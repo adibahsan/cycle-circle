@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff5c7f",
+                        "background-light": "#f8f5f6",
+                        "background-dark": "#230f13",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1.5rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .glass-dark {
+            background: rgba(35, 15, 19, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between py-6 mb-8">
+<div class="flex items-center gap-4">
+<div class="bg-primary p-2 rounded-lg text-white">
+<span class="material-symbols-outlined text-2xl">lock_open</span>
+</div>
+<h1 class="text-2xl font-extrabold tracking-tight">Secret Chats</h1>
+</div>
+<div class="hidden md:flex items-center gap-2 bg-primary/10 p-1 rounded-full">
+<button class="px-6 py-2 rounded-full bg-primary text-white font-semibold text-sm">Feed</button>
+<button class="px-6 py-2 rounded-full hover:bg-primary/20 text-slate-700 dark:text-slate-200 font-semibold text-sm transition-all">Communities</button>
+<button class="px-6 py-2 rounded-full hover:bg-primary/20 text-slate-700 dark:text-slate-200 font-semibold text-sm transition-all">Saved</button>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-3 rounded-full glass hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="p-3 rounded-full glass hover:bg-primary/10 transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+</div>
+</header>
+<!-- Category Scroll -->
+<div class="flex gap-3 overflow-x-auto pb-6 no-scrollbar">
+<div class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-primary text-white px-6 font-bold cursor-pointer">
+<span class="text-sm">All Topics</span>
+</div>
+<div class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full glass px-6 font-bold cursor-pointer hover:border-primary/50 transition-all">
+<span class="text-primary text-sm">#TTC</span>
+</div>
+<div class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full glass px-6 font-bold cursor-pointer hover:border-primary/50 transition-all">
+<span class="text-primary text-sm">#PMS</span>
+</div>
+<div class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full glass px-6 font-bold cursor-pointer hover:border-primary/50 transition-all">
+<span class="text-primary text-sm">#Pregnancy</span>
+</div>
+<div class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full glass px-6 font-bold cursor-pointer hover:border-primary/50 transition-all">
+<span class="text-primary text-sm">#IVF</span>
+</div>
+<div class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full glass px-6 font-bold cursor-pointer hover:border-primary/50 transition-all">
+<span class="text-primary text-sm">#MentalHealth</span>
+</div>
+</div>
+<!-- Feed Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
+<!-- Card 1 -->
+<div class="glass dark:glass-dark p-6 rounded-xl hover:shadow-xl transition-shadow flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="flex gap-3 items-center">
+<div class="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-400 to-indigo-400" data-alt="Abstract colorful gradient avatar for anonymous user"></div>
+<div>
+<p class="font-bold text-slate-800 dark:text-slate-100">Anonymous Butterfly</p>
+<p class="text-xs text-slate-500">2 hours ago</p>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">#TTC</span>
+</div>
+<h3 class="text-lg font-bold leading-snug">First cycle of Clomid and feeling very anxious. Anyone else in the same boat?</h3>
+<div class="p-4 bg-slate-50 dark:bg-white/5 rounded-lg border-l-4 border-primary">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-sm">verified</span>
+<span class="text-xs font-bold text-primary uppercase">Expert Verified Response</span>
+</div>
+<p class="text-sm italic text-slate-600 dark:text-slate-300 line-clamp-2">"It's completely normal to feel this way. The hormonal shift can amplify anxiety..."</p>
+</div>
+<div class="flex items-center justify-between pt-2">
+<div class="flex gap-4">
+<button class="flex items-center gap-1 text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl">favorite</span>
+<span class="text-sm font-medium">24</span>
+</button>
+<button class="flex items-center gap-1 text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl">chat_bubble</span>
+<span class="text-sm font-medium">12</span>
+</button>
+</div>
+<button class="text-sm font-bold text-primary hover:underline">View Discussion</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="glass dark:glass-dark p-6 rounded-xl hover:shadow-xl transition-shadow flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="flex gap-3 items-center">
+<div class="w-12 h-12 rounded-full bg-gradient-to-tr from-yellow-300 to-orange-500" data-alt="Abstract yellow and orange gradient avatar"></div>
+<div>
+<p class="font-bold text-slate-800 dark:text-slate-100">Hidden Harmony</p>
+<p class="text-xs text-slate-500">4 hours ago</p>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">#PMS</span>
+</div>
+<h3 class="text-lg font-bold leading-snug">Natural remedies for severe mood swings? Magnesium is not working as fast as I hoped.</h3>
+<div class="flex items-center justify-between pt-2">
+<div class="flex gap-4">
+<button class="flex items-center gap-1 text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl text-primary" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="text-sm font-medium text-primary">56</span>
+</button>
+<button class="flex items-center gap-1 text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl">chat_bubble</span>
+<span class="text-sm font-medium">31</span>
+</button>
+</div>
+<button class="text-sm font-bold text-primary hover:underline">View Discussion</button>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="glass dark:glass-dark p-6 rounded-xl hover:shadow-xl transition-shadow flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="flex gap-3 items-center">
+<div class="w-12 h-12 rounded-full bg-gradient-to-tr from-green-400 to-cyan-500" data-alt="Abstract green and cyan gradient avatar"></div>
+<div>
+<p class="font-bold text-slate-800 dark:text-slate-100">Quiet Hope</p>
+<p class="text-xs text-slate-500">6 hours ago</p>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">#Pregnancy</span>
+</div>
+<h3 class="text-lg font-bold leading-snug">Finally saw the two lines today after 3 years! I'm crying and don't know who to tell.</h3>
+<div class="p-4 bg-primary/5 rounded-lg border-l-4 border-primary">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-sm">celebration</span>
+<span class="text-xs font-bold text-primary uppercase">Community Support</span>
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-300">Over 140 people have sent congratulations!</p>
+</div>
+<div class="flex items-center justify-between pt-2">
+<div class="flex gap-4">
+<button class="flex items-center gap-1 text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl">favorite</span>
+<span class="text-sm font-medium">142</span>
+</button>
+<button class="flex items-center gap-1 text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl">chat_bubble</span>
+<span class="text-sm font-medium">89</span>
+</button>
+</div>
+<button class="text-sm font-bold text-primary hover:underline">View Discussion</button>
+</div>
+</div>
+<!-- Card 4 (Expert Interaction focus) -->
+<div class="glass dark:glass-dark p-6 rounded-xl hover:shadow-xl transition-shadow flex flex-col gap-4 border-2 border-primary/20">
+<div class="flex justify-between items-start">
+<div class="flex gap-3 items-center">
+<div class="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 to-pink-600" data-alt="Abstract purple and pink gradient avatar"></div>
+<div>
+<p class="font-bold text-slate-800 dark:text-slate-100">Asking Anon</p>
+<p class="text-xs text-slate-500">12 hours ago</p>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">#IVF</span>
+</div>
+<h3 class="text-lg font-bold leading-snug">What should I expect during the first egg retrieval? I'm nervous about the sedation.</h3>
+<div class="p-4 bg-slate-50 dark:bg-white/5 rounded-lg border-l-4 border-primary">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-sm">verified</span>
+<span class="text-xs font-bold text-primary uppercase">Expert Verified Response</span>
+</div>
+<p class="text-sm italic text-slate-600 dark:text-slate-300">"The procedure typically takes 20-30 minutes. Most patients describe the sedation as a light, peaceful sleep..."</p>
+<p class="text-[10px] mt-2 text-slate-400 font-medium">— Dr. Elena R., Fertility Specialist</p>
+</div>
+<div class="flex items-center justify-between pt-2">
+<div class="flex gap-4">
+<button class="flex items-center gap-1 text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl">favorite</span>
+<span class="text-sm font-medium">45</span>
+</button>
+<button class="flex items-center gap-1 text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl">chat_bubble</span>
+<span class="text-sm font-medium">22</span>
+</button>
+</div>
+<button class="text-sm font-bold text-primary hover:underline">View Discussion</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Action Button -->
+<button class="fixed bottom-8 right-8 w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform active:scale-95 z-50">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</body></html>

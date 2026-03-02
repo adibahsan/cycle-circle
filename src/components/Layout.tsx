@@ -38,7 +38,7 @@ export const Layout: React.FC = () => {
             {/* Logo */}
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
               <div className={clsx(
-                "p-2 rounded-lg flex items-center justify-center text-white",
+                "p-2 rounded-full flex items-center justify-center text-white",
                 isPregnancy ? "bg-pregnancy-gold" : "bg-primary"
               )}>
                 <span className="material-symbols-outlined">{isPregnancy ? 'child_care' : 'track_changes'}</span>

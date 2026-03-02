@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff5c7f",
+                        "menstrual": "#DC586D",
+                        "fertile": "#FFBB94",
+                        "background-light": "#f8f5f6",
+                        "background-dark": "#230f13",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "1.5rem", // 24px as requested
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .dark .glass-card {
+            background: rgba(35, 15, 19, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="layout-container flex h-full grow flex-col max-w-[1200px] mx-auto px-4 sm:px-10">
+<!-- Header -->
+<header class="flex items-center justify-between whitespace-nowrap px-4 py-6">
+<div class="flex items-center gap-4">
+<div class="size-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl">water_drop</span>
+</div>
+<h2 class="text-xl font-bold tracking-tight">CycleTracker</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center rounded-full size-11 bg-white dark:bg-slate-800 shadow-sm border border-slate-200/50 dark:border-slate-700">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-11 border-2 border-primary/20" data-alt="User profile photo of a smiling woman" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAY_R97ooYXlDa1kIcnyw2y643WcXnyhNrbqeM9f9tVe6ewKo42NJ7Jcd80CwojMKqGiAz76pwG2mATPFHhQnDymrW_dwYmfEo0lyjXa-KRkQ6LRB9ZC2AktppK9F2ARQkeDnH__Tn7BHslKTv6Q6B45K_5hujUktBDzbF95Xa2rTSANB0df6pinKB6w_rhM4QbJMTgqqwvQC8tf73MECe_pJnjiZNqnSNZFbPYq76-t6MTptAgzkMVqBEwc5iYtsm7hmuuxhs74WE");'></div>
+</div>
+</header>
+<main class="flex flex-col lg:flex-row gap-8 py-4">
+<!-- Sidebar / Stats -->
+<div class="w-full lg:w-80 flex flex-col gap-6">
+<div class="glass-card p-6 rounded-lg shadow-xl shadow-primary/5">
+<div class="flex flex-col gap-1">
+<span class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Today</span>
+<h1 class="text-3xl font-extrabold text-primary">Cycle Day 14</h1>
+<p class="text-slate-600 dark:text-slate-300 mt-2">Predicted <span class="text-fertile font-bold">Fertile Window</span></p>
+</div>
+<div class="mt-6 space-y-4">
+<div class="flex items-center gap-3 p-3 rounded-lg bg-primary/5">
+<span class="material-symbols-outlined text-menstrual">calendar_month</span>
+<div class="text-sm">
+<p class="font-bold">Next Period</p>
+<p class="opacity-70">In 12 days (Oct 12)</p>
+</div>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-lg bg-fertile/10">
+<span class="material-symbols-outlined text-fertile">sunny</span>
+<div class="text-sm">
+<p class="font-bold">Ovulation</p>
+<p class="opacity-70">Likely Tomorrow</p>
+</div>
+</div>
+</div>
+<button class="w-full mt-6 bg-primary text-white font-bold py-4 rounded-lg shadow-lg shadow-primary/30 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">add</span>
+                        Log Symptoms
+                    </button>
+</div>
+<div class="glass-card p-6 rounded-lg">
+<h3 class="font-bold mb-4">Legend</h3>
+<div class="space-y-3">
+<div class="flex items-center gap-3">
+<div class="size-5 rounded-full border-2 border-dashed border-menstrual flex items-center justify-center">
+<div class="size-1.5 bg-menstrual rounded-full"></div>
+</div>
+<span class="text-sm font-medium">Predicted Period</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="size-5 rounded-full border-2 border-dotted border-fertile flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px] text-fertile">star</span>
+</div>
+<span class="text-sm font-medium">Fertile Window</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="size-5 bg-primary/20 rounded-full border border-primary/40"></div>
+<span class="text-sm font-medium">Current Day</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Calendar Section -->
+<div class="flex-1">
+<div class="glass-card p-4 sm:p-8 rounded-lg shadow-xl shadow-primary/5">
+<div class="flex items-center justify-between mb-8">
+<div class="flex flex-col">
+<h2 class="text-2xl font-extrabold tracking-tight">September 2023</h2>
+</div>
+<div class="flex gap-2">
+<button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-7 gap-1 sm:gap-4 text-center">
+<!-- Days of Week -->
+<div class="text-slate-400 text-xs font-bold uppercase tracking-widest pb-4">Sun</div>
+<div class="text-slate-400 text-xs font-bold uppercase tracking-widest pb-4">Mon</div>
+<div class="text-slate-400 text-xs font-bold uppercase tracking-widest pb-4">Tue</div>
+<div class="text-slate-400 text-xs font-bold uppercase tracking-widest pb-4">Wed</div>
+<div class="text-slate-400 text-xs font-bold uppercase tracking-widest pb-4">Thu</div>
+<div class="text-slate-400 text-xs font-bold uppercase tracking-widest pb-4">Fri</div>
+<div class="text-slate-400 text-xs font-bold uppercase tracking-widest pb-4">Sat</div>
+<!-- Row 1 -->
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg opacity-20">27</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg opacity-20">28</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg opacity-20">29</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg opacity-20">30</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg opacity-20 text-menstrual">31</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg bg-menstrual/10 border-2 border-dashed border-menstrual group relative">
+<span class="text-lg font-bold text-menstrual">1</span>
+<div class="size-1 bg-menstrual rounded-full absolute bottom-4"></div>
+</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg bg-menstrual/10 border-2 border-dashed border-menstrual group relative">
+<span class="text-lg font-bold text-menstrual">2</span>
+<div class="size-1 bg-menstrual rounded-full absolute bottom-4"></div>
+</div>
+<!-- Row 2 -->
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg bg-menstrual/10 border-2 border-dashed border-menstrual group relative">
+<span class="text-lg font-bold text-menstrual">3</span>
+<div class="size-1 bg-menstrual rounded-full absolute bottom-4"></div>
+</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg bg-menstrual/10 border-2 border-dashed border-menstrual group relative">
+<span class="text-lg font-bold text-menstrual">4</span>
+<div class="size-1 bg-menstrual rounded-full absolute bottom-4"></div>
+</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg bg-menstrual/10 border-2 border-dashed border-menstrual group relative">
+<span class="text-lg font-bold text-menstrual">5</span>
+<div class="size-1 bg-menstrual rounded-full absolute bottom-4"></div>
+</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">6</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">7</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">8</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">9</div>
+<!-- Row 3 -->
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">10</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">11</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg bg-fertile/5 border-2 border-dotted border-fertile relative">
+<span class="text-lg font-bold text-fertile">12</span>
+<span class="material-symbols-outlined text-[10px] text-fertile absolute bottom-4">star</span>
+</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg bg-fertile/5 border-2 border-dotted border-fertile relative">
+<span class="text-lg font-bold text-fertile">13</span>
+<span class="material-symbols-outlined text-[10px] text-fertile absolute bottom-4">star</span>
+</div>
+<!-- Current Day -->
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg bg-primary text-white shadow-xl shadow-primary/40 transform scale-105 z-10 relative">
+<span class="text-lg font-extrabold">14</span>
+<span class="material-symbols-outlined text-[10px] absolute bottom-4">star</span>
+<div class="absolute -top-2 -right-2 size-4 bg-white rounded-full flex items-center justify-center">
+<div class="size-2 bg-primary rounded-full"></div>
+</div>
+</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg bg-fertile/5 border-2 border-dotted border-fertile relative">
+<span class="text-lg font-bold text-fertile">15</span>
+<span class="material-symbols-outlined text-[10px] text-fertile absolute bottom-4">star</span>
+</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg bg-fertile/5 border-2 border-dotted border-fertile relative">
+<span class="text-lg font-bold text-fertile">16</span>
+<span class="material-symbols-outlined text-[10px] text-fertile absolute bottom-4">star</span>
+</div>
+<!-- Row 4 -->
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">17</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">18</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">19</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">20</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">21</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">22</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">23</div>
+<!-- Row 5 -->
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">24</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">25</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">26</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">27</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">28</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg bg-menstrual/5 border-2 border-dashed border-menstrual/40 relative">
+<span class="text-lg font-bold text-menstrual/60">29</span>
+<div class="size-1 bg-menstrual/40 rounded-full absolute bottom-4"></div>
+</div>
+<div class="h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg bg-menstrual/5 border-2 border-dashed border-menstrual/40 relative">
+<span class="text-lg font-bold text-menstrual/60">30</span>
+<div class="size-1 bg-menstrual/40 rounded-full absolute bottom-4"></div>
+</div>
+</div>
+</div>
+<!-- Secondary Insights -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+<div class="glass-card p-6 rounded-lg flex items-center gap-4">
+<div class="size-12 bg-fertile/20 rounded-lg flex items-center justify-center text-fertile">
+<span class="material-symbols-outlined">psychology_alt</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Mood Insight</h4>
+<p class="text-xs text-slate-500">Expect higher energy and social focus today.</p>
+</div>
+</div>
+<div class="glass-card p-6 rounded-lg flex items-center gap-4">
+<div class="size-12 bg-primary/20 rounded-lg flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">water</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Hydration Tip</h4>
+<p class="text-xs text-slate-500">Drink extra water to support peak cycle phase.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
