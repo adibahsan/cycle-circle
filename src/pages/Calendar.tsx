@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { 
-  format, 
-  addMonths, 
-  subMonths, 
-  startOfMonth, 
-  endOfMonth, 
-  eachDayOfInterval, 
-  isSameMonth, 
-  isSameDay, 
+import {
+  format,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameMonth,
+  isSameDay,
   addDays,
   differenceInDays,
   startOfDay,
@@ -18,9 +18,12 @@ import { clsx } from 'clsx';
 import { useNavigate } from 'react-router-dom';
 
 export const Calendar: React.FC = () => {
-  const { cycleLength, periodLength, lastPeriodStart, symptoms } = useAppContext();
+  const { cycleLength, periodLength, lastPeriodStart, symptoms, predictedCycleLength } = useAppContext();
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
   const navigate = useNavigate();
+
+  // Use ML-predicted cycle length for all cycle calculations
+  const activeCycleLength = predictedCycleLength;
 
   const today = startOfDay(new Date());
   const lastPeriodDate = startOfDay(new Date(lastPeriodStart));
@@ -38,17 +41,12 @@ export const Calendar: React.FC = () => {
   // Calculate predicted periods and fertile windows
   const getDayStatus = (day: Date) => {
     const daysSincePeriod = differenceInDays(day, lastPeriodDate);
-    
-    // If it's before the last period, we don't predict (or we could calculate backwards)
     if (daysSincePeriod < 0) return { isPeriod: false, isFertile: false };
 
-    const cycleDay = (daysSincePeriod % cycleLength) + 1;
-    
+    const cycleDay = (daysSincePeriod % activeCycleLength) + 1;
     const isPeriod = cycleDay <= periodLength;
-    
-    const ovulationDay = cycleLength - 14;
+    const ovulationDay = activeCycleLength - 14;
     const isFertile = cycleDay >= ovulationDay - 4 && cycleDay <= ovulationDay + 1;
-    
     return { isPeriod, isFertile };
   };
 
@@ -60,7 +58,7 @@ export const Calendar: React.FC = () => {
           <div className="flex flex-col gap-1">
             <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Today</span>
             <h1 className="text-3xl font-extrabold text-primary">
-              Cycle Day {(differenceInDays(today, lastPeriodDate) % cycleLength) + 1}
+              Cycle Day {(differenceInDays(today, lastPeriodDate) % activeCycleLength) + 1}
             </h1>
             <p className="text-slate-600 dark:text-slate-300 mt-2">
               {getDayStatus(today).isFertile ? (
@@ -72,14 +70,14 @@ export const Calendar: React.FC = () => {
               )}
             </p>
           </div>
-          
+
           <div className="mt-6 space-y-4">
             <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5">
               <span className="material-symbols-outlined text-menstrual">calendar_month</span>
               <div className="text-sm">
                 <p className="font-bold">Next Period</p>
                 <p className="opacity-70">
-                  In {cycleLength - ((differenceInDays(today, lastPeriodDate) % cycleLength) + 1)} days
+                  In {activeCycleLength - ((differenceInDays(today, lastPeriodDate) % activeCycleLength) + 1)} days
                 </p>
               </div>
             </div>
@@ -89,8 +87,8 @@ export const Calendar: React.FC = () => {
                 <p className="font-bold">Ovulation</p>
                 <p className="opacity-70">
                   {(() => {
-                    const cycleDay = (differenceInDays(today, lastPeriodDate) % cycleLength) + 1;
-                    const ovulationDay = cycleLength - 14;
+                    const cycleDay = (differenceInDays(today, lastPeriodDate) % activeCycleLength) + 1;
+                    const ovulationDay = activeCycleLength - 14;
                     const diff = ovulationDay - cycleDay;
                     if (diff === 0) return 'Today';
                     if (diff === 1) return 'Tomorrow';
@@ -101,8 +99,8 @@ export const Calendar: React.FC = () => {
               </div>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => navigate('/log')}
             className="w-full mt-6 bg-primary text-white font-bold py-4 rounded-lg shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:brightness-110 active:scale-95 transition-all"
           >
@@ -112,8 +110,14 @@ export const Calendar: React.FC = () => {
         </div>
 
         <div className="glass-card p-6 rounded-lg">
-          <h3 className="font-bold mb-4">Legend</h3>
-          <div className="space-y-3">
+          <h3 className="font-bold mb-1">Legend</h3>
+          {activeCycleLength !== cycleLength && (
+            <div className="flex items-center gap-2 mb-3 p-2 bg-primary/5 rounded-lg">
+              <span className="material-symbols-outlined text-primary text-sm">smart_toy</span>
+              <p className="text-xs text-primary font-bold">AI Predicted: {activeCycleLength}d cycle</p>
+            </div>
+          )}
+          <div className="space-y-3 mt-3">
             <div className="flex items-center gap-3">
               <div className="size-5 rounded-full border-2 border-dashed border-menstrual flex items-center justify-center">
                 <div className="size-1.5 bg-menstrual rounded-full"></div>
@@ -168,18 +172,18 @@ export const Calendar: React.FC = () => {
               const isCurrentMonth = isSameMonth(day, currentMonth);
               const isToday = isSameDay(day, today);
               const { isPeriod, isFertile } = getDayStatus(day);
-              
+
               const dateStr = day.toISOString().split('T')[0];
               const daySymptoms = symptoms[dateStr];
               const hasSymptoms = daySymptoms && (
-                daySymptoms.mood.length > 0 || 
-                daySymptoms.pain.length > 0 || 
-                daySymptoms.discharge.length > 0 || 
+                daySymptoms.mood.length > 0 ||
+                daySymptoms.pain.length > 0 ||
+                daySymptoms.discharge.length > 0 ||
                 daySymptoms.lifestyle.length > 0
               );
 
               return (
-                <div 
+                <div
                   key={i}
                   className={clsx(
                     "h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg relative cursor-pointer transition-colors",
@@ -196,11 +200,11 @@ export const Calendar: React.FC = () => {
                   )}>
                     {format(day, 'd')}
                   </span>
-                  
+
                   {!isToday && isPeriod && (
                     <div className="size-1 bg-menstrual rounded-full absolute bottom-4"></div>
                   )}
-                  
+
                   {isFertile && (
                     <span className={clsx(
                       "material-symbols-outlined text-[10px] absolute bottom-4",

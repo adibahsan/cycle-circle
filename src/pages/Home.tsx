@@ -1,21 +1,71 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
-import { differenceInDays, addDays, startOfDay } from 'date-fns';
+import { differenceInDays, startOfDay } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
 export const Home: React.FC = () => {
-  const { mode, cycleLength, periodLength, lastPeriodStart, symptoms } = useAppContext();
+  const {
+    mode,
+    cycleLength,
+    predictedCycleLength,
+    periodLength,
+    lastPeriodStart,
+    pregnancyStartDate,
+    symptoms,
+    anonymousMode,
+    anonymousName,
+  } = useAppContext();
   const navigate = useNavigate();
+
+  // Use ML-predicted cycle length for all computations
+  const activeCycleLength = predictedCycleLength;
 
   const today = startOfDay(new Date());
   const lastPeriodDate = new Date(lastPeriodStart);
   const daysSincePeriod = differenceInDays(today, lastPeriodDate);
-  const currentCycleDay = (daysSincePeriod % cycleLength) + 1;
-  const daysUntilNextPeriod = cycleLength - currentCycleDay;
+  const currentCycleDay = (daysSincePeriod % activeCycleLength) + 1;
+  const daysUntilNextPeriod = activeCycleLength - currentCycleDay;
 
-  // Simple ovulation calculation (approx 14 days before next period)
-  const ovulationDay = cycleLength - 14;
+  // Ovulation calculation (approx 14 days before next period)
+  const ovulationDay = activeCycleLength - 14;
   const isOvulationPhase = currentCycleDay >= ovulationDay - 2 && currentCycleDay <= ovulationDay + 2;
+
+  // Pregnancy week calculation — dynamic from pregnancyStartDate
+  const gestationalWeek = pregnancyStartDate
+    ? Math.floor(differenceInDays(today, new Date(pregnancyStartDate)) / 7)
+    : 22;
+  const trimesterLabel =
+    gestationalWeek < 14 ? 'First Trimester' :
+      gestationalWeek < 28 ? 'Second Trimester' : 'Third Trimester';
+  const journeyPercent = Math.min(Math.round((gestationalWeek / 40) * 100), 100);
+
+  // Fruit comparisons per gestational week (weeks 4–40)
+  const FRUITS: Record<number, [string, string, string]> = {
+    4: ['poppy seed', '0.04 oz', '0.2 in'], 5: ['sesame seed', '0.04 oz', '0.13 in'],
+    6: ['lentil', '0.04 oz', '0.25 in'], 7: ['blueberry', '0.04 oz', '0.51 in'],
+    8: ['kidney bean', '0.04 oz', '0.63 in'], 9: ['grape', '0.07 oz', '0.9 in'],
+    10: ['kumquat', '0.14 oz', '1.2 in'], 11: ['fig', '0.25 oz', '1.6 in'],
+    12: ['lime', '0.49 oz', '2.1 in'], 13: ['pea pod', '0.81 oz', '2.9 in'],
+    14: ['lemon', '1.5 oz', '3.4 in'], 15: ['apple', '2.5 oz', '4 in'],
+    16: ['avocado', '3.5 oz', '4.6 in'], 17: ['turnip', '5 oz', '5.1 in'],
+    18: ['bell pepper', '6.7 oz', '5.6 in'], 19: ['mango', '8.5 oz', '6 in'],
+    20: ['banana', '10.2 oz', '6.5 in'], 21: ['carrot', '12.7 oz', '10.5 in'],
+    22: ['papaya', '1.0 lb', '11 in'], 23: ['grapefruit', '1.1 lb', '11.4 in'],
+    24: ['ear of corn', '1.3 lb', '11.8 in'], 25: ['head of cauliflower', '1.5 lb', '13.6 in'],
+    26: ['scallion', '1.7 lb', '14 in'], 27: ['head of lettuce', '1.9 lb', '14.4 in'],
+    28: ['eggplant', '2.2 lb', '14.8 in'], 29: ['butternut squash', '2.5 lb', '15.2 in'],
+    30: ['cabbage', '2.9 lb', '15.7 in'], 31: ['coconut', '3.3 lb', '16.2 in'],
+    32: ['jicama', '3.75 lb', '16.7 in'], 33: ['pineapple', '4.2 lb', '17.2 in'],
+    34: ['cantaloupe', '4.7 lb', '17.7 in'], 35: ['honeydew melon', '5.3 lb', '18.2 in'],
+    36: ['romaine lettuce', '5.8 lb', '18.7 in'], 37: ['winter melon', '6.3 lb', '19.1 in'],
+    38: ['leek', '6.8 lb', '19.6 in'], 39: ['watermelon', '7.3 lb', '20 in'],
+    40: ['small pumpkin', '7.6 lb', '20.2 in'],
+  };
+  const clampedWeek = Math.min(Math.max(gestationalWeek, 4), 40);
+  const [fruitName, fruitWeight, fruitLength] = FRUITS[clampedWeek] ?? ['papaya', '1.0 lb', '11 in'];
+
+  // Display name
+  const displayName = anonymousMode ? anonymousName : 'Sarah';
 
   // Check if there are symptoms logged today
   const todayStr = today.toISOString().split('T')[0];
@@ -33,14 +83,20 @@ export const Home: React.FC = () => {
         <aside className="lg:col-span-3 flex flex-col gap-6">
           <div className="glass-card rounded-xl p-6 flex flex-col items-center text-center">
             <div className="size-24 rounded-full border-4 border-primary/20 p-1 mb-4">
-              <div className="w-full h-full rounded-full bg-cover bg-center" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuA5pPL9DFH9CmFcwRWJCAWdbGl24f7kLWPea1Utv1xl5oVAZyxvkCikl76LwoRjP2DZcHongd00OsOA51dejS_n5p2pXrpPgkJiHl-Z02g96lWqie4iVWS_C9OcRF6yrE6TTBNhYf0pfJ2PUidmExYg-XJ-_4GR0snwjCEGnNQ3f64LywJMky3xTQcNEFN97SMK80YaAQzhSm4XvpCdDWuxOJzQABtUSy8DkPgn8Jz6hhGWmjuGoQyCSDZBQxvMY3keYGIbomYihuE")' }}></div>
+              {anonymousMode ? (
+                <div className="w-full h-full rounded-full bg-gradient-to-tr from-pink-400 to-indigo-400 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-white text-3xl">visibility_off</span>
+                </div>
+              ) : (
+                <div className="w-full h-full rounded-full bg-cover bg-center" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuA5pPL9DFH9CmFcwRWJCAWdbGl24f7kLWPea1Utv1xl5oVAZyxvkCikl76LwoRjP2DZcHongd00OsOA51dejS_n5p2pXrpPgkJiHl-Z02g96lWqie4iVWS_C9OcRF6yrE6TTBNhYf0pfJ2PUidmExYg-XJ-_4GR0snwjCEGnNQ3f64LywJMky3xTQcNEFN97SMK80YaAQzhSm4XvpCdDWuxOJzQABtUSy8DkPgn8Jz6hhGWmjuGoQyCSDZBQxvMY3keYGIbomYihuE")' }}></div>
+              )}
             </div>
-            <h3 className="text-lg font-bold">Sarah Jenkins</h3>
-            <p className="text-sm text-slate-500 mb-4">22 Weeks Pregnant</p>
+            <h3 className="text-lg font-bold">{displayName}{anonymousMode ? '' : ' Jenkins'}</h3>
+            <p className="text-sm text-slate-500 mb-4">Week {gestationalWeek} · Pregnant</p>
             <div className="w-full bg-warm-accent/30 rounded-full h-2 overflow-hidden">
-              <div className="bg-primary h-full rounded-full w-[55%]"></div>
+              <div className="bg-primary h-full rounded-full transition-all duration-500" style={{ width: `${journeyPercent}%` }}></div>
             </div>
-            <p className="text-xs font-medium mt-2 text-primary">55% of your journey complete</p>
+            <p className="text-xs font-medium mt-2 text-primary">{journeyPercent}% of your journey complete</p>
           </div>
 
           <div className="glass-card rounded-xl p-6">
@@ -64,18 +120,18 @@ export const Home: React.FC = () => {
               <div className="flex-1">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 backdrop-blur-sm text-primary text-sm font-bold mb-4">
                   <span className="material-symbols-outlined text-sm">auto_awesome</span>
-                  Week 22 • Second Trimester
+                  Week {gestationalWeek} • {trimesterLabel}
                 </div>
-                <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">Hello, Sarah!</h1>
-                <p className="text-lg text-slate-700 max-w-md">Your baby is the size of a <span className="text-primary font-bold">papaya</span> this week. They can now hear your heartbeat and voice!</p>
+                <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">Hello, {displayName}!</h1>
+                <p className="text-lg text-slate-700 max-w-md">Your baby is the size of a <span className="text-primary font-bold">{fruitName}</span> this week.</p>
                 <div className="mt-8 flex gap-4">
                   <div className="bg-white/80 p-4 rounded-xl flex flex-col shadow-sm">
                     <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">Weight</span>
-                    <span className="text-xl font-bold">1.0 lb</span>
+                    <span className="text-xl font-bold">{fruitWeight}</span>
                   </div>
                   <div className="bg-white/80 p-4 rounded-xl flex flex-col shadow-sm">
                     <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">Length</span>
-                    <span className="text-xl font-bold">11 in</span>
+                    <span className="text-xl font-bold">{fruitLength}</span>
                   </div>
                 </div>
               </div>
@@ -218,6 +274,7 @@ export const Home: React.FC = () => {
               <p className="text-sm font-bold text-primary uppercase tracking-widest mb-1">Day {currentCycleDay}</p>
               <h3 className="text-6xl font-extrabold text-slate-900 dark:text-white leading-none mb-2">{daysUntilNextPeriod}</h3>
               <p className="text-base font-medium text-slate-500 dark:text-slate-400">Days until period</p>
+              <p className="text-xs text-slate-400 mt-1">AI Cycle: {activeCycleLength}d</p>
 
               <div className="mt-5 px-4 py-2 rounded-full bg-primary/10 flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-base">favorite</span>
@@ -238,9 +295,12 @@ export const Home: React.FC = () => {
 
       <section className="grid grid-cols-2 gap-4">
         <div className="bg-white dark:bg-slate-800/60 p-6 rounded-3xl flex flex-col gap-1 shadow-soft">
-          <span className="material-symbols-outlined text-primary mb-2">calendar_today</span>
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cycle Length</h4>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">{cycleLength} days</p>
+          <span className="material-symbols-outlined text-primary mb-2">smart_toy</span>
+          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">AI Predicted</h4>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{activeCycleLength} days</p>
+          {activeCycleLength !== cycleLength && (
+            <p className="text-[10px] text-slate-400">Base: {cycleLength}d</p>
+          )}
         </div>
         <div className="bg-white dark:bg-slate-800/60 p-6 rounded-3xl flex flex-col gap-1 shadow-soft">
           <span className="material-symbols-outlined text-primary mb-2">water_drop</span>
