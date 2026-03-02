@@ -1,6 +1,8 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
+import { GOAL_LABELS, GOAL_COLORS } from '../data/profiles';
 
 export const Settings: React.FC = () => {
   const {
@@ -11,7 +13,9 @@ export const Settings: React.FC = () => {
     periodLength, setPeriodLength,
     lastPeriodStart, setLastPeriodStart,
     predictedCycleLength, cycleHistory,
+    currentProfile, logout,
   } = useAppContext();
+  const navigate = useNavigate();
 
   // Format lastPeriodStart as YYYY-MM-DD for the date input
   const lastPeriodDateValue = lastPeriodStart
@@ -21,6 +25,34 @@ export const Settings: React.FC = () => {
   return (
     <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
       <h1 className="text-3xl font-bold mb-8">Settings</h1>
+
+      {/* ── Profile Card ──────────────────────────────────────────── */}
+      {currentProfile && (
+        <div className="glass p-6 rounded-xl flex items-center gap-4">
+          {currentProfile.avatar ? (
+            <img src={currentProfile.avatar} alt={currentProfile.name}
+              className="w-16 h-16 rounded-full object-cover flex-shrink-0" />
+          ) : (
+            <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${currentProfile.gradientFrom} ${currentProfile.gradientTo} flex items-center justify-center text-white text-2xl font-bold flex-shrink-0`}>
+              {currentProfile.name.charAt(0)}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl font-bold truncate">{currentProfile.name}</h2>
+            <p className="text-slate-500 text-sm">{currentProfile.bio}</p>
+            <span className={`inline-block mt-1.5 px-3 py-0.5 rounded-full text-xs font-bold ${GOAL_COLORS[currentProfile.goal]}`}>
+              {GOAL_LABELS[currentProfile.goal]}
+            </span>
+          </div>
+          <button
+            onClick={() => navigate('/login')}
+            className="flex-shrink-0 flex flex-col items-center gap-1 text-primary hover:bg-primary/5 px-3 py-2 rounded-lg transition-colors"
+          >
+            <span className="material-symbols-outlined">switch_account</span>
+            <span className="text-xs font-bold">Switch</span>
+          </button>
+        </div>
+      )}
 
       {/* ── Cycle Configuration ─────────────────────────────────────── */}
       <div className="glass p-6 rounded-xl space-y-6">
@@ -210,7 +242,17 @@ export const Settings: React.FC = () => {
             <span className="font-medium">Notifications</span>
             <span className="material-symbols-outlined text-slate-400">chevron_right</span>
           </button>
-          <button className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-red-500">
+          <button
+            onClick={() => navigate('/login')}
+            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-primary"
+          >
+            <span className="font-medium">Switch Account</span>
+            <span className="material-symbols-outlined">switch_account</span>
+          </button>
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-red-500"
+          >
             <span className="font-medium">Log Out</span>
             <span className="material-symbols-outlined">logout</span>
           </button>

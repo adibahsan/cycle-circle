@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { addDays, differenceInDays, startOfDay } from 'date-fns';
+import { DEMO_PROFILES, UserProfile, seedUserData } from '../data/profiles';
 
 type Mode = 'tracking' | 'pregnancy';
 type Theme = 'light' | 'dark';
@@ -15,83 +16,62 @@ export interface SymptomLog {
 }
 
 const EMPTY_LOG: SymptomLog = {
-  flow: [],
-  mood: [],
-  pain: [],
-  discharge: [],
-  lifestyle: [],
-  sexualActivity: [],
-  note: '',
+  flow: [], mood: [], pain: [], discharge: [], lifestyle: [], sexualActivity: [], note: '',
 };
 
-// Pool of anonymous names for "Anonymous Mode"
-const ANON_ADJECTIVES = [
-  'Silent', 'Hidden', 'Quiet', 'Gentle', 'Soft', 'Calm', 'Brave', 'Wise',
-  'Kind', 'Bold', 'Swift', 'Warm', 'Bright', 'Clear', 'Free',
-];
-const ANON_NOUNS = [
-  'Orchid', 'Lily', 'Rose', 'Willow', 'Fern', 'Dawn', 'Moon', 'Star',
-  'River', 'Cloud', 'Sage', 'Wren', 'Lark', 'Bloom', 'Pearl',
-];
+// ─── Anonymous name pool ──────────────────────────────────────────────────────
+const ANON_ADJ = ['Silent', 'Hidden', 'Quiet', 'Gentle', 'Soft', 'Calm', 'Brave', 'Wise', 'Kind', 'Bold', 'Swift', 'Warm', 'Bright', 'Clear', 'Free'];
+const ANON_NOUN = ['Orchid', 'Lily', 'Rose', 'Willow', 'Fern', 'Dawn', 'Moon', 'Star', 'River', 'Cloud', 'Sage', 'Wren', 'Lark', 'Bloom', 'Pearl'];
+const genAnonName = () =>
+  `${ANON_ADJ[Math.floor(Math.random() * ANON_ADJ.length)]} ${ANON_NOUN[Math.floor(Math.random() * ANON_NOUN.length)]}`;
 
-function generateAnonName(): string {
-  const adj = ANON_ADJECTIVES[Math.floor(Math.random() * ANON_ADJECTIVES.length)];
-  const noun = ANON_NOUNS[Math.floor(Math.random() * ANON_NOUNS.length)];
-  return `${adj} ${noun}`;
-}
-
-/**
- * Weighted rolling average (exponential) prediction.
- * More recent cycles carry higher weight.
- * This is a lightweight, client-side analogue to ARIMA/LSTM described in the research doc.
- *
- * @param history array of past cycle lengths, oldest first
- * @returns predicted next cycle length (rounded to nearest integer)
- */
+// ─── ML: exponentially-weighted rolling average ───────────────────────────────
 function predictCycleLength(history: number[]): number {
   if (history.length === 0) return 28;
   if (history.length === 1) return history[0];
-
-  // Assign linearly increasing weights: oldest = 1, newest = n
   const weights = history.map((_, i) => i + 1);
-  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-  const weightedSum = history.reduce((sum, val, i) => sum + val * weights[i], 0);
-  return Math.round(weightedSum / totalWeight);
+  const totalW = weights.reduce((s, w) => s + w, 0);
+  const weightedS = history.reduce((s, v, i) => s + v * weights[i], 0);
+  return Math.round(weightedS / totalW);
 }
 
-// ─── localStorage helpers ────────────────────────────────────────────────────
-function lsGet<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw === null) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
+// ─── localStorage helpers ─────────────────────────────────────────────────────
+// Global (not user-scoped)
+function gLsGet<T>(key: string, fallback: T): T {
+  try { const r = localStorage.getItem(key); return r === null ? fallback : JSON.parse(r) as T; }
+  catch { return fallback; }
+}
+function gLsSet<T>(key: string, v: T) {
+  try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* full */ }
 }
 
-function lsSet<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // storage full or unavailable — silently fail
-  }
+// User-scoped
+function uLsGet<T>(userId: string, key: string, fallback: T): T {
+  return gLsGet<T>(`cc_${userId}_${key}`, fallback);
+}
+function uLsSet<T>(userId: string, key: string, v: T) {
+  gLsSet(`cc_${userId}_${key}`, v);
 }
 
-// ─── Default demo cycle history (simulates ~6 months of data) ────────────────
-const DEFAULT_CYCLE_HISTORY = [27, 29, 28, 30, 27, 28];
-
-// ─── Default dates ────────────────────────────────────────────────────────────
+// ─── Default demo dates ───────────────────────────────────────────────────────
 const DEFAULT_LAST_PERIOD = startOfDay(addDays(new Date(), -14)).toISOString();
-const DEFAULT_PREGNANCY_START = startOfDay(addDays(new Date(), -22 * 7)).toISOString();
+const DEFAULT_PREG_START = startOfDay(addDays(new Date(), -154)).toISOString();
+const DEFAULT_CYCLE_HISTORY = [27, 29, 28, 30, 27, 28];
 
 // ─── Context shape ────────────────────────────────────────────────────────────
 interface AppState {
+  // Auth
+  currentUserId: string | null;
+  currentProfile: UserProfile | null;
+  login: (userId: string) => void;
+  logout: () => void;
+
+  // App state
   mode: Mode;
   theme: Theme;
   cycleLength: number;
   periodLength: number;
-  predictedCycleLength: number;  // ML-weighted prediction
+  predictedCycleLength: number;
   cycleHistory: number[];
   lastPeriodStart: string;
   pregnancyStartDate: string | null;
@@ -105,195 +85,153 @@ interface AppState {
   toggleAnonymousMode: () => void;
   setCycleLength: (n: number) => void;
   setPeriodLength: (n: number) => void;
-  setLastPeriodStart: (date: string) => void;
+  setLastPeriodStart: (d: string) => void;
   addCycleToHistory: (length: number) => void;
-
-  // Symptom helpers
-  logSymptom: (date: string, category: keyof Omit<SymptomLog, 'note'>, value: string) => void;
-  removeSymptom: (date: string, category: keyof Omit<SymptomLog, 'note'>, value: string) => void;
+  logSymptom: (date: string, cat: keyof Omit<SymptomLog, 'note'>, value: string) => void;
+  removeSymptom: (date: string, cat: keyof Omit<SymptomLog, 'note'>, value: string) => void;
   setNote: (date: string, note: string) => void;
 }
 
-const defaultState: AppState = {
-  mode: 'tracking',
-  theme: 'light',
-  cycleLength: 28,
-  periodLength: 5,
-  predictedCycleLength: 28,
-  cycleHistory: DEFAULT_CYCLE_HISTORY,
-  lastPeriodStart: DEFAULT_LAST_PERIOD,
-  pregnancyStartDate: DEFAULT_PREGNANCY_START,
-  symptoms: {},
-  anonymousMode: false,
-  anonymousName: '',
-  toggleMode: () => { },
-  toggleTheme: () => { },
-  toggleAnonymousMode: () => { },
-  setCycleLength: () => { },
-  setPeriodLength: () => { },
-  setLastPeriodStart: () => { },
-  addCycleToHistory: () => { },
-  logSymptom: () => { },
-  removeSymptom: () => { },
-  setNote: () => { },
-};
-
-const AppContext = createContext<AppState>(defaultState);
+const AppContext = createContext<AppState>({} as AppState);
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [mode, setMode] = useState<Mode>(() => lsGet<Mode>('cc_mode', 'tracking'));
+  // ── Auth ───────────────────────────────────────────────────────────────────
+  const [currentUserId] = useState<string | null>(() =>
+    gLsGet<string | null>('cc_activeUser', null)
+  );
 
+  const currentProfile = useMemo(
+    () => DEMO_PROFILES.find(p => p.id === currentUserId) ?? null,
+    [currentUserId]
+  );
+
+  const login = (userId: string) => {
+    // Seed demo data if this is the first time logging in as this user
+    const demoProfile = DEMO_PROFILES.find(p => p.id === userId);
+    if (demoProfile) seedUserData(demoProfile);
+    gLsSet('cc_activeUser', userId);
+    window.location.href = '/';
+  };
+
+  const logout = () => {
+    localStorage.removeItem('cc_activeUser');
+    window.location.href = '/login';
+  };
+
+  // ── Per-user init helpers ──────────────────────────────────────────────────
+  const uid = currentUserId ?? '__guest__';
+  const uGet = <T,>(key: string, fallback: T) => uLsGet<T>(uid, key, fallback);
+  const uSet = <T,>(key: string, v: T) => uLsSet<T>(uid, key, v);
+
+  // ── Theme (global, not user-scoped) ───────────────────────────────────────
   const [theme, setTheme] = useState<Theme>(() => {
-    const saved = lsGet<Theme>('theme', 'system' as any);
+    const saved = gLsGet<Theme>('theme', 'system' as any);
     if (saved === 'dark' || saved === 'light') return saved;
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
+  // ── User-scoped state (lazy init from localStorage) ────────────────────────
+  const [mode, setMode] = useState<Mode>(() => uGet<Mode>('mode', currentProfile?.mode ?? 'tracking'));
+
   const [cycleLength, setCycleLengthState] = useState<number>(() =>
-    lsGet<number>('cc_cycleLength', 28)
+    uGet<number>('cycleLength', currentProfile?.cycleLength ?? 28)
   );
-
   const [periodLength, setPeriodLengthState] = useState<number>(() =>
-    lsGet<number>('cc_periodLength', 5)
+    uGet<number>('periodLength', currentProfile?.periodLength ?? 5)
   );
-
   const [lastPeriodStart, setLastPeriodStartState] = useState<string>(() =>
-    lsGet<string>('cc_lastPeriodStart', DEFAULT_LAST_PERIOD)
+    uGet<string>('lastPeriodStart', currentProfile?.lastPeriodStart ?? DEFAULT_LAST_PERIOD)
   );
-
-  const [pregnancyStartDate] = useState<string | null>(DEFAULT_PREGNANCY_START);
-
-  const [cycleHistory, setCycleHistory] = useState<number[]>(() =>
-    lsGet<number[]>('cc_cycleHistory', DEFAULT_CYCLE_HISTORY)
+  const [pregnancyStartDate] = useState<string | null>(
+    currentProfile?.pregnancyStartDate ?? DEFAULT_PREG_START
   );
-
+  const [cycleHistory, setCycleHistoryState] = useState<number[]>(() =>
+    uGet<number[]>('cycleHistory', currentProfile?.cycleHistory ?? DEFAULT_CYCLE_HISTORY)
+  );
   const [symptoms, setSymptoms] = useState<Record<string, SymptomLog>>(() =>
-    lsGet<Record<string, SymptomLog>>('cc_symptoms', {})
+    uGet<Record<string, SymptomLog>>('symptoms', {})
   );
-
   const [anonymousMode, setAnonymousMode] = useState<boolean>(() =>
-    lsGet<boolean>('cc_anonymousMode', false)
+    uGet<boolean>('anonymousMode', false)
   );
-
   const [anonymousName, setAnonymousName] = useState<string>(() =>
-    lsGet<string>('cc_anonymousName', generateAnonName())
+    uGet<string>('anonymousName', genAnonName())
   );
 
-  // ── Computed: ML-weighted cycle prediction ───────────────────────────────
-  const predictedCycleLength = useMemo(
-    () => predictCycleLength(cycleHistory),
-    [cycleHistory]
-  );
+  // ── ML prediction ──────────────────────────────────────────────────────────
+  const predictedCycleLength = useMemo(() => predictCycleLength(cycleHistory), [cycleHistory]);
 
-  // ── Side-effects: persist to localStorage ────────────────────────────────
+  // ── Theme side-effect (global) ─────────────────────────────────────────────
   useEffect(() => {
-    localStorage.setItem('theme', theme);
+    gLsSet('theme', theme);
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
-  useEffect(() => { lsSet('cc_mode', mode); }, [mode]);
-  useEffect(() => { lsSet('cc_cycleLength', cycleLength); }, [cycleLength]);
-  useEffect(() => { lsSet('cc_periodLength', periodLength); }, [periodLength]);
-  useEffect(() => { lsSet('cc_lastPeriodStart', lastPeriodStart); }, [lastPeriodStart]);
-  useEffect(() => { lsSet('cc_cycleHistory', cycleHistory); }, [cycleHistory]);
-  useEffect(() => { lsSet('cc_symptoms', symptoms); }, [symptoms]);
-  useEffect(() => { lsSet('cc_anonymousMode', anonymousMode); }, [anonymousMode]);
-  useEffect(() => { lsSet('cc_anonymousName', anonymousName); }, [anonymousName]);
+  // ── User-scoped persistence ────────────────────────────────────────────────
+  useEffect(() => { uSet('mode', mode); }, [mode]);
+  useEffect(() => { uSet('cycleLength', cycleLength); }, [cycleLength]);
+  useEffect(() => { uSet('periodLength', periodLength); }, [periodLength]);
+  useEffect(() => { uSet('lastPeriodStart', lastPeriodStart); }, [lastPeriodStart]);
+  useEffect(() => { uSet('cycleHistory', cycleHistory); }, [cycleHistory]);
+  useEffect(() => { uSet('symptoms', symptoms); }, [symptoms]);
+  useEffect(() => { uSet('anonymousMode', anonymousMode); }, [anonymousMode]);
+  useEffect(() => { uSet('anonymousName', anonymousName); }, [anonymousName]);
 
-  // ── Actions ──────────────────────────────────────────────────────────────
-  const toggleMode = () => setMode(prev => prev === 'tracking' ? 'pregnancy' : 'tracking');
-  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  // ── Actions ────────────────────────────────────────────────────────────────
+  const toggleMode = () => setMode(p => p === 'tracking' ? 'pregnancy' : 'tracking');
+  const toggleTheme = () => setTheme(p => p === 'light' ? 'dark' : 'light');
 
   const toggleAnonymousMode = () => {
     setAnonymousMode(prev => {
-      const next = !prev;
-      // Generate a fresh name every time they toggle ON
-      if (next) {
-        const name = generateAnonName();
+      if (!prev) {
+        const name = genAnonName();
         setAnonymousName(name);
-        lsSet('cc_anonymousName', name);
+        uSet('anonymousName', name);
       }
-      return next;
+      return !prev;
     });
   };
 
   const setCycleLength = (n: number) => setCycleLengthState(Math.max(21, Math.min(45, n)));
   const setPeriodLength = (n: number) => setPeriodLengthState(Math.max(1, Math.min(10, n)));
-  const setLastPeriodStart = (date: string) => setLastPeriodStartState(date);
+  const setLastPeriodStart = (d: string) => setLastPeriodStartState(d);
 
-  const addCycleToHistory = (length: number) => {
-    setCycleHistory(prev => {
-      // Keep last 12 cycles (one year)
-      const next = [...prev, length].slice(-12);
-      return next;
+  const addCycleToHistory = (len: number) =>
+    setCycleHistoryState(prev => [...prev, len].slice(-12));
+
+  const logSymptom = (date: string, cat: keyof Omit<SymptomLog, 'note'>, value: string) => {
+    setSymptoms(prev => {
+      const cur = prev[date] || { ...EMPTY_LOG };
+      if ((cur[cat] as string[]).includes(value)) return prev;
+      return { ...prev, [date]: { ...cur, [cat]: [...(cur[cat] as string[]), value] } };
     });
   };
 
-  const logSymptom = (
-    date: string,
-    category: keyof Omit<SymptomLog, 'note'>,
-    value: string
-  ) => {
+  const removeSymptom = (date: string, cat: keyof Omit<SymptomLog, 'note'>, value: string) => {
     setSymptoms(prev => {
-      const current = prev[date] || { ...EMPTY_LOG };
-      const currentCategory = current[category] as string[];
-      if (currentCategory.includes(value)) return prev;
-      return {
-        ...prev,
-        [date]: { ...current, [category]: [...currentCategory, value] },
-      };
-    });
-  };
-
-  const removeSymptom = (
-    date: string,
-    category: keyof Omit<SymptomLog, 'note'>,
-    value: string
-  ) => {
-    setSymptoms(prev => {
-      const current = prev[date];
-      if (!current) return prev;
-      return {
-        ...prev,
-        [date]: {
-          ...current,
-          [category]: (current[category] as string[]).filter(v => v !== value),
-        },
-      };
+      const cur = prev[date];
+      if (!cur) return prev;
+      return { ...prev, [date]: { ...cur, [cat]: (cur[cat] as string[]).filter(v => v !== value) } };
     });
   };
 
   const setNote = (date: string, note: string) => {
     setSymptoms(prev => {
-      const current = prev[date] || { ...EMPTY_LOG };
-      return { ...prev, [date]: { ...current, note } };
+      const cur = prev[date] || { ...EMPTY_LOG };
+      return { ...prev, [date]: { ...cur, note } };
     });
   };
 
   return (
     <AppContext.Provider value={{
-      mode,
-      theme,
-      cycleLength,
-      periodLength,
-      predictedCycleLength,
-      cycleHistory,
-      lastPeriodStart,
-      pregnancyStartDate,
-      symptoms,
-      anonymousMode,
-      anonymousName,
-      toggleMode,
-      toggleTheme,
-      toggleAnonymousMode,
-      setCycleLength,
-      setPeriodLength,
-      setLastPeriodStart,
-      addCycleToHistory,
-      logSymptom,
-      removeSymptom,
-      setNote,
+      currentUserId, currentProfile, login, logout,
+      mode, theme, cycleLength, periodLength, predictedCycleLength,
+      cycleHistory, lastPeriodStart, pregnancyStartDate,
+      symptoms, anonymousMode, anonymousName,
+      toggleMode, toggleTheme, toggleAnonymousMode,
+      setCycleLength, setPeriodLength, setLastPeriodStart, addCycleToHistory,
+      logSymptom, removeSymptom, setNote,
     }}>
       {children}
     </AppContext.Provider>
