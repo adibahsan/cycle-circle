@@ -76,6 +76,7 @@ export const LogSymptoms: React.FC = () => {
   const { symptoms, logSymptom, removeSymptom, setNote } = useAppContext();
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
   const today = startOfDay(new Date());
   const dateStr = today.toISOString().split('T')[0];
@@ -130,30 +131,60 @@ export const LogSymptoms: React.FC = () => {
     );
   };
 
-  // ── Section renderer ──────────────────────────────────────────────────────
+  const toggleSection = (label: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  };
+
+  // ── Section renderer ─────────────────────────────────────────────────────
   const renderSection = (
     label: string,
     icon: string,
     iconColor: string,
     category: LogCategory,
     options: typeof FLOW_OPTIONS
-  ) => (
-    <section>
-      <div className="flex items-center justify-between mb-4 px-2">
-        <h2 className="text-xl font-extrabold flex items-center gap-2">
-          <span className={`material-symbols-outlined ${iconColor}`}>{icon}</span>
-          {label}
-        </h2>
-        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{options.length} Options</span>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {options.map(opt => renderOption(category, opt))}
-      </div>
-    </section>
-  );
+  ) => {
+    const isCollapsed = collapsedSections.has(label);
+    const selectedCount = (current[category] as string[]).length;
+    return (
+      <section key={label}>
+        <button
+          type="button"
+          onClick={() => toggleSection(label)}
+          className="w-full flex items-center justify-between mb-4 px-2 group"
+        >
+          <h2 className="text-xl font-extrabold flex items-center gap-2">
+            <span className={`material-symbols-outlined ${iconColor}`}>{icon}</span>
+            {label}
+            {selectedCount > 0 && (
+              <span className="ml-1 px-2 py-0.5 rounded-full bg-primary/15 text-primary text-xs font-bold">
+                {selectedCount}
+              </span>
+            )}
+          </h2>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{options.length} Options</span>
+            <span className={`material-symbols-outlined text-slate-400 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : 'rotate-0'}`}>
+              expand_more
+            </span>
+          </div>
+        </button>
+        {!isCollapsed && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {options.map(opt => renderOption(category, opt))}
+          </div>
+        )}
+      </section>
+    );
+  };
 
   return (
-    <div className="max-w-[1200px] mx-auto min-h-screen flex flex-col relative">
+    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -my-8 flex flex-col overflow-hidden relative"
+      style={{ height: 'calc(100dvh - 4rem)' }}>
       {/* Background blobs */}
       <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] -z-10" />
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/5 rounded-full blur-[120px] -z-10" />
@@ -179,7 +210,7 @@ export const LogSymptoms: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 px-4 pb-12">
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-4">
         {/* Completeness bar */}
         <section className="glass p-6 rounded-xl mb-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex-1 w-full">
@@ -224,19 +255,36 @@ export const LogSymptoms: React.FC = () => {
           {renderSection('Discharge', 'water', 'text-blue-400', 'discharge', DISCHARGE_OPTIONS)}
           {renderSection('Lifestyle', 'self_improvement', 'text-orange-400', 'lifestyle', LIFESTYLE_OPTIONS)}
 
-          {/* Sexual Activity — soft gated section */}
+          {/* Sexual Activity — collapsible gated section */}
           <section>
-            <div className="flex items-center justify-between mb-4 px-2">
+            <button
+              type="button"
+              onClick={() => toggleSection('Sexual Activity')}
+              className="w-full flex items-center justify-between mb-4 px-2 group"
+            >
               <h2 className="text-xl font-extrabold flex items-center gap-2">
                 <span className="material-symbols-outlined text-rose-400">favorite</span>
                 Sexual Activity
+                {(current.sexualActivity as string[]).length > 0 && (
+                  <span className="ml-1 px-2 py-0.5 rounded-full bg-primary/15 text-primary text-xs font-bold">
+                    {(current.sexualActivity as string[]).length}
+                  </span>
+                )}
               </h2>
-              <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-bold rounded-full uppercase tracking-widest">Private</span>
-            </div>
-            <p className="text-sm text-slate-500 mb-4 px-2">Your data stays on your device and is never shared.</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {SEXUAL_ACTIVITY_OPTIONS.map(opt => renderOption('sexualActivity', opt))}
-            </div>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-bold rounded-full uppercase tracking-widest">Private</span>
+                <span className={`material-symbols-outlined text-slate-400 transition-transform duration-200 ${collapsedSections.has('Sexual Activity') ? '-rotate-90' : 'rotate-0'
+                  }`}>expand_more</span>
+              </div>
+            </button>
+            {!collapsedSections.has('Sexual Activity') && (
+              <>
+                <p className="text-sm text-slate-500 mb-4 px-2">Your data stays on your device and is never shared.</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {SEXUAL_ACTIVITY_OPTIONS.map(opt => renderOption('sexualActivity', opt))}
+                </div>
+              </>
+            )}
           </section>
         </div>
 
@@ -256,35 +304,36 @@ export const LogSymptoms: React.FC = () => {
           </div>
         </section>
 
-        {/* Save bar */}
-        <div className="flex items-center justify-between gap-4 mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center justify-center w-12 h-12 rounded-full glass hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
-          <button
-            onClick={() => navigate('/')}
-            className="flex-1 max-w-md bg-primary text-white font-bold py-4 rounded-full shadow-xl shadow-primary/30 hover:brightness-110 active:scale-95 transition-all text-center"
-          >
-            Save Symptoms
-          </button>
-          <div className="hidden sm:flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-full px-4 py-3 min-w-[140px] justify-center">
-            {isSaving ? (
-              <>
-                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <span className="text-xs font-bold text-slate-500">Auto-saving...</span>
-              </>
-            ) : (
-              <>
-                <span className="material-symbols-outlined text-sm text-green-500">check</span>
-                <span className="text-xs font-bold text-slate-500">Saved</span>
-              </>
-            )}
-          </div>
-        </div>
       </main>
+
+      {/* ── Sticky save bar ───────────────────────────────────────────── */}
+      <div className="flex-shrink-0 flex items-center gap-4 px-4 sm:px-6 lg:px-8 py-3 border-t border-slate-200 dark:border-slate-800 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md">
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center justify-center w-12 h-12 rounded-full glass hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0"
+        >
+          <span className="material-symbols-outlined">close</span>
+        </button>
+        <button
+          onClick={() => navigate('/')}
+          className="flex-1 bg-primary text-white font-bold py-3.5 rounded-full shadow-xl shadow-primary/30 hover:brightness-110 active:scale-95 transition-all text-center"
+        >
+          Save Symptoms
+        </button>
+        <div className="hidden sm:flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-full px-4 py-3 min-w-[130px] justify-center flex-shrink-0">
+          {isSaving ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-xs font-bold text-slate-500">Auto-saving...</span>
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined text-sm text-green-500">check</span>
+              <span className="text-xs font-bold text-slate-500">Saved</span>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
