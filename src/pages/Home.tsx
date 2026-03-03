@@ -240,104 +240,133 @@ export const Home: React.FC = () => {
 
   // Tracking Mode
   return (
-    <>
+    <div className="flex flex-col gap-10 max-w-[500px] mx-auto pb-8">
+
+      {/* ── 1. Health Insights ──────────────────────────────────────────────── */}
       <section>
-        <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4 px-2">Health Insights</h2>
-        <div className="flex gap-5 overflow-x-auto pb-2 scrollbar-hide no-scrollbar">
+        <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 mb-6 px-2">Health Insights</h2>
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide no-scrollbar px-2">
           {[
-            { label: 'Nutrition', active: true, src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIuxohAQTuq2F6q01wvMr3wKYnwWY-sU8c41QcyvE33VPR5tYfuf-w_jiOMXjy3vijXCB01V8g5nfXciB6fRRLlToYxiUp41IsJCHAyoXvn48jBrKx1o2N-bn_DBOwOlPFiw1bG-CWWSr5G1aF59c4BMb2G57rkRKOtdzoSqV7IMK5J-x575zuYUTNf5pzy2Npn8LZqQ3aBQCYcq_rrPfV6R9gAZkAGWLsVDszK-pTVuu66dCXv0deUO9JkFx5ssmAEMOF8gRE3dU' },
-            { label: 'Fitness', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC1IsUP7mL0mu-k4tQ9gg156dCVXTQDbajq87rhJWhPHnvwD7ugGYa_YzyrrKRY6M9ONPPtzLKl6YU-2_2jIuIZF4a6erQHv8XtZ2hQSn7ylpWHwGyQL9rYP_cDCIQZgpIy73i4EjpdzS2-nSMmn4fXLP7h7DGK912caN5Yvg_Ga96446SxW-EP4RUx1UglR3IEa1sKOFhImOuou4P7QvZiMaZE8KNWvPKImtZwC3T86-nvrVHXaxRB5kf2fjZEMbJmrQwWhLYW5HI' },
-            { label: 'Sleep', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBh6UyVIQ9R1Zbk8xcjI1F_lVDuF00B90uZt9MWXGTLnOm1S0Mb2O4bLhabzg-Gzt1Z3UGjgU5pUfjx8CJ7lTrdAARYn0CFS6hYdxWCj8BxU--JByA0iKwzN8jV42EFGXv4zR8U6PH7L5ubzBWjEy80-XdIHxTXgBT8fmLa0IKBroRKqYJQXYuM-iDNO7YDZB_UzSZyQeDSeTrnDGlBe5r3o46Gr3HfBiN4VxIMrqKk4ecVCc_fLDyHjbGC2fB3SQffunKV5vYfFt8' },
-            { label: 'Hormones', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBdi85T2Dy5XVsJAuByGDSBRBC-LIqGCubLjL5Yn5I4gk7jwTPCudYN87yO8DGD11U2A7huueKqZqDCn0C3e5cqBCh_b2dkXf0AsGkLHd-88bzjoDlmqSOlRbbllZebNLRnBt6y5pYMmF1wsUlqxUjTjIwuybKg_vOW-coa-ritibpwtTprp3akHQKjKwCf4mPmk9Tyb2lpHDjEOJkADk7-ED2D0A2EDQ3YaJKNa04HzDkzoNVayeBWBIy059myv2UWugffcQKzMUk' },
-            { label: 'Mood', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAulJkDX5ExVlNiYIzJgouFRMuc6yqYdLbzdkHLkySW2uzucIrsMe69D6Pa7nlnJP2VHOBbow2K_mc8WENYrKQ9mDioMQBcTem-N0GMkEXw6ZziyEOhtUU9KS_bAb1s-wgGThiyUZX340xpehk0hDyz39J2dZbNWukBcAvy53kyLNHaxzcBNWxD1EHDpAfUnxLmXNb-ptteKA1amcQ90SRwteIDpt3dmx9C6jrBlqqT2FNxwP74drDGVGL1JcjlIHsyoQ-PrLI8MCc' },
+            { label: 'Nutrition', active: true, src: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150&h=150&fit=crop' },
+            { label: 'Fitness', src: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=150&h=150&fit=crop' },
+            { label: 'Sleep', src: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=150&h=150&fit=crop' },
+            { label: 'Hormones', src: 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=150&h=150&fit=crop' },
+            { label: 'Mood', src: 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=150&h=150&fit=crop' },
           ].map(({ label, src, active }) => (
-            <div key={label} className="flex flex-col items-center gap-2 min-w-[80px]">
-              <div className={`size-20 rounded-full p-0.5 border-2 ${active ? 'border-primary shadow-glow-primary' : 'border-slate-200/80 dark:border-slate-700'}`}>
+            <div key={label} className="flex flex-col items-center gap-2 min-w-[72px] group cursor-pointer">
+              <div className={`size-[72px] rounded-full p-1 transition-all duration-300 ${active ? 'bg-primary shadow-[0_0_15px_rgba(236,72,153,0.4)] scale-105' : 'bg-transparent border-2 border-slate-200 dark:border-slate-800 group-hover:border-primary/50'}`}>
                 <img className="w-full h-full object-cover rounded-full" src={src} alt={label} />
               </div>
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{label}</span>
+              <span className={`text-[11px] font-bold ${active ? 'text-slate-900 dark:text-white' : 'text-slate-500'}`}>{label}</span>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="flex flex-col items-center justify-center py-4">
-        <div className="relative flex items-center justify-center">
-          {/* Outer glow ring */}
-          <div
-            className="size-[320px] rounded-full flex items-center justify-center p-[6px] shadow-glow-primary"
-            style={{
-              background: `conic-gradient(from -90deg, var(--color-primary) ${(currentCycleDay / cycleLength) * 360}deg, #fce4ea ${(currentCycleDay / cycleLength) * 360}deg)`
-            }}
-          >
-            <div className="size-full rounded-full bg-background-light dark:bg-slate-900 flex flex-col items-center justify-center text-center p-8">
-              <p className="text-sm font-bold text-primary uppercase tracking-widest mb-1">Day {currentCycleDay}</p>
-              <h3 className="text-6xl font-extrabold text-slate-900 dark:text-white leading-none mb-2">{daysUntilNextPeriod}</h3>
-              <p className="text-base font-medium text-slate-500 dark:text-slate-400">Days until period</p>
-              <p className="text-xs text-slate-400 mt-1">AI Cycle: {activeCycleLength}d</p>
+      {/* ── 2. Central Cycle Ring ───────────────────────────────────────────── */}
+      <section className="flex justify-center relative py-6">
+        <div className="relative w-[320px] h-[320px] flex items-center justify-center">
 
-              <div className="mt-5 px-4 py-2 rounded-full bg-primary/10 flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-base">favorite</span>
-                <span className="text-xs font-bold text-primary uppercase tracking-wide">
-                  Chance of pregnancy: {isOvulationPhase ? 'High' : 'Low'}
-                </span>
-              </div>
+          {/* Top Badge: Ovulation Phase */}
+          {isOvulationPhase && (
+            <div className="absolute -top-4 z-20 bg-white dark:bg-slate-900 px-5 py-2 rounded-full shadow-lg shadow-black/5 border border-slate-100 dark:border-slate-800">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Ovulation Phase</span>
+            </div>
+          )}
+
+          {/* Glowing Ring */}
+          <div
+            className="absolute inset-0 rounded-full"
+            style={{
+              background: `conic-gradient(from -90deg, #ec4899 ${(currentCycleDay / cycleLength) * 360}deg, transparent ${(currentCycleDay / cycleLength) * 360}deg)`,
+              maskImage: 'radial-gradient(transparent 65%, black 66%)',
+              WebkitMaskImage: 'radial-gradient(transparent 65%, black 66%)',
+            }}
+          />
+          {/* Subtle background track */}
+          <div className="absolute inset-0 rounded-full border-[10px] border-primary/5 dark:border-primary/10 -z-10" />
+
+          {/* Heavy Pink Glow behind the active segment (simulated) */}
+          <div className="absolute inset-4 rounded-full bg-primary/20 blur-2xl -z-20 opacity-50" />
+
+          {/* Inner Content */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center z-10 pt-4">
+            <p className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-2">Day {currentCycleDay}</p>
+            <h3 className="text-[80px] font-extrabold text-slate-900 dark:text-white leading-[0.85] tracking-tighter mb-4">
+              {daysUntilNextPeriod}
+            </h3>
+            <p className="text-base font-medium text-slate-600 dark:text-slate-400">Days until period</p>
+            <p className="text-xs text-slate-400 mt-1 mb-8">AI Cycle: {activeCycleLength}d</p>
+
+            {/* Bottom Inner Badge: Chance of Pregnancy */}
+            <div className="absolute bottom-6 w-[200px] h-[36px] bg-red-50 dark:bg-rose-950/30 rounded-full flex items-center justify-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[14px]">favorite</span>
+              <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
+                Chance of pregnancy: {isOvulationPhase ? 'High' : 'Low'}
+              </span>
             </div>
           </div>
-
-          {isOvulationPhase && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 px-4 py-1.5 rounded-full shadow-soft border border-slate-100/80 dark:border-slate-700">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ovulation Phase</span>
-            </div>
-          )}
         </div>
       </section>
 
+      {/* ── 3. Stat Cards ───────────────────────────────────────────────────── */}
       <section className="grid grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-slate-800/60 p-6 rounded-3xl flex flex-col gap-1 shadow-soft">
-          <span className="material-symbols-outlined text-primary mb-2">smart_toy</span>
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">AI Predicted</h4>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">{activeCycleLength} days</p>
-          {activeCycleLength !== cycleLength && (
-            <p className="text-[10px] text-slate-400">Base: {cycleLength}d</p>
-          )}
+        {/* AI Predicted */}
+        <div className="bg-white dark:bg-slate-900 p-6 pt-5 rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:shadow-none dark:border dark:border-slate-800 flex flex-col justify-between min-h-[140px]">
+          <span className="material-symbols-outlined text-primary text-xl mb-6">smart_toy</span>
+          <div>
+            <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">AI Predicted</h4>
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              {activeCycleLength} <span className="text-lg font-bold text-slate-500">days</span>
+            </p>
+          </div>
         </div>
-        <div className="bg-white dark:bg-slate-800/60 p-6 rounded-3xl flex flex-col gap-1 shadow-soft">
-          <span className="material-symbols-outlined text-primary mb-2">water_drop</span>
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Period Length</h4>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white">{periodLength} days</p>
+
+        {/* Period Length */}
+        <div className="bg-white dark:bg-slate-900 p-6 pt-5 rounded-3xl shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:shadow-none dark:border dark:border-slate-800 flex flex-col justify-between min-h-[140px]">
+          <span className="material-symbols-outlined text-primary text-xl mb-6">water_drop</span>
+          <div>
+            <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Period Length</h4>
+            <p className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              {periodLength} <span className="text-lg font-bold text-slate-500">days</span>
+            </p>
+          </div>
         </div>
       </section>
 
+      {/* ── 4. Bottom Insight Banner ────────────────────────────────────────── */}
       {hasSymptoms ? (
-        <section className="bg-white dark:bg-slate-800/60 mt-4 px-6 py-5 rounded-3xl border border-primary/20 cursor-pointer shadow-soft hover:shadow-glow-primary transition-shadow duration-300" onClick={() => navigate('/log')}>
-          <div className="flex items-center gap-4">
-            <div className="size-14 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-              <span className="material-symbols-outlined text-[22px]">check_circle</span>
-            </div>
-            <div>
-              <h4 className="font-bold text-slate-900 dark:text-white mb-0.5">Symptoms logged today</h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                You've logged {todaySymptoms.mood.length + todaySymptoms.pain.length + todaySymptoms.discharge.length + todaySymptoms.lifestyle.length} symptoms today. Keep it up!
-              </p>
-            </div>
+        <section
+          className="bg-white dark:bg-slate-900 p-6 rounded-3xl flex items-center gap-5 cursor-pointer shadow-[0_4px_24px_rgba(0,0,0,0.03)] hover:shadow-glow-primary transition-shadow duration-300 dark:border dark:border-slate-800"
+          onClick={() => navigate('/log')}
+        >
+          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-primary text-[24px]">check_circle</span>
+          </div>
+          <div>
+            <h4 className="font-exrabold text-slate-900 dark:text-white text-[15px] mb-1">Symptoms logged today</h4>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed max-w-[90%]">
+              You've logged {todaySymptoms.mood.length + todaySymptoms.pain.length + todaySymptoms.discharge.length + todaySymptoms.lifestyle.length} symptoms today. Keep it up!
+            </p>
           </div>
         </section>
       ) : (
-        <section className="bg-white dark:bg-slate-800/60 mt-4 px-6 py-5 rounded-3xl border border-primary/20 cursor-pointer shadow-soft hover:shadow-glow-primary transition-shadow duration-300" onClick={() => navigate('/log')}>
-          <div className="flex items-center gap-4">
-            <div className="size-14 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-              <span className="material-symbols-outlined text-[22px]">lightbulb</span>
-            </div>
-            <div>
-              <h4 className="font-bold text-slate-900 dark:text-white mb-0.5">Feeling more energetic?</h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                It's common during your ovulation phase. This is a great time for high-intensity workouts or tackling big projects.
-              </p>
-            </div>
+        <section
+          className="bg-white dark:bg-slate-900 p-6 rounded-3xl flex items-center gap-5 cursor-pointer shadow-[0_4px_24px_rgba(0,0,0,0.03)] hover:shadow-glow-primary transition-shadow duration-300 dark:border dark:border-slate-800"
+          onClick={() => navigate('/log')}
+        >
+          <div className="w-14 h-14 rounded-full bg-red-50 dark:bg-rose-950/30 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-primary text-[22px]">lightbulb</span>
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-900 dark:text-white text-[15px] mb-1">Feeling more energetic?</h4>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed max-w-[95%]">
+              It's common during your ovulation phase. This is a great time for high-intensity workouts or tackling big projects.
+            </p>
           </div>
         </section>
       )}
-    </>
+
+    </div>
   );
 };

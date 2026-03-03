@@ -58,17 +58,17 @@ type LogCategory = keyof Omit<SymptomLog, 'note'>;
 
 // ─── Color → CSS helper (avoids Tailwind purge issues) ───────────────────────
 const COLOR_STYLES: Record<string, { bg: string; text: string; ring: string; container: string }> = {
-  primary: { bg: 'bg-primary text-white', text: 'text-primary', ring: 'ring-2 ring-primary', container: 'glass bg-primary/5' },
-  pink: { bg: 'bg-pink-100 dark:bg-pink-900/30 text-pink-500', text: 'text-pink-500', ring: 'ring-2 ring-pink-400', container: 'glass bg-pink-50/50 dark:bg-pink-900/10 border-pink-100 dark:border-pink-900/30' },
-  purple: { bg: 'bg-primary text-white', text: 'text-primary', ring: 'ring-2 ring-primary', container: 'glass bg-purple-50/50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-900/30' },
-  blue: { bg: 'bg-white dark:bg-slate-800 border-2 border-blue-200 dark:border-blue-900 text-blue-400', text: 'text-blue-500', ring: 'ring-2 ring-blue-400', container: 'glass bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30' },
-  cyan: { bg: 'bg-white dark:bg-slate-800 border-2 border-cyan-200 dark:border-cyan-900 text-cyan-400', text: 'text-cyan-500', ring: 'ring-2 ring-cyan-400', container: 'glass bg-cyan-50/50 dark:bg-cyan-900/10 border-cyan-100 dark:border-cyan-900/30' },
-  red: { bg: 'bg-red-100 dark:bg-red-900/20 text-red-500', text: 'text-red-500', ring: 'ring-2 ring-red-400', container: 'glass bg-red-50/50 dark:bg-red-900/10' },
-  green: { bg: 'bg-green-100 dark:bg-green-900/20 text-green-600', text: 'text-green-600', ring: 'ring-2 ring-green-400', container: 'glass bg-green-50/50 dark:bg-green-900/10' },
-  orange: { bg: 'bg-orange-100 dark:bg-orange-900/20 text-orange-500', text: 'text-orange-500', ring: 'ring-2 ring-orange-400', container: 'glass bg-orange-50/50 dark:bg-orange-900/10' },
-  indigo: { bg: 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-500', text: 'text-indigo-500', ring: 'ring-2 ring-indigo-400', container: 'glass bg-indigo-50/50 dark:bg-indigo-900/10' },
-  amber: { bg: 'bg-amber-100 dark:bg-amber-900/20 text-amber-500', text: 'text-amber-500', ring: 'ring-2 ring-amber-400', container: 'glass bg-amber-50/50 dark:bg-amber-900/10' },
-  slate: { bg: 'bg-slate-100 dark:bg-slate-800 text-slate-500', text: 'text-slate-600', ring: 'ring-2 ring-slate-400', container: 'glass' },
+  primary: { bg: 'bg-primary text-white shadow-glow-primary', text: 'text-primary', ring: 'ring-2 ring-primary border-transparent', container: 'bg-white dark:bg-slate-900 shadow-soft' },
+  pink: { bg: 'bg-pink-100 dark:bg-pink-900/40 text-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.3)]', text: 'text-pink-500', ring: 'ring-2 ring-pink-400 border-transparent', container: 'bg-white dark:bg-slate-900 shadow-soft' },
+  purple: { bg: 'bg-primary text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]', text: 'text-primary', ring: 'ring-2 ring-primary border-transparent', container: 'bg-white dark:bg-slate-900 shadow-soft' },
+  blue: { bg: 'bg-blue-100 dark:bg-blue-900/40 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]', text: 'text-blue-500', ring: 'ring-2 ring-blue-400 border-transparent', container: 'bg-white dark:bg-slate-900 shadow-soft' },
+  cyan: { bg: 'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.3)]', text: 'text-cyan-500', ring: 'ring-2 ring-cyan-400 border-transparent', container: 'bg-white dark:bg-slate-900 shadow-soft' },
+  red: { bg: 'bg-red-100 dark:bg-red-900/40 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]', text: 'text-red-500', ring: 'ring-2 ring-red-400 border-transparent', container: 'bg-white dark:bg-slate-900 shadow-soft' },
+  green: { bg: 'bg-green-100 dark:bg-green-900/40 text-green-600 shadow-[0_0_15px_rgba(34,197,94,0.3)]', text: 'text-green-600', ring: 'ring-2 ring-green-400 border-transparent', container: 'bg-white dark:bg-slate-900 shadow-soft' },
+  orange: { bg: 'bg-orange-100 dark:bg-orange-900/40 text-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)]', text: 'text-orange-500', ring: 'ring-2 ring-orange-400 border-transparent', container: 'bg-white dark:bg-slate-900 shadow-soft' },
+  indigo: { bg: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.3)]', text: 'text-indigo-500', ring: 'ring-2 ring-indigo-400 border-transparent', container: 'bg-white dark:bg-slate-900 shadow-soft' },
+  amber: { bg: 'bg-amber-100 dark:bg-amber-900/40 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]', text: 'text-amber-500', ring: 'ring-2 ring-amber-400 border-transparent', container: 'bg-white dark:bg-slate-900 shadow-soft' },
+  slate: { bg: 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300', text: 'text-slate-700 dark:text-slate-200', ring: 'ring-2 ring-slate-400 border-transparent', container: 'bg-white dark:bg-slate-900 shadow-soft' },
 };
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -116,17 +116,17 @@ export const LogSymptoms: React.FC = () => {
         key={option.id}
         onClick={() => handleToggle(category, option.id)}
         className={clsx(
-          'p-4 rounded-lg flex flex-col items-center gap-3 cursor-pointer transition-all group active:scale-95',
-          isSelected ? `${style.container} ${style.ring}` : 'glass hover:border-primary'
+          'p-4 rounded-3xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-300 group active:scale-95 border min-h-[110px]',
+          isSelected ? `${style.container} ${style.ring}` : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:border-primary/40 hover:bg-white dark:hover:bg-slate-800'
         )}
       >
         <div className={clsx(
-          'w-14 h-14 rounded-full flex items-center justify-center transition-transform',
-          isSelected ? style.bg : 'bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:scale-110'
+          'size-14 rounded-full flex items-center justify-center transition-transform duration-300',
+          isSelected ? style.bg : 'bg-white dark:bg-slate-700 text-slate-400 group-hover:scale-110 group-hover:text-primary shadow-sm'
         )}>
-          <span className="material-symbols-outlined text-3xl">{option.icon}</span>
+          <span className="material-symbols-outlined text-[28px]">{option.icon}</span>
         </div>
-        <span className={clsx('text-sm font-semibold text-center leading-tight', isSelected ? style.text : '')}>{option.label}</span>
+        <span className={clsx('text-[11px] font-bold text-center uppercase tracking-widest', isSelected ? style.text : 'text-slate-500')}>{option.label}</span>
       </div>
     );
   };
@@ -151,33 +151,37 @@ export const LogSymptoms: React.FC = () => {
     const isCollapsed = collapsedSections.has(label);
     const selectedCount = (current[category] as string[]).length;
     return (
-      <section key={label}>
+      <section key={label} className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-soft dark:border dark:border-slate-800">
         <button
           type="button"
           onClick={() => toggleSection(label)}
-          className="w-full flex items-center justify-between mb-4 px-2 group"
+          className="w-full flex items-center justify-between group outline-none focus:ring-2 focus:ring-primary/20 rounded-xl"
         >
-          <h2 className="text-xl font-extrabold flex items-center gap-2">
+          <h2 className="text-lg font-extrabold flex items-center gap-3">
             <span className={`material-symbols-outlined ${iconColor}`}>{icon}</span>
             {label}
             {selectedCount > 0 && (
-              <span className="ml-1 px-2 py-0.5 rounded-full bg-primary/15 text-primary text-xs font-bold">
+              <span className="ml-2 size-6 flex items-center justify-center rounded-full bg-primary/15 text-primary text-[11px] font-black">
                 {selectedCount}
               </span>
             )}
           </h2>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{options.length} Options</span>
-            <span className={`material-symbols-outlined text-slate-400 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : 'rotate-0'}`}>
-              expand_more
-            </span>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hidden sm:block">{options.length} Options</span>
+            <div className="size-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+              <span className={`material-symbols-outlined text-slate-400 group-hover:text-primary transition-transform duration-300 ${isCollapsed ? '-rotate-90' : 'rotate-0'}`}>
+                expand_more
+              </span>
+            </div>
           </div>
         </button>
-        {!isCollapsed && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {options.map(opt => renderOption(category, opt))}
-          </div>
-        )}
+
+        <div className={clsx(
+          "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 transition-all duration-500 overflow-hidden",
+          isCollapsed ? "max-h-0 opacity-0 mt-0" : "max-h-[2000px] opacity-100 mt-6"
+        )}>
+          {options.map(opt => renderOption(category, opt))}
+        </div>
       </section>
     );
   };
@@ -190,65 +194,52 @@ export const LogSymptoms: React.FC = () => {
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/5 rounded-full blur-[120px] -z-10" />
 
       {/* Header */}
-      <header className="sticky top-0 z-50 px-6 py-4 flex items-center justify-between glass mb-4 mt-2 mx-4 rounded-xl">
+      <header className="sticky top-0 z-50 px-6 py-4 flex items-center justify-between bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 mb-6 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/30">
-            <span className="material-symbols-outlined text-2xl">favorite</span>
+          <div className="size-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+            <span className="material-symbols-outlined text-[22px]">edit_calendar</span>
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Log Symptoms</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{formattedDate}</p>
+            <h1 className="text-xl font-bold tracking-tight leading-none text-slate-900 dark:text-white">Log Symptoms</h1>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-1">{formattedDate}</p>
           </div>
         </div>
-        <div className="flex gap-3">
-          <button className="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
-            <span className="material-symbols-outlined">calendar_today</span>
+        <div className="flex gap-2">
+          <button className="size-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary transition-all">
+            <span className="material-symbols-outlined text-[20px]">calendar_today</span>
           </button>
-          <button className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-200/50 dark:bg-slate-800/50">
-            <span className="material-symbols-outlined">more_vert</span>
+          <button className="size-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary transition-all">
+            <span className="material-symbols-outlined text-[20px]">more_vert</span>
           </button>
         </div>
       </header>
 
       <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-4">
         {/* Completeness bar */}
-        <section className="glass p-6 rounded-xl mb-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <section className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-soft dark:border dark:border-slate-800 mb-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex-1 w-full">
-            <div className="flex justify-between items-end mb-2">
-              <h3 className="font-bold text-lg">Daily Completeness</h3>
-              <span className="text-primary font-bold">{completeness}%</span>
+            <div className="flex justify-between items-end mb-3">
+              <h3 className="font-exrabold text-[15px] tracking-wide text-slate-900 dark:text-white">Daily Completeness</h3>
+              <span className="text-primary font-black text-lg leading-none">{completeness}%</span>
             </div>
-            <div className="w-full h-3 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div className="w-full h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-full bg-primary rounded-full transition-all duration-500"
+                className="h-full bg-primary rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
                 style={{ width: `${completeness}%` }}
-              />
+              >
+                <div className="absolute inset-0 bg-white/20 w-1/2 skew-x-12 translate-x-[-100%] animate-[shimmer_2s_infinite]" />
+              </div>
             </div>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-3 text-[13px] text-slate-500 dark:text-slate-400 font-medium">
               {completeness === 100
                 ? "You've logged all categories today. Great job!"
                 : `${filledCount} of 6 categories logged today.`}
             </p>
           </div>
-          <div className="flex -space-x-3">
-            {[
-              { bg: 'bg-pink-100', text: 'text-pink-500', icon: 'opacity' },
-              { bg: 'bg-red-100', text: 'text-red-500', icon: 'sentiment_satisfied' },
-              { bg: 'bg-blue-100', text: 'text-blue-500', icon: 'water_drop' },
-              { bg: 'bg-purple-100', text: 'text-purple-500', icon: 'bolt' },
-            ].map((b, i) => (
-              <div key={i} className={`w-12 h-12 rounded-full border-4 border-background-light dark:border-background-dark ${b.bg} flex items-center justify-center ${b.text}`}>
-                <span className="material-symbols-outlined">{b.icon}</span>
-              </div>
-            ))}
-            <div className="w-12 h-12 rounded-full border-4 border-background-light dark:border-background-dark bg-primary flex items-center justify-center text-white text-xs font-bold">
-              +{CATEGORIES.length}
-            </div>
-          </div>
         </section>
 
         {/* Category sections */}
-        <div className="space-y-10">
+        <div className="space-y-6">
           {renderSection('Flow', 'opacity', 'text-pink-500', 'flow', FLOW_OPTIONS)}
           {renderSection('Mood', 'mood', 'text-pink-400', 'mood', MOOD_OPTIONS)}
           {renderSection('Pain', 'personal_injury', 'text-red-400', 'pain', PAIN_OPTIONS)}
@@ -256,35 +247,42 @@ export const LogSymptoms: React.FC = () => {
           {renderSection('Lifestyle', 'self_improvement', 'text-orange-400', 'lifestyle', LIFESTYLE_OPTIONS)}
 
           {/* Sexual Activity — collapsible gated section */}
-          <section>
+          <section className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-soft dark:border dark:border-slate-800 border-2 border-transparent hover:border-pink-100 dark:hover:border-pink-900/40 transition-colors">
             <button
               type="button"
               onClick={() => toggleSection('Sexual Activity')}
-              className="w-full flex items-center justify-between mb-4 px-2 group"
+              className="w-full flex items-center justify-between group outline-none rounded-xl"
             >
-              <h2 className="text-xl font-extrabold flex items-center gap-2">
+              <h2 className="text-lg font-extrabold flex items-center gap-3">
                 <span className="material-symbols-outlined text-rose-400">favorite</span>
                 Sexual Activity
                 {(current.sexualActivity as string[]).length > 0 && (
-                  <span className="ml-1 px-2 py-0.5 rounded-full bg-primary/15 text-primary text-xs font-bold">
+                  <span className="ml-2 size-6 flex items-center justify-center rounded-full bg-primary/15 text-primary text-[11px] font-black">
                     {(current.sexualActivity as string[]).length}
                   </span>
                 )}
               </h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-bold rounded-full uppercase tracking-widest">Private</span>
-                <span className={`material-symbols-outlined text-slate-400 transition-transform duration-200 ${collapsedSections.has('Sexual Activity') ? '-rotate-90' : 'rotate-0'
-                  }`}>expand_more</span>
+              <div className="flex items-center gap-3">
+                <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold rounded-full uppercase tracking-widest hidden sm:block">Private</span>
+                <div className="size-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                  <span className={`material-symbols-outlined text-slate-400 group-hover:text-primary transition-transform duration-300 ${collapsedSections.has('Sexual Activity') ? '-rotate-90' : 'rotate-0'}`}>
+                    expand_more
+                  </span>
+                </div>
               </div>
             </button>
-            {!collapsedSections.has('Sexual Activity') && (
-              <>
-                <p className="text-sm text-slate-500 mb-4 px-2">Your data stays on your device and is never shared.</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {SEXUAL_ACTIVITY_OPTIONS.map(opt => renderOption('sexualActivity', opt))}
-                </div>
-              </>
-            )}
+            <div className={clsx(
+              "transition-all duration-500 overflow-hidden",
+              collapsedSections.has('Sexual Activity') ? "max-h-0 opacity-0 mt-0" : "max-h-[2000px] opacity-100 mt-4"
+            )}>
+              <p className="text-[13px] text-slate-500 font-medium mb-6 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px]">lock</span>
+                Your data stays on your device and is never shared.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {SEXUAL_ACTIVITY_OPTIONS.map(opt => renderOption('sexualActivity', opt))}
+              </div>
+            </div>
           </section>
         </div>
 
@@ -310,13 +308,13 @@ export const LogSymptoms: React.FC = () => {
       <div className="flex-shrink-0 flex items-center gap-4 px-4 sm:px-6 lg:px-8 py-3 border-t border-slate-200 dark:border-slate-800 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center justify-center w-12 h-12 rounded-full glass hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0"
+          className="flex items-center justify-center size-[52px] rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors shrink-0"
         >
           <span className="material-symbols-outlined">close</span>
         </button>
         <button
           onClick={() => navigate('/')}
-          className="flex-1 bg-primary text-white font-bold py-3.5 rounded-full shadow-xl shadow-primary/30 hover:brightness-110 active:scale-95 transition-all text-center"
+          className="flex-1 h-[52px] bg-primary text-white font-extrabold rounded-full shadow-glow-primary hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center text-[15px] tracking-wide"
         >
           Save Symptoms
         </button>

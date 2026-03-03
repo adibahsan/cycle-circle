@@ -54,7 +54,7 @@ export const Calendar: React.FC = () => {
     <div className="flex flex-col lg:flex-row gap-8 py-4">
       {/* Sidebar / Stats */}
       <div className="w-full lg:w-80 flex flex-col gap-6">
-        <div className="glass-card p-6 rounded-lg shadow-xl shadow-primary/5">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-soft dark:border dark:border-slate-800">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Today</span>
             <h1 className="text-3xl font-extrabold text-primary">
@@ -102,14 +102,14 @@ export const Calendar: React.FC = () => {
 
           <button
             onClick={() => navigate('/log')}
-            className="w-full mt-6 bg-primary text-white font-bold py-4 rounded-lg shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:brightness-110 active:scale-95 transition-all"
+            className="w-full mt-6 bg-primary text-white font-extrabold py-4 rounded-full shadow-glow-primary flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all text-[15px] tracking-wide"
           >
             <span className="material-symbols-outlined">add</span>
             Log Symptoms
           </button>
         </div>
 
-        <div className="glass-card p-6 rounded-lg">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-soft dark:border dark:border-slate-800">
           <h3 className="font-bold mb-1">Legend</h3>
           {activeCycleLength !== cycleLength && (
             <div className="flex items-center gap-2 mb-3 p-2 bg-primary/5 rounded-lg">
@@ -146,16 +146,16 @@ export const Calendar: React.FC = () => {
 
       {/* Calendar Section */}
       <div className="flex-1">
-        <div className="glass-card p-4 sm:p-8 rounded-lg shadow-xl shadow-primary/5">
+        <div className="bg-white dark:bg-slate-900 p-4 sm:p-8 rounded-3xl shadow-soft dark:border dark:border-slate-800">
           <div className="flex items-center justify-between mb-8">
             <div className="flex flex-col">
               <h2 className="text-2xl font-extrabold tracking-tight">{format(currentMonth, 'MMMM yyyy')}</h2>
             </div>
             <div className="flex gap-2">
-              <button onClick={prevMonth} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+              <button onClick={prevMonth} className="size-10 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
                 <span className="material-symbols-outlined">chevron_left</span>
               </button>
-              <button onClick={nextMonth} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+              <button onClick={nextMonth} className="size-10 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
                 <span className="material-symbols-outlined">chevron_right</span>
               </button>
             </div>
@@ -186,11 +186,11 @@ export const Calendar: React.FC = () => {
                 <div
                   key={i}
                   className={clsx(
-                    "h-16 sm:h-24 flex flex-col items-center justify-center rounded-lg relative cursor-pointer transition-colors",
+                    "h-16 sm:h-24 flex flex-col items-center justify-center rounded-2xl relative cursor-pointer transition-all duration-300",
                     !isCurrentMonth ? "opacity-20" : "",
-                    isToday ? "bg-primary text-white shadow-xl shadow-primary/40 transform scale-105 z-10" : "hover:bg-slate-50 dark:hover:bg-slate-800",
-                    !isToday && isPeriod ? "bg-menstrual/10 border-2 border-dashed border-menstrual" : "",
-                    !isToday && isFertile ? "bg-fertile/5 border-2 border-dotted border-fertile" : ""
+                    isToday ? "bg-primary text-white shadow-glow-primary z-10 scale-105" : "hover:bg-slate-50 dark:hover:bg-slate-800",
+                    !isToday && isPeriod ? "bg-menstrual/5 border-2 border-transparent hover:border-menstrual/40" : "",
+                    !isToday && isFertile ? "bg-fertile/5 border-2 border-transparent hover:border-fertile/40" : ""
                   )}
                 >
                   <span className={clsx(
@@ -227,23 +227,23 @@ export const Calendar: React.FC = () => {
         </div>
 
         {/* Secondary Insights */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-          <div className="glass-card p-6 rounded-lg flex items-center gap-4">
-            <div className="size-12 bg-fertile/20 rounded-lg flex items-center justify-center text-fertile">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-soft dark:border dark:border-slate-800 flex items-center gap-4">
+            <div className="size-12 bg-fertile/10 rounded-full flex items-center justify-center text-fertile shrink-0">
               <span className="material-symbols-outlined">psychology_alt</span>
             </div>
             <div>
-              <h4 className="font-bold text-sm">Mood Insight</h4>
-              <p className="text-xs text-slate-500">Expect higher energy and social focus today.</p>
+              <h4 className="font-exrabold text-[15px]">Mood Insight</h4>
+              <p className="text-[13px] text-slate-500 font-medium">Expect higher energy and social focus today.</p>
             </div>
           </div>
-          <div className="glass-card p-6 rounded-lg flex items-center gap-4">
-            <div className="size-12 bg-primary/20 rounded-lg flex items-center justify-center text-primary">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-soft dark:border dark:border-slate-800 flex items-center gap-4">
+            <div className="size-12 bg-primary/10 rounded-full flex items-center justify-center text-primary shrink-0">
               <span className="material-symbols-outlined">water</span>
             </div>
             <div>
-              <h4 className="font-bold text-sm">Hydration Tip</h4>
-              <p className="text-xs text-slate-500">Drink extra water to support peak cycle phase.</p>
+              <h4 className="font-exrabold text-[15px]">Hydration Tip</h4>
+              <p className="text-[13px] text-slate-500 font-medium">Drink extra water to support peak cycle phase.</p>
             </div>
           </div>
         </div>

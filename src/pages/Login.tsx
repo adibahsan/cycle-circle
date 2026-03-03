@@ -25,7 +25,7 @@ const ProfileCard: React.FC<{ profile: UserProfile; onSelect: () => void }> = ({
     return (
         <button
             onClick={onSelect}
-            className="group glass p-6 rounded-2xl flex flex-col items-center gap-4 text-center hover:border-primary hover:shadow-xl hover:shadow-primary/10 active:scale-[0.97] transition-all duration-200 cursor-pointer"
+            className="group bg-white/70 dark:bg-slate-900/40 p-6 rounded-3xl flex flex-col items-center gap-4 text-center hover:border-primary/40 border border-transparent dark:border-slate-800 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
         >
             <div className="relative">
                 <Avatar profile={profile} size="w-20 h-20" />
@@ -37,7 +37,7 @@ const ProfileCard: React.FC<{ profile: UserProfile; onSelect: () => void }> = ({
             </div>
 
             <div>
-                <h3 className="font-bold text-lg leading-tight">{profile.name}</h3>
+                <h3 className="font-bold text-lg leading-tight text-slate-900 dark:text-white">{profile.name}</h3>
                 <p className="text-slate-500 text-sm mt-0.5">{profile.bio}</p>
             </div>
 
@@ -62,17 +62,15 @@ export const Login: React.FC = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-background-light dark:bg-background-dark px-4 py-12">
+        <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-background-light dark:bg-slate-950 px-4 py-12 transition-colors duration-500">
             {/* Background gradient blobs */}
             <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px] -z-10" />
             <div className="fixed bottom-[-20%] right-[-10%] w-[40%] h-[50%] bg-violet-500/10 rounded-full blur-[120px] -z-10" />
 
             {/* App logo + heading */}
-            <div className="text-center mb-10">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary shadow-xl shadow-primary/30 mb-5">
-                    <span className="material-symbols-outlined text-white text-3xl">favorite</span>
-                </div>
-                <h1 className="text-4xl font-extrabold tracking-tight">Cycle Circle</h1>
+            <div className="text-center mb-10 flex flex-col items-center">
+                <img src="https://flo.health/images/flo.svg" alt="Flo Logo" className="h-16 w-auto mb-6 drop-shadow-sm" />
+                <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">Cycle Circle</h1>
                 <p className="mt-2 text-slate-500 dark:text-slate-400 text-lg">Who's tracking today?</p>
             </div>
 
@@ -97,13 +95,13 @@ export const Login: React.FC = () => {
             {/* Create new profile */}
             <button
                 onClick={() => navigate('/onboarding')}
-                className="w-full max-w-3xl glass p-5 rounded-2xl flex items-center gap-4 hover:border-primary hover:shadow-xl hover:shadow-primary/10 active:scale-[0.98] transition-all duration-200 group"
+                className="w-full max-w-3xl bg-white/70 dark:bg-slate-900/40 p-5 rounded-3xl border border-transparent dark:border-slate-800 flex items-center gap-4 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 transition-all duration-300 group"
             >
                 <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-colors">
                     <span className="material-symbols-outlined text-2xl text-slate-400 group-hover:text-primary transition-colors">add</span>
                 </div>
                 <div className="text-left">
-                    <h3 className="font-bold text-lg">Create Your Profile</h3>
+                    <h3 className="font-bold text-lg text-slate-900 dark:text-white">Create Your Profile</h3>
                     <p className="text-slate-500 text-sm">Set up your cycle preferences in 2 minutes</p>
                 </div>
                 <span className="material-symbols-outlined ml-auto text-slate-400 group-hover:text-primary transition-colors">chevron_right</span>
