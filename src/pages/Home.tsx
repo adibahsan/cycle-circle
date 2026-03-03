@@ -1,7 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { differenceInDays, startOfDay } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { StoryViewer, Story } from '../components/StoryViewer';
+
+const MOCK_STORIES: Record<string, Story[]> = {
+  'Nutrition': [
+    { id: 'n1', title: 'Power Foods', content: 'Incorporate leafy greens, nuts, and berries to boost energy and satisfy cravings during your luteal phase.', imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80' },
+    { id: 'n2', title: 'Hydration is Key', content: 'Drinking at least 8 glasses of water a day helps reduce bloating and keeps your skin glowing.', imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80' }
+  ],
+  'Fitness': [
+    { id: 'f1', title: 'Gentle Movement', content: 'Yoga and light walking are perfect for days when your energy is lower. Listen to your body.', imageUrl: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&q=80' },
+    { id: 'f2', title: 'High Energy Days', content: 'Take advantage of your ovulation phase by mixing in some HIIT or strength training.', imageUrl: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&q=80' }
+  ],
+  'Sleep': [
+    { id: 's1', title: 'Rest Easy', content: 'Aim for 7-9 hours of sleep. A cool room and no screens an hour before bed can drastically improve sleep quality.', imageUrl: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=800&q=80' },
+    { id: 's2', title: 'Evening Routine', content: 'Try reading or meditating to wind down. Cortisol levels drop when you are relaxed.', imageUrl: 'https://images.unsplash.com/photo-1511295742362-92cf336e3950?w=800&q=80' }
+  ],
+  'Hormones': [
+    { id: 'h1', title: 'Estrogen Peak', content: 'Your estrogen levels are soaring right now! You might feel more social, energetic, and articulate.', imageUrl: 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=800&q=80' }
+  ],
+  'Mood': [
+    { id: 'm1', title: 'Mindful Moments', content: 'It is completely normal to feel a bit moody. Take a deep breath and give yourself some grace today.', imageUrl: 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800&q=80' }
+  ]
+};
 
 export const Home: React.FC = () => {
   const {
@@ -16,6 +38,8 @@ export const Home: React.FC = () => {
     anonymousName,
   } = useAppContext();
   const navigate = useNavigate();
+
+  const [activeStory, setActiveStory] = useState<string | null>(null);
 
   // Use ML-predicted cycle length for all computations
   const activeCycleLength = predictedCycleLength;
@@ -218,7 +242,7 @@ export const Home: React.FC = () => {
                 </div>
               </div>
               <div className="group relative aspect-[4/3] rounded-xl overflow-hidden cursor-pointer">
-                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuADyaiXcE8aYEgPF8nXSOwu0uxJrOjU383MJK8f8_N6zrO0Squ3qB27CGFkkAm_dmHEgz6sO_qS2lRILGbglnpo08CH85bEaSN--9dH2CKnbFSKWcYO34VdSDZ7Fi4NWU5UwfdBivJzjK9G171WF2gtth85qYWcHllesc-wkBembaVCcvZi-2jwIrdQDR1Out2VF5s6My4OrgoildI0zIUaK7kvNNXLd6CZVaIuPzBC4Aet2yVllppqLpoPoMRlr76VlzqvvWGRv04")' }}></div>
+                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuADyaiXcE8aYEgPF8nXSOwu0uxJrOjU383MJK8f8_N6zrO0Squ3qB27CGFkkAm_dmHEgz6sO_qS2lRILGbglnpo08CH85bEaSN--9dH2CKnbFSKWcYO34VdSDZ7Fi4NWU5UwfdBivJzjK9G171WF2gtth85qYWcHllesc-wkBembaVCcvZi-2jwIrdQDR0Out2VF5s6My4OrgoildI0zIUaK7kvNNXLd6CZVaIuPzBC4Aet2yVllppqLpoPoMRlr76VlzqvvWGRv04")' }}></div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
                   <h4 className="text-white font-bold leading-tight">Iron-Rich Diet for Trimester 2</h4>
                   <p className="text-white/70 text-xs">5 min read</p>
@@ -253,7 +277,11 @@ export const Home: React.FC = () => {
             { label: 'Hormones', src: 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=150&h=150&fit=crop' },
             { label: 'Mood', src: 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=150&h=150&fit=crop' },
           ].map(({ label, src, active }) => (
-            <div key={label} className="flex flex-col items-center gap-2 min-w-[72px] group cursor-pointer">
+            <div
+              key={label}
+              className="flex flex-col items-center gap-2 min-w-[72px] group cursor-pointer"
+              onClick={() => setActiveStory(label)}
+            >
               <div className={`size-[72px] rounded-full p-1 transition-all duration-300 ${active ? 'bg-primary shadow-[0_0_15px_rgba(236,72,153,0.4)] scale-105' : 'bg-transparent border-2 border-slate-200 dark:border-slate-800 group-hover:border-primary/50'}`}>
                 <img className="w-full h-full object-cover rounded-full" src={src} alt={label} />
               </div>
@@ -367,6 +395,13 @@ export const Home: React.FC = () => {
         </section>
       )}
 
+      {activeStory && MOCK_STORIES[activeStory] && (
+        <StoryViewer
+          stories={MOCK_STORIES[activeStory]}
+          category={activeStory}
+          onClose={() => setActiveStory(null)}
+        />
+      )}
     </div>
   );
 };
