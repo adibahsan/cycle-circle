@@ -49,13 +49,8 @@ export const Layout: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-              <div className={clsx(
-                "p-2 rounded-full flex items-center justify-center text-white",
-                isPregnancy ? "bg-pregnancy-gold" : "bg-primary"
-              )}>
-                <span className="material-symbols-outlined">{isPregnancy ? 'child_care' : 'track_changes'}</span>
-              </div>
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+              <img src="https://flo.health/images/flo.svg" alt="Flo Logo" className="h-8 w-auto" />
               <h1 className="text-xl font-bold tracking-tight">
                 {isPregnancy ? 'Bloom Health' : 'Cycle Circle'}
               </h1>
@@ -89,6 +84,26 @@ export const Layout: React.FC = () => {
               <button onClick={() => navigate('/settings')} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-300" title="Settings">
                 <span className="material-symbols-outlined">settings</span>
               </button>
+
+              {/* Mode Toggle */}
+              <button
+                onClick={toggleMode}
+                className={clsx(
+                  "relative flex items-center w-14 h-8 rounded-full p-1 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 mx-1",
+                  isPregnancy ? "bg-amber-100 dark:bg-amber-900/40" : "bg-primary/20 dark:bg-primary/30"
+                )}
+                title={isPregnancy ? "Switch to Tracking Mode" : "Switch to Pregnancy Mode"}
+              >
+                <div className={clsx(
+                  "absolute flex items-center justify-center size-6 rounded-full text-white transition-all duration-300 shadow-sm",
+                  isPregnancy ? "translate-x-6 bg-pregnancy-gold" : "translate-x-0 bg-primary"
+                )}>
+                  <span className="material-symbols-outlined text-[14px]">
+                    {isPregnancy ? 'child_care' : 'track_changes'}
+                  </span>
+                </div>
+              </button>
+
               {/* User avatar + menu */}
               <div className="relative" ref={menuRef}>
                 <button

@@ -108,26 +108,22 @@ export const Onboarding: React.FC = () => {
     );
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-background-light dark:bg-background-dark px-4 py-12">
+        <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-background-light dark:bg-slate-950 px-4 py-8 md:py-12 transition-colors duration-500">
             <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px] -z-10" />
             <div className="fixed bottom-[-20%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[120px] -z-10" />
 
-            <div className="w-full max-w-lg">
-                {step > 0 && step < STEPS.length - 1 && (
-                    <button
-                        onClick={goBack}
-                        className="flex items-center gap-1 text-slate-400 hover:text-primary mb-6 text-sm font-medium transition-colors"
-                    >
-                        <span className="material-symbols-outlined text-sm">arrow_back</span> Back
-                    </button>
-                )}
+            <div className="w-full max-w-lg mt-12 md:mt-0 relative">
+                <button
+                    onClick={() => step === 0 ? navigate('/login') : goBack()}
+                    className="absolute -top-16 left-0 flex items-center gap-2 text-slate-500 hover:text-primary mb-6 text-sm font-bold bg-white/50 dark:bg-slate-900/50 px-4 py-2 rounded-full transition-all hover:bg-white dark:hover:bg-slate-800"
+                >
+                    <span className="material-symbols-outlined text-lg">arrow_back</span> Back
+                </button>
 
                 {step === 0 && (
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary shadow-xl shadow-primary/30 mb-4">
-                            <span className="material-symbols-outlined text-white text-2xl">favorite</span>
-                        </div>
-                        <h1 className="text-3xl font-extrabold">Let's get started</h1>
+                    <div className="text-center mb-8 flex flex-col items-center">
+                        <img src="https://flo.health/images/flo.svg" alt="Flo Logo" className="h-16 w-auto mb-6 drop-shadow-sm" />
+                        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Let's get started</h1>
                         <p className="text-slate-500 mt-2">What's your main goal with Cycle Circle?</p>
                     </div>
                 )}
@@ -142,8 +138,8 @@ export const Onboarding: React.FC = () => {
                                 key={opt.id}
                                 onClick={() => { setGoal(opt.id); goNext(); }}
                                 className={clsx(
-                                    'w-full glass p-5 rounded-2xl flex items-center gap-4 text-left hover:border-primary active:scale-[0.98] transition-all group',
-                                    goal === opt.id && 'border-primary ring-2 ring-primary/20'
+                                    'w-full bg-white/70 dark:bg-slate-900/40 border border-transparent dark:border-slate-800 p-5 rounded-3xl flex items-center gap-4 text-left hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 group',
+                                    goal === opt.id && 'border-primary ring-2 ring-primary/20 bg-white dark:bg-slate-900/80 shadow-lg'
                                 )}
                             >
                                 <div className={clsx(
@@ -157,7 +153,7 @@ export const Onboarding: React.FC = () => {
                                     <span className="material-symbols-outlined text-2xl">{opt.icon}</span>
                                 </div>
                                 <div className="flex-1">
-                                    <p className="font-bold">{opt.title}</p>
+                                    <p className="font-bold text-slate-900 dark:text-white">{opt.title}</p>
                                     <p className="text-slate-500 text-sm">{opt.desc}</p>
                                 </div>
                                 <span className="material-symbols-outlined text-slate-300 group-hover:text-primary transition-colors">chevron_right</span>
@@ -168,8 +164,8 @@ export const Onboarding: React.FC = () => {
 
                 {/* Step 1: Name */}
                 {step === 1 && (
-                    <div className="glass p-8 rounded-2xl">
-                        <h2 className="text-2xl font-bold mb-2">What's your name?</h2>
+                    <div className="bg-white/70 dark:bg-slate-900/40 border border-transparent dark:border-slate-800 shadow-xl shadow-primary/5 p-8 rounded-3xl backdrop-blur-md">
+                        <h2 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">What's your name?</h2>
                         <p className="text-slate-500 mb-6">This is how we'll address you in the app.</p>
                         <input
                             type="text"
@@ -177,7 +173,7 @@ export const Onboarding: React.FC = () => {
                             onChange={e => setName(e.target.value)}
                             placeholder="Your first name"
                             autoFocus
-                            className="w-full px-5 py-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-transparent text-lg font-medium focus:outline-none focus:border-primary transition-colors"
+                            className="w-full px-5 py-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-transparent text-lg font-medium text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
                         />
                         <button
                             onClick={goNext}
@@ -191,8 +187,8 @@ export const Onboarding: React.FC = () => {
 
                 {/* Step 2: Cycle Info */}
                 {step === 2 && (
-                    <div className="glass p-8 rounded-2xl">
-                        <h2 className="text-2xl font-bold mb-2">
+                    <div className="bg-white/70 dark:bg-slate-900/40 border border-transparent dark:border-slate-800 shadow-xl shadow-primary/5 p-8 rounded-3xl backdrop-blur-md">
+                        <h2 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">
                             {goal === 'pregnancy' ? 'Pregnancy Info' : 'Your Cycle'}
                         </h2>
                         <p className="text-slate-500 mb-6">
@@ -207,9 +203,9 @@ export const Onboarding: React.FC = () => {
                                     How many weeks pregnant are you?
                                 </label>
                                 <div className="flex items-center gap-4">
-                                    <button onClick={() => setPregWeeks(w => Math.max(1, w - 1))} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 font-bold hover:bg-primary/20 transition-colors">-</button>
+                                    <button onClick={() => setPregWeeks(w => Math.max(1, w - 1))} className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm font-bold text-slate-700 dark:text-slate-200 hover:border-primary/40 hover:text-primary transition-all">-</button>
                                     <span className="text-3xl font-extrabold text-primary w-16 text-center">{pregWeeks}</span>
-                                    <button onClick={() => setPregWeeks(w => Math.min(42, w + 1))} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 font-bold hover:bg-primary/20 transition-colors">+</button>
+                                    <button onClick={() => setPregWeeks(w => Math.min(42, w + 1))} className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm font-bold text-slate-700 dark:text-slate-200 hover:border-primary/40 hover:text-primary transition-all">+</button>
                                     <span className="text-slate-500 ml-1">weeks</span>
                                 </div>
                             </div>
@@ -218,18 +214,18 @@ export const Onboarding: React.FC = () => {
                                 <div>
                                     <label className="text-sm font-bold text-slate-600 dark:text-slate-300 mb-2 block">Cycle Length</label>
                                     <div className="flex items-center gap-4">
-                                        <button onClick={() => setCycleLen(n => Math.max(21, n - 1))} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 font-bold hover:bg-primary/20 transition-colors">-</button>
+                                        <button onClick={() => setCycleLen(n => Math.max(21, n - 1))} className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm font-bold text-slate-700 dark:text-slate-200 hover:border-primary/40 hover:text-primary transition-all">-</button>
                                         <span className="text-3xl font-extrabold text-primary w-16 text-center">{cycleLen}</span>
-                                        <button onClick={() => setCycleLen(n => Math.min(45, n + 1))} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 font-bold hover:bg-primary/20 transition-colors">+</button>
+                                        <button onClick={() => setCycleLen(n => Math.min(45, n + 1))} className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm font-bold text-slate-700 dark:text-slate-200 hover:border-primary/40 hover:text-primary transition-all">+</button>
                                         <span className="text-slate-500 ml-1">days</span>
                                     </div>
                                 </div>
                                 <div>
                                     <label className="text-sm font-bold text-slate-600 dark:text-slate-300 mb-2 block">Period Length</label>
                                     <div className="flex items-center gap-4">
-                                        <button onClick={() => setPeriodLen(n => Math.max(1, n - 1))} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 font-bold hover:bg-primary/20 transition-colors">-</button>
+                                        <button onClick={() => setPeriodLen(n => Math.max(1, n - 1))} className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm font-bold text-slate-700 dark:text-slate-200 hover:border-primary/40 hover:text-primary transition-all">-</button>
                                         <span className="text-3xl font-extrabold text-primary w-16 text-center">{periodLen}</span>
-                                        <button onClick={() => setPeriodLen(n => Math.min(10, n + 1))} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 font-bold hover:bg-primary/20 transition-colors">+</button>
+                                        <button onClick={() => setPeriodLen(n => Math.min(10, n + 1))} className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm font-bold text-slate-700 dark:text-slate-200 hover:border-primary/40 hover:text-primary transition-all">+</button>
                                         <span className="text-slate-500 ml-1">days</span>
                                     </div>
                                 </div>
@@ -240,7 +236,7 @@ export const Onboarding: React.FC = () => {
                                         value={lastPeriodStr}
                                         max={new Date().toISOString().split('T')[0]}
                                         onChange={e => setLastPeriodStr(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-transparent focus:outline-none focus:border-primary transition-colors"
+                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
                                     />
                                 </div>
                             </div>
@@ -257,11 +253,11 @@ export const Onboarding: React.FC = () => {
 
                 {/* Step 3: Done */}
                 {step === 3 && (
-                    <div className="glass p-10 rounded-2xl text-center">
+                    <div className="bg-white/70 dark:bg-slate-900/40 border border-transparent dark:border-slate-800 shadow-xl shadow-primary/5 p-10 rounded-3xl backdrop-blur-md text-center">
                         <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
                             <span className="material-symbols-outlined text-primary text-5xl">celebrate</span>
                         </div>
-                        <h2 className="text-3xl font-extrabold mb-2">You're all set, {name.split(' ')[0]}!</h2>
+                        <h2 className="text-3xl font-extrabold mb-2 text-slate-900 dark:text-white">You're all set, {name.split(' ')[0]}!</h2>
                         <p className="text-slate-500 mb-8">
                             Your profile is ready. Start logging your symptoms and tracking your cycle today.
                         </p>
