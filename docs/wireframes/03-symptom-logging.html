@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flow 03 — Symptom Logging · Flo Web Wireframes</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f1f3f5;padding:40px 32px;min-width:max-content}
+.page-header{margin-bottom:40px}
+.badge{display:inline-block;background:#be185d;color:#fff;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border-radius:100px;margin-bottom:10px}
+.page-title{font-size:26px;font-weight:800;color:#1a1a2e;margin-bottom:6px}
+.page-desc{font-size:13px;color:#6b7280;max-width:680px;line-height:1.6}
+.flow{display:flex;align-items:flex-start;gap:0}
+.sw{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:400px}
+.stepnum{width:26px;height:26px;border-radius:50%;background:#be185d;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.slabel{font-size:11px;font-weight:700;color:#374151;margin-bottom:8px;text-align:center;letter-spacing:.03em;text-transform:uppercase}
+.sdesc{font-size:10px;color:#9ca3af;margin-top:8px;text-align:center;max-width:340px;line-height:1.5}
+.browser{width:380px;background:#fff;border-radius:12px;border:1.5px solid #d1d5db;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.07)}
+.bchrome{background:#f3f4f6;border-bottom:1px solid #e5e7eb;padding:8px 14px;display:flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%}
+.dr{background:#fca5a5}.dy{background:#fcd34d}.dg{background:#86efac}
+.urlbar{flex:1;background:#fff;border:1px solid #e5e7eb;border-radius:5px;padding:3px 8px;font-size:10px;color:#9ca3af}
+.appnav{background:#fff;border-bottom:1px solid #f3f4f6;padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:44px}
+.logo{font-size:15px;font-weight:900;color:#db2777;letter-spacing:-.5px}
+.navlinks{display:flex;gap:16px}
+.nl{font-size:10px;color:#9ca3af;padding:4px 0}
+.nla{font-size:10px;color:#db2777;font-weight:700;border-bottom:2px solid #db2777;padding:4px 0}
+.avcircle{width:24px;height:24px;border-radius:50%;background:#f3f4f6;border:1px solid #e5e7eb}
+.content{min-height:460px;padding:20px 18px;position:relative}
+.arrow{display:flex;align-items:center;padding:130px 10px 0;flex-shrink:0;color:#be185d;font-size:20px;font-weight:700}
+.box{background:#f3f4f6;border:1.5px dashed #d1d5db;border-radius:6px}
+.btn{background:#db2777;color:#fff;border-radius:8px;padding:10px 18px;font-size:12px;font-weight:700;display:block;text-align:center}
+/* symptom icon */
+.sym{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:8px 6px;border-radius:10px}
+.sym-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.sym-icon.inactive{background:#f3f4f6;border:1.5px solid #e5e7eb}
+.sym-icon.active{background:#fce7f3;border:2px solid #db2777}
+.sym-label{font-size:9px;color:#6b7280;text-align:center;line-height:1.3;max-width:48px}
+/* category tab */
+.cattab{padding:6px 10px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap}
+.cattab.active{background:#db2777;color:#fff}
+.cattab.inactive{background:#f3f4f6;color:#6b7280}
+</style>
+</head>
+<body>
+<div class="page-header">
+  <div class="badge">Flow 03 · Symptom Logging</div>
+  <h1 class="page-title">Symptom Logging</h1>
+  <p class="page-desc">80+ symptoms across 16 categories. Accessible via the floating + button from any screen. Icon-based selection — 2–3 taps to log any symptom. Data feeds both prediction engine and content personalisation.</p>
+</div>
+
+<div class="flow">
+
+  <!-- S1: Dashboard with FAB highlighted -->
+  <div class="sw">
+    <div class="stepnum">1</div>
+    <div class="slabel">FAB Entry Point</div>
+    <div class="browser">
+      <div class="bchrome"><div class="dot dr"></div><div class="dot dy"></div><div class="dot dg"></div><div class="urlbar">app.flo.health/home</div></div>
+      <div class="appnav">
+        <div class="logo">flo</div>
+        <div class="navlinks"><div class="nla">Home</div><div class="nl">Calendar</div><div class="nl">Insights</div><div class="nl">Community</div></div>
+        <div class="avcircle"></div>
+      </div>
+      <div class="content">
+        <!-- simplified dashboard -->
+        <div style="display:flex;justify-content:center;margin-bottom:16px">
+          <div style="width:140px;height:140px;border-radius:50%;border:6px solid #fce7f3;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff">
+            <div style="font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em">Day</div>
+            <div style="font-size:44px;font-weight:900;color:#db2777;line-height:1">5</div>
+            <div style="font-size:10px;font-weight:600;color:#374151;margin-top:4px">Menstruation</div>
+          </div>
+        </div>
+        <div style="background:#f3f4f6;border-radius:8px;padding:10px;font-size:11px;color:#6b7280;text-align:center;margin-bottom:16px">Next period: Apr 2 · Fertile: Mar 19–23</div>
+        <!-- Log today's symptoms prompt -->
+        <div style="background:#fff7ed;border-radius:10px;padding:12px;margin-bottom:16px;border:1px solid #fed7aa">
+          <div style="font-size:11px;font-weight:700;color:#c2410c;margin-bottom:3px">Log today's symptoms</div>
+          <div style="font-size:10px;color:#6b7280">Track how you're feeling to improve predictions</div>
+        </div>
+        <!-- FAB area -->
+        <div style="position:relative;height:60px">
+          <div style="position:absolute;bottom:0;right:0">
+            <div style="position:relative">
+              <!-- pulse ring -->
+              <div style="position:absolute;inset:-6px;border-radius:50%;border:3px solid #db277750;animation:pulse 1.5s infinite"></div>
+              <div style="width:52px;height:52px;border-radius:50%;background:#db2777;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;font-weight:700;box-shadow:0 4px 16px rgba(219,39,119,.4)">+</div>
+            </div>
+          </div>
+          <div style="position:absolute;bottom:12px;right:64px;background:#1a1a2e;color:#fff;font-size:10px;padding:5px 10px;border-radius:6px;white-space:nowrap">Tap to log symptoms</div>
+        </div>
+      </div>
+    </div>
+    <div class="sdesc">+ FAB (floating action button) is persistent across all screens. Pulse animation draws attention.</div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- S2: Log sheet - Physical -->
+  <div class="sw">
+    <div class="stepnum">2</div>
+    <div class="slabel">Log Sheet — Physical</div>
+    <div class="browser">
+      <div class="bchrome"><div class="dot dr"></div><div class="dot dy"></div><div class="dot dg"></div><div class="urlbar">app.flo.health/home</div></div>
+      <div class="appnav"><div class="logo">flo</div><div class="navlinks"><div class="nla">Home</div><div class="nl">Calendar</div><div class="nl">Insights</div><div class="nl">Community</div></div><div class="avcircle"></div></div>
+      <div class="content">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:1"></div>
+        <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;z-index:2;max-height:480px;overflow-y:auto">
+          <div style="padding:14px 16px 0">
+            <div style="width:40px;height:4px;background:#e5e7eb;border-radius:2px;margin:0 auto 14px"></div>
+            <div style="font-size:14px;font-weight:800;color:#1a1a2e;margin-bottom:12px">Log today — Wed, Mar 5</div>
+            <!-- Category tabs -->
+            <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:14px">
+              <div class="cattab active">Physical</div>
+              <div class="cattab inactive">Mood</div>
+              <div class="cattab inactive">Discharge</div>
+              <div class="cattab inactive">Lifestyle</div>
+              <div class="cattab inactive">Medical</div>
+              <div class="cattab inactive">Sex</div>
+            </div>
+          </div>
+          <!-- Physical symptoms grid -->
+          <div style="padding:0 16px 20px">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px">
+              <div class="sym"><div class="sym-icon active">😣</div><div class="sym-label">Cramps</div></div>
+              <div class="sym"><div class="sym-icon inactive">🤕</div><div class="sym-label">Headache</div></div>
+              <div class="sym"><div class="sym-icon active">😮‍💨</div><div class="sym-label">Bloating</div></div>
+              <div class="sym"><div class="sym-icon inactive">😪</div><div class="sym-label">Fatigue</div></div>
+              <div class="sym"><div class="sym-icon inactive">🤢</div><div class="sym-label">Nausea</div></div>
+              <div class="sym"><div class="sym-icon inactive">🫀</div><div class="sym-label">Back pain</div></div>
+              <div class="sym"><div class="sym-icon inactive">💊</div><div class="sym-label">Acne</div></div>
+              <div class="sym"><div class="sym-icon inactive">🌡️</div><div class="sym-label">BBT</div></div>
+            </div>
+            <div style="font-size:9px;color:#9ca3af;margin-bottom:14px">2 selected · Tap to deselect</div>
+            <div class="btn">Save log</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sdesc">Bottom sheet slides up. Category tabs scroll horizontally. Tap icons to toggle selection.</div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- S3: Mood category selected -->
+  <div class="sw">
+    <div class="stepnum">3</div>
+    <div class="slabel">Log Sheet — Mood</div>
+    <div class="browser">
+      <div class="bchrome"><div class="dot dr"></div><div class="dot dy"></div><div class="dot dg"></div><div class="urlbar">app.flo.health/home</div></div>
+      <div class="appnav"><div class="logo">flo</div><div class="navlinks"><div class="nla">Home</div><div class="nl">Calendar</div><div class="nl">Insights</div><div class="nl">Community</div></div><div class="avcircle"></div></div>
+      <div class="content">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:1"></div>
+        <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;z-index:2">
+          <div style="padding:14px 16px 0">
+            <div style="width:40px;height:4px;background:#e5e7eb;border-radius:2px;margin:0 auto 14px"></div>
+            <div style="font-size:14px;font-weight:800;color:#1a1a2e;margin-bottom:12px">Log today — Wed, Mar 5</div>
+            <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:14px">
+              <div class="cattab inactive">Physical</div>
+              <div class="cattab active">Mood</div>
+              <div class="cattab inactive">Discharge</div>
+              <div class="cattab inactive">Lifestyle</div>
+              <div class="cattab inactive">Medical</div>
+              <div class="cattab inactive">Sex</div>
+            </div>
+          </div>
+          <div style="padding:0 16px 20px">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px">
+              <div class="sym"><div class="sym-icon inactive">😌</div><div class="sym-label">Calm</div></div>
+              <div class="sym"><div class="sym-icon inactive">😊</div><div class="sym-label">Happy</div></div>
+              <div class="sym"><div class="sym-icon active">😰</div><div class="sym-label">Anxious</div></div>
+              <div class="sym"><div class="sym-icon active">😔</div><div class="sym-label">Sad</div></div>
+              <div class="sym"><div class="sym-icon inactive">😠</div><div class="sym-label">Irritable</div></div>
+              <div class="sym"><div class="sym-icon inactive">😤</div><div class="sym-label">Mood swings</div></div>
+              <div class="sym"><div class="sym-icon inactive">⚡</div><div class="sym-label">Energetic</div></div>
+              <div class="sym"><div class="sym-icon inactive">🌧️</div><div class="sym-label">Depressed</div></div>
+            </div>
+            <!-- Count summary -->
+            <div style="background:#f3f4f6;border-radius:8px;padding:8px 12px;margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap">
+              <div style="font-size:10px;color:#374151;font-weight:600">Logged today:</div>
+              <div style="font-size:10px;background:#fce7f3;color:#db2777;padding:2px 6px;border-radius:4px;font-weight:600">Cramps</div>
+              <div style="font-size:10px;background:#fce7f3;color:#db2777;padding:2px 6px;border-radius:4px;font-weight:600">Bloating</div>
+              <div style="font-size:10px;background:#e0e7ff;color:#4338ca;padding:2px 6px;border-radius:4px;font-weight:600">Anxious</div>
+              <div style="font-size:10px;background:#e0e7ff;color:#4338ca;padding:2px 6px;border-radius:4px;font-weight:600">Sad</div>
+            </div>
+            <div class="btn">Save log</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sdesc">Switching tabs preserves selections across categories. Chip summary shows all logged items.</div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- S4: Confirmation state -->
+  <div class="sw">
+    <div class="stepnum">4</div>
+    <div class="slabel">Logged Confirmation</div>
+    <div class="browser">
+      <div class="bchrome"><div class="dot dr"></div><div class="dot dy"></div><div class="dot dg"></div><div class="urlbar">app.flo.health/home</div></div>
+      <div class="appnav"><div class="logo">flo</div><div class="navlinks"><div class="nla">Home</div><div class="nl">Calendar</div><div class="nl">Insights</div><div class="nl">Community</div></div><div class="avcircle"></div></div>
+      <div class="content">
+        <!-- Toast -->
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px">
+          <div style="width:24px;height:24px;border-radius:50%;background:#16a34a;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:12px">✓</span></div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#16a34a;margin-bottom:2px">4 symptoms logged</div>
+            <div style="font-size:10px;color:#6b7280">Cramps · Bloating · Anxious · Sad</div>
+          </div>
+        </div>
+        <!-- Day summary card -->
+        <div style="border:1.5px solid #e5e7eb;border-radius:12px;padding:14px;margin-bottom:14px">
+          <div style="font-size:11px;font-weight:700;color:#1a1a2e;margin-bottom:10px">Today — Day 5 of period</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:4px;background:#fce7f3;padding:4px 8px;border-radius:6px"><span style="font-size:13px">😣</span><span style="font-size:10px;color:#db2777;font-weight:600">Cramps</span></div>
+            <div style="display:flex;align-items:center;gap:4px;background:#fce7f3;padding:4px 8px;border-radius:6px"><span style="font-size:13px">😮‍💨</span><span style="font-size:10px;color:#db2777;font-weight:600">Bloating</span></div>
+            <div style="display:flex;align-items:center;gap:4px;background:#e0e7ff;padding:4px 8px;border-radius:6px"><span style="font-size:13px">😰</span><span style="font-size:10px;color:#4338ca;font-weight:600">Anxious</span></div>
+            <div style="display:flex;align-items:center;gap:4px;background:#e0e7ff;padding:4px 8px;border-radius:6px"><span style="font-size:13px">😔</span><span style="font-size:10px;color:#4338ca;font-weight:600">Sad</span></div>
+          </div>
+          <div style="font-size:10px;color:#6b7280">Edit today's log →</div>
+        </div>
+        <!-- AI-driven insight surfaced by symptom -->
+        <div style="background:#fdf2f8;border-left:3px solid #db2777;border-radius:0 10px 10px 0;padding:12px 14px;margin-bottom:14px">
+          <div style="font-size:10px;font-weight:700;color:#db2777;margin-bottom:4px">💡 Insight based on your log</div>
+          <div style="font-size:10px;color:#374151;line-height:1.5;margin-bottom:6px">Cramps and mood changes often peak on day 1–2 of your period due to prostaglandins. What you're feeling is completely normal...</div>
+          <div style="font-size:10px;color:#db2777">🔒 Read full insight — Premium</div>
+        </div>
+        <!-- Ask Flo CTA -->
+        <div style="border:1.5px solid #e5e7eb;border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#1a1a2e;margin-bottom:2px">Ask Flo about your symptoms</div>
+            <div style="font-size:10px;color:#6b7280">Get personalised answers from our AI assistant</div>
+          </div>
+          <div style="width:32px;height:32px;border-radius:50%;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">💬</div>
+        </div>
+      </div>
+    </div>
+    <div class="sdesc">After save: logged chips shown, AI insight surfaced, Ask Flo CTA appears contextually.</div>
+  </div>
+
+</div>
+</body>
+</html>

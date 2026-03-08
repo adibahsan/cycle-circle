@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flo Web — Wireframe Index</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f1f3f5;padding:48px 40px;min-height:100vh}
+h1{font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
+.sub{font-size:14px;color:#6b7280;margin-bottom:40px;line-height:1.6;max-width:560px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px}
+.card{background:#fff;border-radius:16px;border:1.5px solid #e5e7eb;padding:24px;text-decoration:none;display:block;transition:box-shadow .15s,border-color .15s}
+.card:hover{box-shadow:0 8px 24px rgba(0,0,0,.1);border-color:#d1d5db}
+.flow-num{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.card-title{font-size:17px;font-weight:800;color:#1a1a2e;margin-bottom:6px}
+.card-desc{font-size:12px;color:#6b7280;line-height:1.5;margin-bottom:16px}
+.screen-count{font-size:11px;font-weight:600;display:inline-block;padding:3px 10px;border-radius:20px}
+.arrow{display:inline-block;margin-left:4px;font-size:12px}
+</style>
+</head>
+<body>
+<h1>Flo Web — Wireframe Flows</h1>
+<p class="sub">MVP core flows. Each file shows 4–6 key screens in sequence with annotations explaining UX decisions. Open any flow to explore.</p>
+
+<div class="grid">
+
+  <a class="card" href="01-onboarding.html">
+    <div class="flow-num" style="color:#be185d">Flow 01</div>
+    <div class="card-title">Onboarding</div>
+    <div class="card-desc">Trust screens → Goal selection → Personal data → Lifestyle questions → Signup → Paywall with 3-stage trial cascade</div>
+    <span class="screen-count" style="background:#fce7f3;color:#be185d">6 screens <span class="arrow">→</span></span>
+  </a>
+
+  <a class="card" href="02-dashboard.html">
+    <div class="flow-num" style="color:#db2777">Flow 02</div>
+    <div class="card-title">Dashboard &amp; Period Tracking</div>
+    <div class="card-desc">Home dashboard with cycle hero and 7-day strip → Calendar → Log period modal → Flow intensity → Updated predictions</div>
+    <span class="screen-count" style="background:#fce7f3;color:#db2777">5 screens <span class="arrow">→</span></span>
+  </a>
+
+  <a class="card" href="03-symptom-logging.html">
+    <div class="flow-num" style="color:#7c3aed">Flow 03</div>
+    <div class="card-title">Symptom Logging</div>
+    <div class="card-desc">Floating + button → Bottom sheet → Physical category → Mood category → Save with contextual insight surfaced</div>
+    <span class="screen-count" style="background:#ede9fe;color:#7c3aed">4 screens <span class="arrow">→</span></span>
+  </a>
+
+  <a class="card" href="04-tcc-fertility.html">
+    <div class="flow-num" style="color:#0d9488">Flow 04</div>
+    <div class="card-title">TTC &amp; Fertility</div>
+    <div class="card-desc">TTC dashboard with fertile window → BBT log entry → OPK positive result → Ovulation shift + conception tip</div>
+    <span class="screen-count" style="background:#f0fdfa;color:#0d9488">4 screens <span class="arrow">→</span></span>
+  </a>
+
+  <a class="card" href="05-pregnancy.html">
+    <div class="flow-num" style="color:#d97706">Flow 05</div>
+    <div class="card-title">Pregnancy Mode</div>
+    <div class="card-desc">Mode switch with due date entry → Yellow-palette dashboard with fetal viz → Weekly milestones → Checklist with calculators</div>
+    <span class="screen-count" style="background:#fffbeb;color:#d97706">4 screens <span class="arrow">→</span></span>
+  </a>
+
+</div>
+
+<div style="margin-top:48px;padding-top:32px;border-top:1px solid #e5e7eb">
+  <div style="font-size:12px;color:#9ca3af;margin-bottom:16px;font-weight:600;text-transform:uppercase;letter-spacing:.08em">Also in this project</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <a href="../flo-health-comprehensive-guide .md" style="font-size:12px;color:#4f46e5;text-decoration:none;background:#eef2ff;padding:6px 12px;border-radius:6px">📄 Comprehensive Research Guide</a>
+    <a href="../flo-user-journey-flows.md" style="font-size:12px;color:#4f46e5;text-decoration:none;background:#eef2ff;padding:6px 12px;border-radius:6px">🔀 Mermaid Flow Diagrams (12 flows)</a>
+    <a href="../flo-user-stories.md" style="font-size:12px;color:#4f46e5;text-decoration:none;background:#eef2ff;padding:6px 12px;border-radius:6px">📋 80 User Stories</a>
+  </div>
+</div>
+</body>
+</html>
