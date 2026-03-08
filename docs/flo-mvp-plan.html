@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flo Web — MVP Implementation Plan</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fa;color:#1a1a2e;line-height:1.6}
+.page{max-width:1100px;margin:0 auto;padding:48px 32px}
+
+/* Header */
+.header{margin-bottom:48px}
+.header-meta{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:4px 12px;border-radius:100px}
+.badge-pink{background:#fce7f3;color:#be185d}
+.badge-blue{background:#eff6ff;color:#1d4ed8}
+.badge-green{background:#f0fdf4;color:#16a34a}
+.badge-orange{background:#fff7ed;color:#c2410c}
+.badge-purple{background:#f5f3ff;color:#7c3aed}
+.badge-gray{background:#f3f4f6;color:#374151}
+h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
+.subtitle{font-size:15px;color:#6b7280;line-height:1.6;max-width:700px}
+.stats-row{display:flex;gap:16px;margin-top:24px;flex-wrap:wrap}
+.stat{background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:16px 20px;min-width:130px}
+.stat-val{font-size:22px;font-weight:900;color:#db2777}
+.stat-label{font-size:11px;color:#6b7280;margin-top:2px}
+
+/* Section */
+.section{margin-bottom:48px}
+.section-title{font-size:18px;font-weight:800;color:#1a1a2e;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.section-num{width:28px;height:28px;border-radius:50%;background:#db2777;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-desc{font-size:13px;color:#6b7280;margin-bottom:20px;margin-left:38px}
+
+/* MoSCoW */
+.moscow-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.moscow-grid{grid-template-columns:1fr}}
+.moscow-card{border-radius:12px;padding:20px;border:1.5px solid}
+.moscow-must{background:#fdf2f8;border-color:#fce7f3}
+.moscow-should{background:#eff6ff;border-color:#dbeafe}
+.moscow-could{background:#f0fdf4;border-color:#dcfce7}
+.moscow-wont{background:#f9fafb;border-color:#f3f4f6}
+.moscow-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.feature-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.05)}
+.feature-item:last-child{border-bottom:none}
+.fi-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.fi-name{font-size:12px;font-weight:600;color:#1a1a2e}
+.fi-note{font-size:10px;color:#9ca3af;margin-top:1px}
+
+/* Sprint plan */
+.week-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;margin-top:24px}
+.week-badge{background:#1a1a2e;color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px}
+.week-desc{font-size:12px;color:#6b7280}
+.sprint-table{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;border:1.5px solid #e5e7eb}
+.sprint-table th{background:#f3f4f6;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;padding:10px 14px;text-align:left;border-bottom:1.5px solid #e5e7eb}
+.sprint-table td{padding:12px 14px;font-size:12px;border-bottom:1px solid #f3f4f6;vertical-align:top}
+.sprint-table tr:last-child td{border-bottom:none}
+.sprint-table tr:hover td{background:#fafafa}
+.day-num{font-weight:800;color:#db2777;white-space:nowrap}
+.deliverable-list{display:flex;flex-direction:column;gap:3px}
+.deliverable{display:flex;align-items:center;gap:6px;font-size:11px;color:#374151}
+.d-dot{width:5px;height:5px;border-radius:50%;background:#db2777;flex-shrink:0}
+.owner-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.owner-fe{background:#eff6ff;color:#1d4ed8}
+.owner-be{background:#f0fdf4;color:#16a34a}
+.owner-shared{background:#f5f3ff;color:#7c3aed}
+
+/* Tech stack */
+.stack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.stack-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px}
+.stack-layer{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:6px}
+.stack-choice{font-size:14px;font-weight:800;color:#1a1a2e;margin-bottom:4px}
+.stack-reason{font-size:11px;color:#6b7280;line-height:1.4}
+
+/* RICE table */
+.rice-table{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;border:1.5px solid #e5e7eb}
+.rice-table th{background:#f3f4f6;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;padding:10px 12px;text-align:left;border-bottom:1.5px solid #e5e7eb}
+.rice-table td{padding:11px 12px;font-size:12px;border-bottom:1px solid #f3f4f6}
+.rice-table tr:last-child td{border-bottom:none}
+.rice-score{font-size:14px;font-weight:900;color:#db2777}
+.rice-bar{height:6px;border-radius:3px;background:#fce7f3;margin-top:4px;overflow:hidden}
+.rice-bar-fill{height:6px;border-radius:3px;background:#db2777}
+.priority-1{font-weight:800;color:#db2777}
+
+/* Schema */
+.schema-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.schema-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px;font-family:monospace}
+.table-name{font-size:12px;font-weight:800;color:#db2777;margin-bottom:10px;font-family:-apple-system,sans-serif}
+.field{display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f9fafb;font-size:11px}
+.field:last-child{border-bottom:none}
+.field-name{color:#1a1a2e;font-weight:600;min-width:110px}
+.field-type{color:#6b7280}
+.field-pk{color:#db2777;font-size:9px;font-weight:700}
+
+/* Algorithm */
+.algo-box{background:#1e293b;border-radius:12px;padding:24px;font-family:'Courier New',monospace;font-size:12px;line-height:1.8;color:#e2e8f0}
+.algo-comment{color:#64748b}
+.algo-var{color:#7dd3fc}
+.algo-op{color:#f472b6}
+.algo-val{color:#86efac}
+
+/* Phases */
+.phases-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:800px){.phases-row{grid-template-columns:1fr}}
+.phase-card{border-radius:12px;padding:20px;border:1.5px solid}
+.phase1{background:#fdf2f8;border-color:#fce7f3}
+.phase2{background:#eff6ff;border-color:#dbeafe}
+.phase3{background:#f0fdf4;border-color:#dcfce7}
+.phase-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.phase-title{font-size:14px;font-weight:800}
+.phase-timeline{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px}
+.phase-features{display:flex;flex-direction:column;gap:6px}
+.pf{display:flex;align-items:flex-start;gap:6px;font-size:11px;color:#374151}
+.pf-dot{width:5px;height:5px;border-radius:50%;margin-top:4px;flex-shrink:0}
+
+/* Risks */
+.risk-list{display:flex;flex-direction:column;gap:10px}
+.risk{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px;display:flex;gap:14px;align-items:flex-start}
+.risk-level{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.risk-high{background:#fef2f2;color:#dc2626}
+.risk-med{background:#fff7ed;color:#c2410c}
+.risk-low{background:#f0fdf4;color:#16a34a}
+.risk-title{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:4px}
+.risk-desc{font-size:11px;color:#6b7280;line-height:1.5}
+.risk-mit{font-size:11px;color:#374151;margin-top:6px;font-weight:600}
+
+/* Dependencies */
+.dep-list{display:flex;flex-direction:column;gap:8px}
+.dep{background:#fff;border:1.5px solid #e5e7eb;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.dep-from{font-size:11px;font-weight:700;color:#1a1a2e;background:#f3f4f6;padding:3px 8px;border-radius:5px}
+.dep-arrow{color:#9ca3af;font-size:12px}
+.dep-to{font-size:11px;font-weight:700;color:#db2777;background:#fce7f3;padding:3px 8px;border-radius:5px}
+.dep-note{font-size:10px;color:#9ca3af;margin-left:auto}
+
+/* Definition of Done */
+.dod-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dod-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px}
+.dod-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;margin-bottom:10px}
+.dod-item{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:#374151;padding:5px 0;border-bottom:1px solid #f9fafb}
+.dod-item:last-child{border-bottom:none}
+.dod-check{color:#16a34a;font-weight:700;flex-shrink:0;font-size:13px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-meta">
+      <span class="badge badge-pink">Flo Web Clone</span>
+      <span class="badge badge-blue">Small Team · 2–4 Devs</span>
+      <span class="badge badge-green">2-Week MVP Sprint</span>
+    </div>
+    <h1>MVP Implementation Plan</h1>
+    <p class="subtitle">A focused 2-week sprint to ship the core period-tracking habit loop — the only flow that must exist for the app to be useful. Everything else is Phase 2+.</p>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val">10</div><div class="stat-label">Working days</div></div>
+      <div class="stat"><div class="stat-val">6</div><div class="stat-label">Core features</div></div>
+      <div class="stat"><div class="stat-val">3</div><div class="stat-label">Phases total</div></div>
+      <div class="stat"><div class="stat-val">0</div><div class="stat-label">ML models needed now</div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: SCOPE — MOSCOW -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">1</div>MVP Scope — MoSCoW Prioritisation</div>
+    <div class="section-desc">Ruthless prioritisation for 2 weeks. The Must Haves form the complete habit loop: log period → see prediction → understand cycle. Everything else follows.</div>
+
+    <div class="moscow-grid">
+      <div class="moscow-card moscow-must">
+        <div class="moscow-title" style="color:#be185d">🔴 Must Have — Week 1–2</div>
+        <div class="feature-item"><div class="fi-dot" style="background:#db2777"></div><div><div class="fi-name">Email + Google auth</div><div class="fi-note">Account creation and sign-in via Supabase Auth</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#db2777"></div><div><div class="fi-name">3-screen onboarding</div><div class="fi-note">Goal → Last period + cycle length → Account signup</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#db2777"></div><div><div class="fi-name">Cycle dashboard</div><div class="fi-note">Cycle day hero, 7-day strip, next period date, phase label</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#db2777"></div><div><div class="fi-name">Period logging</div><div class="fi-note">Start/end modal with flow intensity (light, medium, heavy)</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#db2777"></div><div><div class="fi-name">Monthly calendar view</div><div class="fi-note">Color-coded: period (pink), fertile (teal), ovulation (teal-dot), low (dark)</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#db2777"></div><div><div class="fi-name">Prediction engine (simple)</div><div class="fi-note">Average-based JS function — no ML. Ovulation = next_period − 14 days</div></div></div>
+      </div>
+
+      <div class="moscow-card moscow-should">
+        <div class="moscow-title" style="color:#1d4ed8">🟡 Should Have — Weeks 3–6</div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Symptom logging (top 20)</div><div class="fi-note">FAB button, bottom sheet, Physical + Mood + Discharge categories</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Full onboarding (7 screens)</div><div class="fi-note">Lifestyle questions, social proof screens, trust badges</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Push notifications (web)</div><div class="fi-note">Period start, fertile window, logging reminders via service worker</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Cycle trends graph</div><div class="fi-note">Cycle length history chart over time</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Paywall + Stripe integration</div><div class="fi-note">Freemium tier gating, premium subscription flow</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">TTC mode basics</div><div class="fi-note">Fertile window focus, OPK logging, conception tips</div></div></div>
+      </div>
+
+      <div class="moscow-card moscow-could">
+        <div class="moscow-title" style="color:#16a34a">🟢 Could Have — Month 2</div>
+        <div class="feature-item"><div class="fi-dot" style="background:#22c55e"></div><div><div class="fi-name">Pregnancy mode</div><div class="fi-note">Week counter, milestones, checklists, calculators</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#22c55e"></div><div><div class="fi-name">AI health assistant (rule-based)</div><div class="fi-note">Scripted conversation trees for top 10 queries</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#22c55e"></div><div><div class="fi-name">Partner mode</div><div class="fi-note">Sharing code, read-only partner dashboard</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#22c55e"></div><div><div class="fi-name">BBT tracking</div><div class="fi-note">Temperature log with chart overlay</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#22c55e"></div><div><div class="fi-name">Doctor's report PDF</div><div class="fi-note">6-month cycle + symptom summary export</div></div></div>
+      </div>
+
+      <div class="moscow-card moscow-wont">
+        <div class="moscow-title" style="color:#6b7280">⚫ Won't Have — MVP</div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">ML/neural net predictions</div><div class="fi-note">Need 3+ cycles of user data first — simple algorithm is fine for launch</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">Community / Secret Chats</div><div class="fi-note">High moderation overhead — Phase 3 minimum</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">Anonymous Mode (OHTTP)</div><div class="fi-note">Complex infrastructure — plan for post-product/market fit</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">Symptom checker (PCOS/endo)</div><div class="fi-note">Requires clinical guideline review and legal signoff</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">Wearable / HealthKit integration</div><div class="fi-note">iOS SDK only — not available in web browsers</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: RICE SCORING -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">2</div>Feature Prioritisation — RICE Scores</div>
+    <div class="section-desc">RICE = (Reach × Impact × Confidence) / Effort. Scored against the 2-week window. Anything with RICE &gt; 100 is in Week 1–2.</div>
+
+    <table class="rice-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Reach</th>
+          <th>Impact</th>
+          <th>Confidence</th>
+          <th>Effort (days)</th>
+          <th>RICE</th>
+          <th>Phase</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong class="priority-1">Period logging</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>95%</td>
+          <td>1.5</td>
+          <td><div class="rice-score">190</div><div class="rice-bar"><div class="rice-bar-fill" style="width:100%"></div></div></td>
+          <td><span class="badge badge-pink">MVP</span></td>
+        </tr>
+        <tr>
+          <td><strong>Monthly calendar view</strong></td>
+          <td>100%</td>
+          <td>2.5 (high)</td>
+          <td>90%</td>
+          <td>1.5</td>
+          <td><div class="rice-score">150</div><div class="rice-bar"><div class="rice-bar-fill" style="width:79%"></div></div></td>
+          <td><span class="badge badge-pink">MVP</span></td>
+        </tr>
+        <tr>
+          <td><strong>Cycle dashboard</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>90%</td>
+          <td>2</td>
+          <td><div class="rice-score">135</div><div class="rice-bar"><div class="rice-bar-fill" style="width:71%"></div></div></td>
+          <td><span class="badge badge-pink">MVP</span></td>
+        </tr>
+        <tr>
+          <td><strong>Auth + onboarding</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>90%</td>
+          <td>2</td>
+          <td><div class="rice-score">135</div><div class="rice-bar"><div class="rice-bar-fill" style="width:71%"></div></div></td>
+          <td><span class="badge badge-pink">MVP</span></td>
+        </tr>
+        <tr>
+          <td><strong>Prediction engine</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>85%</td>
+          <td>2</td>
+          <td><div class="rice-score">128</div><div class="rice-bar"><div class="rice-bar-fill" style="width:67%"></div></div></td>
+          <td><span class="badge badge-pink">MVP</span></td>
+        </tr>
+        <tr>
+          <td>Symptom logging (top 20)</td>
+          <td>80%</td>
+          <td>2 (high)</td>
+          <td>85%</td>
+          <td>2</td>
+          <td><div class="rice-score">68</div><div class="rice-bar"><div class="rice-bar-fill" style="width:36%"></div></div></td>
+          <td><span class="badge badge-blue">Phase 2</span></td>
+        </tr>
+        <tr>
+          <td>Push notifications</td>
+          <td>90%</td>
+          <td>2 (high)</td>
+          <td>80%</td>
+          <td>2</td>
+          <td><div class="rice-score">72</div><div class="rice-bar"><div class="rice-bar-fill" style="width:38%"></div></div></td>
+          <td><span class="badge badge-blue">Phase 2</span></td>
+        </tr>
+        <tr>
+          <td>TTC mode</td>
+          <td>35%</td>
+          <td>3 (massive)</td>
+          <td>80%</td>
+          <td>3</td>
+          <td><div class="rice-score">28</div><div class="rice-bar"><div class="rice-bar-fill" style="width:15%"></div></div></td>
+          <td><span class="badge badge-blue">Phase 2</span></td>
+        </tr>
+        <tr>
+          <td>Pregnancy mode</td>
+          <td>25%</td>
+          <td>3 (massive)</td>
+          <td>80%</td>
+          <td>5</td>
+          <td><div class="rice-score">12</div><div class="rice-bar"><div class="rice-bar-fill" style="width:6%"></div></div></td>
+          <td><span class="badge badge-green">Phase 3</span></td>
+        </tr>
+        <tr>
+          <td>AI assistant</td>
+          <td>60%</td>
+          <td>2 (high)</td>
+          <td>60%</td>
+          <td>5</td>
+          <td><div class="rice-score">14</div><div class="rice-bar"><div class="rice-bar-fill" style="width:7%"></div></div></td>
+          <td><span class="badge badge-green">Phase 3</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 3: TECH STACK -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">3</div>Technology Stack</div>
+    <div class="section-desc">Chosen for speed of development, zero-config deploys, and the ability to graduate to ML without rewriting the backend. All selections match the research doc recommendations.</div>
+
+    <div class="stack-grid">
+      <div class="stack-card">
+        <div class="stack-layer">Frontend</div>
+        <div class="stack-choice">Next.js 14 + TypeScript</div>
+        <div class="stack-reason">SSR, API routes, routing, and React in one repo. App Router for layouts.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Styling</div>
+        <div class="stack-choice">Tailwind CSS</div>
+        <div class="stack-reason">Fast iteration. Consistent design tokens. No CSS context-switching.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">State Management</div>
+        <div class="stack-choice">Zustand + SWR</div>
+        <div class="stack-reason">Lightweight global state. SWR for server state + cache invalidation after logs.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Backend + Auth + DB</div>
+        <div class="stack-choice">Supabase</div>
+        <div class="stack-reason">PostgreSQL + Auth + real-time subscriptions + Row Level Security out of the box.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Prediction Engine (MVP)</div>
+        <div class="stack-choice">Pure TypeScript function</div>
+        <div class="stack-reason">No ML needed yet. Simple average-based algorithm runs in the API route. Swap for scikit-learn in Phase 3.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Calendar / Charts</div>
+        <div class="stack-choice">date-fns + Recharts</div>
+        <div class="stack-reason">date-fns for all date math. Recharts for cycle length trend charts in Phase 2.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Hosting</div>
+        <div class="stack-choice">Vercel</div>
+        <div class="stack-reason">Zero-config Next.js deploys. Preview URLs on every PR. Free for MVP scale.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Payments (Phase 2)</div>
+        <div class="stack-choice">Stripe</div>
+        <div class="stack-reason">Subscriptions, FSA/HSA card support, webhooks for entitlement sync.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: DATABASE SCHEMA -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">4</div>Core Database Schema</div>
+    <div class="section-desc">Minimal schema for MVP. All tables have Row Level Security (RLS) enabled in Supabase — users can only read/write their own rows.</div>
+
+    <div class="schema-grid">
+      <div class="schema-card">
+        <div class="table-name">users</div>
+        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
+        <div class="field"><span class="field-name">email</span><span class="field-type">text</span></div>
+        <div class="field"><span class="field-name">goal</span><span class="field-type">enum(period,ttc,pregnant,peri)</span></div>
+        <div class="field"><span class="field-name">date_of_birth</span><span class="field-type">date</span></div>
+        <div class="field"><span class="field-name">avg_cycle_length</span><span class="field-type">int default 28</span></div>
+        <div class="field"><span class="field-name">avg_period_length</span><span class="field-type">int default 5</span></div>
+        <div class="field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="table-name">period_logs</div>
+        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
+        <div class="field"><span class="field-name">user_id</span><span class="field-type">uuid FK → users</span></div>
+        <div class="field"><span class="field-name">start_date</span><span class="field-type">date not null</span></div>
+        <div class="field"><span class="field-name">end_date</span><span class="field-type">date nullable</span></div>
+        <div class="field"><span class="field-name">flow_intensity</span><span class="field-type">enum(light,medium,heavy)</span></div>
+        <div class="field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="table-name">symptom_logs</div>
+        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
+        <div class="field"><span class="field-name">user_id</span><span class="field-type">uuid FK → users</span></div>
+        <div class="field"><span class="field-name">logged_date</span><span class="field-type">date not null</span></div>
+        <div class="field"><span class="field-name">category</span><span class="field-type">text (physical, mood...)</span></div>
+        <div class="field"><span class="field-name">symptom_key</span><span class="field-type">text (cramps, headache...)</span></div>
+        <div class="field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="table-name">predictions</div>
+        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
+        <div class="field"><span class="field-name">user_id</span><span class="field-type">uuid FK → users</span></div>
+        <div class="field"><span class="field-name">next_period_start</span><span class="field-type">date</span></div>
+        <div class="field"><span class="field-name">next_period_end</span><span class="field-type">date</span></div>
+        <div class="field"><span class="field-name">fertile_window_start</span><span class="field-type">date</span></div>
+        <div class="field"><span class="field-name">fertile_window_end</span><span class="field-type">date</span></div>
+        <div class="field"><span class="field-name">ovulation_date</span><span class="field-type">date</span></div>
+        <div class="field"><span class="field-name">recalculated_at</span><span class="field-type">timestamptz</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: PREDICTION ALGORITHM -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">5</div>MVP Prediction Algorithm</div>
+    <div class="section-desc">No ML needed for launch. This simple average-based algorithm reduces prediction error enough to be genuinely useful. Swap for ARIMA or neural nets in Phase 3 once you have data.</div>
+
+    <div class="algo-box">
+<span class="algo-comment">// MVP Cycle Prediction — Pure TypeScript, runs in Next.js API route</span>
+
+<span class="algo-comment">// Step 1: Compute average cycle length from logged period history</span>
+<span class="algo-var">const avgCycleLength</span> <span class="algo-op">=</span> periodLogs.length <span class="algo-op">&gt;=</span> <span class="algo-val">3</span>
+  ? average(periodLogs.map(p <span class="algo-op">=&gt;</span> daysBetween(p.start, nextLog.start)))
+  : user.avg_cycle_length; <span class="algo-comment">// fall back to onboarding value</span>
+
+<span class="algo-comment">// Step 2: Predict next period</span>
+<span class="algo-var">const nextPeriodStart</span> <span class="algo-op">=</span> addDays(lastPeriodStart, avgCycleLength);
+<span class="algo-var">const nextPeriodEnd</span>   <span class="algo-op">=</span> addDays(nextPeriodStart, user.avg_period_length);
+
+<span class="algo-comment">// Step 3: Ovulation = next period start minus 14 days (luteal phase constant)</span>
+<span class="algo-var">const ovulationDate</span>        <span class="algo-op">=</span> subDays(nextPeriodStart, <span class="algo-val">14</span>);
+<span class="algo-var">const fertileWindowStart</span>   <span class="algo-op">=</span> subDays(ovulationDate, <span class="algo-val">5</span>); <span class="algo-comment">// sperm survive 5 days</span>
+<span class="algo-var">const fertileWindowEnd</span>     <span class="algo-op">=</span> addDays(ovulationDate, <span class="algo-val">1</span>);  <span class="algo-comment">// egg survives ~24 hrs</span>
+
+<span class="algo-comment">// Step 4: Assign day colour for calendar rendering</span>
+<span class="algo-var">const getDayType</span> <span class="algo-op">=</span> (date) <span class="algo-op">=&gt;</span> {
+  if (isPeriodDay(date))   return <span class="algo-val">'period'</span>;      <span class="algo-comment">// red/pink</span>
+  if (isOvulationDay(date)) return <span class="algo-val">'ovulation'</span>;   <span class="algo-comment">// teal dashed ring</span>
+  if (isFertileDay(date))  return <span class="algo-val">'fertile'</span>;      <span class="algo-comment">// teal fill</span>
+  return <span class="algo-val">'low'</span>;                                    <span class="algo-comment">// dark/neutral</span>
+};
+
+<span class="algo-comment">// Phase 3 upgrade path: replace avgCycleLength calc with ARIMA or LSTM model</span>
+<span class="algo-comment">// trained on user's full history via Python/FastAPI sidecar service</span>
+    </div>
+  </div>
+
+  <!-- SECTION 6: SPRINT PLAN -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">6</div>2-Week Sprint Plan</div>
+    <div class="section-desc">10 working days. Week 1 builds the foundation and prediction engine. Week 2 wires up the user-facing logging flows and ships. Each day has a primary owner but overlap is expected on a small team.</div>
+
+    <div class="week-header">
+      <div class="week-badge">Week 1</div>
+      <div class="week-desc">Foundation, data model, prediction engine, dashboard</div>
+    </div>
+
+    <table class="sprint-table">
+      <thead>
+        <tr><th>Day</th><th>Focus</th><th>Deliverables</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="day-num">Day 1</div><div style="font-size:10px;color:#9ca3af">Monday</div></td>
+          <td><strong>Project setup</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Next.js 14 + TypeScript repo init, ESLint, Prettier</div>
+            <div class="deliverable"><div class="d-dot"></div>Supabase project created, env vars wired up</div>
+            <div class="deliverable"><div class="d-dot"></div>Tailwind CSS configured with design tokens (pink palette)</div>
+            <div class="deliverable"><div class="d-dot"></div>Vercel project linked — auto-deploy on push to main</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 2</div><div style="font-size:10px;color:#9ca3af">Tuesday</div></td>
+          <td><strong>Auth + DB schema</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Supabase Auth: email + Google OAuth working end-to-end</div>
+            <div class="deliverable"><div class="d-dot"></div>All 4 core tables migrated with RLS policies</div>
+            <div class="deliverable"><div class="d-dot"></div>Protected route middleware (redirect to onboarding if no profile)</div>
+            <div class="deliverable"><div class="d-dot"></div>Session persistence and token refresh handled</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 3</div><div style="font-size:10px;color:#9ca3af">Wednesday</div></td>
+          <td><strong>Onboarding flow</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Screen 1: Welcome + trust badges</div>
+            <div class="deliverable"><div class="d-dot"></div>Screen 2: Goal selection (4 options) → writes to users.goal</div>
+            <div class="deliverable"><div class="d-dot"></div>Screen 3: Last period date + cycle length stepper → writes to users table</div>
+            <div class="deliverable"><div class="d-dot"></div>Signup screen: email / Apple / Google buttons</div>
+          </div></td>
+          <td><span class="owner-badge owner-fe">Front-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 4</div><div style="font-size:10px;color:#9ca3af">Thursday</div></td>
+          <td><strong>Prediction engine</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>TypeScript prediction function (algorithm from Section 5)</div>
+            <div class="deliverable"><div class="d-dot"></div>POST /api/predictions — calculates and writes to predictions table</div>
+            <div class="deliverable"><div class="d-dot"></div>Trigger: fires on onboarding complete, on period log, on period edit</div>
+            <div class="deliverable"><div class="d-dot"></div>Unit tests: verify next period, ovulation, fertile window calculations</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 5</div><div style="font-size:10px;color:#9ca3af">Friday</div></td>
+          <td><strong>Dashboard (home)</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Cycle day hero: large number, phase label, next period countdown</div>
+            <div class="deliverable"><div class="d-dot"></div>7-day calendar strip with colour-coded day circles</div>
+            <div class="deliverable"><div class="d-dot"></div>Top nav: logo, Home/Calendar/Insights tabs, avatar</div>
+            <div class="deliverable"><div class="d-dot"></div>Dashboard reads from predictions table and period_logs</div>
+          </div></td>
+          <td><span class="owner-badge owner-fe">Front-end</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="week-header">
+      <div class="week-badge">Week 2</div>
+      <div class="week-desc">Period logging, calendar, symptom logging (stretch), polish, deploy</div>
+    </div>
+
+    <table class="sprint-table">
+      <thead>
+        <tr><th>Day</th><th>Focus</th><th>Deliverables</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="day-num">Day 6</div><div style="font-size:10px;color:#9ca3af">Monday</div></td>
+          <td><strong>Period logging — UI</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Bottom sheet modal: Period started / Period ended toggle</div>
+            <div class="deliverable"><div class="d-dot"></div>Date selector: defaults to today, editable for retroactive entry</div>
+            <div class="deliverable"><div class="d-dot"></div>Flow intensity picker: Light / Medium / Heavy icon cards</div>
+            <div class="deliverable"><div class="d-dot"></div>Writes to period_logs, triggers prediction recalculation</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 7</div><div style="font-size:10px;color:#9ca3af">Tuesday</div></td>
+          <td><strong>Calendar view</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Monthly grid component (7-col, prev/next month nav)</div>
+            <div class="deliverable"><div class="d-dot"></div>Colour-coding: period (pink), fertile (teal), ovulation (dashed teal), low (dark slate)</div>
+            <div class="deliverable"><div class="d-dot"></div>Tap any day → shows symptoms logged that day (or "nothing logged")</div>
+            <div class="deliverable"><div class="d-dot"></div>Retroactive period editing from calendar day tap</div>
+          </div></td>
+          <td><span class="owner-badge owner-fe">Front-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 8</div><div style="font-size:10px;color:#9ca3af">Wednesday</div></td>
+          <td><strong>Symptom logging</strong><div style="font-size:9px;color:#9ca3af;margin-top:2px">stretch goal</div></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Floating + FAB button, persistent across all screens</div>
+            <div class="deliverable"><div class="d-dot"></div>Bottom sheet: Physical, Mood, Discharge tabs (top 20 symptoms)</div>
+            <div class="deliverable"><div class="d-dot"></div>Icon-based selection — toggle active/inactive state</div>
+            <div class="deliverable"><div class="d-dot"></div>POST /api/symptoms, confirmation toast on save</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 9</div><div style="font-size:10px;color:#9ca3af">Thursday</div></td>
+          <td><strong>Settings + profile</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Profile page: edit cycle length, period length, goal</div>
+            <div class="deliverable"><div class="d-dot"></div>Change prediction recalculates on save</div>
+            <div class="deliverable"><div class="d-dot"></div>Sign out flow</div>
+            <div class="deliverable"><div class="d-dot"></div>Loading states, error states, empty states on all screens</div>
+          </div></td>
+          <td><span class="owner-badge owner-fe">Front-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 10</div><div style="font-size:10px;color:#9ca3af">Friday</div></td>
+          <td><strong>Polish + ship 🚀</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Cross-browser QA (Chrome, Safari, Firefox)</div>
+            <div class="deliverable"><div class="d-dot"></div>Mobile responsive check (375px, 768px, 1280px breakpoints)</div>
+            <div class="deliverable"><div class="d-dot"></div>Supabase RLS audit — verify users cannot access other users' data</div>
+            <div class="deliverable"><div class="d-dot"></div>Production deploy to Vercel — custom domain configured</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 7: DEPENDENCIES -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">7</div>Dependency Map</div>
+    <div class="section-desc">Sequential dependencies that will block work if not resolved in order. Build foundation before UI — data model changes are costly to fix late.</div>
+
+    <div class="dep-list">
+      <div class="dep">
+        <div class="dep-from">Supabase project + schema</div>
+        <div class="dep-arrow">→ blocks →</div>
+        <div class="dep-to">Auth + all API routes</div>
+        <div class="dep-note">Must complete Day 1–2</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Auth working</div>
+        <div class="dep-arrow">→ blocks →</div>
+        <div class="dep-to">Onboarding user creation</div>
+        <div class="dep-note">Must complete Day 2</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Onboarding completes user profile</div>
+        <div class="dep-arrow">→ blocks →</div>
+        <div class="dep-to">First prediction calculation</div>
+        <div class="dep-note">Needs avg_cycle_length in users table</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Prediction engine API</div>
+        <div class="dep-arrow">→ blocks →</div>
+        <div class="dep-to">Dashboard (reads predictions table)</div>
+        <div class="dep-note">Dashboard is empty without prediction data</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Period logging POST endpoint</div>
+        <div class="dep-arrow">→ blocks →</div>
+        <div class="dep-to">Calendar colour-coding</div>
+        <div class="dep-note">Calendar reads from period_logs</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Period log triggers recalculation</div>
+        <div class="dep-arrow">→ blocks →</div>
+        <div class="dep-to">Dashboard reflects updated predictions</div>
+        <div class="dep-note">Must re-fetch predictions after each log</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 8: PHASES -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">8</div>Roadmap — Phase 1 → 2 → 3</div>
+    <div class="section-desc">Now / Next / Later. Phase 1 is the 2-week sprint. Phase 2 adds retention drivers and monetisation. Phase 3 adds the premium and social features.</div>
+
+    <div class="phases-row">
+      <div class="phase-card phase1">
+        <div class="phase-header">
+          <div class="phase-title" style="color:#be185d">Phase 1 — Now</div>
+          <div class="phase-timeline" style="background:#fce7f3;color:#be185d">Weeks 1–2</div>
+        </div>
+        <div class="phase-features">
+          <div class="pf"><div class="pf-dot" style="background:#db2777"></div>Email + Google authentication</div>
+          <div class="pf"><div class="pf-dot" style="background:#db2777"></div>3-screen onboarding</div>
+          <div class="pf"><div class="pf-dot" style="background:#db2777"></div>Cycle dashboard (hero, 7-day strip)</div>
+          <div class="pf"><div class="pf-dot" style="background:#db2777"></div>Period logging (start, end, flow)</div>
+          <div class="pf"><div class="pf-dot" style="background:#db2777"></div>Monthly calendar view + colour coding</div>
+          <div class="pf"><div class="pf-dot" style="background:#db2777"></div>Average-based prediction algorithm</div>
+          <div class="pf"><div class="pf-dot" style="background:#db2777"></div>Symptom logging — top 20 (stretch)</div>
+          <div class="pf"><div class="pf-dot" style="background:#db2777"></div>Profile settings + sign out</div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #fce7f3;font-size:11px;color:#be185d;font-weight:700">Goal: First user logs their period and sees a prediction</div>
+      </div>
+
+      <div class="phase-card phase2">
+        <div class="phase-header">
+          <div class="phase-title" style="color:#1d4ed8">Phase 2 — Next</div>
+          <div class="phase-timeline" style="background:#dbeafe;color:#1d4ed8">Weeks 3–6</div>
+        </div>
+        <div class="phase-features">
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Full symptom logging (80+ symptoms, 6 categories)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Full onboarding (7 screens + social proof)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Web push notifications (period, fertile, logging reminders)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Cycle length trend chart (Recharts)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>TTC mode: fertile window focus, OPK logging</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Paywall + Stripe subscription (monthly + annual)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Daily insights cards (content library, phase-gated)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>PWA manifest + offline support (service worker)</div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #dbeafe;font-size:11px;color:#1d4ed8;font-weight:700">Goal: First paid subscriber converts</div>
+      </div>
+
+      <div class="phase-card phase3">
+        <div class="phase-header">
+          <div class="phase-title" style="color:#16a34a">Phase 3 — Later</div>
+          <div class="phase-timeline" style="background:#dcfce7;color:#16a34a">Months 2–3</div>
+        </div>
+        <div class="phase-features">
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Pregnancy mode (week tracker, milestones, checklist)</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>AI health assistant (rule-based chatbot, top 10 flows)</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Partner mode (sharing code, read-only dashboard)</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Doctor's report PDF export (6-month summary)</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>BBT tracking + temperature chart overlay</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Improved predictions (ARIMA or LSTM via Python sidecar)</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Anonymous mode (Cloudflare OHTTP relay)</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Perimenopause mode</div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #dcfce7;font-size:11px;color:#16a34a;font-weight:700">Goal: Match Flo's core feature parity for web</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 9: RISKS -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">9</div>Key Risks &amp; Mitigations</div>
+    <div class="section-desc">Ranked by likelihood × impact for the 2-week window.</div>
+
+    <div class="risk-list">
+      <div class="risk">
+        <div><span class="risk-level risk-high">High</span></div>
+        <div>
+          <div class="risk-title">Scope creep on onboarding</div>
+          <div class="risk-desc">Onboarding easily expands from 3 screens to 10+. Each extra question delays dashboard development and prediction testing.</div>
+          <div class="risk-mit">→ Mitigate: Hard cap at 3 screens for MVP. Add lifestyle questions and social proof in Phase 2 onboarding update. Design the questions to be additive — they can slide in later without reworking the data model.</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-high">High</span></div>
+        <div>
+          <div class="risk-title">Calendar rendering complexity</div>
+          <div class="risk-desc">Building a monthly calendar grid that handles DST, different month lengths, and correct colour-coding is deceptively complex. Spans across predictions + period_logs tables.</div>
+          <div class="risk-mit">→ Mitigate: Use date-fns for all date arithmetic (not raw Date objects). Build a single <code>getDayMeta(date, predictions, periodLogs)</code> util function on Day 4 and test it in isolation before connecting to the UI.</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-med">Medium</span></div>
+        <div>
+          <div class="risk-title">Cold-start prediction accuracy</div>
+          <div class="risk-desc">First-time users with no period history get predictions based purely on the cycle length they enter during onboarding. This will be inaccurate for users with irregular cycles.</div>
+          <div class="risk-mit">→ Mitigate: Show "This is an estimate — accuracy improves after 3 logged cycles" on the dashboard until 3 cycles are logged. Use the entered cycle length as Cycle 1 baseline data point.</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-med">Medium</span></div>
+        <div>
+          <div class="risk-title">Supabase RLS misconfiguration</div>
+          <div class="risk-desc">Row Level Security is critical — if misconfigured, users could read other users' period data. This is a legal and reputational risk, not just a bug.</div>
+          <div class="risk-mit">→ Mitigate: Write RLS policies on Day 2 and test them explicitly with two test accounts. Add an RLS audit checklist to the Day 10 definition of done. Never disable RLS "just for now."</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-low">Low</span></div>
+        <div>
+          <div class="risk-title">Prediction engine not triggered on retroactive edits</div>
+          <div class="risk-desc">If a user edits a past period date, the predictions table must recalculate. Easy to forget this edge case when building the period log edit flow.</div>
+          <div class="risk-mit">→ Mitigate: Centralise prediction triggering in a single <code>recalculatePredictions(userId)</code> server function called by all period log mutations (create, update, delete). Never call the algorithm from the frontend.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 10: DEFINITION OF DONE -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">10</div>Definition of Done — MVP Launch</div>
+    <div class="section-desc">The MVP is shippable when every item below is checked. Do not move to Phase 2 until all are true.</div>
+
+    <div class="dod-grid">
+      <div class="dod-card">
+        <div class="dod-title">Core Functionality</div>
+        <div class="dod-item"><div class="dod-check">✓</div>New user can sign up with email or Google</div>
+        <div class="dod-item"><div class="dod-check">✓</div>Onboarding writes goal + cycle data to DB</div>
+        <div class="dod-item"><div class="dod-check">✓</div>Dashboard shows correct cycle day, phase, and next period date after onboarding</div>
+        <div class="dod-item"><div class="dod-check">✓</div>User can log period start + flow intensity</div>
+        <div class="dod-item"><div class="dod-check">✓</div>User can log period end</div>
+        <div class="dod-item"><div class="dod-check">✓</div>Predictions recalculate immediately after any period log</div>
+        <div class="dod-item"><div class="dod-check">✓</div>Calendar shows correct colours for period, fertile, ovulation, and low days</div>
+        <div class="dod-item"><div class="dod-check">✓</div>User can edit a past period date and predictions update</div>
+      </div>
+      <div class="dod-card">
+        <div class="dod-title">Quality &amp; Security</div>
+        <div class="dod-item"><div class="dod-check">✓</div>RLS verified: user A cannot read user B's period_logs or predictions</div>
+        <div class="dod-item"><div class="dod-check">✓</div>Prediction algorithm unit tested: next period, ovulation, fertile window</div>
+        <div class="dod-item"><div class="dod-check">✓</div>No console errors in Chrome, Safari, and Firefox</div>
+        <div class="dod-item"><div class="dod-check">✓</div>Responsive at 375px (mobile), 768px (tablet), 1280px (desktop)</div>
+        <div class="dod-item"><div class="dod-check">✓</div>All loading and error states implemented (no blank screens)</div>
+        <div class="dod-item"><div class="dod-check">✓</div>Signed-out users cannot access /home or /calendar</div>
+        <div class="dod-item"><div class="dod-check">✓</div>Deployed to production Vercel URL, not localhost</div>
+        <div class="dod-item"><div class="dod-check">✓</div>5 real end-to-end test runs completed by someone other than the builder</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

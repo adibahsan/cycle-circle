@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flow 02 — Dashboard &amp; Period Tracking · Flo Web Wireframes</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f1f3f5;padding:40px 32px;min-width:max-content}
+.page-header{margin-bottom:40px}
+.badge{display:inline-block;background:#be185d;color:#fff;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border-radius:100px;margin-bottom:10px}
+.page-title{font-size:26px;font-weight:800;color:#1a1a2e;margin-bottom:6px}
+.page-desc{font-size:13px;color:#6b7280;max-width:680px;line-height:1.6}
+.flow{display:flex;align-items:flex-start;gap:0}
+.sw{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:400px}
+.stepnum{width:26px;height:26px;border-radius:50%;background:#be185d;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.slabel{font-size:11px;font-weight:700;color:#374151;margin-bottom:8px;text-align:center;letter-spacing:.03em;text-transform:uppercase}
+.sdesc{font-size:10px;color:#9ca3af;margin-top:8px;text-align:center;max-width:340px;line-height:1.5}
+.browser{width:380px;background:#fff;border-radius:12px;border:1.5px solid #d1d5db;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.07)}
+.bchrome{background:#f3f4f6;border-bottom:1px solid #e5e7eb;padding:8px 14px;display:flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%}
+.dr{background:#fca5a5}.dy{background:#fcd34d}.dg{background:#86efac}
+.urlbar{flex:1;background:#fff;border:1px solid #e5e7eb;border-radius:5px;padding:3px 8px;font-size:10px;color:#9ca3af}
+.appnav{background:#fff;border-bottom:1px solid #f3f4f6;padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:44px}
+.logo{font-size:15px;font-weight:900;color:#db2777;letter-spacing:-.5px}
+.navlinks{display:flex;gap:16px}
+.nl{font-size:10px;color:#9ca3af;padding:4px 0;cursor:pointer}
+.nla{font-size:10px;color:#db2777;font-weight:700;border-bottom:2px solid #db2777;padding:4px 0}
+.avcircle{width:24px;height:24px;border-radius:50%;background:#f3f4f6;border:1px solid #e5e7eb}
+.content{min-height:460px;padding:20px 18px}
+.arrow{display:flex;align-items:center;padding:130px 10px 0;flex-shrink:0;color:#be185d;font-size:20px;font-weight:700}
+.box{background:#f3f4f6;border:1.5px dashed #d1d5db;border-radius:6px}
+.btn{background:#db2777;color:#fff;border-radius:8px;padding:10px 18px;font-size:12px;font-weight:700;display:block;text-align:center}
+.btn-out{border:1.5px solid #d1d5db;border-radius:8px;padding:10px 18px;font-size:12px;color:#6b7280;display:block;text-align:center}
+.inp{border:1.5px solid #e5e7eb;border-radius:8px;padding:9px 12px;font-size:12px;color:#9ca3af;background:#fff;width:100%}
+</style>
+</head>
+<body>
+<div class="page-header">
+  <div class="badge">Flow 02 · Dashboard &amp; Period Tracking</div>
+  <h1 class="page-title">Dashboard &amp; Period Tracking</h1>
+  <p class="page-desc">Core daily habit loop: view cycle status → log period → select flow intensity → predictions update. The home screen is the app's central nervous system.</p>
+</div>
+
+<div class="flow">
+
+  <!-- S1: Home Dashboard -->
+  <div class="sw">
+    <div class="stepnum">1</div>
+    <div class="slabel">Home Dashboard</div>
+    <div class="browser">
+      <div class="bchrome"><div class="dot dr"></div><div class="dot dy"></div><div class="dot dg"></div><div class="urlbar">app.flo.health/home</div></div>
+      <div class="appnav">
+        <div class="logo">flo</div>
+        <div class="navlinks">
+          <div class="nla">Home</div>
+          <div class="nl">Calendar</div>
+          <div class="nl">Insights</div>
+          <div class="nl">Community</div>
+        </div>
+        <div class="avcircle"></div>
+      </div>
+      <div class="content">
+        <!-- 7-day strip -->
+        <div style="display:flex;gap:4px;margin-bottom:20px">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+            <div style="font-size:9px;color:#9ca3af">MON</div>
+            <div style="width:32px;height:32px;border-radius:50%;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#db2777">3</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+            <div style="font-size:9px;color:#9ca3af">TUE</div>
+            <div style="width:32px;height:32px;border-radius:50%;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#db2777">4</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+            <div style="font-size:9px;color:#9ca3af">WED</div>
+            <div style="width:32px;height:32px;border-radius:50%;background:#db2777;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff">5</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+            <div style="font-size:9px;color:#9ca3af">THU</div>
+            <div style="width:32px;height:32px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:11px;color:#374151">6</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+            <div style="font-size:9px;color:#9ca3af">FRI</div>
+            <div style="width:32px;height:32px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:11px;color:#374151">7</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+            <div style="font-size:9px;color:#9ca3af">SAT</div>
+            <div style="width:32px;height:32px;border-radius:50%;background:#ccfbf1;display:flex;align-items:center;justify-content:center;font-size:11px;color:#0d9488">8</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+            <div style="font-size:9px;color:#9ca3af">SUN</div>
+            <div style="width:32px;height:32px;border-radius:50%;background:#ccfbf1;border:2px dashed #0d9488;display:flex;align-items:center;justify-content:center;font-size:11px;color:#0d9488">9</div>
+          </div>
+        </div>
+        <!-- Cycle legend -->
+        <div style="display:flex;gap:12px;margin-bottom:16px;justify-content:center">
+          <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:50%;background:#db2777"></div><span style="font-size:9px;color:#6b7280">Period</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:50%;background:#0d9488"></div><span style="font-size:9px;color:#6b7280">Fertile</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:50%;border:2px dashed #0d9488"></div><span style="font-size:9px;color:#6b7280">Ovulation</span></div>
+        </div>
+        <!-- Hero cycle circle -->
+        <div style="display:flex;justify-content:center;margin-bottom:20px">
+          <div style="width:160px;height:160px;border-radius:50%;border:6px solid #fce7f3;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;background:#fff">
+            <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Day</div>
+            <div style="font-size:48px;font-weight:900;color:#db2777;line-height:1">5</div>
+            <div style="font-size:11px;font-weight:600;color:#374151;margin-top:4px">Menstruation</div>
+            <div style="font-size:10px;color:#9ca3af;margin-top:2px">Period day 3</div>
+          </div>
+        </div>
+        <!-- Next period info -->
+        <div style="background:#fdf9ff;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">Next period</div><div style="font-size:14px;font-weight:800;color:#1a1a2e">Mar 30</div></div>
+          <div style="text-align:right"><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">Cycle length</div><div style="font-size:14px;font-weight:800;color:#1a1a2e">28 days</div></div>
+        </div>
+        <!-- Log period button -->
+        <div style="display:flex;gap:8px">
+          <div class="btn" style="flex:1">Log period</div>
+          <div style="width:44px;height:44px;border-radius:8px;background:#db2777;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;font-weight:700;flex-shrink:0">+</div>
+        </div>
+        <div style="font-size:10px;color:#9ca3af;text-align:center;margin-top:8px">+ button opens symptom logger from any screen</div>
+      </div>
+    </div>
+    <div class="sdesc">Central dashboard. Large cycle-day hero + 7-day strip + log CTA.</div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- S2: Calendar View -->
+  <div class="sw">
+    <div class="stepnum">2</div>
+    <div class="slabel">Calendar View</div>
+    <div class="browser">
+      <div class="bchrome"><div class="dot dr"></div><div class="dot dy"></div><div class="dot dg"></div><div class="urlbar">app.flo.health/calendar</div></div>
+      <div class="appnav">
+        <div class="logo">flo</div>
+        <div class="navlinks">
+          <div class="nl">Home</div>
+          <div class="nla">Calendar</div>
+          <div class="nl">Insights</div>
+          <div class="nl">Community</div>
+        </div>
+        <div class="avcircle"></div>
+      </div>
+      <div class="content">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-size:14px;font-weight:800;color:#1a1a2e">March 2026</div>
+          <div style="display:flex;gap:8px">
+            <div class="box" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#6b7280">‹</div>
+            <div class="box" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#6b7280">›</div>
+          </div>
+        </div>
+        <!-- Calendar grid header -->
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:6px">
+          <div style="font-size:9px;color:#9ca3af;text-align:center">M</div>
+          <div style="font-size:9px;color:#9ca3af;text-align:center">T</div>
+          <div style="font-size:9px;color:#9ca3af;text-align:center">W</div>
+          <div style="font-size:9px;color:#9ca3af;text-align:center">T</div>
+          <div style="font-size:9px;color:#9ca3af;text-align:center">F</div>
+          <div style="font-size:9px;color:#9ca3af;text-align:center">S</div>
+          <div style="font-size:9px;color:#9ca3af;text-align:center">S</div>
+        </div>
+        <!-- Calendar grid -->
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px">
+          <!-- Row 1 -->
+          <div></div>
+          <div style="height:34px;border-radius:6px;background:#fff;border:1px solid #f3f4f6;display:flex;align-items:center;justify-content:center;font-size:11px;color:#374151">1</div>
+          <div style="height:34px;border-radius:6px;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:11px;color:#db2777;font-weight:700">2</div>
+          <div style="height:34px;border-radius:6px;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:11px;color:#db2777;font-weight:700">3</div>
+          <div style="height:34px;border-radius:6px;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:11px;color:#db2777;font-weight:700">4</div>
+          <div style="height:34px;border-radius:6px;background:#db2777;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700">5</div>
+          <div style="height:34px;border-radius:6px;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:11px;color:#db2777;font-weight:700">6</div>
+          <!-- Row 2 -->
+          <div style="height:34px;border-radius:6px;background:#fff;border:1px solid #f3f4f6;display:flex;align-items:center;justify-content:center;font-size:11px;color:#374151">7</div>
+          <div style="height:34px;border-radius:6px;background:#ccfbf1;display:flex;align-items:center;justify-content:center;font-size:11px;color:#0d9488">8</div>
+          <div style="height:34px;border-radius:6px;background:#ccfbf1;border:2px dashed #0d9488;display:flex;align-items:center;justify-content:center;font-size:11px;color:#0d9488;font-weight:700">9</div>
+          <div style="height:34px;border-radius:6px;background:#ccfbf1;display:flex;align-items:center;justify-content:center;font-size:11px;color:#0d9488">10</div>
+          <div style="height:34px;border-radius:6px;background:#ccfbf1;display:flex;align-items:center;justify-content:center;font-size:11px;color:#0d9488">11</div>
+          <div style="height:34px;border-radius:6px;background:#fff;border:1px solid #f3f4f6;display:flex;align-items:center;justify-content:center;font-size:11px;color:#374151">12</div>
+          <div style="height:34px;border-radius:6px;background:#fff;border:1px solid #f3f4f6;display:flex;align-items:center;justify-content:center;font-size:11px;color:#374151">13</div>
+          <!-- Row 3 -->
+          <div style="height:34px;border-radius:6px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:11px;color:#94a3b8">14</div>
+          <div style="height:34px;border-radius:6px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:11px;color:#94a3b8">15</div>
+          <div style="height:34px;border-radius:6px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:11px;color:#94a3b8">16</div>
+          <div style="height:34px;border-radius:6px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:11px;color:#94a3b8">17</div>
+          <div style="height:34px;border-radius:6px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:11px;color:#94a3b8">18</div>
+          <div style="height:34px;border-radius:6px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:11px;color:#94a3b8">19</div>
+          <div style="height:34px;border-radius:6px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:11px;color:#94a3b8">20</div>
+        </div>
+        <!-- Legend -->
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;border-radius:3px;background:#fce7f3;border:1px solid #db2777"></div><span style="font-size:9px;color:#6b7280">Period</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;border-radius:3px;background:#ccfbf1"></div><span style="font-size:9px;color:#6b7280">Fertile</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;border-radius:3px;border:2px dashed #0d9488"></div><span style="font-size:9px;color:#6b7280">Ovulation</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;border-radius:3px;background:#1e293b"></div><span style="font-size:9px;color:#6b7280">Low fertility</span></div>
+        </div>
+        <div style="font-size:10px;color:#6b7280;background:#f3f4f6;border-radius:8px;padding:10px 12px;line-height:1.5">
+          Tap any day to view logged symptoms · Tap period days to edit · Retroactive editing supported
+        </div>
+      </div>
+    </div>
+    <div class="sdesc">Full month view. Tap any day to edit or view symptoms logged that day.</div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- S3: Log Period Modal -->
+  <div class="sw">
+    <div class="stepnum">3</div>
+    <div class="slabel">Log Period Modal</div>
+    <div class="browser">
+      <div class="bchrome"><div class="dot dr"></div><div class="dot dy"></div><div class="dot dg"></div><div class="urlbar">app.flo.health/home</div></div>
+      <div class="appnav">
+        <div class="logo">flo</div>
+        <div class="navlinks"><div class="nla">Home</div><div class="nl">Calendar</div><div class="nl">Insights</div><div class="nl">Community</div></div>
+        <div class="avcircle"></div>
+      </div>
+      <div class="content" style="position:relative">
+        <!-- Dimmed background -->
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,.35);z-index:1;border-radius:0"></div>
+        <!-- Modal -->
+        <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;padding:20px 18px;z-index:2">
+          <div style="width:40px;height:4px;background:#e5e7eb;border-radius:2px;margin:0 auto 16px"></div>
+          <div style="font-size:15px;font-weight:800;color:#1a1a2e;margin-bottom:4px">Log your period</div>
+          <div style="font-size:11px;color:#6b7280;margin-bottom:20px">What would you like to do?</div>
+
+          <!-- Period start/end toggle -->
+          <div style="display:flex;gap:8px;margin-bottom:20px">
+            <div style="flex:1;border:2px solid #db2777;border-radius:10px;padding:14px;text-align:center;cursor:pointer">
+              <div style="font-size:22px;margin-bottom:4px">🔴</div>
+              <div style="font-size:12px;font-weight:700;color:#db2777">Period started</div>
+              <div style="font-size:10px;color:#9ca3af;margin-top:2px">Mark today as day 1</div>
+            </div>
+            <div style="flex:1;border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;text-align:center;cursor:pointer">
+              <div style="font-size:22px;margin-bottom:4px">✓</div>
+              <div style="font-size:12px;font-weight:700;color:#374151">Period ended</div>
+              <div style="font-size:10px;color:#9ca3af;margin-top:2px">Mark period as over</div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div style="font-size:11px;color:#6b7280">Date</div>
+            <div style="font-size:12px;font-weight:700;color:#1a1a2e">Today — Mar 5, 2026</div>
+          </div>
+
+          <div class="btn">Confirm</div>
+          <div style="margin-top:10px;text-align:center;font-size:11px;color:#9ca3af">Log a different date →</div>
+        </div>
+      </div>
+    </div>
+    <div class="sdesc">Bottom sheet modal. Tapping "Period started" advances to flow intensity.</div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- S4: Flow Intensity -->
+  <div class="sw">
+    <div class="stepnum">4</div>
+    <div class="slabel">Flow Intensity</div>
+    <div class="browser">
+      <div class="bchrome"><div class="dot dr"></div><div class="dot dy"></div><div class="dot dg"></div><div class="urlbar">app.flo.health/home</div></div>
+      <div class="appnav">
+        <div class="logo">flo</div>
+        <div class="navlinks"><div class="nla">Home</div><div class="nl">Calendar</div><div class="nl">Insights</div><div class="nl">Community</div></div>
+        <div class="avcircle"></div>
+      </div>
+      <div class="content" style="position:relative">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,.35);z-index:1"></div>
+        <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;padding:20px 18px;z-index:2">
+          <div style="width:40px;height:4px;background:#e5e7eb;border-radius:2px;margin:0 auto 16px"></div>
+          <div style="font-size:15px;font-weight:800;color:#1a1a2e;margin-bottom:4px">How heavy is your flow?</div>
+          <div style="font-size:11px;color:#6b7280;margin-bottom:20px">This helps improve your predictions</div>
+          <div style="display:flex;gap:8px;margin-bottom:20px">
+            <div style="flex:1;border:1.5px solid #e5e7eb;border-radius:10px;padding:12px;text-align:center;cursor:pointer">
+              <div style="font-size:20px;margin-bottom:6px">🩸</div>
+              <div style="font-size:11px;font-weight:700;color:#374151">Light</div>
+            </div>
+            <div style="flex:1;border:2px solid #db2777;border-radius:10px;padding:12px;text-align:center;cursor:pointer;background:#fdf2f8">
+              <div style="font-size:20px;margin-bottom:6px">🩸🩸</div>
+              <div style="font-size:11px;font-weight:700;color:#db2777">Medium</div>
+            </div>
+            <div style="flex:1;border:1.5px solid #e5e7eb;border-radius:10px;padding:12px;text-align:center;cursor:pointer">
+              <div style="font-size:20px;margin-bottom:6px">🩸🩸🩸</div>
+              <div style="font-size:11px;font-weight:700;color:#374151">Heavy</div>
+            </div>
+          </div>
+          <div class="btn" style="margin-bottom:10px">Save period log</div>
+          <div style="font-size:10px;color:#9ca3af;text-align:center">Skip flow intensity (not recommended)</div>
+        </div>
+      </div>
+    </div>
+    <div class="sdesc">Flow intensity feeds the prediction engine alongside cycle history.</div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- S5: Updated predictions -->
+  <div class="sw">
+    <div class="stepnum">5</div>
+    <div class="slabel">Updated Predictions</div>
+    <div class="browser">
+      <div class="bchrome"><div class="dot dr"></div><div class="dot dy"></div><div class="dot dg"></div><div class="urlbar">app.flo.health/home</div></div>
+      <div class="appnav">
+        <div class="logo">flo</div>
+        <div class="navlinks"><div class="nla">Home</div><div class="nl">Calendar</div><div class="nl">Insights</div><div class="nl">Community</div></div>
+        <div class="avcircle"></div>
+      </div>
+      <div class="content">
+        <!-- Toast notification -->
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 12px;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+          <span style="color:#16a34a;font-size:14px">✓</span>
+          <div><div style="font-size:11px;font-weight:700;color:#16a34a">Period logged!</div><div style="font-size:10px;color:#6b7280">Predictions updated · Day 1 of your period</div></div>
+        </div>
+        <!-- Refreshed 7-day strip showing updated state -->
+        <div style="display:flex;gap:4px;margin-bottom:18px">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="font-size:9px;color:#9ca3af">MON</div><div style="width:32px;height:32px;border-radius:50%;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:10px;color:#db2777;font-weight:700">3</div></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="font-size:9px;color:#9ca3af">TUE</div><div style="width:32px;height:32px;border-radius:50%;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:10px;color:#db2777;font-weight:700">4</div></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="font-size:9px;color:#9ca3af">WED</div><div style="width:32px;height:32px;border-radius:50%;background:#db2777;border:2px solid #9f1239;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700">5</div></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="font-size:9px;color:#9ca3af">THU</div><div style="width:32px;height:32px;border-radius:50%;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:10px;color:#db2777;font-weight:700">6</div></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="font-size:9px;color:#9ca3af">FRI</div><div style="width:32px;height:32px;border-radius:50%;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:10px;color:#db2777;font-weight:700">7</div></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="font-size:9px;color:#9ca3af">SAT</div><div style="width:32px;height:32px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:10px;color:#374151">8</div></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="font-size:9px;color:#9ca3af">SUN</div><div style="width:32px;height:32px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:10px;color:#374151">9</div></div>
+        </div>
+        <!-- Updated hero -->
+        <div style="display:flex;justify-content:center;margin-bottom:16px">
+          <div style="width:150px;height:150px;border-radius:50%;border:6px solid #fce7f3;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff">
+            <div style="font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Day</div>
+            <div style="font-size:44px;font-weight:900;color:#db2777;line-height:1">1</div>
+            <div style="font-size:10px;font-weight:600;color:#374151;margin-top:4px">Menstruation</div>
+          </div>
+        </div>
+        <!-- Updated next period -->
+        <div style="background:#f3f4f6;border-radius:10px;padding:12px 16px;margin-bottom:14px">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:4px">Next period predicted</div>
+          <div style="font-size:15px;font-weight:800;color:#1a1a2e">Apr 2, 2026</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px">Fertile window: Mar 19 — 23 · Ovulation: Mar 22</div>
+        </div>
+        <!-- Daily insight card -->
+        <div style="background:#fdf2f8;border-left:3px solid #db2777;border-radius:0 8px 8px 0;padding:10px 12px">
+          <div style="font-size:10px;font-weight:700;color:#db2777;margin-bottom:3px">Today's insight</div>
+          <div style="font-size:10px;color:#374151;line-height:1.5">Cramps during your period are caused by prostaglandins triggering uterine contractions...</div>
+          <div style="font-size:10px;color:#db2777;margin-top:4px">🔒 Full insight — Premium</div>
+        </div>
+      </div>
+    </div>
+    <div class="sdesc">Dashboard refreshes with new prediction + personalized daily insight card.</div>
+  </div>
+
+</div>
+</body>
+</html>
