@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flo Health — Comprehensive Product Research Guide</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f1f3f5;padding:48px 40px;min-height:100vh;color:#1a1a2e}
+h1{font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
+.sub{font-size:14px;color:#6b7280;margin-bottom:16px;line-height:1.7;max-width:720px}
+.stats-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:40px}
+.stat-chip{background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px 18px;font-size:13px;font-weight:700;color:#1a1a2e;white-space:nowrap}
+.stat-chip span{color:#be185d;font-size:15px}
+
+/* TOC */
+.toc{background:#fff;border:1.5px solid #e5e7eb;border-radius:16px;padding:24px 28px;margin-bottom:40px;max-width:680px}
+.toc h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#9ca3af;margin-bottom:14px}
+.toc ol{padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.toc li a{font-size:14px;color:#4f46e5;text-decoration:none;font-weight:600}
+.toc li a:hover{text-decoration:underline}
+
+/* Section cards */
+.section{background:#fff;border:1.5px solid #e5e7eb;border-radius:16px;padding:32px;margin-bottom:28px}
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+h2.section-title{font-size:22px;font-weight:900;color:#1a1a2e;margin-bottom:20px}
+h3{font-size:16px;font-weight:800;color:#1a1a2e;margin:24px 0 10px}
+p{font-size:14px;color:#374151;line-height:1.75;margin-bottom:12px}
+p:last-child{margin-bottom:0}
+ul,ol{padding-left:20px;margin-bottom:12px;display:flex;flex-direction:column;gap:6px}
+li{font-size:14px;color:#374151;line-height:1.6}
+strong{color:#1a1a2e}
+
+/* Highlight box */
+.highlight{background:#fce7f3;border-left:4px solid #be185d;border-radius:0 10px 10px 0;padding:14px 18px;margin:16px 0;font-size:14px;color:#831843;line-height:1.65}
+
+/* Data table */
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}
+thead{background:#f9fafb}
+th{text-align:left;padding:10px 14px;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb}
+td{padding:10px 14px;border-bottom:1px solid #f3f4f6;color:#374151}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafafa}
+
+/* Competitor cards */
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin:16px 0}
+.comp-card{background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;padding:18px}
+.comp-name{font-size:14px;font-weight:800;margin-bottom:4px}
+.comp-mau{font-size:12px;color:#6b7280;margin-bottom:10px}
+.comp-pros{font-size:12px;color:#047857;margin-bottom:6px;font-weight:600}
+.comp-cons{font-size:12px;color:#dc2626;font-weight:600}
+
+/* Phase cards */
+.phase-grid{display:flex;flex-direction:column;gap:14px;margin:16px 0}
+.phase-card{border-radius:12px;padding:18px 20px;border:1.5px solid transparent}
+.phase-1{background:#fce7f3;border-color:#f9a8d4}
+.phase-2{background:#f0fdfa;border-color:#99f6e4}
+.phase-3{background:#eef2ff;border-color:#c7d2fe}
+.phase-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.phase-1 .phase-label{color:#be185d}
+.phase-2 .phase-label{color:#0d9488}
+.phase-3 .phase-label{color:#4f46e5}
+.phase-title{font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:6px}
+.phase-items{font-size:13px;color:#374151;line-height:1.7}
+
+/* Persona cards */
+.persona-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin:16px 0}
+.persona-card{background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;padding:18px}
+.persona-emoji{font-size:28px;margin-bottom:8px}
+.persona-name{font-size:14px;font-weight:800;color:#1a1a2e;margin-bottom:2px}
+.persona-age{font-size:12px;color:#6b7280;margin-bottom:10px}
+.persona-desc{font-size:13px;color:#374151;line-height:1.6}
+
+/* Tech stack */
+.stack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:16px 0}
+.stack-item{background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:10px;padding:14px}
+.stack-layer{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:4px}
+.stack-tech{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:4px}
+.stack-note{font-size:12px;color:#6b7280;line-height:1.5}
+
+/* Bottom nav */
+.bottom-links{margin-top:48px;padding-top:32px;border-top:1px solid #e5e7eb}
+.bottom-label{font-size:12px;color:#9ca3af;margin-bottom:16px;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.link-row{display:flex;gap:12px;flex-wrap:wrap}
+.link-row a{font-size:12px;color:#4f46e5;text-decoration:none;background:#eef2ff;padding:6px 12px;border-radius:6px}
+</style>
+</head>
+<body>
+
+<h1>Flo Health: Comprehensive Product Research</h1>
+<p class="sub">Deep-dive product research for a web app clone — covering features, UX patterns, business model, competitive landscape, technical architecture, and PRD-ready MVP scoping.</p>
+
+<div class="stats-row">
+  <div class="stat-chip"><span>430M+</span> Total Downloads</div>
+  <div class="stat-chip"><span>75M+</span> Monthly Active Users</div>
+  <div class="stat-chip"><span>$200M+</span> Annual Gross Bookings</div>
+  <div class="stat-chip"><span>~6M</span> Paid Subscribers</div>
+  <div class="stat-chip"><span>$1B+</span> Unicorn Valuation (2024)</div>
+  <div class="stat-chip"><span>#1</span> Femtech App Globally</div>
+</div>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#s1">Core Features: The Complete Product Anatomy</a></li>
+    <li><a href="#s2">UX Patterns, Onboarding & Design System</a></li>
+    <li><a href="#s3">Business Model & Monetization</a></li>
+    <li><a href="#s4">Competitive Landscape</a></li>
+    <li><a href="#s5">Technical Architecture & AI/ML</a></li>
+    <li><a href="#s6">PRD Prep: MVP Scope, Personas & User Stories</a></li>
+  </ol>
+</div>
+
+<!-- SECTION 1 -->
+<div class="section" id="s1">
+  <div class="section-label" style="color:#be185d">Section 01</div>
+  <h2 class="section-title">Core Features: The Complete Product Anatomy</h2>
+
+  <p>Flo functions as a reproductive health "super app" spanning the entire lifecycle — menstruation, trying to conceive (TTC), pregnancy, postpartum, and perimenopause. Each mode fundamentally reshapes the UI, content, and predictions.</p>
+
+  <h3>Period Tracking & Cycle Predictions</h3>
+  <p>The home screen centers on a <strong>large cycle-day counter</strong> inside a circular hero element, showing current cycle phase (follicular, luteal, etc.) and days until the next predicted period. A horizontal 7-day calendar strip sits above it, color-coded: <strong>red/pink for period days, teal for fertile window, teal-dotted for ovulation day</strong>, and dark for low-fertility days. Users tap "Log Period" to mark start/end, with flow intensity options (light, medium, heavy). The calendar supports retroactive editing.</p>
+  <p>The prediction engine uses <strong>proprietary neural networks</strong> trained on data from hundreds of millions of users. Inputs include age, past cycle history, logged symptoms, BBT data, ovulation test results, and lifestyle factors. Flo recommends logging at least 3 prior cycles for initial accuracy, with 12 months of data yielding optimal predictions.</p>
+  <div class="highlight">The system achieves a <strong>54.2% improvement</strong> over calendar-based methods for irregular cycles and a mean absolute error of <strong>1.29 days</strong> with consistent symptom logging.</div>
+
+  <h3>Ovulation & Fertility Tracking</h3>
+  <p>The fertile window is visualized on the calendar with teal highlighting. Ovulation day is marked with "High chance of getting pregnant." Users in TTC mode get additional tools: <strong>BBT logging</strong> (manual daily entry that feeds directly into the prediction algorithm), <strong>ovulation test (LH) logging</strong> with positive/negative results — a positive OPK test shifts the predicted ovulation to the next day — and daily conception tips from medical experts.</p>
+
+  <h3>Pregnancy Mode</h3>
+  <p>Switching to pregnancy mode transforms the entire UI — the color scheme shifts to <strong>yellow/warm tones</strong>, the hero display shows gestational age by week, and a <strong>3D fetus visualization</strong> appears. Features include week-by-week developmental milestones, body change tracking, weekly checklists (prenatal appointments, childbirth classes), pregnancy-specific symptom logging (nausea, lochia), safe food guides, exercise recommendations, and multiple calculators (due date, hCG, IVF/FET due date, ultrasound-based dating). Miscarriage/abortion can be logged from day 29 onward.</p>
+
+  <h3>Symptom Logging System</h3>
+  <p>Flo offers <strong>80+ trackable symptoms across 16 categories</strong>, logged via a floating "+" button. The UX is <strong>tap-based icon selection</strong> — not text-heavy — enabling 2–3 taps to log any symptom.</p>
+  <ul>
+    <li><strong>Physical:</strong> cramps, headache, breast tenderness, bloating, back pain, fatigue, nausea, acne</li>
+    <li><strong>Mood/Emotional:</strong> calm, sad, happy, anxious, mood swings, irritable, energetic, depressed</li>
+    <li><strong>Sex & Libido:</strong> high/low sex drive, protected/unprotected sex, masturbation, orgasm</li>
+    <li><strong>Vaginal Discharge:</strong> sticky, creamy, watery, egg white, spotting, atypical</li>
+    <li><strong>Lifestyle:</strong> sleep quality/duration, water intake, exercise type/intensity, weight, diet, stress, travel</li>
+    <li><strong>Medical:</strong> contraception intake (pill, ring, patch, injection, IUD, implant), BBT, OPK results, pregnancy test results</li>
+  </ul>
+  <p>Users can customize which categories appear on their logging screen. Each symptom is logged once per day but is editable. Logged data feeds both the prediction engine and content personalization.</p>
+
+  <h3>AI Health Assistant (Ask Flo)</h3>
+  <p>The assistant lives in a <strong>chat-bubble conversational interface</strong>. Pre-2025, it ran on <strong>rule-based scripted conversation trees</strong> designed by conversation designers with medical/legal review. Starting in 2025, Flo is transitioning to <strong>generative AI using fine-tuned LLMs via Databricks Mosaic AI</strong> for context-aware, personalized responses. Topics span late periods, PMS/PMDD, discharge explanations, fertility guidance, disorder signs, skin/fitness/mood by cycle phase, and general reproductive health Q&A. Free users get limited access; Premium unlocks unlimited interactions.</p>
+
+  <h3>Community: Secret Chats</h3>
+  <p>An anonymous forum with <strong>7M monthly users</strong> and 1,000+ threads. Users are assigned random avatars (no photos required). <strong>All posts are pre-moderated</strong> by a dedicated human team before appearing. Content is organized by categories (PCOS, pregnancy symptoms, sex, relationships, parenting, perimenopause) with feed personalization based on engagement patterns. A critical safety feature: <strong>under-18 and over-18 users see completely different content with no cross-interaction</strong>. An "Ask an Expert" archive provides doctor-verified Q&A.</p>
+
+  <h3>Health Reports & Symptom Checker</h3>
+  <p>Premium users can generate a <strong>Doctor's Report</strong> — a 6-month summary of cycle lengths, symptom patterns, and frequency charts, exportable as PDF. The <strong>Symptom Checker</strong> (not available in UK/EU) runs chatbot-style self-assessments for PCOS, endometriosis, uterine fibroids, and perimenopause, producing match-percentage reports designed for physician follow-up. These are built on clinical guidelines from Monash, ESHRE, and AAFP.</p>
+
+  <h3>Flo for Partners</h3>
+  <p>Launched October 2023 (most-requested feature of 2022), now <strong>1M+ MAU</strong>. The primary user generates a sharing code; the partner installs Flo and enters it. Partners get <strong>read-only access</strong> to the cycle calendar, tailored daily insights about how their partner might be feeling, symptom explanations in accessible language, and educational content. Partners cannot see personally logged symptoms or edit any data. In pregnancy mode, partners receive weekly baby development updates. The primary user can revoke access instantly.</p>
+
+  <h3>Anonymous Mode</h3>
+  <p>Launched September 2022 (fast-tracked after Roe v. Wade), this feature <strong>decouples health data from all personal identifiers</strong> — name, email, Google/Apple account ID, payment info, IP address, and device advertising ID. It uses <strong>Cloudflare's Oblivious HTTP (OHTTP) protocol</strong> ensuring no single party has both the user's identity and their health activity. Post-quantum cryptography was added in 2023. The technology was open-sourced on GitHub. Flo holds <strong>dual ISO certification</strong> (ISO 27001 + ISO 27701) — the only period tracker with both. Anonymous Mode won TIME Best Inventions 2023 and the IAPP Privacy Innovation Award.</p>
+</div>
+
+<!-- SECTION 2 -->
+<div class="section" id="s2">
+  <div class="section-label" style="color:#7c3aed">Section 02</div>
+  <h2 class="section-title">UX Patterns, Onboarding & Design System</h2>
+
+  <h3>The Onboarding Engine</h3>
+  <p>Flo's onboarding is among the longest in consumer apps: <strong>~70 screens in the primary flow, up to 400 across all branches</strong>, taking approximately 7 minutes. It's built on a <strong>server-driven architecture via Contentful CMS</strong>, enabling real-time updates without app releases. Flo tests ~5 hypotheses per 2-week sprint on onboarding alone.</p>
+  <p>The flow follows a deliberate psychological arc:</p>
+  <ol>
+    <li><strong>Trust-building first</strong> — screens emphasizing "Your data is protected" and "We work with 100+ medical experts"</li>
+    <li><strong>Goal selection</strong> (the primary fork) — Track my period / Try to conceive / Track pregnancy / Perimenopause</li>
+    <li><strong>Personal data collection</strong> — date of birth, last period date, cycle length, period length, height, weight</li>
+    <li><strong>Lifestyle/health questions</strong> — diet, exercise, sleep, previous pregnancies, contraception, health concerns, content interests</li>
+    <li><strong>Signup</strong> — positioned <em>after</em> data collection (shows value before requiring commitment)</li>
+    <li><strong>Paywall</strong> — with 14-day free trial toggle</li>
+  </ol>
+
+  <div class="highlight">Two critical UX patterns drive conversion: <strong>reassurance on every answer</strong> (no response makes users feel abnormal) and <strong>15+ social proof statistics</strong> interspersed throughout. One onboarding experiment alone increased trial conversions <strong>8×</strong>.</div>
+
+  <p>If the user declines the paywall, a <strong>"gift box" appears with a heavily discounted annual plan</strong> (77% off framing). If rejected again, a second offer with a 7-day trial at reduced price appears.</p>
+
+  <h3>Navigation & Information Architecture</h3>
+  <p>The bottom navigation has four primary tabs:</p>
+  <ul>
+    <li><strong>Home/Today</strong> — cycle dashboard, daily content, logging</li>
+    <li><strong>Insights</strong> — articles, stories, video courses, educational content</li>
+    <li><strong>Secret Chats</strong> — community forums</li>
+    <li><strong>Calendar</strong> — full month view with color-coded markers</li>
+  </ul>
+  <p>A <strong>profile avatar</strong> (top-left) opens the settings menu with goal switching, cycle/ovulation settings, reminders configuration, graphs and reports, and account/privacy management. The "+" floating action button provides quick symptom logging from any screen.</p>
+
+  <h3>Visual Design System</h3>
+  <p>The design is built around <strong>mode-dependent color palettes</strong> — the entire UI shifts based on the user's goal. Period tracking uses pink/magenta primaries with teal for fertility elements. Pregnancy mode shifts to yellow/warm tones. The design feels <strong>calming, friendly, and empowering — not clinical</strong>. Custom iconography for all 80+ symptoms uses illustrative visuals. Typography uses clean sans-serif with aggressive hierarchy: the cycle day number is the largest element on screen.</p>
+  <p>The tone of voice follows three pillars: <strong>Head</strong> (clear, straightforward), <strong>Heart</strong> (warm, inclusive), <strong>Hands</strong> (actionable, tangible benefits).</p>
+
+  <h3>Notification Strategy</h3>
+  <p>Notifications run on an <strong>infinite loop system with rate limiting</strong>. Types include period start predictions, period logging prompts, fertile window alerts, ovulation day markers, contraceptive pill reminders (customizable time), water/sleep reminders, symptom logging nudges, delay notifications, content engagement prompts, and Secret Chats reply alerts. The tone is described as <strong>"quirky"</strong> — brand personality delivered through push notifications. All notification types have individual toggles.</p>
+</div>
+
+<!-- SECTION 3 -->
+<div class="section" id="s3">
+  <div class="section-label" style="color:#d97706">Section 03</div>
+  <h2 class="section-title">Business Model & Monetization</h2>
+
+  <h3>Freemium Structure</h3>
+  <p><strong>Free tier</strong> includes: period and ovulation predictions, basic symptom tracking (all 80+ symptoms), cycle history and calendar, Anonymous Mode, basic Partner Mode, Secret Chats access, limited Health Assistant interactions, and basic daily insights.</p>
+  <p><strong>Premium</strong> adds: detailed cycle pattern analysis, daily personalized insights by phase, forward-looking symptom predictions, unlimited Health Assistant, Symptom Checker (PCOS/endometriosis/fibroids), Doctor's Report export, expert-led video courses, full educational content library, full Partner features, in-depth pregnancy tracking, and Perimenopause Score tools.</p>
+
+  <h3>Pricing</h3>
+  <table>
+    <thead>
+      <tr><th>Plan</th><th>US Price</th><th>Per Month</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Monthly</td><td>$9.99/mo</td><td>$9.99</td></tr>
+      <tr><td>3 Months</td><td>$19.99</td><td>$6.66</td></tr>
+      <tr><td>6 Months</td><td>$39.99</td><td>$6.67</td></tr>
+      <tr><td>Annual</td><td>$49.99</td><td style="color:#be185d;font-weight:700">$4.17 ★ Best Deal</td></tr>
+    </tbody>
+  </table>
+  <p>Flo uses <strong>dynamic regional pricing</strong>. Since October 2024, Flo Premium is <strong>FSA/HSA eligible</strong> in the US — a powerful conversion lever that legitimizes the app as a healthcare expense.</p>
+
+  <h3>Growth Metrics</h3>
+  <table>
+    <thead>
+      <tr><th>Metric</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Total Downloads</td><td>430M+</td></tr>
+      <tr><td>Monthly Active Users</td><td>75M+ (mid-2025)</td></tr>
+      <tr><td>Paid Subscribers</td><td>~6M (late 2025)</td></tr>
+      <tr><td>Gross Bookings</td><td>$200M+ (2024)</td></tr>
+      <tr><td>Monthly Subscription Revenue</td><td>~$9M</td></tr>
+      <tr><td>Monthly Downloads</td><td>~2M</td></tr>
+      <tr><td>MAU Retention (1+ year)</td><td>60% of MAUs</td></tr>
+    </tbody>
+  </table>
+
+  <p>MAU growth: <strong>43M (2021) → 48M (2022) → 50M (2023) → 62M (Jan 2024) → 70M (mid-2024) → 75M+ (mid-2025)</strong>. Flo reached unicorn status ($1B+ valuation) in July 2024 after a $200M Series C led by General Atlantic — the <strong>first European femtech unicorn</strong>. Total funding: ~$275M.</p>
+
+  <h3>Conversion Mechanics</h3>
+  <p>Flo runs <strong>300+ experiments simultaneously and 400+ per quarter</strong> using a server-driven onboarding system.</p>
+  <ul>
+    <li><strong>Post-onboarding paywall</strong> appears after ~20+ personalization questions, creating psychological sunk cost</li>
+    <li><strong>Multiple in-app paywall touchpoints</strong>: locked insights, articles, health reports, and Health Assistant chats</li>
+    <li><strong>Pricing anchoring</strong>: high monthly price ($9.99) makes annual ($4.17/mo) appear as a bargain</li>
+    <li><strong>Trial rejection cascade</strong>: 14-day trial → discounted annual offer → lower-price 7-day trial</li>
+    <li><strong>Social proof on paywall</strong>: "6.6 million members already signed up for Premium"</li>
+  </ul>
+
+  <h3>Revenue Philosophy</h3>
+  <p>Subscriptions are the <strong>sole stated revenue source</strong> — "Our only source of revenue is the money you pay for your subscription." Flo is explicitly ad-free. After the 2021 FTC settlement for sharing user health data with Facebook and Google analytics (2016–2019), Flo completely ceased third-party data sharing. Emerging streams include <strong>Flo for Business</strong> (employer-sponsored Premium) and <strong>healthcare provider partnerships</strong> via med.flo.health.</p>
+</div>
+
+<!-- SECTION 4 -->
+<div class="section" id="s4">
+  <div class="section-label" style="color:#0d9488">Section 04</div>
+  <h2 class="section-title">Competitive Landscape</h2>
+
+  <p>Flo dominates a <strong>$1.7–3.5B menstrual health apps market</strong> projected to reach $5–7B by 2030. Its closest competitors each have significant gaps:</p>
+
+  <div class="comp-grid">
+    <div class="comp-card">
+      <div class="comp-name">Clue</div>
+      <div class="comp-mau">~10M MAU · ~$600K/mo revenue</div>
+      <div class="comp-pros">✓ Strong scientific credibility · CE-marked medical device</div>
+      <div class="comp-cons">✗ No pregnancy mode · No community · No AI chatbot · No partner sharing</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-name">Natural Cycles</div>
+      <div class="comp-mau">FDA-cleared contraceptive · ~$950K/mo revenue</div>
+      <div class="comp-pros">✓ Only FDA-cleared digital contraceptive · Strong clinical credibility</div>
+      <div class="comp-cons">✗ Requires daily BBT (high friction) · ~$100/year · Narrow use case</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-name">Ovia Health</div>
+      <div class="comp-mau">B2B employer-sponsored model</div>
+      <div class="comp-pros">✓ Free to users via employers · Comprehensive fertility coverage</div>
+      <div class="comp-cons">✗ Split across multiple apps · Weak consumer brand · Employer-dependent</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-name">Apple Health Cycle</div>
+      <div class="comp-mau">Built into iOS · Free</div>
+      <div class="comp-pros">✓ Best-in-class privacy (on-device, E2E encrypted) · Zero cost</div>
+      <div class="comp-cons">✗ Basic tracking only · No community · No AI · No pregnancy mode</div>
+    </div>
+  </div>
+
+  <h3>Flo's Competitive Moats</h3>
+  <ul>
+    <li><strong>Scale:</strong> Largest training dataset = best predictions (network effect)</li>
+    <li><strong>Lifecycle comprehensiveness:</strong> Menstruation through menopause in one app</li>
+    <li><strong>Content depth:</strong> 120+ medical experts review all content</li>
+    <li><strong>Community:</strong> 7M monthly Secret Chats users create switching costs</li>
+    <li><strong>Privacy innovation:</strong> Anonymous Mode with OHTTP + post-quantum crypto</li>
+  </ul>
+
+  <div class="highlight"><strong>Critical insight for a web clone:</strong> No major competitor offers a web-based core tracking experience. Flo.health is a marketing/content site, not a web app. A web-based cycle tracking experience fills a <strong>genuine market gap</strong> — valuable for desktop-preferring users, workplace wellness integrations, clinician dashboards, and users in regions with browser access but limited smartphone capability.</div>
+</div>
+
+<!-- SECTION 5 -->
+<div class="section" id="s5">
+  <div class="section-label" style="color:#4f46e5">Section 05</div>
+  <h2 class="section-title">Technical Architecture & AI/ML</h2>
+
+  <h3>Known Tech Stack</h3>
+  <p>Flo is <strong>native mobile</strong> — Swift for iOS, Kotlin for Android — a deliberate choice over cross-platform for performance. The backend and infrastructure:</p>
+
+  <div class="stack-grid">
+    <div class="stack-item">
+      <div class="stack-layer">Backend</div>
+      <div class="stack-tech">Python on AWS</div>
+      <div class="stack-note">Amazon ECS for containers, PostgreSQL for data</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-layer">ML / AI</div>
+      <div class="stack-tech">SageMaker + Bedrock</div>
+      <div class="stack-note">SageMaker for model training, Bedrock for generative AI content review</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-layer">Content CMS</div>
+      <div class="stack-tech">Contentful</div>
+      <div class="stack-note">Headless CMS with Phrase TMS for localization</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-layer">Privacy / CDN</div>
+      <div class="stack-tech">Cloudflare</div>
+      <div class="stack-note">CDN delivery and OHTTP privacy relay for Anonymous Mode</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-layer">LLM Provider</div>
+      <div class="stack-tech">Databricks Mosaic AI</div>
+      <div class="stack-note">Fine-tuned LLMs for Ask Flo (transitioning from rule-based in 2025)</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-layer">Mobile</div>
+      <div class="stack-tech">Swift / Kotlin</div>
+      <div class="stack-note">Native iOS and Android (no cross-platform)</div>
+    </div>
+  </div>
+
+  <h3>Prediction Algorithm</h3>
+  <p>The cycle prediction model is a <strong>two-step neural network</strong>: individual-level ML models first recognize unique user patterns, then those patterns are transformed into features fed to the neural network that combines population-level statistics with personal history. Training data exceeds <strong>450GB</strong>, with ~1.4M new data points logged daily.</p>
+  <p>The model reduces prediction error from <strong>5.6 days (calendar method) to 2.6 days</strong>, improving further with consistent logging. Flo was the first period tracker to use AI for predictions (~2017).</p>
+
+  <h3>Key Technical Risks for a Clone</h3>
+  <ul>
+    <li><strong>Cold-start problem:</strong> Flo's predictions are trained on 450GB+ of data. Mitigation: use published research datasets (GitHub/Kaggle) and open-source prediction libraries (iurteaga/menstrual_cycle_analysis, cilab-ufersa/period_cycle_prediction)</li>
+    <li><strong>HealthKit access:</strong> A web app cannot directly access Apple HealthKit (iOS-only SDK). Use manual CSV upload, Web Bluetooth, or Health Connect on Android browsers</li>
+    <li><strong>Medical content liability:</strong> Content requires expert review. Consider AI-assisted generation with physician sign-off rather than building a large medical advisory team initially</li>
+  </ul>
+</div>
+
+<!-- SECTION 6 -->
+<div class="section" id="s6">
+  <div class="section-label" style="color:#059669">Section 06</div>
+  <h2 class="section-title">PRD Prep: MVP Scope, Personas & User Stories</h2>
+
+  <h3>Recommended MVP Feature Set (Phased)</h3>
+
+  <div class="phase-grid">
+    <div class="phase-card phase-1">
+      <div class="phase-label">Phase 1 — MVP</div>
+      <div class="phase-title">Core Habit Loop</div>
+      <div class="phase-items">Period logging with flow intensity · Cycle calendar with color-coded predictions (ARIMA/decision trees) · Basic symptom logging (top 20 symptoms across mood, physical, discharge) · Dashboard showing cycle day and phase · Fertile window visualization · Basic cycle length trend insights · Account management with strong privacy defaults</div>
+    </div>
+    <div class="phase-card phase-2">
+      <div class="phase-label">Phase 2 — Enhanced</div>
+      <div class="phase-title">Lifecycle & Intelligence</div>
+      <div class="phase-items">TTC mode with BBT and OPK logging · Pregnancy mode with week-by-week tracking · AI health assistant (rule-based first, migrate to LLM) · Push notifications via service worker · Partner sharing · Premium paywall</div>
+    </div>
+    <div class="phase-card phase-3">
+      <div class="phase-label">Phase 3 — Scale</div>
+      <div class="phase-title">Community & Insights</div>
+      <div class="phase-items">Community forums · Symptom checker (PCOS, endometriosis, perimenopause) · Doctor's report PDF export · Wearable integrations (Web Bluetooth / manual import) · Educational content library</div>
+    </div>
+  </div>
+
+  <h3>Recommended Tech Stack for Clone</h3>
+  <div class="stack-grid">
+    <div class="stack-item">
+      <div class="stack-layer">Frontend</div>
+      <div class="stack-tech">Next.js + TypeScript</div>
+      <div class="stack-note">TailwindCSS for styling, built as a PWA for offline support and push notifications</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-layer">Visualization</div>
+      <div class="stack-tech">Chart.js / Recharts</div>
+      <div class="stack-note">Cycle calendar, trend charts, symptom frequency graphs</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-layer">Backend</div>
+      <div class="stack-tech">Python / FastAPI</div>
+      <div class="stack-note">Enables ML pipeline natively · PostgreSQL + Redis</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-layer">Auth</div>
+      <div class="stack-tech">Supabase Auth / Auth0</div>
+      <div class="stack-note">With anonymous account support for privacy-conscious users</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-layer">ML</div>
+      <div class="stack-tech">scikit-learn → PyTorch</div>
+      <div class="stack-note">Start with ARIMA/decision trees, graduate to neural networks as data grows</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-layer">Infrastructure</div>
+      <div class="stack-tech">Vercel + Cloudflare</div>
+      <div class="stack-note">Frontend on Vercel, Supabase or AWS for backend, Cloudflare CDN/privacy</div>
+    </div>
+  </div>
+
+  <h3>User Personas</h3>
+  <div class="persona-grid">
+    <div class="persona-card">
+      <div class="persona-emoji">🌸</div>
+      <div class="persona-name">Cycle Tracker Casey</div>
+      <div class="persona-age">18–25 · First-time tracker</div>
+      <div class="persona-desc">Wants to understand their body. Needs simple, non-intimidating period logging and basic predictions. Values privacy and anonymity. Entry point to the funnel — primarily uses free tier.</div>
+    </div>
+    <div class="persona-card">
+      <div class="persona-emoji">🌿</div>
+      <div class="persona-name">Fertility-Focused Farah</div>
+      <div class="persona-age">28–35 · Trying to conceive</div>
+      <div class="persona-desc">Needs accurate ovulation predictions, BBT/OPK tracking, fertile window alerts, and conception tips. Willing to pay for Premium. Highest conversion potential of all personas.</div>
+    </div>
+    <div class="persona-card">
+      <div class="persona-emoji">🌼</div>
+      <div class="persona-name">Pregnant Priya</div>
+      <div class="persona-age">25–38 · Currently pregnant</div>
+      <div class="persona-desc">Wants week-by-week tracking, developmental milestones, symptom management, and birth preparation checklists. High engagement with educational content. Strong Premium subscriber.</div>
+    </div>
+    <div class="persona-card">
+      <div class="persona-emoji">🍂</div>
+      <div class="persona-name">Perimenopause Patricia</div>
+      <div class="persona-age">40–55 · Experiencing cycle changes</div>
+      <div class="persona-desc">Wants to understand irregular cycles and perimenopause. Needs symptom tracking, pattern analysis, and phase-appropriate educational content. Underserved by most competitors — growing market segment.</div>
+    </div>
+  </div>
+
+  <h3>Core User Stories (PRD-Ready)</h3>
+  <ol>
+    <li>As a <strong>new user</strong>, I want to complete a personalized onboarding quiz so the app adapts to my specific health goal (period tracking, TTC, pregnancy, or perimenopause).</li>
+    <li>As a <strong>cycle tracker</strong>, I want to log my period start/end and flow intensity in under 3 taps so tracking becomes a daily habit.</li>
+    <li>As a <strong>cycle tracker</strong>, I want to see my predicted next period date, current cycle day, and cycle phase at a glance on my dashboard.</li>
+    <li>As a <strong>cycle tracker</strong>, I want to log symptoms (mood, physical, discharge) quickly via tap-based icon selection so I can build a comprehensive health record.</li>
+    <li>As someone <strong>trying to conceive</strong>, I want to see my fertile window and predicted ovulation day clearly on the calendar so I can optimize timing.</li>
+    <li>As someone <strong>trying to conceive</strong>, I want to log BBT readings and ovulation test results so the app can improve its predictions.</li>
+    <li>As a <strong>pregnant user</strong>, I want to see my current gestational week with baby development milestones and body change information.</li>
+    <li>As a <strong>long-term user</strong>, I want to view cycle length trends, symptom pattern analysis, and generate a health report I can share with my doctor.</li>
+    <li>As a <strong>privacy-conscious user</strong>, I want to use the app without providing my real name or email, with my health data decoupled from my identity.</li>
+    <li>As a <strong>partner</strong>, I want read-only access to my partner's cycle/pregnancy data with daily insights about how they might be feeling, so I can be supportive.</li>
+    <li>As a <strong>free user</strong>, I want the core tracking experience to be fully functional while being exposed to Premium features (insights, reports, unlimited AI assistant) that motivate me to upgrade.</li>
+  </ol>
+</div>
+
+<div class="bottom-links">
+  <div class="bottom-label">Also in this project</div>
+  <div class="link-row">
+    <a href="flo-user-stories.html">📋 80 User Stories</a>
+    <a href="flo-user-journey-flows.html">🔀 User Journey Flows (12 Diagrams)</a>
+    <a href="index.html">🖼 Wireframe Flows</a>
+  </div>
+</div>
+
+</body>
+</html>
