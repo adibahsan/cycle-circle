@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flo Health — User Journey Flow Diagrams</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f1f3f5;color:#1a1a2e;line-height:1.6}
+.page{max-width:1040px;margin:0 auto;padding:48px 40px}
+.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#4f46e5;text-decoration:none;background:#eef2ff;padding:6px 12px;border-radius:6px;margin-bottom:36px;font-weight:600}
+.back:hover{background:#e0e7ff}
+h1{font-size:28px;font-weight:900;margin-bottom:8px}
+.sub{font-size:14px;color:#6b7280;margin-bottom:40px;line-height:1.6;max-width:640px}
+.flow-card{background:#fff;border-radius:16px;border:1.5px solid #e5e7eb;padding:32px;margin-bottom:24px;overflow:hidden}
+.flow-header{display:flex;align-items:flex-start;gap:14px;margin-bottom:8px}
+.flow-num{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af;margin-top:3px;min-width:56px}
+.flow-title{font-size:19px;font-weight:800;color:#1a1a2e}
+.flow-desc{font-size:13.5px;color:#6b7280;margin-bottom:24px;padding-left:70px;line-height:1.5}
+.diagram-wrap{background:#fafafa;border:1px solid #f0f0f0;border-radius:10px;padding:24px;overflow-x:auto;min-height:80px}
+.diagram-wrap .mermaid{display:flex;justify-content:center}
+.toc{background:#fff;border-radius:16px;border:1.5px solid #e5e7eb;padding:24px 32px;margin-bottom:32px}
+.toc h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af;margin-bottom:14px}
+.toc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px}
+.toc-link{font-size:13px;color:#4f46e5;text-decoration:none;padding:4px 0;display:block}
+.toc-link:hover{text-decoration:underline}
+.note{font-size:12px;color:#9ca3af;background:#f9fafb;border:1px solid #f0f0f0;border-radius:8px;padding:10px 14px;margin-bottom:20px;padding-left:70px}
+</style>
+</head>
+<body>
+<div class="page">
+
+<a class="back" href="index.html">← Wireframe Flows</a>
+
+<h1>Flo Health — User Journey Flows</h1>
+<p class="sub">12 feature flows mapped from the comprehensive product research. Each diagram shows the complete end-to-end user journey with branching logic and decision points.</p>
+
+<div class="toc">
+  <h3>Jump to diagram</h3>
+  <div class="toc-grid">
+    <a class="toc-link" href="#flow1">1. Onboarding Flow</a>
+    <a class="toc-link" href="#flow2">2. Period Tracking &amp; Dashboard</a>
+    <a class="toc-link" href="#flow3">3. Symptom Logging</a>
+    <a class="toc-link" href="#flow4">4. Ovulation &amp; Fertility (TTC)</a>
+    <a class="toc-link" href="#flow5">5. Pregnancy Mode</a>
+    <a class="toc-link" href="#flow6">6. AI Health Assistant — Ask Flo</a>
+    <a class="toc-link" href="#flow7">7. Community — Secret Chats</a>
+    <a class="toc-link" href="#flow8">8. Partner Mode</a>
+    <a class="toc-link" href="#flow9">9. Anonymous Mode Setup</a>
+    <a class="toc-link" href="#flow10">10. Health Reports &amp; Symptom Checker</a>
+    <a class="toc-link" href="#flow11">11. Premium Upgrade Flow</a>
+    <a class="toc-link" href="#flow12">12. Mode-Switching Flow</a>
+  </div>
+</div>
+
+<!-- Flow 1 -->
+<div class="flow-card" id="flow1">
+  <div class="flow-header">
+    <span class="flow-num">Flow 01</span>
+    <span class="flow-title">Onboarding Flow</span>
+  </div>
+  <p class="flow-desc">The ~70-screen onboarding arc following a deliberate psychological sequence: trust → goal → data → signup → paywall. Signup is deferred until after the user invests in 70 screens of personalisation.</p>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+    A([App Launch]) --> B[Trust Screens\n'Your data is protected'\n'100+ medical experts']
+    B --> C[Goal Selection]
+    C --> D[Track my Period]
+    C --> E[Try to Conceive]
+    C --> F[Track Pregnancy]
+    C --> G[Perimenopause]
+    D & E & F & G --> H[Personal Data Collection\nDate of birth · Last period date\nCycle length · Period length\nHeight & weight]
+    H --> I[Lifestyle & Health Questions\nDiet · Exercise · Sleep\nPrior pregnancies · Contraception]
+    I --> J[Social Proof Interspersed\n'90% say Flo predicts accurately'\n'3.5M+ 5-star ratings']
+    J --> K[Account Sign-up\nEmail · Apple · Google\nPositioned after value shown]
+    K --> L{Premium Paywall\n14-day free trial}
+    L -->|Accept trial| M([Dashboard — Premium User])
+    L -->|Decline| N[Gift Box Offer\n77% off Annual Plan]
+    N -->|Accept| O([Dashboard — Premium via Discount])
+    N -->|Decline| P[Second Offer\n7-day Trial · Reduced Price]
+    P -->|Accept| Q([Dashboard — Premium via Trial])
+    P -->|Decline| R([Dashboard — Free Tier User])
+    </pre>
+  </div>
+</div>
+
+<!-- Flow 2 -->
+<div class="flow-card" id="flow2">
+  <div class="flow-header">
+    <span class="flow-num">Flow 02</span>
+    <span class="flow-title">Period Tracking &amp; Cycle Dashboard</span>
+  </div>
+  <p class="flow-desc">The core daily habit loop — logging periods and viewing cycle status. Predictions recalculate dynamically with every data point logged.</p>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+    A([Open App]) --> B[Home Dashboard]
+    B --> C[Circular Hero\nCycle Day Counter\nCurrent Phase Label]
+    B --> D[7-Day Calendar Strip\nColor-coded markers]
+    D --> D1[Red/Pink — Period days]
+    D --> D2[Teal fill — Fertile window]
+    D --> D3[Teal dot — Ovulation day]
+    D --> D4[Dark — Low fertility]
+    C --> E{Today's status}
+    E -->|Period expected| F[Tap 'Log Period']
+    F --> G[Select: Start Period]
+    G --> H[Choose Flow Intensity\nLight · Medium · Heavy]
+    H --> I[Confirm & Save]
+    I --> J[Prediction Engine Recalculates]
+    E -->|Period ended| K[Tap 'Log Period End']
+    K --> L[Mark End Date\nEditable retroactively]
+    L --> J
+    J --> M[Updated Predictions Shown\nNext period · Fertile window · Ovulation]
+    M --> N{Need to correct past data?}
+    N -->|Yes| O[Open Full Calendar View\nTap any past day to edit]
+    O --> J
+    N -->|No| P([Done — feeds ML model])
+    </pre>
+  </div>
+</div>
+
+<!-- Flow 3 -->
+<div class="flow-card" id="flow3">
+  <div class="flow-header">
+    <span class="flow-num">Flow 03</span>
+    <span class="flow-title">Symptom Logging</span>
+  </div>
+  <p class="flow-desc">80+ symptoms across 16 categories, logged via floating "+" button in ≤3 taps. Icon-based selection — no text entry required.</p>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+    A([Any Screen]) --> B[Tap Floating '+' Button]
+    B --> C[Symptom Logging Sheet Opens]
+    C --> D[Select Category Tab]
+    D --> E[Physical\nCramps · Headache · Bloating\nFatigue · Nausea · Acne]
+    D --> F[Mood & Emotional\nCalm · Sad · Anxious\nIrritable · Depressed]
+    D --> G[Vaginal Discharge\nSticky · Creamy · Watery\nEgg white · Spotting]
+    D --> H[Lifestyle\nSleep · Water · Exercise\nWeight · Stress]
+    D --> I[Medical\nContraception · BBT · OPK\nPregnancy test results]
+    D --> J[Sex & Libido\nSex drive · Protected/unprotected]
+    E & F & G & H & I & J --> K[Tap Icon to Select\nIcon-based — not text-heavy]
+    K --> L{Select multiple?}
+    L -->|Yes| D
+    L -->|No| M[Save Day's Log]
+    M --> N[Data Stored\nFeeds prediction engine\nFeeds content personalisation]
+    N --> O{Already logged today?}
+    O -->|Yes| P[Edit option available]
+    O -->|No| Q([Log Complete])
+    P --> Q
+    </pre>
+  </div>
+</div>
+
+<!-- Flow 4 -->
+<div class="flow-card" id="flow4">
+  <div class="flow-header">
+    <span class="flow-num">Flow 04</span>
+    <span class="flow-title">Ovulation &amp; Fertility Tracking (TTC Mode)</span>
+  </div>
+  <p class="flow-desc">Journey for users trying to conceive — BBT logging, OPK results, and fertile window tools. A positive OPK shifts the predicted ovulation date +1 day.</p>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+    A([Goal: Try to Conceive]) --> B[TTC Dashboard\nFertile window highlighted\nOvulation day marked]
+    B --> C[Fertile Window View\nTeal calendar strip\nConception tips from experts]
+    B --> D[Log BBT Reading]
+    D --> E[Manual Entry — Temperature]
+    E --> F[BBT feeds Prediction Algorithm\nShifts ovulation estimate]
+    B --> G[Log OPK Result]
+    G --> H{Result?}
+    H -->|Positive| I[Ovulation Predicted for Next Day\nAlgorithm shifts forward 1 day]
+    H -->|Negative| J[No Change — Continue Testing]
+    I & J --> K[Updated Fertile Window on Calendar]
+    K --> L[Daily Conception Tips\nBy cycle phase]
+    B --> M[Log Unprotected Sex]
+    M --> N[Conception Timing Tracked]
+    N --> O{Period late?}
+    O -->|Yes| P[Log Pregnancy Test Result]
+    P --> Q{Result?}
+    Q -->|Positive| R([Switch to Pregnancy Mode])
+    Q -->|Negative| S([Cycle Continues])
+    O -->|No| T([Continue TTC Cycle])
+    </pre>
+  </div>
+</div>
+
+<!-- Flow 5 -->
+<div class="flow-card" id="flow5">
+  <div class="flow-header">
+    <span class="flow-num">Flow 05</span>
+    <span class="flow-title">Pregnancy Mode</span>
+  </div>
+  <p class="flow-desc">Full lifecycle from mode switch through postpartum. The entire UI shifts to yellow/warm tones when Pregnancy Mode activates.</p>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+    A([Positive Test or Manual Switch]) --> B[Enter Due Date or Last Period Date]
+    B --> C[Pregnancy Mode Activated\nUI shifts to yellow/warm palette\nHero: Gestational Week Counter]
+    C --> D[Week-by-Week Dashboard]
+    D --> E[3D Fetus Visualisation\nSize comparison · Milestones]
+    D --> F[Body Change Tracker\nNausea · Pregnancy symptoms]
+    D --> G[Weekly Checklist\nPrenatal appointments\nChildbirth classes · Tasks]
+    D --> H[Educational Content\nSafe foods · Exercise\nSleep positions · Birth prep]
+    D --> I[Calculators]
+    I --> I1[Due Date Calculator]
+    I --> I2[hCG Calculator]
+    I --> I3[IVF/FET Due Date]
+    I --> I4[Ultrasound Dating]
+    D --> J{Week milestone reached?}
+    J -->|Yes| K[Milestone Notification\nBaby development update]
+    D --> P[Partner receives weekly updates\nvia Partner Mode]
+    D --> Q([Postpartum — Return to Cycle Tracking])
+    </pre>
+  </div>
+</div>
+
+<!-- Flow 6 -->
+<div class="flow-card" id="flow6">
+  <div class="flow-header">
+    <span class="flow-num">Flow 06</span>
+    <span class="flow-title">AI Health Assistant — Ask Flo</span>
+  </div>
+  <p class="flow-desc">Conversational health queries triggered by cycle events or user-initiated. Pre-2025 = rule-based trees; 2025+ = fine-tuned LLM via Databricks Mosaic AI.</p>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+    A([Trigger]) --> B{How was it triggered?}
+    B -->|Cycle phase change| C[Auto-push notification]
+    B -->|Symptom logged| D[Contextual prompt\n'Want to know more?']
+    B -->|User taps Ask Flo| E[User-initiated chat]
+    B -->|Cycle start event| F[New cycle insight card]
+    C & D & E & F --> G[Chat Interface Opens]
+    G --> H{User tier?}
+    H -->|Free| I[Limited interactions\nHit limit → Paywall]
+    H -->|Premium| J[Unlimited interactions]
+    I & J --> K[User sends message]
+    K --> L{AI Engine}
+    L -->|Pre-2025| M[Scripted conversation trees\nMedical/legal reviewed]
+    L -->|2025+| N[Fine-tuned LLM\nDatabricks Mosaic AI]
+    M & N --> O[Response with citations\nto Flo articles or experts]
+    O --> R{Continue?}
+    R -->|Follow-up| K
+    R -->|Done| S([Exit — History saved])
+    </pre>
+  </div>
+</div>
+
+<!-- Flow 7 -->
+<div class="flow-card" id="flow7">
+  <div class="flow-header">
+    <span class="flow-num">Flow 07</span>
+    <span class="flow-title">Community — Secret Chats</span>
+  </div>
+  <p class="flow-desc">Anonymous forum with 7M monthly users and full human pre-moderation. Under-18 and 18+ feeds are completely separated with no cross-interaction.</p>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+    A([Tap Secret Chats]) --> B{First time?}
+    B -->|Yes| C[Random Avatar Assigned\nFull anonymity]
+    B -->|No| D[Feed Opens]
+    C --> D
+    D --> E[Personalised Feed]
+    E --> F{User age}
+    F -->|Under 18| G[Under-18 Content Only\nNo cross-interaction with adults]
+    F -->|18+| H[Adult Content Feed\nNo cross-interaction with minors]
+    G & H --> I[Browse Categories\nPCOS · Pregnancy · Sex\nPerimenopause · Parenting]
+    I --> J[Open Thread]
+    J --> K{Action?}
+    K -->|Read replies| L[View thread]
+    K -->|Write post| M[Draft Post]
+    K -->|Ask Expert| N[Expert Archive\nDoctor-verified Q&A]
+    M --> O[Submit for Moderation\nHuman review team]
+    O --> P{Approved?}
+    P -->|Yes| Q[Post appears in feed]
+    P -->|No| R[Post removed · User notified]
+    Q --> S([Reply notifications sent])
+    </pre>
+  </div>
+</div>
+
+<!-- Flow 8 -->
+<div class="flow-card" id="flow8">
+  <div class="flow-header">
+    <span class="flow-num">Flow 08</span>
+    <span class="flow-title">Partner Mode</span>
+  </div>
+  <p class="flow-desc">Read-only sharing between primary user and partner. Partners cannot see raw symptoms, historical data, personal notes, or edit anything. Access revocable instantly.</p>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+    A([Primary User — Settings]) --> B[Navigate to Partner Sharing]
+    B --> C[Generate Sharing Code]
+    C --> D[Share Code with Partner]
+    D --> E([Partner — Downloads Flo App])
+    E --> F[Enter Sharing Code]
+    F --> G[Partner Account — Read Only]
+    G --> H[Partner Dashboard]
+    H --> I[Cycle Calendar — Current data only]
+    H --> J[Daily Insights by cycle phase]
+    H --> K[Symptom Explanations\nAccessible language]
+    H --> S[What Partner CANNOT See]
+    S --> S1[Raw logged symptoms]
+    S --> S2[Historical cycle data]
+    S --> S3[Edit any data]
+    S --> S4[Personal notes]
+    G --> M{Mode of primary user?}
+    M -->|Period tracking| N[Cycle phase + fertility insights]
+    M -->|Pregnancy| O[Weekly baby development updates]
+    G --> P{Primary user revokes access?}
+    P -->|Yes| Q([Partner access removed instantly])
+    P -->|No| R([Ongoing partner access])
+    </pre>
+  </div>
+</div>
+
+<!-- Flow 9 -->
+<div class="flow-card" id="flow9">
+  <div class="flow-header">
+    <span class="flow-num">Flow 09</span>
+    <span class="flow-title">Anonymous Mode Setup</span>
+  </div>
+  <p class="flow-desc">Privacy-first flow using Cloudflare OHTTP to decouple health data from all personal identifiers. Post-quantum cryptography added in 2023. TIME Best Inventions 2023 winner.</p>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+    A([User — Privacy Settings]) --> B[Discover Anonymous Mode]
+    B --> C[Explanation Screen\nOHTTP · Post-quantum crypto\nISO 27001 + ISO 27701]
+    C --> D{Currently signed in?}
+    D -->|Yes| E[Warning: Will disconnect\nName · Email · Apple/Google ID\nPayment info · IP · Device Ad ID]
+    E --> F{User confirms?}
+    F -->|No| G([Stay on Personal Account])
+    F -->|Yes| H[Anonymous Account Created]
+    D -->|New user| H
+    H --> I[Cloudflare OHTTP Relay\nNo single party has both\nidentity AND health data]
+    I --> J[Anonymous Tracking Begins\nAll features available]
+    J --> K{Payment for Premium?}
+    K -->|Yes| L[Payment decoupled\nfrom health activity]
+    K -->|No| M[Free tier with full anonymity]
+    L & M --> N([Anonymous Mode Active])
+    </pre>
+  </div>
+</div>
+
+<!-- Flow 10 -->
+<div class="flow-card" id="flow10">
+  <div class="flow-header">
+    <span class="flow-num">Flow 10</span>
+    <span class="flow-title">Health Reports &amp; Symptom Checker</span>
+  </div>
+  <p class="flow-desc">Premium-only features. Symptom Checker not available in UK/EU. Built on clinical guidelines from Monash, ESHRE, and AAFP.</p>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+    A([User — Insights]) --> B[Navigate to Health Reports]
+    B --> C{Premium subscriber?}
+    C -->|No| D[Paywall Prompt]
+    D --> E([Upgrade Flow])
+    C -->|Yes| F[Report Options]
+    F --> G[Doctor's Report]
+    G --> H[6-Month Data Summary\nCycle lengths · Symptom frequency\nPattern charts]
+    H --> I[Preview Report]
+    I --> J[Export as PDF]
+    J --> K([Share with physician])
+    F --> L[Symptom Checker\nNot available in UK/EU]
+    L --> M[Select Condition]
+    M --> M1[PCOS Checker]
+    M --> M2[Endometriosis Checker]
+    M --> M3[Uterine Fibroids]
+    M --> M4[Perimenopause Checker]
+    M1 & M2 & M3 & M4 --> N[Chatbot-style Self-Assessment\nMonash · ESHRE · AAFP guidelines]
+    N --> O[Answer symptom questions]
+    O --> P{More questions?}
+    P -->|Yes| O
+    P -->|No| Q[Results — Match percentage]
+    Q --> R([Disclaimer + share with provider])
+    </pre>
+  </div>
+</div>
+
+<!-- Flow 11 -->
+<div class="flow-card" id="flow11">
+  <div class="flow-header">
+    <span class="flow-num">Flow 11</span>
+    <span class="flow-title">Premium Upgrade Flow</span>
+  </div>
+  <p class="flow-desc">Multiple in-app touchpoints funnel free users to Premium. Three-stage trial cascade before accepting free tier. FSA/HSA eligible in US.</p>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+    A([Free Tier User]) --> B{Touchpoint encountered}
+    B -->|Taps locked insight| C[Soft Paywall]
+    B -->|Ask Flo at limit| D[Usage Limit Paywall]
+    B -->|Tries health report| E[Feature Paywall]
+    B -->|Symptom Checker| F[Feature Paywall\nWith condition pitch]
+    C & D & E & F --> H[Premium Offer Screen\nAnnual $4.17/mo · 3-Month · Monthly\nHigh monthly anchors annual value]
+    H --> I[Social Proof\n'6.6M members already Premium']
+    I --> K{14-day Free Trial}
+    K -->|Start Trial| L([Premium Activated])
+    K -->|Decline| M[Gift Box Offer\n77% off Annual Plan]
+    M -->|Accept| N([Premium — Discounted])
+    M -->|Decline| O[7-day Trial · Reduced Price]
+    O -->|Accept| P([Premium — Trial])
+    O -->|Decline| Q([Return to Free Tier])
+    L & N & P --> R[Confirmation\nFSA/HSA accepted in US]
+    </pre>
+  </div>
+</div>
+
+<!-- Flow 12 -->
+<div class="flow-card" id="flow12">
+  <div class="flow-header">
+    <span class="flow-num">Flow 12</span>
+    <span class="flow-title">Mode-Switching Flow</span>
+  </div>
+  <p class="flow-desc">How users transition between the app's four lifecycle modes. Partner is auto-notified of mode switches. Each mode triggers a distinct UI palette and feature set.</p>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+    A([User Profile / Settings]) --> B[Goal / Mode Settings]
+    B --> C{Current Mode}
+    C -->|Period Tracking| D[Switch to TTC Mode]
+    C -->|TTC Mode| E{Pregnancy test positive?}
+    E -->|Yes| F[Auto-prompt: Switch to Pregnancy]
+    E -->|No| G[Continue TTC Tracking]
+    C -->|Pregnancy| H[Postpartum — Mode ends\naround 40-week mark]
+    C -->|Any| I[Switch to Perimenopause]
+    D --> J[TTC Dashboard\nBBT · OPK · Fertile window]
+    F --> K[Pregnancy Mode\nYellow UI · Fetal development]
+    H --> L{Post-birth goal?}
+    L -->|Resume cycle tracking| M[Period Tracking Mode]
+    L -->|Another pregnancy| J
+    L -->|No more tracking| N([Reduced engagement mode])
+    I --> O[Perimenopause Mode\nIrregular cycle tools\nPerimenopause Score]
+    K --> Q[Partner auto-notified\nof mode switch]
+    J --> Q
+    M & O --> R([Ongoing Lifecycle Tracking])
+    </pre>
+  </div>
+</div>
+
+<div style="margin-top:8px;padding-top:24px;border-top:1px solid #e5e7eb;display:flex;gap:12px;flex-wrap:wrap">
+  <a href="flo-user-stories.html" style="font-size:12px;color:#4f46e5;text-decoration:none;background:#eef2ff;padding:6px 12px;border-radius:6px;font-weight:600">📋 User Stories</a>
+  <a href="flo-health-comprehensive-guide.html" style="font-size:12px;color:#4f46e5;text-decoration:none;background:#eef2ff;padding:6px 12px;border-radius:6px;font-weight:600">📄 Research Guide</a>
+  <a href="index.html" style="font-size:12px;color:#4f46e5;text-decoration:none;background:#eef2ff;padding:6px 12px;border-radius:6px;font-weight:600">🖥 Wireframes</a>
+</div>
+
+</div>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#fce7f3',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#f9a8d4',
+      lineColor: '#9ca3af',
+      secondaryColor: '#f0fdfa',
+      tertiaryColor: '#eef2ff',
+      background: '#fafafa',
+      mainBkg: '#fff',
+      nodeBorder: '#e5e7eb',
+      clusterBkg: '#f9fafb',
+      titleColor: '#1a1a2e',
+      edgeLabelBackground: '#fff',
+    },
+    flowchart: { curve: 'basis', padding: 20 }
+  });
+</script>
+</body>
+</html>

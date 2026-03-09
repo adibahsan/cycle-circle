@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flo Health — 80 User Stories</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f1f3f5;color:#1a1a2e;line-height:1.6}
+.page{max-width:960px;margin:0 auto;padding:48px 40px}
+.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#4f46e5;text-decoration:none;background:#eef2ff;padding:6px 12px;border-radius:6px;margin-bottom:36px;font-weight:600}
+.back:hover{background:#e0e7ff}
+h1{font-size:28px;font-weight:900;margin-bottom:8px}
+.sub{font-size:14px;color:#6b7280;margin-bottom:40px;line-height:1.6;max-width:640px}
+.section{background:#fff;border-radius:16px;border:1.5px solid #e5e7eb;padding:28px 32px;margin-bottom:20px}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.chip{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:3px 10px;border-radius:20px;white-space:nowrap}
+.count{font-size:12px;color:#9ca3af;margin-left:auto;font-weight:600}
+h2{font-size:17px;font-weight:800;color:#1a1a2e}
+.story{padding:11px 0;border-bottom:1px solid #f3f4f6;font-size:13.5px;color:#374151;display:flex;gap:10px}
+.story:last-child{border-bottom:none;padding-bottom:0}
+.story:first-child{padding-top:0}
+.num{font-weight:800;color:#9ca3af;min-width:24px;font-size:12px;margin-top:1px}
+.story em{font-style:normal;font-weight:700;color:#1a1a2e}
+.toc{background:#fff;border-radius:16px;border:1.5px solid #e5e7eb;padding:24px 32px;margin-bottom:32px}
+.toc h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af;margin-bottom:14px}
+.toc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px}
+.toc-link{font-size:13px;color:#4f46e5;text-decoration:none;padding:4px 0;display:flex;align-items:center;gap:6px}
+.toc-link:hover{text-decoration:underline}
+.toc-link span{color:#9ca3af;font-size:11px}
+</style>
+</head>
+<body>
+<div class="page">
+
+<a class="back" href="index.html">← Wireframe Flows</a>
+
+<h1>Flo Health — User Stories</h1>
+<p class="sub">80 stories across 11 feature areas. Format: <strong>As a [persona], I want to [action], so that [outcome].</strong></p>
+
+<div class="toc">
+  <h3>Jump to section</h3>
+  <div class="toc-grid">
+    <a class="toc-link" href="#onboarding">🚀 Onboarding <span>8 stories</span></a>
+    <a class="toc-link" href="#period">📅 Period Tracking <span>7 stories</span></a>
+    <a class="toc-link" href="#symptoms">🩺 Symptom Logging <span>8 stories</span></a>
+    <a class="toc-link" href="#ttc">🌿 TTC / Fertility <span>6 stories</span></a>
+    <a class="toc-link" href="#pregnancy">🤰 Pregnancy Mode <span>9 stories</span></a>
+    <a class="toc-link" href="#askflo">🤖 Ask Flo AI <span>6 stories</span></a>
+    <a class="toc-link" href="#community">💬 Secret Chats <span>6 stories</span></a>
+    <a class="toc-link" href="#partner">👫 Partner Mode <span>6 stories</span></a>
+    <a class="toc-link" href="#anon">🔒 Anonymous Mode <span>4 stories</span></a>
+    <a class="toc-link" href="#reports">📊 Health Reports <span>5 stories</span></a>
+    <a class="toc-link" href="#premium">💎 Premium <span>5 stories</span></a>
+    <a class="toc-link" href="#mode">🔄 Mode Switching <span>5 stories</span></a>
+    <a class="toc-link" href="#notifs">🔔 Notifications <span>5 stories</span></a>
+  </div>
+</div>
+
+<!-- Onboarding -->
+<div class="section" id="onboarding">
+  <div class="section-header">
+    <span class="chip" style="background:#fce7f3;color:#be185d">Onboarding</span>
+    <h2>Onboarding</h2>
+    <span class="count">8 stories</span>
+  </div>
+  <div class="story"><span class="num">1</span><span>As a <em>new user</em>, I want to see trust and privacy assurances before I enter any personal data, so that I feel safe sharing sensitive health information.</span></div>
+  <div class="story"><span class="num">2</span><span>As a <em>new user</em>, I want to select my primary health goal (period tracking, TTC, pregnancy, or perimenopause), so that the app adapts its experience to my specific needs.</span></div>
+  <div class="story"><span class="num">3</span><span>As a <em>new user</em>, I want to enter my cycle history, last period date, and physical stats during setup, so that the app can generate an accurate first prediction before I've logged anything.</span></div>
+  <div class="story"><span class="num">4</span><span>As a <em>new user</em>, I want to answer lifestyle and health questions (diet, sleep, contraception, health concerns), so that the content and insights I receive feel personally relevant.</span></div>
+  <div class="story"><span class="num">5</span><span>As a <em>new user</em>, I want to see social proof statistics and reassurance messages as I complete the onboarding quiz, so that I don't feel abnormal about my answers and I trust the product.</span></div>
+  <div class="story"><span class="num">6</span><span>As a <em>new user</em>, I want to create my account <em>after</em> I've experienced the app's value through the onboarding flow, so that I feel motivated to sign up rather than hitting a wall immediately.</span></div>
+  <div class="story"><span class="num">7</span><span>As a <em>new user</em>, I want to start with a free trial before committing to a paid plan, so that I can verify the app is worth the cost.</span></div>
+  <div class="story"><span class="num">8</span><span>As a <em>price-sensitive user</em>, I want to be offered a discounted annual plan if I decline the trial, so that I can access Premium at a price that feels worthwhile.</span></div>
+</div>
+
+<!-- Period Tracking -->
+<div class="section" id="period">
+  <div class="section-header">
+    <span class="chip" style="background:#fce7f3;color:#db2777">Period Tracking</span>
+    <h2>Period Tracking &amp; Cycle Dashboard</h2>
+    <span class="count">7 stories</span>
+  </div>
+  <div class="story"><span class="num">9</span><span>As a <em>cycle tracker</em>, I want to see my current cycle day, phase name (follicular, ovulatory, luteal), and days until my next period at a glance, so that I understand where I am in my cycle without digging through the app.</span></div>
+  <div class="story"><span class="num">10</span><span>As a <em>cycle tracker</em>, I want to log my period start in 2–3 taps with a flow intensity selection (light, medium, heavy), so that tracking becomes a quick daily habit.</span></div>
+  <div class="story"><span class="num">11</span><span>As a <em>cycle tracker</em>, I want to log my period end date, so that the app can refine my average cycle and period length over time.</span></div>
+  <div class="story"><span class="num">12</span><span>As a <em>cycle tracker</em>, I want to see a color-coded 7-day calendar strip showing period days, fertile window, and ovulation day, so that I can plan my week at a glance.</span></div>
+  <div class="story"><span class="num">13</span><span>As a <em>cycle tracker</em>, I want the app's predictions to update immediately after I log new data, so that my forecast always reflects my most recent information.</span></div>
+  <div class="story"><span class="num">14</span><span>As a <em>cycle tracker</em>, I want to edit or correct past period dates retroactively on a full calendar view, so that logging mistakes don't permanently skew my predictions.</span></div>
+  <div class="story"><span class="num">15</span><span>As a <em>long-term user</em>, I want my prediction accuracy to improve the longer I use the app, so that the months I invest in logging pay off in reliability.</span></div>
+</div>
+
+<!-- Symptom Logging -->
+<div class="section" id="symptoms">
+  <div class="section-header">
+    <span class="chip" style="background:#ede9fe;color:#7c3aed">Symptoms</span>
+    <h2>Symptom Logging</h2>
+    <span class="count">8 stories</span>
+  </div>
+  <div class="story"><span class="num">16</span><span>As a <em>cycle tracker</em>, I want to log any symptom in under 3 taps using icon-based selection, so that logging never feels like a chore.</span></div>
+  <div class="story"><span class="num">17</span><span>As a <em>cycle tracker</em>, I want to log physical symptoms (cramps, headache, bloating, fatigue, nausea, acne), so that I can track how my body changes across my cycle.</span></div>
+  <div class="story"><span class="num">18</span><span>As a <em>cycle tracker</em>, I want to log mood and emotional states (anxious, sad, irritable, calm, energetic), so that I can identify emotional patterns tied to my cycle phases.</span></div>
+  <div class="story"><span class="num">19</span><span>As a <em>cycle tracker</em>, I want to log vaginal discharge characteristics (sticky, creamy, watery, egg white, spotting), so that I can monitor fertility signals and flag anything atypical.</span></div>
+  <div class="story"><span class="num">20</span><span>As a <em>cycle tracker</em>, I want to log lifestyle factors (sleep, water intake, exercise, weight, stress), so that I can understand how habits correlate with how I feel.</span></div>
+  <div class="story"><span class="num">21</span><span>As a <em>cycle tracker</em>, I want to log contraception intake and type (pill, ring, patch, IUD, implant), so that the app accounts for hormonal influences on my cycle.</span></div>
+  <div class="story"><span class="num">22</span><span>As a <em>cycle tracker</em>, I want to customize which symptom categories appear on my logging screen, so that the interface only shows what's relevant to me.</span></div>
+  <div class="story"><span class="num">23</span><span>As a <em>cycle tracker</em>, I want to edit a symptom log I've already submitted today, so that I can correct mistakes without losing the rest of my data.</span></div>
+</div>
+
+<!-- TTC -->
+<div class="section" id="ttc">
+  <div class="section-header">
+    <span class="chip" style="background:#f0fdfa;color:#0d9488">TTC / Fertility</span>
+    <h2>Ovulation &amp; Fertility (TTC Mode)</h2>
+    <span class="count">6 stories</span>
+  </div>
+  <div class="story"><span class="num">24</span><span>As a <em>user trying to conceive</em>, I want to see my fertile window and predicted ovulation day clearly highlighted on the calendar, so that I can plan intimacy around my highest-chance days.</span></div>
+  <div class="story"><span class="num">25</span><span>As a <em>user trying to conceive</em>, I want to log my basal body temperature (BBT) each morning, so that my temperature shifts can improve the precision of my ovulation prediction.</span></div>
+  <div class="story"><span class="num">26</span><span>As a <em>user trying to conceive</em>, I want to log ovulation predictor kit (OPK) test results as positive or negative, so that a positive result can shift my predicted ovulation to the following day.</span></div>
+  <div class="story"><span class="num">27</span><span>As a <em>user trying to conceive</em>, I want to receive daily conception tips from medical experts relevant to my current cycle phase, so that I have actionable guidance throughout the month.</span></div>
+  <div class="story"><span class="num">28</span><span>As a <em>user trying to conceive</em>, I want to log unprotected sex in the symptom tracker, so that I can correlate timing with my fertile window and track conception attempts.</span></div>
+  <div class="story"><span class="num">29</span><span>As a <em>user trying to conceive</em>, I want to log a pregnancy test result when my period is late, so that the app can prompt me to switch to pregnancy mode or continue cycle tracking accordingly.</span></div>
+</div>
+
+<!-- Pregnancy -->
+<div class="section" id="pregnancy">
+  <div class="section-header">
+    <span class="chip" style="background:#fffbeb;color:#d97706">Pregnancy</span>
+    <h2>Pregnancy Mode</h2>
+    <span class="count">9 stories</span>
+  </div>
+  <div class="story"><span class="num">30</span><span>As a <em>newly pregnant user</em>, I want to switch to pregnancy mode by entering my due date or last period date, so that the app immediately begins tracking gestational age and milestones.</span></div>
+  <div class="story"><span class="num">31</span><span>As a <em>pregnant user</em>, I want to see my current gestational week in a prominent hero display with a 3D fetal visualization, so that I have a vivid, week-by-week sense of my baby's development.</span></div>
+  <div class="story"><span class="num">32</span><span>As a <em>pregnant user</em>, I want to see developmental milestones, size comparisons, and body changes for each week of pregnancy, so that I understand what's happening at every stage.</span></div>
+  <div class="story"><span class="num">33</span><span>As a <em>pregnant user</em>, I want to log pregnancy-specific symptoms (nausea, lochia, back pain, swelling), so that I have a complete health record to discuss with my OB.</span></div>
+  <div class="story"><span class="num">34</span><span>As a <em>pregnant user</em>, I want a weekly checklist of appointments, classes, and preparation tasks, so that I don't miss anything important across my pregnancy journey.</span></div>
+  <div class="story"><span class="num">35</span><span>As a <em>pregnant user</em>, I want access to safe food guides, safe exercise recommendations, and sleep position guidance, so that I can make informed daily decisions.</span></div>
+  <div class="story"><span class="num">36</span><span>As a <em>pregnant user</em>, I want to use calculators (due date, hCG, IVF/FET, ultrasound dating) in one place, so that I don't need to leave the app for reference tools.</span></div>
+  <div class="story"><span class="num">37</span><span>As a <em>pregnant user who experiences a loss</em>, I want to log a miscarriage or abortion from day 29 onward, so that the app handles this sensitively and returns me to the appropriate mode.</span></div>
+  <div class="story"><span class="num">38</span><span>As a <em>postpartum user</em>, I want the app to transition me back to cycle tracking mode after delivery, so that my ongoing health is monitored as my fertility returns.</span></div>
+</div>
+
+<!-- Ask Flo -->
+<div class="section" id="askflo">
+  <div class="section-header">
+    <span class="chip" style="background:#f0f9ff;color:#0369a1">Ask Flo AI</span>
+    <h2>AI Health Assistant — Ask Flo</h2>
+    <span class="count">6 stories</span>
+  </div>
+  <div class="story"><span class="num">39</span><span>As a <em>cycle tracker</em>, I want the health assistant to proactively reach out when my cycle phase changes, so that I receive timely, relevant guidance without having to seek it out.</span></div>
+  <div class="story"><span class="num">40</span><span>As a <em>cycle tracker</em>, I want to ask the assistant about a symptom I just logged and get a contextual explanation, so that I understand what my body might be signaling.</span></div>
+  <div class="story"><span class="num">41</span><span>As a <em>curious user</em>, I want to ask the assistant open-ended reproductive health questions and get medically reviewed answers, so that I have a trusted, always-available source of information.</span></div>
+  <div class="story"><span class="num">42</span><span>As a <em>free user</em>, I want to have a limited number of health assistant interactions included at no cost, so that I can evaluate the feature's value before upgrading.</span></div>
+  <div class="story"><span class="num">43</span><span>As a <em>Premium user</em>, I want unlimited health assistant conversations, so that I can use it as a comprehensive daily health companion.</span></div>
+  <div class="story"><span class="num">44</span><span>As a <em>user with a late period</em>, I want the assistant to explain possible reasons for the delay based on my logged data, so that I can gauge whether I need to take action.</span></div>
+</div>
+
+<!-- Secret Chats -->
+<div class="section" id="community">
+  <div class="section-header">
+    <span class="chip" style="background:#faf5ff;color:#7c3aed">Community</span>
+    <h2>Community — Secret Chats</h2>
+    <span class="count">6 stories</span>
+  </div>
+  <div class="story"><span class="num">45</span><span>As a <em>new community user</em>, I want to be assigned a random anonymous avatar automatically, so that I can participate in discussions without revealing my identity.</span></div>
+  <div class="story"><span class="num">46</span><span>As a <em>community user</em>, I want to browse a personalized feed of forum threads organized by health topic (PCOS, pregnancy, perimenopause, etc.), so that I find relevant conversations without scrolling through noise.</span></div>
+  <div class="story"><span class="num">47</span><span>As a <em>community user</em>, I want to write a post and have it reviewed by a human moderator before it appears, so that I can trust the community is safe and accurate.</span></div>
+  <div class="story"><span class="num">48</span><span>As an <em>under-18 user</em>, I want the community to show me age-appropriate content with no interaction with adult users, so that I have a safe space that matches my experience level.</span></div>
+  <div class="story"><span class="num">49</span><span>As a <em>community user</em>, I want to access an expert Q&amp;A archive of doctor-verified answers, so that I can find reliable answers to questions others have already asked.</span></div>
+  <div class="story"><span class="num">50</span><span>As a <em>community user</em>, I want to receive a notification when someone replies to my thread, so that I can stay engaged in conversations I've started.</span></div>
+</div>
+
+<!-- Partner Mode -->
+<div class="section" id="partner">
+  <div class="section-header">
+    <span class="chip" style="background:#ecfdf5;color:#059669">Partner Mode</span>
+    <h2>Partner Mode</h2>
+    <span class="count">6 stories</span>
+  </div>
+  <div class="story"><span class="num">51</span><span>As a <em>primary user</em>, I want to generate a sharing code and send it to my partner, so that they can access relevant cycle or pregnancy information without me explaining it manually.</span></div>
+  <div class="story"><span class="num">52</span><span>As a <em>partner</em>, I want read-only access to my partner's current cycle calendar, so that I understand where they are in their cycle without them having to tell me.</span></div>
+  <div class="story"><span class="num">53</span><span>As a <em>partner</em>, I want daily insights explaining how my partner might be feeling based on their cycle phase, so that I can be emotionally supportive at the right moments.</span></div>
+  <div class="story"><span class="num">54</span><span>As a <em>partner</em>, I want easy-to-understand explanations of symptoms my partner experiences, so that I can empathize without needing medical knowledge.</span></div>
+  <div class="story"><span class="num">55</span><span>As a <em>partner of a pregnant person</em>, I want to receive weekly baby development updates, so that I feel included and informed throughout the pregnancy.</span></div>
+  <div class="story"><span class="num">56</span><span>As a <em>primary user</em>, I want to instantly revoke my partner's access at any time, so that I remain in full control of who can see my health data.</span></div>
+</div>
+
+<!-- Anonymous Mode -->
+<div class="section" id="anon">
+  <div class="section-header">
+    <span class="chip" style="background:#f1f5f9;color:#475569">Anonymous Mode</span>
+    <h2>Anonymous Mode</h2>
+    <span class="count">4 stories</span>
+  </div>
+  <div class="story"><span class="num">57</span><span>As a <em>privacy-conscious user</em>, I want to use the app without linking my health data to my name, email, or social login, so that my reproductive health activity is completely private.</span></div>
+  <div class="story"><span class="num">58</span><span>As a <em>privacy-conscious user</em>, I want my data routed through a privacy relay (OHTTP) so that no single party can connect my identity to my health activity, even if data is intercepted.</span></div>
+  <div class="story"><span class="num">59</span><span>As a <em>user in a region with legal risks around reproductive health</em>, I want assurance that my data is decoupled from all personal identifiers including IP address and device advertising ID, so that my tracking cannot be used against me.</span></div>
+  <div class="story"><span class="num">60</span><span>As a <em>privacy-conscious user who wants Premium</em>, I want to pay for a subscription without that payment being linked to my health activity, so that my financial records don't reveal my reproductive health choices.</span></div>
+</div>
+
+<!-- Health Reports -->
+<div class="section" id="reports">
+  <div class="section-header">
+    <span class="chip" style="background:#fefce8;color:#a16207">Health Reports</span>
+    <h2>Health Reports &amp; Symptom Checker</h2>
+    <span class="count">5 stories</span>
+  </div>
+  <div class="story"><span class="num">61</span><span>As a <em>long-term user</em>, I want to generate a Doctor's Report summarizing 6 months of cycle data, symptom patterns, and trend charts, so that I can have an informed, evidence-based conversation with my physician.</span></div>
+  <div class="story"><span class="num">62</span><span>As a <em>long-term user</em>, I want to export my Doctor's Report as a PDF, so that I can share it easily with any healthcare provider.</span></div>
+  <div class="story"><span class="num">63</span><span>As a <em>user concerned about PCOS</em>, I want to complete a self-assessment symptom checker built on clinical guidelines, so that I can understand my risk level before speaking with a doctor.</span></div>
+  <div class="story"><span class="num">64</span><span>As a <em>user concerned about endometriosis</em>, I want a structured chatbot-style assessment that produces a match percentage, so that I have a concrete starting point for a specialist consultation.</span></div>
+  <div class="story"><span class="num">65</span><span>As a <em>user experiencing irregular cycles</em>, I want the symptom checker to assess perimenopause likelihood based on my logged patterns, so that I can understand whether my changes are hormonally driven.</span></div>
+</div>
+
+<!-- Premium -->
+<div class="section" id="premium">
+  <div class="section-header">
+    <span class="chip" style="background:#fef3c7;color:#b45309">Premium</span>
+    <h2>Premium Upgrade</h2>
+    <span class="count">5 stories</span>
+  </div>
+  <div class="story"><span class="num">66</span><span>As a <em>free user</em>, I want to see a preview of locked Premium insights when I tap them, so that I understand what I'm missing and feel motivated to upgrade.</span></div>
+  <div class="story"><span class="num">67</span><span>As a <em>free user who hits the health assistant limit</em>, I want a clear explanation of what Premium unlocks at that moment, so that the value of upgrading is immediately obvious.</span></div>
+  <div class="story"><span class="num">68</span><span>As a <em>cost-conscious user</em>, I want to compare pricing plans with clear per-month breakdowns and a highlighted "Best Deal" option, so that I can make a confident purchasing decision.</span></div>
+  <div class="story"><span class="num">69</span><span>As a <em>user considering Premium</em>, I want to see social proof (number of subscribers, testimonials) on the upgrade screen, so that I feel confident I'm joining a trusted product.</span></div>
+  <div class="story"><span class="num">70</span><span>As a <em>US-based user</em>, I want to pay for Premium using my FSA or HSA card, so that I can treat it as a legitimate medical expense and reduce my out-of-pocket cost.</span></div>
+</div>
+
+<!-- Mode Switching -->
+<div class="section" id="mode">
+  <div class="section-header">
+    <span class="chip" style="background:#fff7ed;color:#c2410c">Mode Switching</span>
+    <h2>Mode Switching &amp; Lifecycle</h2>
+    <span class="count">5 stories</span>
+  </div>
+  <div class="story"><span class="num">71</span><span>As a <em>cycle tracker who is ready to try to conceive</em>, I want to switch to TTC mode from my profile settings, so that the app immediately surfaces fertility-focused tools without me needing to re-onboard.</span></div>
+  <div class="story"><span class="num">72</span><span>As a <em>TTC user who gets a positive test</em>, I want the app to prompt me to switch to pregnancy mode, so that the transition is seamless and my gestational tracking begins immediately.</span></div>
+  <div class="story"><span class="num">73</span><span>As a <em>postpartum user</em>, I want to return to period tracking mode after delivery, so that the app continues monitoring my health as my cycle resumes.</span></div>
+  <div class="story"><span class="num">74</span><span>As a <em>user in their 40s experiencing cycle changes</em>, I want to switch to perimenopause mode, so that the app provides phase-appropriate insights, symptom tracking, and a Perimenopause Score tool.</span></div>
+  <div class="story"><span class="num">75</span><span>As a <em>user in any mode</em>, I want my partner to be automatically notified when I switch modes (TTC → Pregnancy), so that their experience stays in sync with mine without manual communication.</span></div>
+</div>
+
+<!-- Notifications -->
+<div class="section" id="notifs">
+  <div class="section-header">
+    <span class="chip" style="background:#f0f9ff;color:#0284c7">Notifications</span>
+    <h2>Notifications &amp; Habit Loop</h2>
+    <span class="count">5 stories</span>
+  </div>
+  <div class="story"><span class="num">76</span><span>As a <em>cycle tracker</em>, I want a push notification when my period is predicted to start, so that I'm never caught off guard.</span></div>
+  <div class="story"><span class="num">77</span><span>As a <em>cycle tracker</em>, I want a reminder to log my period if I haven't done so by the predicted start date, so that my data stays current.</span></div>
+  <div class="story"><span class="num">78</span><span>As a <em>user trying to conceive</em>, I want fertile window and ovulation day alerts, so that I don't miss my highest-probability days.</span></div>
+  <div class="story"><span class="num">79</span><span>As a <em>pill user</em>, I want a daily contraception reminder at a custom time I set, so that I maintain my regimen without relying on memory.</span></div>
+  <div class="story"><span class="num">80</span><span>As a <em>habit-focused user</em>, I want symptom logging nudges and sleep/water reminders, so that the app encourages healthy tracking behavior throughout the day.</span></div>
+</div>
+
+<div style="margin-top:8px;padding-top:24px;border-top:1px solid #e5e7eb;display:flex;gap:12px;flex-wrap:wrap">
+  <a href="flo-user-journey-flows.html" style="font-size:12px;color:#4f46e5;text-decoration:none;background:#eef2ff;padding:6px 12px;border-radius:6px;font-weight:600">🔀 Flow Diagrams</a>
+  <a href="flo-health-comprehensive-guide.html" style="font-size:12px;color:#4f46e5;text-decoration:none;background:#eef2ff;padding:6px 12px;border-radius:6px;font-weight:600">📄 Research Guide</a>
+  <a href="index.html" style="font-size:12px;color:#4f46e5;text-decoration:none;background:#eef2ff;padding:6px 12px;border-radius:6px;font-weight:600">🖥 Wireframes</a>
+</div>
+
+</div>
+</body>
+</html>
