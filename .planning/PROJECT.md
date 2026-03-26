@@ -84,7 +84,8 @@ Enable families in Bangladesh to track and understand reproductive health for mu
 
 ## Constraints
 
-- **Delivery Type**: Scope + estimation document with developer-hour estimates for client — not building yet
+- **Delivery Type**: Scope + estimation document with developer-hour estimates for client
+- **Timeline**: 1 month to production deployment (deadline ~2026-04-27)
 - **Language**: Bilingual (English + Bengali) from day one — affects every UI component
 - **Tech Stack**: React + Vite + Tailwind (frontend), Custom Express/Node backend, Vercel + separate API server
 - **Privacy**: Health data (especially sex life tracking) requires encryption; anonymous mode considerations
