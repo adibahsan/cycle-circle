@@ -48,12 +48,15 @@ Plans:
   3. Calendar displays a full month with color-coded markers for period, fertile window, ovulation, and low-fertility days, shows predicted future periods and fertile windows, and allows tapping any date to view or edit logged data
   4. User can log symptoms via icon-based tap selection across physical, mood, discharge, and lifestyle categories, customize which categories appear, edit same-day logs, and logged symptoms feed into the prediction engine
   5. Prediction engine starts with Tier 1 (rolling average) from cycle 1, auto-escalates to Tier 2 (ARIMA) at 6+ cycles and Tier 3 (LSTM) at 12+ cycles, and shows prediction confidence to the user
-**Plans**: TBD
+**Plans**: 6 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [ ] 02-01-PLAN.md -- Shared contracts (Zod schemas, types, constants, phase calculations) and Prisma schema additions (CycleLog, SymptomLog, Prediction models)
+- [ ] 02-02-PLAN.md -- Three-tier prediction engine (Strategy Pattern): Tier 1 rolling average, Tier 2 ARIMA wrapper, Tier 3 LSTM stub, factory with auto-escalation
+- [ ] 02-03-PLAN.md -- Cycle tracking API (period start/end, retroactive editing, validation) and prediction service with BullMQ recalculation
+- [ ] 02-04-PLAN.md -- Symptom logging vertical slice: REST API (CRUD, preferences, prediction integration) and frontend icon-based UI
+- [ ] 02-05-PLAN.md -- Dashboard: cycle ring hero, phase display, fertile window, TTC tips, period logger (2-3 taps), prediction confidence
+- [ ] 02-06-PLAN.md -- Calendar: color-coded month grid, logged vs predicted distinction, day detail panel, retroactive editing, month navigation
 
 ### Phase 3: Engagement Layer
 **Goal**: Users stay engaged through timely notifications, learn from culturally relevant health content, and can share cycle information with partners
@@ -93,6 +96,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth, and Multi-Profile System | 0/5 | Planned | - |
-| 2. Core Cycle Tracking and Predictions | 0/3 | Not started | - |
+| 2. Core Cycle Tracking and Predictions | 0/6 | Planned | - |
 | 3. Engagement Layer | 0/3 | Not started | - |
 | 4. Admin Panel | 0/2 | Not started | - |
