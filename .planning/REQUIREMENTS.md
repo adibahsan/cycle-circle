@@ -69,12 +69,12 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **SYMP-07**: User can edit a symptom log already submitted for the current day
 - [ ] **SYMP-08**: Logged symptoms feed into prediction engine and content personalization
 
-### Prediction Engine (Three Tiers — Estimated Separately)
+### Prediction Engine (Three Tiers -- Estimated Separately)
 
-- [ ] **PRED-01**: Tier 1 (Simple Average) — rolling average of last 3-6 cycle lengths for next period prediction; works from cycle 1
-- [ ] **PRED-02**: Tier 2 (ARIMA) — time-series statistical model; activates after 6+ logged cycles
-- [ ] **PRED-03**: Tier 3 (LSTM/ML) — neural network with multi-factor inputs (symptoms, lifestyle, age); activates after 12+ logged cycles
-- [ ] **PRED-04**: System auto-escalates prediction tier as data accumulates (Tier 1 → 2 → 3)
+- [ ] **PRED-01**: Tier 1 (Simple Average) -- rolling average of last 3-6 cycle lengths for next period prediction; works from cycle 1
+- [ ] **PRED-02**: Tier 2 (ARIMA) -- time-series statistical model; activates after 6+ logged cycles
+- [ ] **PRED-03**: Tier 3 (LSTM/ML) -- neural network with multi-factor inputs (symptoms, lifestyle, age); activates after 12+ logged cycles
+- [ ] **PRED-04**: System auto-escalates prediction tier as data accumulates (Tier 1 -> 2 -> 3)
 - [ ] **PRED-05**: Prediction accuracy visible to user (confidence percentage)
 
 ### Notifications & Reminders
@@ -223,93 +223,93 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | — | Pending |
-| AUTH-02 | — | Pending |
-| AUTH-03 | — | Pending |
-| AUTH-04 | — | Pending |
-| AUTH-05 | — | Pending |
-| AUTH-06 | — | Pending |
-| AUTH-07 | — | Pending |
-| AUTH-08 | — | Pending |
-| PRTN-01 | — | Pending |
-| PRTN-02 | — | Pending |
-| PRTN-03 | — | Pending |
-| PRTN-04 | — | Pending |
-| PRTN-05 | — | Pending |
-| PRTN-06 | — | Pending |
-| ONBD-01 | — | Pending |
-| ONBD-02 | — | Pending |
-| ONBD-03 | — | Pending |
-| ONBD-04 | — | Pending |
-| ONBD-05 | — | Pending |
-| ONBD-06 | — | Pending |
-| CYCL-01 | — | Pending |
-| CYCL-02 | — | Pending |
-| CYCL-03 | — | Pending |
-| CYCL-04 | — | Pending |
-| CYCL-05 | — | Pending |
-| CYCL-06 | — | Pending |
-| CALR-01 | — | Pending |
-| CALR-02 | — | Pending |
-| CALR-03 | — | Pending |
-| CALR-04 | — | Pending |
-| FERT-01 | — | Pending |
-| FERT-02 | — | Pending |
-| FERT-03 | — | Pending |
-| SYMP-01 | — | Pending |
-| SYMP-02 | — | Pending |
-| SYMP-03 | — | Pending |
-| SYMP-04 | — | Pending |
-| SYMP-05 | — | Pending |
-| SYMP-06 | — | Pending |
-| SYMP-07 | — | Pending |
-| SYMP-08 | — | Pending |
-| PRED-01 | — | Pending |
-| PRED-02 | — | Pending |
-| PRED-03 | — | Pending |
-| PRED-04 | — | Pending |
-| PRED-05 | — | Pending |
-| NOTF-01 | — | Pending |
-| NOTF-02 | — | Pending |
-| NOTF-03 | — | Pending |
-| NOTF-04 | — | Pending |
-| NOTF-05 | — | Pending |
-| NOTF-06 | — | Pending |
-| NOTF-07 | — | Pending |
-| CONT-01 | — | Pending |
-| CONT-02 | — | Pending |
-| CONT-03 | — | Pending |
-| CONT-04 | — | Pending |
-| CONT-05 | — | Pending |
-| I18N-01 | — | Pending |
-| I18N-02 | — | Pending |
-| I18N-03 | — | Pending |
-| I18N-04 | — | Pending |
-| PRIV-01 | — | Pending |
-| PRIV-02 | — | Pending |
-| PRIV-03 | — | Pending |
-| PRIV-04 | — | Pending |
-| PRIV-05 | — | Pending |
-| ADMN-01 | — | Pending |
-| ADMN-02 | — | Pending |
-| ADMN-03 | — | Pending |
-| ADMN-04 | — | Pending |
-| ADMN-05 | — | Pending |
-| ADMN-06 | — | Pending |
-| ADMN-07 | — | Pending |
-| ADMN-08 | — | Pending |
-| ADMN-09 | — | Pending |
-| ADMN-10 | — | Pending |
-| ADMN-11 | — | Pending |
-| ADMN-12 | — | Pending |
-| ADMN-13 | — | Pending |
-| ADMN-14 | — | Pending |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| AUTH-04 | Phase 1 | Pending |
+| AUTH-05 | Phase 1 | Pending |
+| AUTH-06 | Phase 1 | Pending |
+| AUTH-07 | Phase 1 | Pending |
+| AUTH-08 | Phase 1 | Pending |
+| PRTN-01 | Phase 3 | Pending |
+| PRTN-02 | Phase 3 | Pending |
+| PRTN-03 | Phase 3 | Pending |
+| PRTN-04 | Phase 3 | Pending |
+| PRTN-05 | Phase 3 | Pending |
+| PRTN-06 | Phase 3 | Pending |
+| ONBD-01 | Phase 1 | Pending |
+| ONBD-02 | Phase 1 | Pending |
+| ONBD-03 | Phase 1 | Pending |
+| ONBD-04 | Phase 1 | Pending |
+| ONBD-05 | Phase 1 | Pending |
+| ONBD-06 | Phase 1 | Pending |
+| CYCL-01 | Phase 2 | Pending |
+| CYCL-02 | Phase 2 | Pending |
+| CYCL-03 | Phase 2 | Pending |
+| CYCL-04 | Phase 2 | Pending |
+| CYCL-05 | Phase 2 | Pending |
+| CYCL-06 | Phase 2 | Pending |
+| CALR-01 | Phase 2 | Pending |
+| CALR-02 | Phase 2 | Pending |
+| CALR-03 | Phase 2 | Pending |
+| CALR-04 | Phase 2 | Pending |
+| FERT-01 | Phase 2 | Pending |
+| FERT-02 | Phase 2 | Pending |
+| FERT-03 | Phase 2 | Pending |
+| SYMP-01 | Phase 2 | Pending |
+| SYMP-02 | Phase 2 | Pending |
+| SYMP-03 | Phase 2 | Pending |
+| SYMP-04 | Phase 2 | Pending |
+| SYMP-05 | Phase 2 | Pending |
+| SYMP-06 | Phase 2 | Pending |
+| SYMP-07 | Phase 2 | Pending |
+| SYMP-08 | Phase 2 | Pending |
+| PRED-01 | Phase 2 | Pending |
+| PRED-02 | Phase 2 | Pending |
+| PRED-03 | Phase 2 | Pending |
+| PRED-04 | Phase 2 | Pending |
+| PRED-05 | Phase 2 | Pending |
+| NOTF-01 | Phase 3 | Pending |
+| NOTF-02 | Phase 3 | Pending |
+| NOTF-03 | Phase 3 | Pending |
+| NOTF-04 | Phase 3 | Pending |
+| NOTF-05 | Phase 3 | Pending |
+| NOTF-06 | Phase 3 | Pending |
+| NOTF-07 | Phase 3 | Pending |
+| CONT-01 | Phase 3 | Pending |
+| CONT-02 | Phase 3 | Pending |
+| CONT-03 | Phase 3 | Pending |
+| CONT-04 | Phase 3 | Pending |
+| CONT-05 | Phase 3 | Pending |
+| I18N-01 | Phase 1 | Pending |
+| I18N-02 | Phase 1 | Pending |
+| I18N-03 | Phase 1 | Pending |
+| I18N-04 | Phase 1 | Pending |
+| PRIV-01 | Phase 1 | Pending |
+| PRIV-02 | Phase 1 | Pending |
+| PRIV-03 | Phase 1 | Pending |
+| PRIV-04 | Phase 1 | Pending |
+| PRIV-05 | Phase 1 | Pending |
+| ADMN-01 | Phase 4 | Pending |
+| ADMN-02 | Phase 4 | Pending |
+| ADMN-03 | Phase 4 | Pending |
+| ADMN-04 | Phase 4 | Pending |
+| ADMN-05 | Phase 4 | Pending |
+| ADMN-06 | Phase 4 | Pending |
+| ADMN-07 | Phase 4 | Pending |
+| ADMN-08 | Phase 4 | Pending |
+| ADMN-09 | Phase 4 | Pending |
+| ADMN-10 | Phase 4 | Pending |
+| ADMN-11 | Phase 4 | Pending |
+| ADMN-12 | Phase 4 | Pending |
+| ADMN-13 | Phase 4 | Pending |
+| ADMN-14 | Phase 4 | Pending |
 
 **Coverage:**
-- v1 requirements: 68 total
-- Mapped to phases: 0
-- Unmapped: 68 ⚠️
+- v1 requirements: 81 total
+- Mapped to phases: 81
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-03-27 after scope reduction (removed medicine, sleep, exercise, sex life, health analytics, menopause, community from v1)*
+*Last updated: 2026-03-26 -- Traceability updated with phase mappings (4 phases, 81/81 mapped)*
