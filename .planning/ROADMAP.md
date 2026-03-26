@@ -83,11 +83,14 @@ Plans:
   2. Admin can list, view, suspend, reactivate, delete users, and reset passwords -- with Super Admin and Content Admin role separation and full security/access controls
   3. Admin can view aggregated population-level health insights (average cycle length, irregular cycle percentage, common symptoms), prediction accuracy reports (predicted vs actual, accuracy percentages), feature usage reports, alert engagement reports, multi-profile usage analytics, and data completeness reports
   4. Admin can create, edit, and delete content articles, manage categories and languages, control notification/reminder types, send broadcast notifications, and export analytics data as CSV or Excel
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md -- RBAC infrastructure (role constants, requireRole middleware, RequireRole guard), admin layout shell with sidebar, dashboard metrics API
+- [ ] 04-02-PLAN.md -- Dashboard UI (KPI cards, trend charts) and user management vertical slice (list, view, suspend, reactivate, delete, reset password)
+- [ ] 04-03-PLAN.md -- Health analytics (population-level insights, cycle monitoring) and prediction accuracy reports with privacy-protected aggregate queries
+- [ ] 04-04-PLAN.md -- Content management system with Tiptap rich text editor, bilingual article CRUD, category management
+- [ ] 04-05-PLAN.md -- Notification management, operational reports (feature usage, alert engagement, multi-profile analytics, data completeness), and CSV/Excel data export
 
 ## Progress
 
@@ -99,4 +102,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Foundation, Auth, and Multi-Profile System | 0/5 | Planned | - |
 | 2. Core Cycle Tracking and Predictions | 0/6 | Planned | - |
 | 3. Engagement Layer | 0/4 | Planned | - |
-| 4. Admin Panel | 0/2 | Not started | - |
+| 4. Admin Panel | 0/5 | Planned | - |
