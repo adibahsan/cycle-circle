@@ -66,12 +66,13 @@ Plans:
   1. User receives period prediction, logging reminder, and fertile window alerts via email and SMS -- notifications route correctly per-profile in multi-profile accounts, SMS delivers in Bengali via SSL Wireless, and user can toggle each notification type on or off
   2. User can browse bilingual health articles categorized by topic and tagged by cycle phase, sees phase-specific content recommendations on the dashboard, and content addresses Bangladeshi cultural context
   3. Profile owner can generate a sharing code for a partner, partner gets read-only access to cycle calendar and phase insights (with daily updates and fertile window visibility in TTC mode), partner cannot see symptoms or edit data, and primary user can revoke access instantly
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
-- [ ] 03-03: TBD
+- [ ] 03-01-PLAN.md -- Shared infrastructure: Prisma schema (6 new models), BullMQ queues, SMS/email delivery utilities, notification preferences API
+- [ ] 03-02-PLAN.md -- Notification delivery pipeline: React Email templates, cron job processors, multi-profile routing, notification settings UI
+- [ ] 03-03-PLAN.md -- Content platform: article service with phase-based filtering, browsing pages, dashboard content feed, bilingual seed data
+- [ ] 03-04-PLAN.md -- Partner sharing: share code lifecycle, read-only access middleware, daily partner insights, partner frontend
 
 ### Phase 4: Admin Panel
 **Goal**: Operations team can monitor platform health, manage users, oversee content, track prediction accuracy, and export data for analysis
@@ -97,5 +98,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Foundation, Auth, and Multi-Profile System | 0/5 | Planned | - |
 | 2. Core Cycle Tracking and Predictions | 0/6 | Planned | - |
-| 3. Engagement Layer | 0/3 | Not started | - |
+| 3. Engagement Layer | 0/4 | Planned | - |
 | 4. Admin Panel | 0/2 | Not started | - |
