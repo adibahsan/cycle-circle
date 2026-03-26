@@ -29,12 +29,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User completes onboarding (trust screens, goal selection, cycle history, personal data) and receives a first cycle prediction without prior logged data
   4. User can switch the entire UI between English and Bengali at any time, with dates and numbers adapting to the selected language, and Bengali is the default for Bangladesh-based users
   5. Health data is encrypted at field level in the database, account deletion removes all data, privacy policy and terms of service are available in both languages, and multi-profile consent is obtained
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
-- [ ] 01-03: TBD
+- [ ] 01-01-PLAN.md -- Monorepo setup, shared contracts, Prisma schema with field encryption
+- [ ] 01-02-PLAN.md -- Authentication system (Express 5 server, JWT, email verification, password reset)
+- [ ] 01-03-PLAN.md -- Bilingual i18n infrastructure (English + Bengali), privacy/ToS pages
+- [ ] 01-04-PLAN.md -- Multi-profile CRUD with ownership middleware, Tier 1 prediction, profile switcher
+- [ ] 01-05-PLAN.md -- Onboarding wizard, dashboard, account deletion
 
 ### Phase 2: Core Cycle Tracking and Predictions
 **Goal**: Users can track their periods, view their cycle on a calendar, understand their fertile window, log symptoms, and receive increasingly accurate predictions as data accumulates
@@ -90,7 +92,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Auth, and Multi-Profile System | 0/3 | Not started | - |
+| 1. Foundation, Auth, and Multi-Profile System | 0/5 | Planned | - |
 | 2. Core Cycle Tracking and Predictions | 0/3 | Not started | - |
 | 3. Engagement Layer | 0/3 | Not started | - |
 | 4. Admin Panel | 0/2 | Not started | - |
