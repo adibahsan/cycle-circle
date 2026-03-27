@@ -174,7 +174,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
     <p class="subtitle">A focused 4-week sprint to ship a bilingual, multi-profile reproductive health platform -- period tracking, cycle predictions, notifications, content, partner sharing, and a full admin panel.</p>
     <div class="stats-row">
       <div class="stat"><div class="stat-val">20</div><div class="stat-label">Working days</div></div>
-      <div class="stat"><div class="stat-val">81</div><div class="stat-label">Requirements</div></div>
+      <div class="stat"><div class="stat-val">102</div><div class="stat-label">Requirements</div></div>
       <div class="stat"><div class="stat-val">4</div><div class="stat-label">Phases</div></div>
       <div class="stat"><div class="stat-val">3</div><div class="stat-label">Prediction tiers</div></div>
     </div>
@@ -198,6 +198,8 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Onboarding flow</div><div class="fi-note">Trust screens, goal selection (period/TTC/peri), cycle history entry</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Field-level encryption</div><div class="fi-note">AES-256-GCM via prisma-field-encryption for health data</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Profile switcher with data isolation</div><div class="fi-note">checkProfileOwnership middleware on every profile-scoped endpoint</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Feature gating middleware (free/pro access control)</div><div class="fi-note">Backend middleware checks subscription tier before granting access to gated features</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Redis-backed session store with JWT blacklist</div><div class="fi-note">Tracks active sessions per user, enables remote session termination</div></div></div>
       </div>
 
       <div class="moscow-card moscow-should">
@@ -207,6 +209,9 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Partner sharing</div><div class="fi-note">Invite code, read-only calendar, daily phase insights, instant revoke</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Content platform</div><div class="fi-note">Bilingual blog articles, phase-specific recommendations, cultural context</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Notification preferences per-profile</div><div class="fi-note">Toggle each notification type on/off per health profile</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">BDApps carrier billing for Pro subscription</div><div class="fi-note">Mobile carrier charging via BDApps API -- dominant payment method in Bangladesh</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Auto-disable pro on charging lapse (grace period)</div><div class="fi-note">Daily cron checks BDApps status, disables pro after configurable grace period</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Grace period warning to users</div><div class="fi-note">"Your subscription expires in X days" notification when charging lapses</div></div></div>
       </div>
 
       <div class="moscow-card moscow-could">
@@ -218,6 +223,9 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Prediction accuracy reports</div><div class="fi-note">Predicted vs. actual dates, accuracy percentages per tier</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Data export (CSV/Excel)</div><div class="fi-note">Analytics and research data export for operations team</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Role-based access control</div><div class="fi-note">Super Admin and Content Admin roles with requireRole middleware</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Admin feature gating toggle UI</div><div class="fi-note">Configure which features are free vs pro from admin portal</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Admin session management (view/terminate sessions)</div><div class="fi-note">View active sessions for any user, terminate individual or all sessions</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Admin subscription management (BDApps status, manual override, billing history)</div><div class="fi-note">View subscription status, set grace period, manual pro grant/revoke</div></div></div>
       </div>
 
       <div class="moscow-card moscow-wont">
@@ -358,6 +366,33 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
           <td><div class="rice-score">2</div><div class="rice-bar"><div class="rice-bar-fill" style="width:1%"></div></div></td>
           <td><span class="badge badge-blue">Phase 2 (stub)</span></td>
         </tr>
+        <tr>
+          <td><strong class="priority-1">Feature gating</strong></td>
+          <td>100%</td>
+          <td>2.5 (high)</td>
+          <td>85%</td>
+          <td>2</td>
+          <td><div class="rice-score">106</div><div class="rice-bar"><div class="rice-bar-fill" style="width:39%"></div></div></td>
+          <td><span class="badge badge-teal">Phase 1</span></td>
+        </tr>
+        <tr>
+          <td>BDApps subscription</td>
+          <td>70%</td>
+          <td>2.5 (high)</td>
+          <td>70%</td>
+          <td>3</td>
+          <td><div class="rice-score">41</div><div class="rice-bar"><div class="rice-bar-fill" style="width:15%"></div></div></td>
+          <td><span class="badge badge-green">Phase 3</span></td>
+        </tr>
+        <tr>
+          <td>Session management</td>
+          <td>20%</td>
+          <td>2 (high)</td>
+          <td>90%</td>
+          <td>1.5</td>
+          <td><div class="rice-score">24</div><div class="rice-bar"><div class="rice-bar-fill" style="width:9%"></div></div></td>
+          <td><span class="badge badge-purple">Phase 4</span></td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -444,6 +479,16 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         <div class="stack-reason">Rich text editor for bilingual content articles. Collaborative editing support for admin CMS.</div>
       </div>
       <div class="stack-card">
+        <div class="stack-layer">Session Store</div>
+        <div class="stack-choice">Redis + ioredis</div>
+        <div class="stack-reason">JWT blacklist for remote session termination, BullMQ backing store.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Carrier Billing</div>
+        <div class="stack-choice">BDApps API</div>
+        <div class="stack-reason">Mobile carrier charging for Pro subscriptions -- dominant payment method in Bangladesh.</div>
+      </div>
+      <div class="stack-card">
         <div class="stack-layer">Hosting</div>
         <div class="stack-choice">Vercel + Railway/VPS</div>
         <div class="stack-reason">Frontend on Vercel CDN. API on Railway for persistent Express + BullMQ workers.</div>
@@ -451,102 +496,9 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
     </div>
   </div>
 
-  <!-- SECTION 4: DATABASE SCHEMA -->
+  <!-- SECTION 4: PREDICTION ALGORITHM -->
   <div class="section">
-    <div class="section-title"><div class="section-num">4</div>Database Schema</div>
-    <div class="section-desc">Multi-profile architecture is the foundation. Every health table references profiles (not users). Field-level encryption on sensitive columns. Profile ownership middleware enforces data isolation.</div>
-
-    <div class="schema-grid">
-      <div class="schema-card">
-        <div class="table-name">users</div>
-        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
-        <div class="field"><span class="field-name">email</span><span class="field-type">text unique</span></div>
-        <div class="field"><span class="field-name">password_hash</span><span class="field-type">text</span></div>
-        <div class="field"><span class="field-name">role</span><span class="field-type">enum(user, admin)</span></div>
-        <div class="field"><span class="field-name">language_preference</span><span class="field-type">enum(en, bn)</span></div>
-        <div class="field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
-      </div>
-      <div class="schema-card">
-        <div class="table-name">profiles</div>
-        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
-        <div class="field"><span class="field-name">user_id</span><span class="field-type">uuid FK -> users</span></div>
-        <div class="field"><span class="field-name">name</span><span class="field-type">text</span></div>
-        <div class="field"><span class="field-name">relation_type</span><span class="field-type">enum(self, wife, sister, mother, daughter, girlfriend)</span></div>
-        <div class="field"><span class="field-name">date_of_birth</span><span class="field-type">date</span></div>
-        <div class="field"><span class="field-name">height</span><span class="field-type">float nullable</span></div>
-        <div class="field"><span class="field-name">weight</span><span class="field-type">float nullable</span></div>
-        <div class="field"><span class="field-name">avg_cycle_length</span><span class="field-type">int default 28</span></div>
-        <div class="field"><span class="field-name">avg_period_length</span><span class="field-type">int default 5</span></div>
-        <div class="field"><span class="field-name">goal</span><span class="field-type">enum(period, ttc, peri)</span></div>
-        <div class="field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
-      </div>
-      <div class="schema-card">
-        <div class="table-name">period_logs</div>
-        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
-        <div class="field"><span class="field-name">profile_id</span><span class="field-type">uuid FK -> profiles</span></div>
-        <div class="field"><span class="field-name">start_date</span><span class="field-type">date not null</span></div>
-        <div class="field"><span class="field-name">end_date</span><span class="field-type">date nullable</span></div>
-        <div class="field"><span class="field-name">flow_intensity</span><span class="field-type">enum(light, medium, heavy)</span></div>
-      </div>
-      <div class="schema-card">
-        <div class="table-name">symptom_logs</div>
-        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
-        <div class="field"><span class="field-name">profile_id</span><span class="field-type">uuid FK -> profiles</span></div>
-        <div class="field"><span class="field-name">logged_date</span><span class="field-type">date not null</span></div>
-        <div class="field"><span class="field-name">category</span><span class="field-type">text (physical, mood, discharge, lifestyle)</span></div>
-        <div class="field"><span class="field-name">symptom_key</span><span class="field-type">text (cramps, headache, bloating...)</span></div>
-      </div>
-      <div class="schema-card">
-        <div class="table-name">predictions</div>
-        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
-        <div class="field"><span class="field-name">profile_id</span><span class="field-type">uuid FK -> profiles</span></div>
-        <div class="field"><span class="field-name">next_period_start</span><span class="field-type">date</span></div>
-        <div class="field"><span class="field-name">next_period_end</span><span class="field-type">date</span></div>
-        <div class="field"><span class="field-name">fertile_window_start</span><span class="field-type">date</span></div>
-        <div class="field"><span class="field-name">fertile_window_end</span><span class="field-type">date</span></div>
-        <div class="field"><span class="field-name">ovulation_date</span><span class="field-type">date</span></div>
-        <div class="field"><span class="field-name">tier</span><span class="field-type">int (1, 2, 3)</span></div>
-        <div class="field"><span class="field-name">confidence</span><span class="field-type">float (0-1)</span></div>
-        <div class="field"><span class="field-name">recalculated_at</span><span class="field-type">timestamptz</span></div>
-      </div>
-      <div class="schema-card">
-        <div class="table-name">partner_access</div>
-        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
-        <div class="field"><span class="field-name">profile_id</span><span class="field-type">uuid FK -> profiles</span></div>
-        <div class="field"><span class="field-name">partner_user_id</span><span class="field-type">uuid FK -> users</span></div>
-        <div class="field"><span class="field-name">share_code</span><span class="field-type">text unique</span></div>
-        <div class="field"><span class="field-name">permissions</span><span class="field-type">JSONB</span></div>
-        <div class="field"><span class="field-name">revoked</span><span class="field-type">boolean default false</span></div>
-        <div class="field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
-      </div>
-      <div class="schema-card">
-        <div class="table-name">articles</div>
-        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
-        <div class="field"><span class="field-name">title_en</span><span class="field-type">text</span></div>
-        <div class="field"><span class="field-name">title_bn</span><span class="field-type">text</span></div>
-        <div class="field"><span class="field-name">body_en</span><span class="field-type">text (rich text)</span></div>
-        <div class="field"><span class="field-name">body_bn</span><span class="field-type">text (rich text)</span></div>
-        <div class="field"><span class="field-name">category</span><span class="field-type">text</span></div>
-        <div class="field"><span class="field-name">cycle_phase_tags</span><span class="field-type">text[]</span></div>
-        <div class="field"><span class="field-name">published</span><span class="field-type">boolean default false</span></div>
-        <div class="field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
-      </div>
-      <div class="schema-card">
-        <div class="table-name">notification_preferences</div>
-        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
-        <div class="field"><span class="field-name">profile_id</span><span class="field-type">uuid FK -> profiles</span></div>
-        <div class="field"><span class="field-name">period_alert</span><span class="field-type">boolean default true</span></div>
-        <div class="field"><span class="field-name">fertile_alert</span><span class="field-type">boolean default true</span></div>
-        <div class="field"><span class="field-name">logging_reminder</span><span class="field-type">boolean default true</span></div>
-        <div class="field"><span class="field-name">sms_enabled</span><span class="field-type">boolean default false</span></div>
-        <div class="field"><span class="field-name">email_enabled</span><span class="field-type">boolean default true</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SECTION 5: PREDICTION ALGORITHM -->
-  <div class="section">
-    <div class="section-title"><div class="section-num">5</div>Three-Tier Prediction Engine</div>
+    <div class="section-title"><div class="section-num">4</div>Three-Tier Prediction Engine</div>
     <div class="section-desc">Strategy Pattern with auto-escalation. Factory selects tier based on data points. Biggest accuracy gain is Tier 1 to Tier 2. Regular cycles top out near 85-87% regardless of algorithm.</div>
 
     <div class="algo-box">
@@ -597,9 +549,9 @@ arimaModel.train(cycleLengthHistory);
     </div>
   </div>
 
-  <!-- SECTION 6: 4-WEEK SPRINT PLAN -->
+  <!-- SECTION 5: 4-WEEK SPRINT PLAN -->
   <div class="section">
-    <div class="section-title"><div class="section-num">6</div>4-Week Sprint Plan</div>
+    <div class="section-title"><div class="section-num">5</div>4-Week Sprint Plan</div>
     <div class="section-desc">20 working days across 4 phases. Each week produces a coherent, verifiable capability. Phase dependencies flow strictly forward -- no circular dependencies.</div>
 
     <!-- WEEK 1 -->
@@ -633,6 +585,8 @@ arimaModel.train(cycleLengthHistory);
             <div class="deliverable"><div class="d-dot"></div>JWT auth: signup, login, email verify, password reset</div>
             <div class="deliverable"><div class="d-dot"></div>Access + refresh tokens in HttpOnly Secure cookies</div>
             <div class="deliverable"><div class="d-dot"></div>verifyJWT + checkProfileOwnership middleware chain</div>
+            <div class="deliverable"><div class="d-dot"></div>Feature gating middleware (free/pro access control)</div>
+            <div class="deliverable"><div class="d-dot"></div>Redis-backed session store with JWT blacklist (ioredis)</div>
           </div></td>
           <td><span class="owner-badge owner-be">Back-end</span></td>
         </tr>
@@ -781,12 +735,14 @@ arimaModel.train(cycleLengthHistory);
         </tr>
         <tr>
           <td><div class="day-num">Day 13</div><div style="font-size:10px;color:#9ca3af">Wednesday</div></td>
-          <td><strong>Content platform</strong></td>
+          <td><strong>Content platform + BDApps billing</strong></td>
           <td><div class="deliverable-list">
             <div class="deliverable"><div class="d-dot-green"></div>Article service: bilingual content with phase-based filtering</div>
             <div class="deliverable"><div class="d-dot-green"></div>Content browsing pages: article list, article detail, category filter</div>
             <div class="deliverable"><div class="d-dot-green"></div>Dashboard content feed: phase-specific recommendations</div>
             <div class="deliverable"><div class="d-dot-green"></div>Bilingual seed data: 10-15 articles on menstrual health and Bangladeshi cultural context</div>
+            <div class="deliverable"><div class="d-dot-green"></div>BDApps carrier billing integration (Pro subscription charging API)</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Subscription status cron: daily BDApps charging check + grace period logic</div>
           </div></td>
           <td><span class="owner-badge owner-shared">Both</span></td>
         </tr>
@@ -848,11 +804,14 @@ arimaModel.train(cycleLengthHistory);
         </tr>
         <tr>
           <td><div class="day-num">Day 19</div><div style="font-size:10px;color:#9ca3af">Thursday</div></td>
-          <td><strong>Content CMS</strong></td>
+          <td><strong>Content CMS + gating/session/subscription admin</strong></td>
           <td><div class="deliverable-list">
             <div class="deliverable"><div class="d-dot-purple"></div>Tiptap rich text editor for bilingual article CRUD</div>
             <div class="deliverable"><div class="d-dot-purple"></div>Category management + cycle phase tagging</div>
             <div class="deliverable"><div class="d-dot-purple"></div>Notification management: control reminder types, broadcast</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Admin feature gating toggle UI (configure free vs pro features)</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Admin session management (view active sessions, terminate per user)</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Admin subscription management (BDApps status, grace period, manual override, billing history)</div>
           </div></td>
           <td><span class="owner-badge owner-fe">Front-end</span></td>
         </tr>
@@ -871,9 +830,9 @@ arimaModel.train(cycleLengthHistory);
     </table>
   </div>
 
-  <!-- SECTION 7: DEPENDENCIES -->
+  <!-- SECTION 6: DEPENDENCIES -->
   <div class="section">
-    <div class="section-title"><div class="section-num">7</div>Dependency Map</div>
+    <div class="section-title"><div class="section-num">6</div>Dependency Map</div>
     <div class="section-desc">Sequential dependencies between phases and key blockers. Build foundation before features -- multi-profile auth and i18n affect every subsequent component.</div>
 
     <div class="dep-list">
@@ -940,9 +899,9 @@ arimaModel.train(cycleLengthHistory);
     </div>
   </div>
 
-  <!-- SECTION 8: PHASES -->
+  <!-- SECTION 7: PHASES -->
   <div class="section">
-    <div class="section-title"><div class="section-num">8</div>Phase Roadmap</div>
+    <div class="section-title"><div class="section-num">7</div>Phase Roadmap</div>
     <div class="section-desc">4 phases, each producing a coherent, verifiable capability. Phase dependencies flow strictly forward: 1 -> 2 -> 3 -> 4.</div>
 
     <div class="phases-row">
@@ -960,6 +919,8 @@ arimaModel.train(cycleLengthHistory);
           <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Onboarding wizard + first prediction</div>
           <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Profile switcher + account deletion</div>
           <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Privacy policy + ToS (bilingual)</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Feature gating middleware (free/pro)</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Redis session store with JWT blacklist</div>
         </div>
         <div style="margin-top:16px;padding-top:12px;border-top:1px solid #ccfbf1;font-size:11px;color:#115e59;font-weight:700">Goal: User creates account, manages profiles in English/Bengali</div>
       </div>
@@ -996,6 +957,8 @@ arimaModel.train(cycleLengthHistory);
           <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Phase-specific content recommendations</div>
           <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Partner sharing (invite, read-only, revoke)</div>
           <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Partner view (calendar + phase insights)</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>BDApps carrier billing for Pro</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Auto-disable on charging lapse</div>
         </div>
         <div style="margin-top:16px;padding-top:12px;border-top:1px solid #dcfce7;font-size:11px;color:#16a34a;font-weight:700">Goal: User stays engaged through SMS/email and shares with partner</div>
       </div>
@@ -1014,16 +977,19 @@ arimaModel.train(cycleLengthHistory);
           <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Content CMS (Tiptap editor, bilingual)</div>
           <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Operational reports + data export</div>
           <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>CSV/Excel export for all analytics</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Feature gating toggle UI</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Session management</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Subscription management</div>
         </div>
         <div style="margin-top:16px;padding-top:12px;border-top:1px solid #ede9fe;font-size:11px;color:#7c3aed;font-weight:700">Goal: Ops team can monitor and manage the platform</div>
       </div>
     </div>
   </div>
 
-  <!-- SECTION 9: RISKS -->
+  <!-- SECTION 8: RISKS -->
   <div class="section">
-    <div class="section-title"><div class="section-num">9</div>Key Risks &amp; Mitigations</div>
-    <div class="section-desc">6 risks ranked by likelihood and impact. Front-loaded mitigation -- most prevention happens in Phase 1.</div>
+    <div class="section-title"><div class="section-num">8</div>Key Risks &amp; Mitigations</div>
+    <div class="section-desc">7 risks ranked by likelihood and impact. Front-loaded mitigation -- most prevention happens in Phase 1.</div>
 
     <div class="risk-list">
       <div class="risk">
@@ -1067,6 +1033,14 @@ arimaModel.train(cycleLengthHistory);
         </div>
       </div>
       <div class="risk">
+        <div><span class="risk-level risk-med">Medium</span></div>
+        <div>
+          <div class="risk-title">BDApps API reliability</div>
+          <div class="risk-desc">Carrier billing APIs in Bangladesh can have intermittent failures. BDApps charging status checks and subscription operations may fail transiently, risking incorrect pro access revocation.</div>
+          <div class="risk-mit">-> Mitigate: Implement retry logic with exponential backoff on all BDApps API calls. Grace period prevents immediate access loss on transient failures. Daily cron tolerates missed checks -- only revokes after configurable N consecutive failures.</div>
+        </div>
+      </div>
+      <div class="risk">
         <div><span class="risk-level risk-low">Low</span></div>
         <div>
           <div class="risk-title">Prediction cold-start</div>
@@ -1077,9 +1051,9 @@ arimaModel.train(cycleLengthHistory);
     </div>
   </div>
 
-  <!-- SECTION 10: DEFINITION OF DONE -->
+  <!-- SECTION 9: DEFINITION OF DONE -->
   <div class="section">
-    <div class="section-title"><div class="section-num">10</div>Definition of Done -- v1 Launch</div>
+    <div class="section-title"><div class="section-num">9</div>Definition of Done -- v1 Launch</div>
     <div class="section-desc">The v1 is shippable when every item below is verified. Do not consider any phase complete until its criteria are met.</div>
 
     <div class="dod-grid">
@@ -1098,6 +1072,9 @@ arimaModel.train(cycleLengthHistory);
         <div class="dod-item"><div class="dod-check">&#10003;</div>Partner sharing works: invite code, read-only view, instant revoke</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>Admin dashboard loads with KPIs and trend charts</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>Admin can manage users and content via CMS</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Feature gating blocks free users from pro features and allows access for pro users</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Admin can terminate user sessions remotely</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>BDApps charging status checked daily, pro access disabled after grace period</div>
       </div>
       <div class="dod-card">
         <div class="dod-title">Quality &amp; Security</div>
@@ -1117,9 +1094,9 @@ arimaModel.train(cycleLengthHistory);
     </div>
   </div>
 
-  <!-- SECTION 11: DEVELOPER-HOUR ESTIMATES -->
+  <!-- SECTION 10: DEVELOPER-HOUR ESTIMATES -->
   <div class="section">
-    <div class="section-title"><div class="section-num">11</div>Developer-Hour Estimates</div>
+    <div class="section-title"><div class="section-num">10</div>Developer-Hour Estimates</div>
     <div class="section-desc">Per-phase hour breakdown based on 20 implementation plans across 4 phases. Hours assume experienced full-stack developers familiar with the stack.</div>
 
     <table class="hours-table">
@@ -1137,8 +1114,8 @@ arimaModel.train(cycleLengthHistory);
           <td><span class="badge badge-teal">Phase 1</span></td>
           <td><strong>Foundation, Auth, Multi-Profile</strong></td>
           <td>5 plans</td>
-          <td><div class="hours-val">~46h</div></td>
-          <td>Monorepo, Prisma + encryption, JWT auth, i18n, multi-profile CRUD, onboarding</td>
+          <td><div class="hours-val">~50h</div></td>
+          <td>Monorepo, Prisma + encryption, JWT auth, i18n, multi-profile CRUD, onboarding, gating middleware + session store</td>
         </tr>
         <tr>
           <td><span class="badge badge-blue">Phase 2</span></td>
@@ -1151,19 +1128,19 @@ arimaModel.train(cycleLengthHistory);
           <td><span class="badge badge-green">Phase 3</span></td>
           <td><strong>Engagement Layer</strong></td>
           <td>4 plans</td>
-          <td><div class="hours-val">~58h</div></td>
-          <td>Notification infra, SMS + email delivery, content platform, partner sharing</td>
+          <td><div class="hours-val">~68h</div></td>
+          <td>Notification infra, SMS + email delivery, content platform, partner sharing, BDApps billing integration</td>
         </tr>
         <tr>
           <td><span class="badge badge-purple">Phase 4</span></td>
           <td><strong>Admin Panel</strong></td>
           <td>5 plans</td>
-          <td><div class="hours-val">~100h</div></td>
-          <td>RBAC, dashboard + user mgmt, health analytics, content CMS, reports + export</td>
+          <td><div class="hours-val">~115h</div></td>
+          <td>RBAC, dashboard + user mgmt, health analytics, content CMS, reports + export, gating/session/subscription admin UIs</td>
         </tr>
         <tr class="hours-total">
           <td colspan="3"><strong>TOTAL</strong></td>
-          <td><div class="hours-val">~266h</div></td>
+          <td><div class="hours-val">~295h</div></td>
           <td><strong>20 plans across 4 phases</strong></td>
         </tr>
       </tbody>
@@ -1174,19 +1151,19 @@ arimaModel.train(cycleLengthHistory);
         <div class="team-size">2</div>
         <div class="team-label">Developers</div>
         <div class="team-fit" style="background:#fef2f2;color:#dc2626">Tight</div>
-        <div style="font-size:10px;color:#6b7280;margin-top:6px">~133h each over 4 weeks<br>~6.7h/day, minimal buffer</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:6px">~148h each over 4 weeks<br>~7.4h/day, minimal buffer</div>
       </div>
       <div class="team-card">
         <div class="team-size">3</div>
         <div class="team-label">Developers</div>
         <div class="team-fit" style="background:#f0fdf4;color:#16a34a">Comfortable</div>
-        <div style="font-size:10px;color:#6b7280;margin-top:6px">~89h each over 4 weeks<br>~4.4h/day, good buffer</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:6px">~98h each over 4 weeks<br>~4.9h/day, good buffer</div>
       </div>
       <div class="team-card">
         <div class="team-size">4</div>
         <div class="team-label">Developers</div>
         <div class="team-fit" style="background:#ccfbf1;color:#115e59">Ideal for 1-month</div>
-        <div style="font-size:10px;color:#6b7280;margin-top:6px">~67h each over 4 weeks<br>~3.3h/day, ample buffer</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:6px">~74h each over 4 weeks<br>~3.7h/day, ample buffer</div>
       </div>
     </div>
   </div>

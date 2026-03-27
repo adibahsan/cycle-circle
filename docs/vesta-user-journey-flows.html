@@ -177,7 +177,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
     <h1>Vesta &mdash; User Journey Flow Diagrams</h1>
     <p class="subtitle">All major feature flows mapped for the v1 implementation. Each diagram represents the end-to-end user journey for a distinct product area.</p>
     <div class="stats-row">
-      <div class="stat"><div class="stat-val">12</div><div class="stat-label">User flows</div></div>
+      <div class="stat"><div class="stat-val">15</div><div class="stat-label">User flows</div></div>
       <div class="stat"><div class="stat-val">4</div><div class="stat-label">Phases</div></div>
       <div class="stat"><div class="stat-val">Multi</div><div class="stat-label">Profile architecture</div></div>
       <div class="stat"><div class="stat-val">EN/BN</div><div class="stat-label">Bilingual</div></div>
@@ -959,11 +959,339 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
   </div>
 
   <!-- ============================================================ -->
+  <!-- FLOW 13: FEATURE GATING                                       -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">13</div>Feature Gating Flow
+      <span class="phase-tag phase-1">Phase 1</span>
+      <span class="phase-tag phase-4">Phase 4</span>
+    </div>
+    <div class="section-desc">How the system controls feature access based on subscription tier, and how admins manage feature gates in real-time.</div>
+    <div class="section-reqs">
+      <span class="req-badge">GATE-01</span>
+      <span class="req-badge">GATE-02</span>
+      <span class="req-badge">GATE-03</span>
+      <span class="req-badge">GATE-04</span>
+      <span class="req-badge">GATE-05</span>
+    </div>
+
+    <div class="flow-diagram">
+      <!-- User-side gating -->
+      <div class="flow-wrap">
+        <span class="flow-node node-start">User taps feature</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-system wrap">Feature Gate<br>Middleware checks<br>subscription tier</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Pro user</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Grant access</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-end">Feature loads normally</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Free user</span>
+          <span class="flow-node node-data wrap">Check feature_gates<br>table</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-decision wrap">Feature marked<br>free?</span>
+        </div>
+      </div>
+
+      <div class="flow-branch" style="margin-left:76px">
+        <div class="flow-branch-row">
+          <span class="branch-label">Yes</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Grant access (free feature)</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">No</span>
+          <span class="flow-node node-alert wrap">Show "Pro" badge +<br>upgrade prompt</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-decision wrap">User taps<br>upgrade?</span>
+        </div>
+      </div>
+
+      <div class="flow-branch" style="margin-left:114px">
+        <div class="flow-branch-row">
+          <span class="branch-label">Yes</span>
+          <span class="flow-node node-action">Route to BDApps subscription flow</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">No</span>
+          <span class="flow-node node-step">Return to previous screen</span>
+        </div>
+      </div>
+
+      <!-- Admin-side gating -->
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-start" style="background:#7c3aed">Admin Portal</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin">Feature Gating Management</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin wrap">Feature list with<br>free/pro toggles</span>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px;margin-left:38px">
+        <span class="flow-node node-admin-action">Admin toggles feature</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-data">Database updated</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Real-time effect (no restart)</span>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px">
+        <span class="flow-arrow" style="visibility:hidden">&rarr;</span>
+        <span class="flow-node node-end wrap">All users immediately see<br>updated access</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 14: SESSION MANAGEMENT                                   -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">14</div>Session Management Flow
+      <span class="phase-tag phase-1">Phase 1</span>
+      <span class="phase-tag phase-4">Phase 4</span>
+    </div>
+    <div class="section-desc">How sessions are tracked in Redis and how admins can view and terminate sessions remotely.</div>
+    <div class="section-reqs">
+      <span class="req-badge">SESS-01</span>
+      <span class="req-badge">SESS-02</span>
+      <span class="req-badge">SESS-03</span>
+      <span class="req-badge">SESS-04</span>
+    </div>
+
+    <div class="flow-diagram">
+      <!-- User session creation -->
+      <div class="flow-wrap">
+        <span class="flow-node node-start">User logs in</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">JWT issued</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-data wrap">Session record created<br>in Redis<br><small style="font-weight:400;color:#6b7280">user_id, device, IP,<br>login_time, last_activity</small></span>
+      </div>
+
+      <!-- Request lifecycle -->
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-system">Every API request</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action wrap">Update last_activity<br>timestamp</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-system wrap">JWT blacklist checked</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Blacklisted</span>
+          <span class="flow-node node-error">Return 401</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-error">Force re-login</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Valid</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Continue to route handler</span>
+        </div>
+      </div>
+
+      <!-- Admin session management -->
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-start" style="background:#7c3aed">Admin Portal</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin">User Management</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin-action">Select user</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin">View Active Sessions</span>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px;margin-left:38px">
+        <span class="flow-node node-admin wrap">Session list<br><small style="font-weight:400;color:#6b7280">device, IP, last activity,<br>login time</small></span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Single</span>
+          <span class="flow-node node-admin-action wrap">Terminate single<br>session</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data">Add JWT to blacklist</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-error wrap">User's next request<br>returns 401</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">All</span>
+          <span class="flow-node node-admin-action wrap">Terminate all<br>sessions</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data">Blacklist all user JWTs</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-error">All devices logged out</span>
+        </div>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px">
+        <span class="flow-arrow" style="visibility:hidden">&rarr;</span>
+        <span class="flow-node node-system wrap">Session auto-cleanup:<br>Redis TTL matches JWT expiry</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 15: BDAPPS SUBSCRIPTION                                  -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">15</div>BDApps Subscription Flow
+      <span class="phase-tag phase-3">Phase 3</span>
+      <span class="phase-tag phase-4">Phase 4</span>
+    </div>
+    <div class="section-desc">Pro subscription lifecycle via BDApps carrier billing &mdash; from initial charge through grace period handling and admin override.</div>
+    <div class="section-reqs">
+      <span class="req-badge">SUBS-01</span>
+      <span class="req-badge">SUBS-02</span>
+      <span class="req-badge">SUBS-03</span>
+      <span class="req-badge">SUBS-04</span>
+      <span class="req-badge">SUBS-05</span>
+      <span class="req-badge">SUBS-06</span>
+      <span class="req-badge">SUBS-07</span>
+      <span class="req-badge">SUBS-08</span>
+    </div>
+
+    <div class="flow-diagram">
+      <!-- Initial subscription -->
+      <div class="flow-wrap">
+        <span class="flow-node node-start">User taps "Upgrade to Pro"</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">BDApps Charging API called</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Success</span>
+          <span class="flow-node node-data">subscription_status = active</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Pro access granted</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-end wrap">Dashboard shows<br>"Pro" badge</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Failed</span>
+          <span class="flow-node node-error wrap">Show error:<br>"Charging failed.<br>Try again or contact support."</span>
+        </div>
+      </div>
+
+      <!-- Daily cron job -->
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-system wrap">Daily Cron Job<br><small style="font-weight:400;color:#6b7280">BullMQ</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step wrap">For each active<br>subscriber</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action wrap">Query BDApps API<br>for charging status</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Charged</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Reset grace counter</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data">subscription_status = active</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Failed</span>
+          <span class="flow-node node-alert wrap">Increment<br>failed_days counter</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-decision wrap">failed_days &gt;<br>grace_period?</span>
+        </div>
+      </div>
+
+      <div class="flow-branch" style="margin-left:76px">
+        <div class="flow-branch-row">
+          <span class="branch-label">Yes</span>
+          <span class="flow-node node-error">subscription_status = expired</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-error wrap">Pro access revoked<br>User downgraded to free</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">No</span>
+          <span class="flow-node node-alert">subscription_status = grace_period</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-alert wrap">Show warning banner<br><small style="font-weight:400;color:#9a3412">"Subscription expires<br>in X days"</small></span>
+        </div>
+      </div>
+
+      <!-- Re-activation -->
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-decision wrap">Previously expired,<br>charge now successful?</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Yes</span>
+          <span class="flow-node node-data">subscription_status = active</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Pro access auto-restored</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-end">Warning banner removed</span>
+        </div>
+      </div>
+
+      <!-- Admin subscription management -->
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-start" style="background:#7c3aed">Admin Portal</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin">Subscription Management</span>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px;margin-left:38px">
+        <span class="flow-node node-admin wrap">Dashboard:<br><small style="font-weight:400;color:#6b7280">active / grace / expired /<br>never counts</small></span>
+        <span class="flow-arrow" style="padding:0 16px">&bull;&bull;&bull;</span>
+        <span class="flow-node node-admin wrap">Per-user view:<br><small style="font-weight:400;color:#6b7280">subscription history<br>(charge date, amount, status)</small></span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Grant</span>
+          <span class="flow-node node-admin-action wrap">Manual override:<br>Grant Pro</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data">Enter reason</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Pro access granted (overrides BDApps)</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Revoke</span>
+          <span class="flow-node node-admin-action wrap">Manual override:<br>Revoke Pro</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data">Enter reason</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-error">Pro access revoked (overrides BDApps)</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Config</span>
+          <span class="flow-node node-admin-action wrap">Grace period config</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data wrap">Set N days<br><small style="font-weight:400;color:#6b7280">default: 3</small></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
   <!-- FOOTER                                                        -->
   <!-- ============================================================ -->
   <div style="margin-top:64px;padding-top:24px;border-top:1.5px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
     <div style="font-size:12px;color:#9ca3af">
-      <span style="font-weight:700;color:#0d9488">Vesta</span> &mdash; User Journey Flow Diagrams &mdash; v1 Implementation Reference
+      <span style="font-weight:700;color:#0d9488">Vesta</span> &mdash; 15 User Journey Flow Diagrams &mdash; v1 Implementation Reference
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <span class="badge badge-teal">Phase 1: Auth + Onboarding + i18n</span>

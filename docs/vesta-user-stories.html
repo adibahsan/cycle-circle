@@ -118,8 +118,8 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
     <h1>User Stories &amp; Acceptance Criteria</h1>
     <p class="subtitle">Organized by feature area. Each story follows: <strong>As a [persona], I want to [action], so that [outcome]</strong>. Mapped to requirement IDs from the v1 specification.</p>
     <div class="stats-row">
-      <div class="stat"><div class="stat-val">81</div><div class="stat-label">v1 Stories</div></div>
-      <div class="stat"><div class="stat-val">14</div><div class="stat-label">Feature Areas</div></div>
+      <div class="stat"><div class="stat-val">102</div><div class="stat-label">v1 Stories</div></div>
+      <div class="stat"><div class="stat-val">17</div><div class="stat-label">Feature Areas</div></div>
       <div class="stat"><div class="stat-val">5</div><div class="stat-label">Personas</div></div>
       <div class="stat"><div class="stat-val">2</div><div class="stat-label">Languages</div></div>
     </div>
@@ -1317,11 +1317,292 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
   </div>
 
   <!-- ============================================================ -->
-  <!-- SECTION 13: ADMIN PANEL -->
+  <!-- SECTION 13: FEATURE GATING -->
   <!-- ============================================================ -->
   <div class="section">
-    <div class="section-title"><div class="section-num">13</div>Admin Panel<span class="section-req-range">ADMN-01 &mdash; ADMN-14</span></div>
-    <div class="section-desc">Operational dashboard, user and profile management, health data analytics, prediction accuracy reports, CMS, notification controls, security roles, data export, and usage reporting.</div>
+    <div class="section-title"><div class="section-num">13</div>Feature Gating (Free/Pro)<span class="section-req-range">GATE-01 &mdash; GATE-05</span></div>
+    <div class="section-desc">Admin-controlled feature access levels. Every feature can be toggled between free and pro tiers in real-time.</div>
+
+    <div class="stories-grid">
+
+      <!-- GATE-01 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">GATE-01</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want a backend middleware that checks subscription tier before granting feature access, so that pro features are only available to paying users.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Middleware returns 403 for free users accessing pro features.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Pro users pass through the middleware without obstruction.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Middleware reads access configuration from the feature_gates table.</li>
+        </ul>
+      </div>
+
+      <!-- GATE-02 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">GATE-02</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to configure which features are free vs pro from the admin portal, so that I can adjust monetization strategy without code changes.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Admin UI shows feature list with free/pro toggle for each feature.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Changes persist to the database immediately.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Changes take effect without application restart.</li>
+        </ul>
+      </div>
+
+      <!-- GATE-03 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">GATE-03</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>free user</strong>, I want to see a &ldquo;Pro&rdquo; badge on locked features with an upgrade prompt, so that I know what&rsquo;s available if I subscribe.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Pro badge is visible on all gated features for free users.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Tapping the badge shows an upgrade prompt with subscription details.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Pro users never see Pro badges or upgrade prompts.</li>
+        </ul>
+      </div>
+
+      <!-- GATE-04 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">GATE-04</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>pro user</strong>, I want immediate access to all features marked as pro, so that my subscription has clear value.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>All pro-gated features are accessible without restriction.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>No upgrade prompts are shown to pro users.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Access works across all profiles managed by the pro account.</li>
+        </ul>
+      </div>
+
+      <!-- GATE-05 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">GATE-05</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want feature gate changes to take effect in real-time, so that I can respond to business needs immediately.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Toggling a feature gate updates user experience within seconds.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Changes take effect without page reload or app restart.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 14: SESSION MANAGEMENT -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">14</div>Session Management<span class="section-req-range">SESS-01 &mdash; SESS-04</span></div>
+    <div class="section-desc">Admin controls for monitoring and terminating active user sessions remotely.</div>
+
+    <div class="stories-grid">
+
+      <!-- SESS-01 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">SESS-01</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to view all active sessions for any user including device, IP, and last activity time, so that I can monitor suspicious activity.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Session list shows device info, IP address, login time, and last activity timestamp.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Session data updates on page load.</li>
+        </ul>
+      </div>
+
+      <!-- SESS-02 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">SESS-02</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to terminate individual user sessions remotely, so that I can respond to security incidents.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Clicking &ldquo;Terminate&rdquo; immediately invalidates the session.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>The user&rsquo;s next request returns 401 Unauthorized.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>The user must re-login to regain access.</li>
+        </ul>
+      </div>
+
+      <!-- SESS-03 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">SESS-03</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to terminate all sessions for a user at once, so that I can force a complete logout during account compromise.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>&ldquo;Terminate All&rdquo; button invalidates every session for the user.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>All devices are logged out simultaneously.</li>
+        </ul>
+      </div>
+
+      <!-- SESS-04 -->
+      <div class="story-card" data-persona="account-holder">
+        <div class="story-header">
+          <span class="req-badge">SESS-04</span>
+          <span class="persona-badge persona-account-holder">Account Holder</span>
+        </div>
+        <div class="story-text">As a <strong>user</strong>, I want my sessions tracked securely so that admin can protect my account if compromised.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Sessions are stored in Redis with JWT blacklist support.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Expired sessions are auto-cleaned from the store.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Session data includes device fingerprint for identification.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 15: BDAPPS SUBSCRIPTION -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">15</div>BDApps Subscription (Pro Billing)<span class="section-req-range">SUBS-01 &mdash; SUBS-08</span></div>
+    <div class="section-desc">Pro subscription management via BDApps carrier billing with automatic access control based on charging status.</div>
+
+    <div class="stories-grid">
+
+      <!-- SUBS-01 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SUBS-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>user</strong>, I want to subscribe to Pro via BDApps carrier billing, so that the charge appears on my mobile phone bill.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>BDApps charging API is called successfully upon subscription.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Subscription status is stored in the database.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Pro access is granted immediately after successful charge.</li>
+        </ul>
+      </div>
+
+      <!-- SUBS-02 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">SUBS-02</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want the system to check BDApps charging status daily, so that we know which users have active subscriptions.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Cron job runs daily to query BDApps API for each subscriber.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Subscription status is updated in the database based on API response.</li>
+        </ul>
+      </div>
+
+      <!-- SUBS-03 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SUBS-03</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>pro user</strong>, I want my pro access automatically disabled if charging fails for several days, so that the business doesn&rsquo;t give away free pro access.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>After N days (admin-configurable) of failed charges, pro access is revoked.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>User is downgraded to free tier automatically.</li>
+        </ul>
+      </div>
+
+      <!-- SUBS-04 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SUBS-04</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>user in grace period</strong>, I want to see a warning that my subscription is expiring, so that I can resolve the billing issue.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Banner shows &ldquo;Your subscription expires in X days&rdquo; during grace period.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Banner links to billing help or support page.</li>
+        </ul>
+      </div>
+
+      <!-- SUBS-05 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SUBS-05</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>user whose charging resumes</strong>, I want my pro access automatically restored, so that I don&rsquo;t need to re-subscribe manually.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>When BDApps reports a successful charge, pro access is re-enabled automatically.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>No manual intervention is needed to restore access.</li>
+        </ul>
+      </div>
+
+      <!-- SUBS-06 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">SUBS-06</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to view subscription status for all users, so that I can monitor revenue health.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Admin list shows counts for: active, grace period, expired, and never subscribed.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Per-user subscription status is viewable in the user detail view.</li>
+        </ul>
+      </div>
+
+      <!-- SUBS-07 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">SUBS-07</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to manually grant or revoke pro access, so that I can handle edge cases and promotions.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Admin can override BDApps status to grant or revoke pro access.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Manual grant/revoke is logged with a reason field.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Override takes effect immediately.</li>
+        </ul>
+      </div>
+
+      <!-- SUBS-08 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">SUBS-08</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to view subscription history per user, so that I can investigate billing disputes.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>History shows charge date, amount, status, and tier changes in chronological order.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 16: ADMIN PANEL -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">16</div>Admin Panel<span class="section-req-range">ADMN-01 &mdash; ADMN-17</span></div>
+    <div class="section-desc">Operational dashboard, user and profile management, health data analytics, prediction accuracy reports, CMS, notification controls, security roles, data export, usage reporting, and management UIs for feature gating, sessions, and subscriptions.</div>
 
     <div class="stories-grid">
 
@@ -1535,6 +1816,51 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         </ul>
       </div>
 
+      <!-- ADMN-15 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-15</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want a feature gating management UI, so that I can toggle features between free and pro.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Feature list displays all gatable features with free/pro toggles.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Changes are saved to the database upon toggle.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Toggle changes take effect in real-time without restart.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-16 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-16</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want a session management UI, so that I can view and terminate user sessions.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Session list is displayed per user with device, IP, and activity details.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Terminate individual and terminate all buttons are available.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Confirmation dialog appears before terminating sessions.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-17 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-17</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want a subscription management UI, so that I can view BDApps status, set grace period, and override access.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Subscription dashboard shows aggregate and per-user subscription status.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Grace period duration is configurable from the UI.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Manual grant/revoke with a reason field is available per user.</li>
+        </ul>
+      </div>
+
     </div>
   </div>
 
@@ -1549,7 +1875,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
   </div>
 
   <div class="section">
-    <div class="section-title" style="color:#9ca3af"><div class="section-num" style="background:#d1d5db">14</div>v2 &mdash; Deferred Features</div>
+    <div class="section-title" style="color:#9ca3af"><div class="section-num" style="background:#d1d5db">17</div>v2 &mdash; Deferred Features</div>
     <div class="section-desc">Pregnancy mode, medicine tracker, sleep monitor, exercise tracking, sex life tracking, health analytics, menopause, and community features. These will be prioritized after v1 ships and validates product-market fit.</div>
 
     <div class="stories-grid">
@@ -1694,8 +2020,8 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
 
   <!-- FOOTER -->
   <div class="footer">
-    <div class="footer-left">Vesta &mdash; User Stories &amp; Acceptance Criteria &middot; 81 v1 stories across 13 feature areas + 9 v2 deferred stories</div>
-    <div class="footer-right">Generated 2026-03-26 &middot; Mapped to REQUIREMENTS.md</div>
+    <div class="footer-left">Vesta &mdash; User Stories &amp; Acceptance Criteria &middot; 102 v1 stories across 17 feature areas + 9 v2 deferred stories</div>
+    <div class="footer-right">Generated 2026-03-26 &middot; Updated 2026-03-26 &middot; Mapped to REQUIREMENTS.md</div>
   </div>
 
 </div>
