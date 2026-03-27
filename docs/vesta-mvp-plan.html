@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vesta — v1 Implementation Plan</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fa;color:#1a1a2e;line-height:1.6}
+.page{max-width:1100px;margin:0 auto;padding:48px 32px}
+
+/* Header */
+.header{margin-bottom:48px}
+.header-meta{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:4px 12px;border-radius:100px}
+.badge-teal{background:#ccfbf1;color:#115e59}
+.badge-blue{background:#eff6ff;color:#1d4ed8}
+.badge-green{background:#f0fdf4;color:#16a34a}
+.badge-orange{background:#fff7ed;color:#c2410c}
+.badge-purple{background:#f5f3ff;color:#7c3aed}
+.badge-gray{background:#f3f4f6;color:#374151}
+h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
+.subtitle{font-size:15px;color:#6b7280;line-height:1.6;max-width:780px}
+.stats-row{display:flex;gap:16px;margin-top:24px;flex-wrap:wrap}
+.stat{background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:16px 20px;min-width:130px}
+.stat-val{font-size:22px;font-weight:900;color:#0d9488}
+.stat-label{font-size:11px;color:#6b7280;margin-top:2px}
+
+/* Section */
+.section{margin-bottom:48px}
+.section-title{font-size:18px;font-weight:800;color:#1a1a2e;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.section-num{width:28px;height:28px;border-radius:50%;background:#0d9488;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-desc{font-size:13px;color:#6b7280;margin-bottom:20px;margin-left:38px}
+
+/* MoSCoW */
+.moscow-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.moscow-grid{grid-template-columns:1fr}}
+.moscow-card{border-radius:12px;padding:20px;border:1.5px solid}
+.moscow-must{background:#f0fdfa;border-color:#ccfbf1}
+.moscow-should{background:#eff6ff;border-color:#dbeafe}
+.moscow-could{background:#f5f3ff;border-color:#ede9fe}
+.moscow-wont{background:#f9fafb;border-color:#f3f4f6}
+.moscow-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.feature-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.05)}
+.feature-item:last-child{border-bottom:none}
+.fi-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.fi-name{font-size:12px;font-weight:600;color:#1a1a2e}
+.fi-note{font-size:10px;color:#9ca3af;margin-top:1px}
+
+/* Sprint plan */
+.week-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;margin-top:24px}
+.week-badge{background:#1a1a2e;color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px}
+.week-desc{font-size:12px;color:#6b7280}
+.sprint-table{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;border:1.5px solid #e5e7eb}
+.sprint-table th{background:#f3f4f6;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;padding:10px 14px;text-align:left;border-bottom:1.5px solid #e5e7eb}
+.sprint-table td{padding:12px 14px;font-size:12px;border-bottom:1px solid #f3f4f6;vertical-align:top}
+.sprint-table tr:last-child td{border-bottom:none}
+.sprint-table tr:hover td{background:#fafafa}
+.day-num{font-weight:800;color:#0d9488;white-space:nowrap}
+.deliverable-list{display:flex;flex-direction:column;gap:3px}
+.deliverable{display:flex;align-items:center;gap:6px;font-size:11px;color:#374151}
+.d-dot{width:5px;height:5px;border-radius:50%;background:#0d9488;flex-shrink:0}
+.d-dot-blue{width:5px;height:5px;border-radius:50%;background:#3b82f6;flex-shrink:0}
+.d-dot-green{width:5px;height:5px;border-radius:50%;background:#22c55e;flex-shrink:0}
+.d-dot-purple{width:5px;height:5px;border-radius:50%;background:#7c3aed;flex-shrink:0}
+.owner-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.owner-fe{background:#eff6ff;color:#1d4ed8}
+.owner-be{background:#f0fdf4;color:#16a34a}
+.owner-shared{background:#f5f3ff;color:#7c3aed}
+
+/* Tech stack */
+.stack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.stack-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px}
+.stack-layer{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:6px}
+.stack-choice{font-size:14px;font-weight:800;color:#1a1a2e;margin-bottom:4px}
+.stack-reason{font-size:11px;color:#6b7280;line-height:1.4}
+
+/* RICE table */
+.rice-table{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;border:1.5px solid #e5e7eb}
+.rice-table th{background:#f3f4f6;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;padding:10px 12px;text-align:left;border-bottom:1.5px solid #e5e7eb}
+.rice-table td{padding:11px 12px;font-size:12px;border-bottom:1px solid #f3f4f6}
+.rice-table tr:last-child td{border-bottom:none}
+.rice-score{font-size:14px;font-weight:900;color:#0d9488}
+.rice-bar{height:6px;border-radius:3px;background:#ccfbf1;margin-top:4px;overflow:hidden}
+.rice-bar-fill{height:6px;border-radius:3px;background:#0d9488}
+.priority-1{font-weight:800;color:#0d9488}
+
+/* Schema */
+.schema-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.schema-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px;font-family:monospace}
+.table-name{font-size:12px;font-weight:800;color:#0d9488;margin-bottom:10px;font-family:-apple-system,sans-serif}
+.field{display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f9fafb;font-size:11px}
+.field:last-child{border-bottom:none}
+.field-name{color:#1a1a2e;font-weight:600;min-width:130px}
+.field-type{color:#6b7280}
+.field-pk{color:#0d9488;font-size:9px;font-weight:700}
+
+/* Algorithm */
+.algo-box{background:#1e293b;border-radius:12px;padding:24px;font-family:'Courier New',monospace;font-size:12px;line-height:1.8;color:#e2e8f0}
+.algo-comment{color:#64748b}
+.algo-var{color:#7dd3fc}
+.algo-op{color:#5eead4}
+.algo-val{color:#86efac}
+.algo-tier{color:#c4b5fd;font-weight:700}
+
+/* Phases */
+.phases-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.phases-row{grid-template-columns:1fr}}
+.phase-card{border-radius:12px;padding:20px;border:1.5px solid}
+.phase1{background:#f0fdfa;border-color:#ccfbf1}
+.phase2{background:#eff6ff;border-color:#dbeafe}
+.phase3{background:#f0fdf4;border-color:#dcfce7}
+.phase4{background:#f5f3ff;border-color:#ede9fe}
+.phase-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.phase-title{font-size:14px;font-weight:800}
+.phase-timeline{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px}
+.phase-features{display:flex;flex-direction:column;gap:6px}
+.pf{display:flex;align-items:flex-start;gap:6px;font-size:11px;color:#374151}
+.pf-dot{width:5px;height:5px;border-radius:50%;margin-top:4px;flex-shrink:0}
+
+/* Risks */
+.risk-list{display:flex;flex-direction:column;gap:10px}
+.risk{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px;display:flex;gap:14px;align-items:flex-start}
+.risk-level{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.risk-high{background:#fef2f2;color:#dc2626}
+.risk-med{background:#fff7ed;color:#c2410c}
+.risk-low{background:#f0fdf4;color:#16a34a}
+.risk-title{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:4px}
+.risk-desc{font-size:11px;color:#6b7280;line-height:1.5}
+.risk-mit{font-size:11px;color:#374151;margin-top:6px;font-weight:600}
+
+/* Dependencies */
+.dep-list{display:flex;flex-direction:column;gap:8px}
+.dep{background:#fff;border:1.5px solid #e5e7eb;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.dep-from{font-size:11px;font-weight:700;color:#1a1a2e;background:#f3f4f6;padding:3px 8px;border-radius:5px}
+.dep-arrow{color:#9ca3af;font-size:12px}
+.dep-to{font-size:11px;font-weight:700;color:#0d9488;background:#ccfbf1;padding:3px 8px;border-radius:5px}
+.dep-note{font-size:10px;color:#9ca3af;margin-left:auto}
+
+/* Definition of Done */
+.dod-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:700px){.dod-grid{grid-template-columns:1fr}}
+.dod-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px}
+.dod-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;margin-bottom:10px}
+.dod-item{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:#374151;padding:5px 0;border-bottom:1px solid #f9fafb}
+.dod-item:last-child{border-bottom:none}
+.dod-check{color:#0d9488;font-weight:700;flex-shrink:0;font-size:13px}
+
+/* Hour estimates table */
+.hours-table{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;border:1.5px solid #e5e7eb}
+.hours-table th{background:#f3f4f6;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;padding:10px 14px;text-align:left;border-bottom:1.5px solid #e5e7eb}
+.hours-table td{padding:12px 14px;font-size:12px;border-bottom:1px solid #f3f4f6;vertical-align:top}
+.hours-table tr:last-child td{border-bottom:none}
+.hours-table tr:hover td{background:#fafafa}
+.hours-total td{font-weight:800;background:#f0fdfa !important;border-top:2px solid #0d9488}
+.hours-val{font-size:16px;font-weight:900;color:#0d9488}
+.team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.team-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px;text-align:center}
+.team-size{font-size:28px;font-weight:900;color:#0d9488}
+.team-label{font-size:11px;color:#6b7280;margin-top:2px}
+.team-fit{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;display:inline-block;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-meta">
+      <span class="badge badge-teal">Vesta -- Reproductive Health Platform</span>
+      <span class="badge badge-blue">Bangladesh First -- Bilingual</span>
+      <span class="badge badge-green">1-Month Production Sprint</span>
+    </div>
+    <h1>v1 Implementation Plan</h1>
+    <p class="subtitle">A focused 4-week sprint to ship a bilingual, multi-profile reproductive health platform -- period tracking, cycle predictions, notifications, content, partner sharing, and a full admin panel.</p>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val">20</div><div class="stat-label">Working days</div></div>
+      <div class="stat"><div class="stat-val">81</div><div class="stat-label">Requirements</div></div>
+      <div class="stat"><div class="stat-val">4</div><div class="stat-label">Phases</div></div>
+      <div class="stat"><div class="stat-val">3</div><div class="stat-label">Prediction tiers</div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: SCOPE -- MOSCOW -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">1</div>MoSCoW Prioritisation</div>
+    <div class="section-desc">Structured priority for a 4-week delivery. Must Haves form the foundation and core tracking loop. Should Haves add retention. Could Haves deliver operational tooling. Won't Haves are explicitly deferred to v2.</div>
+
+    <div class="moscow-grid">
+      <div class="moscow-card moscow-must">
+        <div class="moscow-title" style="color:#115e59">MUST HAVE -- Phase 1-2, Weeks 1-2</div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Email auth + multi-profile accounts</div><div class="fi-note">Relation types: self, wife, sister, mother, daughter, girlfriend</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Bilingual UI (English + Bengali)</div><div class="fi-note">i18n from day one with i18next + react-i18next</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Period tracking</div><div class="fi-note">Start/end, flow intensity (light/medium/heavy), retroactive editing</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Cycle dashboard</div><div class="fi-note">Cycle day hero, phase label (follicular/ovulatory/luteal/menstrual), countdown</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Monthly calendar</div><div class="fi-note">Color-coded: period pink, fertile teal, ovulation accent</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Symptom logging</div><div class="fi-note">30+ symptoms, icon-based tap selection, 4 categories (physical, mood, discharge, lifestyle)</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Three-tier prediction engine</div><div class="fi-note">Simple avg (Tier 1) -> ARIMA (Tier 2) -> LSTM stub (Tier 3)</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Onboarding flow</div><div class="fi-note">Trust screens, goal selection (period/TTC/peri), cycle history entry</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Field-level encryption</div><div class="fi-note">AES-256-GCM via prisma-field-encryption for health data</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Profile switcher with data isolation</div><div class="fi-note">checkProfileOwnership middleware on every profile-scoped endpoint</div></div></div>
+      </div>
+
+      <div class="moscow-card moscow-should">
+        <div class="moscow-title" style="color:#1d4ed8">SHOULD HAVE -- Phase 3, Week 3</div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">SMS notifications via SSL Wireless</div><div class="fi-note">Bengali per BTRC requirements, IP whitelisting</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Email notifications</div><div class="fi-note">Period alerts, fertile window, logging reminders via Resend + React Email</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Partner sharing</div><div class="fi-note">Invite code, read-only calendar, daily phase insights, instant revoke</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Content platform</div><div class="fi-note">Bilingual blog articles, phase-specific recommendations, cultural context</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Notification preferences per-profile</div><div class="fi-note">Toggle each notification type on/off per health profile</div></div></div>
+      </div>
+
+      <div class="moscow-card moscow-could">
+        <div class="moscow-title" style="color:#7c3aed">COULD HAVE -- Phase 4, Weeks 3-4</div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Admin dashboard</div><div class="fi-note">User metrics, activity charts, daily new users, MAU trends</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">User management</div><div class="fi-note">List, suspend, reactivate, delete, reset password</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Content CMS</div><div class="fi-note">Tiptap rich text editor, bilingual articles, category management</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Population health analytics</div><div class="fi-note">Aggregated, privacy-protected cycle insights</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Prediction accuracy reports</div><div class="fi-note">Predicted vs. actual dates, accuracy percentages per tier</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Data export (CSV/Excel)</div><div class="fi-note">Analytics and research data export for operations team</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Role-based access control</div><div class="fi-note">Super Admin and Content Admin roles with requireRole middleware</div></div></div>
+      </div>
+
+      <div class="moscow-card moscow-wont">
+        <div class="moscow-title" style="color:#6b7280">WON'T HAVE -- v1</div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">Pregnancy mode</div><div class="fi-note">Week-by-week tracker, ultrasound storage -- deferred to v2</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">Medicine tracker, sleep monitor, exercise tracking</div><div class="fi-note">Extended health modules require stable core first</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">Anonymous community forum</div><div class="fi-note">High moderation overhead -- requires infrastructure not in v1 scope</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">AI health chatbot</div><div class="fi-note">Enormous medical liability without expert advisory board</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">Native mobile apps</div><div class="fi-note">Web-first validates PMF; PWA covers 80% of native UX</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">Doctor consultations / marketplace</div><div class="fi-note">Phase 2 monetization features</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: RICE SCORING -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">2</div>Feature Prioritisation -- RICE Scores</div>
+    <div class="section-desc">RICE = (Reach x Impact x Confidence) / Effort. Scored against the 4-week delivery window. Higher scores ship earlier.</div>
+
+    <table class="rice-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Reach</th>
+          <th>Impact</th>
+          <th>Confidence</th>
+          <th>Effort (days)</th>
+          <th>RICE</th>
+          <th>Phase</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong class="priority-1">Prediction engine (Tier 1)</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>90%</td>
+          <td>1</td>
+          <td><div class="rice-score">270</div><div class="rice-bar"><div class="rice-bar-fill" style="width:100%"></div></div></td>
+          <td><span class="badge badge-blue">Phase 2</span></td>
+        </tr>
+        <tr>
+          <td><strong class="priority-1">Auth + onboarding</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>90%</td>
+          <td>2.5</td>
+          <td><div class="rice-score">108</div><div class="rice-bar"><div class="rice-bar-fill" style="width:40%"></div></div></td>
+          <td><span class="badge badge-teal">Phase 1</span></td>
+        </tr>
+        <tr>
+          <td><strong class="priority-1">Bilingual UI (EN+BN)</strong></td>
+          <td>100%</td>
+          <td>2.5 (high)</td>
+          <td>85%</td>
+          <td>2</td>
+          <td><div class="rice-score">106</div><div class="rice-bar"><div class="rice-bar-fill" style="width:39%"></div></div></td>
+          <td><span class="badge badge-teal">Phase 1</span></td>
+        </tr>
+        <tr>
+          <td><strong class="priority-1">Period tracking + calendar</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>95%</td>
+          <td>3</td>
+          <td><div class="rice-score">95</div><div class="rice-bar"><div class="rice-bar-fill" style="width:35%"></div></div></td>
+          <td><span class="badge badge-blue">Phase 2</span></td>
+        </tr>
+        <tr>
+          <td><strong class="priority-1">Multi-profile accounts</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>90%</td>
+          <td>3</td>
+          <td><div class="rice-score">90</div><div class="rice-bar"><div class="rice-bar-fill" style="width:33%"></div></div></td>
+          <td><span class="badge badge-teal">Phase 1</span></td>
+        </tr>
+        <tr>
+          <td>Symptom logging</td>
+          <td>80%</td>
+          <td>2 (high)</td>
+          <td>85%</td>
+          <td>2.5</td>
+          <td><div class="rice-score">54</div><div class="rice-bar"><div class="rice-bar-fill" style="width:20%"></div></div></td>
+          <td><span class="badge badge-blue">Phase 2</span></td>
+        </tr>
+        <tr>
+          <td>SMS notifications</td>
+          <td>90%</td>
+          <td>2.5 (high)</td>
+          <td>70%</td>
+          <td>3</td>
+          <td><div class="rice-score">53</div><div class="rice-bar"><div class="rice-bar-fill" style="width:20%"></div></div></td>
+          <td><span class="badge badge-green">Phase 3</span></td>
+        </tr>
+        <tr>
+          <td>Content platform</td>
+          <td>70%</td>
+          <td>2 (high)</td>
+          <td>80%</td>
+          <td>2.5</td>
+          <td><div class="rice-score">45</div><div class="rice-bar"><div class="rice-bar-fill" style="width:17%"></div></div></td>
+          <td><span class="badge badge-green">Phase 3</span></td>
+        </tr>
+        <tr>
+          <td>Partner sharing</td>
+          <td>40%</td>
+          <td>2.5 (high)</td>
+          <td>85%</td>
+          <td>3</td>
+          <td><div class="rice-score">28</div><div class="rice-bar"><div class="rice-bar-fill" style="width:10%"></div></div></td>
+          <td><span class="badge badge-green">Phase 3</span></td>
+        </tr>
+        <tr>
+          <td>Prediction (ARIMA Tier 2)</td>
+          <td>30%</td>
+          <td>2 (high)</td>
+          <td>60%</td>
+          <td>2</td>
+          <td><div class="rice-score">18</div><div class="rice-bar"><div class="rice-bar-fill" style="width:7%"></div></div></td>
+          <td><span class="badge badge-blue">Phase 2</span></td>
+        </tr>
+        <tr>
+          <td>Admin panel</td>
+          <td>10%</td>
+          <td>2 (high)</td>
+          <td>90%</td>
+          <td>8</td>
+          <td><div class="rice-score">2</div><div class="rice-bar"><div class="rice-bar-fill" style="width:1%"></div></div></td>
+          <td><span class="badge badge-purple">Phase 4</span></td>
+        </tr>
+        <tr>
+          <td>Prediction (LSTM Tier 3)</td>
+          <td>10%</td>
+          <td>2.5 (high)</td>
+          <td>40%</td>
+          <td>5</td>
+          <td><div class="rice-score">2</div><div class="rice-bar"><div class="rice-bar-fill" style="width:1%"></div></div></td>
+          <td><span class="badge badge-blue">Phase 2 (stub)</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 3: TECH STACK -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">3</div>Technology Stack</div>
+    <div class="section-desc">Modern, stable, and well-matched to the domain. Stability over bleeding edge for a health platform. Prisma 6 pinned for encryption compatibility. Vite 6 LTS over Vite 8.</div>
+
+    <div class="stack-grid">
+      <div class="stack-card">
+        <div class="stack-layer">Frontend</div>
+        <div class="stack-choice">React 19 + TypeScript</div>
+        <div class="stack-reason">Ecosystem dominance. React 19 stable with use() hook and Actions. SPA on Vercel CDN.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Styling</div>
+        <div class="stack-choice">Tailwind CSS v4</div>
+        <div class="stack-reason">CSS-first config, OKLCH colors, 5x faster builds. @theme directive for design tokens.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Build Tool</div>
+        <div class="stack-choice">Vite 6 LTS</div>
+        <div class="stack-reason">Stable line for 2026. v8 (Rolldown) too new for production health app. Security patches on 6.4.x.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">State Management</div>
+        <div class="stack-choice">TanStack Query + Zustand</div>
+        <div class="stack-reason">TQ for server state with profile-scoped query keys. Zustand (1KB) for active profile, locale, UI.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Backend</div>
+        <div class="stack-choice">Express 5 + TypeScript</div>
+        <div class="stack-reason">Promise-based error handling, path-to-regexp v8 (ReDoS-safe). Persistent process on Railway.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">ORM + Database</div>
+        <div class="stack-choice">Prisma 6.13 + PostgreSQL 16</div>
+        <div class="stack-reason">Pinned for prisma-field-encryption compatibility. pgcrypto + RLS for profile isolation.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Auth</div>
+        <div class="stack-choice">JWT (bcryptjs + jsonwebtoken)</div>
+        <div class="stack-reason">Access tokens (15min) + refresh tokens (7d) in HttpOnly Secure cookies. Role claims for admin RBAC.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">i18n</div>
+        <div class="stack-choice">i18next + react-i18next</div>
+        <div class="stack-reason">Bengali locale fully supported. JSON namespaces, interpolation, date-fns bn locale.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Encryption</div>
+        <div class="stack-choice">prisma-field-encryption</div>
+        <div class="stack-reason">Transparent AES-256-GCM for sensitive health fields. /// @encrypted in Prisma schema.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Job Queue</div>
+        <div class="stack-choice">BullMQ + Redis</div>
+        <div class="stack-reason">SMS/email delivery, prediction recalc, daily reminder crons. Retries + dead letter queues.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">SMS (Bangladesh)</div>
+        <div class="stack-choice">SSL Wireless (custom wrapper)</div>
+        <div class="stack-reason">Bangladesh premier gateway. Direct HTTP API wrapper. Bengali Unicode SMS per BTRC.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Email</div>
+        <div class="stack-choice">Resend + React Email</div>
+        <div class="stack-reason">Clean DX, 3,000/month free tier. React Email for type-safe templates.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Charts</div>
+        <div class="stack-choice">Recharts 3.x</div>
+        <div class="stack-reason">React-first SVG components. Cycle trends, admin analytics, symptom correlation.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Calendar / Dates</div>
+        <div class="stack-choice">date-fns</div>
+        <div class="stack-reason">Tree-shakeable, immutable. Bengali locale (bn) for date formatting. Cycle math backbone.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">CMS Editor</div>
+        <div class="stack-choice">Tiptap 3.x</div>
+        <div class="stack-reason">Rich text editor for bilingual content articles. Collaborative editing support for admin CMS.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Hosting</div>
+        <div class="stack-choice">Vercel + Railway/VPS</div>
+        <div class="stack-reason">Frontend on Vercel CDN. API on Railway for persistent Express + BullMQ workers.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: DATABASE SCHEMA -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">4</div>Database Schema</div>
+    <div class="section-desc">Multi-profile architecture is the foundation. Every health table references profiles (not users). Field-level encryption on sensitive columns. Profile ownership middleware enforces data isolation.</div>
+
+    <div class="schema-grid">
+      <div class="schema-card">
+        <div class="table-name">users</div>
+        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
+        <div class="field"><span class="field-name">email</span><span class="field-type">text unique</span></div>
+        <div class="field"><span class="field-name">password_hash</span><span class="field-type">text</span></div>
+        <div class="field"><span class="field-name">role</span><span class="field-type">enum(user, admin)</span></div>
+        <div class="field"><span class="field-name">language_preference</span><span class="field-type">enum(en, bn)</span></div>
+        <div class="field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="table-name">profiles</div>
+        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
+        <div class="field"><span class="field-name">user_id</span><span class="field-type">uuid FK -> users</span></div>
+        <div class="field"><span class="field-name">name</span><span class="field-type">text</span></div>
+        <div class="field"><span class="field-name">relation_type</span><span class="field-type">enum(self, wife, sister, mother, daughter, girlfriend)</span></div>
+        <div class="field"><span class="field-name">date_of_birth</span><span class="field-type">date</span></div>
+        <div class="field"><span class="field-name">height</span><span class="field-type">float nullable</span></div>
+        <div class="field"><span class="field-name">weight</span><span class="field-type">float nullable</span></div>
+        <div class="field"><span class="field-name">avg_cycle_length</span><span class="field-type">int default 28</span></div>
+        <div class="field"><span class="field-name">avg_period_length</span><span class="field-type">int default 5</span></div>
+        <div class="field"><span class="field-name">goal</span><span class="field-type">enum(period, ttc, peri)</span></div>
+        <div class="field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="table-name">period_logs</div>
+        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
+        <div class="field"><span class="field-name">profile_id</span><span class="field-type">uuid FK -> profiles</span></div>
+        <div class="field"><span class="field-name">start_date</span><span class="field-type">date not null</span></div>
+        <div class="field"><span class="field-name">end_date</span><span class="field-type">date nullable</span></div>
+        <div class="field"><span class="field-name">flow_intensity</span><span class="field-type">enum(light, medium, heavy)</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="table-name">symptom_logs</div>
+        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
+        <div class="field"><span class="field-name">profile_id</span><span class="field-type">uuid FK -> profiles</span></div>
+        <div class="field"><span class="field-name">logged_date</span><span class="field-type">date not null</span></div>
+        <div class="field"><span class="field-name">category</span><span class="field-type">text (physical, mood, discharge, lifestyle)</span></div>
+        <div class="field"><span class="field-name">symptom_key</span><span class="field-type">text (cramps, headache, bloating...)</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="table-name">predictions</div>
+        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
+        <div class="field"><span class="field-name">profile_id</span><span class="field-type">uuid FK -> profiles</span></div>
+        <div class="field"><span class="field-name">next_period_start</span><span class="field-type">date</span></div>
+        <div class="field"><span class="field-name">next_period_end</span><span class="field-type">date</span></div>
+        <div class="field"><span class="field-name">fertile_window_start</span><span class="field-type">date</span></div>
+        <div class="field"><span class="field-name">fertile_window_end</span><span class="field-type">date</span></div>
+        <div class="field"><span class="field-name">ovulation_date</span><span class="field-type">date</span></div>
+        <div class="field"><span class="field-name">tier</span><span class="field-type">int (1, 2, 3)</span></div>
+        <div class="field"><span class="field-name">confidence</span><span class="field-type">float (0-1)</span></div>
+        <div class="field"><span class="field-name">recalculated_at</span><span class="field-type">timestamptz</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="table-name">partner_access</div>
+        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
+        <div class="field"><span class="field-name">profile_id</span><span class="field-type">uuid FK -> profiles</span></div>
+        <div class="field"><span class="field-name">partner_user_id</span><span class="field-type">uuid FK -> users</span></div>
+        <div class="field"><span class="field-name">share_code</span><span class="field-type">text unique</span></div>
+        <div class="field"><span class="field-name">permissions</span><span class="field-type">JSONB</span></div>
+        <div class="field"><span class="field-name">revoked</span><span class="field-type">boolean default false</span></div>
+        <div class="field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="table-name">articles</div>
+        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
+        <div class="field"><span class="field-name">title_en</span><span class="field-type">text</span></div>
+        <div class="field"><span class="field-name">title_bn</span><span class="field-type">text</span></div>
+        <div class="field"><span class="field-name">body_en</span><span class="field-type">text (rich text)</span></div>
+        <div class="field"><span class="field-name">body_bn</span><span class="field-type">text (rich text)</span></div>
+        <div class="field"><span class="field-name">category</span><span class="field-type">text</span></div>
+        <div class="field"><span class="field-name">cycle_phase_tags</span><span class="field-type">text[]</span></div>
+        <div class="field"><span class="field-name">published</span><span class="field-type">boolean default false</span></div>
+        <div class="field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="table-name">notification_preferences</div>
+        <div class="field"><span class="field-name">id</span><span class="field-type">uuid <span class="field-pk">PK</span></span></div>
+        <div class="field"><span class="field-name">profile_id</span><span class="field-type">uuid FK -> profiles</span></div>
+        <div class="field"><span class="field-name">period_alert</span><span class="field-type">boolean default true</span></div>
+        <div class="field"><span class="field-name">fertile_alert</span><span class="field-type">boolean default true</span></div>
+        <div class="field"><span class="field-name">logging_reminder</span><span class="field-type">boolean default true</span></div>
+        <div class="field"><span class="field-name">sms_enabled</span><span class="field-type">boolean default false</span></div>
+        <div class="field"><span class="field-name">email_enabled</span><span class="field-type">boolean default true</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: PREDICTION ALGORITHM -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">5</div>Three-Tier Prediction Engine</div>
+    <div class="section-desc">Strategy Pattern with auto-escalation. Factory selects tier based on data points. Biggest accuracy gain is Tier 1 to Tier 2. Regular cycles top out near 85-87% regardless of algorithm.</div>
+
+    <div class="algo-box">
+<span class="algo-comment">// Prediction Engine -- Strategy Pattern with Auto-Escalation</span>
+<span class="algo-comment">// getPredictionEngine(dataPointCount) returns the appropriate tier</span>
+
+<span class="algo-comment">// ========================================</span>
+<span class="algo-tier">// TIER 1: Simple Rolling Average</span>
+<span class="algo-comment">// Activates: from cycle 1 (works immediately)</span>
+<span class="algo-comment">// ========================================</span>
+<span class="algo-var">const avgCycleLength</span> <span class="algo-op">=</span> periodLogs.length <span class="algo-op">&gt;=</span> <span class="algo-val">3</span>
+  ? rollingAverage(last <span class="algo-val">3-6</span> cycle lengths)
+  : profile.avg_cycle_length; <span class="algo-comment">// onboarding fallback</span>
+
+<span class="algo-var">const nextPeriodStart</span> <span class="algo-op">=</span> addDays(lastPeriodStart, avgCycleLength);
+<span class="algo-var">const ovulationDate</span>   <span class="algo-op">=</span> subDays(nextPeriodStart, <span class="algo-val">14</span>);
+<span class="algo-var">const fertileStart</span>    <span class="algo-op">=</span> subDays(ovulationDate, <span class="algo-val">5</span>);
+<span class="algo-var">const fertileEnd</span>      <span class="algo-op">=</span> addDays(ovulationDate, <span class="algo-val">1</span>);
+
+<span class="algo-comment">// ========================================</span>
+<span class="algo-tier">// TIER 2: ARIMA(1,1,0) Time-Series</span>
+<span class="algo-comment">// Activates: at 6+ logged cycles</span>
+<span class="algo-comment">// Package: `arima` npm (AutoARIMA for p,d,q selection)</span>
+<span class="algo-comment">// ========================================</span>
+<span class="algo-var">const arimaModel</span> <span class="algo-op">=</span> new ARIMA({ p: <span class="algo-val">1</span>, d: <span class="algo-val">1</span>, q: <span class="algo-val">0</span>, verbose: false });
+arimaModel.train(cycleLengthHistory);
+<span class="algo-var">const [predicted]</span> <span class="algo-op">=</span> arimaModel.predict(<span class="algo-val">1</span>); <span class="algo-comment">// next cycle length</span>
+
+<span class="algo-comment">// ========================================</span>
+<span class="algo-tier">// TIER 3: LSTM Stub (Neural Network)</span>
+<span class="algo-comment">// Activates: at 12+ logged cycles</span>
+<span class="algo-comment">// Falls back to Tier 2 until training data exists</span>
+<span class="algo-comment">// Multi-factor: cycles, symptoms, lifestyle, age</span>
+<span class="algo-comment">// ========================================</span>
+<span class="algo-var">const lstmEngine</span> <span class="algo-op">=</span> {
+  predict: (profile) <span class="algo-op">=&gt;</span> {
+    <span class="algo-comment">// stub: delegates to Tier 2 until model trained</span>
+    return arimaEngine.predict(profile);
+  }
+};
+
+<span class="algo-comment">// Auto-escalation factory</span>
+<span class="algo-var">function getPredictionEngine</span>(dataPoints) {
+  if (dataPoints <span class="algo-op">&gt;=</span> <span class="algo-val">12</span>) return <span class="algo-val">lstmEngine</span>;   <span class="algo-comment">// Tier 3</span>
+  if (dataPoints <span class="algo-op">&gt;=</span> <span class="algo-val">6</span>)  return <span class="algo-val">arimaEngine</span>;  <span class="algo-comment">// Tier 2</span>
+  return <span class="algo-val">simpleEngine</span>;                       <span class="algo-comment">// Tier 1</span>
+}
+    </div>
+  </div>
+
+  <!-- SECTION 6: 4-WEEK SPRINT PLAN -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">6</div>4-Week Sprint Plan</div>
+    <div class="section-desc">20 working days across 4 phases. Each week produces a coherent, verifiable capability. Phase dependencies flow strictly forward -- no circular dependencies.</div>
+
+    <!-- WEEK 1 -->
+    <div class="week-header">
+      <div class="week-badge">Week 1 -- Phase 1</div>
+      <div class="week-desc">Foundation: Auth, multi-profile, bilingual, privacy</div>
+    </div>
+
+    <table class="sprint-table">
+      <thead>
+        <tr><th>Day</th><th>Focus</th><th>Deliverables</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="day-num">Day 1</div><div style="font-size:10px;color:#9ca3af">Monday</div></td>
+          <td><strong>Monorepo setup + Prisma schema</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>pnpm workspace + Turborepo: web, api, shared packages</div>
+            <div class="deliverable"><div class="d-dot"></div>Prisma schema: users, profiles, period_logs, symptom_logs, predictions</div>
+            <div class="deliverable"><div class="d-dot"></div>prisma-field-encryption configured + integration test</div>
+            <div class="deliverable"><div class="d-dot"></div>PostgreSQL 16 provisioned, Redis 7 connected</div>
+            <div class="deliverable"><div class="d-dot"></div>Shared Zod schemas + TypeScript types scaffolded</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 2</div><div style="font-size:10px;color:#9ca3af">Tuesday</div></td>
+          <td><strong>Auth API + security middleware</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Express 5 server with helmet, cors, rate-limit, cookie-parser</div>
+            <div class="deliverable"><div class="d-dot"></div>JWT auth: signup, login, email verify, password reset</div>
+            <div class="deliverable"><div class="d-dot"></div>Access + refresh tokens in HttpOnly Secure cookies</div>
+            <div class="deliverable"><div class="d-dot"></div>verifyJWT + checkProfileOwnership middleware chain</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 3</div><div style="font-size:10px;color:#9ca3af">Wednesday</div></td>
+          <td><strong>i18n infrastructure + privacy pages</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>i18next initialized with EN/BN namespaces, Noto Sans Bengali loaded</div>
+            <div class="deliverable"><div class="d-dot"></div>React shell: App providers, router, layout with language switcher</div>
+            <div class="deliverable"><div class="d-dot"></div>Privacy policy + Terms of Service in both languages</div>
+            <div class="deliverable"><div class="d-dot"></div>Vercel deploy pipeline + Railway API deploy configured</div>
+          </div></td>
+          <td><span class="owner-badge owner-fe">Front-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 4</div><div style="font-size:10px;color:#9ca3af">Thursday</div></td>
+          <td><strong>Multi-profile CRUD + profile switcher</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Profile CRUD API: create, read, update, delete with ownership checks</div>
+            <div class="deliverable"><div class="d-dot"></div>Relation types: self, wife, sister, mother, daughter, girlfriend</div>
+            <div class="deliverable"><div class="d-dot"></div>Profile switcher UI component (always accessible in header)</div>
+            <div class="deliverable"><div class="d-dot"></div>TanStack Query hooks with profile-scoped query keys</div>
+            <div class="deliverable"><div class="d-dot"></div>Tier 1 prediction: initial calculation on profile creation</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 5</div><div style="font-size:10px;color:#9ca3af">Friday</div></td>
+          <td><strong>Onboarding wizard + dashboard shell</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Trust/privacy screens with bilingual content</div>
+            <div class="deliverable"><div class="d-dot"></div>Goal selection: track period, try to conceive, perimenopause</div>
+            <div class="deliverable"><div class="d-dot"></div>Cycle history entry: last period, cycle length, period duration</div>
+            <div class="deliverable"><div class="d-dot"></div>First prediction generated on onboarding complete</div>
+            <div class="deliverable"><div class="d-dot"></div>Dashboard shell + account deletion flow</div>
+          </div></td>
+          <td><span class="owner-badge owner-fe">Front-end</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- WEEK 2 -->
+    <div class="week-header">
+      <div class="week-badge">Week 2 -- Phase 2</div>
+      <div class="week-desc">Core tracking: Period, calendar, symptoms, predictions</div>
+    </div>
+
+    <table class="sprint-table">
+      <thead>
+        <tr><th>Day</th><th>Focus</th><th>Deliverables</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="day-num">Day 6</div><div style="font-size:10px;color:#9ca3af">Monday</div></td>
+          <td><strong>Shared contracts + Prisma additions</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-blue"></div>Zod schemas for cycle, symptom, prediction DTOs</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Phase calculation utilities (follicular, ovulatory, luteal, menstrual)</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Constants: symptom categories, flow levels, phase definitions</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 7</div><div style="font-size:10px;color:#9ca3af">Tuesday</div></td>
+          <td><strong>Prediction engine (all 3 tiers)</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-blue"></div>Strategy Pattern: IPredictionEngine interface</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Tier 1: rolling average (already working from Day 4)</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Tier 2: ARIMA wrapper using `arima` npm package</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Tier 3: LSTM stub (delegates to Tier 2 until trained)</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Factory: getPredictionEngine(dataPoints) auto-escalation</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 8</div><div style="font-size:10px;color:#9ca3af">Wednesday</div></td>
+          <td><strong>Cycle API + BullMQ recalc</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-blue"></div>Period start/end logging API with flow intensity</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Retroactive period editing with validation</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>BullMQ: prediction recalculation job on every period log</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Predictions update immediately on new data</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 9</div><div style="font-size:10px;color:#9ca3af">Thursday</div></td>
+          <td><strong>Symptom logging</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-blue"></div>Symptom CRUD API with category/key validation</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Icon-based tap selection UI (30+ symptoms, 4 categories)</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Physical: cramps, headache, breast tenderness, bloating, back pain, fatigue, nausea, acne</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Mood: calm, sad, happy, anxious, mood swings, irritable, energetic, depressed</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Discharge + lifestyle categories, same-day edit support</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 10</div><div style="font-size:10px;color:#9ca3af">Friday</div></td>
+          <td><strong>Dashboard + Calendar UI</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-blue"></div>Cycle day hero (largest UI element), phase label, countdown</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Fertile window display, TTC tips, prediction confidence</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Period logger: 2-3 tap flow intensity + date picker</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Monthly calendar: color-coded grid (pink=period, teal=fertile, accent=ovulation)</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Day detail panel: tap any date to view/edit logged data</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Month navigation, predicted vs logged distinction</div>
+          </div></td>
+          <td><span class="owner-badge owner-fe">Front-end</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- WEEK 3 -->
+    <div class="week-header">
+      <div class="week-badge">Week 3 -- Phase 3</div>
+      <div class="week-desc">Engagement: Notifications, content, partner sharing</div>
+    </div>
+
+    <table class="sprint-table">
+      <thead>
+        <tr><th>Day</th><th>Focus</th><th>Deliverables</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="day-num">Day 11</div><div style="font-size:10px;color:#9ca3af">Monday</div></td>
+          <td><strong>Notification infrastructure</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-green"></div>Prisma schema additions: notification_preferences, notification_logs</div>
+            <div class="deliverable"><div class="d-dot-green"></div>BullMQ queues: send-sms, send-email, daily-reminder</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Notification preferences API (per-profile toggles)</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Notification settings UI page</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 12</div><div style="font-size:10px;color:#9ca3af">Tuesday</div></td>
+          <td><strong>SMS + Email delivery</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-green"></div>SSL Wireless HTTP wrapper (Bengali SMS, IP whitelisting)</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Resend + React Email templates: period alert, fertile window, logging reminder</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Cron job processors: daily check for upcoming predictions</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Multi-profile routing: correct profile gets correct notification</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 13</div><div style="font-size:10px;color:#9ca3af">Wednesday</div></td>
+          <td><strong>Content platform</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-green"></div>Article service: bilingual content with phase-based filtering</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Content browsing pages: article list, article detail, category filter</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Dashboard content feed: phase-specific recommendations</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Bilingual seed data: 10-15 articles on menstrual health and Bangladeshi cultural context</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 14-15</div><div style="font-size:10px;color:#9ca3af">Thu-Fri</div></td>
+          <td><strong>Partner sharing</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-green"></div>Share code generation + lifecycle (create, accept, revoke)</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Read-only access middleware (partner can see calendar, not symptoms)</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Daily partner insights (current phase, fertile window in TTC mode)</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Partner frontend: limited calendar view + phase insights</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Instant revoke from primary user settings</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- WEEK 4 -->
+    <div class="week-header">
+      <div class="week-badge">Week 4 -- Phase 4</div>
+      <div class="week-desc">Admin: Dashboard, user management, CMS, analytics</div>
+    </div>
+
+    <table class="sprint-table">
+      <thead>
+        <tr><th>Day</th><th>Focus</th><th>Deliverables</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="day-num">Day 16</div><div style="font-size:10px;color:#9ca3af">Monday</div></td>
+          <td><strong>Admin RBAC + layout</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-purple"></div>Role constants, requireRole middleware, RequireRole guard</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Admin layout shell: sidebar navigation, role-gated lazy-loading</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Dashboard metrics API: total users, active users, profiles created</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 17</div><div style="font-size:10px;color:#9ca3af">Tuesday</div></td>
+          <td><strong>Dashboard UI + user management</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-purple"></div>KPI cards: total users, MAU, profiles, tracking activity</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Trend charts: daily new users, monthly active users (Recharts)</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>User management: list, view details, suspend, reactivate, delete, reset password</div>
+          </div></td>
+          <td><span class="owner-badge owner-fe">Front-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 18</div><div style="font-size:10px;color:#9ca3af">Wednesday</div></td>
+          <td><strong>Health analytics + prediction reports</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-purple"></div>Population-level insights: avg cycle length, irregular cycle %, common symptoms</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Prediction accuracy: predicted vs actual dates, per-tier accuracy</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Privacy-protected aggregate queries (no individual health data exposed)</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 19</div><div style="font-size:10px;color:#9ca3af">Thursday</div></td>
+          <td><strong>Content CMS</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-purple"></div>Tiptap rich text editor for bilingual article CRUD</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Category management + cycle phase tagging</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Notification management: control reminder types, broadcast</div>
+          </div></td>
+          <td><span class="owner-badge owner-fe">Front-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 20</div><div style="font-size:10px;color:#9ca3af">Friday</div></td>
+          <td><strong>Reports + data export + ship</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-purple"></div>Feature usage report, alert engagement, multi-profile analytics, data completeness</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>CSV/Excel data export for all reports</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Cross-browser QA + responsive check (375px, 768px, 1280px)</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Production deploy: Vercel (frontend) + Railway (API + worker)</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 7: DEPENDENCIES -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">7</div>Dependency Map</div>
+    <div class="section-desc">Sequential dependencies between phases and key blockers. Build foundation before features -- multi-profile auth and i18n affect every subsequent component.</div>
+
+    <div class="dep-list">
+      <div class="dep">
+        <div class="dep-from">Prisma schema + encryption</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">Auth API + all endpoints</div>
+        <div class="dep-note">Day 1 must complete first</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Auth + JWT middleware</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">Multi-profile CRUD</div>
+        <div class="dep-note">Profile creation requires authenticated user</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">i18n infrastructure</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">All UI components</div>
+        <div class="dep-note">Bengali strings must exist before any UI is built</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Multi-profile + ownership middleware</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">Period tracking, symptoms, predictions</div>
+        <div class="dep-note">All health data scoped to profiles</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Onboarding writes cycle data</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">First prediction calculation</div>
+        <div class="dep-note">Needs avg_cycle_length in profiles table</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Prediction engine API</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">Dashboard + calendar UI</div>
+        <div class="dep-note">Dashboard is empty without prediction data</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Period log triggers recalculation</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">Calendar color-coding</div>
+        <div class="dep-note">Calendar reads from period_logs + predictions</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">BullMQ worker process</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">SMS + email notifications</div>
+        <div class="dep-note">Phase 3 requires job queue from Phase 2</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Core tracking (Phase 2)</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">Partner sharing + content</div>
+        <div class="dep-note">Partner needs calendar data to share</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">All user-facing features (Phases 1-3)</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">Admin analytics + reports</div>
+        <div class="dep-note">Admin monitors features that must exist first</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 8: PHASES -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">8</div>Phase Roadmap</div>
+    <div class="section-desc">4 phases, each producing a coherent, verifiable capability. Phase dependencies flow strictly forward: 1 -> 2 -> 3 -> 4.</div>
+
+    <div class="phases-row">
+      <div class="phase-card phase1">
+        <div class="phase-header">
+          <div class="phase-title" style="color:#115e59">Phase 1 -- Foundation</div>
+          <div class="phase-timeline" style="background:#ccfbf1;color:#115e59">Week 1</div>
+        </div>
+        <div class="phase-features">
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Monorepo setup (pnpm + Turborepo)</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Prisma schema + field encryption</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>JWT auth (signup, login, verify, reset)</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Multi-profile CRUD + ownership middleware</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Bilingual i18n (EN + BN from day one)</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Onboarding wizard + first prediction</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Profile switcher + account deletion</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Privacy policy + ToS (bilingual)</div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #ccfbf1;font-size:11px;color:#115e59;font-weight:700">Goal: User creates account, manages profiles in English/Bengali</div>
+      </div>
+
+      <div class="phase-card phase2">
+        <div class="phase-header">
+          <div class="phase-title" style="color:#1d4ed8">Phase 2 -- Core Tracking</div>
+          <div class="phase-timeline" style="background:#dbeafe;color:#1d4ed8">Week 2</div>
+        </div>
+        <div class="phase-features">
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Period tracking (start/end, flow, retroactive editing)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Three-tier prediction engine (Strategy Pattern)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Cycle dashboard (day hero, phase, countdown)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Monthly calendar (color-coded, month nav)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Symptom logging (30+ symptoms, icon-based)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Fertile window + ovulation display</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>BullMQ prediction recalculation</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Prediction confidence shown to user</div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #dbeafe;font-size:11px;color:#1d4ed8;font-weight:700">Goal: User logs period and sees accurate prediction</div>
+      </div>
+
+      <div class="phase-card phase3">
+        <div class="phase-header">
+          <div class="phase-title" style="color:#16a34a">Phase 3 -- Engagement</div>
+          <div class="phase-timeline" style="background:#dcfce7;color:#16a34a">Week 3</div>
+        </div>
+        <div class="phase-features">
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>SMS notifications (SSL Wireless, Bengali)</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Email notifications (Resend + React Email)</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Period, fertile, logging reminder alerts</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Notification preferences per-profile</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Content platform (bilingual articles)</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Phase-specific content recommendations</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Partner sharing (invite, read-only, revoke)</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Partner view (calendar + phase insights)</div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #dcfce7;font-size:11px;color:#16a34a;font-weight:700">Goal: User stays engaged through SMS/email and shares with partner</div>
+      </div>
+
+      <div class="phase-card phase4">
+        <div class="phase-header">
+          <div class="phase-title" style="color:#7c3aed">Phase 4 -- Admin</div>
+          <div class="phase-timeline" style="background:#ede9fe;color:#7c3aed">Week 4</div>
+        </div>
+        <div class="phase-features">
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>RBAC: Super Admin + Content Admin roles</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Admin dashboard (KPIs, trend charts)</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>User management (list, suspend, delete)</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Population health analytics</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Prediction accuracy reports</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Content CMS (Tiptap editor, bilingual)</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Operational reports + data export</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>CSV/Excel export for all analytics</div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #ede9fe;font-size:11px;color:#7c3aed;font-weight:700">Goal: Ops team can monitor and manage the platform</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 9: RISKS -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">9</div>Key Risks &amp; Mitigations</div>
+    <div class="section-desc">6 risks ranked by likelihood and impact. Front-loaded mitigation -- most prevention happens in Phase 1.</div>
+
+    <div class="risk-list">
+      <div class="risk">
+        <div><span class="risk-level risk-high">High</span></div>
+        <div>
+          <div class="risk-title">Multi-profile auth bypass</div>
+          <div class="risk-desc">A user manipulates profileId in API requests to access another user's health data. With multi-profile architecture, every endpoint is a potential attack surface.</div>
+          <div class="risk-mit">-> Mitigate: checkProfileOwnership middleware is the first check on every profile-scoped route, before any business logic. Write 403-assert tests in CI. PartnerAccess model uses explicit field-level permissions (never blanket read access).</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-high">High</span></div>
+        <div>
+          <div class="risk-title">Admin panel scope explosion</div>
+          <div class="risk-desc">26 admin sections in the original requirements could consume 60-70% of total development hours if treated as one line item.</div>
+          <div class="risk-mit">-> Mitigate: Scoped to 14 launch-critical sections in Phase 4. Each section estimated separately. Feature-dependent sections (community management) deferred until the features they monitor exist.</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-high">High</span></div>
+        <div>
+          <div class="risk-title">SSL Wireless SMS integration</div>
+          <div class="risk-desc">Bangladesh's premier SMS gateway has inadequate Node.js documentation. IP whitelisting required. npm package is thin -- may need custom HTTP wrapper.</div>
+          <div class="risk-mit">-> Mitigate: Budget 2x normal SMS integration estimate. Write direct HTTP wrapper (not the npm package). Prototype and verify delivery receipt format in Week 3 Day 1 before building the full pipeline. Confirm IP whitelisting with SSL Wireless support.</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-med">Medium</span></div>
+        <div>
+          <div class="risk-title">Prisma encryption compatibility</div>
+          <div class="risk-desc">prisma-field-encryption supports up to v6.13. Using v6.19 is unverified. Upgrading to Prisma 7 would break encryption silently.</div>
+          <div class="risk-mit">-> Mitigate: Pin to ^6.13.0 initially. Write an integration test that encrypts, stores, retrieves, and decrypts a sensitive field. Run it in CI. Never upgrade Prisma without the test passing. Document the pin constraint in package.json.</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-med">Medium</span></div>
+        <div>
+          <div class="risk-title">Bengali text layout</div>
+          <div class="risk-desc">Bengali script is 20-40% longer than English. All layouts must accommodate without breaking. Noto Sans Bengali font required. Input method testing (Avro/Probhat) needed.</div>
+          <div class="risk-mit">-> Mitigate: Load Bengali fonts from day one. Test every page in Bengali mode during development. Get client sign-off on Bengali numeral format early. All UI components must be designed with text expansion in mind.</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-low">Low</span></div>
+        <div>
+          <div class="risk-title">Prediction cold-start</div>
+          <div class="risk-desc">First-time users with no period history get predictions based on onboarding cycle length entry. Inaccurate for users with irregular cycles. Regular cycles top out near 85-87% accuracy regardless of algorithm.</div>
+          <div class="risk-mit">-> Mitigate: Show "This is an estimate -- accuracy improves after 3+ logged cycles" on the dashboard. Use onboarding value as initial data point. Auto-escalate prediction tier as data accumulates (Tier 1 -> 2 -> 3). Show confidence levels to users.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 10: DEFINITION OF DONE -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">10</div>Definition of Done -- v1 Launch</div>
+    <div class="section-desc">The v1 is shippable when every item below is verified. Do not consider any phase complete until its criteria are met.</div>
+
+    <div class="dod-grid">
+      <div class="dod-card">
+        <div class="dod-title">Core Functionality</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>New user can sign up with email and verify via email link</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>User can create multiple health profiles with relation types</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Profile switcher allows seamless switching between profiles</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Onboarding completes: trust screens, goal, cycle history, personal data</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Period logging works: start/end with flow intensity in 2-3 taps</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Predictions recalculate immediately after any period log</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Calendar shows correct colors for period, fertile, ovulation, and low days</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Symptom logging works via icon-based tap selection (30+ symptoms)</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>SMS + email notifications deliver to correct profile</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Content articles display in both languages with phase tags</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Partner sharing works: invite code, read-only view, instant revoke</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Admin dashboard loads with KPIs and trend charts</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Admin can manage users and content via CMS</div>
+      </div>
+      <div class="dod-card">
+        <div class="dod-title">Quality &amp; Security</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Field encryption verified: sensitive data encrypted at rest (AES-256-GCM)</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Profile isolation tested: user A cannot see user B's health data</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>checkProfileOwnership middleware on every profile-scoped endpoint</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Bengali UI fully functional: all strings translated, layouts not broken</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Responsive at 375px (mobile), 768px (tablet), 1280px (desktop)</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>No console errors in Chrome, Safari, and Firefox</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Admin RBAC enforced: Super Admin and Content Admin role separation</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Production deployed: Vercel (frontend) + Railway (API + worker)</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>All loading, error, and empty states implemented</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Prediction algorithm unit tested with edge cases</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>SSL Wireless SMS delivery verified in production</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Zero third-party analytics touching health event data</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 11: DEVELOPER-HOUR ESTIMATES -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">11</div>Developer-Hour Estimates</div>
+    <div class="section-desc">Per-phase hour breakdown based on 20 implementation plans across 4 phases. Hours assume experienced full-stack developers familiar with the stack.</div>
+
+    <table class="hours-table">
+      <thead>
+        <tr>
+          <th>Phase</th>
+          <th>Description</th>
+          <th>Plans</th>
+          <th>Estimated Hours</th>
+          <th>Key Work</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-teal">Phase 1</span></td>
+          <td><strong>Foundation, Auth, Multi-Profile</strong></td>
+          <td>5 plans</td>
+          <td><div class="hours-val">~46h</div></td>
+          <td>Monorepo, Prisma + encryption, JWT auth, i18n, multi-profile CRUD, onboarding</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">Phase 2</span></td>
+          <td><strong>Core Cycle Tracking + Predictions</strong></td>
+          <td>6 plans</td>
+          <td><div class="hours-val">~62h</div></td>
+          <td>Shared contracts, 3-tier prediction, cycle API, symptoms, dashboard, calendar</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">Phase 3</span></td>
+          <td><strong>Engagement Layer</strong></td>
+          <td>4 plans</td>
+          <td><div class="hours-val">~58h</div></td>
+          <td>Notification infra, SMS + email delivery, content platform, partner sharing</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple">Phase 4</span></td>
+          <td><strong>Admin Panel</strong></td>
+          <td>5 plans</td>
+          <td><div class="hours-val">~100h</div></td>
+          <td>RBAC, dashboard + user mgmt, health analytics, content CMS, reports + export</td>
+        </tr>
+        <tr class="hours-total">
+          <td colspan="3"><strong>TOTAL</strong></td>
+          <td><div class="hours-val">~266h</div></td>
+          <td><strong>20 plans across 4 phases</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-size">2</div>
+        <div class="team-label">Developers</div>
+        <div class="team-fit" style="background:#fef2f2;color:#dc2626">Tight</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:6px">~133h each over 4 weeks<br>~6.7h/day, minimal buffer</div>
+      </div>
+      <div class="team-card">
+        <div class="team-size">3</div>
+        <div class="team-label">Developers</div>
+        <div class="team-fit" style="background:#f0fdf4;color:#16a34a">Comfortable</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:6px">~89h each over 4 weeks<br>~4.4h/day, good buffer</div>
+      </div>
+      <div class="team-card">
+        <div class="team-size">4</div>
+        <div class="team-label">Developers</div>
+        <div class="team-fit" style="background:#ccfbf1;color:#115e59">Ideal for 1-month</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:6px">~67h each over 4 weeks<br>~3.3h/day, ample buffer</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -110,6 +110,32 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **PRIV-04**: Terms of service available in English and Bengali
 - [ ] **PRIV-05**: Multi-profile consent mechanism (profile owner acknowledgment)
 
+### Feature Gating (Free/Pro)
+
+- [ ] **GATE-01**: Backend middleware checks user subscription tier (free/pro) before granting access to gated features
+- [ ] **GATE-02**: Admin can configure which features are free vs pro from admin portal (feature flag table)
+- [ ] **GATE-03**: Free users see "Pro" badge on locked features with upgrade prompt
+- [ ] **GATE-04**: Pro users get immediate access to all features marked as pro by admin
+- [ ] **GATE-05**: Feature gate changes by admin take effect in real-time (no app restart needed)
+
+### Session Management
+
+- [ ] **SESS-01**: Admin can view all active sessions for any user (device, IP, last activity, login time)
+- [ ] **SESS-02**: Admin can terminate individual user sessions remotely (immediate logout)
+- [ ] **SESS-03**: Admin can terminate all sessions for a user at once (force global logout)
+- [ ] **SESS-04**: Session store tracks active sessions per user (Redis-backed with JWT blacklist)
+
+### BDApps Subscription (Pro Billing)
+
+- [ ] **SUBS-01**: Pro subscription charged via BDApps charging cycle API (mobile carrier billing)
+- [ ] **SUBS-02**: System checks BDApps charging status daily via cron job
+- [ ] **SUBS-03**: If BDApps charging fails for configurable N days (admin-settable grace period), pro access is automatically disabled
+- [ ] **SUBS-04**: User sees grace period warning ("Your subscription expires in X days") when charging lapses
+- [ ] **SUBS-05**: When charging resumes, pro access is automatically re-enabled
+- [ ] **SUBS-06**: Admin can view subscription status for all users (active, grace period, expired, never subscribed)
+- [ ] **SUBS-07**: Admin can manually grant or revoke pro access (override BDApps status)
+- [ ] **SUBS-08**: Subscription history log per user (charge date, amount, status, tier changes)
+
 ### Admin Panel
 
 - [ ] **ADMN-01**: Admin dashboard showing total/active users, profiles created, tracking activity metrics
@@ -126,6 +152,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **ADMN-12**: Alert engagement report: reminders delivered, opened, action taken
 - [ ] **ADMN-13**: Multi-profile usage analytics: accounts, profiles per account, relation type breakdown
 - [ ] **ADMN-14**: Data completeness report: complete vs partial vs inactive profiles
+- [ ] **ADMN-15**: Feature gating management: toggle features free/pro, view gate configuration
+- [ ] **ADMN-16**: Session management UI: view active sessions, terminate sessions per user
+- [ ] **ADMN-17**: Subscription management: view BDApps status, set grace period, manual override, billing history
 
 ## v2 Requirements
 
@@ -187,11 +216,12 @@ Deferred to future release. Tracked but not in current roadmap.
 - **COMM-03**: Topic categorization, comments, upvotes
 - **COMM-04**: Content reporting and age-gating (under-18/over-18)
 
-### Monetization
+### Monetization (Additional)
 
 - **MONE-01**: Doctor consultation booking system
 - **MONE-02**: Health product marketplace
 - **MONE-03**: Sponsored content/advertising
+- **MONE-04**: Alternative payment methods (bKash, Nagad, card) alongside BDApps
 
 ### Extended Features
 
@@ -304,12 +334,32 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADMN-12 | Phase 4 | Pending |
 | ADMN-13 | Phase 4 | Pending |
 | ADMN-14 | Phase 4 | Pending |
+| ADMN-15 | Phase 4 | Pending |
+| ADMN-16 | Phase 4 | Pending |
+| ADMN-17 | Phase 4 | Pending |
+| GATE-01 | Phase 1 | Pending |
+| GATE-02 | Phase 4 | Pending |
+| GATE-03 | Phase 2 | Pending |
+| GATE-04 | Phase 1 | Pending |
+| GATE-05 | Phase 4 | Pending |
+| SESS-01 | Phase 4 | Pending |
+| SESS-02 | Phase 4 | Pending |
+| SESS-03 | Phase 4 | Pending |
+| SESS-04 | Phase 1 | Pending |
+| SUBS-01 | Phase 3 | Pending |
+| SUBS-02 | Phase 3 | Pending |
+| SUBS-03 | Phase 3 | Pending |
+| SUBS-04 | Phase 3 | Pending |
+| SUBS-05 | Phase 3 | Pending |
+| SUBS-06 | Phase 4 | Pending |
+| SUBS-07 | Phase 4 | Pending |
+| SUBS-08 | Phase 4 | Pending |
 
 **Coverage:**
-- v1 requirements: 81 total
-- Mapped to phases: 81
+- v1 requirements: 102 total
+- Mapped to phases: 102
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-03-26 -- Traceability updated with phase mappings (4 phases, 81/81 mapped)*
+*Last updated: 2026-03-27 -- Added feature gating (GATE-01..05), session management (SESS-01..04), BDApps subscription (SUBS-01..08), admin extensions (ADMN-15..17)*

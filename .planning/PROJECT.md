@@ -105,6 +105,9 @@ Enable families in Bangladesh to track and understand reproductive health for mu
 | Admin panel in Phase 1 | Client requires operational tooling from launch | — Pending |
 | Three-tier prediction estimation | Client wants cost options: Simple / ARIMA / Full ML | — Pending |
 | Bangladesh-first market | Primary audience, Bengali language priority | — Pending |
+| Admin-controlled feature gating | Every feature toggleable free/pro by admin in real-time | — Pending |
+| Remote session termination | Admin can force-logout users; Redis-backed session store with JWT blacklist | — Pending |
+| BDApps carrier billing for Pro | Pro subscription via BDApps charging cycle; auto-disable on lapse after grace period | — Pending |
 
 ---
 *Last updated: 2026-03-26 after initialization*
