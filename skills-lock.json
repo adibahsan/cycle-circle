@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "feature-spec": {
+      "source": "pproenca/dot-skills",
+      "sourceType": "github",
+      "computedHash": "d57673d02c72d58434f91a4e1e35a52503ec7c828e84fe70a5586f9b3b02bd8e"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "computedHash": "9e1c8b3103f92fa8092568a44fe64858de7c5c9dc65ce4bea8f168080e889cfd"
+    },
+    "srs-documentation": {
+      "source": "doubleslashse/claude-marketplace",
+      "sourceType": "github",
+      "computedHash": "df4a5357d14dae906e07c3096c23f146ab5aeb00d6aebc4993f3f1dd0b744f28"
+    }
+  }
+}
