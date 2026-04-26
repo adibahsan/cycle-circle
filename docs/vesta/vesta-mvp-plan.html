@@ -172,7 +172,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
       <span class="badge badge-green">1-Month Production Sprint</span>
     </div>
     <h1>v1 Implementation Plan</h1>
-    <p class="subtitle">A focused 4-week sprint to ship a bilingual, multi-profile reproductive health platform -- period tracking, cycle predictions, notifications, content, partner sharing, and a full admin panel.</p>
+    <p class="subtitle">A focused 4-week sprint to ship a bilingual, multi-profile reproductive health platform -- period tracking, cycle predictions, BDApps OTP verification, CAAS billing, notifications, content, and a full admin panel.</p>
     <div class="stats-row">
       <div class="stat"><div class="stat-val">20</div><div class="stat-label">Working days</div></div>
       <div class="stat"><div class="stat-val">102</div><div class="stat-label">Requirements</div></div>
@@ -189,7 +189,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
     <div class="moscow-grid">
       <div class="moscow-card moscow-must">
         <div class="moscow-title" style="color:#115e59">MUST HAVE -- Phase 1-2, Weeks 1-2</div>
-        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Email auth + multi-profile accounts</div><div class="fi-note">Relation types: self, wife, sister, mother, daughter, girlfriend</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Phone auth + OTP verification via BDApps + multi-profile accounts</div><div class="fi-note">BDApps otp/request + otp/verify flow. Relation types: self, wife, sister, mother, daughter, girlfriend</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Bilingual UI (English + Bengali)</div><div class="fi-note">i18n from day one with i18next + react-i18next</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Period tracking</div><div class="fi-note">Start/end, flow intensity (light/medium/heavy), retroactive editing</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Cycle dashboard</div><div class="fi-note">Cycle day hero, phase label (follicular/ovulatory/luteal/menstrual), countdown</div></div></div>
@@ -201,18 +201,15 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Profile switcher with data isolation</div><div class="fi-note">checkProfileOwnership middleware on every profile-scoped endpoint</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Feature gating middleware (free/pro access control)</div><div class="fi-note">Backend middleware checks subscription tier before granting access to gated features</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Redis-backed session store with JWT blacklist</div><div class="fi-note">Tracks active sessions per user, enables remote session termination</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">BDApps CAAS charging for Pro subscription</div><div class="fi-note">caas/directDebit for Pro charging, caas/queryBalance for status checks</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Auto-disable Pro on charging lapse + grace period</div><div class="fi-note">Daily cron checks CAAS status, disables Pro after configurable grace period with user warning</div></div></div>
       </div>
 
       <div class="moscow-card moscow-should">
         <div class="moscow-title" style="color:#1d4ed8">SHOULD HAVE -- Phase 3, Week 3</div>
-        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">SMS notifications via SSL Wireless</div><div class="fi-note">Bengali per BTRC requirements, IP whitelisting</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Email notifications</div><div class="fi-note">Period alerts, fertile window, logging reminders via Resend + React Email</div></div></div>
-        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Partner sharing</div><div class="fi-note">Invite code, read-only calendar, daily phase insights, instant revoke</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Content platform</div><div class="fi-note">Bilingual blog articles, phase-specific recommendations, cultural context</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Notification preferences per-profile</div><div class="fi-note">Toggle each notification type on/off per health profile</div></div></div>
-        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">BDApps carrier billing for Pro subscription</div><div class="fi-note">Mobile carrier charging via BDApps API -- dominant payment method in Bangladesh</div></div></div>
-        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Auto-disable pro on charging lapse (grace period)</div><div class="fi-note">Daily cron checks BDApps status, disables pro after configurable grace period</div></div></div>
-        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Grace period warning to users</div><div class="fi-note">"Your subscription expires in X days" notification when charging lapses</div></div></div>
       </div>
 
       <div class="moscow-card moscow-could">
@@ -269,7 +266,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
           <td><span class="badge badge-blue">Phase 2</span></td>
         </tr>
         <tr>
-          <td><strong class="priority-1">Auth + onboarding</strong></td>
+          <td><strong class="priority-1">Auth + OTP (BDApps) + onboarding</strong></td>
           <td>100%</td>
           <td>3 (massive)</td>
           <td>90%</td>
@@ -314,13 +311,22 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
           <td><span class="badge badge-blue">Phase 2</span></td>
         </tr>
         <tr>
-          <td>SMS notifications</td>
+          <td><strong class="priority-1">BDApps OTP verification</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
           <td>90%</td>
-          <td>2.5 (high)</td>
-          <td>70%</td>
-          <td>3</td>
-          <td><div class="rice-score">53</div><div class="rice-bar"><div class="rice-bar-fill" style="width:20%"></div></div></td>
-          <td><span class="badge badge-green">Phase 3</span></td>
+          <td>1</td>
+          <td><div class="rice-score">270</div><div class="rice-bar"><div class="rice-bar-fill" style="width:100%"></div></div></td>
+          <td><span class="badge badge-teal">Phase 1</span></td>
+        </tr>
+        <tr>
+          <td><strong class="priority-1">BDApps CAAS charging</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>90%</td>
+          <td>1.5</td>
+          <td><div class="rice-score">180</div><div class="rice-bar"><div class="rice-bar-fill" style="width:67%"></div></div></td>
+          <td><span class="badge badge-teal">Phase 1</span></td>
         </tr>
         <tr>
           <td>Content platform</td>
@@ -329,15 +335,6 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
           <td>80%</td>
           <td>2.5</td>
           <td><div class="rice-score">45</div><div class="rice-bar"><div class="rice-bar-fill" style="width:17%"></div></div></td>
-          <td><span class="badge badge-green">Phase 3</span></td>
-        </tr>
-        <tr>
-          <td>Partner sharing</td>
-          <td>40%</td>
-          <td>2.5 (high)</td>
-          <td>85%</td>
-          <td>3</td>
-          <td><div class="rice-score">28</div><div class="rice-bar"><div class="rice-bar-fill" style="width:10%"></div></div></td>
           <td><span class="badge badge-green">Phase 3</span></td>
         </tr>
         <tr>
@@ -375,15 +372,6 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
           <td>2</td>
           <td><div class="rice-score">106</div><div class="rice-bar"><div class="rice-bar-fill" style="width:39%"></div></div></td>
           <td><span class="badge badge-teal">Phase 1</span></td>
-        </tr>
-        <tr>
-          <td>BDApps subscription</td>
-          <td>70%</td>
-          <td>2.5 (high)</td>
-          <td>70%</td>
-          <td>3</td>
-          <td><div class="rice-score">41</div><div class="rice-bar"><div class="rice-bar-fill" style="width:15%"></div></div></td>
-          <td><span class="badge badge-green">Phase 3</span></td>
         </tr>
         <tr>
           <td>Session management</td>
@@ -436,8 +424,8 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
       </div>
       <div class="stack-card">
         <div class="stack-layer">Auth</div>
-        <div class="stack-choice">JWT (bcryptjs + jsonwebtoken)</div>
-        <div class="stack-reason">Access tokens (15min) + refresh tokens (7d) in HttpOnly Secure cookies. Role claims for admin RBAC.</div>
+        <div class="stack-choice">JWT + BDApps OTP</div>
+        <div class="stack-reason">Phone number sign-up verified via BDApps otp/request + otp/verify. Access tokens (15min) + refresh tokens (7d) in HttpOnly Secure cookies. Role claims for admin RBAC.</div>
       </div>
       <div class="stack-card">
         <div class="stack-layer">i18n</div>
@@ -448,16 +436,6 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         <div class="stack-layer">Encryption</div>
         <div class="stack-choice">prisma-field-encryption</div>
         <div class="stack-reason">Transparent AES-256-GCM for sensitive health fields. /// @encrypted in Prisma schema.</div>
-      </div>
-      <div class="stack-card">
-        <div class="stack-layer">Job Queue</div>
-        <div class="stack-choice">BullMQ + Redis</div>
-        <div class="stack-reason">SMS/email delivery, prediction recalc, daily reminder crons. Retries + dead letter queues.</div>
-      </div>
-      <div class="stack-card">
-        <div class="stack-layer">SMS (Bangladesh)</div>
-        <div class="stack-choice">SSL Wireless (custom wrapper)</div>
-        <div class="stack-reason">Bangladesh premier gateway. Direct HTTP API wrapper. Bengali Unicode SMS per BTRC.</div>
       </div>
       <div class="stack-card">
         <div class="stack-layer">Email</div>
@@ -486,13 +464,18 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
       </div>
       <div class="stack-card">
         <div class="stack-layer">Carrier Billing</div>
-        <div class="stack-choice">BDApps API</div>
-        <div class="stack-reason">Mobile carrier charging for Pro subscriptions -- dominant payment method in Bangladesh.</div>
+        <div class="stack-choice">BDApps CAAS API</div>
+        <div class="stack-reason">caas/directDebit for Pro charging, caas/queryBalance for subscription status. Dominant payment method in Bangladesh.</div>
       </div>
       <div class="stack-card">
         <div class="stack-layer">Hosting</div>
-        <div class="stack-choice">Vercel + Railway/VPS</div>
-        <div class="stack-reason">Frontend on Vercel CDN. API on Railway for persistent Express + BullMQ workers.</div>
+        <div class="stack-choice">Vercel + Supabase</div>
+        <div class="stack-reason">Frontend + serverless API on Vercel. PostgreSQL + RLS on Supabase. Upstash Redis for sessions. Zero-cost experimental tier with clear upgrade path.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Job Queue</div>
+        <div class="stack-choice">Vercel Cron + Upstash QStash</div>
+        <div class="stack-reason">Replaces BullMQ workers. Vercel Cron for scheduled reminders + CAAS checks. QStash for reliable async jobs. Both serverless-native, no persistent process needed.</div>
       </div>
     </div>
   </div>
@@ -687,21 +670,24 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
             <div class="deliverable"><div class="d-dot"></div>pnpm workspace + Turborepo: web, api, shared packages</div>
             <div class="deliverable"><div class="d-dot"></div>Prisma schema: users, profiles, period_logs, symptom_logs, predictions</div>
             <div class="deliverable"><div class="d-dot"></div>prisma-field-encryption configured + integration test</div>
-            <div class="deliverable"><div class="d-dot"></div>PostgreSQL 16 provisioned, Redis 7 connected</div>
+            <div class="deliverable"><div class="d-dot"></div>Supabase project provisioned (PostgreSQL + RLS enabled), Upstash Redis connected</div>
+            <div class="deliverable"><div class="d-dot"></div>Vercel project linked, preview + production environments configured</div>
             <div class="deliverable"><div class="d-dot"></div>Shared Zod schemas + TypeScript types scaffolded</div>
           </div></td>
           <td><span class="owner-badge owner-be">Back-end</span></td>
         </tr>
         <tr>
           <td><div class="day-num">Day 2</div><div style="font-size:10px;color:#9ca3af">Tuesday</div></td>
-          <td><strong>Auth API + security middleware</strong></td>
+          <td><strong>Auth API + BDApps OTP + security middleware</strong></td>
           <td><div class="deliverable-list">
             <div class="deliverable"><div class="d-dot"></div>Express 5 server with helmet, cors, rate-limit, cookie-parser</div>
-            <div class="deliverable"><div class="d-dot"></div>JWT auth: signup, login, email verify, password reset</div>
+            <div class="deliverable"><div class="d-dot"></div>Phone-number signup + BDApps otp/request → otp/verify flow</div>
+            <div class="deliverable"><div class="d-dot"></div>JWT auth: login, password reset</div>
             <div class="deliverable"><div class="d-dot"></div>Access + refresh tokens in HttpOnly Secure cookies</div>
             <div class="deliverable"><div class="d-dot"></div>verifyJWT + checkProfileOwnership middleware chain</div>
             <div class="deliverable"><div class="d-dot"></div>Feature gating middleware (free/pro access control)</div>
             <div class="deliverable"><div class="d-dot"></div>Redis-backed session store with JWT blacklist (ioredis)</div>
+            <div class="deliverable"><div class="d-dot"></div>BDApps CAAS wrapper: caas/directDebit + caas/queryBalance</div>
           </div></td>
           <td><span class="owner-badge owner-be">Back-end</span></td>
         </tr>
@@ -818,7 +804,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
     <!-- WEEK 3 -->
     <div class="week-header">
       <div class="week-badge">Week 3 -- Phase 3</div>
-      <div class="week-desc">Engagement: Notifications, content, partner sharing</div>
+      <div class="week-desc">Engagement: Email notifications, content, CAAS billing integration</div>
     </div>
 
     <table class="sprint-table">
@@ -831,7 +817,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
           <td><strong>Notification infrastructure</strong></td>
           <td><div class="deliverable-list">
             <div class="deliverable"><div class="d-dot-green"></div>Prisma schema additions: notification_preferences, notification_logs</div>
-            <div class="deliverable"><div class="d-dot-green"></div>BullMQ queues: send-sms, send-email, daily-reminder</div>
+            <div class="deliverable"><div class="d-dot-green"></div>BullMQ queues: send-email, daily-reminder</div>
             <div class="deliverable"><div class="d-dot-green"></div>Notification preferences API (per-profile toggles)</div>
             <div class="deliverable"><div class="d-dot-green"></div>Notification settings UI page</div>
           </div></td>
@@ -839,9 +825,8 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         </tr>
         <tr>
           <td><div class="day-num">Day 12</div><div style="font-size:10px;color:#9ca3af">Tuesday</div></td>
-          <td><strong>SMS + Email delivery</strong></td>
+          <td><strong>Email delivery</strong></td>
           <td><div class="deliverable-list">
-            <div class="deliverable"><div class="d-dot-green"></div>SSL Wireless HTTP wrapper (Bengali SMS, IP whitelisting)</div>
             <div class="deliverable"><div class="d-dot-green"></div>Resend + React Email templates: period alert, fertile window, logging reminder</div>
             <div class="deliverable"><div class="d-dot-green"></div>Cron job processors: daily check for upcoming predictions</div>
             <div class="deliverable"><div class="d-dot-green"></div>Multi-profile routing: correct profile gets correct notification</div>
@@ -850,26 +835,35 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         </tr>
         <tr>
           <td><div class="day-num">Day 13</div><div style="font-size:10px;color:#9ca3af">Wednesday</div></td>
-          <td><strong>Content platform + BDApps billing</strong></td>
+          <td><strong>Content platform</strong></td>
           <td><div class="deliverable-list">
             <div class="deliverable"><div class="d-dot-green"></div>Article service: bilingual content with phase-based filtering</div>
             <div class="deliverable"><div class="d-dot-green"></div>Content browsing pages: article list, article detail, category filter</div>
             <div class="deliverable"><div class="d-dot-green"></div>Dashboard content feed: phase-specific recommendations</div>
             <div class="deliverable"><div class="d-dot-green"></div>Bilingual seed data: 10-15 articles on menstrual health and Bangladeshi cultural context</div>
-            <div class="deliverable"><div class="d-dot-green"></div>BDApps carrier billing integration (Pro subscription charging API)</div>
-            <div class="deliverable"><div class="d-dot-green"></div>Subscription status cron: daily BDApps charging check + grace period logic</div>
           </div></td>
           <td><span class="owner-badge owner-shared">Both</span></td>
         </tr>
         <tr>
-          <td><div class="day-num">Day 14-15</div><div style="font-size:10px;color:#9ca3af">Thu-Fri</div></td>
-          <td><strong>Partner sharing</strong></td>
+          <td><div class="day-num">Day 14</div><div style="font-size:10px;color:#9ca3af">Thursday</div></td>
+          <td><strong>CAAS subscription lifecycle</strong></td>
           <td><div class="deliverable-list">
-            <div class="deliverable"><div class="d-dot-green"></div>Share code generation + lifecycle (create, accept, revoke)</div>
-            <div class="deliverable"><div class="d-dot-green"></div>Read-only access middleware (partner can see calendar, not symptoms)</div>
-            <div class="deliverable"><div class="d-dot-green"></div>Daily partner insights (current phase, fertile window in TTC mode)</div>
-            <div class="deliverable"><div class="d-dot-green"></div>Partner frontend: limited calendar view + phase insights</div>
-            <div class="deliverable"><div class="d-dot-green"></div>Instant revoke from primary user settings</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Pro upgrade flow: caas/directDebit triggered on plan selection</div>
+            <div class="deliverable"><div class="d-dot-green"></div>caas/queryBalance daily cron: check subscription status per user</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Grace period logic: configurable N-day window before Pro disable</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Grace expiry email warning: "Your subscription expires in X days"</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Feature gating enforcement: Pro features locked on lapse</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 15</div><div style="font-size:10px;color:#9ca3af">Friday</div></td>
+          <td><strong>Subscription UI + Week 3 QA</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-green"></div>Upgrade to Pro page: plan comparison, CAAS charge trigger</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Subscription status badge in user settings</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Grace period warning banner in app</div>
+            <div class="deliverable"><div class="d-dot-green"></div>End-to-end QA: OTP flow, charging, grace period, feature gating</div>
           </div></td>
           <td><span class="owner-badge owner-shared">Both</span></td>
         </tr>
@@ -1002,8 +996,8 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
       <div class="dep">
         <div class="dep-from">Core tracking (Phase 2)</div>
         <div class="dep-arrow">-> blocks -></div>
-        <div class="dep-to">Partner sharing + content</div>
-        <div class="dep-note">Partner needs calendar data to share</div>
+        <div class="dep-to">Content platform</div>
+        <div class="dep-note">Phase-specific content recommendations need cycle state</div>
       </div>
       <div class="dep">
         <div class="dep-from">All user-facing features (Phases 1-3)</div>
@@ -1064,18 +1058,16 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
           <div class="phase-timeline" style="background:#dcfce7;color:#16a34a">Week 3</div>
         </div>
         <div class="phase-features">
-          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>SMS notifications (SSL Wireless, Bengali)</div>
           <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Email notifications (Resend + React Email)</div>
           <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Period, fertile, logging reminder alerts</div>
           <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Notification preferences per-profile</div>
           <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Content platform (bilingual articles)</div>
           <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Phase-specific content recommendations</div>
-          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Partner sharing (invite, read-only, revoke)</div>
-          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Partner view (calendar + phase insights)</div>
-          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>BDApps carrier billing for Pro</div>
-          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Auto-disable on charging lapse</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>CAAS Pro upgrade flow + subscription lifecycle</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Grace period cron + expiry warnings</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Subscription UI (upgrade page, status badge)</div>
         </div>
-        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #dcfce7;font-size:11px;color:#16a34a;font-weight:700">Goal: User stays engaged through SMS/email and shares with partner</div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #dcfce7;font-size:11px;color:#16a34a;font-weight:700">Goal: User stays engaged through email alerts, content, and can upgrade to Pro via BDApps CAAS</div>
       </div>
 
       <div class="phase-card phase4">
@@ -1126,9 +1118,9 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
       <div class="risk">
         <div><span class="risk-level risk-high">High</span></div>
         <div>
-          <div class="risk-title">SSL Wireless SMS integration</div>
-          <div class="risk-desc">Bangladesh's premier SMS gateway has inadequate Node.js documentation. IP whitelisting required. npm package is thin -- may need custom HTTP wrapper.</div>
-          <div class="risk-mit">-> Mitigate: Budget 2x normal SMS integration estimate. Write direct HTTP wrapper (not the npm package). Prototype and verify delivery receipt format in Week 3 Day 1 before building the full pipeline. Confirm IP whitelisting with SSL Wireless support.</div>
+          <div class="risk-title">BDApps OTP + CAAS API reliability</div>
+          <div class="risk-desc">BDApps APIs can be intermittent. OTP delivery failures block sign-up. CAAS charging failures risk incorrect Pro access revocation. Both are on the critical path.</div>
+          <div class="risk-mit">-> Mitigate: Implement retry logic with exponential backoff on all BDApps calls. OTP: resend option after 60s timeout. CAAS: grace period absorbs transient failures -- only revoke Pro after N consecutive daily check failures. Prototype both APIs in Week 1 Day 2 before building the full pipeline.</div>
         </div>
       </div>
       <div class="risk">
@@ -1174,7 +1166,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
     <div class="dod-grid">
       <div class="dod-card">
         <div class="dod-title">Core Functionality</div>
-        <div class="dod-item"><div class="dod-check">&#10003;</div>New user can sign up with email and verify via email link</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>New user can sign up with phone number and verify via BDApps OTP</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>User can create multiple health profiles with relation types</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>Profile switcher allows seamless switching between profiles</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>Onboarding completes: trust screens, goal, cycle history, personal data</div>
@@ -1182,9 +1174,10 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         <div class="dod-item"><div class="dod-check">&#10003;</div>Predictions recalculate immediately after any period log</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>Calendar shows correct colors for period, fertile, ovulation, and low days</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>Symptom logging works via icon-based tap selection (30+ symptoms)</div>
-        <div class="dod-item"><div class="dod-check">&#10003;</div>SMS + email notifications deliver to correct profile</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Email notifications deliver to correct profile</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>Content articles display in both languages with phase tags</div>
-        <div class="dod-item"><div class="dod-check">&#10003;</div>Partner sharing works: invite code, read-only view, instant revoke</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>BDApps OTP flow works end-to-end: request → verify → account created</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Pro upgrade via CAAS charges correctly and gates features immediately</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>Admin dashboard loads with KPIs and trend charts</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>Admin can manage users and content via CMS</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>Feature gating blocks free users from pro features and allows access for pro users</div>
@@ -1203,7 +1196,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         <div class="dod-item"><div class="dod-check">&#10003;</div>Production deployed: Vercel (frontend) + Railway (API + worker)</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>All loading, error, and empty states implemented</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>Prediction algorithm unit tested with edge cases</div>
-        <div class="dod-item"><div class="dod-check">&#10003;</div>SSL Wireless SMS delivery verified in production</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>BDApps CAAS charging verified in production (real transaction test)</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>Zero third-party analytics touching health event data</div>
       </div>
     </div>
@@ -1230,7 +1223,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
           <td><strong>Foundation, Auth, Multi-Profile</strong></td>
           <td>5 plans</td>
           <td><div class="hours-val">~50h</div></td>
-          <td>Monorepo, Prisma + encryption, JWT auth, i18n, multi-profile CRUD, onboarding, gating middleware + session store</td>
+          <td>Monorepo, Prisma + encryption, BDApps OTP auth, CAAS wrapper, i18n, multi-profile CRUD, onboarding, gating middleware + session store</td>
         </tr>
         <tr>
           <td><span class="badge badge-blue">Phase 2</span></td>
@@ -1244,7 +1237,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
           <td><strong>Engagement Layer</strong></td>
           <td>4 plans</td>
           <td><div class="hours-val">~68h</div></td>
-          <td>Notification infra, SMS + email delivery, content platform, partner sharing, BDApps billing integration</td>
+          <td>Notification infra, email delivery, content platform, CAAS subscription lifecycle + UI</td>
         </tr>
         <tr>
           <td><span class="badge badge-purple">Phase 4</span></td>
@@ -1340,6 +1333,266 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- SECTION 11: DEPLOYMENT -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">11</div>Deployment Architecture</div>
+    <div class="section-desc">Zero-cost experimental stack using Vercel + Supabase + Upstash. Every service has a defined upgrade trigger so the client can scale without re-architecting.</div>
+
+    <!-- Cost banner -->
+    <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+      <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:16px 24px;flex:1;min-width:140px;text-align:center">
+        <div style="font-size:28px;font-weight:900;color:#16a34a">$0</div>
+        <div style="font-size:11px;color:#166534;font-weight:700">EXPERIMENTAL PHASE</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:2px">per month</div>
+      </div>
+      <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:16px 24px;flex:1;min-width:140px;text-align:center">
+        <div style="font-size:28px;font-weight:900;color:#1d4ed8">~$45</div>
+        <div style="font-size:11px;color:#1e3a8a;font-weight:700">AFTER UPGRADE</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:2px">Vercel Pro + Supabase Pro</div>
+      </div>
+      <div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:12px;padding:16px 24px;flex:1;min-width:140px;text-align:center">
+        <div style="font-size:28px;font-weight:900;color:#7c3aed">0</div>
+        <div style="font-size:11px;color:#4c1d95;font-weight:700">SERVERS TO MANAGE</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:2px">fully managed PaaS</div>
+      </div>
+    </div>
+
+    <!-- Service table -->
+    <table class="sprint-table" style="margin-bottom:24px">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Provider</th>
+          <th>Free Tier Limits</th>
+          <th>What it replaces</th>
+          <th>Upgrade trigger</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Frontend</strong><div style="font-size:10px;color:#9ca3af">React + Vite build</div></td>
+          <td><span class="badge badge-teal">Vercel Hobby</span></td>
+          <td style="font-size:11px">100 GB bandwidth/mo<br>Unlimited deploys<br>Preview URLs per PR</td>
+          <td style="font-size:11px">Vercel (already planned)</td>
+          <td style="font-size:11px;color:#6b7280">Team members or &gt;100 GB/mo</td>
+        </tr>
+        <tr>
+          <td><strong>API (serverless)</strong><div style="font-size:10px;color:#9ca3af">Express wrapped as Vercel functions</div></td>
+          <td><span class="badge badge-teal">Vercel Hobby</span></td>
+          <td style="font-size:11px">100 GB bandwidth/mo<br>10s function timeout<br>1M invocations/mo</td>
+          <td style="font-size:11px">Railway Express server ($5+/mo)</td>
+          <td style="font-size:11px;color:#6b7280">Long-running tasks (&gt;10s) or team</td>
+        </tr>
+        <tr>
+          <td><strong>Database</strong><div style="font-size:10px;color:#9ca3af">PostgreSQL 16 + RLS</div></td>
+          <td><span class="badge badge-blue">Supabase Free</span></td>
+          <td style="font-size:11px">500 MB storage<br>2 active projects<br>Pauses after 7d inactivity</td>
+          <td style="font-size:11px">Railway PostgreSQL ($5+/mo)</td>
+          <td style="font-size:11px;color:#6b7280">&gt;500 MB or need no-pause guarantee</td>
+        </tr>
+        <tr>
+          <td><strong>Session / Cache</strong><div style="font-size:10px;color:#9ca3af">JWT blacklist, rate-limit state</div></td>
+          <td><span class="badge badge-purple">Upstash Redis</span></td>
+          <td style="font-size:11px">10,000 commands/day<br>256 MB storage<br>HTTP-based (serverless-safe)</td>
+          <td style="font-size:11px">Railway Redis ($5+/mo)</td>
+          <td style="font-size:11px;color:#6b7280">&gt;10K commands/day</td>
+        </tr>
+        <tr>
+          <td><strong>Cron jobs</strong><div style="font-size:10px;color:#9ca3af">Daily CAAS check, reminder scheduler</div></td>
+          <td><span class="badge badge-teal">Vercel Cron</span></td>
+          <td style="font-size:11px">2 cron jobs (Hobby)<br>Daily minimum frequency</td>
+          <td style="font-size:11px">BullMQ persistent workers</td>
+          <td style="font-size:11px;color:#6b7280">More than 2 crons or sub-daily schedule</td>
+        </tr>
+        <tr>
+          <td><strong>Async job queue</strong><div style="font-size:10px;color:#9ca3af">Email delivery, prediction recalc</div></td>
+          <td><span class="badge badge-purple">Upstash QStash</span></td>
+          <td style="font-size:11px">500 messages/day<br>Max 1MB payload<br>Built-in retries</td>
+          <td style="font-size:11px">BullMQ queues</td>
+          <td style="font-size:11px;color:#6b7280">&gt;500 messages/day</td>
+        </tr>
+        <tr>
+          <td><strong>Email</strong><div style="font-size:10px;color:#9ca3af">Transactional + notifications</div></td>
+          <td><span class="badge badge-green">Resend Free</span></td>
+          <td style="font-size:11px">3,000 emails/mo<br>100/day limit</td>
+          <td style="font-size:11px">Already planned</td>
+          <td style="font-size:11px;color:#6b7280">&gt;3K emails/mo or custom domain</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Architecture diagram -->
+    <div style="background:#1e293b;border-radius:12px;padding:24px;margin-bottom:24px;font-family:'Courier New',monospace;font-size:12px;color:#e2e8f0;line-height:2">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:12px">Infrastructure Diagram</div>
+<pre style="margin:0;color:#e2e8f0;font-size:11px;line-height:1.8">
+  ┌─────────────────────────────────────────────────────────┐
+  │                    <span style="color:#2dd4bf">VERCEL</span> (free hobby)                   │
+  │                                                         │
+  │   ┌──────────────────┐   ┌───────────────────────┐      │
+  │   │  React + Vite    │   │  Serverless API funcs  │      │
+  │   │  (static build)  │   │  (Express adapter)     │      │
+  │   └────────┬─────────┘   └────────────┬──────────┘      │
+  │            │                          │                  │
+  │   ┌────────┴──────────────────────────┴──────────┐      │
+  │   │              Vercel Cron (2 jobs)             │      │
+  │   │   daily-caas-check  │  daily-reminder-push    │      │
+  │   └───────────────────────────────────────────────┘      │
+  └───────────────────────┬─────────────────────────────────┘
+                          │
+        ┌─────────────────┼──────────────────┐
+        │                 │                  │
+  ┌─────▼──────┐  ┌───────▼──────┐  ┌───────▼──────┐
+  │  <span style="color:#60a5fa">SUPABASE</span>   │  │ <span style="color:#c4b5fd">UPSTASH</span>      │  │  <span style="color:#34d399">RESEND</span>      │
+  │  (free)    │  │ Redis (free) │  │  (free)      │
+  │            │  │              │  │              │
+  │  PostgreSQL│  │ JWT blacklist│  │ Email alerts │
+  │  + RLS     │  │ Sessions     │  │ Templates    │
+  │  + pgcrypt │  │ Rate limits  │  │              │
+  └────────────┘  └──────────────┘  └──────────────┘
+                          │
+                  ┌───────▼──────┐
+                  │ <span style="color:#c4b5fd">UPSTASH</span>      │
+                  │ QStash (free)│
+                  │              │
+                  │ Email queue  │
+                  │ Pred. recalc │
+                  └──────────────┘
+</pre>
+    </div>
+
+    <!-- Vercel Express adapter note -->
+    <div style="background:#fffbeb;border:1.5px solid #fef3c7;border-radius:10px;padding:16px;margin-bottom:16px;display:flex;gap:12px">
+      <div style="font-size:18px;flex-shrink:0">⚙️</div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:4px">Express → Serverless Adapter</div>
+        <div style="font-size:11px;color:#78350f;line-height:1.6">
+          Express 5 runs as a Vercel serverless function via <code style="background:#fef9c3;padding:1px 4px;border-radius:3px">@vercel/node</code> + a single <code style="background:#fef9c3;padding:1px 4px;border-radius:3px">api/index.ts</code> entry point. All existing middleware (JWT, RLS, rate-limit) works unchanged. The only real change: BullMQ persistent workers are replaced by Vercel Cron (scheduled) + Upstash QStash (async). Function timeout is 10s on Hobby — sufficient for all API routes; upgrade to Pro (60s) if prediction recalculation grows.
+        </div>
+      </div>
+    </div>
+
+    <!-- Supabase RLS note -->
+    <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:16px;margin-bottom:16px;display:flex;gap:12px">
+      <div style="font-size:18px;flex-shrink:0">🔒</div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:4px">Supabase RLS replaces checkProfileOwnership middleware</div>
+        <div style="font-size:11px;color:#14532d;line-height:1.6">
+          Enable Row Level Security on <code style="background:#dcfce7;padding:1px 4px;border-radius:3px">period_logs</code>, <code style="background:#dcfce7;padding:1px 4px;border-radius:3px">symptom_logs</code>, and <code style="background:#dcfce7;padding:1px 4px;border-radius:3px">profiles</code> tables. Set <code style="background:#dcfce7;padding:1px 4px;border-radius:3px">auth.uid()</code> policy so users can only read/write their own rows — enforced at the database level, not just the application layer. Keep the Express middleware as a belt-and-suspenders check. Field-level encryption via prisma-field-encryption still applies on top of RLS.
+        </div>
+      </div>
+    </div>
+
+    <!-- Sprint deployment tasks -->
+    <div style="font-size:13px;font-weight:800;color:#1a1a2e;margin-bottom:12px">Deployment Tasks by Sprint Day</div>
+    <table class="sprint-table" style="margin-bottom:24px">
+      <thead>
+        <tr><th>Day</th><th>Deployment Task</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="day-num">Day 1</div></td>
+          <td>
+            <strong>Provision all free-tier services</strong>
+            <div style="font-size:11px;color:#6b7280;margin-top:4px">Create Supabase project, enable pgcrypto + RLS. Create Upstash Redis + QStash instances. Create Vercel project, link GitHub repo, set environment variables. Confirm Resend domain verified.</div>
+          </td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 2</div></td>
+          <td>
+            <strong>CI/CD pipeline</strong>
+            <div style="font-size:11px;color:#6b7280;margin-top:4px">GitHub Actions: typecheck + lint on every PR. Vercel auto-deploys on merge to main. Supabase migrations run via <code>supabase db push</code> in CI. Preview environments per PR branch.</div>
+          </td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 3</div></td>
+          <td>
+            <strong>Vercel serverless adapter + env config</strong>
+            <div style="font-size:11px;color:#6b7280;margin-top:4px">Wrap Express app in <code>api/index.ts</code> with <code>@vercel/node</code>. Verify all middleware works. Set all env vars in Vercel dashboard (SUPABASE_URL, UPSTASH_REDIS_URL, BDAPPS_*, RESEND_API_KEY).</div>
+          </td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 8</div></td>
+          <td>
+            <strong>Replace BullMQ prediction recalc with QStash job</strong>
+            <div style="font-size:11px;color:#6b7280;margin-top:4px">On period log save → publish QStash message to <code>/api/jobs/recalc-prediction</code>. QStash delivers with automatic retry on failure. Remove BullMQ dependency.</div>
+          </td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 11</div></td>
+          <td>
+            <strong>Vercel Cron setup</strong>
+            <div style="font-size:11px;color:#6b7280;margin-top:4px">Configure 2 cron jobs in <code>vercel.json</code>: <code>0 8 * * *</code> → <code>/api/cron/daily-reminders</code> (email alerts), <code>0 2 * * *</code> → <code>/api/cron/caas-check</code> (Pro subscription status). Both secured with <code>CRON_SECRET</code> header.</div>
+          </td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 20</div></td>
+          <td>
+            <strong>Production hardening + smoke test</strong>
+            <div style="font-size:11px;color:#6b7280;margin-top:4px">Verify Supabase is not paused (ping endpoint in cron). Set Upstash eviction policy to <code>allkeys-lru</code>. Enable Vercel Analytics. Run full sign-up → OTP → Pro upgrade → CAAS charge smoke test in production.</div>
+          </td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Upgrade path -->
+    <div style="font-size:13px;font-weight:800;color:#1a1a2e;margin-bottom:12px">Upgrade Path</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+        <span class="badge badge-teal" style="white-space:nowrap;margin-top:2px">Trigger 1</span>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#1a1a2e">Supabase project pausing becomes a problem</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:2px">Upgrade to <strong>Supabase Pro ($25/mo)</strong> — 8 GB database, daily backups, no inactivity pausing, PITR.</div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+        <span class="badge badge-blue" style="white-space:nowrap;margin-top:2px">Trigger 2</span>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#1a1a2e">Need team members or longer function timeouts</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:2px">Upgrade to <strong>Vercel Pro ($20/mo)</strong> — 60s function timeout, 1 TB bandwidth, team seats, more cron jobs.</div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+        <span class="badge badge-purple" style="white-space:nowrap;margin-top:2px">Trigger 3</span>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#1a1a2e">Redis commands or QStash messages exceed free tier</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:2px">Upstash is <strong>pay-as-you-go</strong> above free tier — typically &lt;$1/mo at early scale. No migration needed, just billing kicks in automatically.</div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+        <span class="badge badge-orange" style="white-space:nowrap;margin-top:2px">Trigger 4</span>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#1a1a2e">Need persistent workers or prediction model training</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:2px">Add <strong>Railway ($5/mo credit)</strong> for a dedicated Express + BullMQ worker process. Frontend + DB stay on Vercel + Supabase — no full migration, just add a worker service.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Env vars checklist -->
+    <div style="margin-top:20px;background:#1e293b;border-radius:12px;padding:20px;font-family:'Courier New',monospace;font-size:11px;line-height:2;color:#e2e8f0">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:8px">Required Environment Variables (Vercel Dashboard)</div>
+      <div><span style="color:#2dd4bf">SUPABASE_URL</span>=<span style="color:#86efac">https://xxxx.supabase.co</span></div>
+      <div><span style="color:#2dd4bf">SUPABASE_SERVICE_ROLE_KEY</span>=<span style="color:#86efac">eyJ...</span></div>
+      <div><span style="color:#2dd4bf">DATABASE_URL</span>=<span style="color:#86efac">postgresql://postgres:[pw]@db.xxxx.supabase.co:5432/postgres</span></div>
+      <div><span style="color:#2dd4bf">UPSTASH_REDIS_REST_URL</span>=<span style="color:#86efac">https://xxxx.upstash.io</span></div>
+      <div><span style="color:#2dd4bf">UPSTASH_REDIS_REST_TOKEN</span>=<span style="color:#86efac">AXxx...</span></div>
+      <div><span style="color:#2dd4bf">QSTASH_URL</span>=<span style="color:#86efac">https://qstash.upstash.io</span></div>
+      <div><span style="color:#2dd4bf">QSTASH_TOKEN</span>=<span style="color:#86efac">eyJ...</span></div>
+      <div><span style="color:#2dd4bf">JWT_SECRET</span>=<span style="color:#86efac">[random 64-byte hex]</span></div>
+      <div><span style="color:#2dd4bf">FIELD_ENCRYPTION_KEY</span>=<span style="color:#86efac">[AES-256 key for prisma-field-encryption]</span></div>
+      <div><span style="color:#2dd4bf">BDAPPS_APP_ID</span>=<span style="color:#86efac">your_application_id</span></div>
+      <div><span style="color:#2dd4bf">BDAPPS_PASSWORD</span>=<span style="color:#86efac">encoded_password</span></div>
+      <div><span style="color:#2dd4bf">RESEND_API_KEY</span>=<span style="color:#86efac">re_...</span></div>
+      <div><span style="color:#2dd4bf">CRON_SECRET</span>=<span style="color:#86efac">[random secret to auth cron endpoint calls]</span></div>
+    </div>
+
   </div>
 
 </div>
