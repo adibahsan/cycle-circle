@@ -176,7 +176,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
 
     <div class="subsection" style="margin-top:20px">
       <div class="subsection-title">1.2 Scope</div>
-      <p style="font-size:13px;color:#374151;line-height:1.7;max-width:820px">Vesta v1 delivers: phone-number-based account management (BDApps OTP verification), multi-profile period tracking and cycle prediction, symptom logging, a monthly calendar, bilingual UI (English + Bengali), Pro subscription billing via BDApps CAAS direct debit, email notifications, a bilingual content platform, and an admin panel with CMS and analytics. The system is deployed on Vercel (frontend + API) and Supabase (PostgreSQL). Partner sharing, SMS notifications, pregnancy mode, and native mobile apps are explicitly out of scope for v1.</p>
+      <p style="font-size:13px;color:#374151;line-height:1.7;max-width:820px">Vesta v1 delivers: phone-number-based account management (BDApps OTP verification), multi-profile period tracking and cycle prediction, symptom logging, a monthly calendar, bilingual UI (English + Bengali), Pro subscription billing via BDApps CAAS direct debit, email notifications, a bilingual content platform, and an admin panel with CMS and analytics. The system is deployed on Vercel (frontend + API) and Supabase (PostgreSQL). SMS notifications, pregnancy mode, and native mobile apps are explicitly out of scope for v1.</p>
     </div>
 
     <div class="subsection" style="margin-top:20px">
@@ -188,10 +188,9 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
         <div class="def-item"><div class="def-term">RLS</div><div class="def-meaning">Row Level Security — PostgreSQL feature that restricts which rows a database session can access, enforced per user_id at the Supabase level.</div></div>
         <div class="def-item"><div class="def-term">AES-256-GCM</div><div class="def-meaning">Advanced Encryption Standard 256-bit in Galois/Counter Mode — symmetric encryption used for sensitive health fields at rest via prisma-field-encryption.</div></div>
         <div class="def-item"><div class="def-term">ARIMA</div><div class="def-meaning">AutoRegressive Integrated Moving Average — Tier 2 statistical model for cycle prediction, unlocked after 6 logged cycles.</div></div>
-        <div class="def-item"><div class="def-term">LSTM</div><div class="def-meaning">Long Short-Term Memory neural network — Tier 3 prediction model stub, unlocked after 12 logged cycles.</div></div>
+        <div class="def-item"><div class="def-term">LSTM</div><div class="def-meaning">Long Short-Term Memory neural network — Tier 3 prediction model stub (not in phase v1), unlocked after 12 logged cycles.</div></div>
         <div class="def-item"><div class="def-term">Grace Period</div><div class="def-meaning">Configurable N-day window after a CAAS balance check failure during which Pro access is maintained before being revoked.</div></div>
         <div class="def-item"><div class="def-term">QStash</div><div class="def-meaning">Upstash QStash — HTTP-based serverless job queue replacing BullMQ for async jobs (email delivery, prediction recalculation).</div></div>
-        <div class="def-item"><div class="def-term">SPA</div><div class="def-meaning">Single-Page Application — the React 19 frontend served as a static bundle via Vercel CDN.</div></div>
       </div>
     </div>
 
@@ -202,9 +201,8 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
         <tbody>
           <tr><td><strong>End User</strong></td><td>Individual tracking their own cycle. Primary persona. Phone number account, free tier.</td><td>Onboarding, period logging, dashboard, calendar, symptom logging</td></tr>
           <tr><td><strong>Family Manager</strong></td><td>User managing profiles for family members (wife, sister, mother, daughter, girlfriend). Up to 6 profiles per account.</td><td>Profile switcher, per-profile data isolation</td></tr>
-          <tr><td><strong>Pro Subscriber</strong></td><td>User who has upgraded to Pro via BDApps CAAS direct debit. Accesses advanced predictions and notifications.</td><td>Subscription flow, feature-gated screens, grace period notifications</td></tr>
-          <tr><td><strong>Content Admin</strong></td><td>Internal staff publishing bilingual health articles. Limited to content CMS.</td><td>Tiptap CMS, article publish/edit, phase tag assignment</td></tr>
-          <tr><td><strong>Super Admin</strong></td><td>Technical owner with full system access — user management, subscription management, analytics.</td><td>Admin panel, RBAC, session management, KPIs</td></tr>
+          <tr><td><strong>Pro Subscriber</strong></td><td>User who has upgraded to Pro via BDApps CAAS direct debit. Accesses advanced predictions and notifications.</td><td>Subscription flow, subscription status persisted (gating deferred to post-v1), grace period notifications</td></tr>
+          <tr><td><strong>Super Admin</strong></td><td>Technical owner with full system access — user management, subscription management, analytics, and bilingual content publishing.</td><td>Admin panel, session management, KPIs, Tiptap CMS, article publish/edit, phase tag assignment</td></tr>
         </tbody>
       </table>
     </div>
@@ -217,16 +215,16 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
 
     <div class="subsection">
       <div class="subsection-title">2.1 Product Perspective</div>
-      <p style="font-size:13px;color:#374151;line-height:1.7;max-width:820px">Vesta is a React 19 SPA backed by an Express 5 API deployed as a Vercel serverless function. User identity is verified via BDApps OTP API (phone-number auth, no email). Pro subscriptions are charged via BDApps CAAS direct debit. The backend connects to PostgreSQL 16 on Supabase (with RLS), Redis on Upstash (JWT blacklist + rate limits), and Upstash QStash (async jobs). Two Vercel Cron jobs handle daily reminders and daily CAAS subscription checks. All sensitive health fields are encrypted at rest with AES-256-GCM.</p>
+      <p style="font-size:13px;color:#374151;line-height:1.7;max-width:820px">Vesta is built with Next.js 16 (React 19) deployed on Vercel. User identity is verified via BDApps OTP API (phone-number auth, no email). Pro subscriptions are charged via BDApps CAAS direct debit. The backend connects to PostgreSQL 16 on Supabase (with RLS), Redis on Upstash (JWT blacklist + rate limits), and Upstash QStash (async jobs). Two Vercel Cron jobs handle daily reminders and daily CAAS subscription checks. All sensitive health fields are encrypted at rest with AES-256-GCM.</p>
     </div>
 
     <div class="subsection" style="margin-top:20px">
       <div class="subsection-title">2.2 Tech Stack</div>
       <div class="stack-grid">
-        <div class="stack-card"><div class="stack-layer">Frontend</div><div class="stack-choice">React 19 + TypeScript + Vite 6</div><div class="stack-reason">SPA, served via Vercel CDN. Tailwind CSS v4 (CSS-first config).</div></div>
+        <div class="stack-card"><div class="stack-layer">Frontend</div><div class="stack-choice">Next.js 16 + React 19 + TypeScript</div><div class="stack-reason">Single Next.js app (App Router) deployed on Vercel. Tailwind CSS v4 (CSS-first config).</div></div>
         <div class="stack-card"><div class="stack-layer">State Management</div><div class="stack-choice">TanStack Query + Zustand</div><div class="stack-reason">TQ for server state + caching. Zustand for UI state and locale.</div></div>
-        <div class="stack-card"><div class="stack-layer">Routing</div><div class="stack-choice">React Router v7</div><div class="stack-reason">Client-side SPA routing with nested layouts.</div></div>
-        <div class="stack-card"><div class="stack-layer">Backend</div><div class="stack-choice">Express 5 + TypeScript</div><div class="stack-reason">Wrapped as Vercel serverless function via api/index.ts.</div></div>
+        <div class="stack-card"><div class="stack-layer">Routing</div><div class="stack-choice">Next.js App Router</div><div class="stack-reason">File-based routing with nested layouts and server/client component boundaries.</div></div>
+        <div class="stack-card"><div class="stack-layer">Backend</div><div class="stack-choice">Next.js Route Handlers + TypeScript</div><div class="stack-reason">API endpoints implemented as Next.js route handlers and deployed on Vercel.</div></div>
         <div class="stack-card"><div class="stack-layer">ORM + Encryption</div><div class="stack-choice">Prisma 6.13 (pinned)</div><div class="stack-reason">Pinned for prisma-field-encryption compat. AES-256-GCM on health fields.</div></div>
         <div class="stack-card"><div class="stack-layer">Database</div><div class="stack-choice">PostgreSQL 16 via Supabase</div><div class="stack-reason">RLS enabled for profile isolation at DB level.</div></div>
         <div class="stack-card"><div class="stack-layer">Auth + Sessions</div><div class="stack-choice">JWT + BDApps OTP</div><div class="stack-reason">Phone auth, HttpOnly cookies, Upstash Redis blacklist.</div></div>
@@ -252,18 +250,94 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
         </tbody>
       </table>
     </div>
+
+    <div class="subsection" style="margin-top:20px">
+      <div class="subsection-title">2.4 Release Plan — 4-Week MoSCoW</div>
+      <p style="font-size:12px;color:#374151;line-height:1.7;max-width:820px;margin-bottom:12px">v1 ships in four weeks. Scope is fixed by the buckets below. Anything in <em>Won&rsquo;t Have</em> is explicitly out of v1 and queued for v2.</p>
+
+      <table class="data-table">
+        <thead><tr><th style="width:22%">Priority</th><th style="width:18%">Window</th><th>Features</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>P0</strong></td>
+            <td>Weeks 1&ndash;2</td>
+            <td>
+              <ul style="margin:0;padding-left:18px;line-height:1.6">
+                <li>Phone auth + BDApps OTP verification</li>
+                <li>Multi-profile accounts (self, wife, sister, mother, daughter, girlfriend)</li>
+                <li>Bilingual UI (EN + BN, i18next)</li>
+                <li>Period tracking (start/end, flow intensity, retroactive editing)</li>
+                <li>Cycle dashboard (day hero, phase label, countdown)</li>
+                <li>Monthly calendar (color-coded period/fertile/ovulation)</li>
+                <li>Symptom logging (30+ symptoms, 4 categories)</li>
+                <li>Three-tier prediction engine (Avg &rarr; ARIMA &rarr; LSTM stub)</li>
+                <li>Onboarding flow (trust screens, goal, cycle history)</li>
+                <li>Field-level encryption (AES-256-GCM)</li>
+                <li>Profile switcher with data isolation</li>
+                <li><strong>Subscription schema (FR-GATE) &mdash; gating logic deferred</strong></li>
+                <li>Redis session store + JWT blacklist</li>
+                <li>BDApps CAAS charging for Pro subscription</li>
+                <li>Auto-disable Pro on charging lapse + grace period</li>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>P1</strong></td>
+            <td>Week 3</td>
+            <td>
+              <ul style="margin:0;padding-left:18px;line-height:1.6">
+                <li>Email notifications (period alert, fertile window, logging reminder)</li>
+                <li>Content platform (bilingual articles, phase-based)</li>
+                <li>Notification preferences per-profile</li>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>P2</strong></td>
+            <td>Week 4</td>
+            <td>
+              <ul style="margin:0;padding-left:18px;line-height:1.6">
+                <li>Admin dashboard + user management</li>
+                <li>Content CMS (Tiptap)</li>
+                <li>Population health analytics</li>
+                <li>Prediction accuracy reports</li>
+                <li><strong>Single Super Admin role</strong> (Content Admin role removed)</li>
+                <li>Admin session + subscription management</li>
+                <li>Data export (CSV/Excel)</li>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Won&rsquo;t Have</strong></td>
+            <td>v2 backlog</td>
+            <td>
+              <ul style="margin:0;padding-left:18px;line-height:1.6">
+                <li>Partner sharing</li>
+                <li>Pregnancy mode</li>
+                <li>SMS notifications</li>
+                <li>Native mobile apps</li>
+                <li>AI health chatbot</li>
+                <li>Doctor consultations</li>
+                <li>Medicine / sleep / exercise tracker</li>
+                <li>Community forum</li>
+              </ul>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- SECTION 3: FUNCTIONAL REQUIREMENTS -->
   <div class="section">
     <div class="section-title"><div class="section-num">3</div>Functional Requirements</div>
-    <div class="section-desc">All Must Have features for v1 launch. Each block shows requirements on the left and testable acceptance criteria on the right.</div>
+    <div class="section-desc">All v1 functional requirements grouped by MoSCoW bucket (Must / Should / Could). Each block shows requirements on the left and testable acceptance criteria on the right; coloured tags identify the bucket.</div>
 
     <!-- FR-AUTH -->
     <div class="fr-block">
       <div class="fr-header">
         <span class="fr-id">FR-AUTH</span>
-        <span class="fr-title">Phone Authentication via BDApps OTP</span>
+        <span class="fr-title">Phone Authentication via BDApps OTP <span style="font-size:10px;font-weight:600;color:#0d9488;background:#ccfbf1;padding:2px 8px;border-radius:10px;margin-left:6px">P0</span></span>
       </div>
       <div class="fr-body">
         <div class="fr-req">
@@ -282,7 +356,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
           <div class="fr-item"><div class="fr-dot-check">✓</div><span>Invalid OTP entry shows error; correct OTP creates account and redirects to onboarding</span></div>
           <div class="fr-item"><div class="fr-dot-check">✓</div><span>Resend button is disabled for 60s, then re-enables</span></div>
           <div class="fr-item"><div class="fr-dot-check">✓</div><span>Logged-out JWT is rejected on subsequent API calls</span></div>
-          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Rate limiter blocks &gt;5 OTP requests/minute from same IP</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Rate limiter blocks &gt;3 OTP requests/minute from same IP</span></div>
         </div>
       </div>
     </div>
@@ -291,7 +365,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
     <div class="fr-block">
       <div class="fr-header">
         <span class="fr-id">FR-PROFILE</span>
-        <span class="fr-title">Multi-Profile Account Management</span>
+        <span class="fr-title">Multi-Profile Account Management <span style="font-size:10px;font-weight:600;color:#0d9488;background:#ccfbf1;padding:2px 8px;border-radius:10px;margin-left:6px">P0</span></span>
       </div>
       <div class="fr-body">
         <div class="fr-req">
@@ -315,7 +389,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
     <div class="fr-block">
       <div class="fr-header">
         <span class="fr-id">FR-TRACK</span>
-        <span class="fr-title">Period Logging</span>
+        <span class="fr-title">Period Logging <span style="font-size:10px;font-weight:600;color:#0d9488;background:#ccfbf1;padding:2px 8px;border-radius:10px;margin-left:6px">P0</span></span>
       </div>
       <div class="fr-body">
         <div class="fr-req">
@@ -336,7 +410,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
     <div class="fr-block">
       <div class="fr-header">
         <span class="fr-id">FR-DASH</span>
-        <span class="fr-title">Cycle Dashboard</span>
+        <span class="fr-title">Cycle Dashboard <span style="font-size:10px;font-weight:600;color:#0d9488;background:#ccfbf1;padding:2px 8px;border-radius:10px;margin-left:6px">P0</span></span>
       </div>
       <div class="fr-body">
         <div class="fr-req">
@@ -349,7 +423,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
         </div>
         <div class="fr-ac">
           <div class="fr-col-label">Acceptance Criteria</div>
-          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Dashboard loads within 2s on mobile connection; all 5 data points render correctly</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Dashboard loads; all 5 data points render correctly</span></div>
           <div class="fr-item"><div class="fr-dot-check">✓</div><span>New user without history sees "estimate" disclaimer and Tier 1 prediction from onboarding data</span></div>
         </div>
       </div>
@@ -359,7 +433,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
     <div class="fr-block">
       <div class="fr-header">
         <span class="fr-id">FR-CAL</span>
-        <span class="fr-title">Monthly Calendar</span>
+        <span class="fr-title">Monthly Calendar <span style="font-size:10px;font-weight:600;color:#0d9488;background:#ccfbf1;padding:2px 8px;border-radius:10px;margin-left:6px">P0</span></span>
       </div>
       <div class="fr-body">
         <div class="fr-req">
@@ -380,7 +454,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
     <div class="fr-block">
       <div class="fr-header">
         <span class="fr-id">FR-SYMP</span>
-        <span class="fr-title">Symptom Logging</span>
+        <span class="fr-title">Symptom Logging <span style="font-size:10px;font-weight:600;color:#0d9488;background:#ccfbf1;padding:2px 8px;border-radius:10px;margin-left:6px">P0</span></span>
       </div>
       <div class="fr-body">
         <div class="fr-req">
@@ -388,12 +462,10 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
           <div class="fr-item"><div class="fr-dot"></div><span>30+ symptoms across 4 categories: Physical, Mood, Discharge, Lifestyle</span></div>
           <div class="fr-item"><div class="fr-dot"></div><span>Icon-based tap-to-select UI (no text input required)</span></div>
           <div class="fr-item"><div class="fr-dot"></div><span>Date picker to log symptoms for any day</span></div>
-          <div class="fr-item"><div class="fr-dot"></div><span>Symptom values encrypted at rest via prisma-field-encryption</span></div>
         </div>
         <div class="fr-ac">
           <div class="fr-col-label">Acceptance Criteria</div>
           <div class="fr-item"><div class="fr-dot-check">✓</div><span>All 30+ symptoms across all 4 categories render correctly and can be saved</span></div>
-          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Stored symptom_logs.value is encrypted in the database (cipher text, not plain text)</span></div>
           <div class="fr-item"><div class="fr-dot-check">✓</div><span>Decrypted value returned to correct user via API</span></div>
         </div>
       </div>
@@ -403,14 +475,14 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
     <div class="fr-block">
       <div class="fr-header">
         <span class="fr-id">FR-PRED</span>
-        <span class="fr-title">Three-Tier Prediction Engine</span>
+        <span class="fr-title">Three-Tier Prediction Engine <span style="font-size:10px;font-weight:600;color:#0d9488;background:#ccfbf1;padding:2px 8px;border-radius:10px;margin-left:6px">P0</span></span>
       </div>
       <div class="fr-body">
         <div class="fr-req">
           <div class="fr-col-label">Requirements</div>
           <div class="fr-item"><div class="fr-dot"></div><span><strong>Tier 1</strong> — Simple average: available from day 1, uses onboarding-provided cycle history</span></div>
           <div class="fr-item"><div class="fr-dot"></div><span><strong>Tier 2</strong> — ARIMA: unlocks automatically after 6 logged cycles; higher accuracy</span></div>
-          <div class="fr-item"><div class="fr-dot"></div><span><strong>Tier 3</strong> — LSTM stub: unlocks after 12 logged cycles; displays confidence %; upgrades silently</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span><strong>Tier 3</strong> — LSTM stub (planned for v2)</span></div>
           <div class="fr-item"><div class="fr-dot"></div><span>Recalculation is async (QStash job); UI shows "updating" state</span></div>
           <div class="fr-item"><div class="fr-dot"></div><span>Outputs: next_period_start, ovulation_day, fertile_start, fertile_end, confidence</span></div>
         </div>
@@ -427,7 +499,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
     <div class="fr-block">
       <div class="fr-header">
         <span class="fr-id">FR-ONBOARD</span>
-        <span class="fr-title">Onboarding Flow</span>
+        <span class="fr-title">Onboarding Flow <span style="font-size:10px;font-weight:600;color:#0d9488;background:#ccfbf1;padding:2px 8px;border-radius:10px;margin-left:6px">P0</span></span>
       </div>
       <div class="fr-body">
         <div class="fr-req">
@@ -449,7 +521,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
     <div class="fr-block">
       <div class="fr-header">
         <span class="fr-id">FR-BILL</span>
-        <span class="fr-title">Pro Subscription via BDApps CAAS</span>
+        <span class="fr-title">Pro Subscription via BDApps CAAS <span style="font-size:10px;font-weight:600;color:#0d9488;background:#ccfbf1;padding:2px 8px;border-radius:10px;margin-left:6px">P0</span></span>
       </div>
       <div class="fr-body">
         <div class="fr-req">
@@ -476,20 +548,21 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
     <div class="fr-block">
       <div class="fr-header">
         <span class="fr-id">FR-GATE</span>
-        <span class="fr-title">Feature Gating</span>
+        <span class="fr-title">Feature Gating <span style="font-size:10px;font-weight:600;color:#0d9488;background:#ccfbf1;padding:2px 8px;border-radius:10px;margin-left:6px">P0</span></span>
       </div>
       <div class="fr-body">
         <div class="fr-req">
           <div class="fr-col-label">Requirements</div>
-          <div class="fr-item"><div class="fr-dot"></div><span>Middleware checks user's subscription status on every Pro-gated request</span></div>
-          <div class="fr-item"><div class="fr-dot"></div><span>Free tier: basic dashboard, calendar, period logging, Tier 1 predictions</span></div>
-          <div class="fr-item"><div class="fr-dot"></div><span>Pro tier: advanced predictions (Tier 2/3), email notifications, full symptom history</span></div>
-          <div class="fr-item"><div class="fr-dot"></div><span>Lapsed Pro subscribers see upgrade prompt rather than error</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Schema-only in v1 — gating logic deferred to post-v1; DB carries the field so it can be enabled later without migration</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span><code>subscription_status</code> column exists on the user/profile table with values <code>free | pro | lapsed</code> and default <code>free</code></span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>v1: all features available to all authenticated users — no middleware gating, no Pro-only endpoints, no upgrade prompts, no 403s based on subscription</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>CAAS billing flow updates <code>subscription_status</code> in DB so the field stays accurate for future gating</span></div>
         </div>
         <div class="fr-ac">
           <div class="fr-col-label">Acceptance Criteria</div>
-          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Pro-only API endpoints return 403 for free users</span></div>
-          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Downgraded user sees upgrade prompt immediately; no residual Pro access</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Migration creates <code>subscription_status</code> column with default <code>free</code></span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>No route returns 403 based on subscription in v1 — verified by smoke test against Pro and free accounts</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Field is queryable; future middleware can read it without a schema change</span></div>
         </div>
       </div>
     </div>
@@ -498,7 +571,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
     <div class="fr-block">
       <div class="fr-header">
         <span class="fr-id">FR-I18N</span>
-        <span class="fr-title">Bilingual UI (English + Bengali)</span>
+        <span class="fr-title">Bilingual UI (English + Bengali) <span style="font-size:10px;font-weight:600;color:#0d9488;background:#ccfbf1;padding:2px 8px;border-radius:10px;margin-left:6px">P0</span></span>
       </div>
       <div class="fr-body">
         <div class="fr-req">
@@ -520,7 +593,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
     <div class="fr-block">
       <div class="fr-header">
         <span class="fr-id">FR-ENC</span>
-        <span class="fr-title">Field-Level Encryption</span>
+        <span class="fr-title">Field-Level Encryption <span style="font-size:10px;font-weight:600;color:#0d9488;background:#ccfbf1;padding:2px 8px;border-radius:10px;margin-left:6px">P0</span></span>
       </div>
       <div class="fr-body">
         <div class="fr-req">
@@ -534,6 +607,172 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
           <div class="fr-item"><div class="fr-dot-check">✓</div><span>Direct SQL query of symptom_logs shows cipher text, not plain text</span></div>
           <div class="fr-item"><div class="fr-dot-check">✓</div><span>Application API returns correct decrypted value to the authenticated user</span></div>
           <div class="fr-item"><div class="fr-dot-check">✓</div><span>CI integration test: encrypt → store → retrieve → decrypt passes</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FR-SESSION -->
+    <div class="fr-block">
+      <div class="fr-header">
+        <span class="fr-id">FR-SESSION</span>
+        <span class="fr-title">Session Store &amp; JWT Blacklist <span style="font-size:10px;font-weight:600;color:#0d9488;background:#ccfbf1;padding:2px 8px;border-radius:10px;margin-left:6px">P0</span></span>
+      </div>
+      <div class="fr-body">
+        <div class="fr-req">
+          <div class="fr-col-label">Requirements</div>
+          <div class="fr-item"><div class="fr-dot"></div><span>JWT issued on successful OTP verification; stored as HttpOnly cookie</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Logout adds the JWT&rsquo;s jti to an Upstash Redis blacklist until token expiry</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Auth middleware rejects any token whose jti is on the blacklist</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Rate-limit counters for OTP request and login attempts stored in Redis</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Note: Robi/BDApps upstream rate limiting may trigger before (and override) app-level limits; users may see upstream throttling even below our thresholds</span></div>
+        </div>
+        <div class="fr-ac">
+          <div class="fr-col-label">Acceptance Criteria</div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Logged-out user&rsquo;s old token returns 401 even before its exp claim</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Blacklist entry TTL matches remaining JWT lifetime; no permanent growth</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>&gt;3 OTP requests/min from same MSISDN returns 429</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FR-NOTIF -->
+    <div class="fr-block">
+      <div class="fr-header">
+        <span class="fr-id">FR-NOTIF</span>
+        <span class="fr-title">Email Notifications &amp; Per-Profile Preferences <span style="font-size:10px;font-weight:600;color:#0369a1;background:#dbeafe;padding:2px 8px;border-radius:10px;margin-left:6px">P1</span></span>
+      </div>
+      <div class="fr-body">
+        <div class="fr-req">
+          <div class="fr-col-label">Requirements</div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Three notification types: period start alert, fertile-window opening, daily logging reminder</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Daily cron <code>/api/cron/daily-reminders</code> evaluates each active profile and dispatches email jobs to QStash</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>QStash worker calls Resend with React Email templates in the user&rsquo;s preferred language (EN or BN)</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Per-profile toggles in <code>notification_preferences</code> let users enable/disable each type independently</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Failed Resend deliveries are retried by QStash; permanent failures logged for admin review</span></div>
+        </div>
+        <div class="fr-ac">
+          <div class="fr-col-label">Acceptance Criteria</div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Period alert email arrives in inbox within 1 hour of cron run on the predicted day</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Toggling a notification preference off prevents future emails of that type for that profile</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>BN-preference user receives Bengali-translated subject and body</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Daily volume stays within Resend free-tier limits (3K/mo, 100/day) at v1 scale</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FR-CONTENT -->
+    <div class="fr-block">
+      <div class="fr-header">
+        <span class="fr-id">FR-CONTENT</span>
+        <span class="fr-title">Bilingual Content Platform <span style="font-size:10px;font-weight:600;color:#0369a1;background:#dbeafe;padding:2px 8px;border-radius:10px;margin-left:6px">P1</span></span>
+      </div>
+      <div class="fr-body">
+        <div class="fr-req">
+          <div class="fr-col-label">Requirements</div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Health articles published with both English and Bengali bodies in a single record</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Articles tagged with one or more cycle phases (menstrual, follicular, ovulation, luteal) and category</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Reader UI surfaces articles relevant to the user&rsquo;s current phase first</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Article body renders in the user&rsquo;s active locale; falls back to the other language if not yet translated</span></div>
+        </div>
+        <div class="fr-ac">
+          <div class="fr-col-label">Acceptance Criteria</div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Article list filters by phase tag and renders correctly in both languages</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Switching language toggle updates body text without page reload</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Article missing a translation shows a clear locale-fallback indicator</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FR-ADMIN -->
+    <div class="fr-block">
+      <div class="fr-header">
+        <span class="fr-id">FR-ADMIN</span>
+        <span class="fr-title">Admin Dashboard, User &amp; Subscription Management <span style="font-size:10px;font-weight:600;color:#7c2d12;background:#fed7aa;padding:2px 8px;border-radius:10px;margin-left:6px">P2</span></span>
+      </div>
+      <div class="fr-body">
+        <div class="fr-req">
+          <div class="fr-col-label">Requirements</div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Single Super Admin role with full system access &mdash; user management, subscription management, content publishing, analytics</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Admin dashboard shows top-line KPIs: total users, active profiles, Pro subscribers, daily logs, prediction accuracy summary</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>User management: list, search, view profile metadata, suspend, soft-delete, and inspect a user&rsquo;s subscription state</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Subscription management: view current Pro subscribers, recent CAAS results, grace-period users, manual revoke / re-grant</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Admin session: separate login screen, short-lived JWT, all admin routes protected by Super Admin authentication middleware</span></div>
+        </div>
+        <div class="fr-ac">
+          <div class="fr-col-label">Acceptance Criteria</div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Non-Super-Admin user accessing any /admin route receives 403</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>KPI dashboard reflects DB state within 1 minute of an event (signup, log, upgrade)</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Suspending a user immediately prevents their JWT from authenticating</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Manual Pro revoke updates <code>subscription_status</code> and stops next CAAS charge attempt</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FR-CMS -->
+    <div class="fr-block">
+      <div class="fr-header">
+        <span class="fr-id">FR-CMS</span>
+        <span class="fr-title">Content CMS (Tiptap) <span style="font-size:10px;font-weight:600;color:#7c2d12;background:#fed7aa;padding:2px 8px;border-radius:10px;margin-left:6px">P2</span></span>
+      </div>
+      <div class="fr-body">
+        <div class="fr-req">
+          <div class="fr-col-label">Requirements</div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Tiptap 3.x rich-text editor for creating and editing bilingual articles in the admin panel</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Side-by-side EN/BN editing with phase tag and category selectors</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Draft / publish lifecycle &mdash; only published articles surface in reader UI</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Image uploads stored in Supabase storage; sanitized HTML output</span></div>
+        </div>
+        <div class="fr-ac">
+          <div class="fr-col-label">Acceptance Criteria</div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Article authored, saved as draft, then published &mdash; appears in reader feed within 1 minute</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Editor renders correctly for Bengali input including font and basic typography</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Sanitization strips &lt;script&gt; and other unsafe tags from saved HTML</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FR-ANALYTICS -->
+    <div class="fr-block">
+      <div class="fr-header">
+        <span class="fr-id">FR-ANALYTICS</span>
+        <span class="fr-title">Population Analytics &amp; Prediction Accuracy <span style="font-size:10px;font-weight:600;color:#7c2d12;background:#fed7aa;padding:2px 8px;border-radius:10px;margin-left:6px">P2</span></span>
+      </div>
+      <div class="fr-body">
+        <div class="fr-req">
+          <div class="fr-col-label">Requirements</div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Anonymized population health charts: cycle length distribution, common symptoms by phase, retention curves &mdash; all rendered with Recharts 3.x</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Prediction accuracy report: per-tier MAE between predicted next-period start and actual logged start, computed nightly</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>All analytics queries respect encryption boundaries &mdash; no plaintext export of <code>symptom_logs.value</code></span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Admin-only; not exposed to end users</span></div>
+        </div>
+        <div class="fr-ac">
+          <div class="fr-col-label">Acceptance Criteria</div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Population charts load in &lt; 3 s on the admin dashboard</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Accuracy MAE figures match a manually computed sample for at least one tier</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>No analytics endpoint returns row-level user identifiers or decrypted symptom values</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FR-EXPORT -->
+    <div class="fr-block">
+      <div class="fr-header">
+        <span class="fr-id">FR-EXPORT</span>
+        <span class="fr-title">Data Export (CSV / Excel) <span style="font-size:10px;font-weight:600;color:#7c2d12;background:#fed7aa;padding:2px 8px;border-radius:10px;margin-left:6px">P2</span></span>
+      </div>
+      <div class="fr-body">
+        <div class="fr-req">
+          <div class="fr-col-label">Requirements</div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Authenticated user can export their own profiles&rsquo; period and symptom logs as CSV or Excel (XLSX)</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Export covers per-profile data only; cross-profile export is opt-in and clearly labeled</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Sensitive fields are decrypted in-app before write &mdash; the file the user downloads contains plaintext</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Generation under 10s; for large datasets, fall back to async QStash job + email link (post-v1 if needed)</span></div>
+        </div>
+        <div class="fr-ac">
+          <div class="fr-col-label">Acceptance Criteria</div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>CSV download opens cleanly in Excel and Google Sheets with correct column headers</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>User cannot trigger export of another user&rsquo;s data even by manipulating the request</span></div>
+          <div class="fr-item"><div class="fr-dot-check">✓</div><span>Exported file contains decrypted symptom values, not cipher text</span></div>
         </div>
       </div>
     </div>
@@ -771,18 +1010,6 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
           <td>Direct SQL query returns cipher text for symptom_logs.value</td>
         </tr>
         <tr>
-          <td><span class="nfr-id">NFR-SEC-02</span></td>
-          <td><span class="nfr-cat cat-sec">Security</span></td>
-          <td>Row Level Security enforced at DB level — user A cannot read user B's health data</td>
-          <td>RLS policy verified: SELECT on period_logs with wrong auth.uid() returns 0 rows</td>
-        </tr>
-        <tr>
-          <td><span class="nfr-id">NFR-SEC-03</span></td>
-          <td><span class="nfr-cat cat-sec">Security</span></td>
-          <td>JWT stored in HttpOnly cookies; blacklisted in Redis on logout</td>
-          <td>Blacklisted token rejected with 401 on next API call</td>
-        </tr>
-        <tr>
           <td><span class="nfr-id">NFR-SEC-04</span></td>
           <td><span class="nfr-cat cat-sec">Security</span></td>
           <td>Zero third-party analytics scripts touching health event data</td>
@@ -791,7 +1018,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
         <tr>
           <td><span class="nfr-id">NFR-PERF-01</span></td>
           <td><span class="nfr-cat cat-perf">Performance</span></td>
-          <td>Period log → prediction recalc → calendar updated in under 3 seconds</td>
+          <td>Period log → prediction recalc → calendar updated in under 10 seconds</td>
           <td>E2E test: log period → measure time until calendar shows updated predictions</td>
         </tr>
         <tr>
@@ -827,14 +1054,14 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
         <tr>
           <td><span class="nfr-id">NFR-BILL-01</span></td>
           <td><span class="nfr-cat cat-bill">Billing</span></td>
-          <td>Pro features gated within 1 API request of successful CAAS charge</td>
-          <td>Feature-gating middleware reads subscription status on every Pro-gated request</td>
+          <td>Pro features gated within 1 API request of successful CAAS charge <strong>(deferred — post-v1)</strong></td>
+          <td><strong>Deferred — post-v1.</strong> Schema is in place (FR-GATE); middleware enforcement is not part of v1 scope.</td>
         </tr>
         <tr>
           <td><span class="nfr-id">NFR-BILL-02</span></td>
           <td><span class="nfr-cat cat-bill">Billing</span></td>
           <td>Grace period length configurable without a code deploy</td>
-          <td>Environment variable or DB config; change grace period, verify new value takes effect immediately</td>
+          <td>DB config; change grace period, verify new value takes effect immediately</td>
         </tr>
       </tbody>
     </table>
@@ -863,8 +1090,8 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
     <div class="subsection" style="margin-top:20px">
       <div class="subsection-title">6.2 Infrastructure Diagram</div>
       <div class="infra-box"><span style="color:#2dd4bf;font-weight:700">VERCEL</span> (Hobby — $0/mo)
-  ├── React 19 + Vite  (static bundle, CDN served)
-  ├── Express 5 API    (api/index.ts via @vercel/node)
+  ├── Next.js 16 (React 19) app
+  ├── Route Handlers (API) via Next.js
   ├── Cron: /api/cron/daily-reminders  (0 8 * * *)
   └── Cron: /api/cron/caas-check       (0 2 * * *)
 
@@ -886,8 +1113,8 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
     </div>
 
     <div class="subsection" style="margin-top:20px">
-      <div class="subsection-title">6.3 Express → Serverless Adapter</div>
-      <p style="font-size:12px;color:#374151;line-height:1.7;max-width:780px">A single entry point <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px">api/index.ts</code> exports the Express 5 app via <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px">@vercel/node</code>. All existing middleware (JWT validation, RLS header injection, rate limiting) runs unchanged. BullMQ is replaced by: Vercel Cron for scheduled jobs and Upstash QStash for async jobs triggered on-demand. The 10-second Hobby timeout is sufficient for all synchronous API routes; prediction recalculation is deliberately offloaded to QStash.</p>
+      <div class="subsection-title">6.3 Backend Deployment Model</div>
+      <p style="font-size:12px;color:#374151;line-height:1.7;max-width:780px">Backend endpoints are implemented as Next.js route handlers and deployed on Vercel. Shared middleware concerns (JWT validation, RLS header injection, rate limiting) are enforced via Next.js middleware and route-level guards. BullMQ is replaced by: Vercel Cron for scheduled jobs and Upstash QStash for async jobs triggered on-demand. The 10-second Hobby timeout is sufficient for all synchronous API routes; prediction recalculation is deliberately offloaded to QStash.</p>
     </div>
 
     <div class="subsection" style="margin-top:20px">
@@ -931,27 +1158,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
       </div>
     </div>
 
-    <div class="subsection" style="margin-top:20px">
-      <div class="subsection-title">6.6 Required Environment Variables</div>
-      <table class="data-table">
-        <thead><tr><th>Variable</th><th>Purpose</th><th>Source</th></tr></thead>
-        <tbody>
-          <tr><td><span class="env-name">SUPABASE_URL</span></td><td>Supabase project REST + auth URL</td><td>Supabase project settings</td></tr>
-          <tr><td><span class="env-name">SUPABASE_SERVICE_ROLE_KEY</span></td><td>Admin key for server-side DB access (bypasses RLS for admin operations)</td><td>Supabase project settings</td></tr>
-          <tr><td><span class="env-name">DATABASE_URL</span></td><td>Prisma connection string (PostgreSQL)</td><td>Supabase project settings → Connection string</td></tr>
-          <tr><td><span class="env-name">UPSTASH_REDIS_REST_URL</span></td><td>Upstash Redis HTTP endpoint</td><td>Upstash console</td></tr>
-          <tr><td><span class="env-name">UPSTASH_REDIS_REST_TOKEN</span></td><td>Upstash Redis auth token</td><td>Upstash console</td></tr>
-          <tr><td><span class="env-name">QSTASH_URL</span></td><td>Upstash QStash publish endpoint</td><td>Upstash console</td></tr>
-          <tr><td><span class="env-name">QSTASH_TOKEN</span></td><td>Upstash QStash auth token</td><td>Upstash console</td></tr>
-          <tr><td><span class="env-name">JWT_SECRET</span></td><td>HMAC-SHA256 secret for JWT signing</td><td>Generate: openssl rand -hex 32</td></tr>
-          <tr><td><span class="env-name">FIELD_ENCRYPTION_KEY</span></td><td>AES-256-GCM key for prisma-field-encryption</td><td>Generate: openssl rand -base64 32</td></tr>
-          <tr><td><span class="env-name">BDAPPS_APP_ID</span></td><td>BDApps application identifier (OTP + CAAS)</td><td>BDApps developer portal</td></tr>
-          <tr><td><span class="env-name">BDAPPS_PASSWORD</span></td><td>BDApps application password</td><td>BDApps developer portal</td></tr>
-          <tr><td><span class="env-name">RESEND_API_KEY</span></td><td>Resend transactional email API key</td><td>Resend dashboard</td></tr>
-          <tr><td><span class="env-name">CRON_SECRET</span></td><td>Shared secret validating Vercel Cron requests</td><td>Generate: openssl rand -hex 16</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- 6.6 Required Environment Variables removed -->
   </div>
 
   <!-- SECTION 7: ACCEPTANCE CRITERIA / DOD -->
@@ -981,19 +1188,18 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
       </div>
       <div class="dod-card">
         <div class="dod-title">Billing — BDApps CAAS</div>
-        <div class="dod-item"><div class="dod-check">□</div><span>Pro upgrade via CAAS charges mobile balance and gates features immediately</span></div>
+        <div class="dod-item"><div class="dod-check">□</div><span>Pro upgrade via CAAS charges mobile balance and updates <code>subscription_status</code> to <code>pro</code> in DB (gating deferred — post-v1)</span></div>
         <div class="dod-item"><div class="dod-check">□</div><span>Daily CAAS cron runs; grace period activates on lapse; Pro revoked at grace expiry</span></div>
         <div class="dod-item"><div class="dod-check">□</div><span>BDApps CAAS charge verified with a real transaction in production environment</span></div>
       </div>
       <div class="dod-card">
         <div class="dod-title">Admin Panel</div>
         <div class="dod-item"><div class="dod-check">□</div><span>Admin dashboard: KPIs, user management, and CMS are all operational</span></div>
-        <div class="dod-item"><div class="dod-check">□</div><span>RBAC: Super Admin vs Content Admin separation enforced on all admin routes</span></div>
+        <div class="dod-item"><div class="dod-check">□</div><span>Super Admin authentication enforced on all admin routes</span></div>
       </div>
       <div class="dod-card">
         <div class="dod-title">Security</div>
         <div class="dod-item"><div class="dod-check">□</div><span>Field encryption verified: sensitive symptom data is cipher text in the database</span></div>
-        <div class="dod-item"><div class="dod-check">□</div><span>RLS verified: user A cannot read user B's health data via direct query</span></div>
         <div class="dod-item"><div class="dod-check">□</div><span>Zero third-party analytics scripts touching health event data</span></div>
       </div>
       <div class="dod-card">
