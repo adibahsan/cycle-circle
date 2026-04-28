@@ -1,0 +1,2029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vesta — User Stories &amp; Acceptance Criteria</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fa;color:#1a1a2e;line-height:1.6}
+.page{max-width:1100px;margin:0 auto;padding:48px 32px}
+
+/* Header */
+.header{margin-bottom:48px}
+.header-meta{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:4px 12px;border-radius:100px}
+.badge-teal{background:#ccfbf1;color:#0d9488}
+.badge-blue{background:#eff6ff;color:#1d4ed8}
+.badge-green{background:#f0fdf4;color:#16a34a}
+.badge-orange{background:#fff7ed;color:#c2410c}
+.badge-purple{background:#f5f3ff;color:#7c3aed}
+.badge-gray{background:#f3f4f6;color:#374151}
+.badge-rose{background:#fce7f3;color:#be185d}
+.badge-amber{background:#fef3c7;color:#92400e}
+.badge-red{background:#fef2f2;color:#dc2626}
+h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
+.subtitle{font-size:15px;color:#6b7280;line-height:1.6;max-width:750px}
+.stats-row{display:flex;gap:16px;margin-top:24px;flex-wrap:wrap}
+.stat{background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:16px 20px;min-width:130px}
+.stat-val{font-size:22px;font-weight:900;color:#0d9488}
+.stat-label{font-size:11px;color:#6b7280;margin-top:2px}
+
+/* Personas */
+.personas-section{margin-bottom:48px}
+.personas-title{font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:16px}
+.personas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.persona-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px;display:flex;align-items:flex-start;gap:10px}
+.persona-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.persona-name{font-size:13px;font-weight:700;color:#1a1a2e}
+.persona-desc{font-size:10px;color:#6b7280;margin-top:2px;line-height:1.4}
+
+/* Persona badge colors */
+.persona-new-user{background:#ccfbf1;color:#0d9488}
+.persona-cycle-tracker{background:#fce7f3;color:#be185d}
+.persona-account-holder{background:#eff6ff;color:#1d4ed8}
+.persona-partner{background:#f5f3ff;color:#7c3aed}
+.persona-admin{background:#fff7ed;color:#c2410c}
+
+/* Section */
+.section{margin-bottom:48px}
+.section-title{font-size:18px;font-weight:800;color:#1a1a2e;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.section-num{width:28px;height:28px;border-radius:50%;background:#0d9488;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-desc{font-size:13px;color:#6b7280;margin-bottom:20px;margin-left:38px}
+.section-req-range{font-size:11px;font-weight:600;color:#0d9488;margin-left:8px}
+
+/* Story cards */
+.stories-grid{display:flex;flex-direction:column;gap:14px}
+.story-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:20px;border-left:4px solid #0d9488;transition:box-shadow .15s}
+.story-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.06)}
+
+/* Border colors by persona */
+.story-card[data-persona="new-user"]{border-left-color:#0d9488}
+.story-card[data-persona="cycle-tracker"]{border-left-color:#db2777}
+.story-card[data-persona="account-holder"]{border-left-color:#2563eb}
+.story-card[data-persona="partner"]{border-left-color:#7c3aed}
+.story-card[data-persona="admin"]{border-left-color:#c2410c}
+.story-card[data-persona="user"]{border-left-color:#0891b2}
+
+.story-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.req-badge{font-size:10px;font-weight:800;letter-spacing:.06em;padding:3px 8px;border-radius:6px;background:#ccfbf1;color:#0d9488;font-family:'Courier New',monospace}
+.persona-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 10px;border-radius:100px}
+
+.story-text{font-size:13px;color:#374151;line-height:1.6;margin-bottom:12px}
+.story-text strong{color:#1a1a2e}
+
+.acceptance-criteria{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.ac-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:6px}
+.ac-item{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:#6b7280;line-height:1.5;padding:4px 0}
+.ac-check{color:#0d9488;font-weight:700;flex-shrink:0;font-size:13px;margin-top:-1px}
+
+/* v2 Deferred */
+.story-card.deferred{opacity:.6;border-left-color:#d1d5db;background:#fafafa}
+.story-card.deferred .req-badge{background:#f3f4f6;color:#9ca3af}
+.story-card.deferred .story-text{color:#9ca3af}
+.story-card.deferred .ac-check{color:#d1d5db}
+.deferred-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 10px;border-radius:100px;background:#f3f4f6;color:#9ca3af;margin-left:auto}
+
+/* Divider */
+.v2-divider{display:flex;align-items:center;gap:16px;margin:48px 0 24px;padding:16px 20px;background:linear-gradient(135deg,#f9fafb,#f3f4f6);border-radius:12px;border:1.5px dashed #d1d5db}
+.v2-divider-text{font-size:14px;font-weight:800;color:#9ca3af}
+.v2-divider-desc{font-size:12px;color:#b0b5be}
+
+/* Footer */
+.footer{margin-top:64px;padding-top:24px;border-top:1.5px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-left{font-size:11px;color:#9ca3af}
+.footer-right{font-size:11px;color:#9ca3af}
+
+/* Responsive */
+@media(max-width:700px){
+  .page{padding:24px 16px}
+  h1{font-size:24px}
+  .stats-row{gap:8px}
+  .stat{min-width:100px;padding:12px 14px}
+  .stat-val{font-size:18px}
+  .personas-grid{grid-template-columns:1fr 1fr}
+  .story-card{padding:14px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-meta">
+      <span class="badge badge-teal">Vesta Platform</span>
+      <span class="badge badge-blue">Bilingual Web App</span>
+      <span class="badge badge-green">Bangladesh-First</span>
+    </div>
+    <h1>User Stories &amp; Acceptance Criteria</h1>
+    <p class="subtitle">Organized by feature area. Each story follows: <strong>As a [persona], I want to [action], so that [outcome]</strong>. Mapped to requirement IDs from the v1 specification.</p>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val">102</div><div class="stat-label">v1 Stories</div></div>
+      <div class="stat"><div class="stat-val">17</div><div class="stat-label">Feature Areas</div></div>
+      <div class="stat"><div class="stat-val">5</div><div class="stat-label">Personas</div></div>
+      <div class="stat"><div class="stat-val">2</div><div class="stat-label">Languages</div></div>
+    </div>
+  </div>
+
+  <!-- PERSONAS -->
+  <div class="personas-section">
+    <div class="personas-title">Personas</div>
+    <div class="personas-grid">
+      <div class="persona-card">
+        <div class="persona-icon" style="background:#ccfbf1;color:#0d9488">&#9733;</div>
+        <div>
+          <div class="persona-name">New User</div>
+          <div class="persona-desc">First-time visitor going through onboarding</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon" style="background:#fce7f3;color:#be185d">&#9790;</div>
+        <div>
+          <div class="persona-name">Cycle Tracker</div>
+          <div class="persona-desc">Active user tracking their period and symptoms</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon" style="background:#eff6ff;color:#2563eb">&#9998;</div>
+        <div>
+          <div class="persona-name">Account Holder</div>
+          <div class="persona-desc">Person managing multiple family profiles</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon" style="background:#f5f3ff;color:#7c3aed">&#9829;</div>
+        <div>
+          <div class="persona-name">Partner</div>
+          <div class="persona-desc">Person with read-only shared access to a profile</div>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-icon" style="background:#fff7ed;color:#c2410c">&#9881;</div>
+        <div>
+          <div class="persona-name">Admin</div>
+          <div class="persona-desc">Operations team member managing the platform</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 1: ONBOARDING -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">1</div>Onboarding<span class="section-req-range">ONBD-01 &mdash; ONBD-06</span></div>
+    <div class="section-desc">Trust-building screens, goal selection, cycle history intake, and bilingual first-run experience. The onboarding flow must generate an accurate first prediction before any data is logged.</div>
+
+    <div class="stories-grid">
+
+      <!-- ONBD-01 -->
+      <div class="story-card" data-persona="new-user">
+        <div class="story-header">
+          <span class="req-badge">ONBD-01</span>
+          <span class="persona-badge persona-new-user">New User</span>
+        </div>
+        <div class="story-text">As a <strong>new user</strong>, I want to see trust and privacy screens before I enter any personal data, so that I feel safe sharing sensitive health information.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>First screen after app load displays a privacy assurance message before any data input fields appear.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Trust screen includes a link to the full privacy policy and explains data encryption in plain language.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>User must explicitly tap "Continue" to proceed past the trust screen; it cannot be auto-dismissed.</li>
+        </ul>
+      </div>
+
+      <!-- ONBD-02 -->
+      <div class="story-card" data-persona="new-user">
+        <div class="story-header">
+          <span class="req-badge">ONBD-02</span>
+          <span class="persona-badge persona-new-user">New User</span>
+        </div>
+        <div class="story-text">As a <strong>new user</strong>, I want to select my primary health goal (track period, try to conceive), so that the app adapts its experience to my specific needs.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Goal selection screen presents exactly two options: "Track my period" and "Trying to conceive."</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Selected goal is persisted to the user's profile and determines which dashboard widgets and content recommendations appear.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>User can change their goal later from profile settings without re-onboarding.</li>
+        </ul>
+      </div>
+
+      <!-- ONBD-03 -->
+      <div class="story-card" data-persona="new-user">
+        <div class="story-header">
+          <span class="req-badge">ONBD-03</span>
+          <span class="persona-badge persona-new-user">New User</span>
+        </div>
+        <div class="story-text">As a <strong>new user</strong>, I want to enter my cycle history (last period date, cycle length estimate, period duration), so that the app can generate an accurate first prediction.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Date picker for last period start defaults to approximately 14 days ago and allows selection within the past 90 days.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Cycle length input has a slider or selector ranging from 21&ndash;40 days with 28-day default.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>All three fields (last period, cycle length, period duration) are required before proceeding.</li>
+        </ul>
+      </div>
+
+      <!-- ONBD-04 -->
+      <div class="story-card" data-persona="new-user">
+        <div class="story-header">
+          <span class="req-badge">ONBD-04</span>
+          <span class="persona-badge persona-new-user">New User</span>
+        </div>
+        <div class="story-text">As a <strong>new user</strong>, I want to enter my personal data (date of birth, height, weight), so that the app has baseline biometric context for insights.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Date of birth, height, and weight fields are presented on a single screen with appropriate input types (date picker, numeric).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Height and weight support both metric (cm/kg) and imperial (ft-in/lb) units with a toggle.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Personal data is optional to skip, but a note explains how it improves predictions if provided.</li>
+        </ul>
+      </div>
+
+      <!-- ONBD-05 -->
+      <div class="story-card" data-persona="new-user">
+        <div class="story-header">
+          <span class="req-badge">ONBD-05</span>
+          <span class="persona-badge persona-new-user">New User</span>
+        </div>
+        <div class="story-text">As a <strong>new user</strong>, I want the app to generate a first prediction after onboarding without any prior logged data, so that I immediately see value before I start tracking.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>After onboarding completes, the dashboard displays next predicted period date, current cycle day, and phase name.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Prediction is generated using the Tier 1 simple average algorithm with the data entered during onboarding.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Calendar view shows predicted period and fertile window markers for the next 3 months.</li>
+        </ul>
+      </div>
+
+      <!-- ONBD-06 -->
+      <div class="story-card" data-persona="new-user">
+        <div class="story-header">
+          <span class="req-badge">ONBD-06</span>
+          <span class="persona-badge persona-new-user">New User</span>
+        </div>
+        <div class="story-text">As a <strong>new user</strong>, I want the onboarding flow to support both English and Bengali, so that I can complete setup in my native language.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Language selector is the first interactive element on the onboarding welcome screen.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>All onboarding screens (trust, goal, cycle history, personal data) render fully in the selected language with no untranslated strings.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Selected language persists as the user's default language preference after account creation.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 2: AUTHENTICATION & ACCOUNT -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">2</div>Authentication &amp; Account<span class="section-req-range">AUTH-01 &mdash; AUTH-08</span></div>
+    <div class="section-desc">Account creation, email verification, password management, session persistence, and the multi-profile system that enables one account to manage health tracking for multiple family members.</div>
+
+    <div class="stories-grid">
+
+      <!-- AUTH-01 -->
+      <div class="story-card" data-persona="new-user">
+        <div class="story-header">
+          <span class="req-badge">AUTH-01</span>
+          <span class="persona-badge persona-new-user">New User</span>
+        </div>
+        <div class="story-text">As a <strong>new user</strong>, I want to create an account with email and password, so that I can access the app and my data is tied to my identity.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Signup form requires a valid email address and a password with minimum 8 characters including at least one number.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Duplicate email addresses are rejected with a clear error message.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Successful signup redirects the user to the onboarding flow (or dashboard if onboarding is already complete).</li>
+        </ul>
+      </div>
+
+      <!-- AUTH-02 -->
+      <div class="story-card" data-persona="new-user">
+        <div class="story-header">
+          <span class="req-badge">AUTH-02</span>
+          <span class="persona-badge persona-new-user">New User</span>
+        </div>
+        <div class="story-text">As a <strong>new user</strong>, I want to receive email verification after signup, so that my account is secure and I confirm ownership of my email.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Verification email is sent within 30 seconds of account creation with a clickable confirmation link.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Unverified accounts can use the app but see a persistent banner prompting email verification.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Verification link expires after 24 hours; user can request a new link from the banner.</li>
+        </ul>
+      </div>
+
+      <!-- AUTH-03 -->
+      <div class="story-card" data-persona="user">
+        <div class="story-header">
+          <span class="req-badge">AUTH-03</span>
+          <span class="persona-badge persona-new-user">User</span>
+        </div>
+        <div class="story-text">As a <strong>user</strong>, I want to reset my password via an email link, so that I can regain access if I forget my credentials.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>"Forgot password" link on login screen triggers a reset email to the registered address within 60 seconds.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Reset link expires after 1 hour and can only be used once.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>After resetting, user is redirected to login with a success message; all existing sessions are invalidated.</li>
+        </ul>
+      </div>
+
+      <!-- AUTH-04 -->
+      <div class="story-card" data-persona="user">
+        <div class="story-header">
+          <span class="req-badge">AUTH-04</span>
+          <span class="persona-badge persona-new-user">User</span>
+        </div>
+        <div class="story-text">As a <strong>user</strong>, I want my session to persist across browser refresh, so that I stay logged in without re-entering credentials every time.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>JWT token is stored securely and automatically refreshed before expiration.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Refreshing the browser or reopening the tab restores the authenticated session without a login screen.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Sessions expire after 30 days of inactivity, at which point the user is redirected to login.</li>
+        </ul>
+      </div>
+
+      <!-- AUTH-05 -->
+      <div class="story-card" data-persona="account-holder">
+        <div class="story-header">
+          <span class="req-badge">AUTH-05</span>
+          <span class="persona-badge persona-account-holder">Account Holder</span>
+        </div>
+        <div class="story-text">As an <strong>account holder</strong>, I want to create multiple health profiles with name, relation type (self/wife/sister/mother/daughter/girlfriend), date of birth, height, weight, cycle length, and last period date, so that I can track health for my family.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Profile creation form includes all required fields: name, relation type (dropdown), DOB, height, weight, cycle length, last period date.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>No hard limit on the number of profiles per account; each profile gets its own independent data store.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Newly created profile immediately generates a first prediction from the entered cycle data.</li>
+        </ul>
+      </div>
+
+      <!-- AUTH-06 -->
+      <div class="story-card" data-persona="account-holder">
+        <div class="story-header">
+          <span class="req-badge">AUTH-06</span>
+          <span class="persona-badge persona-account-holder">Account Holder</span>
+        </div>
+        <div class="story-text">As an <strong>account holder</strong>, I want to switch between profiles via a profile switcher UI, so that I can manage different family members without logging out.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Profile switcher is accessible from the top navigation bar on every screen.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Switching profiles loads that profile's dashboard, calendar, and data within 1 second.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Active profile name and avatar are visually indicated in the navigation at all times.</li>
+        </ul>
+      </div>
+
+      <!-- AUTH-07 -->
+      <div class="story-card" data-persona="account-holder">
+        <div class="story-header">
+          <span class="req-badge">AUTH-07</span>
+          <span class="persona-badge persona-account-holder">Account Holder</span>
+        </div>
+        <div class="story-text">As an <strong>account holder</strong>, I want all health data isolated per profile, so that each family member's cycle data, symptoms, and predictions remain completely separate.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Every API call includes a profile ID; no endpoint returns data from multiple profiles in a single response.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Database queries are scoped by profile ID at the query level, preventing cross-profile data leakage.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Deleting a profile removes only that profile's data; other profiles and the account remain intact.</li>
+        </ul>
+      </div>
+
+      <!-- AUTH-08 -->
+      <div class="story-card" data-persona="account-holder">
+        <div class="story-header">
+          <span class="req-badge">AUTH-08</span>
+          <span class="persona-badge persona-account-holder">Account Holder</span>
+        </div>
+        <div class="story-text">As an <strong>account holder</strong>, I want to edit or delete any profile I manage, so that I can keep information current or remove profiles no longer needed.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Edit profile screen allows changing name, relation type, DOB, height, weight, and cycle defaults.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Delete profile requires a confirmation dialog with the profile name typed to confirm (destructive action safeguard).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>If the currently active profile is deleted, the app switches to the first remaining profile or prompts to create a new one.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 3: PERIOD TRACKING -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">3</div>Period Tracking &amp; Cycle Dashboard<span class="section-req-range">CYCL-01 &mdash; CYCL-06</span></div>
+    <div class="section-desc">The core habit loop: log period, see predictions, understand cycle phase. Cycle day is the hero metric. Every interaction should take 2&ndash;3 taps maximum.</div>
+
+    <div class="stories-grid">
+
+      <!-- CYCL-01 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CYCL-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to log my period start with flow intensity (light/medium/heavy) in 2&ndash;3 taps, so that tracking is effortless and becomes a daily habit.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Prominent "Log Period" button on the dashboard opens a modal with flow intensity selection (light, medium, heavy).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>The complete logging flow (open modal, select intensity, confirm) requires no more than 3 taps.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>After logging, the dashboard immediately updates to show "Day 1" and the current cycle phase changes to "Menstrual."</li>
+        </ul>
+      </div>
+
+      <!-- CYCL-02 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CYCL-02</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to log my period end date, so that the app refines my average period length and cycle calculations over time.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>During an active period, a "Period Ended" button replaces the "Log Period" button on the dashboard.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>End date is recorded and the period duration (start to end) is stored for average calculation.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>If the user does not log an end date, the system auto-closes the period after the average period length + 2 days.</li>
+        </ul>
+      </div>
+
+      <!-- CYCL-03 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CYCL-03</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to see my current cycle day, phase name (follicular, ovulatory, luteal, menstrual), and days until next period at a glance, so that I understand where I am in my cycle immediately.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Dashboard hero section displays cycle day number, phase name, and "X days until next period" simultaneously.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Phase name updates dynamically based on the current day within the predicted cycle.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>All three data points are visible without scrolling on both mobile and desktop viewports.</li>
+        </ul>
+      </div>
+
+      <!-- CYCL-04 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CYCL-04</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want cycle day displayed as the largest UI element on the dashboard, so that I immediately know where I am in my cycle the moment I open the app.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Cycle day number is rendered at a minimum font size of 48px and is the visually dominant element on the dashboard.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Cycle day is surrounded by a circular progress indicator showing position within the full cycle.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Color of the progress ring changes based on the current phase (red = menstrual, teal = fertile, blue = follicular, orange = luteal).</li>
+        </ul>
+      </div>
+
+      <!-- CYCL-05 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CYCL-05</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want predictions to recalculate immediately when I log new data, so that my forecast always reflects my most recent information.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>After logging period start or end, all predictions (next period, fertile window, ovulation) update within 2 seconds.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Calendar view refreshes predicted markers without requiring a page reload.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Notification schedules for upcoming predictions are recalculated server-side and rescheduled accordingly.</li>
+        </ul>
+      </div>
+
+      <!-- CYCL-06 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CYCL-06</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to edit or correct past period dates retroactively, so that logging mistakes do not permanently skew my predictions.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Tapping a past period day on the calendar opens an edit modal allowing start/end date and flow intensity changes.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Editing a past period triggers a full prediction recalculation using the corrected historical data.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Edits are logged in an audit trail so the user can see what was changed and when.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 4: CALENDAR -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">4</div>Calendar<span class="section-req-range">CALR-01 &mdash; CALR-04</span></div>
+    <div class="section-desc">Color-coded monthly view showing period days, fertile windows, and ovulation markers. Tap any date to view or edit logged data.</div>
+
+    <div class="stories-grid">
+
+      <!-- CALR-01 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CALR-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to view a full month calendar with color-coded markers (red/pink for period, teal for fertile window, accent for ovulation, muted for low-fertility), so that I can see my entire cycle at a glance.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Month view renders a 7-column grid with all days of the month, using distinct background colors for each cycle event.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Period days are red/pink, fertile window days are teal, ovulation day has a distinct accent marker, and remaining days use a muted neutral tone.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>A color legend is displayed below the calendar explaining each marker type.</li>
+        </ul>
+      </div>
+
+      <!-- CALR-02 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CALR-02</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want the calendar to show predicted future periods and fertile windows, so that I can plan ahead based on my forecast.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Predicted events use a lighter shade or dashed border to visually distinguish them from logged (actual) events.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Future predictions are displayed for at least 3 months ahead of the current date.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>When a prediction is replaced by actual logged data, the marker style updates from predicted to confirmed.</li>
+        </ul>
+      </div>
+
+      <!-- CALR-03 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CALR-03</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to tap any date on the calendar to view or edit the logged data for that day, so that I can review and correct my history easily.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Tapping a date opens a detail panel showing all logged data (period status, flow intensity, symptoms) for that day.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Detail panel includes an "Edit" button that allows modifying period status, flow, and symptoms for that date.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Tapping a future predicted date shows the prediction details without edit functionality.</li>
+        </ul>
+      </div>
+
+      <!-- CALR-04 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CALR-04</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to navigate to past and future months on the calendar, so that I can review my cycle history and see upcoming predictions.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Left and right arrow buttons allow month-by-month navigation with the current month/year label updating accordingly.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Swiping left/right on mobile viewports also navigates between months.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>A "Today" button instantly returns to the current month regardless of how far the user has navigated.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 5: OVULATION & FERTILITY -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">5</div>Ovulation &amp; Fertility<span class="section-req-range">FERT-01 &mdash; FERT-03</span></div>
+    <div class="section-desc">Fertile window display, ovulation day marker, and TTC-specific conception tips. The fertile window spans 5 days before ovulation plus ovulation day.</div>
+
+    <div class="stories-grid">
+
+      <!-- FERT-01 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">FERT-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to see my fertile window (5 days before ovulation + ovulation day) displayed on the calendar and dashboard, so that I understand my fertility status throughout my cycle.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Fertile window is highlighted on the calendar as a 6-day span using teal background markers.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Dashboard displays a fertility status indicator (e.g., "Fertile window in X days" or "You are in your fertile window").</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Fertile window calculation uses ovulation day = predicted next period start &minus; 14 days.</li>
+        </ul>
+      </div>
+
+      <!-- FERT-02 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">FERT-02</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want ovulation day clearly marked with a distinct visual indicator, so that I can immediately identify my most fertile day on the calendar.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Ovulation day displays a unique icon (e.g., filled circle or star) that is visually distinct from the fertile window markers.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Tapping ovulation day on the calendar shows an explanatory tooltip: "Estimated ovulation day &mdash; your most fertile day."</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Ovulation marker appears on both the calendar view and the 7-day dashboard strip.</li>
+        </ul>
+      </div>
+
+      <!-- FERT-03 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">FERT-03</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong> in TTC mode, I want to see daily conception tips based on my current cycle phase, so that I have actionable guidance for optimizing my chances of conception.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>TTC mode dashboard shows a daily tip card that changes based on the current cycle phase (follicular, fertile, luteal).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Tips are sourced from the content platform and available in both English and Bengali.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Tips are only visible to profiles with the "Trying to conceive" health goal selected.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 6: SYMPTOM LOGGING -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">6</div>Symptom Logging<span class="section-req-range">SYMP-01 &mdash; SYMP-08</span></div>
+    <div class="section-desc">Icon-based symptom logging across four categories: physical, mood, vaginal discharge, and lifestyle. Logged data feeds into the prediction engine and content personalization.</div>
+
+    <div class="stories-grid">
+
+      <!-- SYMP-01 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SYMP-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to log symptoms via icon-based tap selection (not text-heavy forms), so that logging never feels like a chore and I can do it quickly.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Symptom logging screen presents icons in a grid layout, where tapping an icon selects/deselects it with a visual highlight.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Each icon has a short text label (max 2 words) beneath it for clarity.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>The complete symptom logging flow (open, select symptoms, save) can be completed in under 5 seconds.</li>
+        </ul>
+      </div>
+
+      <!-- SYMP-02 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SYMP-02</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to log physical symptoms (cramps, headache, breast tenderness, bloating, back pain, fatigue, nausea, acne), so that I can track how my body changes across my cycle.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Physical symptoms category contains all 8 specified symptoms, each with a unique icon.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Multiple physical symptoms can be selected simultaneously for a single day.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Logged physical symptoms appear on the calendar day detail and are stored with the date and profile ID.</li>
+        </ul>
+      </div>
+
+      <!-- SYMP-03 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SYMP-03</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to log mood and emotional symptoms (calm, sad, happy, anxious, mood swings, irritable, energetic, depressed), so that I can identify emotional patterns tied to my cycle phases.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Mood category contains all 8 specified emotional states, each with a distinct emoji-style icon.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Mood symptoms are displayed as a separate tab or section from physical symptoms for clear categorization.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Only one primary mood can be selected per day, but secondary moods can be added as supplementary.</li>
+        </ul>
+      </div>
+
+      <!-- SYMP-04 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SYMP-04</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to log vaginal discharge characteristics (sticky, creamy, watery, egg white, spotting, atypical), so that I can monitor fertility signals and flag anything unusual.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Discharge category contains all 6 specified types with descriptive icons and brief explanations.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Only one discharge type can be selected per day (mutually exclusive selection).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Selecting "Atypical" triggers a subtle educational note suggesting the user consult a healthcare provider if it persists.</li>
+        </ul>
+      </div>
+
+      <!-- SYMP-05 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SYMP-05</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to log lifestyle factors (sleep quality, water intake, exercise, weight, stress), so that I can understand how daily habits correlate with how I feel during my cycle.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Lifestyle section includes all 5 specified factors with appropriate input types (sliders for quality/stress, numeric for water/weight).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Each lifestyle factor can be logged independently; no factor is required to save others.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Logged lifestyle data is associated with the date and profile, and is available for the prediction engine.</li>
+        </ul>
+      </div>
+
+      <!-- SYMP-06 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SYMP-06</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to customize which symptom categories appear on my logging screen, so that the interface only shows what is relevant to me.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>A "Customize" button on the symptom logging screen opens a settings panel listing all available categories with toggles.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>At least one symptom category must remain enabled; the UI prevents disabling all categories.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Customization preferences are saved per profile, so different family members can have different logging layouts.</li>
+        </ul>
+      </div>
+
+      <!-- SYMP-07 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SYMP-07</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to edit a symptom log already submitted for the current day, so that I can correct mistakes without losing the rest of my data.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>If symptoms have already been logged today, the logging screen opens pre-populated with the existing selections.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Changes overwrite the previous entry for today rather than creating a duplicate record.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>A "Logged today" indicator badge appears on the symptom logging button when data exists for the current day.</li>
+        </ul>
+      </div>
+
+      <!-- SYMP-08 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SYMP-08</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want my logged symptoms to feed into the prediction engine and content personalization, so that my tracking effort makes my experience smarter over time.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Symptom data is included as an input vector for Tier 2 and Tier 3 prediction models when sufficient data is available.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Content recommendations on the dashboard reflect logged symptoms (e.g., logging cramps surfaces articles about cramp relief).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>A "Your data improves predictions" message is shown periodically to reinforce the value of consistent logging.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 7: PREDICTION ENGINE -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">7</div>Prediction Engine<span class="section-req-range">PRED-01 &mdash; PRED-05</span></div>
+    <div class="section-desc">Three-tier prediction system that auto-escalates as data accumulates: simple average from day one, ARIMA after 6 cycles, LSTM/ML after 12 cycles. Confidence is visible to the user.</div>
+
+    <div class="stories-grid">
+
+      <!-- PRED-01 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">PRED-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want Tier 1 predictions (rolling average of last 3&ndash;6 cycle lengths) to work from my very first cycle, so that I get useful forecasts immediately without needing months of data.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>With only onboarding data (cycle length estimate), the system generates a next-period prediction using that single value.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>As more cycles are logged (2&ndash;6), the rolling average incorporates all available cycle lengths.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Ovulation is estimated at predicted next period start minus 14 days (standard luteal phase assumption).</li>
+        </ul>
+      </div>
+
+      <!-- PRED-02 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">PRED-02</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong> with 6+ logged cycles, I want Tier 2 predictions (ARIMA time-series model) to activate automatically, so that my forecasts become more accurate as my data grows.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>The system automatically switches from Tier 1 to Tier 2 when 6 complete logged cycles are available for a profile.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>ARIMA model accounts for trend and seasonality in cycle length variation, not just simple averaging.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>User is notified via a one-time dashboard message: "Your predictions have been upgraded based on your tracking history."</li>
+        </ul>
+      </div>
+
+      <!-- PRED-03 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">PRED-03</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong> with 12+ logged cycles, I want Tier 3 predictions (LSTM/neural network with multi-factor inputs) to activate automatically, so that my forecasts incorporate symptoms, lifestyle, and age for maximum accuracy.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>The system automatically switches from Tier 2 to Tier 3 when 12 complete logged cycles and sufficient symptom data are available.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Tier 3 model uses cycle lengths, logged symptoms, lifestyle factors, and user age as input features.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>If Tier 3 predictions are less accurate than Tier 2 for a specific user, the system falls back to Tier 2 with a logged reason.</li>
+        </ul>
+      </div>
+
+      <!-- PRED-04 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">PRED-04</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want the system to auto-escalate my prediction tier as my data accumulates (Tier 1 &rarr; 2 &rarr; 3), so that I benefit from better models without any manual action.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Tier escalation check runs automatically after every new cycle is completed and logged.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Escalation thresholds are configurable in the admin panel (default: 6 cycles for Tier 2, 12 for Tier 3).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>The current prediction tier is visible to the user in their profile settings as an informational label.</li>
+        </ul>
+      </div>
+
+      <!-- PRED-05 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">PRED-05</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to see a confidence percentage for my predictions, so that I understand how reliable the forecast is and can set expectations accordingly.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>A confidence percentage (e.g., "72% confidence") is displayed next to the predicted next period date on the dashboard.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Confidence increases as more cycles are logged and as the prediction tier escalates.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Tapping the confidence indicator shows a brief explanation of what affects confidence and how to improve it.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 8: NOTIFICATIONS -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">8</div>Notifications &amp; Reminders<span class="section-req-range">NOTF-01 &mdash; NOTF-07</span></div>
+    <div class="section-desc">Period, fertile window, and logging reminder alerts delivered via email and SMS. Per-profile routing, user-controlled toggles, and Bengali SMS content for BTRC compliance.</div>
+
+    <div class="stories-grid">
+
+      <!-- NOTF-01 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">NOTF-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to receive a period start prediction alert via email and SMS, so that I am never caught off guard by my period starting.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Alert is sent 2 days before the predicted period start date via both email and SMS (if phone number is provided).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Email includes the predicted start date, current cycle day, and a link to the dashboard.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>SMS message is concise (under 160 characters) and delivered in the user's selected language.</li>
+        </ul>
+      </div>
+
+      <!-- NOTF-02 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">NOTF-02</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want a period logging reminder via email and SMS if I have not logged by the predicted start date, so that my data stays current and predictions remain accurate.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Reminder is sent on the predicted period start date if no period log exists for that day by 6 PM local time.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Reminder message asks "Did your period start today?" with a direct link to the period logging screen.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>A follow-up reminder is sent 2 days after the predicted date if still no period has been logged.</li>
+        </ul>
+      </div>
+
+      <!-- NOTF-03 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">NOTF-03</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want a fertile window alert via email and SMS, so that I am aware when my fertile days are approaching.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Alert is sent 1 day before the predicted fertile window opens.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>For TTC users, the message emphasizes conception timing; for period trackers, it simply notes the fertile phase.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Fertile window alerts are only sent if the user has this notification type enabled in their settings.</li>
+        </ul>
+      </div>
+
+      <!-- NOTF-04 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">NOTF-04</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to toggle each notification type (period alert, logging reminder, fertile window) on or off individually, so that I only receive the alerts I find useful.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Notification settings screen lists each notification type with an independent on/off toggle.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Changes take effect immediately; toggling off a notification cancels any scheduled future deliveries of that type.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Default state for new profiles: period alert ON, logging reminder ON, fertile window OFF.</li>
+        </ul>
+      </div>
+
+      <!-- NOTF-05 -->
+      <div class="story-card" data-persona="account-holder">
+        <div class="story-header">
+          <span class="req-badge">NOTF-05</span>
+          <span class="persona-badge persona-account-holder">Account Holder</span>
+        </div>
+        <div class="story-text">As an <strong>account holder</strong>, I want notification routing to work per-profile in my multi-profile system, so that each family member's alerts go to the correct phone number and email.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Each profile has its own notification settings including an optional phone number for SMS delivery.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Alerts for Profile A are never sent to the phone number or email configured for Profile B.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>If no phone number is set for a profile, SMS notifications are silently skipped (email-only delivery).</li>
+        </ul>
+      </div>
+
+      <!-- NOTF-06 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">NOTF-06</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong> in Bangladesh, I want SMS delivery via SSL Wireless (Bangladesh provider), so that messages arrive reliably on my local carrier.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>SMS is routed through SSL Wireless API for all Bangladeshi phone numbers (country code +880).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Delivery status (sent, delivered, failed) is tracked and available in admin reports.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Failed SMS delivery triggers a retry after 15 minutes with exponential backoff (max 3 retries).</li>
+        </ul>
+      </div>
+
+      <!-- NOTF-07 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">NOTF-07</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want SMS content delivered in Bengali per BTRC requirements, so that the messages are understandable and legally compliant in Bangladesh.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>All SMS messages to Bangladeshi numbers are sent in Bengali (Unicode SMS encoding) by default.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>SMS content is transliterated properly for display on basic feature phones that may not support full Unicode.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Users who have set their language to English still receive SMS in Bengali if their number is +880 (BTRC compliance); email follows their language preference.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 9: CONTENT PLATFORM -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">9</div>Content Platform<span class="section-req-range">CONT-01 &mdash; CONT-05</span></div>
+    <div class="section-desc">Bilingual articles on menstrual health, fertility, and reproductive wellness. Content is categorized by topic, tagged by cycle phase, and addresses Bangladeshi cultural context.</div>
+
+    <div class="stories-grid">
+
+      <!-- CONT-01 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CONT-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to read blog-style articles on menstrual health, fertility, and reproductive wellness, so that I can educate myself about my body and make informed decisions.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Content section is accessible from the main navigation and displays articles in a card-based feed with title, excerpt, and thumbnail.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Articles support rich text formatting including headers, images, and bulleted lists.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>At least 20 articles are available at launch covering core topics: period basics, fertile window, nutrition, exercise, and common myths.</li>
+        </ul>
+      </div>
+
+      <!-- CONT-02 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CONT-02</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want all content available in both English and Bengali, so that I can read articles in my preferred language.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Every article has both an English and Bengali version stored as separate content entries linked by a shared article ID.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>The content feed automatically displays articles in the user's selected language.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>A language toggle on the article page allows switching between English and Bengali without navigating away.</li>
+        </ul>
+      </div>
+
+      <!-- CONT-03 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CONT-03</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want content categorized by topic and tagged by cycle phase, so that I can find relevant articles quickly and see content matched to where I am in my cycle.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Content is organized into categories (e.g., Menstrual Health, Fertility, Nutrition, Exercise, Mental Health) with filterable tabs.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Each article is tagged with one or more cycle phases (menstrual, follicular, ovulatory, luteal) as metadata.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Phase tags are visible on article cards and can be used as a filter criterion.</li>
+        </ul>
+      </div>
+
+      <!-- CONT-04 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CONT-04</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want phase-specific content recommendations on my dashboard, so that I see the most relevant articles for where I currently am in my cycle.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Dashboard displays a "Recommended for you" section with 2&ndash;3 article cards matched to the user's current cycle phase.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Recommendations change as the user's cycle phase changes (e.g., transitioning from follicular to fertile shows fertility-related content).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Tapping a recommended article card opens the full article in the user's selected language.</li>
+        </ul>
+      </div>
+
+      <!-- CONT-05 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">CONT-05</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong> in Bangladesh, I want content that addresses Bangladeshi cultural context and menstrual myths, so that the information feels relevant to my life and helps me overcome cultural misconceptions.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>At least 5 launch articles directly address common menstrual myths in Bangladeshi culture (e.g., food restrictions during periods, pickle taboo).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Cultural context articles are written by or reviewed by Bangladeshi healthcare professionals.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Content uses culturally sensitive language and avoids dismissing beliefs; instead, it explains the science while respecting the cultural context.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 10: PARTNER SHARING -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">10</div>Partner Sharing<span class="section-req-range">PRTN-01 &mdash; PRTN-06</span></div>
+    <div class="section-desc">Sharing code generation, read-only partner access to cycle calendar and phase insights, daily partner tips, and instant revocation. Partners cannot see logged symptoms or edit data.</div>
+
+    <div class="stories-grid">
+
+      <!-- PRTN-01 -->
+      <div class="story-card" data-persona="account-holder">
+        <div class="story-header">
+          <span class="req-badge">PRTN-01</span>
+          <span class="persona-badge persona-account-holder">Account Holder</span>
+        </div>
+        <div class="story-text">As an <strong>account holder</strong>, I want to generate a sharing code for a specific profile and send it to my partner, so that they can access relevant cycle information without me explaining it manually.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>A "Share with Partner" button in profile settings generates a unique 6-character alphanumeric code.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>The code expires after 48 hours if not redeemed and can be regenerated at any time.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Only one active partner link is allowed per profile; generating a new code invalidates the previous one.</li>
+        </ul>
+      </div>
+
+      <!-- PRTN-02 -->
+      <div class="story-card" data-persona="partner">
+        <div class="story-header">
+          <span class="req-badge">PRTN-02</span>
+          <span class="persona-badge persona-partner">Partner</span>
+        </div>
+        <div class="story-text">As a <strong>partner</strong>, I want read-only access to my partner's current cycle calendar and phase insights, so that I understand where they are in their cycle without them having to tell me.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>After entering a valid sharing code, the partner sees a simplified dashboard showing current cycle day, phase name, and calendar view.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Calendar displays period days, fertile window, and ovulation markers (same color coding as the primary user's view).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>No edit buttons, logging capabilities, or symptom data are visible in the partner's view.</li>
+        </ul>
+      </div>
+
+      <!-- PRTN-03 -->
+      <div class="story-card" data-persona="partner">
+        <div class="story-header">
+          <span class="req-badge">PRTN-03</span>
+          <span class="persona-badge persona-partner">Partner</span>
+        </div>
+        <div class="story-text">As a <strong>partner</strong>, I want to receive daily insights about my partner's current cycle phase, so that I can be emotionally supportive at the right moments.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Partner dashboard shows a daily insight card with a brief, empathetic description of the current phase (e.g., "Your partner may feel more fatigued during this phase").</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Insights change daily based on the cycle day and phase, providing variety across the cycle.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Insights are available in both English and Bengali based on the partner's language preference.</li>
+        </ul>
+      </div>
+
+      <!-- PRTN-04 -->
+      <div class="story-card" data-persona="partner">
+        <div class="story-header">
+          <span class="req-badge">PRTN-04</span>
+          <span class="persona-badge persona-partner">Partner</span>
+        </div>
+        <div class="story-text">As a <strong>partner</strong> of someone in TTC mode, I want to see fertile window visibility on the shared calendar, so that I can be an active participant in conception planning.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Fertile window and ovulation markers are visible on the partner's calendar view when the primary user is in TTC mode.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Fertile window visibility is automatically enabled for TTC profiles and hidden for period-tracking-only profiles.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>The primary user can override this default and hide fertile window from the partner view in their sharing settings.</li>
+        </ul>
+      </div>
+
+      <!-- PRTN-05 -->
+      <div class="story-card" data-persona="partner">
+        <div class="story-header">
+          <span class="req-badge">PRTN-05</span>
+          <span class="persona-badge persona-partner">Partner</span>
+        </div>
+        <div class="story-text">As a <strong>partner</strong>, I want to be unable to see logged symptoms or edit any data, so that the primary user's detailed health data remains private and under their sole control.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Partner API endpoints return only calendar events and phase data; symptom logs, lifestyle data, and personal biometrics are excluded.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>No edit, delete, or logging endpoints are accessible with a partner-level authentication token.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Attempting to access restricted data returns a 403 Forbidden response with a clear error message.</li>
+        </ul>
+      </div>
+
+      <!-- PRTN-06 -->
+      <div class="story-card" data-persona="account-holder">
+        <div class="story-header">
+          <span class="req-badge">PRTN-06</span>
+          <span class="persona-badge persona-account-holder">Account Holder</span>
+        </div>
+        <div class="story-text">As an <strong>account holder</strong>, I want to instantly revoke my partner's access at any time, so that I remain in full control of who can see my health data.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>"Revoke Partner Access" button in profile sharing settings terminates the partner link immediately.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>After revocation, the partner sees a "Access has been revoked" screen on their next page load or API call.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Revocation does not require the partner's consent or notification; it is a unilateral action by the profile owner.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 11: BILINGUAL SUPPORT -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">11</div>Bilingual Support<span class="section-req-range">I18N-01 &mdash; I18N-04</span></div>
+    <div class="section-desc">Every UI string translatable between English and Bengali. Language switching, date/number formatting, and Bengali as the default for Bangladesh-based users.</div>
+
+    <div class="stories-grid">
+
+      <!-- I18N-01 -->
+      <div class="story-card" data-persona="user">
+        <div class="story-header">
+          <span class="req-badge">I18N-01</span>
+          <span class="persona-badge persona-new-user">User</span>
+        </div>
+        <div class="story-text">As a <strong>user</strong>, I want every UI string to be translatable between English and Bengali, so that I can use the entire app in my preferred language without encountering untranslated text.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>All UI strings are externalized in a translation file (JSON) with keys for both English (en) and Bengali (bn).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>No hardcoded strings exist in component code; every visible text uses the translation system.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>A CI/CD check verifies that every English key has a corresponding Bengali translation before deploy.</li>
+        </ul>
+      </div>
+
+      <!-- I18N-02 -->
+      <div class="story-card" data-persona="user">
+        <div class="story-header">
+          <span class="req-badge">I18N-02</span>
+          <span class="persona-badge persona-new-user">User</span>
+        </div>
+        <div class="story-text">As a <strong>user</strong>, I want to switch language at any time from any screen, so that I am never locked into a language choice I made during onboarding.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>A language toggle (EN/BN) is accessible from the settings screen and optionally from the navigation bar.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Switching language re-renders the entire UI in the new language without a page reload or data loss.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Language preference is saved to the user's profile and persists across sessions and devices.</li>
+        </ul>
+      </div>
+
+      <!-- I18N-03 -->
+      <div class="story-card" data-persona="user">
+        <div class="story-header">
+          <span class="req-badge">I18N-03</span>
+          <span class="persona-badge persona-new-user">User</span>
+        </div>
+        <div class="story-text">As a <strong>user</strong>, I want date and number formatting to adapt to my selected language, so that dates, times, and numbers display in a format natural to me.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Bengali mode displays dates using Bengali numerals and the Bengali calendar month names where appropriate.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>English mode uses standard Gregorian date formatting (e.g., "March 26, 2026").</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Numeric values (cycle day, confidence %, days until period) render in Bengali numerals when Bengali is selected.</li>
+        </ul>
+      </div>
+
+      <!-- I18N-04 -->
+      <div class="story-card" data-persona="new-user">
+        <div class="story-header">
+          <span class="req-badge">I18N-04</span>
+          <span class="persona-badge persona-new-user">New User</span>
+        </div>
+        <div class="story-text">As a <strong>new user</strong> based in Bangladesh, I want Bengali to be the default language, so that I do not need to search for a language setting to use the app in my native tongue.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Geolocation or browser locale detection identifies Bangladesh-based users and sets Bengali as the default.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Default language can be overridden on the onboarding welcome screen before any other interaction.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Users outside Bangladesh default to English, with an option to switch to Bengali at any time.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 12: PRIVACY & SECURITY -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">12</div>Privacy &amp; Security<span class="section-req-range">PRIV-01 &mdash; PRIV-05</span></div>
+    <div class="section-desc">Field-level encryption for health data, account deletion, bilingual privacy policy, terms of service, and multi-profile consent mechanisms.</div>
+
+    <div class="stories-grid">
+
+      <!-- PRIV-01 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">PRIV-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want my health data (symptoms, cycle data) encrypted at field level in the database, so that even if the database is compromised, my sensitive information remains unreadable.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>All health-related database fields (cycle dates, symptoms, flow intensity, lifestyle data) are encrypted using AES-256 at rest.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Encryption keys are stored in a separate secrets manager (not in the application database or codebase).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Decryption happens at the application layer only when the authenticated user or their authorized partner requests the data.</li>
+        </ul>
+      </div>
+
+      <!-- PRIV-02 -->
+      <div class="story-card" data-persona="account-holder">
+        <div class="story-header">
+          <span class="req-badge">PRIV-02</span>
+          <span class="persona-badge persona-account-holder">Account Holder</span>
+        </div>
+        <div class="story-text">As an <strong>account holder</strong>, I want to delete my entire account and all associated data, so that I can exercise my right to be forgotten and remove all traces of my health information.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Account deletion requires password re-entry and a confirmation dialog explaining that all profiles and data will be permanently removed.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Deletion is executed within 24 hours and removes all profiles, cycle data, symptoms, notifications, and partner links.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>After deletion, the user receives a confirmation email and the account cannot be recovered.</li>
+        </ul>
+      </div>
+
+      <!-- PRIV-03 -->
+      <div class="story-card" data-persona="new-user">
+        <div class="story-header">
+          <span class="req-badge">PRIV-03</span>
+          <span class="persona-badge persona-new-user">New User</span>
+        </div>
+        <div class="story-text">As a <strong>new user</strong>, I want a clear privacy policy explaining how multi-profile data is handled, so that I understand what data is collected, how it is stored, and who can access it.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Privacy policy is accessible from the onboarding trust screen, settings, and footer of every page.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Policy explicitly explains that multi-profile data is isolated and that the account holder controls all profiles' data.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Policy is written in plain language (not legalese) and covers data collection, storage, encryption, sharing, and deletion.</li>
+        </ul>
+      </div>
+
+      <!-- PRIV-04 -->
+      <div class="story-card" data-persona="user">
+        <div class="story-header">
+          <span class="req-badge">PRIV-04</span>
+          <span class="persona-badge persona-new-user">User</span>
+        </div>
+        <div class="story-text">As a <strong>user</strong>, I want terms of service available in both English and Bengali, so that I can understand my rights and obligations in my preferred language.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Terms of service page renders in the user's selected language with a toggle to switch between English and Bengali.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Both language versions are legally equivalent and reviewed by a legal professional familiar with Bangladeshi law.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Users must accept the terms during signup; the acceptance timestamp and language version are recorded.</li>
+        </ul>
+      </div>
+
+      <!-- PRIV-05 -->
+      <div class="story-card" data-persona="account-holder">
+        <div class="story-header">
+          <span class="req-badge">PRIV-05</span>
+          <span class="persona-badge persona-account-holder">Account Holder</span>
+        </div>
+        <div class="story-text">As an <strong>account holder</strong>, I want a multi-profile consent mechanism requiring profile owner acknowledgment, so that I explicitly confirm responsibility for managing other people's health data.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>When creating a profile for someone other than "self," a consent dialog explains data stewardship responsibilities.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Consent acknowledgment is timestamped and stored with the profile creation record.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>The consent dialog is available in both English and Bengali and includes a summary of what data will be collected.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 13: FEATURE GATING -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">13</div>Feature Gating (Free/Pro)<span class="section-req-range">GATE-01 &mdash; GATE-05</span></div>
+    <div class="section-desc">Admin-controlled feature access levels. Every feature can be toggled between free and pro tiers in real-time.</div>
+
+    <div class="stories-grid">
+
+      <!-- GATE-01 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">GATE-01</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want a backend middleware that checks subscription tier before granting feature access, so that pro features are only available to paying users.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Middleware returns 403 for free users accessing pro features.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Pro users pass through the middleware without obstruction.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Middleware reads access configuration from the feature_gates table.</li>
+        </ul>
+      </div>
+
+      <!-- GATE-02 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">GATE-02</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to configure which features are free vs pro from the admin portal, so that I can adjust monetization strategy without code changes.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Admin UI shows feature list with free/pro toggle for each feature.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Changes persist to the database immediately.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Changes take effect without application restart.</li>
+        </ul>
+      </div>
+
+      <!-- GATE-03 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">GATE-03</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>free user</strong>, I want to see a &ldquo;Pro&rdquo; badge on locked features with an upgrade prompt, so that I know what&rsquo;s available if I subscribe.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Pro badge is visible on all gated features for free users.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Tapping the badge shows an upgrade prompt with subscription details.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Pro users never see Pro badges or upgrade prompts.</li>
+        </ul>
+      </div>
+
+      <!-- GATE-04 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">GATE-04</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>pro user</strong>, I want immediate access to all features marked as pro, so that my subscription has clear value.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>All pro-gated features are accessible without restriction.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>No upgrade prompts are shown to pro users.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Access works across all profiles managed by the pro account.</li>
+        </ul>
+      </div>
+
+      <!-- GATE-05 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">GATE-05</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want feature gate changes to take effect in real-time, so that I can respond to business needs immediately.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Toggling a feature gate updates user experience within seconds.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Changes take effect without page reload or app restart.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 14: SESSION MANAGEMENT -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">14</div>Session Management<span class="section-req-range">SESS-01 &mdash; SESS-04</span></div>
+    <div class="section-desc">Admin controls for monitoring and terminating active user sessions remotely.</div>
+
+    <div class="stories-grid">
+
+      <!-- SESS-01 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">SESS-01</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to view all active sessions for any user including device, IP, and last activity time, so that I can monitor suspicious activity.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Session list shows device info, IP address, login time, and last activity timestamp.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Session data updates on page load.</li>
+        </ul>
+      </div>
+
+      <!-- SESS-02 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">SESS-02</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to terminate individual user sessions remotely, so that I can respond to security incidents.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Clicking &ldquo;Terminate&rdquo; immediately invalidates the session.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>The user&rsquo;s next request returns 401 Unauthorized.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>The user must re-login to regain access.</li>
+        </ul>
+      </div>
+
+      <!-- SESS-03 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">SESS-03</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to terminate all sessions for a user at once, so that I can force a complete logout during account compromise.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>&ldquo;Terminate All&rdquo; button invalidates every session for the user.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>All devices are logged out simultaneously.</li>
+        </ul>
+      </div>
+
+      <!-- SESS-04 -->
+      <div class="story-card" data-persona="account-holder">
+        <div class="story-header">
+          <span class="req-badge">SESS-04</span>
+          <span class="persona-badge persona-account-holder">Account Holder</span>
+        </div>
+        <div class="story-text">As a <strong>user</strong>, I want my sessions tracked securely so that admin can protect my account if compromised.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Sessions are stored in Redis with JWT blacklist support.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Expired sessions are auto-cleaned from the store.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Session data includes device fingerprint for identification.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 15: BDAPPS SUBSCRIPTION -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">15</div>BDApps Subscription (Pro Billing)<span class="section-req-range">SUBS-01 &mdash; SUBS-08</span></div>
+    <div class="section-desc">Pro subscription management via BDApps carrier billing with automatic access control based on charging status.</div>
+
+    <div class="stories-grid">
+
+      <!-- SUBS-01 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SUBS-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>user</strong>, I want to subscribe to Pro via BDApps carrier billing, so that the charge appears on my mobile phone bill.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>BDApps charging API is called successfully upon subscription.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Subscription status is stored in the database.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Pro access is granted immediately after successful charge.</li>
+        </ul>
+      </div>
+
+      <!-- SUBS-02 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">SUBS-02</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want the system to check BDApps charging status daily, so that we know which users have active subscriptions.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Cron job runs daily to query BDApps API for each subscriber.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Subscription status is updated in the database based on API response.</li>
+        </ul>
+      </div>
+
+      <!-- SUBS-03 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SUBS-03</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>pro user</strong>, I want my pro access automatically disabled if charging fails for several days, so that the business doesn&rsquo;t give away free pro access.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>After N days (admin-configurable) of failed charges, pro access is revoked.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>User is downgraded to free tier automatically.</li>
+        </ul>
+      </div>
+
+      <!-- SUBS-04 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SUBS-04</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>user in grace period</strong>, I want to see a warning that my subscription is expiring, so that I can resolve the billing issue.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Banner shows &ldquo;Your subscription expires in X days&rdquo; during grace period.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Banner links to billing help or support page.</li>
+        </ul>
+      </div>
+
+      <!-- SUBS-05 -->
+      <div class="story-card" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SUBS-05</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        </div>
+        <div class="story-text">As a <strong>user whose charging resumes</strong>, I want my pro access automatically restored, so that I don&rsquo;t need to re-subscribe manually.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>When BDApps reports a successful charge, pro access is re-enabled automatically.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>No manual intervention is needed to restore access.</li>
+        </ul>
+      </div>
+
+      <!-- SUBS-06 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">SUBS-06</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to view subscription status for all users, so that I can monitor revenue health.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Admin list shows counts for: active, grace period, expired, and never subscribed.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Per-user subscription status is viewable in the user detail view.</li>
+        </ul>
+      </div>
+
+      <!-- SUBS-07 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">SUBS-07</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to manually grant or revoke pro access, so that I can handle edge cases and promotions.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Admin can override BDApps status to grant or revoke pro access.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Manual grant/revoke is logged with a reason field.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Override takes effect immediately.</li>
+        </ul>
+      </div>
+
+      <!-- SUBS-08 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">SUBS-08</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to view subscription history per user, so that I can investigate billing disputes.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>History shows charge date, amount, status, and tier changes in chronological order.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 16: ADMIN PANEL -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">16</div>Admin Panel<span class="section-req-range">ADMN-01 &mdash; ADMN-17</span></div>
+    <div class="section-desc">Operational dashboard, user and profile management, health data analytics, prediction accuracy reports, CMS, notification controls, security roles, data export, usage reporting, and management UIs for feature gating, sessions, and subscriptions.</div>
+
+    <div class="stories-grid">
+
+      <!-- ADMN-01 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-01</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want a dashboard showing total users, active users, profiles created, and tracking activity metrics, so that I can monitor platform health at a glance.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Dashboard displays key metrics: total accounts, total profiles, daily active users (DAU), monthly active users (MAU), and periods logged today.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Metrics update in near-real-time (within 5 minutes of data change).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Dashboard loads in under 3 seconds even with 100k+ users in the system.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-02 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-02</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want visual charts showing daily new users, monthly active users, and profile creation trends, so that I can identify growth patterns and seasonality.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Line charts display daily new signups, MAU trend, and profile creation counts over selectable time ranges (7d, 30d, 90d, 1y).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Charts support hover tooltips showing exact values for any data point.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Chart data can be exported as CSV for external analysis.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-03 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-03</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want user management capabilities (list, view details, suspend, reactivate, delete, reset password), so that I can handle support requests and enforce platform policies.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>User list supports search by email, name, or account ID with pagination (50 users per page).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Each user row shows email, signup date, last active, profile count, and account status (active/suspended).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Suspend, reactivate, delete, and password reset actions require confirmation and are logged in an admin audit trail.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-04 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-04</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want profile monitoring with aggregated cycle insights (privacy-protected), so that I can understand usage patterns without accessing individual health data.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Profile monitoring shows aggregated statistics only: total profiles, active/inactive ratio, average profiles per account.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>No individual cycle data, symptom logs, or personal health information is visible to admins.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Aggregated insights require a minimum anonymity threshold (e.g., 50+ profiles) before displaying any statistic.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-05 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-05</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want health data analytics showing aggregated population-level insights (average cycle length, irregular cycle percentage, common symptoms), so that I can identify trends for product and content decisions.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Analytics dashboard displays: average cycle length, median period duration, % of irregular cycles (&gt;35 or &lt;21 days), and top 10 logged symptoms.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>All data is aggregated and anonymized; no individual profile can be identified from the analytics view.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Filters allow slicing by date range, age group, and health goal (period tracking vs. TTC).</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-06 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-06</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want prediction accuracy reports showing predicted vs. actual dates and accuracy percentages, so that I can evaluate and improve the prediction engine.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Report shows: mean absolute error (days), percentage of predictions within 1/2/3 days of actual, and accuracy by prediction tier.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Accuracy trend chart shows improvement (or degradation) over time as more user data accumulates.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Report is filterable by prediction tier (1, 2, 3) and date range.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-07 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-07</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want a content management system to create, edit, and delete articles, manage categories, and handle languages, so that I can maintain and expand the content library without developer involvement.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>CMS provides a rich text editor for creating articles with title, body, category, phase tags, and thumbnail image upload.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Each article has side-by-side English and Bengali editor fields to ensure both translations are created together.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Published articles are immediately visible to users; draft status keeps articles hidden until published.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-08 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-08</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want notification management to control reminder types and send broadcast notifications, so that I can communicate with users about platform updates or health campaigns.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Admin can enable/disable each notification type globally (period alert, fertile window, logging reminder) as a kill switch.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Broadcast notification tool allows sending a one-time message to all users or a filtered segment via email and/or SMS.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Broadcast messages require bilingual content (English + Bengali) before they can be sent.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-09 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-09</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want security and access control with Super Admin and Content Admin roles, so that team members have appropriate permissions without unnecessary access to sensitive data.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Super Admin has full access to all admin features; Content Admin is limited to CMS and content analytics only.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Role assignment is managed by Super Admins through the admin user management interface.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>All admin actions are logged with timestamp, actor (admin email), and action type for audit purposes.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-10 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-10</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want to export analytics and research data as CSV or Excel, so that I can perform external analysis and generate reports for stakeholders.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Export button is available on every analytics dashboard (user metrics, health analytics, prediction reports).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Exported files contain only aggregated, anonymized data; no PII or individual health records are included.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Export supports both CSV and Excel (.xlsx) formats with a format selector before download.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-11 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-11</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want a feature usage report showing usage percentages per feature area, so that I can identify which features are delivering value and which are underutilized.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Report shows usage percentage for each feature: period logging, symptom logging, calendar views, content reads, partner sharing, and notification opt-in rates.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Feature usage is calculated as (users who used feature / total active users) over a selectable time period.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Bar chart visualization makes it easy to compare feature adoption at a glance.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-12 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-12</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want an alert engagement report showing reminders delivered, opened, and action taken, so that I can optimize notification timing and content for better user engagement.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Report tracks three metrics per notification type: delivered count, open/click rate, and action rate (e.g., period logged after reminder).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>SMS delivery and email open tracking are implemented and feed data into this report.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Data is breakable by channel (email vs. SMS) and by language (English vs. Bengali).</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-13 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-13</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want multi-profile usage analytics showing accounts, profiles per account, and relation type breakdown, so that I can understand how the family-oriented model is being adopted.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Dashboard shows: total accounts with multiple profiles, average profiles per account, and distribution of relation types (self, wife, sister, etc.).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Pie chart displays relation type breakdown; bar chart shows profiles-per-account distribution.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Trend line shows multi-profile adoption rate over time (percentage of new accounts creating 2+ profiles).</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-14 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-14</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want a data completeness report showing complete vs. partial vs. inactive profiles, so that I can identify engagement issues and target re-engagement campaigns.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Profiles are classified as: Complete (logged 3+ cycles with symptoms), Partial (logged 1&ndash;2 cycles or missing symptoms), Inactive (no logs in 60+ days).</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Report shows counts and percentages for each category with a trend over time.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Inactive profile segment can be exported as a list (account email only, no health data) for re-engagement email campaigns.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-15 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-15</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want a feature gating management UI, so that I can toggle features between free and pro.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Feature list displays all gatable features with free/pro toggles.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Changes are saved to the database upon toggle.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Toggle changes take effect in real-time without restart.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-16 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-16</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want a session management UI, so that I can view and terminate user sessions.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Session list is displayed per user with device, IP, and activity details.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Terminate individual and terminate all buttons are available.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Confirmation dialog appears before terminating sessions.</li>
+        </ul>
+      </div>
+
+      <!-- ADMN-17 -->
+      <div class="story-card" data-persona="admin">
+        <div class="story-header">
+          <span class="req-badge">ADMN-17</span>
+          <span class="persona-badge persona-admin">Admin</span>
+        </div>
+        <div class="story-text">As an <strong>admin</strong>, I want a subscription management UI, so that I can view BDApps status, set grace period, and override access.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Subscription dashboard shows aggregate and per-user subscription status.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Grace period duration is configurable from the UI.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Manual grant/revoke with a reason field is available per user.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- V2 DEFERRED -->
+  <!-- ============================================================ -->
+  <div class="v2-divider">
+    <div>
+      <div class="v2-divider-text">v2 Deferred Stories</div>
+      <div class="v2-divider-desc">The following features are tracked but not in the current v1 roadmap. Included here for completeness and future planning.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title" style="color:#9ca3af"><div class="section-num" style="background:#d1d5db">17</div>v2 &mdash; Deferred Features</div>
+    <div class="section-desc">Pregnancy mode, medicine tracker, sleep monitor, exercise tracking, sex life tracking, health analytics, menopause, and community features. These will be prioritized after v1 ships and validates product-market fit.</div>
+
+    <div class="stories-grid">
+
+      <!-- PREG-01 -->
+      <div class="story-card deferred" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">PREG-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+          <span class="deferred-label">v2 Deferred</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong> who becomes pregnant, I want to switch to pregnancy mode by entering my due date or last menstrual period date, so that the app transitions to gestational tracking seamlessly.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Pregnancy mode switch is accessible from profile settings and accepts either a due date or LMP date to calculate gestational age.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Switching to pregnancy mode pauses cycle predictions and replaces the dashboard with pregnancy-focused widgets.</li>
+        </ul>
+      </div>
+
+      <!-- PREG-02 -->
+      <div class="story-card deferred" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">PREG-02</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+          <span class="deferred-label">v2 Deferred</span>
+        </div>
+        <div class="story-text">As a <strong>pregnant user</strong>, I want week-by-week fetal development visualization, so that I have a vivid sense of my baby's growth at every stage.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Dashboard hero shows current gestational week with a fetal size comparison illustration.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Developmental milestones and body changes are listed for each week in both English and Bengali.</li>
+        </ul>
+      </div>
+
+      <!-- MEDC-01 -->
+      <div class="story-card deferred" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">MEDC-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+          <span class="deferred-label">v2 Deferred</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to add medicines with name, dosage, schedule, and duration, so that I can track my medication alongside my cycle.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Medicine entry form accepts name, dosage, frequency (daily/weekly/as needed), and start/end dates.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Automated reminders are sent at scheduled times for active medications.</li>
+        </ul>
+      </div>
+
+      <!-- SLEP-01 -->
+      <div class="story-card deferred" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SLEP-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+          <span class="deferred-label">v2 Deferred</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to log my sleep duration, start/wake times, and quality, so that I can correlate sleep patterns with my cycle phases.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Sleep logging includes bedtime, wake time (auto-calculating duration), and a 1&ndash;5 quality rating.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Sleep data is correlated with cycle phase in a chart showing sleep quality trends across the cycle.</li>
+        </ul>
+      </div>
+
+      <!-- EXRC-01 -->
+      <div class="story-card deferred" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">EXRC-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+          <span class="deferred-label">v2 Deferred</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to log steps, workouts, and calories burned, so that I can understand how exercise correlates with my cycle regularity.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Exercise logging supports workout type, duration, intensity, and estimated calories burned.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Analytics show exercise frequency vs. cycle regularity correlation over time.</li>
+        </ul>
+      </div>
+
+      <!-- SXLF-01 -->
+      <div class="story-card deferred" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">SXLF-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+          <span class="deferred-label">v2 Deferred</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want to log intercourse date and protection status (encrypted, opt-in only), so that I can correlate timing with my fertile window and track conception attempts.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Sex life tracking is a hidden-by-default feature that must be explicitly opted into from privacy settings.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>All sex life data is encrypted with an additional encryption layer beyond standard health data encryption.</li>
+        </ul>
+      </div>
+
+      <!-- ANLT-01 -->
+      <div class="story-card deferred" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">ANLT-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+          <span class="deferred-label">v2 Deferred</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want monthly charts showing my period history and cycle variation, so that I can visualize trends and discuss them with my healthcare provider.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Charts display cycle length variation, period duration trends, and symptom frequency over the last 6&ndash;12 months.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Health report can be exported as a shareable PDF for doctor visits.</li>
+        </ul>
+      </div>
+
+      <!-- MNPS-01 -->
+      <div class="story-card deferred" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">MNPS-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+          <span class="deferred-label">v2 Deferred</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong> aged 40+, I want to switch to perimenopause mode, so that the app provides phase-appropriate insights for hot flashes, night sweats, mood changes, and irregular cycles.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Perimenopause mode adds tracking for hot flashes, night sweats, and menopause-specific symptoms.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Cycle predictions adapt to account for increasing irregularity typical of perimenopause.</li>
+        </ul>
+      </div>
+
+      <!-- COMM-01 -->
+      <div class="story-card deferred" data-persona="cycle-tracker">
+        <div class="story-header">
+          <span class="req-badge">COMM-01</span>
+          <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+          <span class="deferred-label">v2 Deferred</span>
+        </div>
+        <div class="story-text">As a <strong>cycle tracker</strong>, I want anonymous community posting with random avatars, so that I can discuss health topics and get peer support without revealing my identity.</div>
+        <div class="ac-title">Acceptance Criteria</div>
+        <ul class="acceptance-criteria">
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Users are assigned a random avatar and display name upon entering the community; no real names or profile data are visible.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>All posts are pre-moderated by the admin team before appearing publicly.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">Vesta &mdash; User Stories &amp; Acceptance Criteria &middot; 102 v1 stories across 17 feature areas + 9 v2 deferred stories</div>
+    <div class="footer-right">Generated 2026-03-26 &middot; Updated 2026-03-26 &middot; Mapped to REQUIREMENTS.md</div>
+  </div>
+
+</div>
+</body>
+</html>
