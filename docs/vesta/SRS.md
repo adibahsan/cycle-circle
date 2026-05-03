@@ -1,8 +1,8 @@
 # Software Requirements Specification
 
 **Project:** Vesta v1 — Bilingual Reproductive Health & Cycle Intelligence Platform for Bangladesh
-**Document Version:** 1.0
-**Date:** 28 April 2026  
+**Document Version:** 1.1
+**Date:** 3 May 2026  
 **Status:** Draft for Client Sign-Off
 **Standard:** IEEE 830-1998
 
@@ -15,8 +15,8 @@
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Document title    | Software Requirements Specification — Vesta v1                                                                                                                                 |
 | Document ID       | SRS-VESTA-001                                                                                                                                                                  |
-| Version           | 1.0                                                                                                                                                                            |
-| Issue date        | April 2026                                                                                                                                                                     |
+| Version           | 1.1                                                                                                                                                                            |
+| Issue date        | May 2026                                                                                                                                                                       |
 | Source            | `netlify-vesta/vesta/vesta-srs.html`                                                                                                                                           |
 | Related artifacts | `docs/vesta/vesta-kb.md`, `docs/vesta/vesta-mvp-plan.html`, `docs/vesta/vesta-user-stories.html`, `docs/vesta/vesta-user-journey-flows.html`, `docs/vesta/bdapps-tap-api.html` |
 | Audience          | Client sponsor, product owner, engineering team, QA team, security reviewers                                                                                                   |
@@ -29,6 +29,7 @@
 | Version | Date    | Author | Description                                                       |
 | ------- | ------- | ------ | ----------------------------------------------------------------- |
 | 1.0     | 2026-04 | Adib   | Initial release derived from `netlify-vesta/vesta/vesta-srs.html` |
+| 1.1     | 2026-05-03 | Adib | Deferred Pro auto-disable to v2; added SMS content circulation (FR-SMS); added BDApps webhook endpoints (FR-WEBHOOK) |
 
 
 ---
@@ -82,7 +83,7 @@ This document is the primary reference for:
 
 **What the software shall do:**
 
-Vesta v1 shall deliver phone-number-based account management (verified via BDApps OTP), multi-profile period tracking with cycle prediction, symptom logging across 30+ symptoms, a monthly calendar visualisation, a fully bilingual user interface (English + Bengali), Pro-tier subscription billing via BDApps CAAS direct debit, transactional email notifications, a bilingual content platform with phase-based article surfacing, and an admin panel containing a content management system and population analytics.
+Vesta v1 shall deliver phone-number-based account management (verified via BDApps OTP), multi-profile period tracking with cycle prediction, symptom logging across 30+ symptoms, a monthly calendar visualisation, a fully bilingual user interface (English + Bengali), Pro-tier subscription billing via BDApps CAAS direct debit, transactional email notifications, a bilingual content platform with phase-based article surfacing, and an admin panel containing a content management system and population analytics, SMS-based health content circulation via BDApps SMS Send API (broadcast to all subscribers), and inbound webhook endpoints for BDApps event ingestion.
 
 **Deployment:** The system shall be deployed on Vercel (frontend + API route handlers) and Supabase (PostgreSQL with Row Level Security). Asynchronous workloads shall run on Upstash QStash; cache, session blacklist, and rate-limit state shall reside on Upstash Redis. Transactional email shall be delivered through Resend.
 
@@ -121,6 +122,10 @@ Vesta v1 shall deliver phone-number-based account management (verified via BDApp
 | **Tier 1 / 2 / 3** | The three prediction tiers: Tier 1 = simple average (day 1), Tier 2 = ARIMA (after 6 cycles), Tier 3 = LSTM (v2).                                                   |
 | **Tiptap**         | The rich-text editor (v3.x) used by the admin CMS for bilingual article creation.                                                                                   |
 | **UAT**            | User Acceptance Testing.                                                                                                                                            |
+| **MO (Mobile Originated)** | An SMS sent by a subscriber to the application's short code. Received via the `/api/webhooks/sms/receive` inbound webhook. |
+| **MT (Mobile Terminated)** | An SMS sent from the application to a subscriber's handset via the BDApps SMS Send API. |
+| **SMS Broadcast** | Sending an SMS to all subscribers at once using `destinationAddresses: ["tel:all"]` in the BDApps SMS Send API. |
+| **Webhook** | An HTTP endpoint exposed by the application that receives inbound event notifications (callbacks) from BDApps. |
 
 
 ### 1.4 References
@@ -249,6 +254,8 @@ The system provides the following major capabilities. Each item below is expande
 | Content CMS (Tiptap)                            | FR-CMS       | P2       |
 | Population analytics & prediction accuracy      | FR-ANALYTICS | P2       |
 | Data export (CSV / Excel)                       | FR-EXPORT    | P2       |
+| SMS content circulation via BDApps              | FR-SMS       | P1       |
+| BDApps inbound webhook endpoints                | FR-WEBHOOK   | P0       |
 
 
 ### 2.3 User Characteristics
@@ -296,10 +303,10 @@ v1 shall ship in four weeks. The scope is fixed by the buckets below. Anything i
 
 | Priority             | Window     | Features                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | -------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **P0 (Must Have)**   | Weeks 1–2  | Phone auth + BDApps OTP verification • Multi-profile accounts (self, wife, sister, mother, daughter, girlfriend) • Bilingual UI (EN + BN, i18next) • Period tracking (start/end, flow intensity, retroactive editing) • Cycle dashboard (day hero, phase label, countdown) • Monthly calendar (period / fertile / ovulation) • Symptom logging (30+ symptoms, 4 categories) • Three-tier prediction engine (Avg → ARIMA → LSTM stub) • Onboarding flow (trust screens, goal, cycle history) • Field-level encryption (AES-256-GCM) • Profile switcher with data isolation • **Subscription schema (FR-GATE) — gating logic deferred** • Redis session store + JWT blacklist • BDApps CAAS charging for Pro • Auto-disable Pro on charging lapse + grace period |
-| **P1 (Should Have)** | Week 3     | Email notifications (period alert, fertile window, logging reminder) • Content platform (bilingual articles, phase-based) • Notification preferences per-profile                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **P0 (Must Have)**   | Weeks 1–2  | Phone auth + BDApps OTP verification • Multi-profile accounts (self, wife, sister, mother, daughter, girlfriend) • Bilingual UI (EN + BN, i18next) • Period tracking (start/end, flow intensity, retroactive editing) • Cycle dashboard (day hero, phase label, countdown) • Monthly calendar (period / fertile / ovulation) • Symptom logging (30+ symptoms, 4 categories) • Three-tier prediction engine (Avg → ARIMA → LSTM stub) • Onboarding flow (trust screens, goal, cycle history) • Field-level encryption (AES-256-GCM) • Profile switcher with data isolation • **Subscription schema (FR-GATE) — gating logic deferred** • Redis session store + JWT blacklist • BDApps CAAS charging for Pro • BDApps webhook endpoints (SMS receive, SMS report, USSD, subscription/CAAS notifications) |
+| **P1 (Should Have)** | Week 3     | Email notifications (period alert, fertile window, logging reminder) • Content platform (bilingual articles, phase-based) • Notification preferences per-profile • SMS content circulation (admin batch upload, daily broadcast via BDApps SMS Send API)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | **P2 (Could Have)**  | Week 4     | Admin dashboard + user management • Content CMS (Tiptap) • Population health analytics • Prediction accuracy reports • **Single Super Admin role** (Content Admin role removed) • Admin session + subscription management • Data export (CSV / Excel)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| **Won't Have**       | v2 backlog | Partner sharing • Pregnancy mode • SMS notifications • Native mobile apps • AI health chatbot • Doctor consultations • Medicine / sleep / exercise tracker • Community forum                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Won't Have**       | v2 backlog | Partner sharing • Pregnancy mode • SMS notifications • Native mobile apps • AI health chatbot • Doctor consultations • Medicine / sleep / exercise tracker • Community forum • Auto-disable Pro on charging lapse + grace period (deferred from v1 P0)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 
 ---
@@ -429,6 +436,38 @@ User enters phone
 
 Free-tier limits shall be respected: 3,000 emails/month, 100/day. Notification preferences are per-profile and shall respect opt-out flags.
 
+##### 3.1.3.4 BDApps SMS Send API — Content Broadcast
+
+**Endpoint:** `POST https://developer.bdapps.com/sms/send`
+**Authentication:** `applicationId` + `password` in request body.
+**Method:** `POST` with `Content-Type: application/json`.
+
+| Parameter | Required | Description |
+|---|---|---|
+| `applicationId` | yes | BDApps application identifier (from environment) |
+| `password` | yes | BDApps application password (from environment) |
+| `message` | yes | SMS content text |
+| `destinationAddresses` | yes | Array of MSISDNs, or `["tel:all"]` for broadcast to all subscribers |
+| `sourceAddress` | no | Sender ID / short code |
+| `deliveryStatusRequest` | no | `1` to receive delivery reports via webhook; `0` to skip |
+
+**Success response fields:** `messageId` (unique message identifier), `status` (`SUCCESS` / `FAILED`).
+
+**Broadcast capability:** Setting `destinationAddresses` to `["tel:all"]` sends the SMS to every active subscriber. This is the mechanism used for daily health-content circulation.
+
+##### 3.1.3.5 BDApps Inbound Webhooks
+
+The application shall expose four route-handler endpoints to receive inbound event callbacks from BDApps. These URLs are registered in the BDApps developer portal.
+
+| Webhook endpoint | BDApps event | Key payload fields |
+|---|---|---|
+| `POST /api/webhooks/sms/receive` | Inbound SMS (MO) from subscriber | `sourceAddress`, `message`, `messageId`, `timeStamp` |
+| `POST /api/webhooks/sms/report` | SMS delivery status report | `destinationAddress`, `requestId`, `deliveryStatus` (`DELIVERED` / `FAILED` / `PENDING`), `timeStamp` |
+| `POST /api/webhooks/ussd/receive` | USSD session events | `subscriberId`, `ussdContent`, `sessionId`, `status` |
+| `POST /api/webhooks/subscription/notify` | Subscription status changes and CAAS payment confirmations | `subscriberId`, `status` (`ACTIVE` / `INACTIVE` / `SUSPENDED` / `EXPIRED`), `reason`, `timeStamp` |
+
+All webhook endpoints shall respond with HTTP 200 within 5 seconds. Validation shall be enforced via IP whitelist or request signature as configured in the BDApps portal.
+
 #### 3.1.4 Communications Interface Requirements
 
 
@@ -438,6 +477,7 @@ Free-tier limits shall be respected: 3,000 emails/month, 100/day. Notification p
 | CIR-02 | JWT cookies shall be `HttpOnly`, `Secure`, and `SameSite=Lax`.                                           |
 | CIR-03 | Cron endpoints shall reject any request whose `CRON_SECRET` header does not match the configured secret. |
 | CIR-04 | BDApps requests and responses shall use `Content-Type: application/json`.                                |
+| CIR-05 | Webhook endpoints shall validate inbound BDApps requests via IP whitelist or payload signature verification. |
 
 
 ### 3.2 Functional Requirements
@@ -589,16 +629,16 @@ Each functional requirement below states the expected behaviour and the testable
 - When the user selects the Pro plan, the system shall call BDApps `caas/direct/debit`.
 - On success, a subscription record shall be created and Pro features shall be unlocked immediately.
 - A daily cron at 02:00 UTC shall call `caas/get/balance` for all Pro subscribers.
-- On a balance-check failure, the system shall increment the `consecutive_failures` counter.
-- After N consecutive failures (configurable), the system shall start a grace-period countdown.
-- At grace-period expiry, the system shall disable Pro and shall send an email warning to the user.
-- Transient BDApps errors shall be tolerated; only N consecutive failures shall trigger lapse.
+- On a balance-check failure, the system shall increment the `consecutive_failures` counter. **(deferred — v2)**
+- After N consecutive failures (configurable), the system shall start a grace-period countdown. **(deferred — v2)**
+- At grace-period expiry, the system shall disable Pro and shall send an email warning to the user. **(deferred — v2)**
+- Transient BDApps errors shall be tolerated; only N consecutive failures shall trigger lapse. **(deferred — v2)**
 
 **Acceptance criteria:**
 
 - A Pro upgrade via CAAS shall charge the mobile balance and shall update `subscription_status` within one API request.
 - The daily CAAS cron shall run at 02:00 UTC and shall update the subscriptions table (verifiable in logs).
-- A grace period shall activate on simulated N consecutive failures; Pro shall be revoked at expiry.
+- A grace period shall activate on simulated N consecutive failures; Pro shall be revoked at expiry. **(deferred — v2)**
 - A real BDApps CAAS charge shall be verified in production.
 
 #### FR-GATE — Feature Gating (Schema-Only in v1)
@@ -668,6 +708,29 @@ Each functional requirement below states the expected behaviour and the testable
 - The blacklist entry TTL shall match the remaining JWT lifetime; there shall be no permanent growth of blacklist storage.
 - More than three OTP requests per minute from the same MSISDN shall return HTTP 429.
 
+#### FR-WEBHOOK — BDApps Inbound Webhooks
+
+**Priority:** P0
+
+**Requirements:**
+
+- The system shall expose four Next.js route-handler endpoints to receive BDApps webhook callbacks: `/api/webhooks/sms/receive`, `/api/webhooks/sms/report`, `/api/webhooks/ussd/receive`, `/api/webhooks/subscription/notify`.
+- Each endpoint shall validate the inbound request via IP whitelist or signature verification as configured in the BDApps portal.
+- Each endpoint shall persist the event payload in a `webhook_events` log table for audit and debugging.
+- The `/api/webhooks/subscription/notify` endpoint shall update `subscription_status` in the `subscriptions` table on status changes (ACTIVE → pro; INACTIVE / SUSPENDED / EXPIRED → lapsed).
+- The `/api/webhooks/sms/report` endpoint shall update the delivery status for the corresponding SMS broadcast message.
+- The `/api/webhooks/sms/receive` endpoint shall log inbound subscriber messages for admin review.
+- The `/api/webhooks/ussd/receive` endpoint shall log USSD session events; interactive USSD menus are deferred to v2.
+- All webhook handlers shall respond with HTTP 200 within 5 seconds to prevent BDApps retry storms.
+- Duplicate events (same `messageId` or `timeStamp`) shall be deduplicated via idempotency checks.
+
+**Acceptance criteria:**
+
+- Each webhook endpoint shall return HTTP 200 on a valid BDApps payload and HTTP 401 on an invalid or unsigned request.
+- A subscription status change via the subscription/notify webhook shall update `subscription_status` in the database within 1 second.
+- An SMS delivery report shall update the broadcast message status visible in the admin panel.
+- Duplicate webhook payloads shall not create duplicate records.
+
 #### FR-NOTIF — Email Notifications & Per-Profile Preferences
 
 **Priority:** P1
@@ -703,6 +766,27 @@ Each functional requirement below states the expected behaviour and the testable
 - The article list shall filter by phase tag and shall render correctly in both languages.
 - Switching the language toggle shall update the body text without a page reload.
 - An article missing a translation shall display a clear locale-fallback indicator.
+
+#### FR-SMS — SMS Content Circulation via BDApps
+
+**Priority:** P1
+
+**Requirements:**
+
+- The Super Admin shall be able to create SMS content messages (short health tips, reminders, educational content) in both English and Bengali.
+- The admin panel shall support batch-uploading multiple SMS messages via CSV upload or a form-based bulk-entry interface.
+- The admin shall be able to schedule messages for daily dispatch — one message per day from the queue, sent during the existing daily-reminders cron window (08:00 UTC).
+- The system shall call BDApps `sms/send` with `destinationAddresses: ["tel:all"]` to broadcast the day's scheduled message to all subscribers.
+- The system shall set `deliveryStatusRequest: 1` on every broadcast so delivery reports are received via the `/api/webhooks/sms/report` webhook.
+- SMS dispatch shall be folded into the existing `/api/cron/daily-reminders` cron job (08:00 UTC) to stay within the 2-job Vercel Hobby limit.
+- The admin panel shall display send history: message content, scheduled date, actual send time, and delivery-status summary (delivered / failed / pending counts sourced from webhook reports).
+
+**Acceptance criteria:**
+
+- An admin shall upload 7 messages via CSV; the system shall send one per day for 7 consecutive days to all subscribers.
+- A `tel:all` broadcast shall be confirmed working in the BDApps sandbox or production environment.
+- Delivery-report webhooks shall be received and the admin panel shall reflect accurate delivery statistics.
+- Bengali SMS content shall render correctly on recipient handsets (encoding verified).
 
 #### FR-ADMIN — Admin Dashboard, User & Subscription Management
 
@@ -803,7 +887,7 @@ The constraints in [§2.4](#24-constraints) (CON-TECH-01 – CON-TECH-05, CON-RE
 
 | ID             | Requirement                                                                                                         | Verification                                                                                                 |
 | -------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **NFR-REL-01** | Transient BDApps errors shall not cause Pro lapse; only N consecutive failures shall trigger the grace-period flow. | Failure-injection test: simulate transient errors; subscription remains active until N consecutive failures. |
+| **NFR-REL-01** | Transient BDApps errors shall not cause Pro lapse; only N consecutive failures shall trigger the grace-period flow. **(deferred — v2)** | Failure-injection test: simulate transient errors; subscription remains active until N consecutive failures. |
 
 
 #### 3.5.2 Availability
@@ -823,6 +907,7 @@ The constraints in [§2.4](#24-constraints) (CON-TECH-01 – CON-TECH-05, CON-RE
 | **NFR-SEC-04** | No third-party analytics scripts shall touch health-event data.                            | Network-panel audit shall confirm zero health-event payloads sent to third-party domains. |
 | **NFR-SEC-05** | All admin routes (`/admin/`*) shall be protected by Super Admin authentication middleware. | Smoke test: a non-admin token to any `/admin/*` route shall return HTTP 403.              |
 | **NFR-SEC-06** | JWT cookies shall be `HttpOnly`, `Secure`, and `SameSite=Lax`.                             | Browser dev-tools inspection shall confirm cookie flags.                                  |
+| **NFR-SEC-07** | Webhook endpoints shall validate inbound BDApps requests and shall reject requests that fail IP or signature checks with HTTP 401. | Smoke test: a request from a non-whitelisted IP to any `/api/webhooks/*` route shall return 401. |
 
 
 #### 3.5.4 Maintainability
@@ -830,7 +915,7 @@ The constraints in [§2.4](#24-constraints) (CON-TECH-01 – CON-TECH-05, CON-RE
 
 | ID               | Requirement                                                                                                 | Verification                                                                                    |
 | ---------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| **NFR-MAINT-01** | The grace-period length shall be configurable without a code deploy. *(NFR-BILL-02 in source.)*             | DB-config update shall change the grace period and the new value shall take effect immediately. |
+| **NFR-MAINT-01** | The grace-period length shall be configurable without a code deploy. *(NFR-BILL-02 in source.)* **(deferred — v2)** | DB-config update shall change the grace period and the new value shall take effect immediately. |
 | **NFR-MAINT-02** | The pinned Prisma version (6.13.x) shall be honoured until `prisma-field-encryption` certifies a newer one. | Dependency lockfile audit.                                                                      |
 
 
@@ -865,7 +950,7 @@ The constraints in [§2.4](#24-constraints) (CON-TECH-01 – CON-TECH-05, CON-RE
 | ID              | Requirement                                                                                             | Verification                                                                  |
 | --------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | **NFR-BILL-01** | *(Deferred — post-v1.)* Pro features shall be gated within one API request of a successful CAAS charge. | Schema is in place (FR-GATE); middleware enforcement is not part of v1 scope. |
-| **NFR-BILL-02** | Grace-period length shall be configurable without a code deploy.                                        | DB config; change grace period; new value shall take effect immediately.      |
+| **NFR-BILL-02** | Grace-period length shall be configurable without a code deploy. **(deferred — v2)**                    | DB config; change grace period; new value shall take effect immediately.      |
 
 
 ### 3.6 Other Requirements
@@ -904,8 +989,8 @@ The database shall be PostgreSQL 16 on Supabase with Row Level Security enabled 
 
 | Path                        | Schedule                      | Purpose                                                                                                           | Auth                 |
 | --------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------- |
-| `/api/cron/daily-reminders` | `0 8 * * `* (08:00 UTC daily) | Check notification preferences; dispatch email jobs to QStash                                                     | `CRON_SECRET` header |
-| `/api/cron/caas-check`      | `0 2 * * *` (02:00 UTC daily) | Query balance for all Pro subscribers; update `consecutive_failures`; trigger grace period or revoke Pro on lapse | `CRON_SECRET` header |
+| `/api/cron/daily-reminders` | `0 8 * * `* (08:00 UTC daily) | Check notification preferences; dispatch email jobs to QStash + dispatch next scheduled SMS broadcast (FR-SMS)    | `CRON_SECRET` header |
+| `/api/cron/caas-check`      | `0 2 * * *` (02:00 UTC daily) | Query balance for all Pro subscribers; update `consecutive_failures`; trigger grace period or revoke Pro on lapse (auto-disable deferred to v2) | `CRON_SECRET` header |
 
 
 **Upgrade Path.**
@@ -947,7 +1032,7 @@ The system shall not be considered production-ready until all of the following g
 ### Billing — BDApps CAAS
 
 - Pro upgrade via CAAS shall charge mobile balance and shall update `subscription_status` to `pro` in DB (gating deferred — post-v1).
-- The daily CAAS cron shall run; the grace period shall activate on lapse; Pro shall be revoked at grace expiry.
+- The daily CAAS cron shall run; the grace period shall activate on lapse; Pro shall be revoked at grace expiry. **(deferred — v2)**
 - BDApps CAAS charge shall be verified with a real transaction in the production environment.
 
 ### Admin Panel
@@ -959,6 +1044,15 @@ The system shall not be considered production-ready until all of the following g
 
 - Field encryption shall be verified: sensitive symptom data shall be cipher text in the database.
 - Zero third-party analytics scripts shall touch health-event data.
+
+### SMS Content Circulation
+
+- [ ] SMS broadcast via BDApps `sms/send` with `tel:all` shall deliver to all subscribers; delivery reports shall be received via webhook.
+
+### BDApps Webhooks
+
+- [ ] All four webhook endpoints (`/api/webhooks/sms/receive`, `/sms/report`, `/ussd/receive`, `/subscription/notify`) shall be registered in BDApps, receiving events, and persisting them.
+- [ ] Subscription status changes via webhook shall update `subscription_status` in the database.
 
 ### Production & Responsiveness
 
@@ -999,9 +1093,9 @@ Error path:
 | ---- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1    | User selects Pro plan                | Frontend calls backend → backend calls `caas/direct/debit`. On success, the `subscriptions` record is created with status `ACTIVE`. Pro features are unlocked immediately.                  |
 | 2    | Daily balance check (02:00 UTC cron) | Vercel Cron calls `/api/cron/caas-check`. For each Pro subscriber, the system calls `caas/get/balance`. On success, `consecutive_failures` resets to 0. On failure, the counter increments. |
-| 3    | Lapse detection                      | When `consecutive_failures` reaches the configured threshold N, `grace_start = now()`. Pro access remains active during the grace period.                                                   |
-| 4    | Grace-period warning                 | Email is sent warning that Pro access will expire at `grace_start + N` days if billing is not resolved.                                                                                     |
-| 5    | Pro access revoked                   | At grace-period expiry, `subscriptions.status = LAPSED`. Feature gating (when enabled post-v1) blocks Pro features and the user sees an upgrade prompt.                                     |
+| 3    | **(v2)** Lapse detection             | When `consecutive_failures` reaches the configured threshold N, `grace_start = now()`. Pro access remains active during the grace period.                                                   |
+| 4    | **(v2)** Grace-period warning        | Email is sent warning that Pro access will expire at `grace_start + N` days if billing is not resolved.                                                                                     |
+| 5    | **(v2)** Pro access revoked          | At grace-period expiry, `subscriptions.status = LAPSED`. Feature gating (when enabled post-v1) blocks Pro features and the user sees an upgrade prompt.                                     |
 
 
 #### B.3 Infrastructure Diagram
@@ -1056,6 +1150,8 @@ The matrix below maps each Functional Requirement to its priority bucket, the up
 | FR-CMS       | Content CMS (Tiptap)                            | P2       | R1 §5, R6 §3.FR-CMS       | Admin Panel #1; Content #1                 | NFR-SEC-05                            |
 | FR-ANALYTICS | Population Analytics & Prediction Accuracy      | P2       | R1 §5, R6 §3.FR-ANALYTICS | Admin Panel #1                             | NFR-SEC-04, NFR-SEC-05                |
 | FR-EXPORT    | Data Export (CSV / Excel)                       | P2       | R1 §5, R6 §3.FR-EXPORT    | (no dedicated DoD; covered by Security #1) | NFR-SEC-01, NFR-SEC-04                |
+| FR-SMS       | SMS Content Circulation via BDApps              | P1       | R1 §5, R5                  | SMS Content Circulation #1                 | NFR-SEC-07                            |
+| FR-WEBHOOK   | BDApps Inbound Webhooks                         | P0       | R5                         | BDApps Webhooks #1, #2                     | NFR-SEC-07, CIR-05                    |
 
 
 ---
