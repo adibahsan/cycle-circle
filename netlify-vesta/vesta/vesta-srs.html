@@ -296,7 +296,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
                 <li>BDApps CAAS charging for Pro subscription</li>
                 <li>Email fallback login with 24-hour trial window <em>(v1.2)</em></li>
                 <li>Profile completion popup (post-OTP) <em>(v1.2)</em></li>
-                <li>Auto-disable Pro on charging lapse + grace period <em>(deferred &mdash; v2)</em></li>
+                <li>Auto-disable Pro on charging lapse + grace period <em>(deferred &mdash; v2)</em> <em>(v1.1)</em></li>
               </ul>
             </td>
           </tr>
@@ -559,10 +559,10 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
           <div class="fr-item"><div class="fr-dot"></div><span>User selects Pro plan → system calls BDApps <code>caas/direct/debit</code></span></div>
           <div class="fr-item"><div class="fr-dot"></div><span>On success: subscription record created, Pro features unlocked immediately</span></div>
           <div class="fr-item"><div class="fr-dot"></div><span>Daily cron (02:00 UTC) calls <code>caas/get/balance</code> for all Pro subscribers</span></div>
-          <div class="fr-item"><div class="fr-dot"></div><span>On balance check failure: increment consecutive_failures counter</span></div>
-          <div class="fr-item"><div class="fr-dot"></div><span>After N consecutive failures (configurable): start grace period countdown</span></div>
-          <div class="fr-item"><div class="fr-dot"></div><span>At grace period expiry: disable Pro, send email warning to user</span></div>
-          <div class="fr-item"><div class="fr-dot"></div><span>Transient BDApps errors tolerated — only N consecutive failures trigger lapse</span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>On balance check failure: increment consecutive_failures counter <em>(deferred — v2)</em> <em>(v1.1)</em></span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>After N consecutive failures (configurable): start grace period countdown <em>(deferred — v2)</em> <em>(v1.1)</em></span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>At grace period expiry: disable Pro, send final email warning to user <em>(deferred — v2)</em> <em>(v1.1)</em></span></div>
+          <div class="fr-item"><div class="fr-dot"></div><span>Transient BDApps errors tolerated — only N consecutive failures trigger lapse <em>(deferred — v2)</em> <em>(v1.1)</em></span></div>
           <div class="fr-item"><div class="fr-dot"></div><span>Grace-period warnings display renewal reminders without exposing exact Pro expiration date &mdash; only reminder messaging shown (deferred &mdash; v2) <em>(v1.2)</em></span></div>
         </div>
         <div class="fr-ac">
@@ -1046,22 +1046,22 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
         <div class="lc-step">
           <div class="lc-num">3</div>
           <div class="lc-content">
-            <div class="lc-title">Lapse detection</div>
+            <div class="lc-title">Lapse detection <em>(deferred — v2)</em> <em>(v1.1)</em></div>
             <div class="lc-desc">When consecutive_failures reaches the configured threshold N: set grace_start = now(). Pro access still active during grace period.</div>
           </div>
         </div>
         <div class="lc-step">
           <div class="lc-num">4</div>
           <div class="lc-content">
-            <div class="lc-title">Grace period warning</div>
-            <div class="lc-desc">Email sent to user warning that Pro access will expire at grace_start + N days if billing is not resolved.</div>
+            <div class="lc-title">Grace period warning <em>(deferred — v2)</em> <em>(v1.1)</em></div>
+            <div class="lc-desc">Warning notifications sent encouraging renewal. The system does NOT display the exact Pro expiration date or cutoff timing — only reminder messaging (e.g. "Please renew your subscription soon") to encourage renewal. <em>(v1.2)</em></div>
           </div>
         </div>
         <div class="lc-step">
           <div class="lc-num">5</div>
           <div class="lc-content">
-            <div class="lc-title">Pro access revoked</div>
-            <div class="lc-desc">At grace period expiry: subscriptions.status set to LAPSED. Feature gating middleware blocks Pro features. User sees upgrade prompt.</div>
+            <div class="lc-title">Pro access revoked <em>(deferred — v2)</em> <em>(v1.1)</em></div>
+            <div class="lc-desc">At grace period expiry: subscriptions.status set to LAPSED. Feature gating (when enabled post-v1) blocks Pro features. User sees upgrade prompt.</div>
           </div>
         </div>
       </div>
@@ -1279,7 +1279,7 @@ pre.json{background:#f8f9fa;border:1.5px solid #e5e7eb;border-radius:8px;padding
       <div class="dod-card">
         <div class="dod-title">Billing — BDApps CAAS</div>
         <div class="dod-item"><div class="dod-check">□</div><span>Pro upgrade via CAAS charges mobile balance and updates <code>subscription_status</code> to <code>pro</code> in DB (gating deferred — post-v1)</span></div>
-        <div class="dod-item"><div class="dod-check">□</div><span>Daily CAAS cron runs; grace period activates on lapse; Pro revoked at grace expiry</span></div>
+        <div class="dod-item"><div class="dod-check">□</div><span>Daily CAAS cron runs; grace period activates on lapse; Pro revoked at grace expiry <em>(deferred — v2)</em> <em>(v1.1)</em></span></div>
         <div class="dod-item"><div class="dod-check">□</div><span>BDApps CAAS charge verified with a real transaction in production environment</span></div>
       </div>
       <div class="dod-card">
