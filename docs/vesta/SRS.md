@@ -33,6 +33,15 @@
 | 1.2     | 2026-05-09 | Adib | Client feedback: email fallback auth with 24h trial window; SMS period/fertile alerts for subscribers; profile completion flow post-OTP; in-app feedback module (FR-FEEDBACK); grace period warning policy (no expiry date shown) |
 
 
+### Revision Markers
+
+Items added or changed in revisions are marked inline throughout this document:
+
+- ***(v1.1)*** — Added in version 1.1 (2026-05-03): FR-SMS, FR-WEBHOOK, BDApps SMS Send API, inbound webhooks, Pro auto-disable deferred to v2.
+- ***(v1.2)*** — Added in version 1.2 (2026-05-09): Email fallback auth with 24h trial window, profile completion flow, in-app feedback module (FR-FEEDBACK), SMS period/fertile alerts for subscribers, content override logic, grace period warning policy.
+- ***(v1.1; updated v1.2)*** — Introduced in v1.1 and subsequently modified in v1.2.
+
+
 ---
 
 ## Table of Contents
@@ -108,7 +117,7 @@ Vesta v1 shall deliver phone-number-based account management (verified via BDApp
 | **CAAS**           | Carrier Aggregated Application Services — the BDApps billing system that charges a user's mobile balance via direct-debit API.                                      |
 | **CRON_SECRET**    | Shared secret in the `Authorization` (or custom) header that authenticates Vercel Cron requests to internal endpoints.                                              |
 | **DoD**            | Definition of Done — the formal acceptance gates that shall pass before production release.                                                                         |
-| **Email Trial Window** | A 24-hour limited-access period granted to users who authenticate via the email fallback method. During this window the platform collects required user data; after expiry, premium features are locked until subscription. |
+| **Email Trial Window** | A 24-hour limited-access period granted to users who authenticate via the email fallback method. During this window the platform collects required user data; after expiry, premium features are locked until subscription. *(v1.2)* |
 | **Grace Period**   | Configurable N-day window after a CAAS balance-check failure during which Pro access remains active before being revoked.                                           |
 | **JWT**            | JSON Web Token — issued in an HttpOnly cookie on successful OTP verification. Carries a `jti` claim used by the blacklist mechanism.                                |
 | **LSTM**           | Long Short-Term Memory neural network — Tier 3 prediction model stub planned for v2; not implemented in v1.                                                         |
@@ -118,17 +127,17 @@ Vesta v1 shall deliver phone-number-based account management (verified via BDApp
 | **NFR**            | Non-Functional Requirement.                                                                                                                                         |
 | **OTP**            | One-Time Password — 4–6 digit code delivered to a user's phone by BDApps for account verification.                                                                  |
 | **PII**            | Personally Identifiable Information.                                                                                                                                |
-| **Profile Completion Flow** | A post-login popup (triggered ~1 minute after OTP verification) that collects the user's full name, verified phone number, and required profile details. Necessary because OTP verification alone does not reliably persist the phone number in the database. |
+| **Profile Completion Flow** | A post-login popup (triggered ~1 minute after OTP verification) that collects the user's full name, verified phone number, and required profile details. Necessary because OTP verification alone does not reliably persist the phone number in the database. *(v1.2)* |
 | **QStash**         | Upstash QStash — HTTP-based serverless job queue replacing BullMQ for asynchronous jobs (email delivery, prediction recalculation).                                 |
 | **RLS**            | Row Level Security — PostgreSQL feature restricting which rows a database session can read. Enforced per `user_id` at Supabase.                                     |
 | **RBAC**           | Role-Based Access Control. v1 has a single admin role (Super Admin).                                                                                                |
 | **Tier 1 / 2 / 3** | The three prediction tiers: Tier 1 = simple average (day 1), Tier 2 = ARIMA (after 6 cycles), Tier 3 = LSTM (v2).                                                   |
 | **Tiptap**         | The rich-text editor (v3.x) used by the admin CMS for bilingual article creation.                                                                                   |
 | **UAT**            | User Acceptance Testing.                                                                                                                                            |
-| **MO (Mobile Originated)** | An SMS sent by a subscriber to the application's short code. Received via the `/api/webhooks/sms/receive` inbound webhook. |
-| **MT (Mobile Terminated)** | An SMS sent from the application to a subscriber's handset via the BDApps SMS Send API. |
-| **SMS Broadcast** | Sending an SMS to all subscribers at once using `destinationAddresses: ["tel:all"]` in the BDApps SMS Send API. |
-| **Webhook** | An HTTP endpoint exposed by the application that receives inbound event notifications (callbacks) from BDApps. |
+| **MO (Mobile Originated)** | An SMS sent by a subscriber to the application's short code. Received via the `/api/webhooks/sms/receive` inbound webhook. *(v1.1)* |
+| **MT (Mobile Terminated)** | An SMS sent from the application to a subscriber's handset via the BDApps SMS Send API. *(v1.1)* |
+| **SMS Broadcast** | Sending an SMS to all subscribers at once using `destinationAddresses: ["tel:all"]` in the BDApps SMS Send API. *(v1.1)* |
+| **Webhook** | An HTTP endpoint exposed by the application that receives inbound event notifications (callbacks) from BDApps. *(v1.1)* |
 
 
 ### 1.4 References
@@ -257,9 +266,9 @@ The system provides the following major capabilities. Each item below is expande
 | Content CMS (Tiptap)                            | FR-CMS       | P2       |
 | Population analytics & prediction accuracy      | FR-ANALYTICS | P2       |
 | Data export (CSV / Excel)                       | FR-EXPORT    | P2       |
-| SMS content circulation via BDApps              | FR-SMS       | P1       |
-| BDApps inbound webhook endpoints                | FR-WEBHOOK   | P0       |
-| In-app feedback module                          | FR-FEEDBACK  | P1       |
+| SMS content circulation via BDApps              | FR-SMS       | P1       | *(v1.1)* |
+| BDApps inbound webhook endpoints                | FR-WEBHOOK   | P0       | *(v1.1)* |
+| In-app feedback module                          | FR-FEEDBACK  | P1       | *(v1.2)* |
 
 
 ### 2.3 User Characteristics
@@ -270,7 +279,7 @@ The system provides the following major capabilities. Each item below is expande
 | **End User**       | Individual tracking her own cycle. Primary persona. Uses a phone-number account on the free tier. Assumed literacy in either Bengali or English; comfortable with smartphone web apps. | Onboarding, period logging, dashboard, calendar, symptom logging                              |
 | **Family Manager** | A user who manages profiles for family members (wife, sister, mother, daughter, girlfriend). Up to six profiles per account.                                                           | Profile switcher, per-profile data isolation                                                  |
 | **Pro Subscriber** | A user who has upgraded to Pro via BDApps CAAS direct debit. The subscription field is persisted in v1 even though feature gating is deferred.                                         | Subscription flow; grace-period notifications                                                 |
-| **Email Trial User** | A transient user class — a user who authenticated via email fallback (OTP unavailable). Has a 24-hour limited-access window to explore basic features and complete profile data. After 24 hours, premium features are locked until subscription. | Profile completion, basic feature exploration, data collection |
+| **Email Trial User** *(v1.2)* | A transient user class — a user who authenticated via email fallback (OTP unavailable). Has a 24-hour limited-access window to explore basic features and complete profile data. After 24 hours, premium features are locked until subscription. | Profile completion, basic feature exploration, data collection |
 | **Super Admin**    | Technical owner with full system access — user management, subscription management, analytics, and bilingual content publishing. (v1 has no separate Content Admin role.)              | Admin panel, session management, KPIs, Tiptap CMS, article publish/edit, phase-tag assignment |
 
 
@@ -279,7 +288,7 @@ The system provides the following major capabilities. Each item below is expande
 
 | ID          | Constraint                              | Detail                                                                      | Impact                                                                                                          |
 | ----------- | --------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| CON-TECH-01 | BDApps OTP as primary authentication    | Primary auth is BDApps OTP; email login is available as fallback when OTP is unavailable. Email-authenticated users receive a 24-hour limited-access trial window. | Primary sign-up uses phone numbers in `tel:8801XXXXXXXXX` format; email fallback grants time-limited access     |
+| CON-TECH-01 | BDApps OTP as primary authentication *(v1.2)* | Primary auth is BDApps OTP; email login is available as fallback when OTP is unavailable. Email-authenticated users receive a 24-hour limited-access trial window. | Primary sign-up uses phone numbers in `tel:8801XXXXXXXXX` format; email fallback grants time-limited access     |
 | CON-TECH-02 | Vercel Hobby 10-second function timeout | Serverless functions shall complete within 10 s                             | Prediction recalculation shall be asynchronous via QStash; no synchronous long jobs                             |
 | CON-TECH-03 | Supabase Free 500 MB storage            | Free tier PostgreSQL is capped at 500 MB before auto-pause                  | Encrypted health blobs increase row size; storage shall be monitored and the upgrade trigger shall be respected |
 | CON-REG-01  | BDT currency only                       | BDApps CAAS processes only Bangladeshi Taka                                 | Pro subscription pricing shall be denominated in BDT                                                            |
@@ -299,8 +308,8 @@ The system provides the following major capabilities. Each item below is expande
 | AD-05 | Users have consistent enough internet connectivity to complete OTP verification within the 60-second resend cooldown.                                                       |
 | AD-06 | The Pro subscription pricing model is monthly direct-debit; no annual or one-time billing is in scope for v1.                                                               |
 | AD-07 | LSTM (Tier 3) prediction is explicitly deferred to v2; Tier 3 in v1 is a stub.                                                                                              |
-| AD-08 | Email login is a secondary fallback method; the majority of users are expected to authenticate via BDApps OTP. Email login via Resend magic-link counts against the 3K/mo free-tier email budget. |
-| AD-09 | The profile-completion popup (~1 minute after OTP login) is necessary because BDApps OTP verification alone does not reliably persist the user's phone number in the database. |
+| AD-08 | Email login is a secondary fallback method; the majority of users are expected to authenticate via BDApps OTP. Email login via Resend magic-link counts against the 3K/mo free-tier email budget. *(v1.2)* |
+| AD-09 | The profile-completion popup (~1 minute after OTP login) is necessary because BDApps OTP verification alone does not reliably persist the user's phone number in the database. *(v1.2)* |
 
 
 ### 2.6 Release Plan — 4-Week MoSCoW
@@ -443,7 +452,7 @@ User enters phone
 
 Free-tier limits shall be respected: 3,000 emails/month, 100/day. Notification preferences are per-profile and shall respect opt-out flags.
 
-##### 3.1.3.4 BDApps SMS Send API — Content Broadcast
+##### 3.1.3.4 BDApps SMS Send API — Content Broadcast *(v1.1)*
 
 **Endpoint:** `POST https://developer.bdapps.com/sms/send`
 **Authentication:** `applicationId` + `password` in request body.
@@ -462,7 +471,7 @@ Free-tier limits shall be respected: 3,000 emails/month, 100/day. Notification p
 
 **Broadcast capability:** Setting `destinationAddresses` to `["tel:all"]` sends the SMS to every active subscriber. This is the mechanism used for daily health-content circulation.
 
-##### 3.1.3.5 BDApps Inbound Webhooks
+##### 3.1.3.5 BDApps Inbound Webhooks *(v1.1)*
 
 The application shall expose four route-handler endpoints to receive inbound event callbacks from BDApps. These URLs are registered in the BDApps developer portal.
 
@@ -484,14 +493,14 @@ All webhook endpoints shall respond with HTTP 200 within 5 seconds. Validation s
 | CIR-02 | JWT cookies shall be `HttpOnly`, `Secure`, and `SameSite=Lax`.                                           |
 | CIR-03 | Cron endpoints shall reject any request whose `CRON_SECRET` header does not match the configured secret. |
 | CIR-04 | BDApps requests and responses shall use `Content-Type: application/json`.                                |
-| CIR-05 | Webhook endpoints shall validate inbound BDApps requests via IP whitelist or payload signature verification. |
+| CIR-05 | Webhook endpoints shall validate inbound BDApps requests via IP whitelist or payload signature verification. *(v1.1)* |
 
 
 ### 3.2 Functional Requirements
 
 Each functional requirement below states the expected behaviour and the testable acceptance criteria. All requirements are written in the imperative voice using "shall" for mandatory behaviour. Priority follows the MoSCoW buckets in §2.6 (P0 = Must, P1 = Should, P2 = Could).
 
-#### FR-AUTH — Phone Authentication via BDApps OTP (with Email Fallback)
+#### FR-AUTH — Phone Authentication via BDApps OTP (with Email Fallback) *(updated v1.2)*
 
 **Priority:** P0
 
@@ -505,7 +514,7 @@ Each functional requirement below states the expected behaviour and the testable
 - On successful verification, the system shall issue a JWT in an `HttpOnly` cookie.
 - On logout, the system shall add the JWT's `jti` to an Upstash Redis blacklist.
 
-**Requirements — Email fallback:**
+**Requirements — Email fallback:** *(v1.2)*
 
 - If BDApps OTP is unavailable or login is unsuccessful after retries, the system shall offer email-based login as an alternative method.
 - Email login shall use a magic-link flow delivered via Resend.
@@ -515,7 +524,7 @@ Each functional requirement below states the expected behaviour and the testable
 - The system shall track `auth_method` (`otp` | `email`) and `email_trial_expires_at` on the user record.
 - The 24-hour trial ensures full onboarding data collection during the window while enabling conversion to paid users.
 
-**Requirements — Profile completion flow (post-login):**
+**Requirements — Profile completion flow (post-login):** *(v1.2)*
 
 - After successful OTP verification, a profile-completion popup shall appear approximately 1 minute after login, prompting the user to provide all required personal information.
 - The popup shall collect: full name, verified phone number, and required profile details.
@@ -530,10 +539,10 @@ Each functional requirement below states the expected behaviour and the testable
 - The resend button shall remain disabled for 60 s, then re-enable.
 - A logged-out JWT shall be rejected on subsequent API calls.
 - The rate limiter shall block more than three OTP requests per minute from the same IP.
-- When OTP is unavailable, the email fallback login screen shall be displayed and a magic-link email shall be delivered via Resend.
-- An email-authenticated user shall have full basic-feature access for 24 hours; after expiry, premium features shall return HTTP 403.
-- The profile-completion popup shall appear ~1 minute after OTP login and shall persist until the user completes all required fields.
-- A user who dismisses the popup shall be re-prompted on the next login.
+- When OTP is unavailable, the email fallback login screen shall be displayed and a magic-link email shall be delivered via Resend. *(v1.2)*
+- An email-authenticated user shall have full basic-feature access for 24 hours; after expiry, premium features shall return HTTP 403. *(v1.2)*
+- The profile-completion popup shall appear ~1 minute after OTP login and shall persist until the user completes all required fields. *(v1.2)*
+- A user who dismisses the popup shall be re-prompted on the next login. *(v1.2)*
 
 #### FR-PROFILE — Multi-Profile Account Management
 
@@ -658,11 +667,11 @@ Each functional requirement below states the expected behaviour and the testable
 - When the user selects the Pro plan, the system shall call BDApps `caas/direct/debit`.
 - On success, a subscription record shall be created and Pro features shall be unlocked immediately.
 - A daily cron at 02:00 UTC shall call `caas/get/balance` for all Pro subscribers.
-- On a balance-check failure, the system shall increment the `consecutive_failures` counter. **(deferred — v2)**
-- After N consecutive failures (configurable), the system shall start a grace-period countdown. **(deferred — v2)**
-- Grace-period warning notifications shall display renewal reminders (e.g. "Please renew your subscription") without exposing the exact Pro expiration date or cutoff timing. Only reminder/warning messaging shall be shown to encourage renewal. **(deferred — v2)**
-- At grace-period expiry, the system shall disable Pro and shall send a final email warning to the user. **(deferred — v2)**
-- Transient BDApps errors shall be tolerated; only N consecutive failures shall trigger lapse. **(deferred — v2)**
+- On a balance-check failure, the system shall increment the `consecutive_failures` counter. **(deferred — v2)** *(v1.1)*
+- After N consecutive failures (configurable), the system shall start a grace-period countdown. **(deferred — v2)** *(v1.1)*
+- Grace-period warning notifications shall display renewal reminders (e.g. "Please renew your subscription") without exposing the exact Pro expiration date or cutoff timing. Only reminder/warning messaging shall be shown to encourage renewal. **(deferred — v2)** *(v1.2)*
+- At grace-period expiry, the system shall disable Pro and shall send a final email warning to the user. **(deferred — v2)** *(v1.1)*
+- Transient BDApps errors shall be tolerated; only N consecutive failures shall trigger lapse. **(deferred — v2)** *(v1.1)*
 
 **Acceptance criteria:**
 
@@ -671,7 +680,7 @@ Each functional requirement below states the expected behaviour and the testable
 - A grace period shall activate on simulated N consecutive failures; Pro shall be revoked at expiry. **(deferred — v2)**
 - A real BDApps CAAS charge shall be verified in production.
 
-#### FR-GATE — Feature Gating (Email Trial + Subscription Schema)
+#### FR-GATE — Feature Gating (Email Trial + Subscription Schema) *(updated v1.2)*
 
 **Priority:** P0
 
@@ -679,7 +688,7 @@ Each functional requirement below states the expected behaviour and the testable
 
 - A `subscription_status` column shall exist on the user/profile table with values `free | pro | lapsed` and default `free`.
 - The CAAS billing flow shall keep `subscription_status` accurate so that future Pro/free gating can rely on the field.
-- **Email trial gating (active in v1):** The system shall enforce the 24-hour email trial window. Users authenticated via email shall have `auth_method = 'email'` and `email_trial_expires_at` tracked. After the 24-hour window expires, premium features and sensitive data shall be locked (HTTP 403). Subscription via BDApps CAAS shall be required for continued access.
+- **Email trial gating (active in v1):** *(v1.2)* The system shall enforce the 24-hour email trial window. Users authenticated via email shall have `auth_method = 'email'` and `email_trial_expires_at` tracked. After the 24-hour window expires, premium features and sensitive data shall be locked (HTTP 403). Subscription via BDApps CAAS shall be required for continued access.
 - **Pro/free feature gating (deferred — post-v1):** Subscription-based gating logic (free vs. pro tier enforcement, upgrade prompts, Pro-only endpoints) shall be deferred to post-v1. The schema is in place so gating can be enabled later without a schema change.
 
 **Acceptance criteria:**
@@ -740,7 +749,7 @@ Each functional requirement below states the expected behaviour and the testable
 - The blacklist entry TTL shall match the remaining JWT lifetime; there shall be no permanent growth of blacklist storage.
 - More than three OTP requests per minute from the same MSISDN shall return HTTP 429.
 
-#### FR-WEBHOOK — BDApps Inbound Webhooks
+#### FR-WEBHOOK — BDApps Inbound Webhooks *(v1.1)*
 
 **Priority:** P0
 
@@ -799,11 +808,11 @@ Each functional requirement below states the expected behaviour and the testable
 - Switching the language toggle shall update the body text without a page reload.
 - An article missing a translation shall display a clear locale-fallback indicator.
 
-#### FR-SMS — SMS Notifications & Content Circulation via BDApps
+#### FR-SMS — SMS Notifications & Content Circulation via BDApps *(v1.1; updated v1.2)*
 
 **Priority:** P1
 
-**Requirements — SMS period/fertile alerts (subscriber-only):**
+**Requirements — SMS period/fertile alerts (subscriber-only):** *(v1.2)*
 
 - Pro subscribers shall receive automated SMS notifications before expected period dates and fertile window openings.
 - These SMS alerts may be integrated with the daily content delivery system (sent during the same 08:00 UTC cron window).
@@ -815,17 +824,17 @@ Each functional requirement below states the expected behaviour and the testable
 - The admin panel shall support batch-uploading multiple SMS messages via CSV upload or a form-based bulk-entry interface.
 - The admin shall be able to schedule messages for daily dispatch — one message per day from the queue, sent during the existing daily-reminders cron window (08:00 UTC).
 - The system shall call BDApps `sms/send` with `destinationAddresses: ["tel:all"]` to broadcast the day's scheduled message to all subscribers.
-- **Content override logic:** When new daily content is published, the previous day's content shall automatically be replaced/deactivated. Only the latest content version shall remain active and visible.
+- **Content override logic:** *(v1.2)* When new daily content is published, the previous day's content shall automatically be replaced/deactivated. Only the latest content version shall remain active and visible.
 - The system shall set `deliveryStatusRequest: 1` on every broadcast so delivery reports are received via the `/api/webhooks/sms/report` webhook.
 - SMS dispatch shall be folded into the existing `/api/cron/daily-reminders` cron job (08:00 UTC) to stay within the 2-job Vercel Hobby limit.
 - The admin panel shall display send history: message content, scheduled date, actual send time, and delivery-status summary (delivered / failed / pending counts sourced from webhook reports).
 
 **Acceptance criteria:**
 
-- A Pro subscriber shall receive SMS alerts before predicted period date and fertile window opening.
-- A free-tier user shall NOT receive any SMS alerts — verified by checking the SMS dispatch log.
+- A Pro subscriber shall receive SMS alerts before predicted period date and fertile window opening. *(v1.2)*
+- A free-tier user shall NOT receive any SMS alerts — verified by checking the SMS dispatch log. *(v1.2)*
 - An admin shall upload 7 messages via CSV; the system shall send one per day for 7 consecutive days to all subscribers.
-- Publishing new daily content shall deactivate the previous day's content; only the latest shall be visible.
+- Publishing new daily content shall deactivate the previous day's content; only the latest shall be visible. *(v1.2)*
 - A `tel:all` broadcast shall be confirmed working in the BDApps sandbox or production environment.
 - Delivery-report webhooks shall be received and the admin panel shall reflect accurate delivery statistics.
 - Bengali SMS content shall render correctly on recipient handsets (encoding verified).
@@ -900,7 +909,7 @@ Each functional requirement below states the expected behaviour and the testable
 - A user shall not be able to trigger an export of another user's data even by manipulating the request.
 - The exported file shall contain decrypted symptom values, not cipher text.
 
-#### FR-FEEDBACK — In-App Feedback Module
+#### FR-FEEDBACK — In-App Feedback Module *(v1.2)*
 
 **Priority:** P1
 
@@ -970,7 +979,7 @@ The constraints in [§2.4](#24-constraints) (CON-TECH-01 – CON-TECH-05, CON-RE
 | **NFR-SEC-04** | No third-party analytics scripts shall touch health-event data.                            | Network-panel audit shall confirm zero health-event payloads sent to third-party domains. |
 | **NFR-SEC-05** | All admin routes (`/admin/`*) shall be protected by Super Admin authentication middleware. | Smoke test: a non-admin token to any `/admin/*` route shall return HTTP 403.              |
 | **NFR-SEC-06** | JWT cookies shall be `HttpOnly`, `Secure`, and `SameSite=Lax`.                             | Browser dev-tools inspection shall confirm cookie flags.                                  |
-| **NFR-SEC-07** | Webhook endpoints shall validate inbound BDApps requests and shall reject requests that fail IP or signature checks with HTTP 401. | Smoke test: a request from a non-whitelisted IP to any `/api/webhooks/*` route shall return 401. |
+| **NFR-SEC-07** | Webhook endpoints shall validate inbound BDApps requests and shall reject requests that fail IP or signature checks with HTTP 401. *(v1.1)* | Smoke test: a request from a non-whitelisted IP to any `/api/webhooks/*` route shall return 401. |
 
 
 #### 3.5.4 Maintainability
@@ -1076,9 +1085,9 @@ The system shall not be considered production-ready until all of the following g
 ### Authentication & Accounts
 
 - Phone sign-up + BDApps OTP verified end-to-end in production with a real Bangladeshi number.
-- Email fallback login shall be verified end-to-end: magic-link delivery via Resend, account creation, and JWT issuance.
-- The 24-hour email trial window shall lock premium features after expiry; verified by testing an email-authenticated user after 24 hours.
-- Profile-completion popup shall appear ~1 minute after OTP login and shall collect all required personal information.
+- Email fallback login shall be verified end-to-end: magic-link delivery via Resend, account creation, and JWT issuance. *(v1.2)*
+- The 24-hour email trial window shall lock premium features after expiry; verified by testing an email-authenticated user after 24 hours. *(v1.2)*
+- Profile-completion popup shall appear ~1 minute after OTP login and shall collect all required personal information. *(v1.2)*
 - Multi-profile create / switch / delete shall work with complete data isolation between profiles.
 
 ### Core Tracking
@@ -1111,21 +1120,21 @@ The system shall not be considered production-ready until all of the following g
 - Field encryption shall be verified: sensitive symptom data shall be cipher text in the database.
 - Zero third-party analytics scripts shall touch health-event data.
 
-### SMS Notifications & Content Circulation
+### SMS Notifications & Content Circulation *(v1.1; updated v1.2)*
 
-- [ ] SMS period/fertile-window alerts shall be delivered exclusively to Pro subscribers; free-tier users shall not receive SMS alerts.
-- [ ] SMS broadcast via BDApps `sms/send` with `tel:all` shall deliver to all subscribers; delivery reports shall be received via webhook.
-- [ ] Content override: publishing new daily content shall deactivate the previous day's content.
+- [ ] SMS period/fertile-window alerts shall be delivered exclusively to Pro subscribers; free-tier users shall not receive SMS alerts. *(v1.2)*
+- [ ] SMS broadcast via BDApps `sms/send` with `tel:all` shall deliver to all subscribers; delivery reports shall be received via webhook. *(v1.1)*
+- [ ] Content override: publishing new daily content shall deactivate the previous day's content. *(v1.2)*
 
-### BDApps Webhooks
+### BDApps Webhooks *(v1.1)*
 
-- [ ] All four webhook endpoints (`/api/webhooks/sms/receive`, `/sms/report`, `/ussd/receive`, `/subscription/notify`) shall be registered in BDApps, receiving events, and persisting them.
-- [ ] Subscription status changes via webhook shall update `subscription_status` in the database.
+- [ ] All four webhook endpoints (`/api/webhooks/sms/receive`, `/sms/report`, `/ussd/receive`, `/subscription/notify`) shall be registered in BDApps, receiving events, and persisting them. *(v1.1)*
+- [ ] Subscription status changes via webhook shall update `subscription_status` in the database. *(v1.1)*
 
-### Feedback Module
+### Feedback Module *(v1.2)*
 
-- [ ] In-app feedback form shall be accessible and shall store submissions with category, message, and optional rating.
-- [ ] Admin panel shall display and filter feedback submissions.
+- [ ] In-app feedback form shall be accessible and shall store submissions with category, message, and optional rating. *(v1.2)*
+- [ ] Admin panel shall display and filter feedback submissions. *(v1.2)*
 
 ### Production & Responsiveness
 
@@ -1204,7 +1213,7 @@ The matrix below maps each Functional Requirement to its priority bucket, the up
 
 | FR ID        | Title                                           | Priority | Source (R#)               | DoD Gates                                  | Related NFRs                          |
 | ------------ | ----------------------------------------------- | -------- | ------------------------- | ------------------------------------------ | ------------------------------------- |
-| FR-AUTH      | Phone Auth (OTP) + Email Fallback + Profile Completion | P0 | R1 §1, R5, R6 §3.FR-AUTH  | Authentication & Accounts #1–4             | NFR-SEC-06                            |
+| FR-AUTH      | Phone Auth (OTP) + Email Fallback + Profile Completion *(v1.2)* | P0 | R1 §1, R5, R6 §3.FR-AUTH  | Authentication & Accounts #1–4             | NFR-SEC-06                     |
 | FR-PROFILE   | Multi-Profile Account Management                | P0       | R1 §5, R6 §3.FR-PROFILE   | Authentication & Accounts #2               | NFR-SEC-01                            |
 | FR-TRACK     | Period Logging                                  | P0       | R1 §5, R6 §3.FR-TRACK     | Core Tracking #1                           | NFR-PERF-01                           |
 | FR-DASH      | Cycle Dashboard                                 | P0       | R1 §5, R6 §3.FR-DASH      | (covered by tracking + i18n gates)         | NFR-PERF-02                           |
@@ -1213,7 +1222,7 @@ The matrix below maps each Functional Requirement to its priority bucket, the up
 | FR-PRED      | Three-Tier Prediction Engine                    | P0       | R1 §5, R6 §3.FR-PRED      | Core Tracking #1                           | NFR-PERF-01, NFR-PERF-02              |
 | FR-ONBOARD   | Onboarding Flow                                 | P0       | R1 §5, R6 §3.FR-ONBOARD   | (covered by Tracking + I18N)               | NFR-I18N-01                           |
 | FR-BILL      | Pro Subscription via BDApps CAAS                | P0       | R1 §2, R5, R6 §3.FR-BILL  | Billing — BDApps CAAS #1–3                 | NFR-REL-01, NFR-MAINT-01              |
-| FR-GATE      | Feature Gating (Email Trial + Schema)           | P0       | R6 §3.FR-GATE             | Authentication & Accounts #3; Billing #1   | NFR-BILL-01 (deferred), NFR-BILL-02   |
+| FR-GATE      | Feature Gating (Email Trial + Schema) *(v1.2)*  | P0       | R6 §3.FR-GATE             | Authentication & Accounts #3; Billing #1   | NFR-BILL-01 (deferred), NFR-BILL-02   |
 | FR-I18N      | Bilingual UI (EN + BN)                          | P0       | R1 §5, R6 §3.FR-I18N      | Localisation #1                            | NFR-I18N-01, NFR-I18N-02, NFR-RESP-01 |
 | FR-ENC       | Field-Level Encryption                          | P0       | R1 §5, R6 §3.FR-ENC       | Security #1                                | NFR-SEC-01                            |
 | FR-SESSION   | Session Store & JWT Blacklist                   | P0       | R1 §5, R6 §3.FR-SESSION   | Authentication & Accounts #1               | NFR-SEC-06                            |
@@ -1223,9 +1232,9 @@ The matrix below maps each Functional Requirement to its priority bucket, the up
 | FR-CMS       | Content CMS (Tiptap)                            | P2       | R1 §5, R6 §3.FR-CMS       | Admin Panel #1; Content #1                 | NFR-SEC-05                            |
 | FR-ANALYTICS | Population Analytics & Prediction Accuracy      | P2       | R1 §5, R6 §3.FR-ANALYTICS | Admin Panel #1                             | NFR-SEC-04, NFR-SEC-05                |
 | FR-EXPORT    | Data Export (CSV / Excel)                       | P2       | R1 §5, R6 §3.FR-EXPORT    | (no dedicated DoD; covered by Security #1) | NFR-SEC-01, NFR-SEC-04                |
-| FR-SMS       | SMS Notifications & Content Circulation         | P1       | R1 §5, R5                  | SMS Notifications & Content Circulation #1–3 | NFR-SEC-07                          |
-| FR-WEBHOOK   | BDApps Inbound Webhooks                         | P0       | R5                         | BDApps Webhooks #1, #2                     | NFR-SEC-07, CIR-05                    |
-| FR-FEEDBACK  | In-App Feedback Module                          | P1       | Client feedback (v1.2)     | Feedback Module #1, #2                     | NFR-SEC-04                            |
+| FR-SMS       | SMS Notifications & Content Circulation *(v1.1; v1.2)* | P1 | R1 §5, R5                | SMS Notifications & Content Circulation #1–3 | NFR-SEC-07                          |
+| FR-WEBHOOK   | BDApps Inbound Webhooks *(v1.1)*                | P0       | R5                         | BDApps Webhooks #1, #2                     | NFR-SEC-07, CIR-05                    |
+| FR-FEEDBACK  | In-App Feedback Module *(v1.2)*                 | P1       | Client feedback (v1.2)     | Feedback Module #1, #2                     | NFR-SEC-04                            |
 
 
 ---

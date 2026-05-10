@@ -118,8 +118,8 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
     <h1>User Stories &amp; Acceptance Criteria</h1>
     <p class="subtitle">Organized by feature area. Each story follows: <strong>As a [persona], I want to [action], so that [outcome]</strong>. Mapped to requirement IDs from the v1 specification.</p>
     <div class="stats-row">
-      <div class="stat"><div class="stat-val">102</div><div class="stat-label">v1 Stories</div></div>
-      <div class="stat"><div class="stat-val">17</div><div class="stat-label">Feature Areas</div></div>
+      <div class="stat"><div class="stat-val">110</div><div class="stat-label">v1 Stories</div></div>
+      <div class="stat"><div class="stat-val">19</div><div class="stat-label">Feature Areas</div></div>
       <div class="stat"><div class="stat-val">5</div><div class="stat-label">Personas</div></div>
       <div class="stat"><div class="stat-val">2</div><div class="stat-label">Languages</div></div>
     </div>
@@ -397,6 +397,54 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
           <li class="ac-item"><span class="ac-check">&#10003;</span>If the currently active profile is deleted, the app switches to the first remaining profile or prompts to create a new one.</li>
         </ul>
       </div>
+
+    <!-- v1.2: Email Fallback -->
+    <div class="story-card" data-persona="new-user">
+      <div class="story-header">
+        <span class="req-badge">AUTH-09</span>
+        <span class="persona-badge persona-new-user">New User</span>
+        <em style="font-size:10px;color:#16a34a;font-weight:700">(v1.2)</em>
+      </div>
+      <div class="story-text">As a <strong>new user</strong>, I want to <strong>log in via email magic-link when OTP is unavailable</strong>, so that <strong>I can still access the platform even when BDApps OTP fails</strong>.</div>
+      <div class="ac-title">Acceptance Criteria</div>
+      <ul class="acceptance-criteria">
+        <li class="ac-item"><span class="ac-check">✓</span><span>When OTP fails after 3 retries, email fallback option is displayed</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Magic-link email is delivered via Resend within 30 seconds</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Clicking the magic-link creates account and issues JWT</span></li>
+      </ul>
+    </div>
+
+    <div class="story-card" data-persona="new-user">
+      <div class="story-header">
+        <span class="req-badge">AUTH-10</span>
+        <span class="persona-badge persona-new-user">New User</span>
+        <em style="font-size:10px;color:#16a34a;font-weight:700">(v1.2)</em>
+      </div>
+      <div class="story-text">As an <strong>email-authenticated user</strong>, I want to <strong>explore basic features for 24 hours</strong>, so that <strong>I can evaluate the platform before subscribing</strong>.</div>
+      <div class="ac-title">Acceptance Criteria</div>
+      <ul class="acceptance-criteria">
+        <li class="ac-item"><span class="ac-check">✓</span><span>Email user has full basic-feature access for exactly 24 hours</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>After 24h, premium features return HTTP 403</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Platform prompts for phone number and profile details during the window</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Subscription prompt shown after trial expiry</span></li>
+      </ul>
+    </div>
+
+    <div class="story-card" data-persona="user">
+      <div class="story-header">
+        <span class="req-badge">AUTH-11</span>
+        <span class="persona-badge" style="background:#e0f2fe;color:#0891b2">User</span>
+        <em style="font-size:10px;color:#16a34a;font-weight:700">(v1.2)</em>
+      </div>
+      <div class="story-text">As a <strong>user who just completed OTP login</strong>, I want to <strong>be prompted to complete my profile after ~1 minute</strong>, so that <strong>my phone number and personal details are securely stored in the database</strong>.</div>
+      <div class="ac-title">Acceptance Criteria</div>
+      <ul class="acceptance-criteria">
+        <li class="ac-item"><span class="ac-check">✓</span><span>Profile completion popup appears approximately 1 minute after OTP login</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Popup collects full name, verified phone number, and profile details</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Dismissing the popup marks profile as incomplete; user is re-prompted on next login</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Completing the form stores phone number securely and marks profile complete</span></li>
+      </ul>
+    </div>
 
     </div>
   </div>
@@ -965,6 +1013,23 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         </ul>
       </div>
 
+    <!-- v1.2: SMS alerts for subscribers -->
+    <div class="story-card" data-persona="cycle-tracker">
+      <div class="story-header">
+        <span class="req-badge">NOTF-08</span>
+        <span class="persona-badge persona-cycle-tracker">Cycle Tracker</span>
+        <em style="font-size:10px;color:#16a34a;font-weight:700">(v1.2)</em>
+      </div>
+      <div class="story-text">As a <strong>Pro subscriber</strong>, I want to <strong>receive SMS notifications before my expected period date and fertile window</strong>, so that <strong>I am alerted even without opening the app</strong>.</div>
+      <div class="ac-title">Acceptance Criteria</div>
+      <ul class="acceptance-criteria">
+        <li class="ac-item"><span class="ac-check">✓</span><span>Pro subscriber receives SMS alert before predicted period date</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Pro subscriber receives SMS alert when fertile window opens</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Free-tier users do NOT receive any SMS alerts</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>SMS alerts are sent via BDApps SMS Send API during daily cron window</span></li>
+      </ul>
+    </div>
+
     </div>
   </div>
 
@@ -1051,6 +1116,22 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
           <li class="ac-item"><span class="ac-check">&#10003;</span>Content uses culturally sensitive language and avoids dismissing beliefs; instead, it explains the science while respecting the cultural context.</li>
         </ul>
       </div>
+
+    <!-- v1.2: Content override -->
+    <div class="story-card" data-persona="admin">
+      <div class="story-header">
+        <span class="req-badge">CONT-06</span>
+        <span class="persona-badge persona-admin">Admin</span>
+        <em style="font-size:10px;color:#16a34a;font-weight:700">(v1.2)</em>
+      </div>
+      <div class="story-text">As an <strong>admin</strong>, I want <strong>new daily content to automatically replace the previous day&rsquo;s content</strong>, so that <strong>only the latest version remains active and visible to users</strong>.</div>
+      <div class="ac-title">Acceptance Criteria</div>
+      <ul class="acceptance-criteria">
+        <li class="ac-item"><span class="ac-check">✓</span><span>Publishing new daily content deactivates the previous day&rsquo;s content</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Only the latest content version is visible to subscribers</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Admin can see send history with override timestamps</span></li>
+      </ul>
+    </div>
 
     </div>
   </div>
@@ -1399,6 +1480,22 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         </ul>
       </div>
 
+    <!-- v1.2: Email trial gating -->
+    <div class="story-card" data-persona="new-user">
+      <div class="story-header">
+        <span class="req-badge">GATE-06</span>
+        <span class="persona-badge persona-new-user">New User</span>
+        <em style="font-size:10px;color:#16a34a;font-weight:700">(v1.2)</em>
+      </div>
+      <div class="story-text">As an <strong>email-authenticated user whose 24-hour trial has expired</strong>, I want to <strong>see a clear message that premium features are locked</strong>, so that <strong>I understand I need to subscribe via BDApps CAAS for continued access</strong>.</div>
+      <div class="ac-title">Acceptance Criteria</div>
+      <ul class="acceptance-criteria">
+        <li class="ac-item"><span class="ac-check">✓</span><span>After 24h trial expiry, premium routes return HTTP 403</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Clear upgrade prompt displayed with BDApps subscription option</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>OTP-authenticated users are never subject to trial restrictions</span></li>
+      </ul>
+    </div>
+
     </div>
   </div>
 
@@ -1533,7 +1630,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         <div class="story-text">As a <strong>user in grace period</strong>, I want to see a warning that my subscription is expiring, so that I can resolve the billing issue.</div>
         <div class="ac-title">Acceptance Criteria</div>
         <ul class="acceptance-criteria">
-          <li class="ac-item"><span class="ac-check">&#10003;</span>Banner shows &ldquo;Your subscription expires in X days&rdquo; during grace period.</li>
+          <li class="ac-item"><span class="ac-check">&#10003;</span>Banner shows &ldquo;Please renew your subscription soon&rdquo; during grace period.</li>
           <li class="ac-item"><span class="ac-check">&#10003;</span>Banner links to billing help or support page.</li>
         </ul>
       </div>
@@ -1864,6 +1961,71 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
     </div>
   </div>
 
+  <!-- SECTION 18: IN-APP FEEDBACK (v1.2) -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">18</div>In-App Feedback Module<span class="section-req-range">FDBK-01 &mdash; FDBK-04</span> <em style="font-size:10px;color:#16a34a;font-weight:700;margin-left:8px">(v1.2)</em></div>
+    <div class="section-desc">Dedicated in-app feedback collection for user opinions, bug reports, feature requests, and satisfaction data.</div>
+
+    <div class="stories-grid">
+
+    <div class="story-card" data-persona="user">
+      <div class="story-header">
+        <span class="req-badge">FDBK-01</span>
+        <span class="persona-badge" style="background:#e0f2fe;color:#0891b2">User</span>
+      </div>
+      <div class="story-text">As a <strong>user</strong>, I want to <strong>submit feedback from any screen via a persistent feedback button</strong>, so that <strong>I can report bugs or suggest features without leaving my current context</strong>.</div>
+      <div class="ac-title">Acceptance Criteria</div>
+      <ul class="acceptance-criteria">
+        <li class="ac-item"><span class="ac-check">✓</span><span>Feedback button/form is accessible from every screen</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Submission shows a confirmation message</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Feedback is stored with user_id, profile_id, timestamp</span></li>
+      </ul>
+    </div>
+
+    <div class="story-card" data-persona="user">
+      <div class="story-header">
+        <span class="req-badge">FDBK-02</span>
+        <span class="persona-badge" style="background:#e0f2fe;color:#0891b2">User</span>
+      </div>
+      <div class="story-text">As a <strong>user</strong>, I want to <strong>categorize my feedback as bug report, feature request, general feedback, or satisfaction rating</strong>, so that <strong>my input is properly classified for the team</strong>.</div>
+      <div class="ac-title">Acceptance Criteria</div>
+      <ul class="acceptance-criteria">
+        <li class="ac-item"><span class="ac-check">✓</span><span>Four category options available: bug, feature request, general, satisfaction</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Free-text field accepts feedback message</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Optional 1&ndash;5 star rating available</span></li>
+      </ul>
+    </div>
+
+    <div class="story-card" data-persona="admin">
+      <div class="story-header">
+        <span class="req-badge">FDBK-03</span>
+        <span class="persona-badge persona-admin">Admin</span>
+      </div>
+      <div class="story-text">As an <strong>admin</strong>, I want to <strong>view all user feedback with filters by category, date, and rating</strong>, so that <strong>I can prioritize issues and identify trends</strong>.</div>
+      <div class="ac-title">Acceptance Criteria</div>
+      <ul class="acceptance-criteria">
+        <li class="ac-item"><span class="ac-check">✓</span><span>Admin panel shows all feedback submissions</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Filters by category, date range, and star rating work correctly</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>No user can access another user&rsquo;s feedback via API manipulation</span></li>
+      </ul>
+    </div>
+
+    <div class="story-card" data-persona="admin">
+      <div class="story-header">
+        <span class="req-badge">FDBK-04</span>
+        <span class="persona-badge persona-admin">Admin</span>
+      </div>
+      <div class="story-text">As an <strong>admin</strong>, I want to <strong>export all feedback as CSV</strong>, so that <strong>I can analyze it in external tools and share with stakeholders</strong>.</div>
+      <div class="ac-title">Acceptance Criteria</div>
+      <ul class="acceptance-criteria">
+        <li class="ac-item"><span class="ac-check">✓</span><span>CSV export includes all fields: category, message, rating, user, date</span></li>
+        <li class="ac-item"><span class="ac-check">✓</span><span>Export opens cleanly in Excel and Google Sheets</span></li>
+      </ul>
+    </div>
+
+    </div>
+  </div>
+
   <!-- ============================================================ -->
   <!-- V2 DEFERRED -->
   <!-- ============================================================ -->
@@ -1875,7 +2037,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
   </div>
 
   <div class="section">
-    <div class="section-title" style="color:#9ca3af"><div class="section-num" style="background:#d1d5db">17</div>v2 &mdash; Deferred Features</div>
+    <div class="section-title" style="color:#9ca3af"><div class="section-num" style="background:#d1d5db">19</div>v2 &mdash; Deferred Features</div>
     <div class="section-desc">Pregnancy mode, medicine tracker, sleep monitor, exercise tracking, sex life tracking, health analytics, menopause, and community features. These will be prioritized after v1 ships and validates product-market fit.</div>
 
     <div class="stories-grid">
