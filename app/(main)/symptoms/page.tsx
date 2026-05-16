@@ -153,6 +153,15 @@ function SymptomChip({ icon, name, selected, category, onToggle }: SymptomChipPr
           </svg>
         </motion.span>
       )}
+      {selected && (
+        <motion.span
+          className="absolute inset-0 rounded-2xl"
+          initial={{ opacity: 0.3, scale: 0.8 }}
+          animate={{ opacity: 0, scale: 1.2 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          style={{ border: `2px solid ${colors.text}` }}
+        />
+      )}
     </motion.button>
   );
 }
@@ -363,9 +372,21 @@ export default function SymptomsPage() {
               <motion.div
                 key="has-symptoms"
                 initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                  boxShadow: [
+                    '0 0 20px rgba(232,71,108,0.2)',
+                    '0 0 30px rgba(232,71,108,0.35)',
+                    '0 0 20px rgba(232,71,108,0.2)',
+                  ],
+                }}
                 exit={{ opacity: 0, y: 16 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                transition={{
+                  opacity: { type: 'spring', stiffness: 400, damping: 35 },
+                  y: { type: 'spring', stiffness: 400, damping: 35 },
+                  boxShadow: { duration: 3, repeat: Infinity, ease: 'easeInOut' },
+                }}
                 className="rounded-2xl px-5 py-3.5 flex items-center justify-between pointer-events-auto shadow-glow"
                 style={{
                   background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',

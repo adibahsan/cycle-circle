@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/lib/store';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
+import VestaLogo from '@/components/ui/VestaLogo';
 import {
   Home,
   CalendarDays,
@@ -16,6 +17,8 @@ import {
   Users,
   Crown,
   CreditCard,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -36,7 +39,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useTranslation();
-  const { isAuthenticated, user, profiles, activeProfileId, setActiveProfile } = useAppStore();
+  const { isAuthenticated, user, profiles, activeProfileId, setActiveProfile, theme, setTheme } = useAppStore();
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.documentElement.classList.toggle('dark', next === 'dark');
+  };
 
   useEffect(() => {
     if (!isAuthenticated) router.replace('/login');
@@ -52,6 +61,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <aside className="hidden md:flex md:flex-col md:w-64 md:sticky md:top-0 md:h-screen md:shrink-0 glass border-r border-[var(--color-border)] z-40">
         {/* Sidebar header / branding */}
         <div className="px-5 py-5 flex items-center gap-3">
+          <VestaLogo size={28} animate={false} />
           <h1 className="text-xl font-bold gradient-primary bg-clip-text text-transparent">Vesta</h1>
           {user?.subscriptionStatus === 'pro' && (
             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
@@ -119,8 +129,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           })}
         </nav>
 
-        {/* Sidebar footer — language toggle */}
-        <div className="px-4 py-4 border-t border-[var(--color-border)]">
+        {/* Sidebar footer — theme + language toggles */}
+        <div className="px-4 py-4 border-t border-[var(--color-border)] flex flex-col gap-2">
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors w-full"
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+          </button>
           <LanguageToggle />
         </div>
       </aside>
@@ -130,6 +147,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {/* Top header — mobile only; sidebar handles desktop navigation */}
         <header className="sticky top-0 z-40 glass px-4 py-3 flex items-center justify-between md:hidden">
           <div className="flex items-center gap-3">
+            <VestaLogo size={24} animate={false} />
             <h1 className="text-xl font-bold gradient-primary bg-clip-text text-transparent">Vesta</h1>
             <Link
               href="/profiles"
@@ -145,6 +163,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <Crown size={10} /> PRO
               </span>
             )}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors"
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
             <LanguageToggle />
           </div>
         </header>

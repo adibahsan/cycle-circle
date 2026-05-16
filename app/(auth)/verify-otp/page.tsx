@@ -35,6 +35,7 @@ export default function VerifyOtpPage() {
   const [countdown, setCountdown] = useState(RESEND_SECONDS);
   const [resending, setResending] = useState(false);
   const [phone, setPhone] = useState('');
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -134,7 +135,7 @@ export default function VerifyOtpPage() {
   const allFilled = filled === OTP_LENGTH;
 
   return (
-    <div className="flex flex-col min-h-[calc(100dvh-4rem)]">
+    <div className="flex flex-col min-h-[calc(100dvh-4rem)] relative">
       {/* Back button */}
       <motion.button
         custom={0}
@@ -193,9 +194,10 @@ export default function VerifyOtpPage() {
               key={index}
               animate={
                 error
-                  ? { x: [0, -5, 5, -5, 5, 0], transition: { duration: 0.35 } }
-                  : {}
+                  ? { x: [0, -5, 5, -5, 5, 0], scale: 1, transition: { duration: 0.35 } }
+                  : { scale: focusedIndex === index ? 1.05 : 1 }
               }
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
               className="flex-1"
             >
               <input
@@ -206,7 +208,8 @@ export default function VerifyOtpPage() {
                 value={digit}
                 onChange={(e) => updateDigit(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                onFocus={(e) => e.target.select()}
+                onFocus={(e) => { e.target.select(); setFocusedIndex(index); }}
+                onBlur={() => setFocusedIndex(null)}
                 className={`w-full aspect-square text-center text-xl font-bold rounded-xl border-2 bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none transition-all duration-200 ${
                   digit
                     ? 'border-[var(--color-primary)] bg-[var(--color-bg-card)]'
@@ -312,7 +315,16 @@ export default function VerifyOtpPage() {
               Resending…
             </>
           ) : countdown > 0 ? (
-            t('auth.resendIn', { seconds: countdown })
+            <span className="inline-flex items-center gap-1">
+              Resend in{' '}
+              <motion.span
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                className="tabular-nums font-bold"
+              >
+                {countdown}s
+              </motion.span>
+            </span>
           ) : (
             <>
               <RefreshCw size={14} />
@@ -332,6 +344,37 @@ export default function VerifyOtpPage() {
       >
         This code expires in 10 minutes. Never share your OTP with anyone.
       </motion.p>
+
+      {/* Success overlay — full-screen scale+fade checkmark */}
+      <AnimatePresence>
+        {success && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-bg-primary)]/90 backdrop-blur-sm z-20 rounded-inherit"
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.05 }}
+              className="w-24 h-24 rounded-full flex items-center justify-center shadow-[0_8px_40px_rgba(232,71,108,0.4)]"
+              style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)' }}
+            >
+              <CheckCircle2 size={44} className="text-white" strokeWidth={2} />
+            </motion.div>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25, duration: 0.35 }}
+              className="mt-5 text-lg font-bold text-[var(--color-text-primary)]"
+            >
+              Verified!
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

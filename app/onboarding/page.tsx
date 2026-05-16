@@ -51,18 +51,30 @@ const RELATIONS: { value: ProfileRelation; labelKey: string }[] = [
 function ProgressBar({ step }: { step: number }) {
   return (
     <div className="flex items-center gap-1.5 justify-center" aria-label={`Step ${step} of ${TOTAL_STEPS}`}>
-      {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-        <motion.div
-          key={i}
-          initial={false}
-          animate={{
-            width: i + 1 === step ? 24 : 8,
-            backgroundColor: i + 1 <= step ? 'var(--color-primary)' : 'var(--color-border)',
-          }}
-          transition={{ duration: 0.3 }}
-          className="h-2 rounded-full"
-        />
-      ))}
+      {Array.from({ length: TOTAL_STEPS }, (_, i) => {
+        const isActive = i + 1 === step;
+        return (
+          <motion.div
+            key={i}
+            initial={false}
+            animate={{
+              width: isActive ? 24 : 8,
+              backgroundColor: i + 1 <= step ? 'var(--color-primary)' : 'var(--color-border)',
+              scale: isActive ? [1, 1.2, 1] : 1,
+            }}
+            transition={
+              isActive
+                ? {
+                    width: { duration: 0.3 },
+                    backgroundColor: { duration: 0.3 },
+                    scale: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
+                  }
+                : { duration: 0.3 }
+            }
+            className="h-2 rounded-full"
+          />
+        );
+      })}
     </div>
   );
 }
@@ -565,8 +577,14 @@ function StepDone({
           <motion.div
             key={i}
             initial={{ opacity: 0, y: -20, scale: 0 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: parseFloat(dot.delay), type: 'spring', stiffness: 200 }}
+            animate={{ opacity: [0, 1, 0.6, 1], y: [-20, 0, -18, 0], scale: [0, 1, 1, 1] }}
+            transition={{
+              delay: parseFloat(dot.delay),
+              duration: 3 + i * 0.4,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              times: [0, 0.15, 0.57, 1],
+            }}
             className="absolute rounded-full"
             style={{
               top: dot.top,
@@ -739,7 +757,23 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-primary)] flex flex-col max-w-md mx-auto">
+    <div className="min-h-screen bg-[var(--color-bg-primary)] flex flex-col max-w-md mx-auto relative overflow-hidden">
+      {/* Floating background orbs */}
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-[-80px] right-[-60px] w-72 h-72 rounded-full opacity-[0.08]"
+        style={{ background: 'radial-gradient(circle, #e8476c 0%, transparent 70%)' }}
+        animate={{ x: [0, 20, 0], y: [0, -15, 0] }}
+        transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-[-60px] left-[-80px] w-80 h-80 rounded-full opacity-[0.08]"
+        style={{ background: 'radial-gradient(circle, #9b7fd4 0%, transparent 70%)' }}
+        animate={{ x: [0, -12, 0], y: [0, 18, 0] }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
       {/* Top bar */}
       <div className="sticky top-0 z-10 bg-[var(--color-bg-primary)]/90 backdrop-blur-sm px-5 pt-safe-top">
         <div className="flex items-center justify-between py-4">
