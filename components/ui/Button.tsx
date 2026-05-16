@@ -13,7 +13,7 @@ export function Button({ variant = 'primary', size = 'md', fullWidth, className,
   return (
     <button
       className={twMerge(clsx(
-        'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 active:scale-[0.97]',
+        'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 active:scale-[0.97] transition-transform duration-150',
         {
           'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)] shadow-soft': variant === 'primary',
           'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-border)]': variant === 'secondary',

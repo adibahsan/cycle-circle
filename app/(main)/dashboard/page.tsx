@@ -67,6 +67,15 @@ function CycleRing({
         className="absolute rotate-[-90deg]"
         style={{ filter: 'drop-shadow(0 4px 24px rgba(232,71,108,0.12))' }}
       >
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
         <circle
           cx={SIZE / 2}
           cy={SIZE / 2}
@@ -87,11 +96,16 @@ function CycleRing({
           initial={{ strokeDashoffset: CIRCUMFERENCE }}
           animate={{ strokeDashoffset: offset }}
           transition={{ duration: 1.2, ease: 'easeOut' }}
+          filter="url(#glow)"
         />
       </svg>
 
       {/* Center content */}
-      <div className="flex flex-col items-center gap-1">
+      <motion.div
+        className="flex flex-col items-center gap-1"
+        animate={{ scale: [1, 1.03, 1] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      >
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -109,7 +123,7 @@ function CycleRing({
         >
           Day
         </motion.div>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -330,6 +344,20 @@ export default function DashboardPage() {
 
   return (
     <>
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <motion.div
+          className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-[0.07]"
+          style={{ background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)' }}
+          animate={{ x: [0, 15, 0], y: [0, -10, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute -bottom-32 -left-20 w-80 h-80 rounded-full opacity-[0.05]"
+          style={{ background: 'radial-gradient(circle, var(--color-secondary) 0%, transparent 70%)' }}
+          animate={{ x: [0, -10, 0], y: [0, 12, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
       <div className="flex flex-col gap-5 py-3">
 
         {/* ── Hero Section ──────────────────────────────────────── */}
@@ -373,7 +401,7 @@ export default function DashboardPage() {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.45 }}
+            transition={{ delay: 0.1, type: "spring", stiffness: 100, damping: 20 }}
           >
             <Card padding="md" className="h-full">
               <div className="flex flex-col gap-2">
@@ -413,7 +441,7 @@ export default function DashboardPage() {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.22, duration: 0.45 }}
+            transition={{ delay: 0.18, type: "spring", stiffness: 100, damping: 20 }}
           >
             <Card padding="md" className="h-full">
               <div className="flex flex-col gap-2">
@@ -457,7 +485,7 @@ export default function DashboardPage() {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.29, duration: 0.45 }}
+            transition={{ delay: 0.26, type: "spring", stiffness: 100, damping: 20 }}
           >
             <Card padding="md" className="h-full">
               <div className="flex flex-col gap-2">
@@ -498,7 +526,7 @@ export default function DashboardPage() {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.36, duration: 0.45 }}
+            transition={{ delay: 0.34, type: "spring", stiffness: 100, damping: 20 }}
           >
             <Card padding="md" className="h-full">
               <div className="flex flex-col gap-2.5 h-full">

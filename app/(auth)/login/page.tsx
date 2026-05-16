@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Phone, Shield, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import VestaLogo from '@/components/ui/VestaLogo';
 import '@/lib/i18n';
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -69,25 +70,14 @@ export default function LoginPage() {
         animate="show"
         className="flex flex-col items-center pt-8 pb-6"
       >
-        {/* Logo mark */}
-        <div className="relative mb-4">
-          <div
-            className="w-20 h-20 rounded-3xl flex items-center justify-center shadow-glow"
-            style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)' }}
-          >
-            {/* Moon + cycle motif */}
-            <svg width="44" height="44" viewBox="0 0 44 44" fill="none" aria-hidden="true">
-              <circle cx="22" cy="22" r="14" stroke="white" strokeWidth="2.2" strokeDasharray="4 2.5" strokeLinecap="round" />
-              <circle cx="22" cy="22" r="6" fill="white" fillOpacity="0.9" />
-              <path d="M22 8 C14 8 8 14 8 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
-          </div>
-          {/* Pulse ring */}
-          <span
-            className="absolute inset-0 rounded-3xl animate-ping opacity-20"
-            style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)' }}
-          />
-        </div>
+        {/* Logo mark — floating bob animation */}
+        <motion.div
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          className="mb-4"
+        >
+          <VestaLogo size={56} animate={true} />
+        </motion.div>
 
         <h1
           className="text-3xl font-bold bg-clip-text text-transparent mb-1"

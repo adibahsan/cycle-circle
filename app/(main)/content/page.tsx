@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { X, ChevronRight, BookOpen } from 'lucide-react';
+import { X, ChevronRight, BookOpen, ChevronLeft } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { DEMO_ARTICLES } from '@/lib/dummy-data';
 import { getCurrentCycleDay, getCurrentPhase, getPhaseEmoji, getPhaseColor } from '@/lib/cycle-utils';
@@ -27,9 +27,9 @@ const FADE_UP: any = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SLIDE_IN: any = {
-  hidden: { opacity: 0, x: 20 },
-  show: { opacity: 1, x: 0, transition: { duration: 0.35, ease: EASE_OUT } },
-  exit: { opacity: 0, x: 20, transition: { duration: 0.25, ease: EASE_OUT } },
+  hidden: { opacity: 0, scale: 0.95 },
+  show: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 28 } },
+  exit: { opacity: 0, scale: 0.97, transition: { duration: 0.2, ease: EASE_OUT } },
 };
 
 // ── Phase filter config ────────────────────────────────────────────────────
@@ -100,8 +100,28 @@ function ArticleExpanded({
 }) {
   const isEn = language === 'en';
   const title = isEn ? article.titleEn : article.titleBn;
-  const body = isEn ? article.bodyBn || article.bodyEn : article.bodyBn;
+  const body = isEn ? article.bodyEn : (article.bodyBn || article.bodyEn);
   const missingTranslation = !isEn && !article.bodyBn;
+
+  // Reading progress
+  const [readProgress, setReadProgress] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const max = scrollHeight - clientHeight;
+      setReadProgress(max > 0 ? Math.min(100, Math.round((scrollTop / max) * 100)) : 100);
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Estimated reading time (~200 wpm)
+  const wordCount = body.trim().split(/\s+/).length;
+  const readingMinutes = Math.max(1, Math.round(wordCount / 200));
 
   return (
     <motion.div
@@ -112,44 +132,73 @@ function ArticleExpanded({
       exit="exit"
       className="fixed inset-0 z-50 flex flex-col bg-[var(--color-bg-primary)] max-w-md md:max-w-2xl lg:max-w-3xl mx-auto"
     >
-      {/* Header */}
-      <div className="sticky top-0 z-10 glass px-4 py-3 flex items-center gap-3">
-        <button
-          onClick={onClose}
-          className="flex items-center justify-center w-9 h-9 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:border-[var(--color-primary)] transition-colors active:scale-95"
-          aria-label="Close article"
-        >
-          <X size={18} className="text-[var(--color-text-secondary)]" />
-        </button>
-        <span className="text-sm font-semibold text-[var(--color-text-secondary)] truncate flex-1">
-          {article.category}
-        </span>
-        {article.phaseTags.length > 0 && (
-          <PhaseChip phase={article.phaseTags[0]} />
-        )}
+      {/* Reading progress bar */}
+      <div className="absolute top-0 left-0 right-0 h-0.5 z-20 bg-[var(--color-border)]">
+        <div
+          className="h-full bg-[var(--color-primary)] transition-all duration-150 ease-out"
+          style={{ width: `${readProgress}%` }}
+        />
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-12 lg:px-20 pt-4 pb-8">
-        {missingTranslation && (
-          <div className="mb-4 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-700 font-medium">
-            Showing in English — Bengali translation coming soon
+      {/* Header */}
+      <div className="sticky top-0 z-10 glass px-4 py-3 flex items-center gap-3">
+        {/* Breadcrumb back link */}
+        <button
+          onClick={onClose}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors active:scale-95"
+          aria-label="Back to articles"
+        >
+          <ChevronLeft size={14} />
+          Back to articles
+        </button>
+
+        <span className="text-xs font-semibold text-[var(--color-text-muted)] truncate flex-1 text-center">
+          {article.category}
+        </span>
+
+        <button
+          onClick={onClose}
+          className="flex items-center justify-center w-8 h-8 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:border-[var(--color-primary)] transition-colors active:scale-95"
+          aria-label="Close article"
+        >
+          <X size={16} className="text-[var(--color-text-secondary)]" />
+        </button>
+      </div>
+
+      {/* Content — scroll area with bottom fade */}
+      <div className="relative flex-1 min-h-0">
+        <div
+          ref={scrollRef}
+          className="h-full overflow-y-auto px-4 md:px-12 lg:px-20 pt-5 pb-12"
+        >
+          {missingTranslation && (
+            <div className="mb-4 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-700 font-medium">
+              Showing in English — Bengali translation coming soon
+            </div>
+          )}
+
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)] leading-snug mb-2">
+            {title}
+          </h1>
+
+          {/* Reading time */}
+          <p className="text-xs text-[var(--color-text-muted)] mb-4">
+            {readingMinutes} min read
+          </p>
+
+          <div className="flex flex-wrap gap-1.5 mb-5">
+            {article.phaseTags.map(tag => (
+              <PhaseChip key={tag} phase={tag} />
+            ))}
           </div>
-        )}
 
-        <h1 className="text-xl font-bold text-[var(--color-text-primary)] leading-snug mb-4">
-          {title}
-        </h1>
-
-        <div className="flex flex-wrap gap-1.5 mb-5">
-          {article.phaseTags.map(tag => (
-            <PhaseChip key={tag} phase={tag} />
-          ))}
+          <p className="text-[var(--color-text-secondary)] leading-7 text-sm md:text-base whitespace-pre-wrap">
+            {body}
+          </p>
         </div>
 
-        <p className="text-[var(--color-text-secondary)] leading-relaxed text-sm whitespace-pre-wrap">
-          {isEn ? article.bodyEn : (article.bodyBn || article.bodyEn)}
-        </p>
+        {/* Bottom gradient fade */}
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[var(--color-bg-primary)] to-transparent" />
       </div>
     </motion.div>
   );
@@ -179,6 +228,8 @@ function ArticleCard({
       variants={FADE_UP}
       initial="hidden"
       animate="show"
+      onClick={() => onExpand(article)}
+      className="cursor-pointer"
     >
       <Card hover padding="md" className="mb-3">
         {/* Category + phase tags row */}
@@ -201,7 +252,7 @@ function ArticleCard({
 
         {/* Read more */}
         <button
-          onClick={() => onExpand(article)}
+          onClick={e => { e.stopPropagation(); onExpand(article); }}
           className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] transition-colors active:scale-95"
         >
           {t('content.readMore')}

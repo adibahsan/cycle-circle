@@ -1,6 +1,7 @@
 # Vesta v1 — Developer Checklist (4-Week Sprint)
 
 **Generated:** 2026-05-17  
+**Last Updated:** 2026-05-17 (animations, logo, content UX, theme toggle)  
 **Status Legend:** DONE | PARTIAL | NOT STARTED  
 **Context:** Frontend prototype with Next.js 16 + dummy data. No backend/DB yet.
 
@@ -271,6 +272,32 @@
 
 9. **Implement actual CSV/Excel export** — Add file-generation logic with `papaparse` or `xlsx`
 10. **Add "updating" state** for prediction recalculation — Currently instant, SRS expects loading state
+
+---
+
+## Recent Session Changes (2026-05-17)
+
+### Completed This Session:
+
+| Change | Status |
+|--------|--------|
+| Proper Bengali (বাংলা) translations — all 65 placeholders replaced | DONE |
+| Responsive web layout — desktop sidebar nav + wider grids | DONE |
+| Vesta SVG logo (petal/crescent mark with gradient) | DONE |
+| Logo integrated in login, sidebar, mobile header | DONE |
+| Flo-like soothing animations across all pages | DONE |
+| Dashboard: breathing cycle ring, floating orbs, spring cards | DONE |
+| Calendar: hover scale, pulsing today ring, ambient blobs | DONE |
+| Symptoms: selection ripple, summary bar glow | DONE |
+| Onboarding: floating orbs, pulsing dots, confetti | DONE |
+| OTP: breathing countdown, spring-scale boxes, success overlay | DONE |
+| Global CSS: 5 keyframe animations, glass-hover, page-enter | DONE |
+| Button press animation (active:scale) | DONE |
+| Card glass-hover glow effect | DONE |
+| Shimmer skeleton component | DONE |
+| Content: full cards clickable, reading progress bar, read time | DONE |
+| Content: scale+fade transitions, bottom gradient, better typography | DONE |
+| Sidebar: light/dark theme toggle (desktop + mobile) | DONE |
 
 ---
 

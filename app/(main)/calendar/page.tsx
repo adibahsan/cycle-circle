@@ -98,7 +98,7 @@ function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
   return (
     <button
       onClick={onClick}
-      className="relative flex flex-col items-center justify-center aspect-square w-full rounded-xl transition-all duration-150 active:scale-95"
+      className={`relative flex flex-col items-center justify-center aspect-square w-full rounded-xl transition-all duration-150 active:scale-95${(isPeriod || isFertile || isOvulation) && isCurrentMonth ? ' hover:scale-105' : ''}`}
       style={{
         backgroundColor: isSelected
           ? isPeriod
@@ -114,9 +114,11 @@ function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
     >
       {/* Today ring */}
       {isToday && (
-        <div
+        <motion.div
           className="absolute inset-0.5 rounded-[10px] border-2 pointer-events-none"
           style={{ borderColor: 'var(--color-text-primary)' }}
+          animate={{ opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
         />
       )}
 
@@ -392,7 +394,21 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 py-3">
+    <div className="flex flex-col gap-4 py-3 relative overflow-hidden">
+
+      {/* ── Decorative floating blobs ── */}
+      <motion.div
+        className="absolute -top-8 -right-8 w-40 h-40 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(232,71,108,0.07) 0%, transparent 70%)' }}
+        animate={{ y: [0, -10, 0], x: [0, 6, 0] }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute bottom-24 -left-10 w-32 h-32 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(123,197,174,0.06) 0%, transparent 70%)' }}
+        animate={{ y: [0, 10, 0], x: [0, -5, 0] }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+      />
 
       {/* ── Month Header ─────────────────────────────────────── */}
       <motion.div

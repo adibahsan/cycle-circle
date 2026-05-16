@@ -19,7 +19,7 @@ export function Card({ children, className, padding = 'md', hover }: CardProps) 
           'p-3': padding === 'sm',
           'p-5': padding === 'md',
           'p-7': padding === 'lg',
-          'hover:shadow-glow hover:-translate-y-0.5 transition-all duration-300 cursor-pointer': hover,
+          'glass-hover hover:shadow-glow hover:-translate-y-0.5 transition-all duration-300 cursor-pointer': hover,
         },
         className
       ))}
