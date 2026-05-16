@@ -337,7 +337,7 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="flex flex-col items-center pt-4 pb-2"
+          className="flex flex-col items-center md:flex-row md:items-center md:gap-8 pt-4 pb-2"
         >
           <CycleRing
             cycleDay={cycleDay}
@@ -367,7 +367,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* ── Cards Grid ────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
 
           {/* Countdown Card */}
           <motion.div
@@ -530,87 +530,88 @@ export default function DashboardPage() {
           </motion.div>
         </div>
 
-        {/* ── Cycle Phase Overview ────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45, duration: 0.45 }}
-        >
-          <Card padding="md">
-            <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
-              Cycle Overview
-            </h3>
-            <div className="flex gap-1.5">
-              {(
-                [
-                  { ph: 'menstrual', label: 'Menstrual', days: profile.periodLength },
-                  { ph: 'follicular', label: 'Follicular', days: profile.cycleLength - 14 - profile.periodLength - 5 },
-                  { ph: 'ovulation', label: 'Ovulation', days: 6 },
-                  { ph: 'luteal', label: 'Luteal', days: 14 },
-                ] as const
-              ).map(({ ph, label, days }) => {
-                const isActive = ph === phase;
-                const color = getPhaseColor(ph as any);
-                return (
-                  <div
-                    key={ph}
-                    className={`flex-1 rounded-lg px-1 py-2 flex flex-col items-center gap-1 transition-all ${
-                      isActive ? 'ring-2' : ''
-                    }`}
-                    style={{
-                      backgroundColor: `${color}20`,
-                      outline: isActive ? `2px solid ${color}` : 'none',
-                    }}
-                  >
-                    <span className="text-base">{getPhaseEmoji(ph as any)}</span>
-                    <span
-                      className="text-[9px] font-bold text-center leading-tight"
-                      style={{ color }}
+        {/* ── Cycle Phase Overview + Predicted Windows ────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45, duration: 0.45 }}
+          >
+            <Card padding="md" className="h-full">
+              <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
+                Cycle Overview
+              </h3>
+              <div className="flex gap-1.5">
+                {(
+                  [
+                    { ph: 'menstrual', label: 'Menstrual', days: profile.periodLength },
+                    { ph: 'follicular', label: 'Follicular', days: profile.cycleLength - 14 - profile.periodLength - 5 },
+                    { ph: 'ovulation', label: 'Ovulation', days: 6 },
+                    { ph: 'luteal', label: 'Luteal', days: 14 },
+                  ] as const
+                ).map(({ ph, label, days }) => {
+                  const isActive = ph === phase;
+                  const color = getPhaseColor(ph as any);
+                  return (
+                    <div
+                      key={ph}
+                      className={`flex-1 rounded-lg px-1 py-2 md:py-3 flex flex-col items-center gap-1 transition-all ${
+                        isActive ? 'ring-2' : ''
+                      }`}
+                      style={{
+                        backgroundColor: `${color}20`,
+                        outline: isActive ? `2px solid ${color}` : 'none',
+                      }}
                     >
-                      {label}
-                    </span>
-                    <span className="text-[9px] text-[var(--color-text-muted)]">{days}d</span>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        </motion.div>
+                      <span className="text-base md:text-lg">{getPhaseEmoji(ph as any)}</span>
+                      <span
+                        className="text-[9px] md:text-[11px] font-bold text-center leading-tight"
+                        style={{ color }}
+                      >
+                        {label}
+                      </span>
+                      <span className="text-[9px] md:text-[10px] text-[var(--color-text-muted)]">{days}d</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </motion.div>
 
-        {/* ── Fertile & Ovulation Info ────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.52, duration: 0.45 }}
-        >
-          <Card padding="md">
-            <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
-              Predicted Windows
-            </h3>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[var(--color-bg-secondary)]">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-fertile)' }} />
-                  <span className="text-xs font-medium text-[var(--color-text-secondary)]">Fertile Window</span>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.52, duration: 0.45 }}
+          >
+            <Card padding="md" className="h-full">
+              <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
+                Predicted Windows
+              </h3>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[var(--color-bg-secondary)]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-fertile)' }} />
+                    <span className="text-xs font-medium text-[var(--color-text-secondary)]">Fertile Window</span>
+                  </div>
+                  <span className="text-xs font-bold text-[var(--color-text-primary)]">
+                    {format(parseISO(prediction.fertileStart), 'MMM d')}
+                    {' – '}
+                    {format(parseISO(prediction.fertileEnd), 'MMM d')}
+                  </span>
                 </div>
-                <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                  {format(parseISO(prediction.fertileStart), 'MMM d')}
-                  {' – '}
-                  {format(parseISO(prediction.fertileEnd), 'MMM d')}
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[var(--color-bg-secondary)]">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-ovulation)' }} />
-                  <span className="text-xs font-medium text-[var(--color-text-secondary)]">Ovulation Day</span>
+                <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[var(--color-bg-secondary)]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-ovulation)' }} />
+                    <span className="text-xs font-medium text-[var(--color-text-secondary)]">Ovulation Day</span>
+                  </div>
+                  <span className="text-xs font-bold text-[var(--color-text-primary)]">
+                    {format(parseISO(prediction.ovulationDay), 'MMM d')}
+                  </span>
                 </div>
-                <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                  {format(parseISO(prediction.ovulationDay), 'MMM d')}
-                </span>
               </div>
-            </div>
-          </Card>
-        </motion.div>
+            </Card>
+          </motion.div>
+        </div>
       </div>
 
       {/* ── Period Log Modal ─────────────────────────────────── */}
