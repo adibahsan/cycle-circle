@@ -231,7 +231,7 @@ export default function FeedbackPage() {
         animate="show"
         className="mb-6"
       >
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
+        <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
           {t('feedback.title')}
         </h1>
         <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
@@ -239,7 +239,8 @@ export default function FeedbackPage() {
         </p>
       </motion.div>
 
-      {/* ── Feedback Form Card ── */}
+      {/* ── Feedback Form Card + History (side-by-side on desktop) ── */}
+      <div className="md:grid md:grid-cols-2 md:gap-6">
       <motion.div
         custom={1}
         variants={FADE_UP}
@@ -281,7 +282,7 @@ export default function FeedbackPage() {
                 <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">
                   Category
                 </p>
-                <div className="grid grid-cols-2 gap-2 mb-5">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
                   {CATEGORIES.map(cat => {
                     const { Icon } = cat;
                     const isSelected = selectedCategory === cat.id;
@@ -413,6 +414,7 @@ export default function FeedbackPage() {
       </motion.div>
 
       {/* ── Feedback History ── */}
+      <div>
       {userFeedback.length > 0 && (
         <motion.div
           custom={2}
@@ -442,6 +444,8 @@ export default function FeedbackPage() {
           </p>
         </motion.div>
       )}
+      </div>
+      </div>
     </div>
   );
 }

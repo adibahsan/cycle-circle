@@ -6,7 +6,17 @@ import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/lib/store';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
-import { Home, CalendarDays, Activity, BookOpen, Settings, MessageSquare, Users, Crown } from 'lucide-react';
+import {
+  Home,
+  CalendarDays,
+  Activity,
+  BookOpen,
+  Settings,
+  MessageSquare,
+  Users,
+  Crown,
+  CreditCard,
+} from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/dashboard', icon: Home, labelKey: 'nav.dashboard' },
@@ -14,6 +24,12 @@ const NAV_ITEMS = [
   { href: '/symptoms', icon: Activity, labelKey: 'nav.symptoms' },
   { href: '/content', icon: BookOpen, labelKey: 'nav.content' },
   { href: '/settings', icon: Settings, labelKey: 'nav.settings' },
+];
+
+const SIDEBAR_EXTRA_ITEMS = [
+  { href: '/profiles', icon: Users, labelKey: 'nav.profiles' },
+  { href: '/feedback', icon: MessageSquare, labelKey: 'nav.feedback' },
+  { href: '/subscription', icon: CreditCard, labelKey: 'nav.subscription' },
 ];
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -31,38 +47,117 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const activeProfile = profiles.find(p => p.id === activeProfileId);
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-primary)] flex flex-col max-w-md mx-auto relative">
-      {/* Top header */}
-      <header className="sticky top-0 z-40 glass px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-[var(--color-bg-primary)] flex flex-col md:flex-row relative">
+      {/* ── Desktop Sidebar (md+) ── */}
+      <aside className="hidden md:flex md:flex-col md:w-64 md:sticky md:top-0 md:h-screen md:shrink-0 glass border-r border-[var(--color-border)] z-40">
+        {/* Sidebar header / branding */}
+        <div className="px-5 py-5 flex items-center gap-3">
           <h1 className="text-xl font-bold gradient-primary bg-clip-text text-transparent">Vesta</h1>
-          {/* Profile switcher chip */}
-          <Link
-            href="/profiles"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-xs font-medium hover:border-[var(--color-primary)] transition-colors"
-          >
-            <Users size={12} />
-            <span>{activeProfile?.name ?? 'Profile'}</span>
-          </Link>
-        </div>
-        <div className="flex items-center gap-2">
           {user?.subscriptionStatus === 'pro' && (
             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
               <Crown size={10} /> PRO
             </span>
           )}
+        </div>
+
+        {/* Profile switcher */}
+        <div className="px-4 mb-4">
+          <Link
+            href="/profiles"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors"
+          >
+            <Users size={14} />
+            <span className="truncate">{activeProfile?.name ?? 'Profile'}</span>
+          </Link>
+        </div>
+
+        {/* Main navigation */}
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
+          <p className="px-3 mb-2 text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
+            Menu
+          </p>
+          {NAV_ITEMS.map(({ href, icon: Icon, labelKey }) => {
+            const isActive = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                  isActive
+                    ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
+                }`}
+              >
+                <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} />
+                <span className="text-sm font-semibold">{t(labelKey)}</span>
+              </Link>
+            );
+          })}
+
+          {/* Divider */}
+          <div className="my-3 border-t border-[var(--color-border)]" />
+
+          <p className="px-3 mb-2 text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
+            More
+          </p>
+          {SIDEBAR_EXTRA_ITEMS.map(({ href, icon: Icon, labelKey }) => {
+            const isActive = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                  isActive
+                    ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
+                }`}
+              >
+                <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} />
+                <span className="text-sm font-semibold">{t(labelKey)}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Sidebar footer — language toggle */}
+        <div className="px-4 py-4 border-t border-[var(--color-border)]">
           <LanguageToggle />
         </div>
-      </header>
+      </aside>
 
-      {/* Page content */}
-      <main className="flex-1 px-4 pb-24 pt-2">
-        {children}
-      </main>
+      {/* ── Main content column ── */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top header — mobile only; sidebar handles desktop navigation */}
+        <header className="sticky top-0 z-40 glass px-4 py-3 flex items-center justify-between md:hidden">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold gradient-primary bg-clip-text text-transparent">Vesta</h1>
+            <Link
+              href="/profiles"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-xs font-medium hover:border-[var(--color-primary)] transition-colors"
+            >
+              <Users size={12} />
+              <span>{activeProfile?.name ?? 'Profile'}</span>
+            </Link>
+          </div>
+          <div className="flex items-center gap-2">
+            {user?.subscriptionStatus === 'pro' && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
+                <Crown size={10} /> PRO
+              </span>
+            )}
+            <LanguageToggle />
+          </div>
+        </header>
 
-      {/* Bottom navigation */}
-      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md glass border-t border-[var(--color-border)] z-40">
-        <div className="flex items-center justify-around py-2">
+        {/* Page content */}
+        <main className="flex-1 px-4 pb-24 pt-2 md:pb-8 md:max-w-4xl md:mx-auto md:w-full md:px-8">
+          {children}
+        </main>
+      </div>
+
+      {/* ── Mobile Bottom Navigation (< md) ── */}
+      <nav className="fixed bottom-0 left-0 right-0 glass border-t border-[var(--color-border)] z-40 md:hidden">
+        <div className="flex items-center justify-around py-2 max-w-md mx-auto">
           {NAV_ITEMS.map(({ href, icon: Icon, labelKey }) => {
             const isActive = pathname === href;
             return (

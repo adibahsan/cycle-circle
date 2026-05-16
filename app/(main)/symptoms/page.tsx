@@ -324,7 +324,7 @@ export default function SymptomsPage() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -12 }}
           transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="grid grid-cols-3 gap-2 flex-1"
+          className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3 flex-1"
         >
           {categorySymptoms.map((symptom, i) => {
             const selected = isSymptomSelected(symptom.id);
@@ -356,7 +356,7 @@ export default function SymptomsPage() {
         <motion.div
           key="summary-bar"
           initial={false}
-          className="fixed bottom-[60px] left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-30 pointer-events-none"
+          className="fixed bottom-[60px] md:bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-xl px-4 z-30 pointer-events-none"
         >
           <AnimatePresence mode="wait">
             {totalSelected > 0 ? (

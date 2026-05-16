@@ -229,231 +229,239 @@ export default function SettingsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
+          <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
             {t('settings.title')}
           </h1>
         </motion.div>
 
-        {/* ─────────────────────────────────────── */}
-        {/* 1. Language & Appearance                */}
-        {/* ─────────────────────────────────────── */}
-        <motion.div custom={0} variants={sectionVariants} initial="hidden" animate="visible">
-          <SectionHeader icon={Globe} title="Language & Appearance" />
-          <Card padding="md" className="space-y-5">
-            {/* Language */}
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                  {t('settings.language')}
-                </p>
-                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                  App display language
-                </p>
-              </div>
-              <SegmentedControl<Language>
-                options={[
-                  { label: 'EN', value: 'en' },
-                  { label: 'বাং', value: 'bn' },
-                ]}
-                value={language}
-                onChange={handleLanguageChange}
-              />
-            </div>
-
-            <div className="h-px bg-[var(--color-border)]" />
-
-            {/* Theme */}
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                  {t('settings.theme')}
-                </p>
-                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                  Visual appearance
-                </p>
-              </div>
-              <SegmentedControl<Theme>
-                options={[
-                  { label: '☀️ Light', value: 'light' },
-                  { label: '🌙 Dark', value: 'dark' },
-                ]}
-                value={theme}
-                onChange={handleThemeChange}
-              />
-            </div>
-          </Card>
-        </motion.div>
-
-        {/* ─────────────────────────────────────── */}
-        {/* 2. Notifications                        */}
-        {/* ─────────────────────────────────────── */}
-        <motion.div custom={1} variants={sectionVariants} initial="hidden" animate="visible">
-          <SectionHeader icon={Bell} title={t('settings.notifications')} />
-          <Card padding="md" className="divide-y divide-[var(--color-border)]">
-            {[
-              {
-                key: 'periodAlert' as const,
-                label: t('settings.periodAlert'),
-                desc: 'Get notified 2 days before your period',
-              },
-              {
-                key: 'fertileWindow' as const,
-                label: t('settings.fertileAlert'),
-                desc: 'Know when your fertile window opens',
-              },
-              {
-                key: 'loggingReminder' as const,
-                label: t('settings.reminderAlert'),
-                desc: 'Daily reminder to log your symptoms',
-              },
-            ].map(({ key, label, desc }) => (
-              <div key={key} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">{label}</p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{desc}</p>
+        <div className="md:grid md:grid-cols-2 md:gap-6 space-y-6 md:space-y-0">
+          {/* ── Left column: Language & Appearance, Notifications ── */}
+          <div className="space-y-6">
+            {/* ─────────────────────────────────────── */}
+            {/* 1. Language & Appearance                */}
+            {/* ─────────────────────────────────────── */}
+            <motion.div custom={0} variants={sectionVariants} initial="hidden" animate="visible">
+              <SectionHeader icon={Globe} title="Language & Appearance" />
+              <Card padding="md" className="space-y-5">
+                {/* Language */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                      {t('settings.language')}
+                    </p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                      App display language
+                    </p>
+                  </div>
+                  <SegmentedControl<Language>
+                    options={[
+                      { label: 'EN', value: 'en' },
+                      { label: 'বাং', value: 'bn' },
+                    ]}
+                    value={language}
+                    onChange={handleLanguageChange}
+                  />
                 </div>
-                <Toggle
-                  id={key}
-                  checked={notificationPrefs[key]}
-                  onChange={(v) => setNotificationPref(key, v)}
-                />
-              </div>
-            ))}
-          </Card>
-        </motion.div>
 
-        {/* ─────────────────────────────────────── */}
-        {/* 3. Data Export                          */}
-        {/* ─────────────────────────────────────── */}
-        <motion.div custom={2} variants={sectionVariants} initial="hidden" animate="visible">
-          <SectionHeader icon={Download} title={t('settings.export')} />
-          <Card padding="md" className="space-y-3">
-            <p className="text-xs text-[var(--color-text-muted)]">
-              Exports data for your active profile only
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={handleExportCsv}
-                className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] transition-all duration-200"
-              >
-                <FileText size={22} className="text-[var(--color-secondary)]" />
-                <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
-                  {t('settings.exportCsv')}
-                </span>
-              </button>
-              <button
-                onClick={handleExportExcel}
-                className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] transition-all duration-200"
-              >
-                <FileSpreadsheet size={22} className="text-[var(--color-primary)]" />
-                <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
-                  {t('settings.exportExcel')}
-                </span>
-              </button>
-            </div>
-          </Card>
-        </motion.div>
+                <div className="h-px bg-[var(--color-border)]" />
 
-        {/* ─────────────────────────────────────── */}
-        {/* 4. Account                              */}
-        {/* ─────────────────────────────────────── */}
-        <motion.div custom={3} variants={sectionVariants} initial="hidden" animate="visible">
-          <SectionHeader icon={User} title="Account" />
-          <Card padding="md" className="space-y-2">
-            {/* Account info */}
-            <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-3 space-y-1.5">
-              {user?.phone && (
+                {/* Theme */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                      {t('settings.theme')}
+                    </p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                      Visual appearance
+                    </p>
+                  </div>
+                  <SegmentedControl<Theme>
+                    options={[
+                      { label: '☀️ Light', value: 'light' },
+                      { label: '🌙 Dark', value: 'dark' },
+                    ]}
+                    value={theme}
+                    onChange={handleThemeChange}
+                  />
+                </div>
+              </Card>
+            </motion.div>
+
+            {/* ─────────────────────────────────────── */}
+            {/* 2. Notifications                        */}
+            {/* ─────────────────────────────────────── */}
+            <motion.div custom={1} variants={sectionVariants} initial="hidden" animate="visible">
+              <SectionHeader icon={Bell} title={t('settings.notifications')} />
+              <Card padding="md" className="divide-y divide-[var(--color-border)]">
+                {[
+                  {
+                    key: 'periodAlert' as const,
+                    label: t('settings.periodAlert'),
+                    desc: 'Get notified 2 days before your period',
+                  },
+                  {
+                    key: 'fertileWindow' as const,
+                    label: t('settings.fertileAlert'),
+                    desc: 'Know when your fertile window opens',
+                  },
+                  {
+                    key: 'loggingReminder' as const,
+                    label: t('settings.reminderAlert'),
+                    desc: 'Daily reminder to log your symptoms',
+                  },
+                ].map(({ key, label, desc }) => (
+                  <div key={key} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-[var(--color-text-primary)]">{label}</p>
+                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{desc}</p>
+                    </div>
+                    <Toggle
+                      id={key}
+                      checked={notificationPrefs[key]}
+                      onChange={(v) => setNotificationPref(key, v)}
+                    />
+                  </div>
+                ))}
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* ── Right column: Data Export, Account, About ── */}
+          <div className="space-y-6">
+            {/* ─────────────────────────────────────── */}
+            {/* 3. Data Export                          */}
+            {/* ─────────────────────────────────────── */}
+            <motion.div custom={2} variants={sectionVariants} initial="hidden" animate="visible">
+              <SectionHeader icon={Download} title={t('settings.export')} />
+              <Card padding="md" className="space-y-3">
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  Exports data for your active profile only
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={handleExportCsv}
+                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] transition-all duration-200"
+                  >
+                    <FileText size={22} className="text-[var(--color-secondary)]" />
+                    <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                      {t('settings.exportCsv')}
+                    </span>
+                  </button>
+                  <button
+                    onClick={handleExportExcel}
+                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] transition-all duration-200"
+                  >
+                    <FileSpreadsheet size={22} className="text-[var(--color-primary)]" />
+                    <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                      {t('settings.exportExcel')}
+                    </span>
+                  </button>
+                </div>
+              </Card>
+            </motion.div>
+
+            {/* ─────────────────────────────────────── */}
+            {/* 4. Account                              */}
+            {/* ─────────────────────────────────────── */}
+            <motion.div custom={3} variants={sectionVariants} initial="hidden" animate="visible">
+              <SectionHeader icon={User} title="Account" />
+              <Card padding="md" className="space-y-2">
+                {/* Account info */}
+                <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-3 space-y-1.5">
+                  {user?.phone && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[var(--color-text-muted)]">Phone</span>
+                      <span className="text-xs font-semibold text-[var(--color-text-primary)] font-mono">
+                        +{user.phone}
+                      </span>
+                    </div>
+                  )}
+                  {user?.email && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[var(--color-text-muted)]">Email</span>
+                      <span className="text-xs font-semibold text-[var(--color-text-primary)]">
+                        {user.email}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between pt-1 border-t border-[var(--color-border)]">
+                    <span className="text-xs text-[var(--color-text-muted)]">Plan</span>
+                    <span
+                      className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                        user?.subscriptionStatus === 'pro'
+                          ? 'gradient-primary text-white'
+                          : 'bg-[var(--color-border)] text-[var(--color-text-muted)]'
+                      }`}
+                    >
+                      {user?.subscriptionStatus?.toUpperCase() ?? 'FREE'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Nav links */}
+                <div className="divide-y divide-[var(--color-border)]">
+                  <AccountRow icon={Users} label="Manage Profiles" href="/profiles" />
+                  <AccountRow icon={MessageSquare} label="Give Feedback" href="/feedback" />
+                  <AccountRow
+                    icon={Crown}
+                    label="Subscription"
+                    href="/subscription"
+                    badge={user?.subscriptionStatus !== 'pro' ? 'Upgrade' : undefined}
+                  />
+                </div>
+
+                {/* Logout */}
+                <div className="pt-1">
+                  <Button
+                    variant="outline"
+                    fullWidth
+                    onClick={handleLogout}
+                    className="border-red-300 text-red-500 hover:bg-red-50 hover:border-red-400 dark:hover:bg-red-950/20"
+                  >
+                    <LogOut size={15} className="mr-2" />
+                    {t('settings.logout')}
+                  </Button>
+                </div>
+              </Card>
+            </motion.div>
+
+            {/* ─────────────────────────────────────── */}
+            {/* 5. About                                */}
+            {/* ─────────────────────────────────────── */}
+            <motion.div custom={4} variants={sectionVariants} initial="hidden" animate="visible">
+              <SectionHeader icon={Info} title="About" />
+              <Card padding="md" className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[var(--color-text-muted)]">Phone</span>
-                  <span className="text-xs font-semibold text-[var(--color-text-primary)] font-mono">
-                    +{user.phone}
-                  </span>
+                  <span className="text-sm text-[var(--color-text-secondary)]">App Version</span>
+                  <span className="text-sm font-semibold text-[var(--color-text-primary)]">Vesta v1.0</span>
                 </div>
-              )}
-              {user?.email && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[var(--color-text-muted)]">Email</span>
-                  <span className="text-xs font-semibold text-[var(--color-text-primary)]">
-                    {user.email}
-                  </span>
+
+                <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-3 py-2.5 flex items-start gap-2">
+                  <Lock size={14} className="text-[var(--color-secondary)] mt-0.5 shrink-0" />
+                  <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                    Your health data is encrypted with AES-256-GCM and stored securely.
+                  </p>
                 </div>
-              )}
-              <div className="flex items-center justify-between pt-1 border-t border-[var(--color-border)]">
-                <span className="text-xs text-[var(--color-text-muted)]">Plan</span>
-                <span
-                  className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                    user?.subscriptionStatus === 'pro'
-                      ? 'gradient-primary text-white'
-                      : 'bg-[var(--color-border)] text-[var(--color-text-muted)]'
-                  }`}
-                >
-                  {user?.subscriptionStatus?.toUpperCase() ?? 'FREE'}
-                </span>
-              </div>
-            </div>
 
-            {/* Nav links */}
-            <div className="divide-y divide-[var(--color-border)]">
-              <AccountRow icon={Users} label="Manage Profiles" href="/profiles" />
-              <AccountRow icon={MessageSquare} label="Give Feedback" href="/feedback" />
-              <AccountRow
-                icon={Crown}
-                label="Subscription"
-                href="/subscription"
-                badge={user?.subscriptionStatus !== 'pro' ? 'Upgrade' : undefined}
-              />
-            </div>
-
-            {/* Logout */}
-            <div className="pt-1">
-              <Button
-                variant="outline"
-                fullWidth
-                onClick={handleLogout}
-                className="border-red-300 text-red-500 hover:bg-red-50 hover:border-red-400 dark:hover:bg-red-950/20"
-              >
-                <LogOut size={15} className="mr-2" />
-                {t('settings.logout')}
-              </Button>
-            </div>
-          </Card>
-        </motion.div>
-
-        {/* ─────────────────────────────────────── */}
-        {/* 5. About                                */}
-        {/* ─────────────────────────────────────── */}
-        <motion.div custom={4} variants={sectionVariants} initial="hidden" animate="visible">
-          <SectionHeader icon={Info} title="About" />
-          <Card padding="md" className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-[var(--color-text-secondary)]">App Version</span>
-              <span className="text-sm font-semibold text-[var(--color-text-primary)]">Vesta v1.0</span>
-            </div>
-
-            <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-3 py-2.5 flex items-start gap-2">
-              <Lock size={14} className="text-[var(--color-secondary)] mt-0.5 shrink-0" />
-              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-                Your health data is encrypted with AES-256-GCM and stored securely.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-4 pt-1">
-              <button
-                onClick={() => showToast('Privacy Policy — coming soon')}
-                className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
-              >
-                Privacy Policy
-              </button>
-              <span className="text-[var(--color-border)]">·</span>
-              <button
-                onClick={() => showToast('Terms of Service — coming soon')}
-                className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
-              >
-                Terms of Service
-              </button>
-            </div>
-          </Card>
-        </motion.div>
+                <div className="flex items-center gap-4 pt-1">
+                  <button
+                    onClick={() => showToast('Privacy Policy — coming soon')}
+                    className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
+                  >
+                    Privacy Policy
+                  </button>
+                  <span className="text-[var(--color-border)]">·</span>
+                  <button
+                    onClick={() => showToast('Terms of Service — coming soon')}
+                    className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
+                  >
+                    Terms of Service
+                  </button>
+                </div>
+              </Card>
+            </motion.div>
+          </div>
+        </div>
 
         {/* Bottom spacer */}
         <div className="h-4" />

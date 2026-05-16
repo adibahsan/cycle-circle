@@ -316,7 +316,7 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
           <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             Relation
           </p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
             {RELATIONS.map((rel) => {
               const isSelected = relation === rel;
               const colors = RELATION_COLORS[rel];
@@ -494,7 +494,7 @@ export default function ProfilesPage() {
           transition={{ duration: 0.3 }}
           className="pt-3 pb-4"
         >
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)]">
             {t('profiles.title')}
           </h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
@@ -503,7 +503,7 @@ export default function ProfilesPage() {
         </motion.div>
 
         {/* Profile list */}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
           <AnimatePresence mode="popLayout">
             {profiles.map((profile) => (
               <ProfileCard

@@ -62,7 +62,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-6"
+        className="fixed inset-0 z-50 flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -207,7 +207,7 @@ export default function SubscriptionPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
       >
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
+        <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
           {t('subscription.title')}
         </h1>
         <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
@@ -215,6 +215,8 @@ export default function SubscriptionPage() {
         </p>
       </motion.div>
 
+      {/* ── Current Plan Card + Pro Upgrade Card (side-by-side on desktop) ── */}
+      <div className="md:grid md:grid-cols-2 md:gap-6 space-y-6 md:space-y-0">
       {/* ── Current Plan Card ── */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -276,7 +278,7 @@ export default function SubscriptionPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <div className="relative rounded-2xl overflow-hidden shadow-glow">
+          <div className="relative rounded-2xl overflow-hidden shadow-glow h-full">
             {/* Gradient background */}
             <div className="absolute inset-0 gradient-primary opacity-90" />
             {/* Decorative orb */}
@@ -324,6 +326,7 @@ export default function SubscriptionPage() {
           </div>
         </motion.div>
       )}
+      </div>
 
       {/* ── Comparison Table ── */}
       <motion.div
@@ -359,7 +362,7 @@ export default function SubscriptionPage() {
                 i % 2 === 0 ? '' : 'bg-[var(--color-bg-secondary)]/40'
               }`}
             >
-              <div className="px-4 py-3 text-sm text-[var(--color-text-secondary)] col-span-1">
+              <div className="px-4 py-3 text-sm md:text-base text-[var(--color-text-secondary)] col-span-1">
                 {label}
               </div>
               <div className="px-2 py-3 flex justify-center items-center">

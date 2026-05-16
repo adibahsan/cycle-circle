@@ -110,7 +110,7 @@ function ArticleExpanded({
       initial="hidden"
       animate="show"
       exit="exit"
-      className="fixed inset-0 z-50 flex flex-col bg-[var(--color-bg-primary)] max-w-md mx-auto"
+      className="fixed inset-0 z-50 flex flex-col bg-[var(--color-bg-primary)] max-w-md md:max-w-2xl lg:max-w-3xl mx-auto"
     >
       {/* Header */}
       <div className="sticky top-0 z-10 glass px-4 py-3 flex items-center gap-3">
@@ -130,7 +130,7 @@ function ArticleExpanded({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-8">
+      <div className="flex-1 overflow-y-auto px-4 md:px-12 lg:px-20 pt-4 pb-8">
         {missingTranslation && (
           <div className="mb-4 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-700 font-medium">
             Showing in English — Bengali translation coming soon
@@ -375,7 +375,13 @@ export default function ContentPage() {
               </p>
             </motion.div>
           ) : (
-            <motion.div key={activeFilter} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div
+              key={activeFilter}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4"
+            >
               {filteredArticles.map((article, i) => (
                 <ArticleCard
                   key={article.id}

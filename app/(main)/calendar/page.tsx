@@ -130,7 +130,7 @@ function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
 
       {/* Date number */}
       <span
-        className="text-sm font-semibold leading-none"
+        className="text-sm md:text-base font-semibold leading-none"
         style={{ color: isCurrentMonth ? textColor : 'var(--color-text-muted)', fontWeight: isToday ? 800 : 600 }}
       >
         {format(date, 'd')}
@@ -428,10 +428,10 @@ export default function CalendarPage() {
           </div>
 
           {/* Day-of-week headers */}
-          <div className="grid grid-cols-7 mb-1">
+          <div className="grid grid-cols-7 mb-1 md:mb-2">
             {DOW.map((d) => (
               <div key={d} className="flex items-center justify-center">
-                <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                <span className="text-[10px] md:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
                   {d}
                 </span>
               </div>
@@ -446,7 +446,7 @@ export default function CalendarPage() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -12 }}
               transition={{ duration: 0.22 }}
-              className="grid grid-cols-7 gap-0.5"
+              className="grid grid-cols-7 gap-0.5 md:gap-1"
             >
               {gridDays.map((date) => {
                 const dateStr = format(date, 'yyyy-MM-dd');
@@ -469,31 +469,34 @@ export default function CalendarPage() {
         </Card>
       </motion.div>
 
-      {/* ── Legend ───────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3, duration: 0.4 }}
-      >
-        <Card padding="sm">
-          <Legend />
-        </Card>
-      </motion.div>
+      {/* ── Legend + Day Detail + Monthly Summary ────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Legend */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+          className="md:col-span-2"
+        >
+          <Card padding="sm">
+            <Legend />
+          </Card>
+        </motion.div>
 
-      {/* ── Day Detail ───────────────────────────────────────── */}
-      <AnimatePresence>
-        {selectedDate && selectedMeta && (
-          <DayDetail
-            key={format(selectedDate, 'yyyy-MM-dd')}
-            date={selectedDate}
-            meta={selectedMeta}
-            symptomLogs={symptomLogs.filter((s) => s.profileId === activeProfileId)}
-            onClose={() => setSelectedDate(null)}
-          />
-        )}
-      </AnimatePresence>
+        {/* Day Detail */}
+        <AnimatePresence>
+          {selectedDate && selectedMeta && (
+            <DayDetail
+              key={format(selectedDate, 'yyyy-MM-dd')}
+              date={selectedDate}
+              meta={selectedMeta}
+              symptomLogs={symptomLogs.filter((s) => s.profileId === activeProfileId)}
+              onClose={() => setSelectedDate(null)}
+            />
+          )}
+        </AnimatePresence>
 
-      {/* ── Monthly Summary ──────────────────────────────────── */}
+      {/* Monthly Summary */}
       {prediction && (
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -547,6 +550,7 @@ export default function CalendarPage() {
           </Card>
         </motion.div>
       )}
+      </div>
     </div>
   );
 }
