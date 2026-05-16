@@ -10,3 +10,5 @@ coverage/
 .code-review-graph/
 
 .idea/
+
+.next/
