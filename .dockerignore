@@ -1,0 +1,24 @@
+# Git and editor
+.git
+.gitignore
+**/.DS_Store
+.cursor
+.vscode
+.idea
+
+# Node / frontend (not needed for TAP simulator image)
+node_modules
+.pnpm-store
+**/.next
+**/dist
+**/build
+**/coverage
+**/.turbo
+
+# Logs and local simulator noise (smaller context, reproducible WAR)
+**/logs/**
+**/*.log
+Developer_Bundle/sdk-standalone-1.2.68/**/*.war.bak
+
+# Planning / docs not required in image context (optional speedup)
+.planning
