@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/adibahsan/.local/share/uv/tools/code-review-graph/bin/code-review-graph update --skip-flows",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/adibahsan/.local/share/uv/tools/code-review-graph/bin/code-review-graph status",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
