@@ -175,7 +175,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
     <p class="subtitle">A focused 4-week sprint to ship a bilingual, multi-profile reproductive health platform -- period tracking, cycle predictions, BDApps OTP verification, CAAS billing, notifications, content, and a full admin panel.</p>
     <div class="stats-row">
       <div class="stat"><div class="stat-val">20</div><div class="stat-label">Working days</div></div>
-      <div class="stat"><div class="stat-val">102</div><div class="stat-label">Requirements</div></div>
+      <div class="stat"><div class="stat-val">110</div><div class="stat-label">Requirements</div></div>
       <div class="stat"><div class="stat-val">4</div><div class="stat-label">Phases</div></div>
       <div class="stat"><div class="stat-val">3</div><div class="stat-label">Prediction tiers</div></div>
     </div>
@@ -189,7 +189,7 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
     <div class="moscow-grid">
       <div class="moscow-card moscow-must">
         <div class="moscow-title" style="color:#115e59">MUST HAVE -- Phase 1-2, Weeks 1-2</div>
-        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Phone auth + OTP verification via BDApps + multi-profile accounts</div><div class="fi-note">BDApps otp/request + otp/verify flow. Relation types: self, wife, sister, mother, daughter, girlfriend</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Phone auth + OTP verification via BDApps (email fallback) + multi-profile accounts</div><div class="fi-note">BDApps otp/request + otp/verify flow. Email magic-link fallback with 24h trial window. Profile completion popup post-OTP. Relation types: self, wife, sister, mother, daughter, girlfriend</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Bilingual UI (English + Bengali)</div><div class="fi-note">i18n from day one with i18next + react-i18next</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Period tracking</div><div class="fi-note">Start/end, flow intensity (light/medium/heavy), retroactive editing</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Cycle dashboard</div><div class="fi-note">Cycle day hero, phase label (follicular/ovulatory/luteal/menstrual), countdown</div></div></div>
@@ -199,10 +199,10 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Onboarding flow</div><div class="fi-note">Trust screens, goal selection (period/TTC/peri), cycle history entry</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Field-level encryption</div><div class="fi-note">AES-256-GCM via prisma-field-encryption for health data</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Profile switcher with data isolation</div><div class="fi-note">checkProfileOwnership middleware on every profile-scoped endpoint</div></div></div>
-        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Feature gating middleware (free/pro access control)</div><div class="fi-note">Backend middleware checks subscription tier before granting access to gated features</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Feature gating (email trial 24h expiry + subscription schema)</div><div class="fi-note">Email trial gating active in v1 (24h expiry for email-authenticated users). Pro/free gating deferred to post-v1. Schema in place for future enablement.</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Redis-backed session store with JWT blacklist</div><div class="fi-note">Tracks active sessions per user, enables remote session termination</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">BDApps CAAS charging for Pro subscription</div><div class="fi-note">caas/directDebit for Pro charging, caas/queryBalance for status checks</div></div></div>
-        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Auto-disable Pro on charging lapse + grace period</div><div class="fi-note">Daily cron checks CAAS status, disables Pro after configurable grace period with user warning</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Auto-disable Pro on charging lapse + grace period <em style="color:#9ca3af">(deferred — v2)</em></div><div class="fi-note">Daily cron checks CAAS status. Grace period warnings show "Please renew" messaging without exact expiry date. Auto-disable deferred to v2.</div></div></div>
       </div>
 
       <div class="moscow-card moscow-should">
@@ -210,6 +210,9 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Email notifications</div><div class="fi-note">Period alerts, fertile window, logging reminders via Resend + React Email</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Content platform</div><div class="fi-note">Bilingual blog articles, phase-specific recommendations, cultural context</div></div></div>
         <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Notification preferences per-profile</div><div class="fi-note">Toggle each notification type on/off per health profile</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">SMS period/fertile alerts for Pro subscribers <em style="color:#16a34a;font-size:9px">(v1.2)</em></div><div class="fi-note">Automated SMS before expected period and fertile window. Exclusively for subscribed users. Via BDApps SMS Send API.</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">SMS content circulation (daily broadcast) <em style="color:#16a34a;font-size:9px">(v1.1)</em></div><div class="fi-note">Admin batch-uploads health tips. Daily dispatch to all subscribers via BDApps sms/send with tel:all. Content override: new replaces previous day's.</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">In-app feedback module <em style="color:#16a34a;font-size:9px">(v1.2)</em></div><div class="fi-note">Bug reports, feature requests, general feedback, satisfaction rating. Admin views and exports as CSV.</div></div></div>
       </div>
 
       <div class="moscow-card moscow-could">
@@ -1182,7 +1185,11 @@ h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
         <div class="dod-item"><div class="dod-check">&#10003;</div>Admin can manage users and content via CMS</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>Feature gating blocks free users from pro features and allows access for pro users</div>
         <div class="dod-item"><div class="dod-check">&#10003;</div>Admin can terminate user sessions remotely</div>
-        <div class="dod-item"><div class="dod-check">&#10003;</div>BDApps charging status checked daily, pro access disabled after grace period</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>BDApps charging status checked daily; grace period warnings show renewal messaging without exact expiry date (auto-disable deferred — v2)</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Email fallback login verified end-to-end; 24h trial window locks features after expiry <em style="color:#16a34a;font-size:9px">(v1.2)</em></div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Profile completion popup appears ~1 min after OTP login <em style="color:#16a34a;font-size:9px">(v1.2)</em></div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>SMS period/fertile alerts delivered exclusively to Pro subscribers <em style="color:#16a34a;font-size:9px">(v1.2)</em></div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>In-app feedback module operational; admin can view submissions <em style="color:#16a34a;font-size:9px">(v1.2)</em></div>
       </div>
       <div class="dod-card">
         <div class="dod-title">Quality &amp; Security</div>

@@ -2,6 +2,8 @@
 
 Reproducible Linux image for the vendor bundle under `Developer_Bundle/sdk-standalone-1.2.68/`: Jetty UI on **10001**, REST simulator on **7000** (SMS/USSD/CaaS per the BDApps guides).
 
+The `Developer_Bundle/sdk-standalone-1.2.68/` runtime is intentionally kept in the repo because this Docker image copies the vendor SDK directly. Generated sample-app build outputs under `Developer_Bundle/sample-applications/**/target/` should not be committed.
+
 ## Prerequisites
 
 - Docker with BuildKit and Compose v2
