@@ -1,10 +1,31 @@
 'use client';
 
 import { motion } from 'motion/react';
+import { Sun, Moon } from 'lucide-react';
+import { useAppStore } from '@/lib/store';
+import { LanguageToggle } from '@/components/ui/LanguageToggle';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const { theme, setTheme } = useAppStore();
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row relative overflow-hidden bg-[var(--color-bg-primary)]">
+      {/* ── Floating controls: theme + language toggle ── */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+        <LanguageToggle />
+        <button
+          onClick={toggleTheme}
+          className="p-2.5 rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft hover:border-[var(--color-primary)] transition-all duration-200 active:scale-95"
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? (
+            <Sun size={18} className="text-[var(--color-text-primary)]" />
+          ) : (
+            <Moon size={18} className="text-[var(--color-text-primary)]" />
+          )}
+        </button>
+      </div>
       {/* ── Desktop left panel: branding / illustration (md+) ── */}
       <div className="hidden md:flex md:w-1/2 lg:w-[55%] relative items-center justify-center overflow-hidden">
         {/* Decorative blobs for left panel */}

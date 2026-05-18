@@ -42,9 +42,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { isAuthenticated, user, profiles, activeProfileId, setActiveProfile, theme, setTheme } = useAppStore();
 
   const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.classList.toggle('dark', next === 'dark');
+    setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
   useEffect(() => {
