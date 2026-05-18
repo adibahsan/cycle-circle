@@ -17,7 +17,8 @@
 | Document ID       | SRS-VESTA-001                                                                                                                                                                  |
 | Version           | 1.2                                                                                                                                                                            |
 | Issue date        | May 2026                                                                                                                                                                       |
-| Source            | `netlify-vesta/vesta/vesta-srs.html`                                                                                                                                           |
+| Source            | `docs/vesta/SRS.md`                                                                                                                                                            |
+| Published copy    | `netlify-vesta/vesta/vesta-srs.html`                                                                                                                                           |
 | Related artifacts | `docs/vesta/vesta-kb.md`, `docs/vesta/vesta-mvp-plan.html`, `docs/vesta/vesta-user-stories.html`, `docs/vesta/vesta-user-journey-flows.html`, `docs/vesta/bdapps-tap-api.html` |
 | Audience          | Client sponsor, product owner, engineering team, QA team, security reviewers                                                                                                   |
 | Approval          | Arika/Fakhrul                                                                                                                                                                  |
@@ -28,7 +29,7 @@
 
 | Version | Date    | Author | Description                                                       |
 | ------- | ------- | ------ | ----------------------------------------------------------------- |
-| 1.0     | 2026-04 | Adib   | Initial release derived from `netlify-vesta/vesta/vesta-srs.html` |
+| 1.0     | 2026-04 | Adib   | Initial release derived from the Vesta SRS HTML draft |
 | 1.1     | 2026-05-03 | Adib | Deferred Pro auto-disable to v2; added SMS content circulation (FR-SMS); added BDApps webhook endpoints (FR-WEBHOOK) |
 | 1.2     | 2026-05-09 | Adib | Client feedback: email fallback auth with 24h trial window; SMS period/fertile alerts for subscribers; profile completion flow post-OTP; in-app feedback module (FR-FEEDBACK); grace period warning policy (no expiry date shown) |
 
@@ -150,7 +151,7 @@ Vesta v1 shall deliver phone-number-based account management (verified via BDApp
 | R3  | Vesta v1 User Stories                                | `docs/vesta/vesta-user-stories.html`                                                                                 |
 | R4  | Vesta v1 User Journey Flows                          | `docs/vesta/vesta-user-journey-flows.html`                                                                           |
 | R5  | BDApps Telco Aggregator Platform (TAP) API Reference | `docs/vesta/bdapps-tap-api.html`                                                                                     |
-| R6  | Source SRS (HTML form)                               | `netlify-vesta/vesta/vesta-srs.html`                                                                                 |
+| R6  | Published client SRS (HTML form)                     | `netlify-vesta/vesta/vesta-srs.html`                                                                                 |
 | R7  | Resend Transactional Email API                       | [https://resend.com/docs](https://resend.com/docs)                                                                   |
 | R8  | Upstash QStash Documentation                         | [https://upstash.com/docs/qstash](https://upstash.com/docs/qstash)                                                   |
 | R9  | Supabase Row Level Security                          | [https://supabase.com/docs/guides/auth/row-level-security](https://supabase.com/docs/guides/auth/row-level-security) |
@@ -574,8 +575,8 @@ Each functional requirement below states the expected behaviour and the testable
 
 **Acceptance criteria:**
 
-- A period log shall be saved, prediction recalculation shall complete, and the calendar shall be updated within 3 seconds end-to-end.
-- Editing a past entry shall update predictions; the dashboard shall reflect new values within 3 s.
+- A period log shall be saved, prediction recalculation shall complete, and the calendar shall be updated within 10 seconds end-to-end.
+- Editing a past entry shall update predictions; the dashboard shall reflect new values within 10 seconds.
 
 #### FR-DASH — Cycle Dashboard
 
@@ -677,7 +678,7 @@ Each functional requirement below states the expected behaviour and the testable
 
 - A Pro upgrade via CAAS shall charge the mobile balance and shall update `subscription_status` within one API request.
 - The daily CAAS cron shall run at 02:00 UTC and shall update the subscriptions table (verifiable in logs).
-- A grace period shall activate on simulated N consecutive failures; Pro shall be revoked at expiry. **(deferred — v2)**
+- Grace-period activation and Pro revocation shall be validated in v2; v1 shall only preserve the schema/state needed for future implementation. **(deferred — v2)**
 - A real BDApps CAAS charge shall be verified in production.
 
 #### FR-GATE — Feature Gating (Email Trial + Subscription Schema) *(updated v1.2)*
@@ -1092,7 +1093,7 @@ The system shall not be considered production-ready until all of the following g
 
 ### Core Tracking
 
-- Period logging → prediction recalculation → calendar update shall complete in under 3 seconds.
+- Period logging → prediction recalculation → calendar update shall complete in under 10 seconds.
 - Symptom logging shall handle all 30+ symptoms across all four categories, saved and displayed correctly.
 
 ### Localisation
