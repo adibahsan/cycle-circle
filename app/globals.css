@@ -47,6 +47,16 @@
   --radius-full: 9999px;
 }
 
+.dark {
+  --color-bg-primary: #1A0E12;
+  --color-bg-secondary: #2D1A20;
+  --color-bg-card: #3A2229;
+  --color-text-primary: #FFF0F3;
+  --color-text-secondary: #D4B8C0;
+  --color-text-muted: #9B8A92;
+  --color-border: #4A2D35;
+}
+
 @layer base {
   body {
     font-family: var(--font-display);
@@ -54,10 +64,6 @@
     color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-  }
-  .dark body {
-    background-color: var(--color-dark-bg-primary);
-    color: var(--color-dark-text-primary);
   }
 }
 

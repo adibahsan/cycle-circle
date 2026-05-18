@@ -444,19 +444,19 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="flex items-center gap-4 pt-1">
-                  <button
-                    onClick={() => showToast('Privacy Policy — coming soon')}
+                  <Link
+                    href="/privacy"
                     className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
                   >
                     Privacy Policy
-                  </button>
+                  </Link>
                   <span className="text-[var(--color-border)]">·</span>
-                  <button
-                    onClick={() => showToast('Terms of Service — coming soon')}
+                  <Link
+                    href="/terms"
                     className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
                   >
                     Terms of Service
-                  </button>
+                  </Link>
                 </div>
               </Card>
             </motion.div>

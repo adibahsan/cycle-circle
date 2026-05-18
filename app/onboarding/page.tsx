@@ -182,13 +182,9 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
 function StepGoal({
   selected,
   onSelect,
-  onNext,
-  onBack,
 }: {
   selected: Goal;
   onSelect: (g: Goal) => void;
-  onNext: () => void;
-  onBack: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -278,14 +274,6 @@ function StepGoal({
         })}
       </div>
 
-      <div className="flex gap-3 mt-2">
-        <Button variant="outline" size="lg" onClick={onBack} className="w-14 shrink-0 px-0">
-          <ChevronLeft size={20} />
-        </Button>
-        <Button size="lg" fullWidth onClick={onNext} disabled={!selected}>
-          {t('onboarding.next')} <ChevronRight size={18} className="ml-1" />
-        </Button>
-      </div>
     </div>
   );
 }
@@ -299,9 +287,6 @@ function StepCycleHistory({
   onCycleLength,
   onPeriodLength,
   onLastPeriodDate,
-  onNext,
-  onBack,
-  onSkip,
 }: {
   cycleLength: number;
   periodLength: number;
@@ -309,9 +294,6 @@ function StepCycleHistory({
   onCycleLength: (v: number) => void;
   onPeriodLength: (v: number) => void;
   onLastPeriodDate: (v: string) => void;
-  onNext: () => void;
-  onBack: () => void;
-  onSkip: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -389,21 +371,6 @@ function StepCycleHistory({
         />
       </Card>
 
-      <div className="flex gap-3">
-        <Button variant="outline" size="lg" onClick={onBack} className="w-14 shrink-0 px-0">
-          <ChevronLeft size={20} />
-        </Button>
-        <Button size="lg" fullWidth onClick={onNext}>
-          {t('onboarding.next')} <ChevronRight size={18} className="ml-1" />
-        </Button>
-      </div>
-
-      <button
-        onClick={onSkip}
-        className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors text-center"
-      >
-        {t('onboarding.skip')}
-      </button>
     </div>
   );
 }
@@ -415,17 +382,11 @@ function StepProfile({
   relation,
   onName,
   onRelation,
-  onNext,
-  onBack,
-  onSkip,
 }: {
   name: string;
   relation: ProfileRelation;
   onName: (v: string) => void;
   onRelation: (v: ProfileRelation) => void;
-  onNext: () => void;
-  onBack: () => void;
-  onSkip: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -493,21 +454,6 @@ function StepProfile({
         </motion.div>
       )}
 
-      <div className="flex gap-3">
-        <Button variant="outline" size="lg" onClick={onBack} className="w-14 shrink-0 px-0">
-          <ChevronLeft size={20} />
-        </Button>
-        <Button size="lg" fullWidth onClick={onNext}>
-          {t('onboarding.next')} <ChevronRight size={18} className="ml-1" />
-        </Button>
-      </div>
-
-      <button
-        onClick={onSkip}
-        className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors text-center"
-      >
-        {t('onboarding.skip')}
-      </button>
     </div>
   );
 }
@@ -643,6 +589,7 @@ function StepDone({
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { setOnboardingComplete, addProfile } = useAppStore();
 
   const [step, setStep] = useState(1);
@@ -719,11 +666,18 @@ export default function OnboardingPage() {
           <StepGoal
             selected={state.goal}
             onSelect={(g) => setState((s) => ({ ...s, goal: g }))}
-            onNext={goNext}
-            onBack={goBack}
           />
         );
       case 3:
+        return (
+          <StepProfile
+            name={state.profileName}
+            relation={state.profileRelation}
+            onName={(v) => setState((s) => ({ ...s, profileName: v }))}
+            onRelation={(v) => setState((s) => ({ ...s, profileRelation: v }))}
+          />
+        );
+      case 4:
         return (
           <StepCycleHistory
             cycleLength={state.cycleLength}
@@ -732,21 +686,6 @@ export default function OnboardingPage() {
             onCycleLength={(v) => setState((s) => ({ ...s, cycleLength: v }))}
             onPeriodLength={(v) => setState((s) => ({ ...s, periodLength: v }))}
             onLastPeriodDate={(v) => setState((s) => ({ ...s, lastPeriodDate: v }))}
-            onNext={goNext}
-            onBack={goBack}
-            onSkip={skipStep}
-          />
-        );
-      case 4:
-        return (
-          <StepProfile
-            name={state.profileName}
-            relation={state.profileRelation}
-            onName={(v) => setState((s) => ({ ...s, profileName: v }))}
-            onRelation={(v) => setState((s) => ({ ...s, profileRelation: v }))}
-            onNext={goNext}
-            onBack={goBack}
-            onSkip={skipStep}
           />
         );
       case 5:
@@ -758,59 +697,81 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-primary)] flex flex-col max-w-md mx-auto relative overflow-hidden">
-      {/* Floating background orbs */}
-      <motion.div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-[-80px] right-[-60px] w-72 h-72 rounded-full opacity-[0.08]"
-        style={{ background: 'radial-gradient(circle, #e8476c 0%, transparent 70%)' }}
-        animate={{ x: [0, 20, 0], y: [0, -15, 0] }}
-        transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      <motion.div
-        aria-hidden="true"
-        className="pointer-events-none absolute bottom-[-60px] left-[-80px] w-80 h-80 rounded-full opacity-[0.08]"
-        style={{ background: 'radial-gradient(circle, #9b7fd4 0%, transparent 70%)' }}
-        animate={{ x: [0, -12, 0], y: [0, 18, 0] }}
-        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-      />
+        {/* Floating background orbs */}
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-[-80px] right-[-60px] w-72 h-72 rounded-full opacity-[0.08]"
+          style={{ background: 'radial-gradient(circle, #e8476c 0%, transparent 70%)' }}
+          animate={{ x: [0, 20, 0], y: [0, -15, 0] }}
+          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-[-60px] left-[-80px] w-80 h-80 rounded-full opacity-[0.08]"
+          style={{ background: 'radial-gradient(circle, #9b7fd4 0%, transparent 70%)' }}
+          animate={{ x: [0, -12, 0], y: [0, 18, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+        />
 
-      {/* Top bar */}
-      <div className="sticky top-0 z-10 bg-[var(--color-bg-primary)]/90 backdrop-blur-sm px-5 pt-safe-top">
-        <div className="flex items-center justify-between py-4">
-          {/* Vesta wordmark */}
-          <span className="text-lg font-bold text-[var(--color-primary)]">Vesta</span>
-          {/* Step counter */}
-          <span className="text-xs font-medium text-[var(--color-text-muted)]">
-            {step} / {TOTAL_STEPS}
-          </span>
+        {/* Top bar */}
+        <div className="sticky top-0 z-10 bg-[var(--color-bg-primary)]/90 backdrop-blur-sm px-5 pt-safe-top">
+          <div className="flex items-center justify-between py-4">
+            {/* Vesta wordmark */}
+            <span className="text-lg font-bold text-[var(--color-primary)]">Vesta</span>
+            {/* Step counter */}
+            <span className="text-xs font-medium text-[var(--color-text-muted)]">
+              {step} / {TOTAL_STEPS}
+            </span>
+          </div>
+          {/* Progress bar */}
+          <ProgressBar step={step} />
+          <div className="pb-2" />
         </div>
-        {/* Progress bar */}
-        <ProgressBar step={step} />
-        <div className="pb-2" />
-      </div>
 
-      {/* Step content with animated transitions */}
-      <div className="flex-1 overflow-hidden relative">
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={step}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{
-              x: { type: 'spring', stiffness: 280, damping: 30 },
-              opacity: { duration: 0.18 },
-            }}
-            className="absolute inset-0 overflow-y-auto px-5 py-4"
-          >
-            {renderStep()}
-            {/* Bottom padding so content isn't hidden behind phone chrome */}
-            <div className="h-6" />
-          </motion.div>
-        </AnimatePresence>
-      </div>
+        {/* Step content with animated transitions */}
+        <div className="flex-1 overflow-hidden relative">
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={step}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: 'spring', stiffness: 280, damping: 30 },
+                opacity: { duration: 0.18 },
+              }}
+              className="absolute inset-0 overflow-y-auto px-5 py-4"
+            >
+              {renderStep()}
+              {/* Bottom padding so content isn't hidden behind fixed nav */}
+              <div className="h-6" />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Fixed bottom navigation bar — shown for steps 2–4 */}
+        {step >= 2 && step <= 4 && (
+          <div className="sticky bottom-0 z-20 bg-[var(--color-bg-primary)]/95 backdrop-blur-sm border-t border-[var(--color-border)] px-5 py-4">
+            <div className="flex gap-3 max-w-md mx-auto">
+              <Button variant="outline" size="lg" onClick={goBack} className="w-14 shrink-0 px-0">
+                <ChevronLeft size={20} />
+              </Button>
+              <Button size="lg" fullWidth onClick={goNext} disabled={step === 2 && !state.goal}>
+                {t('onboarding.next')} <ChevronRight size={18} className="ml-1" />
+              </Button>
+            </div>
+            {(step === 3 || step === 4) && (
+              <button
+                onClick={skipStep}
+                className="w-full text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors text-center mt-2"
+              >
+                {t('onboarding.skip')}
+              </button>
+            )}
+          </div>
+        )}
     </div>
   );
 }
