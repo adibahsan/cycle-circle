@@ -1,9 +1,9 @@
 # Vesta v1 — Developer Checklist (4-Week Sprint)
 
 **Generated:** 2026-05-17  
-**Last Updated:** 2026-05-17 (animations, logo, content UX, theme toggle)  
+**Last Updated:** 2026-05-20 (full P0 backend implementation)  
 **Status Legend:** DONE | PARTIAL | NOT STARTED  
-**Context:** Frontend prototype with Next.js 16 + dummy data. No backend/DB yet.
+**Context:** Frontend prototype + full P0 backend. Prisma 7.8, PostgreSQL, Redis, Docker Compose, 35 API routes, service adapters, worker process.
 
 ---
 
@@ -97,45 +97,45 @@
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | AES-256-GCM encryption | NOT STARTED | No crypto code (UI mentions it only) |
-| 2 | prisma-field-encryption integration | NOT STARTED | No Prisma in project |
-| 3 | Transparent decrypt in application layer | NOT STARTED | All data is plain objects |
+| 1 | AES-256-GCM encryption | DONE | `prisma-field-encryption` 1.6.0 with AES-256-GCM via `PRISMA_FIELD_ENCRYPTION_KEY` |
+| 2 | prisma-field-encryption integration | DONE | `lib/server/db.ts` uses `$extends(fieldEncryptionExtension())` — Prisma 7 API |
+| 3 | Transparent decrypt in application layer | DONE | `SymptomLog.value` annotated `/// @encrypted`, auto-decrypt on read |
 
 ### FR-SESSION — Session Store & JWT Blacklist
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | JWT in HttpOnly cookie | NOT STARTED | Auth is simulated in Zustand |
-| 2 | Redis blacklist for logged-out JWTs | NOT STARTED | No Redis |
-| 3 | Rate-limit counters | NOT STARTED | No server-side infra |
+| 1 | JWT in HttpOnly cookie | DONE | `lib/server/auth.ts` — jose HS256, HttpOnly/Secure/SameSite=Lax cookie, 30-day expiry |
+| 2 | Redis blacklist for logged-out JWTs | DONE | `lib/server/adapters/redis.ts` — `blacklistJti()` with TTL matching token remaining life |
+| 3 | Rate-limit counters | DONE | Sliding-window rate limiter via Redis sorted sets — 3 OTP/min, 3 magic-link/hr |
 
 ### FR-BILL — Pro Subscription via BDApps CAAS
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | CAAS direct/debit API call | NOT STARTED | UI simulates with setTimeout |
-| 2 | Subscription record creation | NOT STARTED | Local state only, no DB |
-| 3 | Daily CAAS balance-check cron | NOT STARTED | No cron infrastructure |
+| 1 | CAAS direct/debit API call | DONE | `POST /api/billing/subscribe` — calls `caasDirectDebit()`, creates CaasTransaction |
+| 2 | Subscription record creation | DONE | Upserts Subscription (status=PRO) + updates User.subscriptionStatus |
+| 3 | Daily CAAS balance-check cron | DONE | `POST /api/cron/caas-check` — `withCronAuth`, batch checks all PRO subs, tracks failures |
 | 4 | Grace period flow | NOT STARTED | Deferred to v2 per SRS |
 
 ### FR-GATE — Feature Gating
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | subscription_status field (free/pro/lapsed) | PARTIAL | Type + UI exists, no DB column |
-| 2 | Email trial 24h expiry enforcement | PARTIAL | Timer countdown UI, no server-side gate |
-| 3 | auth_method tracking (otp/email) | PARTIAL | Stored in Zustand, no DB |
+| 1 | subscription_status field (free/pro/lapsed) | DONE | DB column `SubscriptionStatus` enum (FREE/PRO/LAPSED) on User + Subscription models |
+| 2 | Email trial 24h expiry enforcement | DONE | `withAuth` middleware checks `emailTrialExpiresAt` — returns 402 after 24h for EMAIL auth |
+| 3 | auth_method tracking (otp/email) | DONE | `AuthMethod` enum on User, set during OTP verify / magic-link callback |
 
 ### FR-WEBHOOK — BDApps Inbound Webhooks
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | /api/webhooks/sms/receive | NOT STARTED | No app/api/ directory |
-| 2 | /api/webhooks/sms/report | NOT STARTED | — |
-| 3 | /api/webhooks/ussd/receive | NOT STARTED | — |
-| 4 | /api/webhooks/subscription/notify | NOT STARTED | — |
-| 5 | IP whitelist/signature validation | NOT STARTED | — |
-| 6 | webhook_events log table | NOT STARTED | — |
+| 1 | /api/webhooks/sms/receive | DONE | Route handler logs inbound MO SMS, persists to WebhookEvent |
+| 2 | /api/webhooks/sms/report | DONE | Route handler persists delivery status reports |
+| 3 | /api/webhooks/ussd/receive | DONE | Route handler logs USSD session events |
+| 4 | /api/webhooks/subscription/notify | DONE | Maps ACTIVE→PRO / INACTIVE→LAPSED, updates User + Subscription |
+| 5 | IP whitelist/signature validation | DONE | `validateWebhookSource()` checks `BDAPPS_WEBHOOK_IPS` (allow-all in dev) |
+| 6 | webhook_events log table | DONE | `WebhookEvent` model with `idempotencyKey` unique index for dedup |
 
 ---
 
@@ -150,7 +150,7 @@
 | 3 | Logging reminder email template | NOT STARTED | — |
 | 4 | Per-profile notification toggles UI | DONE | 3 toggles in settings, wired to store |
 | 5 | Daily cron for evaluating notifications | NOT STARTED | No cron |
-| 6 | QStash worker for Resend | NOT STARTED | No QStash |
+| 6 | QStash worker for Resend | PARTIAL | Local DB-backed job worker in `worker-process.ts` (polls JobEvent). QStash adapter for prod not yet wired |
 
 ### FR-SMS — SMS Alerts & Content Circulation
 
@@ -188,7 +188,7 @@
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | Super Admin role | NOT STARTED | No role field, no admin enum |
+| 1 | Super Admin role | PARTIAL | `Role` enum (USER/ADMIN) on User model in schema. No admin UI or middleware yet |
 | 2 | Admin KPI dashboard | NOT STARTED | No /admin route tree |
 | 3 | User management (list/search/suspend) | NOT STARTED | — |
 | 4 | Subscription management | NOT STARTED | — |
@@ -224,7 +224,7 @@
 | 1 | CSV export for period + symptom logs | PARTIAL | Button exists, handler is a stub (toast only) |
 | 2 | Excel (XLSX) export | PARTIAL | Button exists, handler is a stub |
 | 3 | Per-profile data only | PARTIAL | Copy states intent, logic not implemented |
-| 4 | Sensitive fields decrypted before export | NOT STARTED | No encryption layer exists |
+| 4 | Sensitive fields decrypted before export | PARTIAL | Encryption layer exists (prisma-field-encryption), but export logic not implemented |
 | 5 | Export UI in settings (buttons/triggers) | DONE | Two buttons with icons rendered |
 
 ---
@@ -237,21 +237,23 @@
 | 2 | NFR-I18N-01: All UI strings in EN + BN | PARTIAL | i18n file complete, ~20+ hardcoded strings remain |
 | 3 | NFR-I18N-02: Bengali no-overflow at 375px | PARTIAL | Layout uses overflow patterns, no formal test |
 | 4 | NFR-PERF-01: Period log→prediction <10s | DONE | Synchronous/reactive, instant in prototype |
-| 5 | NFR-SEC-01: Field encryption at rest | NOT STARTED | No crypto layer |
-| 6 | NFR-SEC-06: JWT HttpOnly/Secure/SameSite | NOT STARTED | No real JWT |
+| 5 | NFR-SEC-01: Field encryption at rest | DONE | `prisma-field-encryption` AES-256-GCM on `SymptomLog.value` via `/// @encrypted` annotation |
+| 6 | NFR-SEC-06: JWT HttpOnly/Secure/SameSite | DONE | `lib/server/auth.ts` — `setAuthCookie()` sets HttpOnly, Secure (prod), SameSite=Lax |
 
 ---
 
 ## Summary Scorecard
 
-| Week | Total Items | DONE | PARTIAL | NOT STARTED |
-|------|-------------|------|---------|-------------|
-| **Week 1–2 (P0 Frontend)** | 42 | 30 | 9 | 3 |
-| **Week 1–2 (P0 Backend)** | 18 | 0 | 3 | 15 |
-| **Week 3 (P1)** | 19 | 7 | 2 | 10 |
-| **Week 4 (P2)** | 29 | 1 | 3 | 25 |
-| **NFR** | 6 | 2 | 2 | 2 |
-| **TOTAL** | **114** | **40** | **19** | **55** |
+| Week | Total Items | DONE | PARTIAL | NOT STARTED | Delta |
+|------|-------------|------|---------|-------------|-------|
+| **Week 1–2 (P0 Frontend)** | 42 | 30 | 9 | 3 | — |
+| **Week 1–2 (P0 Backend)** | 18 | **18** | 0 | 0 | +18 DONE |
+| **Week 3 (P1)** | 19 | 7 | **3** | **9** | +1 PARTIAL |
+| **Week 4 (P2)** | 29 | 1 | **5** | **23** | +2 PARTIAL |
+| **NFR** | 6 | **4** | 2 | **0** | +2 DONE |
+| **TOTAL** | **114** | **60** | **19** | **35** | **+20 items completed** |
+
+> **Progress:** 40 → 60 DONE items (**+50% increase**). All P0 backend work complete. 53% of total project now DONE.
 
 ---
 
@@ -275,7 +277,42 @@
 
 ---
 
-## Recent Session Changes (2026-05-17)
+## Recent Session Changes (2026-05-19)
+
+### Completed This Session — Full P0 Backend:
+
+| Change | Status |
+|--------|--------|
+| Prisma schema: 13 models, 11 enums (User, Profile, PeriodLog, SymptomLog, Prediction, Subscription, CaasTransaction, OtpChallenge, MagicLink, WebhookEvent, JobEvent, NotificationPreference, Feedback) | DONE |
+| Prisma 7.8 config (`prisma.config.ts`) + field encryption via `$extends` | DONE |
+| Zod 4 env validation (`lib/env.ts`) — 13 env vars | DONE |
+| DB client singleton with encryption middleware (`lib/server/db.ts`) | DONE |
+| RLS transaction helper (`lib/server/rls.ts`) — parameterized, injection-safe | DONE |
+| Seed script with demo user, profiles, period logs, predictions | DONE |
+| BDApps adapter — OTP, CAAS, SMS with exponential backoff + simulator switching | DONE |
+| Redis adapter — JWT blacklist + sliding-window rate limiter | DONE |
+| Auth module — JWT (jose HS256), HttpOnly cookies, MSISDN validation | DONE |
+| Mail adapter — Resend with dev console fallback | DONE |
+| Job adapter — DB-backed queue with `FOR UPDATE SKIP LOCKED` | DONE |
+| Webhook adapter — IP validation + idempotent persistence | DONE |
+| Auth middleware — `withAuth` (email trial enforcement) + `withCronAuth` | DONE |
+| API error format + Zod request validation helpers | DONE |
+| 6 Auth routes: OTP request/verify, magic-link request/callback, logout, status | DONE |
+| 2 Profile routes: CRUD with max-6 limit, ownership guards | DONE |
+| 5 Tracking routes: period logs, symptoms, dashboard (phase calc), calendar (month overlay) | DONE |
+| 1 Prediction route: GET with tier explanation | DONE |
+| 2 Billing routes: CAAS subscribe + cron balance check | DONE |
+| 4 Webhook routes: SMS receive/report, USSD, subscription notify with dedup | DONE |
+| 5 Health check routes: DB, Redis, BDApps, Mailpit, Worker | DONE |
+| Docker Compose: 6 services (app, postgres:16, redis:7, worker, mailpit, bdapps-simulator) | DONE |
+| Worker process: poll-loop with Tier 1/2 prediction recalculation | DONE |
+| Developer checklist page at `/backend-checklist` with live health checks, API ref, test panel | DONE |
+| Vitest config + 11 npm scripts (docker:*, db:*, backend:test) | DONE |
+| TypeScript: zero errors across 61 new files | DONE |
+
+---
+
+## Previous Session Changes (2026-05-17)
 
 ### Completed This Session:
 
@@ -301,17 +338,24 @@
 
 ---
 
-## Backend Work Remaining (Post-Prototype)
+## Backend Work Remaining
 
-All backend infrastructure is NOT STARTED:
-- Database setup (Supabase + Prisma + RLS)
-- Real BDApps OTP/CAAS API integration
-- JWT auth + Redis blacklist + rate limiting
-- Field-level encryption (prisma-field-encryption)
-- Webhook endpoints (4 routes)
-- Email notification system (Resend + QStash)
-- SMS broadcast system (BDApps SMS Send API)
-- Cron jobs (daily-reminders + caas-check)
+### DONE (2026-05-19 session):
+- ~~Database setup (Prisma 7.8 + PostgreSQL + RLS helper)~~ — 13 models, 11 enums, seed script
+- ~~Real BDApps OTP/CAAS API integration~~ — adapter with simulator switching + exponential backoff
+- ~~JWT auth + Redis blacklist + rate limiting~~ — jose HS256, sliding-window rate limiter
+- ~~Field-level encryption (prisma-field-encryption)~~ — AES-256-GCM on SymptomLog.value
+- ~~Webhook endpoints (4 routes)~~ — with IP validation + idempotent dedup
+- ~~CAAS balance-check cron~~ — `/api/cron/caas-check` with `withCronAuth`
+- ~~Docker Compose local stack~~ — 6 services (app, postgres, redis, worker, mailpit, bdapps-simulator)
+- ~~Local job worker~~ — `worker-process.ts` with `FOR UPDATE SKIP LOCKED` + prediction recalculation
+- ~~Developer checklist page~~ — `/backend-checklist` with health checks, API reference, test panel
+
+### Still Remaining:
+- Wire frontend to real API routes (replace Zustand dummy data with fetch calls)
+- Email notification templates (Resend React Email for period/fertile/reminder)
+- Daily-reminders cron job (`/api/cron/daily-reminders`)
+- SMS broadcast system (BDApps SMS Send API — adapter exists, no cron integration)
 - Admin panel (entire /admin route tree)
 - Content CMS (Tiptap)
 - Analytics (Recharts)
