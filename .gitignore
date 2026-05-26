@@ -24,6 +24,9 @@ tsconfig.tsbuildinfo
 # Local agent/tool state
 .code-review-graph/
 .codex/
+.understand-anything/intermediate/
+.understand-anything/diff-overlay.json
+.understand-anything/tmp/
 
 # Java / Maven / Ant build output
 target/
