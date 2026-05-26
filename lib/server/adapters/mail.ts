@@ -58,3 +58,26 @@ export async function sendMagicLinkEmail(
     html,
   })
 }
+
+/**
+ * Generic email sender.
+ *
+ * In development, when RESEND_API_KEY is absent, the email is logged to the
+ * console instead of being dispatched.
+ */
+export async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+): Promise<void> {
+  if (!resend) {
+    console.log(`[DEV] Email → ${to}: ${subject}`)
+    return
+  }
+  await resend.emails.send({
+    from: 'Vesta <noreply@vesta.app>',
+    to,
+    subject,
+    html,
+  })
+}

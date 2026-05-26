@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -23,6 +23,7 @@ import { useAppStore } from '@/lib/store';
 import { computePrediction } from '@/lib/cycle-utils';
 import type { PeriodLog, SymptomLog } from '@/lib/types';
 import { Card } from '@/components/ui/Card';
+import { tracking } from '@/lib/api';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -292,6 +293,16 @@ export default function CalendarPage() {
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(today);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [apiCalendar, setApiCalendar] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    if (!activeProfileId) return;
+    const month = format(currentMonth, 'yyyy-MM');
+    tracking.getCalendar(activeProfileId, month)
+      .then(setApiCalendar)
+      .catch(() => {}); // Silently fail — use store computed data as fallback
+  }, [activeProfileId, currentMonth]);
 
   const profile = profiles.find((p) => p.id === activeProfileId);
 
@@ -309,6 +320,16 @@ export default function CalendarPage() {
     const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
     return eachDayOfInterval({ start: gridStart, end: gridEnd });
   }, [currentMonth]);
+
+  // Build an apiCalendar lookup map for fast access
+  const apiCalendarMap = useMemo(() => {
+    if (!apiCalendar) return null;
+    const map = new Map<string, { date: string; period: boolean; fertile: boolean; ovulation: boolean; predicted: boolean }>();
+    for (const entry of apiCalendar) {
+      map.set(entry.date, entry);
+    }
+    return map;
+  }, [apiCalendar]);
 
   // Build DayMeta for each grid day
   const dayMetaMap = useMemo(() => {
@@ -346,21 +367,24 @@ export default function CalendarPage() {
       // Ovulation
       const isOvulation = isSameDay(date, ovulationDay);
 
-      const isPast = date < today;
       const isFuture = date > today;
 
+      // Prefer API calendar data when available, fall back to store-computed values
+      const apiDay = apiCalendarMap?.get(dateStr);
       map.set(dateStr, {
         date,
-        isPeriod: Boolean(periodLog) || isInPredictedPeriod,
-        isFertile,
-        isOvulation,
-        isFuturePredicted: isFuture && (isInPredictedPeriod || isFertile || isOvulation),
+        isPeriod: apiDay ? (apiDay.period || Boolean(periodLog)) : (Boolean(periodLog) || isInPredictedPeriod),
+        isFertile: apiDay ? apiDay.fertile : isFertile,
+        isOvulation: apiDay ? apiDay.ovulation : isOvulation,
+        isFuturePredicted: apiDay
+          ? (apiDay.predicted && isFuture)
+          : (isFuture && (isInPredictedPeriod || isFertile || isOvulation)),
         periodLog,
       });
     }
 
     return map;
-  }, [gridDays, periodLogs, activeProfileId, profile, prediction, today]);
+  }, [gridDays, periodLogs, activeProfileId, profile, prediction, today, apiCalendarMap]);
 
   const selectedMeta = selectedDate
     ? dayMetaMap.get(format(selectedDate, 'yyyy-MM-dd'))

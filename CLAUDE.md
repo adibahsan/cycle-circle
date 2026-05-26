@@ -1,3 +1,11 @@
+## Working Principles
+
+1. **Ask clarification questions** before implementing — never assume when intent is ambiguous.
+2. **95% surety threshold** — only proceed with implementation when you are 95% confident the approach is correct. If below that, ask.
+3. **Deploy multiple Sonnet 4.6 subagents** for every planning and implementation task — parallelize independent workstreams.
+
+---
+
 <!-- code-review-graph MCP tools -->
 ## MCP Tools: code-review-graph
 

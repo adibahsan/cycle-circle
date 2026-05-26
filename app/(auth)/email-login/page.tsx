@@ -8,6 +8,7 @@ import { ArrowLeft, Mail, Clock, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAppStore } from '@/lib/store';
+import { auth, ApiClientError } from '@/lib/api';
 import '@/lib/i18n';
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -51,12 +52,23 @@ export default function EmailLoginPage() {
     }
 
     setLoading(true);
-    await new Promise((res) => setTimeout(res, 1300));
-    setLoading(false);
-    setSent(true);
+    try {
+      await auth.requestMagicLink(email);
+      setSent(true);
+    } catch (err) {
+      if (err instanceof ApiClientError) {
+        setError(err.message);
+      } else {
+        setError('Failed to send magic link. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
-  // Simulate clicking the magic link from email
+  // Simulate clicking the magic link from email (demo only).
+  // In production, the magic link callback route (/api/auth/magic-link/callback) handles
+  // token verification, sets the session, and redirects the user directly.
   async function handleSimulatedMagicLink() {
     setLoading(true);
     await new Promise((res) => setTimeout(res, 800));

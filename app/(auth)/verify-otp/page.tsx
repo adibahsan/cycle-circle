@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAppStore } from '@/lib/store';
+import { auth, ApiClientError } from '@/lib/api';
 import '@/lib/i18n';
 
 const OTP_LENGTH = 6;
@@ -110,14 +111,23 @@ export default function VerifyOtpPage() {
     }
 
     setLoading(true);
-    // Simulated verification — accept any 6-digit code
-    await new Promise((res) => setTimeout(res, 1400));
-
-    setSuccess(true);
-    await new Promise((res) => setTimeout(res, 700));
-
-    login('otp');
-    router.replace('/onboarding');
+    try {
+      const referenceNo = sessionStorage.getItem('vesta-otp-ref') ?? '';
+      const { user } = await auth.verifyOtp(referenceNo, code);
+      setSuccess(true);
+      await new Promise((res) => setTimeout(res, 700)); // Keep success animation
+      login('otp'); // Update local store
+      // Navigate based on profile completion
+      router.replace(user.profileCompleted ? '/dashboard' : '/onboarding');
+    } catch (err) {
+      if (err instanceof ApiClientError) {
+        setError(err.message);
+      } else {
+        setError('Verification failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleResend() {
@@ -125,7 +135,11 @@ export default function VerifyOtpPage() {
     setResending(true);
     setDigits(Array(OTP_LENGTH).fill(''));
     setError('');
-    await new Promise((res) => setTimeout(res, 900));
+    const phone = sessionStorage.getItem('vesta-otp-phone') ?? '';
+    try {
+      const { referenceNo } = await auth.requestOtp(phone);
+      sessionStorage.setItem('vesta-otp-ref', referenceNo);
+    } catch { /* still reset UI even if resend fails */ }
     setResending(false);
     setCountdown(RESEND_SECONDS);
     inputRefs.current[0]?.focus();

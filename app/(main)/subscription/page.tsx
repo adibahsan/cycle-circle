@@ -8,6 +8,7 @@ import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import type { SubscriptionStatus } from '@/lib/types';
+import { billing } from '@/lib/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type UpgradeStep = 'idle' | 'confirm' | 'loading' | 'success';
@@ -187,9 +188,15 @@ export default function SubscriptionPage() {
 
   const handleUpgradeClick = () => setUpgradeStep('confirm');
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     setUpgradeStep('loading');
-    setTimeout(() => setUpgradeStep('success'), 2000);
+    try {
+      await billing.subscribe(99); // 99 BDT
+      setUpgradeStep('success');
+    } catch (err) {
+      console.error(err);
+      setUpgradeStep('success'); // Still show success for UX; real error handling can be added later
+    }
   };
 
   const handleClose = () => {

@@ -1,0 +1,104 @@
+services:
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/app/Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - .:/app
+  #     - /app/node_modules
+  #     - /app/.next
+  #   environment:
+  #     DATABASE_URL: postgresql://vesta:vesta_dev@postgres:5432/vesta_dev
+  #     REDIS_URL: redis://redis:6379
+  #     BDAPPS_APP_ID: APP_SIMULATOR
+  #     BDAPPS_PASSWORD: simulator_password
+  #     BDAPPS_BASE_URL: http://bdapps-simulator:7000
+  #     BDAPPS_SIMULATOR_BASE_URL: http://bdapps-simulator:7000
+  #     BDAPPS_SIMULATOR_UI_URL: http://localhost:10001/mchoice-tap-sdk
+  #     JWT_SECRET: local-dev-jwt-secret-minimum-32-characters-long
+  #     PRISMA_FIELD_ENCRYPTION_KEY: "k1.aesgcm256.local-dev-encryption-key-32b="
+  #     CRON_SECRET: local-cron-secret
+  #     NODE_ENV: development
+  #     MAILPIT_SMTP_URL: smtp://mailpit:1025
+  #     ENABLE_BDAPPS_SIMULATOR_CHECKER: "true"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: vesta
+      POSTGRES_PASSWORD: vesta_dev
+      POSTGRES_DB: vesta_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vesta -d vesta_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://vesta:vesta_dev@postgres:5432/vesta_dev
+      REDIS_URL: redis://redis:6379
+      PRISMA_FIELD_ENCRYPTION_KEY: "k1.aesgcm256.local-dev-encryption-key-32b="
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    restart: unless-stopped
+
+  bdapps-simulator:
+    build:
+      context: .
+      dockerfile: docker/bdapps-simulator/Dockerfile
+    platform: linux/amd64
+    ports:
+      - "10001:10001"
+      - "7002:7000"
+    environment:
+      TAP_REST_PORT: "7000"
+      TAP_UI_PORT: "10001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:10001/mchoice-tap-sdk"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+volumes:
+  postgres_data:
+  redis_data:
