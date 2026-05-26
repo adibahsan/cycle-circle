@@ -8,6 +8,7 @@ import { Phone, Shield, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import VestaLogo from '@/components/ui/VestaLogo';
+import { auth, ApiClientError } from '@/lib/api';
 import '@/lib/i18n';
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -51,13 +52,20 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    // Simulated OTP send
-    await new Promise((res) => setTimeout(res, 1200));
-    setLoading(false);
-
-    // Store phone in sessionStorage so verify-otp page can read it
-    sessionStorage.setItem('vesta-otp-phone', phone);
-    router.push('/verify-otp');
+    try {
+      const { referenceNo } = await auth.requestOtp(phone);
+      sessionStorage.setItem('vesta-otp-phone', phone);
+      sessionStorage.setItem('vesta-otp-ref', referenceNo);
+      router.push('/verify-otp');
+    } catch (err) {
+      if (err instanceof ApiClientError) {
+        setError(err.message);
+      } else {
+        setError('Failed to send OTP. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

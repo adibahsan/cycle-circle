@@ -1,9 +1,9 @@
 # Vesta v1 — Developer Checklist (4-Week Sprint)
 
 **Generated:** 2026-05-17  
-**Last Updated:** 2026-05-20 (full P0 backend implementation)  
+**Last Updated:** 2026-05-20 (frontend API wiring + email/cron/SMS)  
 **Status Legend:** DONE | PARTIAL | NOT STARTED  
-**Context:** Frontend prototype + full P0 backend. Prisma 7.8, PostgreSQL, Redis, Docker Compose, 35 API routes, service adapters, worker process.
+**Context:** Frontend wired to real API + full P0 backend + P1 notifications. Prisma 7.8, PostgreSQL, Redis, Docker Compose, 36 API routes, email templates, cron jobs.
 
 ---
 
@@ -145,20 +145,20 @@
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | Period alert email template | NOT STARTED | No email templates |
-| 2 | Fertile-window email template | NOT STARTED | — |
-| 3 | Logging reminder email template | NOT STARTED | — |
+| 1 | Period alert email template | DONE | `lib/server/email-templates.ts` — responsive HTML, EN+BN, Vesta branding |
+| 2 | Fertile-window email template | DONE | Same file — fertile dates, ovulation info, bilingual |
+| 3 | Logging reminder email template | DONE | Same file — gentle reminder with days-since-last-log |
 | 4 | Per-profile notification toggles UI | DONE | 3 toggles in settings, wired to store |
-| 5 | Daily cron for evaluating notifications | NOT STARTED | No cron |
-| 6 | QStash worker for Resend | PARTIAL | Local DB-backed job worker in `worker-process.ts` (polls JobEvent). QStash adapter for prod not yet wired |
+| 5 | Daily cron for evaluating notifications | DONE | `POST /api/cron/daily-reminders` — evaluates all profiles, dispatches email+SMS |
+| 6 | QStash worker for Resend | PARTIAL | Local DB-backed job worker + direct Resend calls in cron. QStash adapter for prod not yet wired |
 
 ### FR-SMS — SMS Alerts & Content Circulation
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | SMS alerts for Pro subscribers | NOT STARTED | Mentioned as Pro feature label only |
+| 1 | SMS alerts for Pro subscribers | DONE | `lib/server/adapters/notifications.ts` — SMS via BDApps for PRO users only, EN+BN |
 | 2 | Admin SMS content management | NOT STARTED | No admin panel |
-| 3 | Daily broadcast via BDApps sms/send | NOT STARTED | No cron or API calls |
+| 3 | Daily broadcast via BDApps sms/send | PARTIAL | Adapter wired into cron for per-user alerts. Broadcast `tel:all` not yet in cron |
 | 4 | Content override logic (new replaces old) | NOT STARTED | — |
 | 5 | Delivery status tracking | NOT STARTED | — |
 
@@ -247,13 +247,13 @@
 | Week | Total Items | DONE | PARTIAL | NOT STARTED | Delta |
 |------|-------------|------|---------|-------------|-------|
 | **Week 1–2 (P0 Frontend)** | 42 | 30 | 9 | 3 | — |
-| **Week 1–2 (P0 Backend)** | 18 | **18** | 0 | 0 | +18 DONE |
-| **Week 3 (P1)** | 19 | 7 | **3** | **9** | +1 PARTIAL |
-| **Week 4 (P2)** | 29 | 1 | **5** | **23** | +2 PARTIAL |
-| **NFR** | 6 | **4** | 2 | **0** | +2 DONE |
-| **TOTAL** | **114** | **60** | **19** | **35** | **+20 items completed** |
+| **Week 1–2 (P0 Backend)** | 18 | **18** | 0 | 0 | — |
+| **Week 3 (P1)** | 19 | **11** | **3** | **5** | +4 DONE this session |
+| **Week 4 (P2)** | 29 | 1 | **5** | **23** | — |
+| **NFR** | 6 | **4** | 2 | **0** | — |
+| **TOTAL** | **114** | **64** | **19** | **31** | **+24 items completed total** |
 
-> **Progress:** 40 → 60 DONE items (**+50% increase**). All P0 backend work complete. 53% of total project now DONE.
+> **Progress:** 40 → 64 DONE items (**+60% increase**). P0 backend complete. P1 notifications largely done. Frontend wired to API. 56% of total project now DONE.
 
 ---
 
@@ -351,11 +351,15 @@
 - ~~Local job worker~~ — `worker-process.ts` with `FOR UPDATE SKIP LOCKED` + prediction recalculation
 - ~~Developer checklist page~~ — `/backend-checklist` with health checks, API reference, test panel
 
-### Still Remaining:
-- Wire frontend to real API routes (replace Zustand dummy data with fetch calls)
-- Email notification templates (Resend React Email for period/fertile/reminder)
-- Daily-reminders cron job (`/api/cron/daily-reminders`)
-- SMS broadcast system (BDApps SMS Send API — adapter exists, no cron integration)
+### DONE (2026-05-20 session):
+- ~~Wire frontend to real API routes~~ — `lib/api.ts` typed client, store fire-and-forget mutations, dashboard/calendar API fetch with fallback
+- ~~Auth pages wired to real API~~ — login→OTP request, verify→OTP verify, email→magic link, all with error handling
+- ~~Email notification templates~~ — `lib/server/email-templates.ts` — 3 templates (period/fertile/reminder), EN+BN, responsive HTML
+- ~~Daily-reminders cron~~ — `POST /api/cron/daily-reminders` — evaluates all profiles, dispatches email+SMS per notification prefs
+- ~~SMS alerts for Pro subscribers~~ — `lib/server/adapters/notifications.ts` — period/fertile SMS via BDApps for PRO only
+
+### Still Remaining (Week 4 P2 scope):
 - Admin panel (entire /admin route tree)
 - Content CMS (Tiptap)
 - Analytics (Recharts)
+- SMS broadcast to all subscribers (`tel:all`) — adapter exists, admin UI + cron integration needed

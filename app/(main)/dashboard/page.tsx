@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { format, differenceInDays, parseISO } from 'date-fns';
@@ -19,6 +19,7 @@ import {
 import type { FlowIntensity } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { tracking } from '@/lib/api';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -294,6 +295,15 @@ export default function DashboardPage() {
 
   const [showModal, setShowModal] = useState(false);
   const [editLogId, setEditLogId] = useState<string | undefined>(undefined);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [apiDashboard, setApiDashboard] = useState<any>(null);
+
+  useEffect(() => {
+    if (!activeProfileId) return;
+    tracking.getDashboard(activeProfileId)
+      .then(setApiDashboard)
+      .catch(() => {}); // Silently fail — use store data as fallback
+  }, [activeProfileId]);
 
   const profile = profiles.find((p) => p.id === activeProfileId);
 
@@ -321,11 +331,11 @@ export default function DashboardPage() {
     );
   }
 
-  const cycleDay = getCurrentCycleDay(profile.lastPeriodStart, profile.cycleLength);
-  const phase = getCurrentPhase(cycleDay, profile.periodLength, profile.cycleLength);
+  const cycleDay = apiDashboard?.currentCycleDay ?? getCurrentCycleDay(profile.lastPeriodStart, profile.cycleLength);
+  const phase = apiDashboard?.currentPhase ?? getCurrentPhase(cycleDay, profile.periodLength, profile.cycleLength);
   const phaseColor = getPhaseColor(phase);
   const phaseEmoji = getPhaseEmoji(phase);
-  const daysUntilNext = getDaysUntilNextPeriod(cycleDay, profile.cycleLength);
+  const daysUntilNext = apiDashboard?.countdownToNextPeriod ?? getDaysUntilNextPeriod(cycleDay, profile.cycleLength);
   const prediction = computePrediction(profile);
 
   // Most recent period log for this profile

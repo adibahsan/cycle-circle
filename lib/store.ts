@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Language, Theme, UserProfile, User, PeriodLog, SymptomLog, FeedbackSubmission, NotificationPreference } from './types';
 import { DEMO_USER, DEMO_PROFILES, DEMO_PERIOD_LOGS, DEMO_PREDICTION, DEMO_NOTIFICATION_PREFS } from './dummy-data';
+import { profiles as profilesApi, tracking, feedback as feedbackApi, auth as authApi } from '@/lib/api';
 
 interface AppStore {
   // Auth
@@ -62,7 +63,10 @@ export const useAppStore = create<AppStore>()(
           setTimeout(() => set({ showProfileCompletion: true }), 60000);
         }
       },
-      logout: () => set({ isAuthenticated: false, user: null }),
+      logout: () => {
+        set({ isAuthenticated: false, user: null });
+        authApi.logout().catch(console.error);
+      },
       completeProfile: (name, phone) => set((state) => ({
         user: state.user ? { ...state.user, fullName: name, phone, profileCompleted: true } : null,
         showProfileCompletion: false,
@@ -72,48 +76,91 @@ export const useAppStore = create<AppStore>()(
       profiles: DEMO_PROFILES,
       activeProfileId: 'profile-1',
       setActiveProfile: (id) => set({ activeProfileId: id }),
-      addProfile: (profile) => set((state) => ({
-        profiles: [...state.profiles, {
-          ...profile,
-          id: `profile-${Date.now()}`,
-          userId: 'user-1',
-          createdAt: new Date().toISOString(),
-        }],
-      })),
-      deleteProfile: (id) => set((state) => ({
-        profiles: state.profiles.filter(p => p.id !== id),
-        activeProfileId: state.activeProfileId === id ? state.profiles[0]?.id ?? '' : state.activeProfileId,
-      })),
+      addProfile: (profile) => {
+        set((state) => ({
+          profiles: [...state.profiles, {
+            ...profile,
+            id: `profile-${Date.now()}`,
+            userId: 'user-1',
+            createdAt: new Date().toISOString(),
+          }],
+        }));
+        profilesApi.create({
+          name: profile.name,
+          relation: profile.relation,
+          cycleLength: profile.cycleLength,
+          periodLength: profile.periodLength,
+          lastPeriodStart: profile.lastPeriodStart,
+        }).catch(console.error);
+      },
+      deleteProfile: (id) => {
+        set((state) => ({
+          profiles: state.profiles.filter(p => p.id !== id),
+          activeProfileId: state.activeProfileId === id ? state.profiles[0]?.id ?? '' : state.activeProfileId,
+        }));
+        profilesApi.delete(id).catch(console.error);
+      },
 
       // Period tracking
       periodLogs: DEMO_PERIOD_LOGS,
-      addPeriodLog: (log) => set((state) => ({
-        periodLogs: [...state.periodLogs, { ...log, id: `pl-${Date.now()}` }],
-      })),
-      updatePeriodLog: (id, updates) => set((state) => ({
-        periodLogs: state.periodLogs.map(l => l.id === id ? { ...l, ...updates } : l),
-      })),
+      addPeriodLog: (log) => {
+        set((state) => ({
+          periodLogs: [...state.periodLogs, { ...log, id: `pl-${Date.now()}` }],
+        }));
+        tracking.createPeriodLog({
+          profileId: log.profileId,
+          startDate: log.startDate,
+          endDate: log.endDate,
+          flowIntensity: log.flowIntensity,
+        }).catch(console.error);
+      },
+      updatePeriodLog: (id, updates) => {
+        set((state) => ({
+          periodLogs: state.periodLogs.map(l => l.id === id ? { ...l, ...updates } : l),
+        }));
+        tracking.updatePeriodLog(id, {
+          startDate: updates.startDate,
+          endDate: updates.endDate,
+          flowIntensity: updates.flowIntensity,
+        }).catch(console.error);
+      },
 
       // Symptoms
       symptomLogs: [],
-      toggleSymptom: (profileId, date, category, symptomId) => set((state) => {
-        const existing = state.symptomLogs.find(
+      toggleSymptom: (profileId, date, category, symptomId) => {
+        // Check before toggling to determine if this is an add or remove
+        const isAdding = !get().symptomLogs.find(
           s => s.profileId === profileId && s.date === date && s.symptomId === symptomId
         );
-        if (existing) {
-          return { symptomLogs: state.symptomLogs.filter(s => s.id !== existing.id) };
-        }
-        return {
-          symptomLogs: [...state.symptomLogs, {
-            id: `sym-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        set((state) => {
+          const existing = state.symptomLogs.find(
+            s => s.profileId === profileId && s.date === date && s.symptomId === symptomId
+          );
+          if (existing) {
+            return { symptomLogs: state.symptomLogs.filter(s => s.id !== existing.id) };
+          }
+          return {
+            symptomLogs: [...state.symptomLogs, {
+              id: `sym-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+              profileId,
+              date,
+              category: category as any,
+              symptomId,
+              value: symptomId,
+            }],
+          };
+        });
+        // Fire-and-forget: createSymptom for additions (deletions not yet supported by API)
+        if (isAdding) {
+          tracking.createSymptom({
             profileId,
             date,
-            category: category as any,
+            category: category as import('./types').SymptomCategory,
             symptomId,
             value: symptomId,
-          }],
-        };
-      }),
+          }).catch(console.error);
+        }
+      },
 
       // Settings
       language: 'en',
@@ -127,13 +174,22 @@ export const useAppStore = create<AppStore>()(
 
       // Feedback
       feedbackHistory: [],
-      submitFeedback: (feedback) => set((state) => ({
-        feedbackHistory: [...state.feedbackHistory, {
-          ...feedback,
-          id: `fb-${Date.now()}`,
-          createdAt: new Date().toISOString(),
-        }],
-      })),
+      submitFeedback: (feedback) => {
+        set((state) => ({
+          feedbackHistory: [...state.feedbackHistory, {
+            ...feedback,
+            id: `fb-${Date.now()}`,
+            createdAt: new Date().toISOString(),
+          }],
+        }));
+        feedbackApi.submit({
+          userId: feedback.userId,
+          profileId: feedback.profileId,
+          category: feedback.category,
+          message: feedback.message,
+          rating: feedback.rating,
+        }).catch(console.error);
+      },
 
       // Onboarding
       onboardingComplete: false,
