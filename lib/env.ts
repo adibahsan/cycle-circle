@@ -16,9 +16,6 @@ const envSchema = z.object({
 
   // Auth
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
-  PRISMA_FIELD_ENCRYPTION_KEY: z
-    .string()
-    .min(1, 'PRISMA_FIELD_ENCRYPTION_KEY is required'),
 
   // Email
   RESEND_API_KEY: z.string().optional(),

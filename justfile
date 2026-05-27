@@ -52,17 +52,22 @@ db-seed:
 db-studio:
     pnpm db:studio
 
+# Shortcut: Open Prisma Studio
+studio:
+    just db-studio
+
 # Completely reset database: drop → migrate → seed
 db-reset:
     pnpm db:reset
 
-# Reset database without interactive prompt
+# Reset database without interactive prompt: drop via Docker, push schema, generate, seed
 db-reset-force:
-    docker exec -i vesta-postgres psql -U vesta -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'vesta_dev' AND pid <> pg_backend_pid();" || true
-    docker exec -i vesta-postgres psql -U vesta -d postgres -c "DROP DATABASE IF EXISTS vesta_dev;" || true
-    docker exec -i vesta-postgres psql -U vesta -d postgres -c "CREATE DATABASE vesta_dev;" || true
-    docker exec -i vesta-postgres psql -U vesta -d vesta_dev -f /docker-entrypoint-initdb.d/init.sql || true
-    pnpm db:migrate:deploy
+    docker exec -i $(docker compose ps -q postgres) psql -U vesta -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'vesta_dev' AND pid <> pg_backend_pid();" || true
+    docker exec -i $(docker compose ps -q postgres) psql -U vesta -d postgres -c "DROP DATABASE IF EXISTS vesta_dev;" || true
+    docker exec -i $(docker compose ps -q postgres) psql -U vesta -d postgres -c "CREATE DATABASE vesta_dev;" || true
+    docker exec -i $(docker compose ps -q postgres) psql -U vesta -d vesta_dev -f /docker-entrypoint-initdb.d/init.sql
+    pnpm exec prisma db push --accept-data-loss
+    pnpm db:generate
     pnpm db:seed
 
 # Wipe database volumes and start fresh (nuclear option)
