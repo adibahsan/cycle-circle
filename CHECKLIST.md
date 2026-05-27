@@ -98,15 +98,15 @@
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
 | 1 | AES-256-GCM encryption | DONE | `prisma-field-encryption` 1.6.0 with AES-256-GCM via `PRISMA_FIELD_ENCRYPTION_KEY` |
-| 2 | prisma-field-encryption integration | DONE | `apps/web/src/server/db.ts` uses `$extends(fieldEncryptionExtension())` — Prisma 7 API |
+| 2 | prisma-field-encryption integration | DONE | `app/src/server/db.ts` uses `$extends(fieldEncryptionExtension())` — Prisma 7 API |
 | 3 | Transparent decrypt in application layer | DONE | `SymptomLog.value` annotated `/// @encrypted`, auto-decrypt on read |
 
 ### FR-SESSION — Session Store & JWT Blacklist
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | JWT in HttpOnly cookie | DONE | `apps/web/src/server/auth.ts` — jose HS256, HttpOnly/Secure/SameSite=Lax cookie, 30-day expiry |
-| 2 | Redis blacklist for logged-out JWTs | DONE | `apps/web/src/server/adapters/redis.ts` — `blacklistJti()` with TTL matching token remaining life |
+| 1 | JWT in HttpOnly cookie | DONE | `app/src/server/auth.ts` — jose HS256, HttpOnly/Secure/SameSite=Lax cookie, 30-day expiry |
+| 2 | Redis blacklist for logged-out JWTs | DONE | `app/src/server/adapters/redis.ts` — `blacklistJti()` with TTL matching token remaining life |
 | 3 | Rate-limit counters | DONE | Sliding-window rate limiter via Redis sorted sets — 3 OTP/min, 3 magic-link/hr |
 
 ### FR-BILL — Pro Subscription via BDApps CAAS
@@ -145,7 +145,7 @@
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | Period alert email template | DONE | `apps/web/src/server/email-templates.ts` — responsive HTML, EN+BN, Vesta branding |
+| 1 | Period alert email template | DONE | `app/src/server/email-templates.ts` — responsive HTML, EN+BN, Vesta branding |
 | 2 | Fertile-window email template | DONE | Same file — fertile dates, ovulation info, bilingual |
 | 3 | Logging reminder email template | DONE | Same file — gentle reminder with days-since-last-log |
 | 4 | Per-profile notification toggles UI | DONE | 3 toggles in settings, wired to store |
@@ -156,7 +156,7 @@
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | SMS alerts for Pro subscribers | DONE | `apps/web/src/server/adapters/notifications.ts` — SMS via BDApps for PRO users only, EN+BN |
+| 1 | SMS alerts for Pro subscribers | DONE | `app/src/server/adapters/notifications.ts` — SMS via BDApps for PRO users only, EN+BN |
 | 2 | Admin SMS content management | NOT STARTED | No admin panel |
 | 3 | Daily broadcast via BDApps sms/send | PARTIAL | Adapter wired into cron for per-user alerts. Broadcast `tel:all` not yet in cron |
 | 4 | Content override logic (new replaces old) | NOT STARTED | — |
@@ -238,7 +238,7 @@
 | 3 | NFR-I18N-02: Bengali no-overflow at 375px | PARTIAL | Layout uses overflow patterns, no formal test |
 | 4 | NFR-PERF-01: Period log→prediction <10s | DONE | Synchronous/reactive, instant in prototype |
 | 5 | NFR-SEC-01: Field encryption at rest | DONE | `prisma-field-encryption` AES-256-GCM on `SymptomLog.value` via `/// @encrypted` annotation |
-| 6 | NFR-SEC-06: JWT HttpOnly/Secure/SameSite | DONE | `apps/web/src/server/auth.ts` — `setAuthCookie()` sets HttpOnly, Secure (prod), SameSite=Lax |
+| 6 | NFR-SEC-06: JWT HttpOnly/Secure/SameSite | DONE | `app/src/server/auth.ts` — `setAuthCookie()` sets HttpOnly, Secure (prod), SameSite=Lax |
 
 ---
 
@@ -286,8 +286,8 @@
 | Prisma schema: 13 models, 11 enums (User, Profile, PeriodLog, SymptomLog, Prediction, Subscription, CaasTransaction, OtpChallenge, MagicLink, WebhookEvent, JobEvent, NotificationPreference, Feedback) | DONE |
 | Prisma 7.8 config (`prisma.config.ts`) + field encryption via `$extends` | DONE |
 | Zod 4 env validation (`lib/env.ts`) — 13 env vars | DONE |
-| DB client singleton with encryption middleware (`apps/web/src/server/db.ts`) | DONE |
-| RLS transaction helper (`apps/web/src/server/rls.ts`) — parameterized, injection-safe | DONE |
+| DB client singleton with encryption middleware (`app/src/server/db.ts`) | DONE |
+| RLS transaction helper (`app/src/server/rls.ts`) — parameterized, injection-safe | DONE |
 | Seed script with demo user, profiles, period logs, predictions | DONE |
 | BDApps adapter — OTP, CAAS, SMS with exponential backoff + simulator switching | DONE |
 | Redis adapter — JWT blacklist + sliding-window rate limiter | DONE |
@@ -354,9 +354,9 @@
 ### DONE (2026-05-20 session):
 - ~~Wire frontend to real API routes~~ — `lib/api.ts` typed client, store fire-and-forget mutations, dashboard/calendar API fetch with fallback
 - ~~Auth pages wired to real API~~ — login→OTP request, verify→OTP verify, email→magic link, all with error handling
-- ~~Email notification templates~~ — `apps/web/src/server/email-templates.ts` — 3 templates (period/fertile/reminder), EN+BN, responsive HTML
+- ~~Email notification templates~~ — `app/src/server/email-templates.ts` — 3 templates (period/fertile/reminder), EN+BN, responsive HTML
 - ~~Daily-reminders cron~~ — `POST /api/cron/daily-reminders` — evaluates all profiles, dispatches email+SMS per notification prefs
-- ~~SMS alerts for Pro subscribers~~ — `apps/web/src/server/adapters/notifications.ts` — period/fertile SMS via BDApps for PRO only
+- ~~SMS alerts for Pro subscribers~~ — `app/src/server/adapters/notifications.ts` — period/fertile SMS via BDApps for PRO only
 
 ### Still Remaining (Week 4 P2 scope):
 - Admin panel (entire /admin route tree)

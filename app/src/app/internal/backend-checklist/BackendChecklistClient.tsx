@@ -34,7 +34,7 @@ const CHECKLIST_STORAGE_KEY = 'vesta-backend-checklist-v1'
 const SETUP_STEPS = [
   { id: 'clone', label: 'Clone repository', hint: 'git clone <repo-url>' },
   { id: 'install', label: 'Install dependencies', hint: 'pnpm install' },
-  { id: 'env', label: 'Copy .env.example to .env.local', hint: 'cp apps/web/.env.example apps/web/.env.local' },
+  { id: 'env', label: 'Copy .env.example to .env.local', hint: 'cp app/.env.example app/.env.local' },
   { id: 'docker-start', label: 'Start Docker Compose', hint: 'pnpm docker:dev' },
   { id: 'docker-healthy', label: 'Wait for all containers healthy', hint: 'docker compose -f ops/docker/compose.yml ps (all should show "healthy")' },
   { id: 'migrate', label: 'Run database migrations', hint: 'pnpm db:migrate' },

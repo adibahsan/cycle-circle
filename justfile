@@ -1,7 +1,8 @@
-set dotenv-filename := "apps/web/.env.local"
+set dotenv-filename := "app/.env.local"
 set dotenv-load
 
 compose := "docker compose -f ops/docker/compose.yml"
+app := "pnpm --dir app"
 
 default:
     just --list
@@ -36,23 +37,23 @@ ps:
 
 # Generate Prisma client
 db-generate:
-    pnpm db:generate
+    {{app}} db:generate
 
 # Create and apply new migration
 db-migrate:
-    pnpm db:migrate
+    {{app}} db:migrate
 
 # Apply migrations (deploy, no prompt)
 db-deploy:
-    pnpm db:migrate:deploy
+    {{app}} db:migrate:deploy
 
 # Seed database with demo data
 db-seed:
-    pnpm db:seed
+    {{app}} db:seed
 
 # Open Prisma Studio
 db-studio:
-    pnpm db:studio
+    {{app}} db:studio
 
 # Shortcut: Open Prisma Studio
 studio:
@@ -60,7 +61,7 @@ studio:
 
 # Completely reset database: drop → migrate → seed
 db-reset:
-    pnpm db:reset
+    {{app}} db:reset
 
 # Reset database without interactive prompt: drop via Docker, push schema, generate, seed
 db-reset-force:
@@ -68,9 +69,9 @@ db-reset-force:
     docker exec -i $({{compose}} ps -q postgres) psql -U vesta -d postgres -c "DROP DATABASE IF EXISTS vesta_dev;" || true
     docker exec -i $({{compose}} ps -q postgres) psql -U vesta -d postgres -c "CREATE DATABASE vesta_dev;" || true
     docker exec -i $({{compose}} ps -q postgres) psql -U vesta -d vesta_dev -f /docker-entrypoint-initdb.d/init.sql
-    pnpm --filter web exec prisma db push --accept-data-loss
-    pnpm db:generate
-    pnpm db:seed
+    {{app}} exec prisma db push --accept-data-loss
+    {{app}} db:generate
+    {{app}} db:seed
 
 # Wipe database volumes and start fresh (nuclear option)
 db-nuke:
@@ -78,26 +79,26 @@ db-nuke:
     {{compose}} up -d postgres
     @echo "Waiting for postgres to be healthy..."
     @sleep 5
-    pnpm db:migrate:deploy
-    pnpm db:seed
+    {{app}} db:migrate:deploy
+    {{app}} db:seed
     @echo "Database nuked and re-seeded."
 
 # ─── DEV ────────────────────────────────────────────────
 
 # Full local dev setup: copy env, start infra, migrate, seed, run dev server
 setup:
-    @test -f apps/web/.env.local || cp apps/web/.env.example apps/web/.env.local && echo "Created apps/web/.env.local"
+    @test -f app/.env.local || cp app/.env.example app/.env.local && echo "Created app/.env.local"
     just infra
     @echo "Waiting for services to be healthy..."
     @sleep 5
-    pnpm db:generate
-    pnpm db:migrate:deploy
-    pnpm db:seed
+    {{app}} db:generate
+    {{app}} db:migrate:deploy
+    {{app}} db:seed
     @echo "Ready! Run 'just dev' to start."
 
 # Start Next.js dev server (assumes infra is running)
 dev:
-    pnpm dev
+    {{app}} dev
 
 # Start everything inside Docker (no local Node needed)
 dev-docker:
@@ -105,15 +106,15 @@ dev-docker:
 
 # Type check
 typecheck:
-    pnpm typecheck
+    {{app}} typecheck
 
 # Run tests
 test:
-    pnpm backend:test
+    {{app}} backend:test
 
 # Run tests in watch mode
 test-watch:
-    pnpm backend:test:watch
+    {{app}} backend:test:watch
 
 # ─── HEALTH ─────────────────────────────────────────────
 
@@ -160,6 +161,6 @@ fresh:
     just up
     @echo "Waiting for services..."
     @sleep 8
-    pnpm db:migrate:deploy
-    pnpm db:seed
+    {{app}} db:migrate:deploy
+    {{app}} db:seed
     @echo "Fresh start complete."

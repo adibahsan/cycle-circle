@@ -1,26 +1,12 @@
 {
-  "name": "vesta-workspace",
+  "name": "vesta-repo",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "dev": "pnpm --filter web dev",
-    "build": "pnpm --filter web build",
-    "start": "pnpm --filter web start",
-    "lint": "pnpm --filter web lint",
-    "typecheck": "pnpm --filter web typecheck",
     "docs:sync": "node tools/scripts/sync-netlify-docs.mjs --sync",
     "docs:check": "node tools/scripts/sync-netlify-docs.mjs --check",
     "docker:dev": "docker compose -f ops/docker/compose.yml up -d --build",
     "docker:down": "docker compose -f ops/docker/compose.yml down",
-    "docker:logs": "docker compose -f ops/docker/compose.yml logs -f",
-    "db:generate": "pnpm --filter web db:generate",
-    "db:migrate": "pnpm --filter web db:migrate",
-    "db:migrate:deploy": "pnpm --filter web db:migrate:deploy",
-    "db:seed": "pnpm --filter web db:seed",
-    "db:studio": "pnpm --filter web db:studio",
-    "db:reset": "pnpm --filter web db:reset",
-    "backend:test": "pnpm --filter web backend:test",
-    "backend:test:watch": "pnpm --filter web backend:test:watch"
+    "docker:logs": "docker compose -f ops/docker/compose.yml logs -f"
   }
 }
