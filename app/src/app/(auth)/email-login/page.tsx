@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAppStore } from '@/lib/store';
 import { auth, ApiClientError } from '@/lib/api';
+import { useDummyData } from '@/lib/config';
 import '@/lib/i18n';
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -42,6 +43,11 @@ export default function EmailLoginPage() {
   }
 
   async function handleSendMagicLink() {
+    if (useDummyData) {
+      setError('Email login in demo mode uses the simulate button below.');
+      return;
+    }
+
     if (!email.trim()) {
       setError('Email address is required');
       return;
@@ -281,41 +287,42 @@ export default function EmailLoginPage() {
               </ul>
             </motion.div>
 
-            {/* Simulated click button (demo) */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.46, duration: 0.4 }}
-              className="w-full"
-            >
-              <Button
-                fullWidth
-                size="lg"
-                onClick={handleSimulatedMagicLink}
-                disabled={loading}
-                variant="secondary"
-                className="rounded-2xl text-sm font-semibold mb-3"
+            {useDummyData && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.46, duration: 0.4 }}
+                className="w-full"
               >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                    </svg>
-                    Logging in…
-                  </span>
-                ) : (
-                  '✉ Simulate clicking magic link (demo)'
-                )}
-              </Button>
+                <Button
+                  fullWidth
+                  size="lg"
+                  onClick={handleSimulatedMagicLink}
+                  disabled={loading}
+                  variant="secondary"
+                  className="rounded-2xl text-sm font-semibold mb-3"
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Logging in…
+                    </span>
+                  ) : (
+                    '✉ Simulate clicking magic link (demo)'
+                  )}
+                </Button>
 
-              <button
-                onClick={() => { setSent(false); setEmail(''); }}
-                className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors w-full text-center"
-              >
-                Use a different email
-              </button>
-            </motion.div>
+                <button
+                  onClick={() => { setSent(false); setEmail(''); }}
+                  className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors w-full text-center"
+                >
+                  Use a different email
+                </button>
+              </motion.div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

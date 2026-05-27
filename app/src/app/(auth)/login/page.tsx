@@ -8,7 +8,11 @@ import { Phone, Shield, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import VestaLogo from '@/components/ui/VestaLogo';
+import { useAppStore } from '@/lib/store';
 import { auth, ApiClientError } from '@/lib/api';
+import { devMode, DEV_DEFAULT_PHONE, useDummyData } from '@/lib/config';
+import { hydrateFromApi } from '@/lib/hydrate-store';
+import { getPostAuthPath } from '@/lib/post-auth';
 import '@/lib/i18n';
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -26,7 +30,10 @@ export default function LoginPage() {
   const router = useRouter();
   const { t } = useTranslation();
 
-  const [phone, setPhone] = useState('');
+  const login = useAppStore((s) => s.login);
+  const loginWithUser = useAppStore((s) => s.loginWithUser);
+
+  const [phone, setPhone] = useState(devMode ? DEV_DEFAULT_PHONE : '');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -45,6 +52,12 @@ export default function LoginPage() {
   }
 
   async function handleSendOtp() {
+    if (useDummyData) {
+      login('otp');
+      router.replace('/dashboard');
+      return;
+    }
+
     const validationError = validatePhone(phone);
     if (validationError) {
       setError(validationError);
@@ -52,6 +65,26 @@ export default function LoginPage() {
     }
 
     setLoading(true);
+
+    if (devMode) {
+      try {
+        const { user } = await auth.devLogin(phone);
+        loginWithUser(user, 'otp');
+        await hydrateFromApi();
+        const { profiles } = useAppStore.getState();
+        router.replace(getPostAuthPath(profiles.length));
+      } catch (err) {
+        if (err instanceof ApiClientError) {
+          setError(err.message);
+        } else {
+          setError('Dev login failed. Ensure DEV_MODE=true on the server.');
+        }
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
       const { referenceNo } = await auth.requestOtp(phone);
       sessionStorage.setItem('vesta-otp-phone', phone);
@@ -112,7 +145,9 @@ export default function LoginPage() {
           {t('auth.login')}
         </h2>
         <p className="text-sm text-[var(--color-text-muted)] mb-5">
-          Enter your phone number to receive a one-time code
+          {devMode && !useDummyData
+            ? 'Dev mode: sign in with phone only (OTP skipped, real database)'
+            : 'Enter your phone number to receive a one-time code'}
         </p>
 
         {/* Phone input */}
@@ -158,12 +193,12 @@ export default function LoginPage() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
-              Sending…
+              {devMode ? 'Signing in…' : 'Sending…'}
             </span>
           ) : (
             <span className="flex items-center gap-2">
               <Phone size={18} />
-              {t('auth.sendOtp')}
+              {devMode && !useDummyData ? 'Continue (dev)' : t('auth.sendOtp')}
             </span>
           )}
         </Button>

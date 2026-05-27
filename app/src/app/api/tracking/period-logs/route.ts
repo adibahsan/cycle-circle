@@ -4,6 +4,7 @@ import { handleApiError, ApiError } from '@/server/api-error'
 import { parseBody, parseSearchParams } from '@/server/validation'
 import { prisma } from '@/server/db'
 import { enqueueJob } from '@/server/adapters/jobs'
+import { ensurePeriodLogFromProfile } from '@/server/period-log-sync'
 import type { AuthUser } from '@/server/auth'
 
 const getParamsSchema = z.object({
@@ -28,7 +29,8 @@ async function verifyProfileOwnership(profileId: string, userId: string) {
 export const GET = withAuth(async (request, { user }: { user: AuthUser }) => {
   try {
     const params = await parseSearchParams(request, getParamsSchema)
-    await verifyProfileOwnership(params.profileId, user.id)
+    const profile = await verifyProfileOwnership(params.profileId, user.id)
+    await ensurePeriodLogFromProfile(profile)
 
     const logs = await prisma.periodLog.findMany({
       where: { profileId: params.profileId },

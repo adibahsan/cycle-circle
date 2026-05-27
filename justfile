@@ -15,7 +15,7 @@ up:
 
 # Start only infrastructure (postgres, redis, mailpit) — run Next.js locally
 infra:
-    {{compose}} up -d postgres redis mailpit --remove-orphans
+    {{compose}} up -d postgres redis mailpit --remove-orphans --wait
 
 # Stop all docker services
 down:
@@ -89,8 +89,6 @@ db-nuke:
 setup:
     @test -f app/.env.local || cp app/.env.example app/.env.local && echo "Created app/.env.local"
     just infra
-    @echo "Waiting for services to be healthy..."
-    @sleep 5
     {{app}} db:generate
     {{app}} db:migrate:deploy
     {{app}} db:seed

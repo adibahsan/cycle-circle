@@ -2,6 +2,7 @@ import { withAuth } from '@/server/middleware'
 import { handleApiError, ApiError } from '@/server/api-error'
 import { parseSearchParams } from '@/server/validation'
 import { prisma } from '@/server/db'
+import { addPeriodDatesInRange, ensurePeriodLogFromProfile } from '@/server/period-log-sync'
 import { z } from 'zod'
 import type { AuthUser } from '@/server/auth'
 
@@ -31,6 +32,8 @@ export const GET = withAuth(async (request, { user }: { user: AuthUser }) => {
     const monthStart = new Date(year, month - 1, 1)
     const monthEnd = new Date(year, month, 0) // last day of month
 
+    await ensurePeriodLogFromProfile(profile)
+
     // Fetch actual period logs that overlap with this month
     const periodLogs = await prisma.periodLog.findMany({
       where: {
@@ -52,18 +55,13 @@ export const GET = withAuth(async (request, { user }: { user: AuthUser }) => {
 
     // Mark actual period log days
     for (const log of periodLogs) {
-      const start = new Date(log.startDate)
-      const end = new Date(log.endDate)
-      start.setHours(0, 0, 0, 0)
-      end.setHours(0, 0, 0, 0)
-
-      const cur = new Date(start)
-      while (cur <= end) {
-        if (cur >= monthStart && cur <= monthEnd) {
-          periodDates.add(cur.toISOString().slice(0, 10))
-        }
-        cur.setDate(cur.getDate() + 1)
-      }
+      addPeriodDatesInRange(
+        new Date(log.startDate),
+        new Date(log.endDate),
+        monthStart,
+        monthEnd,
+        periodDates,
+      )
     }
 
     // Mark predicted future period days

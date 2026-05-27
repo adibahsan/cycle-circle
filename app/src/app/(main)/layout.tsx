@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/lib/store';
+import { useDummyData } from '@/lib/config';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import VestaLogo from '@/components/ui/VestaLogo';
 import {
@@ -39,7 +40,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useTranslation();
-  const { isAuthenticated, user, profiles, activeProfileId, setActiveProfile, theme, setTheme } = useAppStore();
+  const { isAuthenticated, isHydrating, user, profiles, activeProfileId, setActiveProfile, theme, setTheme } = useAppStore();
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -50,6 +51,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }, [isAuthenticated, router]);
 
   if (!isAuthenticated) return null;
+
+  if (!useDummyData && isHydrating) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-primary)]">
+        <p className="text-sm text-[var(--color-text-muted)]">Loading your data…</p>
+      </div>
+    );
+  }
 
   const activeProfile = profiles.find(p => p.id === activeProfileId);
 

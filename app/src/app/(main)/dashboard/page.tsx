@@ -13,6 +13,7 @@ import {
   getCurrentPhase,
   getDaysUntilNextPeriod,
   computePrediction,
+  normalizeCyclePhase,
   getPhaseColor,
   getPhaseEmoji,
 } from '@/lib/cycle-utils';
@@ -20,6 +21,7 @@ import type { FlowIntensity } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { tracking } from '@/lib/api';
+import { useDummyData } from '@/lib/config';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -156,15 +158,19 @@ function PeriodLogModal({
 
   const isEdit = Boolean(existingLogId);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!startDate || !endDate) return;
-    if (isEdit && existingLogId) {
-      updatePeriodLog(existingLogId, { startDate, endDate, flowIntensity: flow });
-    } else {
-      addPeriodLog({ profileId, startDate, endDate, flowIntensity: flow });
+    try {
+      if (isEdit && existingLogId) {
+        await updatePeriodLog(existingLogId, { startDate, endDate, flowIntensity: flow });
+      } else {
+        await addPeriodLog({ profileId, startDate, endDate, flowIntensity: flow });
+      }
+      setSaved(true);
+      setTimeout(onClose, 700);
+    } catch (err) {
+      console.error('Failed to save period log:', err);
     }
-    setSaved(true);
-    setTimeout(onClose, 700);
   };
 
   return (
@@ -297,12 +303,21 @@ export default function DashboardPage() {
   const [editLogId, setEditLogId] = useState<string | undefined>(undefined);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [apiDashboard, setApiDashboard] = useState<any>(null);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!activeProfileId) return;
+    if (!activeProfileId || useDummyData) {
+      setApiDashboard(null);
+      setDashboardError(null);
+      return;
+    }
+    setDashboardError(null);
     tracking.getDashboard(activeProfileId)
       .then(setApiDashboard)
-      .catch(() => {}); // Silently fail — use store data as fallback
+      .catch((err: Error) => {
+        setApiDashboard(null);
+        setDashboardError(err.message ?? 'Failed to load dashboard');
+      });
   }, [activeProfileId]);
 
   const profile = profiles.find((p) => p.id === activeProfileId);
@@ -331,18 +346,46 @@ export default function DashboardPage() {
     );
   }
 
+  if (dashboardError && !useDummyData) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4 px-4 text-center">
+        <p className="text-[var(--color-text-muted)]">{dashboardError}</p>
+        <Button variant="primary" onClick={() => window.location.reload()}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
   const cycleDay = apiDashboard?.currentCycleDay ?? getCurrentCycleDay(profile.lastPeriodStart, profile.cycleLength);
-  const phase = apiDashboard?.currentPhase ?? getCurrentPhase(cycleDay, profile.periodLength, profile.cycleLength);
+  const rawPhase =
+    apiDashboard?.currentPhase ??
+    getCurrentPhase(cycleDay, profile.periodLength, profile.cycleLength);
+  const phase = normalizeCyclePhase(String(rawPhase));
   const phaseColor = getPhaseColor(phase);
   const phaseEmoji = getPhaseEmoji(phase);
   const daysUntilNext = apiDashboard?.countdownToNextPeriod ?? getDaysUntilNextPeriod(cycleDay, profile.cycleLength);
-  const prediction = computePrediction(profile);
+  const prediction = apiDashboard?.prediction ?? computePrediction(profile);
 
   // Most recent period log for this profile
   const profileLogs = periodLogs
     .filter((l) => l.profileId === activeProfileId)
     .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
-  const lastLog = profileLogs[0];
+  const storeLastLog = profileLogs[0];
+  const apiLastPeriod = apiDashboard?.lastPeriod;
+  const lastPeriodDisplay = apiLastPeriod ?? (storeLastLog
+    ? {
+        startDate: storeLastLog.startDate,
+        duration: differenceInDays(parseISO(storeLastLog.endDate), parseISO(storeLastLog.startDate)) + 1,
+        flowIntensity: storeLastLog.flowIntensity,
+      }
+    : profile.lastPeriodStart
+      ? {
+          startDate: profile.lastPeriodStart,
+          duration: profile.periodLength,
+          flowIntensity: 'medium' as FlowIntensity,
+        }
+      : null);
 
   // Find the edit log data if editing
   const editLog = editLogId ? periodLogs.find((l) => l.id === editLogId) : undefined;
@@ -461,26 +504,31 @@ export default function DashboardPage() {
                     Last Period
                   </span>
                 </div>
-                {lastLog ? (
+                {lastPeriodDisplay ? (
                   <>
                     <p className="text-sm font-bold text-[var(--color-text-primary)]">
-                      {format(parseISO(lastLog.startDate), 'MMM d')}
+                      {format(parseISO(lastPeriodDisplay.startDate), 'MMM d')}
                     </p>
                     <p className="text-xs text-[var(--color-text-muted)]">
-                      {differenceInDays(parseISO(lastLog.endDate), parseISO(lastLog.startDate)) + 1}d duration
+                      {lastPeriodDisplay.duration}d duration
                     </p>
                     <div
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-white self-start"
-                      style={{ backgroundColor: FLOW_COLORS[lastLog.flowIntensity] }}
+                      style={{
+                        backgroundColor:
+                          FLOW_COLORS[lastPeriodDisplay.flowIntensity as FlowIntensity],
+                      }}
                     >
-                      🩸 {capitalize(lastLog.flowIntensity)}
+                      🩸 {capitalize(lastPeriodDisplay.flowIntensity)}
                     </div>
-                    <button
-                      onClick={() => openEditLog(lastLog.id)}
-                      className="text-[10px] text-[var(--color-primary)] font-semibold hover:underline self-start mt-auto"
-                    >
-                      Edit log
-                    </button>
+                    {storeLastLog && (
+                      <button
+                        onClick={() => openEditLog(storeLastLog.id)}
+                        className="text-[10px] text-[var(--color-primary)] font-semibold hover:underline self-start mt-auto"
+                      >
+                        Edit log
+                      </button>
+                    )}
                   </>
                 ) : (
                   <p className="text-xs text-[var(--color-text-muted)] mt-1">

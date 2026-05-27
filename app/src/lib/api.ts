@@ -15,6 +15,16 @@ import type {
   NotificationPreference,
   Symptom,
 } from './types'
+import {
+  mapApiPeriodLog,
+  mapApiPrediction,
+  mapApiProfile,
+  mapApiSymptomLog,
+  mapApiUser,
+  mapPartialAuthUser,
+  toApiFlowIntensity,
+  toApiRelation,
+} from './api-mappers'
 
 // ── Error class ───────────────────────────────────────────────────────────────
 
@@ -64,7 +74,10 @@ export const auth = {
     }>('/api/auth/otp/verify', {
       method: 'POST',
       body: JSON.stringify({ referenceNo, otp }),
-    })
+    }).then((res) => ({
+      ...res,
+      user: mapPartialAuthUser(res.user),
+    }))
   },
 
   /** Send a magic-link sign-in email. */
@@ -82,7 +95,20 @@ export const auth = {
 
   /** Return the currently authenticated user (or throw 401). */
   getStatus() {
-    return request<{ user: User }>('/api/auth/status')
+    return request<{ user: Record<string, unknown> }>('/api/auth/status').then((res) => ({
+      user: mapApiUser(res.user),
+    }))
+  },
+
+  /**
+   * Dev-only: sign in without OTP (requires DEV_MODE=true on server).
+   * Uses real DB — not the same as dummy-data mode.
+   */
+  devLogin(phone: string) {
+    return request<{ user: User; token: string }>('/api/auth/dev-login', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    })
   },
 }
 
@@ -91,12 +117,25 @@ export const auth = {
 export const profiles = {
   /** List all profiles belonging to the current user. */
   list() {
-    return request<UserProfile[]>('/api/profiles')
+    return request<{ profiles: Record<string, unknown>[] }>('/api/profiles').then((res) =>
+      res.profiles.map((raw) => mapApiProfile(raw)),
+    )
   },
 
   /** Fetch a single profile, including its latest prediction if available. */
   get(id: string) {
-    return request<UserProfile & { prediction?: Prediction }>(`/api/profiles/${id}`)
+    return request<{ profile: Record<string, unknown>; prediction?: Record<string, unknown> }>(
+      `/api/profiles/${id}`,
+    ).then((res) => {
+      const profileId = String(res.profile.id)
+      const prediction = res.prediction
+        ? mapApiPrediction(res.prediction, profileId)
+        : undefined
+      return {
+        ...mapApiProfile(res.profile, res.prediction),
+        prediction,
+      }
+    })
   },
 
   /** Create a new profile. */
@@ -108,10 +147,13 @@ export const profiles = {
     lastPeriodStart?: string
     goal?: string
   }) {
-    return request<UserProfile>('/api/profiles', {
+    return request<{ profile: Record<string, unknown> }>('/api/profiles', {
       method: 'POST',
-      body: JSON.stringify(data),
-    })
+      body: JSON.stringify({
+        ...data,
+        relation: toApiRelation(data.relation),
+      }),
+    }).then((res) => mapApiProfile(res.profile))
   },
 
   /** Partial-update a profile's mutable fields. */
@@ -124,10 +166,10 @@ export const profiles = {
       goal?: string
     },
   ) {
-    return request<UserProfile>(`/api/profiles/${id}`, {
+    return request<{ profile: Record<string, unknown> }>(`/api/profiles/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
-    })
+    }).then((res) => mapApiProfile(res.profile))
   },
 
   /** Permanently delete a profile. */
@@ -143,7 +185,9 @@ export const tracking = {
 
   /** List all period logs for a profile. */
   listPeriodLogs(profileId: string) {
-    return request<PeriodLog[]>(`/api/tracking/period-logs?profileId=${profileId}`)
+    return request<{ logs: Record<string, unknown>[] }>(
+      `/api/tracking/period-logs?profileId=${profileId}`,
+    ).then((res) => res.logs.map(mapApiPeriodLog))
   },
 
   /** Record a new period log entry. */
@@ -153,10 +197,13 @@ export const tracking = {
     endDate: string
     flowIntensity: FlowIntensity
   }) {
-    return request<PeriodLog>('/api/tracking/period-logs', {
+    return request<{ log: Record<string, unknown> }>('/api/tracking/period-logs', {
       method: 'POST',
-      body: JSON.stringify(data),
-    })
+      body: JSON.stringify({
+        ...data,
+        flowIntensity: toApiFlowIntensity(data.flowIntensity),
+      }),
+    }).then((res) => mapApiPeriodLog(res.log))
   },
 
   /** Update an existing period log. */
@@ -168,10 +215,13 @@ export const tracking = {
       flowIntensity?: FlowIntensity
     },
   ) {
-    return request<PeriodLog>(`/api/tracking/period-logs/${id}`, {
+    return request<{ log: Record<string, unknown> }>(`/api/tracking/period-logs/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(data),
-    })
+      body: JSON.stringify({
+        ...data,
+        ...(data.flowIntensity && { flowIntensity: toApiFlowIntensity(data.flowIntensity) }),
+      }),
+    }).then((res) => mapApiPeriodLog(res.log))
   },
 
   /** Delete a period log. */
@@ -185,7 +235,9 @@ export const tracking = {
   listSymptoms(profileId: string, date?: string) {
     let url = `/api/tracking/symptoms?profileId=${profileId}`
     if (date) url += `&date=${encodeURIComponent(date)}`
-    return request<SymptomLog[]>(url)
+    return request<{ logs: Record<string, unknown>[] }>(url).then((res) =>
+      res.logs.map(mapApiSymptomLog),
+    )
   },
 
   /** Log a symptom entry. */
@@ -196,10 +248,13 @@ export const tracking = {
     symptomId: string
     value: string
   }) {
-    return request<SymptomLog>('/api/tracking/symptoms', {
+    return request<{ log: Record<string, unknown> }>('/api/tracking/symptoms', {
       method: 'POST',
-      body: JSON.stringify(data),
-    })
+      body: JSON.stringify({
+        ...data,
+        category: data.category.toUpperCase(),
+      }),
+    }).then((res) => mapApiSymptomLog(res.log))
   },
 
   // — Dashboard —
@@ -208,15 +263,27 @@ export const tracking = {
   getDashboard(profileId: string) {
     return request<{
       currentCycleDay: number
-      currentPhase: CyclePhase
+      currentPhase: string
       countdownToNextPeriod: number | null
       lastPeriod: {
         startDate: string
         duration: number
-        flowIntensity: FlowIntensity
+        flowIntensity: string
       } | null
-      prediction: Prediction | null
-    }>(`/api/tracking/dashboard?profileId=${profileId}`)
+      prediction: Record<string, unknown> | null
+    }>(`/api/tracking/dashboard?profileId=${profileId}`).then((res) => ({
+      currentCycleDay: res.currentCycleDay,
+      currentPhase: res.currentPhase as CyclePhase,
+      countdownToNextPeriod: res.countdownToNextPeriod,
+      lastPeriod: res.lastPeriod
+        ? {
+            startDate: res.lastPeriod.startDate,
+            duration: res.lastPeriod.duration,
+            flowIntensity: String(res.lastPeriod.flowIntensity).toLowerCase() as FlowIntensity,
+          }
+        : null,
+      prediction: res.prediction ? mapApiPrediction(res.prediction, profileId) : null,
+    }))
   },
 
   // — Calendar —
@@ -226,15 +293,17 @@ export const tracking = {
    * @param month - YYYY-MM format (e.g. "2024-06")
    */
   getCalendar(profileId: string, month: string) {
-    return request<
-      Array<{
+    return request<{
+      days: Array<{
         date: string
         period: boolean
         fertile: boolean
         ovulation: boolean
         predicted: boolean
       }>
-    >(`/api/tracking/calendar?profileId=${profileId}&month=${encodeURIComponent(month)}`)
+    }>(`/api/tracking/calendar?profileId=${profileId}&month=${encodeURIComponent(month)}`).then(
+      (res) => res.days,
+    )
   },
 }
 

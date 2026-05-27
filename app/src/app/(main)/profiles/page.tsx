@@ -473,15 +473,23 @@ export default function ProfilesPage() {
     setTimeout(() => setJustSwitched(null), 1500);
   }
 
-  function handleAddProfile(data: Parameters<typeof addProfile>[0]) {
-    addProfile(data);
-    setShowForm(false);
+  async function handleAddProfile(data: Parameters<typeof addProfile>[0]) {
+    try {
+      await addProfile(data);
+      setShowForm(false);
+    } catch (err) {
+      console.error('Failed to add profile:', err);
+    }
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!deleteTarget) return;
-    deleteProfile(deleteTarget.id);
-    setDeleteTarget(null);
+    try {
+      await deleteProfile(deleteTarget.id);
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error('Failed to delete profile:', err);
+    }
   }
 
   return (
