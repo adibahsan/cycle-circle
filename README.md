@@ -1,14 +1,21 @@
 # Vesta
 
-Vesta is a bilingual reproductive health and cycle intelligence workspace for Bangladesh. The active app lives under `apps/web`, while planning, source docs, static-site artifacts, and agent guidance live in dedicated top-level directories.
+Vesta is a bilingual reproductive health and cycle intelligence workspace for Bangladesh. The Next.js application lives under `app/`, while planning, source docs, static-site artifacts, and agent guidance live at the repo root.
 
 The full v1 requirements are documented in [docs/vesta/source/SRS.md](docs/vesta/source/SRS.md). Backend integrations such as BDApps OTP/CAAS/SMS, Supabase, Prisma, Upstash, Resend, API route handlers, webhooks, and admin persistence are specified in the docs and partially implemented in the workspace.
 
 ## Run Locally
 
 ```bash
-pnpm install
-pnpm dev
+cd app && pnpm install
+cd app && pnpm dev
+```
+
+Or from the repo root with [just](https://github.com/casey/just):
+
+```bash
+just setup
+just dev
 ```
 
 The web app runs on `http://localhost:3000`.
@@ -16,22 +23,24 @@ The web app runs on `http://localhost:3000`.
 Useful checks:
 
 ```bash
-pnpm build
+cd app && pnpm build
 pnpm docs:check
 ```
 
 If `pnpm build` fails in a restricted sandbox because Turbopack cannot bind its internal worker port, rerun it in a normal local shell.
 
-## Workspace Map
+## Repository Map
 
-- `apps/web/` - Next.js application and tests.
+- `app/` - Next.js application package (Prisma, API routes, UI).
 - `docs/vesta/source/` - canonical Vesta source docs, planning notes, and editable HTML source pages.
 - `docs/vesta/exports/` - generated export artifacts such as the DOCX SRS.
 - `docs/site/index.html` - source for the client-facing documentation landing page.
 - `static-site/` - publishable static documentation site.
 - `planning/` - implementation plans, research, and roadmap material.
-- `agent-instructions/` - canonical agent instruction files; root `AGENTS.md` and `CLAUDE.md` are thin shims.
+- `AGENTS.md` / `CLAUDE.md` - agent instructions at repo root.
 - `tools/scripts/` - repo maintenance scripts, including docs sync helpers.
+- `ops/` - Docker Compose stack and BDApps simulator packaging.
+- `vendor/bdapps/` - read-only BDApps SDK bundle for the simulator image.
 - `docs/archive/flo-research/` - archived Flo research retained for reference only.
 
 ## Client Docs Workflow
@@ -57,7 +66,7 @@ HTML_TO_DOCX_DIR=/tmp/vesta-html-to-docx node tools/scripts/build-srs-docx.mjs
 
 The simulator stack lives under `ops/simulator/bdapps/` and uses the vendor SDK runtime under `vendor/bdapps/sdk-standalone-1.2.68/`. That bulky bundle is intentionally retained because the simulator image copies it directly.
 
-Use the workspace commands for local orchestration:
+Use the repo-level commands for local orchestration:
 
 ```bash
 pnpm docker:dev

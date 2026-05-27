@@ -91,7 +91,7 @@ const FLOWS: FlowNode[] = [
     steps: ['Define Zod envSchema', 'Parse process.env at import time', 'Export typed env object'],
   },
   {
-    id: 'prisma-config', name: 'Prisma Config', desc: 'Package-local Prisma scripts point the CLI at prisma/schema.prisma so generate, migrate, and studio commands run from apps/web.',
+    id: 'prisma-config', name: 'Prisma Config', desc: 'Package-local Prisma scripts point the CLI at prisma/schema.prisma so generate, migrate, and studio commands run from app/.',
     group: 1, type: 'config', status: 'complete', deps: ['env-validation'],
     api: [], store: [],
     files: ['package.json', 'prisma/schema.prisma'],
