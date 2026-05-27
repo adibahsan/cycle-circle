@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/server/db'
 import type { JobEvent } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 
 export type JobType = 'PREDICTION_RECALC' | 'SEND_EMAIL' | 'SMS_BROADCAST'
 
@@ -15,7 +16,7 @@ export async function enqueueJob(
   return prisma.jobEvent.create({
     data: {
       type,
-      payload,
+      payload: payload as Prisma.InputJsonValue,
       status: 'PENDING',
     },
   })

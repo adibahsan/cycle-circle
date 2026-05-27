@@ -7,6 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -143,7 +144,7 @@ model SymptomLog {
   date      DateTime
   category  SymptomCategory
   symptomId String
-  value     String /// @encrypted
+  value     String
   createdAt DateTime        @default(now())
 
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
