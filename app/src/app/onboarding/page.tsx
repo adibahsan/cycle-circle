@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
@@ -284,6 +284,7 @@ function StepCycleHistory({
   cycleLength,
   periodLength,
   lastPeriodDate,
+  lastPeriodError,
   onCycleLength,
   onPeriodLength,
   onLastPeriodDate,
@@ -291,6 +292,7 @@ function StepCycleHistory({
   cycleLength: number;
   periodLength: number;
   lastPeriodDate: string;
+  lastPeriodError?: string;
   onCycleLength: (v: number) => void;
   onPeriodLength: (v: number) => void;
   onLastPeriodDate: (v: string) => void;
@@ -362,11 +364,12 @@ function StepCycleHistory({
       {/* Last period date */}
       <Card padding="md">
         <Input
-          label={t('onboarding.lastPeriod')}
+          label={`${t('onboarding.lastPeriod')} *`}
           type="date"
           value={lastPeriodDate}
           min={minDate}
           max={today}
+          error={lastPeriodError}
           onChange={(e) => onLastPeriodDate(e.target.value)}
         />
       </Card>
@@ -379,11 +382,13 @@ function StepCycleHistory({
 
 function StepProfile({
   name,
+  nameError,
   relation,
   onName,
   onRelation,
 }: {
   name: string;
+  nameError?: string;
   relation: ProfileRelation;
   onName: (v: string) => void;
   onRelation: (v: ProfileRelation) => void;
@@ -427,9 +432,10 @@ function StepProfile({
       {/* Name input */}
       <div>
         <Input
-          label="Name (optional)"
+          label="Name *"
           placeholder={relation === 'self' ? 'Your name' : `${t(`profiles.${relation}`)}\'s name`}
           value={name}
+          error={nameError}
           onChange={(e) => onName(e.target.value)}
           maxLength={40}
         />
@@ -463,9 +469,11 @@ function StepProfile({
 function StepDone({
   state,
   onFinish,
+  submitting = false,
 }: {
   state: OnboardingState;
   onFinish: () => void;
+  submitting?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -574,8 +582,8 @@ function StepDone({
         </div>
       </Card>
 
-      <Button size="lg" fullWidth onClick={onFinish} className="mt-2">
-        Go to Dashboard
+      <Button size="lg" fullWidth onClick={onFinish} disabled={submitting} className="mt-2">
+        {submitting ? 'Saving…' : 'Go to Dashboard'}
       </Button>
 
       <p className="text-xs text-[var(--color-text-muted)] max-w-xs">
@@ -590,7 +598,14 @@ function StepDone({
 export default function OnboardingPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { setOnboardingComplete, addProfile } = useAppStore();
+  const { profiles, setOnboardingComplete, addProfile } = useAppStore();
+
+  useEffect(() => {
+    if (profiles.length > 0) {
+      setOnboardingComplete(true);
+      router.replace('/dashboard');
+    }
+  }, [profiles.length, router, setOnboardingComplete]);
 
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState<1 | -1>(1);
@@ -604,38 +619,92 @@ export default function OnboardingPage() {
     profileRelation: 'self',
   });
 
+  const [stepErrors, setStepErrors] = useState<{
+    profileName?: string;
+    lastPeriodDate?: string;
+    submit?: string;
+  }>({});
+
+  const [submitting, setSubmitting] = useState(false);
+
+  function goalLabel(goal: Goal): string {
+    switch (goal) {
+      case 'tracking':
+        return 'Cycle tracking';
+      case 'conceive':
+        return 'Trying to conceive';
+      case 'perimenopause':
+        return 'Perimenopause support';
+      default:
+        return '';
+    }
+  }
+
+  function validateStep(currentStep: number): boolean {
+    const errors: typeof stepErrors = {};
+
+    if (currentStep === 3) {
+      const trimmed = state.profileName.trim();
+      if (trimmed.length < 2) {
+        errors.profileName = 'Enter a name (at least 2 characters)';
+      }
+    }
+
+    if (currentStep === 4) {
+      if (!state.lastPeriodDate) {
+        errors.lastPeriodDate = 'Last period start date is required';
+      }
+    }
+
+    setStepErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
   // ── Navigation helpers ──
 
   function goNext() {
+    if (!validateStep(step)) return;
     setDirection(1);
     setStep((s) => Math.min(TOTAL_STEPS, s + 1));
   }
 
   function goBack() {
+    setStepErrors({});
     setDirection(-1);
     setStep((s) => Math.max(1, s - 1));
   }
 
-  function skipStep() {
-    goNext();
-  }
-
   // ── Final submission ──
 
-  function handleFinish() {
-    // Build the profile from collected data
-    const today = new Date().toISOString().split('T')[0];
-    addProfile({
-      name: state.profileName || 'Me',
-      relation: state.profileRelation,
-      cycleLength: state.cycleLength,
-      periodLength: state.periodLength,
-      lastPeriodStart: state.lastPeriodDate || today,
-      cycleHistory: [state.cycleLength],
-      predictionTier: 'average',
-    });
-    setOnboardingComplete(true);
-    router.replace('/dashboard');
+  async function handleFinish() {
+    if (!validateStep(3) || !validateStep(4)) {
+      setStep(3);
+      return;
+    }
+
+    setSubmitting(true);
+    setStepErrors({});
+
+    try {
+      await addProfile({
+        name: state.profileName.trim(),
+        relation: state.profileRelation,
+        cycleLength: state.cycleLength,
+        periodLength: state.periodLength,
+        lastPeriodStart: state.lastPeriodDate,
+        cycleHistory: [state.cycleLength],
+        predictionTier: 'average',
+        goal: state.goal ? goalLabel(state.goal) : undefined,
+      });
+      setOnboardingComplete(true);
+      router.replace('/dashboard');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create profile. Please try again.';
+      setStepErrors({ submit: message });
+      console.error('Failed to create profile:', err);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // ── Animation variants ──
@@ -672,8 +741,12 @@ export default function OnboardingPage() {
         return (
           <StepProfile
             name={state.profileName}
+            nameError={stepErrors.profileName}
             relation={state.profileRelation}
-            onName={(v) => setState((s) => ({ ...s, profileName: v }))}
+            onName={(v) => {
+              setState((s) => ({ ...s, profileName: v }));
+              if (stepErrors.profileName) setStepErrors((e) => ({ ...e, profileName: undefined }));
+            }}
             onRelation={(v) => setState((s) => ({ ...s, profileRelation: v }))}
           />
         );
@@ -683,13 +756,24 @@ export default function OnboardingPage() {
             cycleLength={state.cycleLength}
             periodLength={state.periodLength}
             lastPeriodDate={state.lastPeriodDate}
+            lastPeriodError={stepErrors.lastPeriodDate}
             onCycleLength={(v) => setState((s) => ({ ...s, cycleLength: v }))}
             onPeriodLength={(v) => setState((s) => ({ ...s, periodLength: v }))}
-            onLastPeriodDate={(v) => setState((s) => ({ ...s, lastPeriodDate: v }))}
+            onLastPeriodDate={(v) => {
+              setState((s) => ({ ...s, lastPeriodDate: v }));
+              if (stepErrors.lastPeriodDate) setStepErrors((e) => ({ ...e, lastPeriodDate: undefined }));
+            }}
           />
         );
       case 5:
-        return <StepDone state={state} onFinish={handleFinish} />;
+        return (
+          <>
+            {stepErrors.submit && (
+              <p className="mb-4 text-sm text-red-500 text-center">{stepErrors.submit}</p>
+            )}
+            <StepDone state={state} onFinish={handleFinish} submitting={submitting} />
+          </>
+        );
       default:
         return null;
     }
@@ -758,18 +842,19 @@ export default function OnboardingPage() {
               <Button variant="outline" size="lg" onClick={goBack} className="w-14 shrink-0 px-0">
                 <ChevronLeft size={20} />
               </Button>
-              <Button size="lg" fullWidth onClick={goNext} disabled={step === 2 && !state.goal}>
+              <Button
+                size="lg"
+                fullWidth
+                onClick={goNext}
+                disabled={
+                  (step === 2 && !state.goal) ||
+                  (step === 3 && state.profileName.trim().length < 2) ||
+                  (step === 4 && !state.lastPeriodDate)
+                }
+              >
                 {t('onboarding.next')} <ChevronRight size={18} className="ml-1" />
               </Button>
             </div>
-            {(step === 3 || step === 4) && (
-              <button
-                onClick={skipStep}
-                className="w-full text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors text-center mt-2"
-              >
-                {t('onboarding.skip')}
-              </button>
-            )}
           </div>
         )}
     </div>

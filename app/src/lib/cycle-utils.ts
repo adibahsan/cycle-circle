@@ -20,8 +20,8 @@ export function getDaysUntilNextPeriod(cycleDay: number, cycleLength: number): n
   return cycleLength - cycleDay;
 }
 
-export function predictCycleLength(history: number[]): number {
-  if (history.length === 0) return 28;
+export function predictCycleLength(history: number[], fallback = 28): number {
+  if (history.length === 0) return fallback;
   if (history.length === 1) return history[0];
   const weights = history.map((_, i) => i + 1);
   const totalWeight = weights.reduce((s, w) => s + w, 0);
@@ -39,8 +39,14 @@ export function getConfidence(tier: PredictionTier, cycleCount: number): number 
   return Math.min(75, 40 + cycleCount * 8);
 }
 
+/** Map API phase names to client CyclePhase (e.g. ovulatory → ovulation). */
+export function normalizeCyclePhase(phase: string): CyclePhase {
+  if (phase === 'ovulatory') return 'ovulation';
+  return phase as CyclePhase;
+}
+
 export function computePrediction(profile: UserProfile): Prediction {
-  const predictedLength = predictCycleLength(profile.cycleHistory);
+  const predictedLength = predictCycleLength(profile.cycleHistory, profile.cycleLength);
   const lastPeriod = new Date(profile.lastPeriodStart);
   const nextPeriodStart = addDays(lastPeriod, predictedLength);
   const ovulationDay = addDays(nextPeriodStart, -14);

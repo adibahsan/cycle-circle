@@ -2,6 +2,7 @@ import { withAuth } from '@/server/middleware'
 import { handleApiError, ApiError } from '@/server/api-error'
 import { parseSearchParams } from '@/server/validation'
 import { prisma } from '@/server/db'
+import { getLatestPeriodLog } from '@/server/period-log-sync'
 import { z } from 'zod'
 import type { AuthUser } from '@/server/auth'
 
@@ -32,10 +33,7 @@ export const GET = withAuth(async (request, { user }: { user: AuthUser }) => {
       throw new ApiError(404, 'Profile not found', 'PROFILE_NOT_FOUND')
     }
 
-    const lastPeriod = await prisma.periodLog.findFirst({
-      where: { profileId: profile.id },
-      orderBy: { startDate: 'desc' },
-    })
+    const lastPeriod = await getLatestPeriodLog(profile)
 
     const prediction = await prisma.prediction.findUnique({
       where: { profileId: profile.id },

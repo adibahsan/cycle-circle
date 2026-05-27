@@ -8,6 +8,9 @@ import { ArrowLeft, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAppStore } from '@/lib/store';
 import { auth, ApiClientError } from '@/lib/api';
+import { devMode, useDummyData } from '@/lib/config';
+import { hydrateFromApi } from '@/lib/hydrate-store';
+import { getPostAuthPath } from '@/lib/post-auth';
 import '@/lib/i18n';
 
 const OTP_LENGTH = 6;
@@ -27,7 +30,7 @@ const FADE_UP = {
 export default function VerifyOtpPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const login = useAppStore((s) => s.login);
+  const loginWithUser = useAppStore((s) => s.loginWithUser);
 
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [error, setError] = useState('');
@@ -39,6 +42,13 @@ export default function VerifyOtpPage() {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Dummy / dev mode: OTP page is not used
+  useEffect(() => {
+    if (useDummyData || devMode) {
+      router.replace('/login');
+    }
+  }, [router]);
 
   // Read phone from sessionStorage
   useEffect(() => {
@@ -116,9 +126,10 @@ export default function VerifyOtpPage() {
       const { user } = await auth.verifyOtp(referenceNo, code);
       setSuccess(true);
       await new Promise((res) => setTimeout(res, 700)); // Keep success animation
-      login('otp'); // Update local store
-      // Navigate based on profile completion
-      router.replace(user.profileCompleted ? '/dashboard' : '/onboarding');
+      loginWithUser(user, 'otp');
+      await hydrateFromApi();
+      const { profiles } = useAppStore.getState();
+      router.replace(getPostAuthPath(profiles.length));
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message);

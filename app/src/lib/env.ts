@@ -28,6 +28,12 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
     .default('development'),
+
+  /** Skip OTP via POST /api/auth/dev-login. Ignored when NODE_ENV=production. */
+  DEV_MODE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
 })
 
 export type Env = z.infer<typeof envSchema>

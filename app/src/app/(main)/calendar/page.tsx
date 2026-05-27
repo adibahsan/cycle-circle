@@ -24,6 +24,8 @@ import { computePrediction } from '@/lib/cycle-utils';
 import type { PeriodLog, SymptomLog } from '@/lib/types';
 import { Card } from '@/components/ui/Card';
 import { tracking } from '@/lib/api';
+import { useDummyData } from '@/lib/config';
+import { Button } from '@/components/ui/Button';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -295,16 +297,36 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [apiCalendar, setApiCalendar] = useState<any[] | null>(null);
+  const [calendarError, setCalendarError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!activeProfileId) return;
+    if (!activeProfileId || useDummyData) {
+      setApiCalendar(null);
+      setCalendarError(null);
+      return;
+    }
     const month = format(currentMonth, 'yyyy-MM');
+    setCalendarError(null);
     tracking.getCalendar(activeProfileId, month)
       .then(setApiCalendar)
-      .catch(() => {}); // Silently fail — use store computed data as fallback
+      .catch((err: Error) => {
+        setApiCalendar(null);
+        setCalendarError(err.message ?? 'Failed to load calendar');
+      });
   }, [activeProfileId, currentMonth]);
 
   const profile = profiles.find((p) => p.id === activeProfileId);
+
+  if (calendarError && !useDummyData) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4 px-4 text-center">
+        <p className="text-[var(--color-text-muted)]">{calendarError}</p>
+        <Button variant="primary" onClick={() => window.location.reload()}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   // Compute prediction & build date metadata
   const prediction = useMemo(() => {
@@ -345,6 +367,14 @@ export default function CalendarPage() {
     const nextPeriodEnd = new Date(nextPeriodStart);
     nextPeriodEnd.setDate(nextPeriodStart.getDate() + profile.periodLength - 1);
 
+    const lastPeriodEnd = profile.lastPeriodStart
+      ? (() => {
+          const end = parseISO(profile.lastPeriodStart);
+          end.setDate(end.getDate() + profile.periodLength - 1);
+          return end;
+        })()
+      : null;
+
     for (const date of gridDays) {
       const dateStr = format(date, 'yyyy-MM-dd');
 
@@ -369,11 +399,21 @@ export default function CalendarPage() {
 
       const isFuture = date > today;
 
+      const isInLastPeriodWindow =
+        profile.lastPeriodStart &&
+        lastPeriodEnd &&
+        isWithinInterval(date, {
+          start: parseISO(profile.lastPeriodStart),
+          end: lastPeriodEnd,
+        });
+
       // Prefer API calendar data when available, fall back to store-computed values
       const apiDay = apiCalendarMap?.get(dateStr);
       map.set(dateStr, {
         date,
-        isPeriod: apiDay ? (apiDay.period || Boolean(periodLog)) : (Boolean(periodLog) || isInPredictedPeriod),
+        isPeriod: apiDay
+          ? (apiDay.period || Boolean(periodLog))
+          : (Boolean(periodLog) || isInLastPeriodWindow || isInPredictedPeriod),
         isFertile: apiDay ? apiDay.fertile : isFertile,
         isOvulation: apiDay ? apiDay.ovulation : isOvulation,
         isFuturePredicted: apiDay

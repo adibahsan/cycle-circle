@@ -4,6 +4,7 @@ import { handleApiError, ApiError } from '@/server/api-error'
 import { parseBody } from '@/server/validation'
 import { prisma } from '@/server/db'
 import { enqueueJob } from '@/server/adapters/jobs'
+import { ensurePeriodLogFromProfile } from '@/server/period-log-sync'
 import type { AuthUser } from '@/server/auth'
 
 const createProfileSchema = z.object({
@@ -58,7 +59,7 @@ export const POST = withAuth(async (request, { user }: { user: AuthUser }) => {
     })
 
     if (body.lastPeriodStart) {
-      await enqueueJob('PREDICTION_RECALC', { profileId: profile.id })
+      await ensurePeriodLogFromProfile(profile)
     }
 
     return Response.json({ profile }, { status: 201 })
