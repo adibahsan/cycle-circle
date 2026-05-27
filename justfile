@@ -1,5 +1,7 @@
-set dotenv-filename := ".env.local"
+set dotenv-filename := "apps/web/.env.local"
 set dotenv-load
+
+compose := "docker compose -f ops/docker/compose.yml"
 
 default:
     just --list
@@ -8,27 +10,27 @@ default:
 
 # Start all services (postgres, redis, mailpit, bdapps-simulator, worker, app)
 up:
-    docker compose up -d --build --remove-orphans
+    {{compose}} up -d --build --remove-orphans
 
 # Start only infrastructure (postgres, redis, mailpit) — run Next.js locally
 infra:
-    docker compose up -d postgres redis mailpit --remove-orphans
+    {{compose}} up -d postgres redis mailpit --remove-orphans
 
 # Stop all docker services
 down:
-    docker compose down
+    {{compose}} down
 
 # Stop and remove all volumes (full wipe)
 nuke:
-    docker compose down -v --remove-orphans
+    {{compose}} down -v --remove-orphans
 
 # Show docker service logs (follow)
 logs *args='':
-    docker compose logs -f {{args}}
+    {{compose}} logs -f {{args}}
 
 # Show status of all services
 ps:
-    docker compose ps
+    {{compose}} ps
 
 # ─── DATABASE ───────────────────────────────────────────
 
@@ -62,18 +64,18 @@ db-reset:
 
 # Reset database without interactive prompt: drop via Docker, push schema, generate, seed
 db-reset-force:
-    docker exec -i $(docker compose ps -q postgres) psql -U vesta -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'vesta_dev' AND pid <> pg_backend_pid();" || true
-    docker exec -i $(docker compose ps -q postgres) psql -U vesta -d postgres -c "DROP DATABASE IF EXISTS vesta_dev;" || true
-    docker exec -i $(docker compose ps -q postgres) psql -U vesta -d postgres -c "CREATE DATABASE vesta_dev;" || true
-    docker exec -i $(docker compose ps -q postgres) psql -U vesta -d vesta_dev -f /docker-entrypoint-initdb.d/init.sql
-    pnpm exec prisma db push --accept-data-loss
+    docker exec -i $({{compose}} ps -q postgres) psql -U vesta -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'vesta_dev' AND pid <> pg_backend_pid();" || true
+    docker exec -i $({{compose}} ps -q postgres) psql -U vesta -d postgres -c "DROP DATABASE IF EXISTS vesta_dev;" || true
+    docker exec -i $({{compose}} ps -q postgres) psql -U vesta -d postgres -c "CREATE DATABASE vesta_dev;" || true
+    docker exec -i $({{compose}} ps -q postgres) psql -U vesta -d vesta_dev -f /docker-entrypoint-initdb.d/init.sql
+    pnpm --filter web exec prisma db push --accept-data-loss
     pnpm db:generate
     pnpm db:seed
 
 # Wipe database volumes and start fresh (nuclear option)
 db-nuke:
-    docker compose down -v postgres
-    docker compose up -d postgres
+    {{compose}} down -v postgres
+    {{compose}} up -d postgres
     @echo "Waiting for postgres to be healthy..."
     @sleep 5
     pnpm db:migrate:deploy
@@ -84,7 +86,7 @@ db-nuke:
 
 # Full local dev setup: copy env, start infra, migrate, seed, run dev server
 setup:
-    @test -f .env.local || cp .env.local.example .env.local && echo "Created .env.local"
+    @test -f apps/web/.env.local || cp apps/web/.env.example apps/web/.env.local && echo "Created apps/web/.env.local"
     just infra
     @echo "Waiting for services to be healthy..."
     @sleep 5
@@ -103,7 +105,7 @@ dev-docker:
 
 # Type check
 typecheck:
-    npx tsc --noEmit
+    pnpm typecheck
 
 # Run tests
 test:
@@ -137,11 +139,11 @@ cron-caas:
 
 # Open Redis CLI
 redis-cli:
-    docker exec -it $(docker compose ps -q redis) redis-cli
+    docker exec -it $({{compose}} ps -q redis) redis-cli
 
 # Flush all Redis data
 redis-flush:
-    docker exec -it $(docker compose ps -q redis) redis-cli FLUSHALL
+    docker exec -it $({{compose}} ps -q redis) redis-cli FLUSHALL
     @echo "Redis flushed."
 
 # ─── QUICK COMBOS ──────────────────────────────────────

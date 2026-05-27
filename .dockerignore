@@ -18,7 +18,7 @@ node_modules
 # Logs and local simulator noise (smaller context, reproducible WAR)
 **/logs/**
 **/*.log
-Developer_Bundle/sdk-standalone-1.2.68/**/*.war.bak
+vendor/bdapps/sdk-standalone-1.2.68/**/*.war.bak
 
 # Planning / docs not required in image context (optional speedup)
-.planning
+planning

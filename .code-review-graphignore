@@ -3,5 +3,6 @@ dist/**
 .code-review-graph/**
 stitch/**
 docs/**
+vendor/**
 *.md
 *.html
