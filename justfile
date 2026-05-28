@@ -97,13 +97,11 @@ db-nuke:
 
 # ─── DEV ────────────────────────────────────────────────
 
-# Full local dev setup: copy env, start infra, migrate, seed, run dev server
+# Full local dev setup: copy env, start infra, reset db, run dev server
 setup:
     @test -f apps/web/.env.local || cp apps/web/.env.example apps/web/.env.local && echo "Created apps/web/.env.local"
     just infra
-    {{shared}} db:generate
-    {{shared}} db:migrate:deploy
-    {{shared}} db:seed
+    just db-reset-force
     @echo "Ready! Run 'just w' to start web, 'just a' for admin."
 
 # Start Next.js web dev server (assumes infra is running)
