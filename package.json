@@ -1,10 +1,20 @@
 {
-  "name": "vesta-repo",
+  "name": "vesta-workspace",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "docs:sync": "node tools/scripts/sync-netlify-docs.mjs --sync",
-    "docs:check": "node tools/scripts/sync-netlify-docs.mjs --check",
+    "dev": "pnpm --filter @vesta/web dev",
+    "dev:admin": "pnpm --filter @vesta/admin dev",
+    "build": "pnpm --filter @vesta/web build",
+    "build:admin": "pnpm --filter @vesta/admin build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "db:generate": "pnpm --filter @vesta/shared db:generate",
+    "db:migrate": "pnpm --filter @vesta/shared db:migrate",
+    "db:studio": "pnpm --filter @vesta/shared db:studio",
+    "docs:sync": "node scripts/sync-netlify-docs.mjs --sync",
+    "docs:check": "node scripts/sync-netlify-docs.mjs --check",
     "docker:dev": "docker compose -f ops/docker/compose.yml up -d --build",
     "docker:down": "docker compose -f ops/docker/compose.yml down",
     "docker:logs": "docker compose -f ops/docker/compose.yml logs -f"

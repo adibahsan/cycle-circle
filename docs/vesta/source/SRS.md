@@ -18,7 +18,7 @@
 | Version           | 1.2                                                                                                                                                                            |
 | Issue date        | May 2026                                                                                                                                                                       |
 | Source            | `docs/vesta/source/SRS.md`                                                                                                                                                            |
-| Published copy    | `static-site/vesta/vesta-srs.html`                                                                                                                                           |
+| Published copy    | `docs/site/vesta/vesta-srs.html`                                                                                                                                             |
 | Related artifacts | `docs/vesta/source/vesta-kb.md`, `docs/vesta/source/vesta-mvp-plan.html`, `docs/vesta/source/vesta-user-stories.html`, `docs/vesta/source/vesta-user-journey-flows.html`, `docs/vesta/source/bdapps-tap-api.html` |
 | Audience          | Client sponsor, product owner, engineering team, QA team, security reviewers                                                                                                   |
 | Approval          | Arika/Fakhrul                                                                                                                                                                  |
@@ -151,7 +151,7 @@ Vesta v1 shall deliver phone-number-based account management (verified via BDApp
 | R3  | Vesta v1 User Stories                                | `docs/vesta/source/vesta-user-stories.html`                                                                                 |
 | R4  | Vesta v1 User Journey Flows                          | `docs/vesta/source/vesta-user-journey-flows.html`                                                                           |
 | R5  | BDApps Telco Aggregator Platform (TAP) API Reference | `docs/vesta/source/bdapps-tap-api.html`                                                                                     |
-| R6  | Published client SRS (HTML form)                     | `static-site/vesta/vesta-srs.html`                                                                                 |
+| R6  | Published client SRS (HTML form)                     | `docs/site/vesta/vesta-srs.html`                                                                                   |
 | R7  | Resend Transactional Email API                       | [https://resend.com/docs](https://resend.com/docs)                                                                   |
 | R8  | Upstash QStash Documentation                         | [https://upstash.com/docs/qstash](https://upstash.com/docs/qstash)                                                   |
 | R9  | Supabase Row Level Security                          | [https://supabase.com/docs/guides/auth/row-level-security](https://supabase.com/docs/guides/auth/row-level-security) |

@@ -1,0 +1,54 @@
+{
+  "name": "@vesta/web",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "pnpm --filter @vesta/shared db:generate",
+    "db:migrate": "pnpm --filter @vesta/shared db:migrate",
+    "db:migrate:deploy": "pnpm --filter @vesta/shared db:migrate:deploy",
+    "db:seed": "pnpm --filter @vesta/shared db:seed",
+    "db:studio": "pnpm --filter @vesta/shared db:studio",
+    "db:reset": "pnpm --filter @vesta/shared db:reset",
+    "backend:test": "vitest run",
+    "backend:test:watch": "vitest",
+    "worker": "node --import tsx/esm ../../packages/shared/src/server/worker-process.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "@vesta/shared": "workspace:*",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "i18next": "^25.1.0",
+    "i18next-browser-languagedetector": "^8.0.0",
+    "lucide-react": "^0.546.0",
+    "motion": "^12.23.24",
+    "next": "^16.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-i18next": "^15.4.0",
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.0"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.14",
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitest/coverage-v8": "^4.1.6",
+    "prisma": "^6.19.3",
+    "tailwindcss": "^4.1.14",
+    "tsx": "^4.22.3",
+    "typescript": "~5.8.2",
+    "vitest": "^4.1.6"
+  }
+}
