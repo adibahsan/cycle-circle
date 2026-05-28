@@ -1,76 +1,79 @@
 # Vesta
 
-Vesta is a bilingual reproductive health and cycle intelligence workspace for Bangladesh. The Next.js application lives under `app/`, while planning, source docs, static-site artifacts, and agent guidance live at the repo root.
+Vesta is a bilingual reproductive health and cycle intelligence platform for Bangladesh. The project is structured as a pnpm monorepo with a customer-facing app, an admin panel, and a shared code package.
 
-The full v1 requirements are documented in [docs/vesta/source/SRS.md](docs/vesta/source/SRS.md). Backend integrations such as BDApps OTP/CAAS/SMS, Supabase, Prisma, Upstash, Resend, API route handlers, webhooks, and admin persistence are specified in the docs and partially implemented in the workspace.
+The full v1 requirements are documented in [docs/vesta/source/SRS.md](docs/vesta/source/SRS.md). Implementation progress is tracked in [DEV_SRS.md](DEV_SRS.md).
 
 ## Run Locally
 
 ```bash
-cd app && pnpm install
-cd app && pnpm dev
-```
-
-Or from the repo root with [just](https://github.com/casey/just):
-
-```bash
+pnpm install
 just setup
-just dev
+just w
 ```
 
-The web app runs on `http://localhost:3000`.
-
-Useful checks:
+Or start both apps:
 
 ```bash
-cd app && pnpm build
-pnpm docs:check
+just wa
 ```
 
-If `pnpm build` fails in a restricted sandbox because Turbopack cannot bind its internal worker port, rerun it in a normal local shell.
+The web app runs on `http://localhost:3000`, admin on `http://localhost:3001`.
+
+## Quick Commands
+
+| Command | What |
+|---|---|
+| `just w` | Start web dev server |
+| `just a` | Start admin dev server |
+| `just wa` | Start both |
+| `just setup` | Full local setup (env, infra, DB reset, seed) |
+| `just typecheck` | Type-check web app |
+| `just studio` | Open Prisma Studio |
+| `just up` | Start all Docker services |
+| `just infra` | Start only infrastructure (postgres, redis, mailpit) |
+
+Run `just` to see all available commands.
 
 ## Repository Map
 
-- `app/` - Next.js application package (Prisma, API routes, UI).
-- `docs/vesta/source/` - canonical Vesta source docs, planning notes, and editable HTML source pages.
-- `docs/vesta/exports/` - generated export artifacts such as the DOCX SRS.
-- `docs/site/index.html` - source for the client-facing documentation landing page.
-- `static-site/` - publishable static documentation site.
-- `planning/` - implementation plans, research, and roadmap material.
-- `AGENTS.md` / `CLAUDE.md` - agent instructions at repo root.
-- `tools/scripts/` - repo maintenance scripts, including docs sync helpers.
-- `ops/` - Docker Compose stack and BDApps simulator packaging.
-- `vendor/bdapps/` - read-only BDApps SDK bundle for the simulator image.
-- `docs/archive/flo-research/` - archived Flo research retained for reference only.
+```
+apps/web/              Next.js customer app (Prisma, API routes, UI)
+apps/admin/            Next.js admin panel (scaffold for Phase 04)
+packages/shared/       @vesta/shared — Prisma schema, server logic, auth, adapters, types
+ops/docker/            Docker Compose stack (postgres, redis, mailpit, worker)
+ops/vendor/bdapps/     Read-only BDApps SDK for simulator image
+ops/simulator/bdapps/  Local BDApps simulator for testing
+docs/vesta/source/     Canonical Vesta source docs (SRS, knowledge base, user stories)
+docs/vesta/exports/    Generated artifacts (DOCX SRS)
+docs/site/             Client-facing documentation site
+docs/archive/          Archived research (Flo competitor analysis)
+.planning/             Implementation plans, roadmap, research
+scripts/               Repo maintenance scripts (docs sync, SRS export)
+```
 
 ## Client Docs Workflow
 
-Author Vesta documentation in `docs/vesta/source/`. Generated exports belong in `docs/vesta/exports/`, and the client-facing site is synced into `static-site/`.
-
-After changing client-facing HTML docs:
+Author docs in `docs/vesta/source/`. The client-facing site lives in `docs/site/`.
 
 ```bash
-pnpm docs:sync
-pnpm docs:check
+pnpm docs:sync      # Sync source docs to docs/site/
+pnpm docs:check     # Verify docs/site/ hasn't drifted from source
 ```
 
-`docs:sync` copies the published Vesta HTML pages and landing page source into `static-site/`. `docs:check` verifies that the static-site copies have not drifted from the source docs.
-
-To rebuild the Word export for the client SRS:
+To rebuild the Word export:
 
 ```bash
-HTML_TO_DOCX_DIR=/tmp/vesta-html-to-docx node tools/scripts/build-srs-docx.mjs
+HTML_TO_DOCX_DIR=/tmp/vesta-html-to-docx node scripts/build-srs-docx.mjs
 ```
 
 ## BDApps Simulator
 
-The simulator stack lives under `ops/simulator/bdapps/` and uses the vendor SDK runtime under `vendor/bdapps/sdk-standalone-1.2.68/`. That bulky bundle is intentionally retained because the simulator image copies it directly.
-
-Use the repo-level commands for local orchestration:
+The simulator stack lives under `ops/simulator/bdapps/` and uses the vendor SDK at `ops/vendor/bdapps/sdk-standalone-1.2.68/`.
 
 ```bash
-pnpm docker:dev
-pnpm docker:down
+just up        # Start all services including simulator
+just down      # Stop everything
 ```
 
-See [ops/simulator/bdapps/README.md](ops/simulator/bdapps/README.md) for ports, smoke tests, and macOS port-7000 notes.
+See [ops/simulator/bdapps/README.md](ops/simulator/bdapps/README.md) for ports and smoke tests.
