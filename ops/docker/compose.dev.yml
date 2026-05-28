@@ -8,8 +8,8 @@ services:
   #   volumes:
   #     - ../..:/workspace
   #     - /workspace/node_modules
-  #     - /workspace/app/node_modules
-  #     - /workspace/app/.next
+  #     - /workspace/apps/web/node_modules
+  #     - /workspace/apps/web/.next
   #   environment:
   #     DATABASE_URL: postgresql://vesta:vesta_dev@postgres:5432/vesta_dev
   #     REDIS_URL: redis://redis:6379

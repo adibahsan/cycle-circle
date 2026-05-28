@@ -1,0 +1,50 @@
+{
+  "name": "@vesta/shared",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server/*": "./src/server/*.ts",
+    "./server/adapters/*": "./src/server/adapters/*.ts",
+    "./server/simulator/*": "./src/server/simulator/*.ts",
+    "./types": "./src/types/index.ts",
+    "./utils/*": "./src/utils/*.ts",
+    "./prisma": "./prisma/schema.prisma"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate --schema ./prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema ./prisma/schema.prisma",
+    "db:migrate:deploy": "prisma migrate deploy --schema ./prisma/schema.prisma",
+    "db:seed": "prisma db seed --schema ./prisma/schema.prisma",
+    "db:studio": "prisma studio --schema ./prisma/schema.prisma",
+    "db:reset": "prisma migrate reset --schema ./prisma/schema.prisma"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "date-fns": "^4.1.0",
+    "i18next": "^25.1.0",
+    "i18next-browser-languagedetector": "^8.0.0",
+    "react-i18next": "^15.4.0",
+    "ioredis": "^5.10.1",
+    "jose": "^6.2.3",
+    "resend": "^6.12.3",
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "next": ">=16.0.0",
+    "react": ">=19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.0.0",
+    "next": "^16.2.0",
+    "prisma": "^6.19.3",
+    "tsx": "^4.22.3",
+    "typescript": "~5.8.2"
+  }
+}

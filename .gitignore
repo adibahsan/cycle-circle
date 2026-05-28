@@ -1,10 +1,13 @@
 # Dependencies
 node_modules/
+apps/*/node_modules
+packages/*/node_modules
 package-lock.json
 yarn.lock
 
 # Next.js / TypeScript output
 .next/
+apps/*/.next
 build/
 dist/
 coverage/
@@ -40,3 +43,5 @@ target/
 *.tar
 *.tar.gz
 *.tgz
+
+.planning/
