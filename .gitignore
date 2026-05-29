@@ -1,8 +1,54 @@
+# Dependencies
 node_modules/
+apps/*/node_modules
+packages/*/node_modules
+package-lock.json
+yarn.lock
+
+# Next.js / TypeScript output
+.next/
+apps/*/.next
 build/
 dist/
 coverage/
-.DS_Store
-*.log
+tsconfig.tsbuildinfo
+
+# Local environment
 .env*
 !.env.example
+apps/web/env.local
+apps/web/.env.local
+apps/admin/.env.local
+*.log
+
+# OS/editor metadata
+.DS_Store
+**/.DS_Store
+.idea/
+.cursor/
+
+# Local agent/tool state
+.code-review-graph/
+.codex/
+.understand-anything/intermediate/
+.understand-anything/diff-overlay.json
+.understand-anything/tmp/
+
+# Java / Maven / Ant build output
+target/
+**/target/
+*.class
+*.war
+*.ear
+
+# Archives generated during local experiments
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+.planning/
+
+.playwright-mcp/
+
+review/screenshots/

@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vesta — v1 Implementation Plan</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fa;color:#1a1a2e;line-height:1.6}
+.page{max-width:1100px;margin:0 auto;padding:48px 32px}
+
+/* Header */
+.header{margin-bottom:48px}
+.header-meta{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:4px 12px;border-radius:100px}
+.badge-teal{background:#ccfbf1;color:#115e59}
+.badge-blue{background:#eff6ff;color:#1d4ed8}
+.badge-green{background:#f0fdf4;color:#16a34a}
+.badge-orange{background:#fff7ed;color:#c2410c}
+.badge-purple{background:#f5f3ff;color:#7c3aed}
+.badge-gray{background:#f3f4f6;color:#374151}
+h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
+.subtitle{font-size:15px;color:#6b7280;line-height:1.6;max-width:780px}
+.stats-row{display:flex;gap:16px;margin-top:24px;flex-wrap:wrap}
+.stat{background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:16px 20px;min-width:130px}
+.stat-val{font-size:22px;font-weight:900;color:#0d9488}
+.stat-label{font-size:11px;color:#6b7280;margin-top:2px}
+
+/* Section */
+.section{margin-bottom:48px}
+.section-title{font-size:18px;font-weight:800;color:#1a1a2e;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.section-num{width:28px;height:28px;border-radius:50%;background:#0d9488;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-desc{font-size:13px;color:#6b7280;margin-bottom:20px;margin-left:38px}
+
+/* MoSCoW */
+.moscow-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.moscow-grid{grid-template-columns:1fr}}
+.moscow-card{border-radius:12px;padding:20px;border:1.5px solid}
+.moscow-must{background:#f0fdfa;border-color:#ccfbf1}
+.moscow-should{background:#eff6ff;border-color:#dbeafe}
+.moscow-could{background:#f5f3ff;border-color:#ede9fe}
+.moscow-wont{background:#f9fafb;border-color:#f3f4f6}
+.moscow-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.feature-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.05)}
+.feature-item:last-child{border-bottom:none}
+.fi-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.fi-name{font-size:12px;font-weight:600;color:#1a1a2e}
+.fi-note{font-size:10px;color:#9ca3af;margin-top:1px}
+
+/* Sprint plan */
+.week-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;margin-top:24px}
+.week-badge{background:#1a1a2e;color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px}
+.week-desc{font-size:12px;color:#6b7280}
+.sprint-table{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;border:1.5px solid #e5e7eb}
+.sprint-table th{background:#f3f4f6;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;padding:10px 14px;text-align:left;border-bottom:1.5px solid #e5e7eb}
+.sprint-table td{padding:12px 14px;font-size:12px;border-bottom:1px solid #f3f4f6;vertical-align:top}
+.sprint-table tr:last-child td{border-bottom:none}
+.sprint-table tr:hover td{background:#fafafa}
+.day-num{font-weight:800;color:#0d9488;white-space:nowrap}
+.deliverable-list{display:flex;flex-direction:column;gap:3px}
+.deliverable{display:flex;align-items:center;gap:6px;font-size:11px;color:#374151}
+.d-dot{width:5px;height:5px;border-radius:50%;background:#0d9488;flex-shrink:0}
+.d-dot-blue{width:5px;height:5px;border-radius:50%;background:#3b82f6;flex-shrink:0}
+.d-dot-green{width:5px;height:5px;border-radius:50%;background:#22c55e;flex-shrink:0}
+.d-dot-purple{width:5px;height:5px;border-radius:50%;background:#7c3aed;flex-shrink:0}
+.owner-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.owner-fe{background:#eff6ff;color:#1d4ed8}
+.owner-be{background:#f0fdf4;color:#16a34a}
+.owner-shared{background:#f5f3ff;color:#7c3aed}
+
+/* Tech stack */
+.stack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.stack-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px}
+.stack-layer{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:6px}
+.stack-choice{font-size:14px;font-weight:800;color:#1a1a2e;margin-bottom:4px}
+.stack-reason{font-size:11px;color:#6b7280;line-height:1.4}
+
+/* RICE table */
+.rice-table{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;border:1.5px solid #e5e7eb}
+.rice-table th{background:#f3f4f6;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;padding:10px 12px;text-align:left;border-bottom:1.5px solid #e5e7eb}
+.rice-table td{padding:11px 12px;font-size:12px;border-bottom:1px solid #f3f4f6}
+.rice-table tr:last-child td{border-bottom:none}
+.rice-score{font-size:14px;font-weight:900;color:#0d9488}
+.rice-bar{height:6px;border-radius:3px;background:#ccfbf1;margin-top:4px;overflow:hidden}
+.rice-bar-fill{height:6px;border-radius:3px;background:#0d9488}
+.priority-1{font-weight:800;color:#0d9488}
+
+/* Schema */
+.schema-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.schema-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px;font-family:monospace}
+.table-name{font-size:12px;font-weight:800;color:#0d9488;margin-bottom:10px;font-family:-apple-system,sans-serif}
+.field{display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f9fafb;font-size:11px}
+.field:last-child{border-bottom:none}
+.field-name{color:#1a1a2e;font-weight:600;min-width:130px}
+.field-type{color:#6b7280}
+.field-pk{color:#0d9488;font-size:9px;font-weight:700}
+
+/* Algorithm */
+.algo-box{background:#1e293b;border-radius:12px;padding:24px;font-family:'Courier New',monospace;font-size:12px;line-height:1.8;color:#e2e8f0;white-space:pre-wrap;overflow-x:auto}
+.algo-tier{color:#2dd4bf;font-weight:700}
+.algo-comment{color:#64748b}
+.algo-var{color:#7dd3fc}
+.algo-op{color:#5eead4}
+.algo-val{color:#86efac}
+.algo-tier{color:#c4b5fd;font-weight:700}
+
+/* Phases */
+.phases-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.phases-row{grid-template-columns:1fr}}
+.phase-card{border-radius:12px;padding:20px;border:1.5px solid}
+.phase1{background:#f0fdfa;border-color:#ccfbf1}
+.phase2{background:#eff6ff;border-color:#dbeafe}
+.phase3{background:#f0fdf4;border-color:#dcfce7}
+.phase4{background:#f5f3ff;border-color:#ede9fe}
+.phase-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.phase-title{font-size:14px;font-weight:800}
+.phase-timeline{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px}
+.phase-features{display:flex;flex-direction:column;gap:6px}
+.pf{display:flex;align-items:flex-start;gap:6px;font-size:11px;color:#374151}
+.pf-dot{width:5px;height:5px;border-radius:50%;margin-top:4px;flex-shrink:0}
+
+/* Risks */
+.risk-list{display:flex;flex-direction:column;gap:10px}
+.risk{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px;display:flex;gap:14px;align-items:flex-start}
+.risk-level{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.risk-high{background:#fef2f2;color:#dc2626}
+.risk-med{background:#fff7ed;color:#c2410c}
+.risk-low{background:#f0fdf4;color:#16a34a}
+.risk-title{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:4px}
+.risk-desc{font-size:11px;color:#6b7280;line-height:1.5}
+.risk-mit{font-size:11px;color:#374151;margin-top:6px;font-weight:600}
+
+/* Dependencies */
+.dep-list{display:flex;flex-direction:column;gap:8px}
+.dep{background:#fff;border:1.5px solid #e5e7eb;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.dep-from{font-size:11px;font-weight:700;color:#1a1a2e;background:#f3f4f6;padding:3px 8px;border-radius:5px}
+.dep-arrow{color:#9ca3af;font-size:12px}
+.dep-to{font-size:11px;font-weight:700;color:#0d9488;background:#ccfbf1;padding:3px 8px;border-radius:5px}
+.dep-note{font-size:10px;color:#9ca3af;margin-left:auto}
+
+/* Definition of Done */
+.dod-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:700px){.dod-grid{grid-template-columns:1fr}}
+.dod-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px}
+.dod-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;margin-bottom:10px}
+.dod-item{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:#374151;padding:5px 0;border-bottom:1px solid #f9fafb}
+.dod-item:last-child{border-bottom:none}
+.dod-check{color:#0d9488;font-weight:700;flex-shrink:0;font-size:13px}
+
+/* Hour estimates table */
+.hours-table{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;border:1.5px solid #e5e7eb}
+.hours-table th{background:#f3f4f6;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;padding:10px 14px;text-align:left;border-bottom:1.5px solid #e5e7eb}
+.hours-table td{padding:12px 14px;font-size:12px;border-bottom:1px solid #f3f4f6;vertical-align:top}
+.hours-table tr:last-child td{border-bottom:none}
+.hours-table tr:hover td{background:#fafafa}
+.hours-total td{font-weight:800;background:#f0fdfa !important;border-top:2px solid #0d9488}
+.hours-val{font-size:16px;font-weight:900;color:#0d9488}
+.team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.team-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px;text-align:center}
+.team-size{font-size:28px;font-weight:900;color:#0d9488}
+.team-label{font-size:11px;color:#6b7280;margin-top:2px}
+.team-fit{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;display:inline-block;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-meta">
+      <span class="badge badge-teal">Vesta -- Reproductive Health Platform</span>
+      <span class="badge badge-blue">Bangladesh First -- Bilingual</span>
+      <span class="badge badge-green">1-Month Production Sprint</span>
+    </div>
+    <h1>v1 Implementation Plan</h1>
+    <p class="subtitle">A focused 4-week sprint to ship a bilingual, multi-profile reproductive health platform -- period tracking, cycle predictions, BDApps OTP verification, CAAS billing, notifications, content, and a full admin panel.</p>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val">20</div><div class="stat-label">Working days</div></div>
+      <div class="stat"><div class="stat-val">110</div><div class="stat-label">Requirements</div></div>
+      <div class="stat"><div class="stat-val">4</div><div class="stat-label">Phases</div></div>
+      <div class="stat"><div class="stat-val">3</div><div class="stat-label">Prediction tiers</div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: SCOPE -- MOSCOW -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">1</div>MoSCoW Prioritisation</div>
+    <div class="section-desc">Structured priority for a 4-week delivery. Must Haves form the foundation and core tracking loop. Should Haves add retention. Could Haves deliver operational tooling. Won't Haves are explicitly deferred to v2.</div>
+
+    <div class="moscow-grid">
+      <div class="moscow-card moscow-must">
+        <div class="moscow-title" style="color:#115e59">MUST HAVE -- Phase 1-2, Weeks 1-2</div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Phone auth + OTP verification via BDApps (email fallback) + multi-profile accounts</div><div class="fi-note">BDApps otp/request + otp/verify flow. Email magic-link fallback with 24h trial window. Profile completion popup post-OTP. Relation types: self, wife, sister, mother, daughter, girlfriend</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Bilingual UI (English + Bengali)</div><div class="fi-note">i18n from day one with i18next + react-i18next</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Period tracking</div><div class="fi-note">Start/end, flow intensity (light/medium/heavy), retroactive editing</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Cycle dashboard</div><div class="fi-note">Cycle day hero, phase label (follicular/ovulatory/luteal/menstrual), countdown</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Monthly calendar</div><div class="fi-note">Color-coded: period pink, fertile teal, ovulation accent</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Symptom logging</div><div class="fi-note">30+ symptoms, icon-based tap selection, 4 categories (physical, mood, discharge, lifestyle)</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Three-tier prediction engine</div><div class="fi-note">Simple avg (Tier 1) -> ARIMA (Tier 2) -> LSTM stub (Tier 3)</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Onboarding flow</div><div class="fi-note">Trust screens, goal selection (period/TTC/peri), cycle history entry</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Field-level encryption</div><div class="fi-note">AES-256-GCM via prisma-field-encryption for health data</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Profile switcher with data isolation</div><div class="fi-note">checkProfileOwnership middleware on every profile-scoped endpoint</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Feature gating (email trial 24h expiry + subscription schema)</div><div class="fi-note">Email trial gating active in v1 (24h expiry for email-authenticated users). Pro/free gating deferred to post-v1. Schema in place for future enablement.</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Redis-backed session store with JWT blacklist</div><div class="fi-note">Tracks active sessions per user, enables remote session termination</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">BDApps CAAS charging for Pro subscription</div><div class="fi-note">caas/directDebit for Pro charging, caas/queryBalance for status checks</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#0d9488"></div><div><div class="fi-name">Auto-disable Pro on charging lapse + grace period <em style="color:#9ca3af">(deferred — v2)</em></div><div class="fi-note">Daily cron checks CAAS status. Grace period warnings show "Please renew" messaging without exact expiry date. Auto-disable deferred to v2.</div></div></div>
+      </div>
+
+      <div class="moscow-card moscow-should">
+        <div class="moscow-title" style="color:#1d4ed8">SHOULD HAVE -- Phase 3, Week 3</div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Email notifications</div><div class="fi-note">Period alerts, fertile window, logging reminders via Resend + React Email</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Content platform</div><div class="fi-note">Bilingual blog articles, phase-specific recommendations, cultural context</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">Notification preferences per-profile</div><div class="fi-note">Toggle each notification type on/off per health profile</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">SMS period/fertile alerts for Pro subscribers <em style="color:#16a34a;font-size:9px">(v1.2)</em></div><div class="fi-note">Automated SMS before expected period and fertile window. Exclusively for subscribed users. Via BDApps SMS Send API.</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">SMS content circulation (daily broadcast) <em style="color:#16a34a;font-size:9px">(v1.1)</em></div><div class="fi-note">Admin batch-uploads health tips. Daily dispatch to all subscribers via BDApps sms/send with tel:all. Content override: new replaces previous day's.</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#3b82f6"></div><div><div class="fi-name">In-app feedback module <em style="color:#16a34a;font-size:9px">(v1.2)</em></div><div class="fi-note">Bug reports, feature requests, general feedback, satisfaction rating. Admin views and exports as CSV.</div></div></div>
+      </div>
+
+      <div class="moscow-card moscow-could">
+        <div class="moscow-title" style="color:#7c3aed">COULD HAVE -- Phase 4, Weeks 3-4</div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Admin dashboard</div><div class="fi-note">User metrics, activity charts, daily new users, MAU trends</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">User management</div><div class="fi-note">List, suspend, reactivate, delete, reset password</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Content CMS</div><div class="fi-note">Tiptap rich text editor, bilingual articles, category management</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Population health analytics</div><div class="fi-note">Aggregated, privacy-protected cycle insights</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Prediction accuracy reports</div><div class="fi-note">Predicted vs. actual dates, accuracy percentages per tier</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Data export (CSV/Excel)</div><div class="fi-note">Analytics and research data export for operations team</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Role-based access control</div><div class="fi-note">Super Admin and Content Admin roles with requireRole middleware</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Admin feature gating toggle UI</div><div class="fi-note">Configure which features are free vs pro from admin portal</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Admin session management (view/terminate sessions)</div><div class="fi-note">View active sessions for any user, terminate individual or all sessions</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#7c3aed"></div><div><div class="fi-name">Admin subscription management (BDApps status, manual override, billing history)</div><div class="fi-note">View subscription status, set grace period, manual pro grant/revoke</div></div></div>
+      </div>
+
+      <div class="moscow-card moscow-wont">
+        <div class="moscow-title" style="color:#6b7280">WON'T HAVE -- v1</div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">Pregnancy mode</div><div class="fi-note">Week-by-week tracker, ultrasound storage -- deferred to v2</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">Medicine tracker, sleep monitor, exercise tracking</div><div class="fi-note">Extended health modules require stable core first</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">Anonymous community forum</div><div class="fi-note">High moderation overhead -- requires infrastructure not in v1 scope</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">AI health chatbot</div><div class="fi-note">Enormous medical liability without expert advisory board</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">Native mobile apps</div><div class="fi-note">Web-first validates PMF; PWA covers 80% of native UX</div></div></div>
+        <div class="feature-item"><div class="fi-dot" style="background:#9ca3af"></div><div><div class="fi-name">Doctor consultations / marketplace</div><div class="fi-note">Phase 2 monetization features</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: RICE SCORING -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">2</div>Feature Prioritisation -- RICE Scores</div>
+    <div class="section-desc">RICE = (Reach x Impact x Confidence) / Effort. Scored against the 4-week delivery window. Higher scores ship earlier.</div>
+
+    <table class="rice-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Reach</th>
+          <th>Impact</th>
+          <th>Confidence</th>
+          <th>Effort (days)</th>
+          <th>RICE</th>
+          <th>Phase</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong class="priority-1">Prediction engine (Tier 1)</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>90%</td>
+          <td>1</td>
+          <td><div class="rice-score">270</div><div class="rice-bar"><div class="rice-bar-fill" style="width:100%"></div></div></td>
+          <td><span class="badge badge-blue">Phase 2</span></td>
+        </tr>
+        <tr>
+          <td><strong class="priority-1">Auth + OTP (BDApps) + onboarding</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>90%</td>
+          <td>2.5</td>
+          <td><div class="rice-score">108</div><div class="rice-bar"><div class="rice-bar-fill" style="width:40%"></div></div></td>
+          <td><span class="badge badge-teal">Phase 1</span></td>
+        </tr>
+        <tr>
+          <td><strong class="priority-1">Bilingual UI (EN+BN)</strong></td>
+          <td>100%</td>
+          <td>2.5 (high)</td>
+          <td>85%</td>
+          <td>2</td>
+          <td><div class="rice-score">106</div><div class="rice-bar"><div class="rice-bar-fill" style="width:39%"></div></div></td>
+          <td><span class="badge badge-teal">Phase 1</span></td>
+        </tr>
+        <tr>
+          <td><strong class="priority-1">Period tracking + calendar</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>95%</td>
+          <td>3</td>
+          <td><div class="rice-score">95</div><div class="rice-bar"><div class="rice-bar-fill" style="width:35%"></div></div></td>
+          <td><span class="badge badge-blue">Phase 2</span></td>
+        </tr>
+        <tr>
+          <td><strong class="priority-1">Multi-profile accounts</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>90%</td>
+          <td>3</td>
+          <td><div class="rice-score">90</div><div class="rice-bar"><div class="rice-bar-fill" style="width:33%"></div></div></td>
+          <td><span class="badge badge-teal">Phase 1</span></td>
+        </tr>
+        <tr>
+          <td>Symptom logging</td>
+          <td>80%</td>
+          <td>2 (high)</td>
+          <td>85%</td>
+          <td>2.5</td>
+          <td><div class="rice-score">54</div><div class="rice-bar"><div class="rice-bar-fill" style="width:20%"></div></div></td>
+          <td><span class="badge badge-blue">Phase 2</span></td>
+        </tr>
+        <tr>
+          <td><strong class="priority-1">BDApps OTP verification</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>90%</td>
+          <td>1</td>
+          <td><div class="rice-score">270</div><div class="rice-bar"><div class="rice-bar-fill" style="width:100%"></div></div></td>
+          <td><span class="badge badge-teal">Phase 1</span></td>
+        </tr>
+        <tr>
+          <td><strong class="priority-1">BDApps CAAS charging</strong></td>
+          <td>100%</td>
+          <td>3 (massive)</td>
+          <td>90%</td>
+          <td>1.5</td>
+          <td><div class="rice-score">180</div><div class="rice-bar"><div class="rice-bar-fill" style="width:67%"></div></div></td>
+          <td><span class="badge badge-teal">Phase 1</span></td>
+        </tr>
+        <tr>
+          <td>Content platform</td>
+          <td>70%</td>
+          <td>2 (high)</td>
+          <td>80%</td>
+          <td>2.5</td>
+          <td><div class="rice-score">45</div><div class="rice-bar"><div class="rice-bar-fill" style="width:17%"></div></div></td>
+          <td><span class="badge badge-green">Phase 3</span></td>
+        </tr>
+        <tr>
+          <td>Prediction (ARIMA Tier 2)</td>
+          <td>30%</td>
+          <td>2 (high)</td>
+          <td>60%</td>
+          <td>2</td>
+          <td><div class="rice-score">18</div><div class="rice-bar"><div class="rice-bar-fill" style="width:7%"></div></div></td>
+          <td><span class="badge badge-blue">Phase 2</span></td>
+        </tr>
+        <tr>
+          <td>Admin panel</td>
+          <td>10%</td>
+          <td>2 (high)</td>
+          <td>90%</td>
+          <td>8</td>
+          <td><div class="rice-score">2</div><div class="rice-bar"><div class="rice-bar-fill" style="width:1%"></div></div></td>
+          <td><span class="badge badge-purple">Phase 4</span></td>
+        </tr>
+        <tr>
+          <td>Prediction (LSTM Tier 3)</td>
+          <td>10%</td>
+          <td>2.5 (high)</td>
+          <td>40%</td>
+          <td>5</td>
+          <td><div class="rice-score">2</div><div class="rice-bar"><div class="rice-bar-fill" style="width:1%"></div></div></td>
+          <td><span class="badge badge-blue">Phase 2 (stub)</span></td>
+        </tr>
+        <tr>
+          <td><strong class="priority-1">Feature gating</strong></td>
+          <td>100%</td>
+          <td>2.5 (high)</td>
+          <td>85%</td>
+          <td>2</td>
+          <td><div class="rice-score">106</div><div class="rice-bar"><div class="rice-bar-fill" style="width:39%"></div></div></td>
+          <td><span class="badge badge-teal">Phase 1</span></td>
+        </tr>
+        <tr>
+          <td>Session management</td>
+          <td>20%</td>
+          <td>2 (high)</td>
+          <td>90%</td>
+          <td>1.5</td>
+          <td><div class="rice-score">24</div><div class="rice-bar"><div class="rice-bar-fill" style="width:9%"></div></div></td>
+          <td><span class="badge badge-purple">Phase 4</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 3: TECH STACK -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">3</div>Technology Stack</div>
+    <div class="section-desc">Modern, stable, and well-matched to the domain. Stability over bleeding edge for a health platform. Prisma 6 pinned for encryption compatibility. Vite 6 LTS over Vite 8.</div>
+
+    <div class="stack-grid">
+      <div class="stack-card">
+        <div class="stack-layer">Frontend</div>
+        <div class="stack-choice">React 19 + TypeScript</div>
+        <div class="stack-reason">Ecosystem dominance. React 19 stable with use() hook and Actions. SPA on Vercel CDN.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Styling</div>
+        <div class="stack-choice">Tailwind CSS v4</div>
+        <div class="stack-reason">CSS-first config, OKLCH colors, 5x faster builds. @theme directive for design tokens.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Build Tool</div>
+        <div class="stack-choice">Vite 6 LTS</div>
+        <div class="stack-reason">Stable line for 2026. v8 (Rolldown) too new for production health app. Security patches on 6.4.x.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">State Management</div>
+        <div class="stack-choice">TanStack Query + Zustand</div>
+        <div class="stack-reason">TQ for server state with profile-scoped query keys. Zustand (1KB) for active profile, locale, UI.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Backend</div>
+        <div class="stack-choice">Express 5 + TypeScript</div>
+        <div class="stack-reason">Promise-based error handling, path-to-regexp v8 (ReDoS-safe). Persistent process on Railway.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">ORM + Database</div>
+        <div class="stack-choice">Prisma 6.13 + PostgreSQL 16</div>
+        <div class="stack-reason">Pinned for prisma-field-encryption compatibility. pgcrypto + RLS for profile isolation.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Auth</div>
+        <div class="stack-choice">JWT + BDApps OTP</div>
+        <div class="stack-reason">Phone number sign-up verified via BDApps otp/request + otp/verify. Access tokens (15min) + refresh tokens (7d) in HttpOnly Secure cookies. Role claims for admin RBAC.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">i18n</div>
+        <div class="stack-choice">i18next + react-i18next</div>
+        <div class="stack-reason">Bengali locale fully supported. JSON namespaces, interpolation, date-fns bn locale.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Encryption</div>
+        <div class="stack-choice">prisma-field-encryption</div>
+        <div class="stack-reason">Transparent AES-256-GCM for sensitive health fields. /// @encrypted in Prisma schema.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Email</div>
+        <div class="stack-choice">Resend + React Email</div>
+        <div class="stack-reason">Clean DX, 3,000/month free tier. React Email for type-safe templates.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Charts</div>
+        <div class="stack-choice">Recharts 3.x</div>
+        <div class="stack-reason">React-first SVG components. Cycle trends, admin analytics, symptom correlation.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Calendar / Dates</div>
+        <div class="stack-choice">date-fns</div>
+        <div class="stack-reason">Tree-shakeable, immutable. Bengali locale (bn) for date formatting. Cycle math backbone.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">CMS Editor</div>
+        <div class="stack-choice">Tiptap 3.x</div>
+        <div class="stack-reason">Rich text editor for bilingual content articles. Collaborative editing support for admin CMS.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Session Store</div>
+        <div class="stack-choice">Redis + ioredis</div>
+        <div class="stack-reason">JWT blacklist for remote session termination, BullMQ backing store.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Carrier Billing</div>
+        <div class="stack-choice">BDApps CAAS API</div>
+        <div class="stack-reason">caas/directDebit for Pro charging, caas/queryBalance for subscription status. Dominant payment method in Bangladesh.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Hosting</div>
+        <div class="stack-choice">Vercel + Supabase</div>
+        <div class="stack-reason">Frontend + serverless API on Vercel. PostgreSQL + RLS on Supabase. Upstash Redis for sessions. Zero-cost experimental tier with clear upgrade path.</div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-layer">Job Queue</div>
+        <div class="stack-choice">Vercel Cron + Upstash QStash</div>
+        <div class="stack-reason">Replaces BullMQ workers. Vercel Cron for scheduled reminders + CAAS checks. QStash for reliable async jobs. Both serverless-native, no persistent process needed.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: PREDICTION ENGINE -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">4</div>Three-Tier Prediction Engine</div>
+    <div class="section-desc">The prediction engine automatically upgrades itself as users log more data. No user action needed — the system detects when enough data is available and switches to a smarter algorithm. The biggest accuracy jump happens between Tier 1 and Tier 2.</div>
+
+    <!-- Tier Cards -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px">
+      <div style="background:#f0fdfa;border:1.5px solid #ccfbf1;border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <div style="width:36px;height:36px;border-radius:50%;background:#0d9488;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900">1</div>
+          <div>
+            <div style="font-size:14px;font-weight:800;color:#115e59">Simple Average</div>
+            <div style="font-size:10px;color:#0d9488;font-weight:600">AVAILABLE FROM DAY 1</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#374151;line-height:1.6;margin-bottom:12px">
+          Calculates the average length of the user's last 3–6 cycles. For brand-new users, it uses the cycle length entered during onboarding as a starting point.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6b7280">
+            <span style="color:#0d9488;font-weight:700">Predicts:</span> Next period start, ovulation day, fertile window
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6b7280">
+            <span style="color:#0d9488;font-weight:700">Accuracy:</span> ~70–75% for regular cycles
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6b7280">
+            <span style="color:#0d9488;font-weight:700">Data needed:</span> 0 cycles (uses onboarding input)
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#eff6ff;border:1.5px solid #dbeafe;border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <div style="width:36px;height:36px;border-radius:50%;background:#1d4ed8;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900">2</div>
+          <div>
+            <div style="font-size:14px;font-weight:800;color:#1e3a5f">Statistical Model (ARIMA)</div>
+            <div style="font-size:10px;color:#1d4ed8;font-weight:600">UNLOCKS AT 6 LOGGED CYCLES</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#374151;line-height:1.6;margin-bottom:12px">
+          A time-series algorithm that detects patterns and trends in cycle history — such as cycles gradually getting shorter or longer. Adapts to each user's unique rhythm.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6b7280">
+            <span style="color:#1d4ed8;font-weight:700">Predicts:</span> All Tier 1 outputs + trend-adjusted dates
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6b7280">
+            <span style="color:#1d4ed8;font-weight:700">Accuracy:</span> ~80–87% (biggest jump from Tier 1)
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6b7280">
+            <span style="color:#1d4ed8;font-weight:700">Data needed:</span> 6+ logged cycles (~6 months)
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#f5f3ff;border:1.5px solid #ede9fe;border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <div style="width:36px;height:36px;border-radius:50%;background:#7c3aed;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900">3</div>
+          <div>
+            <div style="font-size:14px;font-weight:800;color:#3b0764">AI / Neural Network (LSTM)</div>
+            <div style="font-size:10px;color:#7c3aed;font-weight:600">UNLOCKS AT 12 LOGGED CYCLES</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#374151;line-height:1.6;margin-bottom:12px">
+          A deep learning model that considers multiple factors — cycle history, logged symptoms, lifestyle data, and age — to make highly personalized predictions. Learns from population-level patterns.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6b7280">
+            <span style="color:#7c3aed;font-weight:700">Predicts:</span> All Tier 2 outputs + symptom-adjusted forecasts
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6b7280">
+            <span style="color:#7c3aed;font-weight:700">Accuracy:</span> ~85–91% (incremental gain over Tier 2)
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6b7280">
+            <span style="color:#7c3aed;font-weight:700">Data needed:</span> 12+ logged cycles (~12 months)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auto-Escalation Visual -->
+    <div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:24px">
+      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;margin-bottom:16px">How Auto-Escalation Works</div>
+      <div style="display:flex;align-items:center;gap:0;justify-content:center;flex-wrap:wrap">
+        <!-- Step 1 -->
+        <div style="text-align:center">
+          <div style="background:#f0fdfa;border:1.5px solid #ccfbf1;border-radius:10px;padding:12px 16px;min-width:140px">
+            <div style="font-size:10px;font-weight:700;color:#0d9488;margin-bottom:4px">USER SIGNS UP</div>
+            <div style="font-size:20px;font-weight:900;color:#115e59">Tier 1</div>
+            <div style="font-size:10px;color:#6b7280">Simple Average</div>
+          </div>
+          <div style="font-size:9px;color:#9ca3af;margin-top:4px">0 cycles</div>
+        </div>
+        <!-- Arrow -->
+        <div style="display:flex;flex-direction:column;align-items:center;padding:0 8px">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:2px">~6 months</div>
+          <div style="font-size:18px;color:#d1d5db">&#10140;</div>
+        </div>
+        <!-- Step 2 -->
+        <div style="text-align:center">
+          <div style="background:#eff6ff;border:1.5px solid #dbeafe;border-radius:10px;padding:12px 16px;min-width:140px">
+            <div style="font-size:10px;font-weight:700;color:#1d4ed8;margin-bottom:4px">6 CYCLES LOGGED</div>
+            <div style="font-size:20px;font-weight:900;color:#1e3a5f">Tier 2</div>
+            <div style="font-size:10px;color:#6b7280">Statistical (ARIMA)</div>
+          </div>
+          <div style="font-size:9px;color:#9ca3af;margin-top:4px">6+ cycles</div>
+        </div>
+        <!-- Arrow -->
+        <div style="display:flex;flex-direction:column;align-items:center;padding:0 8px">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:2px">~12 months</div>
+          <div style="font-size:18px;color:#d1d5db">&#10140;</div>
+        </div>
+        <!-- Step 3 -->
+        <div style="text-align:center">
+          <div style="background:#f5f3ff;border:1.5px solid #ede9fe;border-radius:10px;padding:12px 16px;min-width:140px">
+            <div style="font-size:10px;font-weight:700;color:#7c3aed;margin-bottom:4px">12 CYCLES LOGGED</div>
+            <div style="font-size:20px;font-weight:900;color:#3b0764">Tier 3</div>
+            <div style="font-size:10px;color:#6b7280">AI / Neural Network</div>
+          </div>
+          <div style="font-size:9px;color:#9ca3af;margin-top:4px">12+ cycles</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:16px;font-size:11px;color:#6b7280;line-height:1.6">
+        The upgrade happens automatically — users see a confidence percentage that improves over time.<br>
+        No manual action required. The more data logged, the smarter the predictions become.
+      </div>
+    </div>
+
+    <!-- What Gets Predicted -->
+    <div style="margin-top:16px;background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:20px">
+      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;margin-bottom:12px">What the Engine Predicts</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
+        <div style="text-align:center;padding:12px;background:#fdf2f8;border-radius:8px">
+          <div style="font-size:20px;margin-bottom:4px">&#128312;</div>
+          <div style="font-size:11px;font-weight:700;color:#be185d">Next Period</div>
+          <div style="font-size:10px;color:#6b7280">Start & end date</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:#f0fdfa;border-radius:8px">
+          <div style="font-size:20px;margin-bottom:4px">&#128154;</div>
+          <div style="font-size:11px;font-weight:700;color:#0d9488">Fertile Window</div>
+          <div style="font-size:10px;color:#6b7280">5-day high-chance range</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:#eff6ff;border-radius:8px">
+          <div style="font-size:20px;margin-bottom:4px">&#9898;</div>
+          <div style="font-size:11px;font-weight:700;color:#1d4ed8">Ovulation Day</div>
+          <div style="font-size:10px;color:#6b7280">Peak fertility date</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:#f5f3ff;border-radius:8px">
+          <div style="font-size:20px;margin-bottom:4px">&#128200;</div>
+          <div style="font-size:11px;font-weight:700;color:#7c3aed">Confidence %</div>
+          <div style="font-size:10px;color:#6b7280">How sure the engine is</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estimation Note -->
+    <div style="margin-top:16px;background:#fffbeb;border:1.5px solid #fef3c7;border-radius:10px;padding:16px;display:flex;align-items:flex-start;gap:10px">
+      <div style="font-size:16px;flex-shrink:0">&#9888;&#65039;</div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:4px">Estimation Note for Client</div>
+        <div style="font-size:11px;color:#78350f;line-height:1.5">
+          <strong>Tier 1</strong> is included in the base estimate. <strong>Tier 2 (ARIMA)</strong> adds ~10 development hours. <strong>Tier 3 (Neural Network)</strong> adds ~20 hours for the initial stub, with full model training requiring additional effort once production data accumulates (~12 months post-launch). Tier 3 can be deferred without impacting launch.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: 4-WEEK SPRINT PLAN -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">5</div>4-Week Sprint Plan</div>
+    <div class="section-desc">20 working days across 4 phases. Each week produces a coherent, verifiable capability. Phase dependencies flow strictly forward -- no circular dependencies.</div>
+
+    <!-- WEEK 1 -->
+    <div class="week-header">
+      <div class="week-badge">Week 1 -- Phase 1</div>
+      <div class="week-desc">Foundation: Auth, multi-profile, bilingual, privacy</div>
+    </div>
+
+    <table class="sprint-table">
+      <thead>
+        <tr><th>Day</th><th>Focus</th><th>Deliverables</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="day-num">Day 1</div><div style="font-size:10px;color:#9ca3af">Monday</div></td>
+          <td><strong>Monorepo setup + Prisma schema</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>pnpm workspace + Turborepo: web, api, shared packages</div>
+            <div class="deliverable"><div class="d-dot"></div>Prisma schema: users, profiles, period_logs, symptom_logs, predictions</div>
+            <div class="deliverable"><div class="d-dot"></div>prisma-field-encryption configured + integration test</div>
+            <div class="deliverable"><div class="d-dot"></div>Supabase project provisioned (PostgreSQL + RLS enabled), Upstash Redis connected</div>
+            <div class="deliverable"><div class="d-dot"></div>Vercel project linked, preview + production environments configured</div>
+            <div class="deliverable"><div class="d-dot"></div>Shared Zod schemas + TypeScript types scaffolded</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 2</div><div style="font-size:10px;color:#9ca3af">Tuesday</div></td>
+          <td><strong>Auth API + BDApps OTP + security middleware</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Express 5 server with helmet, cors, rate-limit, cookie-parser</div>
+            <div class="deliverable"><div class="d-dot"></div>Phone-number signup + BDApps otp/request → otp/verify flow</div>
+            <div class="deliverable"><div class="d-dot"></div>JWT auth: login, password reset</div>
+            <div class="deliverable"><div class="d-dot"></div>Access + refresh tokens in HttpOnly Secure cookies</div>
+            <div class="deliverable"><div class="d-dot"></div>verifyJWT + checkProfileOwnership middleware chain</div>
+            <div class="deliverable"><div class="d-dot"></div>Feature gating middleware (free/pro access control)</div>
+            <div class="deliverable"><div class="d-dot"></div>Redis-backed session store with JWT blacklist (ioredis)</div>
+            <div class="deliverable"><div class="d-dot"></div>BDApps CAAS wrapper: caas/directDebit + caas/queryBalance</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 3</div><div style="font-size:10px;color:#9ca3af">Wednesday</div></td>
+          <td><strong>i18n infrastructure + privacy pages</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>i18next initialized with EN/BN namespaces, Noto Sans Bengali loaded</div>
+            <div class="deliverable"><div class="d-dot"></div>React shell: App providers, router, layout with language switcher</div>
+            <div class="deliverable"><div class="d-dot"></div>Privacy policy + Terms of Service in both languages</div>
+            <div class="deliverable"><div class="d-dot"></div>Vercel deploy pipeline + Railway API deploy configured</div>
+          </div></td>
+          <td><span class="owner-badge owner-fe">Front-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 4</div><div style="font-size:10px;color:#9ca3af">Thursday</div></td>
+          <td><strong>Multi-profile CRUD + profile switcher</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Profile CRUD API: create, read, update, delete with ownership checks</div>
+            <div class="deliverable"><div class="d-dot"></div>Relation types: self, wife, sister, mother, daughter, girlfriend</div>
+            <div class="deliverable"><div class="d-dot"></div>Profile switcher UI component (always accessible in header)</div>
+            <div class="deliverable"><div class="d-dot"></div>TanStack Query hooks with profile-scoped query keys</div>
+            <div class="deliverable"><div class="d-dot"></div>Tier 1 prediction: initial calculation on profile creation</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 5</div><div style="font-size:10px;color:#9ca3af">Friday</div></td>
+          <td><strong>Onboarding wizard + dashboard shell</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot"></div>Trust/privacy screens with bilingual content</div>
+            <div class="deliverable"><div class="d-dot"></div>Goal selection: track period, try to conceive, perimenopause</div>
+            <div class="deliverable"><div class="d-dot"></div>Cycle history entry: last period, cycle length, period duration</div>
+            <div class="deliverable"><div class="d-dot"></div>First prediction generated on onboarding complete</div>
+            <div class="deliverable"><div class="d-dot"></div>Dashboard shell + account deletion flow</div>
+          </div></td>
+          <td><span class="owner-badge owner-fe">Front-end</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- WEEK 2 -->
+    <div class="week-header">
+      <div class="week-badge">Week 2 -- Phase 2</div>
+      <div class="week-desc">Core tracking: Period, calendar, symptoms, predictions</div>
+    </div>
+
+    <table class="sprint-table">
+      <thead>
+        <tr><th>Day</th><th>Focus</th><th>Deliverables</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="day-num">Day 6</div><div style="font-size:10px;color:#9ca3af">Monday</div></td>
+          <td><strong>Shared contracts + Prisma additions</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-blue"></div>Zod schemas for cycle, symptom, prediction DTOs</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Phase calculation utilities (follicular, ovulatory, luteal, menstrual)</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Constants: symptom categories, flow levels, phase definitions</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 7</div><div style="font-size:10px;color:#9ca3af">Tuesday</div></td>
+          <td><strong>Prediction engine (all 3 tiers)</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-blue"></div>Strategy Pattern: IPredictionEngine interface</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Tier 1: rolling average (already working from Day 4)</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Tier 2: ARIMA wrapper using `arima` npm package</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Tier 3: LSTM stub (delegates to Tier 2 until trained)</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Factory: getPredictionEngine(dataPoints) auto-escalation</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 8</div><div style="font-size:10px;color:#9ca3af">Wednesday</div></td>
+          <td><strong>Cycle API + BullMQ recalc</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-blue"></div>Period start/end logging API with flow intensity</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Retroactive period editing with validation</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>BullMQ: prediction recalculation job on every period log</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Predictions update immediately on new data</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 9</div><div style="font-size:10px;color:#9ca3af">Thursday</div></td>
+          <td><strong>Symptom logging</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-blue"></div>Symptom CRUD API with category/key validation</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Icon-based tap selection UI (30+ symptoms, 4 categories)</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Physical: cramps, headache, breast tenderness, bloating, back pain, fatigue, nausea, acne</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Mood: calm, sad, happy, anxious, mood swings, irritable, energetic, depressed</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Discharge + lifestyle categories, same-day edit support</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 10</div><div style="font-size:10px;color:#9ca3af">Friday</div></td>
+          <td><strong>Dashboard + Calendar UI</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-blue"></div>Cycle day hero (largest UI element), phase label, countdown</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Fertile window display, TTC tips, prediction confidence</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Period logger: 2-3 tap flow intensity + date picker</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Monthly calendar: color-coded grid (pink=period, teal=fertile, accent=ovulation)</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Day detail panel: tap any date to view/edit logged data</div>
+            <div class="deliverable"><div class="d-dot-blue"></div>Month navigation, predicted vs logged distinction</div>
+          </div></td>
+          <td><span class="owner-badge owner-fe">Front-end</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- WEEK 3 -->
+    <div class="week-header">
+      <div class="week-badge">Week 3 -- Phase 3</div>
+      <div class="week-desc">Engagement: Email notifications, content, CAAS billing integration</div>
+    </div>
+
+    <table class="sprint-table">
+      <thead>
+        <tr><th>Day</th><th>Focus</th><th>Deliverables</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="day-num">Day 11</div><div style="font-size:10px;color:#9ca3af">Monday</div></td>
+          <td><strong>Notification infrastructure</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-green"></div>Prisma schema additions: notification_preferences, notification_logs</div>
+            <div class="deliverable"><div class="d-dot-green"></div>BullMQ queues: send-email, daily-reminder</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Notification preferences API (per-profile toggles)</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Notification settings UI page</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 12</div><div style="font-size:10px;color:#9ca3af">Tuesday</div></td>
+          <td><strong>Email delivery</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-green"></div>Resend + React Email templates: period alert, fertile window, logging reminder</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Cron job processors: daily check for upcoming predictions</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Multi-profile routing: correct profile gets correct notification</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 13</div><div style="font-size:10px;color:#9ca3af">Wednesday</div></td>
+          <td><strong>Content platform</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-green"></div>Article service: bilingual content with phase-based filtering</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Content browsing pages: article list, article detail, category filter</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Dashboard content feed: phase-specific recommendations</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Bilingual seed data: 10-15 articles on menstrual health and Bangladeshi cultural context</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 14</div><div style="font-size:10px;color:#9ca3af">Thursday</div></td>
+          <td><strong>CAAS subscription lifecycle</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-green"></div>Pro upgrade flow: caas/directDebit triggered on plan selection</div>
+            <div class="deliverable"><div class="d-dot-green"></div>caas/queryBalance daily cron: check subscription status per user</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Grace period logic: configurable N-day window before Pro disable</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Grace expiry email warning: "Your subscription expires in X days"</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Feature gating enforcement: Pro features locked on lapse</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 15</div><div style="font-size:10px;color:#9ca3af">Friday</div></td>
+          <td><strong>Subscription UI + Week 3 QA</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-green"></div>Upgrade to Pro page: plan comparison, CAAS charge trigger</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Subscription status badge in user settings</div>
+            <div class="deliverable"><div class="d-dot-green"></div>Grace period warning banner in app</div>
+            <div class="deliverable"><div class="d-dot-green"></div>End-to-end QA: OTP flow, charging, grace period, feature gating</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- WEEK 4 -->
+    <div class="week-header">
+      <div class="week-badge">Week 4 -- Phase 4</div>
+      <div class="week-desc">Admin: Dashboard, user management, CMS, analytics</div>
+    </div>
+
+    <table class="sprint-table">
+      <thead>
+        <tr><th>Day</th><th>Focus</th><th>Deliverables</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="day-num">Day 16</div><div style="font-size:10px;color:#9ca3af">Monday</div></td>
+          <td><strong>Admin RBAC + layout</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-purple"></div>Role constants, requireRole middleware, RequireRole guard</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Admin layout shell: sidebar navigation, role-gated lazy-loading</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Dashboard metrics API: total users, active users, profiles created</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 17</div><div style="font-size:10px;color:#9ca3af">Tuesday</div></td>
+          <td><strong>Dashboard UI + user management</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-purple"></div>KPI cards: total users, MAU, profiles, tracking activity</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Trend charts: daily new users, monthly active users (Recharts)</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>User management: list, view details, suspend, reactivate, delete, reset password</div>
+          </div></td>
+          <td><span class="owner-badge owner-fe">Front-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 18</div><div style="font-size:10px;color:#9ca3af">Wednesday</div></td>
+          <td><strong>Health analytics + prediction reports</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-purple"></div>Population-level insights: avg cycle length, irregular cycle %, common symptoms</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Prediction accuracy: predicted vs actual dates, per-tier accuracy</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Privacy-protected aggregate queries (no individual health data exposed)</div>
+          </div></td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 19</div><div style="font-size:10px;color:#9ca3af">Thursday</div></td>
+          <td><strong>Content CMS + gating/session/subscription admin</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-purple"></div>Tiptap rich text editor for bilingual article CRUD</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Category management + cycle phase tagging</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Notification management: control reminder types, broadcast</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Admin feature gating toggle UI (configure free vs pro features)</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Admin session management (view active sessions, terminate per user)</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Admin subscription management (BDApps status, grace period, manual override, billing history)</div>
+          </div></td>
+          <td><span class="owner-badge owner-fe">Front-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 20</div><div style="font-size:10px;color:#9ca3af">Friday</div></td>
+          <td><strong>Reports + data export + ship</strong></td>
+          <td><div class="deliverable-list">
+            <div class="deliverable"><div class="d-dot-purple"></div>Feature usage report, alert engagement, multi-profile analytics, data completeness</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>CSV/Excel data export for all reports</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Cross-browser QA + responsive check (375px, 768px, 1280px)</div>
+            <div class="deliverable"><div class="d-dot-purple"></div>Production deploy: Vercel (frontend) + Railway (API + worker)</div>
+          </div></td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 6: DEPENDENCIES -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">6</div>Dependency Map</div>
+    <div class="section-desc">Sequential dependencies between phases and key blockers. Build foundation before features -- multi-profile auth and i18n affect every subsequent component.</div>
+
+    <div class="dep-list">
+      <div class="dep">
+        <div class="dep-from">Prisma schema + encryption</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">Auth API + all endpoints</div>
+        <div class="dep-note">Day 1 must complete first</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Auth + JWT middleware</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">Multi-profile CRUD</div>
+        <div class="dep-note">Profile creation requires authenticated user</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">i18n infrastructure</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">All UI components</div>
+        <div class="dep-note">Bengali strings must exist before any UI is built</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Multi-profile + ownership middleware</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">Period tracking, symptoms, predictions</div>
+        <div class="dep-note">All health data scoped to profiles</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Onboarding writes cycle data</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">First prediction calculation</div>
+        <div class="dep-note">Needs avg_cycle_length in profiles table</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Prediction engine API</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">Dashboard + calendar UI</div>
+        <div class="dep-note">Dashboard is empty without prediction data</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Period log triggers recalculation</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">Calendar color-coding</div>
+        <div class="dep-note">Calendar reads from period_logs + predictions</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">BullMQ worker process</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">SMS + email notifications</div>
+        <div class="dep-note">Phase 3 requires job queue from Phase 2</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">Core tracking (Phase 2)</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">Content platform</div>
+        <div class="dep-note">Phase-specific content recommendations need cycle state</div>
+      </div>
+      <div class="dep">
+        <div class="dep-from">All user-facing features (Phases 1-3)</div>
+        <div class="dep-arrow">-> blocks -></div>
+        <div class="dep-to">Admin analytics + reports</div>
+        <div class="dep-note">Admin monitors features that must exist first</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 7: PHASES -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">7</div>Phase Roadmap</div>
+    <div class="section-desc">4 phases, each producing a coherent, verifiable capability. Phase dependencies flow strictly forward: 1 -> 2 -> 3 -> 4.</div>
+
+    <div class="phases-row">
+      <div class="phase-card phase1">
+        <div class="phase-header">
+          <div class="phase-title" style="color:#115e59">Phase 1 -- Foundation</div>
+          <div class="phase-timeline" style="background:#ccfbf1;color:#115e59">Week 1</div>
+        </div>
+        <div class="phase-features">
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Monorepo setup (pnpm + Turborepo)</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Prisma schema + field encryption</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>JWT auth (signup, login, verify, reset)</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Multi-profile CRUD + ownership middleware</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Bilingual i18n (EN + BN from day one)</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Onboarding wizard + first prediction</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Profile switcher + account deletion</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Privacy policy + ToS (bilingual)</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Feature gating middleware (free/pro)</div>
+          <div class="pf"><div class="pf-dot" style="background:#0d9488"></div>Redis session store with JWT blacklist</div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #ccfbf1;font-size:11px;color:#115e59;font-weight:700">Goal: User creates account, manages profiles in English/Bengali</div>
+      </div>
+
+      <div class="phase-card phase2">
+        <div class="phase-header">
+          <div class="phase-title" style="color:#1d4ed8">Phase 2 -- Core Tracking</div>
+          <div class="phase-timeline" style="background:#dbeafe;color:#1d4ed8">Week 2</div>
+        </div>
+        <div class="phase-features">
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Period tracking (start/end, flow, retroactive editing)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Three-tier prediction engine (Strategy Pattern)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Cycle dashboard (day hero, phase, countdown)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Monthly calendar (color-coded, month nav)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Symptom logging (30+ symptoms, icon-based)</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Fertile window + ovulation display</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>BullMQ prediction recalculation</div>
+          <div class="pf"><div class="pf-dot" style="background:#3b82f6"></div>Prediction confidence shown to user</div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #dbeafe;font-size:11px;color:#1d4ed8;font-weight:700">Goal: User logs period and sees accurate prediction</div>
+      </div>
+
+      <div class="phase-card phase3">
+        <div class="phase-header">
+          <div class="phase-title" style="color:#16a34a">Phase 3 -- Engagement</div>
+          <div class="phase-timeline" style="background:#dcfce7;color:#16a34a">Week 3</div>
+        </div>
+        <div class="phase-features">
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Email notifications (Resend + React Email)</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Period, fertile, logging reminder alerts</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Notification preferences per-profile</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Content platform (bilingual articles)</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Phase-specific content recommendations</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>CAAS Pro upgrade flow + subscription lifecycle</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Grace period cron + expiry warnings</div>
+          <div class="pf"><div class="pf-dot" style="background:#22c55e"></div>Subscription UI (upgrade page, status badge)</div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #dcfce7;font-size:11px;color:#16a34a;font-weight:700">Goal: User stays engaged through email alerts, content, and can upgrade to Pro via BDApps CAAS</div>
+      </div>
+
+      <div class="phase-card phase4">
+        <div class="phase-header">
+          <div class="phase-title" style="color:#7c3aed">Phase 4 -- Admin</div>
+          <div class="phase-timeline" style="background:#ede9fe;color:#7c3aed">Week 4</div>
+        </div>
+        <div class="phase-features">
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>RBAC: Super Admin + Content Admin roles</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Admin dashboard (KPIs, trend charts)</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>User management (list, suspend, delete)</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Population health analytics</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Prediction accuracy reports</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Content CMS (Tiptap editor, bilingual)</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Operational reports + data export</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>CSV/Excel export for all analytics</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Feature gating toggle UI</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Session management</div>
+          <div class="pf"><div class="pf-dot" style="background:#7c3aed"></div>Subscription management</div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #ede9fe;font-size:11px;color:#7c3aed;font-weight:700">Goal: Ops team can monitor and manage the platform</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 8: RISKS -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">8</div>Key Risks &amp; Mitigations</div>
+    <div class="section-desc">7 risks ranked by likelihood and impact. Front-loaded mitigation -- most prevention happens in Phase 1.</div>
+
+    <div class="risk-list">
+      <div class="risk">
+        <div><span class="risk-level risk-high">High</span></div>
+        <div>
+          <div class="risk-title">Multi-profile auth bypass</div>
+          <div class="risk-desc">A user manipulates profileId in API requests to access another user's health data. With multi-profile architecture, every endpoint is a potential attack surface.</div>
+          <div class="risk-mit">-> Mitigate: checkProfileOwnership middleware is the first check on every profile-scoped route, before any business logic. Write 403-assert tests in CI. PartnerAccess model uses explicit field-level permissions (never blanket read access).</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-high">High</span></div>
+        <div>
+          <div class="risk-title">Admin panel scope explosion</div>
+          <div class="risk-desc">26 admin sections in the original requirements could consume 60-70% of total development hours if treated as one line item.</div>
+          <div class="risk-mit">-> Mitigate: Scoped to 14 launch-critical sections in Phase 4. Each section estimated separately. Feature-dependent sections (community management) deferred until the features they monitor exist.</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-high">High</span></div>
+        <div>
+          <div class="risk-title">BDApps OTP + CAAS API reliability</div>
+          <div class="risk-desc">BDApps APIs can be intermittent. OTP delivery failures block sign-up. CAAS charging failures risk incorrect Pro access revocation. Both are on the critical path.</div>
+          <div class="risk-mit">-> Mitigate: Implement retry logic with exponential backoff on all BDApps calls. OTP: resend option after 60s timeout. CAAS: grace period absorbs transient failures -- only revoke Pro after N consecutive daily check failures. Prototype both APIs in Week 1 Day 2 before building the full pipeline.</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-med">Medium</span></div>
+        <div>
+          <div class="risk-title">Prisma encryption compatibility</div>
+          <div class="risk-desc">prisma-field-encryption supports up to v6.13. Using v6.19 is unverified. Upgrading to Prisma 7 would break encryption silently.</div>
+          <div class="risk-mit">-> Mitigate: Pin to ^6.13.0 initially. Write an integration test that encrypts, stores, retrieves, and decrypts a sensitive field. Run it in CI. Never upgrade Prisma without the test passing. Document the pin constraint in package.json.</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-med">Medium</span></div>
+        <div>
+          <div class="risk-title">Bengali text layout</div>
+          <div class="risk-desc">Bengali script is 20-40% longer than English. All layouts must accommodate without breaking. Noto Sans Bengali font required. Input method testing (Avro/Probhat) needed.</div>
+          <div class="risk-mit">-> Mitigate: Load Bengali fonts from day one. Test every page in Bengali mode during development. Get client sign-off on Bengali numeral format early. All UI components must be designed with text expansion in mind.</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-med">Medium</span></div>
+        <div>
+          <div class="risk-title">BDApps API reliability</div>
+          <div class="risk-desc">Carrier billing APIs in Bangladesh can have intermittent failures. BDApps charging status checks and subscription operations may fail transiently, risking incorrect pro access revocation.</div>
+          <div class="risk-mit">-> Mitigate: Implement retry logic with exponential backoff on all BDApps API calls. Grace period prevents immediate access loss on transient failures. Daily cron tolerates missed checks -- only revokes after configurable N consecutive failures.</div>
+        </div>
+      </div>
+      <div class="risk">
+        <div><span class="risk-level risk-low">Low</span></div>
+        <div>
+          <div class="risk-title">Prediction cold-start</div>
+          <div class="risk-desc">First-time users with no period history get predictions based on onboarding cycle length entry. Inaccurate for users with irregular cycles. Regular cycles top out near 85-87% accuracy regardless of algorithm.</div>
+          <div class="risk-mit">-> Mitigate: Show "This is an estimate -- accuracy improves after 3+ logged cycles" on the dashboard. Use onboarding value as initial data point. Auto-escalate prediction tier as data accumulates (Tier 1 -> 2 -> 3). Show confidence levels to users.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 9: DEFINITION OF DONE -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">9</div>Definition of Done -- v1 Launch</div>
+    <div class="section-desc">The v1 is shippable when every item below is verified. Do not consider any phase complete until its criteria are met.</div>
+
+    <div class="dod-grid">
+      <div class="dod-card">
+        <div class="dod-title">Core Functionality</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>New user can sign up with phone number and verify via BDApps OTP</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>User can create multiple health profiles with relation types</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Profile switcher allows seamless switching between profiles</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Onboarding completes: trust screens, goal, cycle history, personal data</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Period logging works: start/end with flow intensity in 2-3 taps</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Predictions recalculate immediately after any period log</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Calendar shows correct colors for period, fertile, ovulation, and low days</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Symptom logging works via icon-based tap selection (30+ symptoms)</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Email notifications deliver to correct profile</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Content articles display in both languages with phase tags</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>BDApps OTP flow works end-to-end: request → verify → account created</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Pro upgrade via CAAS charges correctly and gates features immediately</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Admin dashboard loads with KPIs and trend charts</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Admin can manage users and content via CMS</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Feature gating blocks free users from pro features and allows access for pro users</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Admin can terminate user sessions remotely</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>BDApps charging status checked daily; grace period warnings show renewal messaging without exact expiry date (auto-disable deferred — v2)</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Email fallback login verified end-to-end; 24h trial window locks features after expiry <em style="color:#16a34a;font-size:9px">(v1.2)</em></div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Profile completion popup appears ~1 min after OTP login <em style="color:#16a34a;font-size:9px">(v1.2)</em></div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>SMS period/fertile alerts delivered exclusively to Pro subscribers <em style="color:#16a34a;font-size:9px">(v1.2)</em></div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>In-app feedback module operational; admin can view submissions <em style="color:#16a34a;font-size:9px">(v1.2)</em></div>
+      </div>
+      <div class="dod-card">
+        <div class="dod-title">Quality &amp; Security</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Field encryption verified: sensitive data encrypted at rest (AES-256-GCM)</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Profile isolation tested: user A cannot see user B's health data</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>checkProfileOwnership middleware on every profile-scoped endpoint</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Bengali UI fully functional: all strings translated, layouts not broken</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Responsive at 375px (mobile), 768px (tablet), 1280px (desktop)</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>No console errors in Chrome, Safari, and Firefox</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Admin RBAC enforced: Super Admin and Content Admin role separation</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Production deployed: Vercel (frontend) + Railway (API + worker)</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>All loading, error, and empty states implemented</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Prediction algorithm unit tested with edge cases</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>BDApps CAAS charging verified in production (real transaction test)</div>
+        <div class="dod-item"><div class="dod-check">&#10003;</div>Zero third-party analytics touching health event data</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 10: DEVELOPER-HOUR ESTIMATES -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">10</div>Developer-Hour Estimates</div>
+    <div class="section-desc">Per-phase hour breakdown based on 20 implementation plans across 4 phases. Hours assume experienced full-stack developers familiar with the stack.</div>
+
+    <table class="hours-table">
+      <thead>
+        <tr>
+          <th>Phase</th>
+          <th>Description</th>
+          <th>Plans</th>
+          <th>Estimated Hours</th>
+          <th>Key Work</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-teal">Phase 1</span></td>
+          <td><strong>Foundation, Auth, Multi-Profile</strong></td>
+          <td>5 plans</td>
+          <td><div class="hours-val">~50h</div></td>
+          <td>Monorepo, Prisma + encryption, BDApps OTP auth, CAAS wrapper, i18n, multi-profile CRUD, onboarding, gating middleware + session store</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">Phase 2</span></td>
+          <td><strong>Core Cycle Tracking + Predictions</strong></td>
+          <td>6 plans</td>
+          <td><div class="hours-val">~62h</div></td>
+          <td>Shared contracts, 3-tier prediction, cycle API, symptoms, dashboard, calendar</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">Phase 3</span></td>
+          <td><strong>Engagement Layer</strong></td>
+          <td>4 plans</td>
+          <td><div class="hours-val">~68h</div></td>
+          <td>Notification infra, email delivery, content platform, CAAS subscription lifecycle + UI</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple">Phase 4</span></td>
+          <td><strong>Admin Panel</strong></td>
+          <td>5 plans</td>
+          <td><div class="hours-val">~115h</div></td>
+          <td>RBAC, dashboard + user mgmt, health analytics, content CMS, reports + export, gating/session/subscription admin UIs</td>
+        </tr>
+        <tr class="hours-total">
+          <td colspan="3"><strong>TOTAL</strong></td>
+          <td><div class="hours-val">~295h</div></td>
+          <td><strong>20 plans across 4 phases</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;margin-top:24px;margin-bottom:12px">Recommended Team Plans</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+      <!-- Option A: 2 Devs + QA -->
+      <div style="background:#fff;border:2px solid #e5e7eb;border-radius:12px;padding:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:24px;font-weight:900;color:#1a1a2e">Option A</div>
+            <div style="font-size:13px;color:#6b7280;font-weight:600">Lean Team</div>
+          </div>
+          <div style="background:#fff7ed;color:#c2410c;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px">Tight but feasible</div>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:16px">
+          <div style="flex:1;background:#f0fdfa;border-radius:8px;padding:12px;text-align:center">
+            <div style="font-size:28px;font-weight:900;color:#0d9488">2</div>
+            <div style="font-size:10px;font-weight:700;color:#115e59">FULL-STACK DEVS</div>
+          </div>
+          <div style="flex:1;background:#fdf2f8;border-radius:8px;padding:12px;text-align:center">
+            <div style="font-size:28px;font-weight:900;color:#be185d">1</div>
+            <div style="font-size:10px;font-weight:700;color:#9f1239">QA ENGINEER</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:11px;color:#374151">
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6"><span style="font-weight:600">Dev workload</span><span>~148h each / ~7.4h per day</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6"><span style="font-weight:600">QA workload</span><span>~80h / testing + regression across 4 phases</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6"><span style="font-weight:600">Parallel capacity</span><span>2 tasks at a time (Wave 2 plans)</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6"><span style="font-weight:600">Buffer</span><span style="color:#c2410c;font-weight:600">Minimal — limited room for scope changes</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="font-weight:600">Best for</span><span>Experienced team, fixed scope, minimal unknowns</span></div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1.5px solid #f3f4f6">
+          <div style="font-size:10px;font-weight:700;color:#6b7280;margin-bottom:6px">WEEKLY CADENCE</div>
+          <div style="font-size:11px;color:#374151;line-height:1.6">Dev A owns frontend, Dev B owns backend. QA starts testing Phase 1 while devs build Phase 2. Tight handoff — QA must start by end of Week 1.</div>
+        </div>
+      </div>
+
+      <!-- Option B: 3 Devs + QA -->
+      <div style="background:#fff;border:2px solid #0d9488;border-radius:12px;padding:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:24px;font-weight:900;color:#1a1a2e">Option B</div>
+            <div style="font-size:13px;color:#6b7280;font-weight:600">Recommended Team</div>
+          </div>
+          <div style="background:#f0fdf4;color:#16a34a;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px">Recommended</div>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:16px">
+          <div style="flex:1;background:#f0fdfa;border-radius:8px;padding:12px;text-align:center">
+            <div style="font-size:28px;font-weight:900;color:#0d9488">3</div>
+            <div style="font-size:10px;font-weight:700;color:#115e59">FULL-STACK DEVS</div>
+          </div>
+          <div style="flex:1;background:#fdf2f8;border-radius:8px;padding:12px;text-align:center">
+            <div style="font-size:28px;font-weight:900;color:#be185d">1</div>
+            <div style="font-size:10px;font-weight:700;color:#9f1239">QA ENGINEER</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:11px;color:#374151">
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6"><span style="font-weight:600">Dev workload</span><span>~98h each / ~4.9h per day</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6"><span style="font-weight:600">QA workload</span><span>~80h / testing + regression across 4 phases</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6"><span style="font-weight:600">Parallel capacity</span><span>3 tasks at a time (full Wave 2 parallelism)</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6"><span style="font-weight:600">Buffer</span><span style="color:#16a34a;font-weight:600">Good — handles scope changes and sick days</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="font-weight:600">Best for</span><span>Balanced risk, allows for BDApps integration unknowns</span></div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1.5px solid #f3f4f6">
+          <div style="font-size:10px;font-weight:700;color:#6b7280;margin-bottom:6px">WEEKLY CADENCE</div>
+          <div style="font-size:11px;color:#374151;line-height:1.6">Dev A: frontend lead. Dev B: backend + API lead. Dev C: admin panel + integrations (BDApps, SMS). QA overlaps testing Phase N while devs build Phase N+1. Comfortable pace with room for iteration.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- QA Role Detail -->
+    <div style="margin-top:16px;background:#fdf2f8;border:1.5px solid #fce7f3;border-radius:10px;padding:16px;display:flex;align-items:flex-start;gap:12px">
+      <div style="width:32px;height:32px;border-radius:50%;background:#be185d;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;flex-shrink:0">QA</div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#9f1239;margin-bottom:4px">QA Engineer Responsibilities</div>
+        <div style="font-size:11px;color:#374151;line-height:1.6">
+          Manual testing of each phase after development completes. Cross-browser verification (Chrome, Safari, Firefox). Mobile responsive testing (375px, 768px, 1280px). Bengali language QA — verify all strings, date/number formatting, text overflow. Multi-profile data isolation testing (user A cannot see user B's data). Security testing for admin RBAC, session management, and feature gating. BDApps billing edge cases (lapse, grace period, re-activation). Regression testing across phases as new features are added.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 11: DEPLOYMENT -->
+  <div class="section">
+    <div class="section-title"><div class="section-num">11</div>Deployment Architecture</div>
+    <div class="section-desc">Zero-cost experimental stack using Vercel + Supabase + Upstash. Every service has a defined upgrade trigger so the client can scale without re-architecting.</div>
+
+    <!-- Cost banner -->
+    <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+      <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:16px 24px;flex:1;min-width:140px;text-align:center">
+        <div style="font-size:28px;font-weight:900;color:#16a34a">$0</div>
+        <div style="font-size:11px;color:#166534;font-weight:700">EXPERIMENTAL PHASE</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:2px">per month</div>
+      </div>
+      <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:16px 24px;flex:1;min-width:140px;text-align:center">
+        <div style="font-size:28px;font-weight:900;color:#1d4ed8">~$45</div>
+        <div style="font-size:11px;color:#1e3a8a;font-weight:700">AFTER UPGRADE</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:2px">Vercel Pro + Supabase Pro</div>
+      </div>
+      <div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:12px;padding:16px 24px;flex:1;min-width:140px;text-align:center">
+        <div style="font-size:28px;font-weight:900;color:#7c3aed">0</div>
+        <div style="font-size:11px;color:#4c1d95;font-weight:700">SERVERS TO MANAGE</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:2px">fully managed PaaS</div>
+      </div>
+    </div>
+
+    <!-- Service table -->
+    <table class="sprint-table" style="margin-bottom:24px">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Provider</th>
+          <th>Free Tier Limits</th>
+          <th>What it replaces</th>
+          <th>Upgrade trigger</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Frontend</strong><div style="font-size:10px;color:#9ca3af">React + Vite build</div></td>
+          <td><span class="badge badge-teal">Vercel Hobby</span></td>
+          <td style="font-size:11px">100 GB bandwidth/mo<br>Unlimited deploys<br>Preview URLs per PR</td>
+          <td style="font-size:11px">Vercel (already planned)</td>
+          <td style="font-size:11px;color:#6b7280">Team members or &gt;100 GB/mo</td>
+        </tr>
+        <tr>
+          <td><strong>API (serverless)</strong><div style="font-size:10px;color:#9ca3af">Express wrapped as Vercel functions</div></td>
+          <td><span class="badge badge-teal">Vercel Hobby</span></td>
+          <td style="font-size:11px">100 GB bandwidth/mo<br>10s function timeout<br>1M invocations/mo</td>
+          <td style="font-size:11px">Railway Express server ($5+/mo)</td>
+          <td style="font-size:11px;color:#6b7280">Long-running tasks (&gt;10s) or team</td>
+        </tr>
+        <tr>
+          <td><strong>Database</strong><div style="font-size:10px;color:#9ca3af">PostgreSQL 16 + RLS</div></td>
+          <td><span class="badge badge-blue">Supabase Free</span></td>
+          <td style="font-size:11px">500 MB storage<br>2 active projects<br>Pauses after 7d inactivity</td>
+          <td style="font-size:11px">Railway PostgreSQL ($5+/mo)</td>
+          <td style="font-size:11px;color:#6b7280">&gt;500 MB or need no-pause guarantee</td>
+        </tr>
+        <tr>
+          <td><strong>Session / Cache</strong><div style="font-size:10px;color:#9ca3af">JWT blacklist, rate-limit state</div></td>
+          <td><span class="badge badge-purple">Upstash Redis</span></td>
+          <td style="font-size:11px">10,000 commands/day<br>256 MB storage<br>HTTP-based (serverless-safe)</td>
+          <td style="font-size:11px">Railway Redis ($5+/mo)</td>
+          <td style="font-size:11px;color:#6b7280">&gt;10K commands/day</td>
+        </tr>
+        <tr>
+          <td><strong>Cron jobs</strong><div style="font-size:10px;color:#9ca3af">Daily CAAS check, reminder scheduler</div></td>
+          <td><span class="badge badge-teal">Vercel Cron</span></td>
+          <td style="font-size:11px">2 cron jobs (Hobby)<br>Daily minimum frequency</td>
+          <td style="font-size:11px">BullMQ persistent workers</td>
+          <td style="font-size:11px;color:#6b7280">More than 2 crons or sub-daily schedule</td>
+        </tr>
+        <tr>
+          <td><strong>Async job queue</strong><div style="font-size:10px;color:#9ca3af">Email delivery, prediction recalc</div></td>
+          <td><span class="badge badge-purple">Upstash QStash</span></td>
+          <td style="font-size:11px">500 messages/day<br>Max 1MB payload<br>Built-in retries</td>
+          <td style="font-size:11px">BullMQ queues</td>
+          <td style="font-size:11px;color:#6b7280">&gt;500 messages/day</td>
+        </tr>
+        <tr>
+          <td><strong>Email</strong><div style="font-size:10px;color:#9ca3af">Transactional + notifications</div></td>
+          <td><span class="badge badge-green">Resend Free</span></td>
+          <td style="font-size:11px">3,000 emails/mo<br>100/day limit</td>
+          <td style="font-size:11px">Already planned</td>
+          <td style="font-size:11px;color:#6b7280">&gt;3K emails/mo or custom domain</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Architecture diagram -->
+    <div style="background:#1e293b;border-radius:12px;padding:24px;margin-bottom:24px;font-family:'Courier New',monospace;font-size:12px;color:#e2e8f0;line-height:2">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:12px">Infrastructure Diagram</div>
+<pre style="margin:0;color:#e2e8f0;font-size:11px;line-height:1.8">
+  ┌─────────────────────────────────────────────────────────┐
+  │                    <span style="color:#2dd4bf">VERCEL</span> (free hobby)                   │
+  │                                                         │
+  │   ┌──────────────────┐   ┌───────────────────────┐      │
+  │   │  React + Vite    │   │  Serverless API funcs  │      │
+  │   │  (static build)  │   │  (Express adapter)     │      │
+  │   └────────┬─────────┘   └────────────┬──────────┘      │
+  │            │                          │                  │
+  │   ┌────────┴──────────────────────────┴──────────┐      │
+  │   │              Vercel Cron (2 jobs)             │      │
+  │   │   daily-caas-check  │  daily-reminder-push    │      │
+  │   └───────────────────────────────────────────────┘      │
+  └───────────────────────┬─────────────────────────────────┘
+                          │
+        ┌─────────────────┼──────────────────┐
+        │                 │                  │
+  ┌─────▼──────┐  ┌───────▼──────┐  ┌───────▼──────┐
+  │  <span style="color:#60a5fa">SUPABASE</span>   │  │ <span style="color:#c4b5fd">UPSTASH</span>      │  │  <span style="color:#34d399">RESEND</span>      │
+  │  (free)    │  │ Redis (free) │  │  (free)      │
+  │            │  │              │  │              │
+  │  PostgreSQL│  │ JWT blacklist│  │ Email alerts │
+  │  + RLS     │  │ Sessions     │  │ Templates    │
+  │  + pgcrypt │  │ Rate limits  │  │              │
+  └────────────┘  └──────────────┘  └──────────────┘
+                          │
+                  ┌───────▼──────┐
+                  │ <span style="color:#c4b5fd">UPSTASH</span>      │
+                  │ QStash (free)│
+                  │              │
+                  │ Email queue  │
+                  │ Pred. recalc │
+                  └──────────────┘
+</pre>
+    </div>
+
+    <!-- Vercel Express adapter note -->
+    <div style="background:#fffbeb;border:1.5px solid #fef3c7;border-radius:10px;padding:16px;margin-bottom:16px;display:flex;gap:12px">
+      <div style="font-size:18px;flex-shrink:0">⚙️</div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:4px">Express → Serverless Adapter</div>
+        <div style="font-size:11px;color:#78350f;line-height:1.6">
+          Express 5 runs as a Vercel serverless function via <code style="background:#fef9c3;padding:1px 4px;border-radius:3px">@vercel/node</code> + a single <code style="background:#fef9c3;padding:1px 4px;border-radius:3px">api/index.ts</code> entry point. All existing middleware (JWT, RLS, rate-limit) works unchanged. The only real change: BullMQ persistent workers are replaced by Vercel Cron (scheduled) + Upstash QStash (async). Function timeout is 10s on Hobby — sufficient for all API routes; upgrade to Pro (60s) if prediction recalculation grows.
+        </div>
+      </div>
+    </div>
+
+    <!-- Supabase RLS note -->
+    <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:16px;margin-bottom:16px;display:flex;gap:12px">
+      <div style="font-size:18px;flex-shrink:0">🔒</div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:4px">Supabase RLS replaces checkProfileOwnership middleware</div>
+        <div style="font-size:11px;color:#14532d;line-height:1.6">
+          Enable Row Level Security on <code style="background:#dcfce7;padding:1px 4px;border-radius:3px">period_logs</code>, <code style="background:#dcfce7;padding:1px 4px;border-radius:3px">symptom_logs</code>, and <code style="background:#dcfce7;padding:1px 4px;border-radius:3px">profiles</code> tables. Set <code style="background:#dcfce7;padding:1px 4px;border-radius:3px">auth.uid()</code> policy so users can only read/write their own rows — enforced at the database level, not just the application layer. Keep the Express middleware as a belt-and-suspenders check. Field-level encryption via prisma-field-encryption still applies on top of RLS.
+        </div>
+      </div>
+    </div>
+
+    <!-- Sprint deployment tasks -->
+    <div style="font-size:13px;font-weight:800;color:#1a1a2e;margin-bottom:12px">Deployment Tasks by Sprint Day</div>
+    <table class="sprint-table" style="margin-bottom:24px">
+      <thead>
+        <tr><th>Day</th><th>Deployment Task</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="day-num">Day 1</div></td>
+          <td>
+            <strong>Provision all free-tier services</strong>
+            <div style="font-size:11px;color:#6b7280;margin-top:4px">Create Supabase project, enable pgcrypto + RLS. Create Upstash Redis + QStash instances. Create Vercel project, link GitHub repo, set environment variables. Confirm Resend domain verified.</div>
+          </td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 2</div></td>
+          <td>
+            <strong>CI/CD pipeline</strong>
+            <div style="font-size:11px;color:#6b7280;margin-top:4px">GitHub Actions: typecheck + lint on every PR. Vercel auto-deploys on merge to main. Supabase migrations run via <code>supabase db push</code> in CI. Preview environments per PR branch.</div>
+          </td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 3</div></td>
+          <td>
+            <strong>Vercel serverless adapter + env config</strong>
+            <div style="font-size:11px;color:#6b7280;margin-top:4px">Wrap Express app in <code>api/index.ts</code> with <code>@vercel/node</code>. Verify all middleware works. Set all env vars in Vercel dashboard (SUPABASE_URL, UPSTASH_REDIS_URL, BDAPPS_*, RESEND_API_KEY).</div>
+          </td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 8</div></td>
+          <td>
+            <strong>Replace BullMQ prediction recalc with QStash job</strong>
+            <div style="font-size:11px;color:#6b7280;margin-top:4px">On period log save → publish QStash message to <code>/api/jobs/recalc-prediction</code>. QStash delivers with automatic retry on failure. Remove BullMQ dependency.</div>
+          </td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 11</div></td>
+          <td>
+            <strong>Vercel Cron setup</strong>
+            <div style="font-size:11px;color:#6b7280;margin-top:4px">Configure 2 cron jobs in <code>vercel.json</code>: <code>0 8 * * *</code> → <code>/api/cron/daily-reminders</code> (email alerts), <code>0 2 * * *</code> → <code>/api/cron/caas-check</code> (Pro subscription status). Both secured with <code>CRON_SECRET</code> header.</div>
+          </td>
+          <td><span class="owner-badge owner-be">Back-end</span></td>
+        </tr>
+        <tr>
+          <td><div class="day-num">Day 20</div></td>
+          <td>
+            <strong>Production hardening + smoke test</strong>
+            <div style="font-size:11px;color:#6b7280;margin-top:4px">Verify Supabase is not paused (ping endpoint in cron). Set Upstash eviction policy to <code>allkeys-lru</code>. Enable Vercel Analytics. Run full sign-up → OTP → Pro upgrade → CAAS charge smoke test in production.</div>
+          </td>
+          <td><span class="owner-badge owner-shared">Both</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Upgrade path -->
+    <div style="font-size:13px;font-weight:800;color:#1a1a2e;margin-bottom:12px">Upgrade Path</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+        <span class="badge badge-teal" style="white-space:nowrap;margin-top:2px">Trigger 1</span>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#1a1a2e">Supabase project pausing becomes a problem</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:2px">Upgrade to <strong>Supabase Pro ($25/mo)</strong> — 8 GB database, daily backups, no inactivity pausing, PITR.</div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+        <span class="badge badge-blue" style="white-space:nowrap;margin-top:2px">Trigger 2</span>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#1a1a2e">Need team members or longer function timeouts</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:2px">Upgrade to <strong>Vercel Pro ($20/mo)</strong> — 60s function timeout, 1 TB bandwidth, team seats, more cron jobs.</div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+        <span class="badge badge-purple" style="white-space:nowrap;margin-top:2px">Trigger 3</span>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#1a1a2e">Redis commands or QStash messages exceed free tier</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:2px">Upstash is <strong>pay-as-you-go</strong> above free tier — typically &lt;$1/mo at early scale. No migration needed, just billing kicks in automatically.</div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+        <span class="badge badge-orange" style="white-space:nowrap;margin-top:2px">Trigger 4</span>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#1a1a2e">Need persistent workers or prediction model training</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:2px">Add <strong>Railway ($5/mo credit)</strong> for a dedicated Express + BullMQ worker process. Frontend + DB stay on Vercel + Supabase — no full migration, just add a worker service.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Env vars checklist -->
+    <div style="margin-top:20px;background:#1e293b;border-radius:12px;padding:20px;font-family:'Courier New',monospace;font-size:11px;line-height:2;color:#e2e8f0">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:8px">Required Environment Variables (Vercel Dashboard)</div>
+      <div><span style="color:#2dd4bf">SUPABASE_URL</span>=<span style="color:#86efac">https://xxxx.supabase.co</span></div>
+      <div><span style="color:#2dd4bf">SUPABASE_SERVICE_ROLE_KEY</span>=<span style="color:#86efac">eyJ...</span></div>
+      <div><span style="color:#2dd4bf">DATABASE_URL</span>=<span style="color:#86efac">postgresql://postgres:[pw]@db.xxxx.supabase.co:5432/postgres</span></div>
+      <div><span style="color:#2dd4bf">UPSTASH_REDIS_REST_URL</span>=<span style="color:#86efac">https://xxxx.upstash.io</span></div>
+      <div><span style="color:#2dd4bf">UPSTASH_REDIS_REST_TOKEN</span>=<span style="color:#86efac">AXxx...</span></div>
+      <div><span style="color:#2dd4bf">QSTASH_URL</span>=<span style="color:#86efac">https://qstash.upstash.io</span></div>
+      <div><span style="color:#2dd4bf">QSTASH_TOKEN</span>=<span style="color:#86efac">eyJ...</span></div>
+      <div><span style="color:#2dd4bf">JWT_SECRET</span>=<span style="color:#86efac">[random 64-byte hex]</span></div>
+      <div><span style="color:#2dd4bf">FIELD_ENCRYPTION_KEY</span>=<span style="color:#86efac">[AES-256 key for prisma-field-encryption]</span></div>
+      <div><span style="color:#2dd4bf">BDAPPS_APP_ID</span>=<span style="color:#86efac">your_application_id</span></div>
+      <div><span style="color:#2dd4bf">BDAPPS_PASSWORD</span>=<span style="color:#86efac">encoded_password</span></div>
+      <div><span style="color:#2dd4bf">RESEND_API_KEY</span>=<span style="color:#86efac">re_...</span></div>
+      <div><span style="color:#2dd4bf">CRON_SECRET</span>=<span style="color:#86efac">[random secret to auth cron endpoint calls]</span></div>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>

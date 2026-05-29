@@ -1,20 +1,79 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Vesta
 
-# Run and deploy your AI Studio app
+Vesta is a bilingual reproductive health and cycle intelligence platform for Bangladesh. The project is structured as a pnpm monorepo with a customer-facing app, an admin panel, and a shared code package.
 
-This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/d40271ba-f2c3-491e-afd9-7f8ff4e4b626
+The full v1 requirements are documented in [docs/vesta/source/SRS.md](docs/vesta/source/SRS.md). Implementation progress is tracked in [DEV_SRS.md](DEV_SRS.md).
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
+```bash
+pnpm install
+just setup
+just w
+```
 
+Or start both apps:
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```bash
+just wa
+```
+
+The web app runs on `http://localhost:3000`, admin on `http://localhost:3001`.
+
+## Quick Commands
+
+| Command | What |
+|---|---|
+| `just w` | Start web dev server |
+| `just a` | Start admin dev server |
+| `just wa` | Start both |
+| `just setup` | Full local setup (env, infra, DB reset, seed) |
+| `just typecheck` | Type-check web app |
+| `just studio` | Open Prisma Studio |
+| `just up` | Start all Docker services |
+| `just infra` | Start only infrastructure (postgres, redis, mailpit) |
+
+Run `just` to see all available commands.
+
+## Repository Map
+
+```
+apps/web/              Next.js customer app (Prisma, API routes, UI)
+apps/admin/            Next.js admin panel (scaffold for Phase 04)
+packages/shared/       @vesta/shared — Prisma schema, server logic, auth, adapters, types
+ops/docker/            Docker Compose stack (postgres, redis, mailpit, worker)
+ops/vendor/bdapps/     Read-only BDApps SDK for simulator image
+ops/simulator/bdapps/  Local BDApps simulator for testing
+docs/vesta/source/     Canonical Vesta source docs (SRS, knowledge base, user stories)
+docs/vesta/exports/    Generated artifacts (DOCX SRS)
+docs/site/             Client-facing documentation site
+docs/archive/          Archived research (Flo competitor analysis)
+.planning/             Implementation plans, roadmap, research
+scripts/               Repo maintenance scripts (docs sync, SRS export)
+```
+
+## Client Docs Workflow
+
+Author docs in `docs/vesta/source/`. The client-facing site lives in `docs/site/`.
+
+```bash
+pnpm docs:sync      # Sync source docs to docs/site/
+pnpm docs:check     # Verify docs/site/ hasn't drifted from source
+```
+
+To rebuild the Word export:
+
+```bash
+HTML_TO_DOCX_DIR=/tmp/vesta-html-to-docx node scripts/build-srs-docx.mjs
+```
+
+## BDApps Simulator
+
+The simulator stack lives under `ops/simulator/bdapps/` and uses the vendor SDK at `ops/vendor/bdapps/sdk-standalone-1.2.68/`.
+
+```bash
+just up        # Start all services including simulator
+just down      # Stop everything
+```
+
+See [ops/simulator/bdapps/README.md](ops/simulator/bdapps/README.md) for ports and smoke tests.

@@ -1,0 +1,249 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
+import { Phone, Shield, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { devMode, DEV_DEFAULT_PHONE } from '@vesta/shared/utils/config';
+import '@vesta/shared/utils/i18n';
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const FADE_UP = {
+  hidden: { opacity: 0, y: 20 },
+  show: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.08, duration: 0.42, ease: EASE },
+  }),
+};
+
+export default function LoginPage() {
+  const router = useRouter();
+  const { t } = useTranslation();
+
+  const [phone, setPhone] = useState(devMode ? DEV_DEFAULT_PHONE : '');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  function validatePhone(value: string) {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length === 0) return t('auth.phoneRequired');
+    if (digits.length !== 11) return t('auth.phoneInvalid');
+    if (!digits.startsWith('01')) return t('auth.phoneMustStart');
+    return '';
+  }
+
+  function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value.replace(/[^\d]/g, '').slice(0, 11);
+    setPhone(raw);
+    if (error) setError('');
+  }
+
+  async function handleSendOtp() {
+    const validationError = validatePhone(phone);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setLoading(true);
+
+    if (devMode) {
+      try {
+        const res = await fetch('/api/auth/dev-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          setError((body as { error?: string }).error ?? 'Dev login failed.');
+          return;
+        }
+        router.replace('/dashboard');
+      } catch {
+        setError('Dev login failed. Ensure DEV_MODE=true on the server.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/otp/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      const body = await res.json().catch(() => ({})) as { referenceNo?: string; error?: string };
+      if (!res.ok) {
+        setError(body.error ?? 'Failed to send OTP. Please try again.');
+        return;
+      }
+      const { referenceNo } = body;
+      router.push(`/verify-otp?referenceNo=${encodeURIComponent(referenceNo ?? '')}&phone=${encodeURIComponent(phone)}`);
+    } catch {
+      setError('Failed to send OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col min-h-[calc(100dvh-4rem)]">
+      {/* ── Logo / hero section ── */}
+      <motion.div
+        custom={0}
+        variants={FADE_UP}
+        initial="hidden"
+        animate="show"
+        className="flex flex-col items-center pt-8 pb-6"
+      >
+        {/* Logo mark — floating bob animation */}
+        <motion.div
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          className="mb-4"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center shadow-soft">
+            <span className="text-white text-2xl font-bold">V</span>
+          </div>
+        </motion.div>
+
+        <h1
+          className="text-3xl font-bold mb-1"
+          style={{
+            background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          Vesta
+        </h1>
+        <p className="text-sm text-[var(--color-text-muted)] text-center leading-relaxed px-4">
+          আপনার স্বাস্থ্য, আপনার নিয়ন্ত্রণে
+          <br />
+          <span className="text-[var(--color-text-secondary)]">Your cycle, your way</span>
+        </p>
+      </motion.div>
+
+      {/* ── Card ── */}
+      <motion.div
+        custom={1}
+        variants={FADE_UP}
+        initial="hidden"
+        animate="show"
+        className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft p-6 mx-0"
+      >
+        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">
+          {t('auth.login')}
+        </h2>
+        <p className="text-sm text-[var(--color-text-muted)] mb-5">
+          {devMode
+            ? 'Dev mode: sign in with phone only (OTP skipped, real database)'
+            : 'Enter your phone number to receive a one-time code'}
+        </p>
+
+        {/* Phone input */}
+        <div className="mb-5">
+          <label htmlFor="phone-input" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
+            {t('auth.phone')}
+          </label>
+          <div className="relative">
+            {/* Country prefix */}
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-secondary)] select-none">
+              🇧🇩 +88
+            </span>
+            <input
+              id="phone-input"
+              type="tel"
+              inputMode="numeric"
+              name="phone"
+              autoComplete="tel"
+              spellCheck={false}
+              placeholder="01XXXXXXXXX…"
+              value={phone}
+              onChange={handlePhoneChange}
+              maxLength={11}
+              className={`w-full pl-20 pr-4 py-3.5 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors duration-200 text-base tracking-widest font-medium ${
+                error ? 'border-red-400 focus:ring-red-300' : 'border-[var(--color-border)]'
+              }`}
+            />
+            {phone.length === 11 && !error && (
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="9" fill="currentColor" fillOpacity="0.15"/><path d="M5 9l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </span>
+            )}
+          </div>
+          {error && <p aria-live="polite" className="mt-1.5 text-sm text-red-500 flex items-center gap-1"><span>⚠</span>{error}</p>}
+        </div>
+
+        <Button
+          fullWidth
+          size="lg"
+          onClick={handleSendOtp}
+          disabled={loading}
+          className="rounded-2xl text-base font-bold tracking-wide"
+        >
+          {loading ? (
+            <span className="flex items-center gap-2">
+              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+              {devMode ? 'Signing in…' : 'Sending…'}
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              <Phone size={18} aria-hidden="true" />
+              {devMode ? 'Continue (dev)' : t('auth.sendOtp')}
+            </span>
+          )}
+        </Button>
+      </motion.div>
+
+      {/* ── Email fallback ── */}
+      <motion.div
+        custom={2}
+        variants={FADE_UP}
+        initial="hidden"
+        animate="show"
+        className="mt-4 text-center"
+      >
+        <Link
+          href="/email-login"
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-secondary)] font-semibold hover:underline underline-offset-2 transition-colors"
+        >
+          {t('auth.emailFallback')}
+          <ChevronRight size={14} aria-hidden="true" />
+        </Link>
+      </motion.div>
+
+      {/* ── Trust footer ── */}
+      <motion.div
+        custom={3}
+        variants={FADE_UP}
+        initial="hidden"
+        animate="show"
+        className="mt-auto pt-8 pb-2 flex flex-col items-center gap-2"
+      >
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+          <Shield size={14} className="text-[var(--color-primary)]" aria-hidden="true" />
+          <span className="text-xs text-[var(--color-text-muted)]">
+            {t('onboarding.privacy')}
+          </span>
+        </div>
+        <p className="text-[11px] text-[var(--color-text-muted)] text-center leading-relaxed px-6">
+          By continuing you agree to Vesta&apos;s{' '}
+          <Link href="/privacy" className="text-[var(--color-secondary)] font-medium hover:underline underline-offset-2">Privacy Policy</Link>{' '}
+          &amp;{' '}
+          <Link href="/terms" className="text-[var(--color-secondary)] font-medium hover:underline underline-offset-2">Terms of Service</Link>
+        </p>
+      </motion.div>
+    </div>
+  );
+}

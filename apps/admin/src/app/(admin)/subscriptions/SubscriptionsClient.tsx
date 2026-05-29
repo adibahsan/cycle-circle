@@ -1,0 +1,410 @@
+'use client'
+
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { useCallback, useState, useTransition } from 'react'
+import { CreditCard, Mail, Smartphone, ShieldCheck, AlertTriangle } from 'lucide-react'
+import { FilterBar } from '@/components/ui/FilterBar'
+import { DataTable, Column } from '@/components/ui/DataTable'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
+import { Pagination } from '@/components/ui/Pagination'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { grantProAccess, revokeProAccess } from '@/app/actions/user-actions'
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Types — mirror the Prisma include shape from getSubscriptions
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface CaasTransaction {
+  id: string
+  amount: number
+  status: string
+  createdAt: Date
+}
+
+interface SubscriptionRow {
+  id: string
+  userId: string
+  status: string
+  amount: number | null
+  consecutiveFailures: number
+  gracePeriodEndsAt: Date | null
+  adminOverride: boolean
+  adminOverrideBy: string | null
+  adminOverrideAt: Date | null
+  createdAt: Date
+  updatedAt: Date
+  user: {
+    id: string
+    fullName: string | null
+    phone: string | null
+    email: string | null
+  }
+  caasTransactions: CaasTransaction[]
+}
+
+interface SubscriptionsClientProps {
+  data: {
+    subscriptions: SubscriptionRow[]
+    total: number
+    page: number
+    pageSize: number
+    totalPages: number
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────────────
+
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'PRO', label: 'PRO' },
+  { value: 'FREE', label: 'FREE' },
+  { value: 'LAPSED', label: 'Lapsed' },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+function formatDate(d: Date | null | undefined) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function formatAmount(cents: number | null | undefined) {
+  if (cents == null) return '—'
+  // BDApps amounts are in paisa (1/100 BDT)
+  return `৳${new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100)}`
+}
+
+function StatusBadge({ status }: { status: string }) {
+  if (status === 'PRO') return <Badge variant="success" size="sm">PRO</Badge>
+  if (status === 'LAPSED') return <Badge variant="danger" size="sm">Lapsed</Badge>
+  return <Badge variant="neutral" size="sm">Free</Badge>
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Actions cell — extracted so it can use hooks via the parent
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface ActionsCellProps {
+  row: SubscriptionRow
+  onGrant: (row: SubscriptionRow) => void
+  onRevoke: (row: SubscriptionRow) => void
+}
+
+function ActionsCell({ row, onGrant, onRevoke }: ActionsCellProps) {
+  const isPro = row.status === 'PRO'
+  return (
+    <div className="flex items-center gap-1.5">
+      {isPro ? (
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={(e) => { e.stopPropagation(); onRevoke(row) }}
+        >
+          Revoke
+        </Button>
+      ) : (
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={(e) => { e.stopPropagation(); onGrant(row) }}
+        >
+          Grant Pro
+        </Button>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main client component
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function SubscriptionsClient({ data }: SubscriptionsClientProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [, startTransition] = useTransition()
+  const [actionPending, startActionTransition] = useTransition()
+
+  // Modal state
+  const [grantTarget, setGrantTarget] = useState<SubscriptionRow | null>(null)
+  const [revokeTarget, setRevokeTarget] = useState<SubscriptionRow | null>(null)
+
+  const currentStatus = searchParams.get('status') ?? 'all'
+  const currentPage = data.page
+  const currentPageSize = data.pageSize
+
+  // ── URL helpers ──────────────────────────────────────────────────────────
+
+  const updateParams = useCallback(
+    (updates: Record<string, string | number>) => {
+      const params = new URLSearchParams(searchParams.toString())
+      Object.entries(updates).forEach(([k, v]) => {
+        if (v === '' || v === undefined) {
+          params.delete(k)
+        } else {
+          params.set(k, String(v))
+        }
+      })
+      if (!('page' in updates)) params.set('page', '1')
+      startTransition(() => {
+        router.push(`${pathname}?${params.toString()}`)
+      })
+    },
+    [router, pathname, searchParams]
+  )
+
+  function handleStatusChange(value: string) {
+    updateParams({ status: value })
+  }
+
+  function handlePageChange(page: number) {
+    updateParams({ page })
+  }
+
+  function handlePageSizeChange(pageSize: number) {
+    updateParams({ pageSize, page: 1 })
+  }
+
+  // ── Server action handlers ────────────────────────────────────────────────
+
+  function handleConfirmGrant() {
+    if (!grantTarget) return
+    const userId = grantTarget.user.id
+    setGrantTarget(null)
+    startActionTransition(async () => {
+      await grantProAccess(userId)
+      router.refresh()
+    })
+  }
+
+  function handleConfirmRevoke() {
+    if (!revokeTarget) return
+    const userId = revokeTarget.user.id
+    setRevokeTarget(null)
+    startActionTransition(async () => {
+      await revokeProAccess(userId)
+      router.refresh()
+    })
+  }
+
+  // ── Columns ───────────────────────────────────────────────────────────────
+
+  const columns: Column<SubscriptionRow>[] = [
+    {
+      key: 'user',
+      header: 'User',
+      render: (row) => (
+        <div className="space-y-0.5 min-w-[140px]">
+          <p className="font-medium text-[var(--color-text-primary)] truncate max-w-[180px]">
+            {row.user.fullName ?? '—'}
+          </p>
+          {row.user.email && (
+            <div className="flex items-center gap-1 text-xs text-[var(--color-text-secondary)]">
+              <Mail size={11} aria-hidden="true" className="shrink-0" />
+              <span className="truncate max-w-[160px]">{row.user.email}</span>
+            </div>
+          )}
+          {row.user.phone && (
+            <div className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
+              <Smartphone size={11} aria-hidden="true" className="shrink-0" />
+              <span>{row.user.phone}</span>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (row) => <StatusBadge status={row.status} />,
+    },
+    {
+      key: 'amount',
+      header: 'Amount',
+      render: (row) => (
+        <span className="text-sm tabular-nums text-[var(--color-text-secondary)] font-mono">
+          {formatAmount(row.amount)}
+        </span>
+      ),
+    },
+    {
+      key: 'consecutiveFailures',
+      header: 'Failures',
+      render: (row) => {
+        const count = row.consecutiveFailures
+        if (count === 0) {
+          return <span className="text-sm tabular-nums text-[var(--color-text-muted)]">0</span>
+        }
+        return (
+          <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-600 dark:text-amber-400">
+            <AlertTriangle size={13} aria-hidden="true" />
+            {count}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'gracePeriodEndsAt',
+      header: 'Grace Period End',
+      sortable: true,
+      render: (row) => {
+        if (!row.gracePeriodEndsAt) {
+          return <span className="text-sm text-[var(--color-text-muted)]">—</span>
+        }
+        const isExpired = new Date(row.gracePeriodEndsAt) < new Date()
+        return (
+          <span
+            className={
+              isExpired
+                ? 'text-sm text-red-600 dark:text-red-400'
+                : 'text-sm text-[var(--color-text-secondary)]'
+            }
+          >
+            {formatDate(row.gracePeriodEndsAt)}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'adminOverride',
+      header: 'Admin Override',
+      render: (row) => {
+        if (!row.adminOverride) {
+          return <span className="text-sm text-[var(--color-text-muted)]">—</span>
+        }
+        return (
+          <span className="inline-flex items-center gap-1">
+            <Badge variant="info" size="sm">
+              <ShieldCheck size={11} aria-hidden="true" className="mr-1" />
+              Override
+            </Badge>
+          </span>
+        )
+      },
+    },
+    {
+      key: 'lastTransaction',
+      header: 'Last Transaction',
+      sortable: false,
+      render: (row) => {
+        const tx = row.caasTransactions[0]
+        if (!tx) return <span className="text-sm text-[var(--color-text-muted)]">—</span>
+        return (
+          <div className="space-y-0.5">
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              {formatDate(tx.createdAt)}
+            </p>
+            <p className="text-xs text-[var(--color-text-muted)]">{tx.status}</p>
+          </div>
+        )
+      },
+    },
+    {
+      key: 'actions',
+      header: '',
+      width: '100px',
+      render: (row) => (
+        <ActionsCell
+          row={row}
+          onGrant={setGrantTarget}
+          onRevoke={setRevokeTarget}
+        />
+      ),
+    },
+  ]
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  return (
+    <>
+      <div className="space-y-6 page-enter">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
+              Subscriptions
+            </h1>
+            <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+              {data.total.toLocaleString()} total subscriptions
+            </p>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 rounded-xl border border-[var(--color-border)] glass px-4 py-2.5">
+            <CreditCard size={16} aria-hidden="true" className="text-[var(--color-primary)]" />
+            <span className="text-sm font-medium text-[var(--color-text-secondary)]">
+              BDApps CAAS
+            </span>
+          </div>
+        </div>
+
+        {/* Filters — no search field, just status filter */}
+        <FilterBar
+          searchValue=""
+          onSearchChange={() => {}}
+          showSearch={false}
+          filters={[
+            {
+              key: 'status',
+              label: 'Status',
+              options: STATUS_OPTIONS,
+              value: currentStatus,
+              onChange: handleStatusChange,
+            },
+          ]}
+        />
+
+        {/* Table */}
+        <DataTable
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          columns={columns as unknown as Column<Record<string, unknown>>[]}
+          data={data.subscriptions as unknown as Record<string, unknown>[]}
+          emptyMessage="No subscriptions match your filters."
+          keyExtractor={(row) => row['id'] as string}
+          loading={actionPending}
+        />
+
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={data.totalPages}
+          pageSize={currentPageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
+      </div>
+
+      {/* Grant Pro confirm modal */}
+      <ConfirmModal
+        open={grantTarget !== null}
+        onClose={() => setGrantTarget(null)}
+        onConfirm={handleConfirmGrant}
+        title="Grant Pro Access"
+        message={`Grant Pro access to ${grantTarget?.user.fullName ?? 'this user'}? This will override their current subscription status.`}
+        confirmLabel="Grant Pro"
+        variant="warning"
+        loading={actionPending}
+      />
+
+      {/* Revoke Pro confirm modal */}
+      <ConfirmModal
+        open={revokeTarget !== null}
+        onClose={() => setRevokeTarget(null)}
+        onConfirm={handleConfirmRevoke}
+        title="Revoke Pro Access"
+        message={`Revoke Pro access from ${revokeTarget?.user.fullName ?? 'this user'}? Their subscription will be set to Lapsed.`}
+        confirmLabel="Revoke Pro"
+        variant="danger"
+        loading={actionPending}
+      />
+    </>
+  )
+}

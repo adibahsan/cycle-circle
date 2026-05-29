@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vesta — User Journey Flow Diagrams</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fa;color:#1a1a2e;line-height:1.6}
+.page{max-width:1100px;margin:0 auto;padding:48px 32px}
+
+/* Header */
+.header{margin-bottom:48px}
+.header-meta{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:4px 12px;border-radius:100px}
+.badge-teal{background:#f0fdfa;color:#0d9488}
+.badge-blue{background:#eff6ff;color:#1d4ed8}
+.badge-green{background:#f0fdf4;color:#16a34a}
+.badge-orange{background:#fff7ed;color:#c2410c}
+.badge-purple{background:#f5f3ff;color:#7c3aed}
+.badge-pink{background:#fce7f3;color:#be185d}
+.badge-gray{background:#f3f4f6;color:#374151}
+h1{font-size:32px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
+.subtitle{font-size:15px;color:#6b7280;line-height:1.6;max-width:750px}
+.stats-row{display:flex;gap:16px;margin-top:24px;flex-wrap:wrap}
+.stat{background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:16px 20px;min-width:130px}
+.stat-val{font-size:22px;font-weight:900;color:#0d9488}
+.stat-label{font-size:11px;color:#6b7280;margin-top:2px}
+
+/* Section */
+.section{margin-bottom:56px}
+.section-title{font-size:18px;font-weight:800;color:#1a1a2e;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.section-num{width:28px;height:28px;border-radius:50%;background:#0d9488;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-desc{font-size:13px;color:#6b7280;margin-bottom:16px;margin-left:38px;line-height:1.6}
+.section-reqs{margin-left:38px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:6px}
+.req-badge{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:4px;background:#f0fdfa;color:#0d9488;border:1px solid #ccfbf1}
+
+/* Flow Diagram Containers */
+.flow-diagram{margin-left:38px;background:#fff;border:1.5px solid #e5e7eb;border-radius:14px;padding:28px 24px;overflow-x:auto}
+.flow-row{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin-bottom:0}
+.flow-row.center{justify-content:flex-start}
+
+/* Flow Nodes */
+.flow-node{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:10px 16px;border-radius:10px;font-size:11px;font-weight:600;
+  text-align:center;line-height:1.35;white-space:nowrap;
+  min-height:40px;position:relative;flex-shrink:0;
+}
+.flow-node.wrap{white-space:normal;max-width:160px}
+.flow-node.wide{max-width:200px}
+
+/* Node Colors by Flow Type */
+/* Core flows - teal */
+.node-start{background:#0d9488;color:#fff;border-radius:20px}
+.node-end{background:#0d9488;color:#fff;border-radius:20px}
+.node-step{background:#f0fdfa;color:#134e4a;border:1.5px solid #99f6e4}
+.node-action{background:#ccfbf1;color:#0f766e;border:1.5px solid #5eead4}
+.node-data{background:#e0f2fe;color:#075985;border:1.5px solid #7dd3fc}
+
+/* Decision diamond */
+.node-decision{
+  background:#fef3c7;color:#92400e;border:1.5px solid #fcd34d;
+  border-radius:4px;transform:rotate(0deg);
+  padding:8px 12px;font-size:10px;font-weight:700;
+  position:relative;
+}
+.node-decision::before{content:'';position:absolute;top:-1px;left:-1px;right:-1px;bottom:-1px;border-radius:4px}
+
+/* Engagement flows - blue */
+.node-engage{background:#eff6ff;color:#1e40af;border:1.5px solid #93c5fd}
+
+/* Admin flows - purple */
+.node-admin{background:#f5f3ff;color:#5b21b6;border:1.5px solid #c4b5fd}
+.node-admin-action{background:#ede9fe;color:#6d28d9;border:1.5px solid #a78bfa}
+
+/* Alert/notification */
+.node-alert{background:#fff7ed;color:#9a3412;border:1.5px solid #fdba74}
+
+/* System/engine */
+.node-system{background:#f1f5f9;color:#334155;border:1.5px solid #94a3b8}
+
+/* Destructive / error */
+.node-error{background:#fef2f2;color:#991b1b;border:1.5px solid #fca5a5}
+
+/* Arrows */
+.flow-arrow{
+  display:inline-flex;align-items:center;justify-content:center;
+  color:#94a3b8;font-size:18px;font-weight:400;
+  padding:0 6px;flex-shrink:0;font-family:system-ui;
+}
+.flow-arrow.down{
+  display:flex;justify-content:center;
+  padding:4px 0;color:#94a3b8;font-size:16px;
+  width:100%;
+}
+
+/* Branch containers */
+.flow-branch{
+  display:flex;flex-direction:column;gap:10px;
+  margin:12px 0 12px 38px;padding-left:20px;
+  border-left:2px solid #e5e7eb;
+}
+.flow-branch-row{display:flex;align-items:center;gap:0;flex-wrap:wrap}
+.branch-label{
+  font-size:10px;font-weight:700;color:#6b7280;
+  text-transform:uppercase;letter-spacing:.06em;
+  min-width:60px;margin-right:8px;flex-shrink:0;
+}
+
+/* Vertical flow */
+.flow-vertical{display:flex;flex-direction:column;align-items:flex-start;gap:0}
+.flow-vertical .flow-row{margin-bottom:0}
+
+/* OR separator */
+.flow-or{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:#f3f4f6;color:#6b7280;font-size:9px;font-weight:800;
+  width:28px;height:28px;border-radius:50%;flex-shrink:0;
+  letter-spacing:.04em;
+}
+
+/* Sub-label under arrow */
+.arrow-label{font-size:9px;color:#9ca3af;font-weight:600;margin-top:1px;text-align:center}
+
+/* Phase indicator */
+.phase-tag{
+  display:inline-block;font-size:9px;font-weight:700;
+  padding:2px 7px;border-radius:3px;margin-left:8px;
+}
+.phase-1{background:#f0fdfa;color:#0d9488}
+.phase-2{background:#eff6ff;color:#1d4ed8}
+.phase-3{background:#fff7ed;color:#c2410c}
+.phase-4{background:#f5f3ff;color:#7c3aed}
+
+/* Responsive */
+@media(max-width:768px){
+  .page{padding:24px 16px}
+  .flow-diagram{padding:16px 12px}
+  .flow-node{font-size:10px;padding:7px 10px}
+  .stats-row{gap:8px}
+  .stat{min-width:100px;padding:12px 14px}
+  .stat-val{font-size:18px}
+  h1{font-size:26px}
+}
+
+/* Compact flow layout helpers */
+.flow-segment{display:flex;align-items:center;flex-wrap:nowrap;gap:0}
+.flow-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:6px 0}
+.flow-group{display:flex;align-items:center;gap:0;flex-wrap:wrap}
+.gap-row{height:8px;width:100%}
+
+/* Tier indicator */
+.tier-label{
+  font-size:9px;font-weight:800;letter-spacing:.08em;
+  text-transform:uppercase;padding:2px 6px;border-radius:3px;
+  display:inline-block;margin-bottom:3px;
+}
+.tier-1{background:#dcfce7;color:#166534}
+.tier-2{background:#dbeafe;color:#1e40af}
+.tier-3{background:#ede9fe;color:#6d28d9}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ============================================================ -->
+  <!-- HEADER                                                        -->
+  <!-- ============================================================ -->
+  <div class="header">
+    <div class="header-meta">
+      <span class="badge badge-teal">Vesta Platform</span>
+      <span class="badge badge-blue">v1 User Journeys</span>
+      <span class="badge badge-green">Bangladesh-First</span>
+      <span class="badge badge-purple">Multi-Profile</span>
+    </div>
+    <h1>Vesta &mdash; User Journey Flow Diagrams</h1>
+    <p class="subtitle">All major feature flows mapped for the v1 implementation. Each diagram represents the end-to-end user journey for a distinct product area.</p>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val">17</div><div class="stat-label">User flows</div></div>
+      <div class="stat"><div class="stat-val">4</div><div class="stat-label">Phases</div></div>
+      <div class="stat"><div class="stat-val">Multi</div><div class="stat-label">Profile architecture</div></div>
+      <div class="stat"><div class="stat-val">EN/BN</div><div class="stat-label">Bilingual</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 1: ONBOARDING                                            -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">1</div>Onboarding Flow
+      <span class="phase-tag phase-1">Phase 1</span>
+    </div>
+    <div class="section-desc">First-time user experience from app launch to first prediction. Builds trust before collecting data, supports bilingual selection from the first screen.</div>
+    <div class="section-reqs">
+      <span class="req-badge">ONBD-01</span>
+      <span class="req-badge">ONBD-02</span>
+      <span class="req-badge">ONBD-03</span>
+      <span class="req-badge">ONBD-04</span>
+      <span class="req-badge">ONBD-05</span>
+      <span class="req-badge">ONBD-06</span>
+      <span class="req-badge">I18N-01</span>
+      <span class="req-badge">I18N-04</span>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-wrap">
+        <span class="flow-node node-start">App Launch</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step wrap">Language Selection<br><small style="font-weight:400;color:#6b7280">EN / BN</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step wrap">Trust Screens<br><small style="font-weight:400;color:#6b7280">"Your data is protected"<br>"Bilingual support"</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-decision wrap">Goal Selection<br><small style="font-weight:400">Track period /<br>Try to conceive</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-data wrap">Personal Data<br><small style="font-weight:400;color:#6b7280">DOB, height, weight</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-data wrap">Cycle History<br><small style="font-weight:400;color:#6b7280">Last period date,<br>cycle length,<br>period duration</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action wrap">Account Signup<br><small style="font-weight:400;color:#6b7280">Email + password</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-system wrap">First Prediction<br>Generated</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-end">Dashboard</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 2: MULTI-PROFILE MANAGEMENT                              -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">2</div>Multi-Profile Management Flow
+      <span class="phase-tag phase-1">Phase 1</span>
+    </div>
+    <div class="section-desc">The core differentiator: one account manages multiple women's health profiles. Family-oriented model enabling a husband, parent, or sibling to assist in health management.</div>
+    <div class="section-reqs">
+      <span class="req-badge">AUTH-05</span>
+      <span class="req-badge">AUTH-06</span>
+      <span class="req-badge">AUTH-07</span>
+      <span class="req-badge">AUTH-08</span>
+      <span class="req-badge">PRIV-05</span>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-wrap">
+        <span class="flow-node node-start">Dashboard</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step">Profile Avatar (top-left)</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">Profile Switcher</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Option A</span>
+          <span class="flow-node node-step">Select existing profile</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-system wrap">Dashboard reloads<br>with profile data</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Option B</span>
+          <span class="flow-node node-action">Create new profile</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data wrap">Name, relation type<br><small style="font-weight:400;color:#6b7280">self / wife / sister /<br>mother / daughter /<br>girlfriend</small></span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data wrap">DOB, height,<br>weight, cycle data</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-decision wrap">Consent<br>acknowledgment</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-system">Profile created</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-end">Dashboard</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Option C</span>
+          <span class="flow-node node-step">Edit profile</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-action">Update fields</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-end">Save</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Option D</span>
+          <span class="flow-node node-error">Delete profile</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-decision">Confirm?</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-error wrap">Cascade delete<br>all profile data</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 3: PERIOD TRACKING & DASHBOARD                           -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">3</div>Period Tracking &amp; Dashboard Flow
+      <span class="phase-tag phase-2">Phase 2</span>
+    </div>
+    <div class="section-desc">The core daily habit loop. Users log periods, view cycle status, and see predictions recalculate in real time. The dashboard is the most-visited screen.</div>
+    <div class="section-reqs">
+      <span class="req-badge">CYCL-01</span>
+      <span class="req-badge">CYCL-02</span>
+      <span class="req-badge">CYCL-03</span>
+      <span class="req-badge">CYCL-04</span>
+      <span class="req-badge">CYCL-05</span>
+      <span class="req-badge">CYCL-06</span>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-wrap">
+        <span class="flow-node node-start">Open App</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step">Dashboard</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action wrap">Cycle Day Hero<br><small style="font-weight:400;color:#6b7280">Large number, phase label,<br>days to next period</small></span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Active</span>
+          <span class="flow-node node-decision wrap">Period expected<br>or active?</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-action">Tap "Log Period"</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data wrap">Period Start modal<br><small style="font-weight:400;color:#6b7280">Date selector, flow intensity:<br>light / medium / heavy</small></span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-action">Save</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-system wrap">Prediction<br>recalculates</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-end wrap">Dashboard<br>updates</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Ending</span>
+          <span class="flow-node node-decision wrap">Period<br>ending?</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-action">Tap "End Period"</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data">End date</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-action">Save</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-system wrap">Cycle length updated,<br>new prediction</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Edit</span>
+          <span class="flow-node node-step">Edit past entry</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-step">Calendar</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-action">Tap date</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data">Edit modal</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-action">Save</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-system wrap">Predictions<br>recalculate</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 4: CALENDAR                                              -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">4</div>Calendar Flow
+      <span class="phase-tag phase-2">Phase 2</span>
+    </div>
+    <div class="section-desc">Full monthly calendar with color-coded cycle phases. Distinguishes logged data (solid) from predicted future data (dashed) for transparency.</div>
+    <div class="section-reqs">
+      <span class="req-badge">CALR-01</span>
+      <span class="req-badge">CALR-02</span>
+      <span class="req-badge">CALR-03</span>
+      <span class="req-badge">CALR-04</span>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-wrap">
+        <span class="flow-node node-start">Bottom Nav</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">Calendar Tab</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step wrap">Monthly Grid View<br><small style="font-weight:400;color:#6b7280">Color-coded:<br><span style="color:#e11d48">pink</span>=period, <span style="color:#0d9488">teal</span>=fertile,<br><span style="color:#f59e0b">accent</span>=ovulation, <span style="color:#9ca3af">muted</span>=low</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step wrap">Navigate months<br><small style="font-weight:400;color:#6b7280">prev / next</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">Tap any date</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Has data</span>
+          <span class="flow-node node-data wrap">View logged symptoms<br>+ period data</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-action">Edit option</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">No data</span>
+          <span class="flow-node node-step">"Nothing logged"</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-action">Option to log symptoms</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Future</span>
+          <span class="flow-node node-system wrap">Predicted future periods<br><small style="font-weight:400;color:#6b7280">Dashed style vs solid<br>for logged data</small></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 5: SYMPTOM LOGGING                                       -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">5</div>Symptom Logging Flow
+      <span class="phase-tag phase-2">Phase 2</span>
+    </div>
+    <div class="section-desc">Icon-based symptom logging accessible from any screen via FAB button. Designed for 2-3 tap completion. Data feeds both the prediction engine and content personalization.</div>
+    <div class="section-reqs">
+      <span class="req-badge">SYMP-01</span>
+      <span class="req-badge">SYMP-02</span>
+      <span class="req-badge">SYMP-03</span>
+      <span class="req-badge">SYMP-04</span>
+      <span class="req-badge">SYMP-05</span>
+      <span class="req-badge">SYMP-06</span>
+      <span class="req-badge">SYMP-07</span>
+      <span class="req-badge">SYMP-08</span>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-wrap">
+        <span class="flow-node node-start">Any Screen</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">Tap "+" FAB button</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step wrap">Symptom Logger<br>Bottom Sheet</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-data wrap">Category Tabs<br><small style="font-weight:400;color:#6b7280">Physical / Mood /<br>Discharge / Lifestyle</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action wrap">Icon-based tap selection<br><small style="font-weight:400;color:#6b7280">Toggle active / inactive</small></span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Customize</span>
+          <span class="flow-node node-step">Settings</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-action wrap">Toggle categories<br>on / off</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Existing</span>
+          <span class="flow-node node-decision wrap">Already logged<br>today?</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-action">Edit existing log</span>
+        </div>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px">
+        <span class="flow-arrow" style="visibility:hidden">&rarr;</span>
+        <span class="flow-node node-action">Save</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step wrap">Toast confirmation</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-end wrap">Data feeds prediction engine<br>+ content personalization</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 6: PREDICTION ENGINE                                     -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">6</div>Prediction Engine Flow (3 Tiers)
+      <span class="phase-tag phase-2">Phase 2</span>
+    </div>
+    <div class="section-desc">Three-tier prediction system that auto-escalates as data accumulates. Starts with simple averages, advances to ARIMA time-series, and eventually LSTM neural networks.</div>
+    <div class="section-reqs">
+      <span class="req-badge">PRED-01</span>
+      <span class="req-badge">PRED-02</span>
+      <span class="req-badge">PRED-03</span>
+      <span class="req-badge">PRED-04</span>
+      <span class="req-badge">PRED-05</span>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-wrap">
+        <span class="flow-node node-start wrap">User logs period /<br>symptom data</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-system">Check data points</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label" style="min-width:80px"><span class="tier-label tier-1">Tier 1</span></span>
+          <span class="flow-node node-decision wrap">&lt; 3 cycles</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-step wrap" style="background:#dcfce7;border-color:#86efac;color:#166534">Simple Average<br><small style="font-weight:400;color:#15803d">Uses onboarding cycle length</small></span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label" style="min-width:80px"><span class="tier-label tier-1">Tier 1+</span></span>
+          <span class="flow-node node-decision wrap">3 &ndash; 5 cycles</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-step wrap" style="background:#dcfce7;border-color:#86efac;color:#166534">Rolling Average<br><small style="font-weight:400;color:#15803d">Last 3-6 cycles</small></span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label" style="min-width:80px"><span class="tier-label tier-2">Tier 2</span></span>
+          <span class="flow-node node-decision wrap">6 &ndash; 11 cycles</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-step wrap" style="background:#dbeafe;border-color:#93c5fd;color:#1e40af">ARIMA(1,1,0)<br><small style="font-weight:400;color:#2563eb">Time-series model</small></span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label" style="min-width:80px"><span class="tier-label tier-3">Tier 3</span></span>
+          <span class="flow-node node-decision wrap">12+ cycles</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-step wrap" style="background:#ede9fe;border-color:#c4b5fd;color:#5b21b6">LSTM Neural Net<br><small style="font-weight:400;color:#7c3aed">Stub &rarr; falls back to Tier 2</small></span>
+        </div>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px">
+        <span class="flow-arrow" style="visibility:hidden">&rarr;</span>
+        <span class="flow-node node-system wrap">Output:<br><small style="font-weight:400;color:#6b7280">next_period_start, fertile_window,<br>ovulation_date, confidence %</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-data wrap">Cache in<br>predictions table</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-end wrap">Dashboard +<br>Calendar update</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 7: NOTIFICATION                                          -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">7</div>Notification Flow
+      <span class="phase-tag phase-3">Phase 3</span>
+    </div>
+    <div class="section-desc">Per-profile notification delivery via BullMQ cron jobs. Routes to email (Resend) or SMS (SSL Wireless) with bilingual templates and Bangladesh timezone awareness.</div>
+    <div class="section-reqs">
+      <span class="req-badge">NOTF-01</span>
+      <span class="req-badge">NOTF-02</span>
+      <span class="req-badge">NOTF-03</span>
+      <span class="req-badge">NOTF-04</span>
+      <span class="req-badge">NOTF-05</span>
+      <span class="req-badge">NOTF-06</span>
+      <span class="req-badge">NOTF-07</span>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-wrap">
+        <span class="flow-node node-system wrap">BullMQ Cron Job<br><small style="font-weight:400;color:#6b7280">Daily, Asia/Dhaka timezone</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step">For each profile</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-decision wrap">Check notification<br>preferences</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-system wrap">Check cycle<br>phase</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">NOTF-01</span>
+          <span class="flow-node node-alert wrap">Period predicted<br>tomorrow?</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-alert">Period start alert</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">NOTF-02</span>
+          <span class="flow-node node-alert wrap">Period started,<br>not logged?</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-alert">Logging reminder</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">NOTF-03</span>
+          <span class="flow-node node-alert wrap">Fertile window<br>starting?</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-alert">Fertile alert</span>
+        </div>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px">
+        <span class="flow-arrow" style="visibility:hidden">&rarr;</span>
+        <span class="flow-node node-decision wrap">Route<br>per-profile</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Email</span>
+          <span class="flow-node node-decision wrap">Email<br>enabled?</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-engage">Resend API</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-engage wrap">React Email template<br><small style="font-weight:400;color:#6b7280">Bilingual</small></span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">SMS</span>
+          <span class="flow-node node-decision wrap">SMS<br>enabled?</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-engage">SSL Wireless API</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-engage wrap">Bengali text<br><small style="font-weight:400;color:#6b7280">BTRC required,<br>UTF-16 encoding</small></span>
+        </div>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px">
+        <span class="flow-arrow" style="visibility:hidden">&rarr;</span>
+        <span class="flow-node node-system">Delivery tracking</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-end wrap">Admin engagement<br>reports</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 8: CONTENT PLATFORM                                      -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">8</div>Content Platform Flow
+      <span class="phase-tag phase-3">Phase 3</span>
+    </div>
+    <div class="section-desc">Bilingual health content surfaced contextually by cycle phase. Dashboard shows a phase-specific "Today's Insight" card; the Content tab offers full browsing and filtering.</div>
+    <div class="section-reqs">
+      <span class="req-badge">CONT-01</span>
+      <span class="req-badge">CONT-02</span>
+      <span class="req-badge">CONT-03</span>
+      <span class="req-badge">CONT-04</span>
+      <span class="req-badge">CONT-05</span>
+      <span class="req-badge">I18N-01</span>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-wrap">
+        <span class="flow-node node-start">Dashboard</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-engage wrap">"Today's Insight" card<br><small style="font-weight:400;color:#6b7280">Phase-specific<br>recommendation</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">Tap</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-engage wrap">Article detail<br><small style="font-weight:400;color:#6b7280">Bilingual: EN/BN toggle</small></span>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-or">OR</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-start">Bottom Nav</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">Content Tab</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-engage wrap">Browse by category<br><small style="font-weight:400;color:#6b7280">Menstrual Health /<br>Fertility / Wellness</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step wrap">Filter by cycle phase<br><small style="font-weight:400;color:#6b7280">(optional)</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-engage">Article list</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">Tap article</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-engage wrap">Full article view</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step">Related articles</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-end">Back to browse</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 9: PARTNER SHARING                                       -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">9</div>Partner Sharing Flow
+      <span class="phase-tag phase-3">Phase 3</span>
+    </div>
+    <div class="section-desc">Privacy-first sharing via nanoid code. Partner receives read-only access to calendar and phase insights but cannot see symptoms or edit data. Instant revocation supported.</div>
+    <div class="section-reqs">
+      <span class="req-badge">PRTN-01</span>
+      <span class="req-badge">PRTN-02</span>
+      <span class="req-badge">PRTN-03</span>
+      <span class="req-badge">PRTN-04</span>
+      <span class="req-badge">PRTN-05</span>
+      <span class="req-badge">PRTN-06</span>
+    </div>
+
+    <div class="flow-diagram">
+      <!-- Primary user generates code -->
+      <div class="flow-wrap">
+        <span class="flow-node node-start">Profile Settings</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step">Partner Sharing</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action wrap">Generate Share Code<br><small style="font-weight:400;color:#6b7280">nanoid 8-char</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step wrap">Share with partner<br><small style="font-weight:400;color:#6b7280">Copy / SMS / show</small></span>
+      </div>
+
+      <!-- Partner enters code -->
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-start" style="background:#3b82f6">Partner</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">Enter code in account</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Valid</span>
+          <span class="flow-node node-step wrap">Partner gets<br>read-only access</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-engage wrap">Cycle calendar +<br>phase insights</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-engage wrap">Fertile window<br><small style="font-weight:400;color:#6b7280">if TTC mode</small></span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-engage">Daily tips</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Invalid</span>
+          <span class="flow-node node-error wrap">Code invalid /<br>expired &rarr; Error</span>
+        </div>
+      </div>
+
+      <!-- Partner view restrictions -->
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-system wrap" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b">Partner restrictions:<br><small style="font-weight:400">Cannot see symptoms,<br>cannot edit data,<br>read-only calendar</small></span>
+        <span class="flow-arrow" style="padding:0 16px">&bull;&bull;&bull;</span>
+        <span class="flow-node node-action wrap">Primary user:<br>Revoke access?</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-error wrap">Instant revocation<br><small style="font-weight:400;color:#991b1b">Partner's next request<br>returns 403</small></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 10: ADMIN USER MANAGEMENT                                -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">10</div>Admin User Management Flow
+      <span class="phase-tag phase-4">Phase 4</span>
+    </div>
+    <div class="section-desc">Role-based admin panel for operational management. Super Admins have full control; Content Admins manage articles only. KPI dashboards and user lifecycle management.</div>
+    <div class="section-reqs">
+      <span class="req-badge">ADMN-01</span>
+      <span class="req-badge">ADMN-02</span>
+      <span class="req-badge">ADMN-03</span>
+      <span class="req-badge">ADMN-09</span>
+      <span class="req-badge">ADMN-11</span>
+      <span class="req-badge">ADMN-13</span>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-wrap">
+        <span class="flow-node node-start" style="background:#7c3aed">Admin Login</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin wrap">RBAC Check<br><small style="font-weight:400;color:#6b7280">Super Admin /<br>Content Admin</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin">Admin Dashboard</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin wrap">KPI Cards<br><small style="font-weight:400;color:#6b7280">Total users, active users,<br>profiles, tracking activity</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin">Trend Charts</span>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-admin-action">User Management</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin wrap">User List<br><small style="font-weight:400;color:#6b7280">Paginated, searchable</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin-action">Select user</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">View</span>
+          <span class="flow-node node-admin wrap">View details<br><small style="font-weight:400;color:#6b7280">Account info +<br>profile count + activity</small></span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Suspend</span>
+          <span class="flow-node node-admin-action">Suspend</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-decision">Confirm</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-error">User locked out</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Reactivate</span>
+          <span class="flow-node node-admin-action">Reactivate</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-decision">Confirm</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Access restored</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Delete</span>
+          <span class="flow-node node-error">Delete</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-decision">Confirm</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-error wrap">Cascade delete<br>all data</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Reset PW</span>
+          <span class="flow-node node-admin-action">Reset password</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-engage">Send email</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 11: ADMIN CONTENT CMS                                    -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">11</div>Admin Content CMS Flow
+      <span class="phase-tag phase-4">Phase 4</span>
+    </div>
+    <div class="section-desc">Bilingual content management with Tiptap rich-text editor. Articles are tagged by category and cycle phase to power the user-facing content recommendation engine.</div>
+    <div class="section-reqs">
+      <span class="req-badge">ADMN-07</span>
+      <span class="req-badge">CONT-01</span>
+      <span class="req-badge">CONT-02</span>
+      <span class="req-badge">CONT-03</span>
+      <span class="req-badge">CONT-05</span>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-wrap">
+        <span class="flow-node node-start" style="background:#7c3aed">Admin Dashboard</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin">Content Management</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin wrap">Article List<br><small style="font-weight:400;color:#6b7280">Title, category,<br>language, status</small></span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Create</span>
+          <span class="flow-node node-admin-action">Create new</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-admin wrap">Tiptap editor</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data wrap">Title (EN + BN)<br>Body (EN + BN)</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data wrap">Category +<br>Cycle phase tags</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-decision wrap">Publish /<br>Draft</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Edit</span>
+          <span class="flow-node node-admin-action">Edit existing</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-admin">Same editor</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-admin-action">Update</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Save</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Delete</span>
+          <span class="flow-node node-error">Delete</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-decision">Confirm</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-error">Remove</span>
+        </div>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px">
+        <span class="flow-arrow" style="visibility:hidden">&rarr;</span>
+        <span class="flow-node node-end wrap">Published articles appear<br>on user Content tab</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 12: LANGUAGE SWITCHING                                   -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">12</div>Language Switching Flow
+      <span class="phase-tag phase-1">Phase 1</span>
+    </div>
+    <div class="section-desc">Bilingual support baked into every UI component from day one. Bangladesh IP detection defaults to Bengali. Content articles have an independent bilingual toggle separate from UI language.</div>
+    <div class="section-reqs">
+      <span class="req-badge">I18N-01</span>
+      <span class="req-badge">I18N-02</span>
+      <span class="req-badge">I18N-03</span>
+      <span class="req-badge">I18N-04</span>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-wrap">
+        <span class="flow-node node-start">Any Screen</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step">Settings</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">Language</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">English</span>
+          <span class="flow-node node-step wrap">All UI strings<br>switch to EN</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data wrap">Dates: "March 27, 2026"<br>Numbers: "28 days"</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Bengali</span>
+          <span class="flow-node node-step wrap">All strings<br>switch to BN</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data wrap">Dates format Bengali<br>Numbers optionally<br>Bengali digits</span>
+        </div>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px">
+        <span class="flow-arrow" style="visibility:hidden">&rarr;</span>
+        <span class="flow-node node-action wrap">Preference saved<br>to user account</span>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-system wrap">Browser detection:<br><small style="font-weight:400;color:#6b7280">Bangladesh IP &rarr;<br>default Bengali</small></span>
+        <span class="flow-arrow" style="padding:0 16px">&bull;&bull;&bull;</span>
+        <span class="flow-node node-engage wrap">Content articles:<br><small style="font-weight:400;color:#6b7280">Bilingual toggle independent<br>of UI language</small></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 13: FEATURE GATING                                       -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">13</div>Feature Gating Flow
+      <span class="phase-tag phase-1">Phase 1</span>
+      <span class="phase-tag phase-4">Phase 4</span>
+    </div>
+    <div class="section-desc">How the system controls feature access based on subscription tier, and how admins manage feature gates in real-time.</div>
+    <div class="section-reqs">
+      <span class="req-badge">GATE-01</span>
+      <span class="req-badge">GATE-02</span>
+      <span class="req-badge">GATE-03</span>
+      <span class="req-badge">GATE-04</span>
+      <span class="req-badge">GATE-05</span>
+    </div>
+
+    <div class="flow-diagram">
+      <!-- User-side gating -->
+      <div class="flow-wrap">
+        <span class="flow-node node-start">User taps feature</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-system wrap">Feature Gate<br>Middleware checks<br>subscription tier</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Pro user</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Grant access</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-end">Feature loads normally</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Free user</span>
+          <span class="flow-node node-data wrap">Check feature_gates<br>table</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-decision wrap">Feature marked<br>free?</span>
+        </div>
+      </div>
+
+      <div class="flow-branch" style="margin-left:76px">
+        <div class="flow-branch-row">
+          <span class="branch-label">Yes</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Grant access (free feature)</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">No</span>
+          <span class="flow-node node-alert wrap">Show "Pro" badge +<br>upgrade prompt</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-decision wrap">User taps<br>upgrade?</span>
+        </div>
+      </div>
+
+      <div class="flow-branch" style="margin-left:114px">
+        <div class="flow-branch-row">
+          <span class="branch-label">Yes</span>
+          <span class="flow-node node-action">Route to BDApps subscription flow</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">No</span>
+          <span class="flow-node node-step">Return to previous screen</span>
+        </div>
+      </div>
+
+      <!-- Admin-side gating -->
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-start" style="background:#7c3aed">Admin Portal</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin">Feature Gating Management</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin wrap">Feature list with<br>free/pro toggles</span>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px;margin-left:38px">
+        <span class="flow-node node-admin-action">Admin toggles feature</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-data">Database updated</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Real-time effect (no restart)</span>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px">
+        <span class="flow-arrow" style="visibility:hidden">&rarr;</span>
+        <span class="flow-node node-end wrap">All users immediately see<br>updated access</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 14: SESSION MANAGEMENT                                   -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">14</div>Session Management Flow
+      <span class="phase-tag phase-1">Phase 1</span>
+      <span class="phase-tag phase-4">Phase 4</span>
+    </div>
+    <div class="section-desc">How sessions are tracked in Redis and how admins can view and terminate sessions remotely.</div>
+    <div class="section-reqs">
+      <span class="req-badge">SESS-01</span>
+      <span class="req-badge">SESS-02</span>
+      <span class="req-badge">SESS-03</span>
+      <span class="req-badge">SESS-04</span>
+    </div>
+
+    <div class="flow-diagram">
+      <!-- User session creation -->
+      <div class="flow-wrap">
+        <span class="flow-node node-start">User logs in</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">JWT issued</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-data wrap">Session record created<br>in Redis<br><small style="font-weight:400;color:#6b7280">user_id, device, IP,<br>login_time, last_activity</small></span>
+      </div>
+
+      <!-- Request lifecycle -->
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-system">Every API request</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action wrap">Update last_activity<br>timestamp</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-system wrap">JWT blacklist checked</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Blacklisted</span>
+          <span class="flow-node node-error">Return 401</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-error">Force re-login</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Valid</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Continue to route handler</span>
+        </div>
+      </div>
+
+      <!-- Admin session management -->
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-start" style="background:#7c3aed">Admin Portal</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin">User Management</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin-action">Select user</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin">View Active Sessions</span>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px;margin-left:38px">
+        <span class="flow-node node-admin wrap">Session list<br><small style="font-weight:400;color:#6b7280">device, IP, last activity,<br>login time</small></span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Single</span>
+          <span class="flow-node node-admin-action wrap">Terminate single<br>session</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data">Add JWT to blacklist</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-error wrap">User's next request<br>returns 401</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">All</span>
+          <span class="flow-node node-admin-action wrap">Terminate all<br>sessions</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data">Blacklist all user JWTs</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-error">All devices logged out</span>
+        </div>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px">
+        <span class="flow-arrow" style="visibility:hidden">&rarr;</span>
+        <span class="flow-node node-system wrap">Session auto-cleanup:<br>Redis TTL matches JWT expiry</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 15: BDAPPS SUBSCRIPTION                                  -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">15</div>BDApps Subscription Flow
+      <span class="phase-tag phase-3">Phase 3</span>
+      <span class="phase-tag phase-4">Phase 4</span>
+    </div>
+    <div class="section-desc">Pro subscription lifecycle via BDApps carrier billing &mdash; from initial charge through grace period handling and admin override.</div>
+    <div class="section-reqs">
+      <span class="req-badge">SUBS-01</span>
+      <span class="req-badge">SUBS-02</span>
+      <span class="req-badge">SUBS-03</span>
+      <span class="req-badge">SUBS-04</span>
+      <span class="req-badge">SUBS-05</span>
+      <span class="req-badge">SUBS-06</span>
+      <span class="req-badge">SUBS-07</span>
+      <span class="req-badge">SUBS-08</span>
+    </div>
+
+    <div class="flow-diagram">
+      <!-- Initial subscription -->
+      <div class="flow-wrap">
+        <span class="flow-node node-start">User taps "Upgrade to Pro"</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">BDApps Charging API called</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Success</span>
+          <span class="flow-node node-data">subscription_status = active</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Pro access granted</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-end wrap">Dashboard shows<br>"Pro" badge</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Failed</span>
+          <span class="flow-node node-error wrap">Show error:<br>"Charging failed.<br>Try again or contact support."</span>
+        </div>
+      </div>
+
+      <!-- Daily cron job -->
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-system wrap">Daily Cron Job<br><small style="font-weight:400;color:#6b7280">BullMQ</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step wrap">For each active<br>subscriber</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action wrap">Query BDApps API<br>for charging status</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Charged</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Reset grace counter</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data">subscription_status = active</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Failed</span>
+          <span class="flow-node node-alert wrap">Increment<br>failed_days counter</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-decision wrap">failed_days &gt;<br>grace_period?</span>
+        </div>
+      </div>
+
+      <div class="flow-branch" style="margin-left:76px">
+        <div class="flow-branch-row">
+          <span class="branch-label">Yes</span>
+          <span class="flow-node node-error">subscription_status = expired</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-error wrap">Pro access revoked<br>User downgraded to free</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">No</span>
+          <span class="flow-node node-alert">subscription_status = grace_period</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-alert wrap">Show warning banner<br><small style="font-weight:400;color:#9a3412">"Please renew your<br>subscription soon"<br>(no exact expiry shown)</small></span>
+        </div>
+      </div>
+
+      <!-- Re-activation -->
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-decision wrap">Previously expired,<br>charge now successful?</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Yes</span>
+          <span class="flow-node node-data">subscription_status = active</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Pro access auto-restored</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-end">Warning banner removed</span>
+        </div>
+      </div>
+
+      <!-- Admin subscription management -->
+      <div class="flow-wrap" style="margin-top:16px;padding-top:16px;border-top:1px dashed #e5e7eb">
+        <span class="flow-node node-start" style="background:#7c3aed">Admin Portal</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-admin">Subscription Management</span>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px;margin-left:38px">
+        <span class="flow-node node-admin wrap">Dashboard:<br><small style="font-weight:400;color:#6b7280">active / grace / expired /<br>never counts</small></span>
+        <span class="flow-arrow" style="padding:0 16px">&bull;&bull;&bull;</span>
+        <span class="flow-node node-admin wrap">Per-user view:<br><small style="font-weight:400;color:#6b7280">subscription history<br>(charge date, amount, status)</small></span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Grant</span>
+          <span class="flow-node node-admin-action wrap">Manual override:<br>Grant Pro</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data">Enter reason</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Pro access granted (overrides BDApps)</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Revoke</span>
+          <span class="flow-node node-admin-action wrap">Manual override:<br>Revoke Pro</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data">Enter reason</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-error">Pro access revoked (overrides BDApps)</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Config</span>
+          <span class="flow-node node-admin-action wrap">Grace period config</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data wrap">Set N days<br><small style="font-weight:400;color:#6b7280">default: 3</small></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 16: EMAIL FALLBACK LOGIN & 24h TRIAL (v1.2)             -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">16</div>Email Fallback Login &amp; 24h Trial
+      <span class="phase-tag phase-1">Phase 1</span>
+      <span style="font-size:9px;font-weight:700;color:#16a34a;background:#f0fdf4;padding:2px 8px;border-radius:10px;margin-left:4px">NEW v1.2</span>
+    </div>
+    <div class="section-desc">When BDApps OTP is unavailable or fails after retries, users can authenticate via email magic-link. Email-authenticated users receive a 24-hour limited-access trial window to explore basic features and complete profile data.</div>
+    <div class="section-reqs">
+      <span class="req-badge">AUTH-09</span>
+      <span class="req-badge">AUTH-10</span>
+      <span class="req-badge">GATE-06</span>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-wrap">
+        <span class="flow-node node-start">Login Screen</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">Enter phone number</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-system">BDApps OTP request</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Success</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Normal OTP flow</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-end">Full access (no trial limit)</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">Failed</span>
+          <span class="flow-node node-error wrap">OTP unavailable /<br>3 retries exhausted</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-alert wrap">Show email<br>fallback option</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-action">User enters email</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-system wrap">Magic-link sent<br>via Resend</span>
+        </div>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px">
+        <span class="flow-arrow" style="visibility:hidden">&rarr;</span>
+        <span class="flow-node node-action">User clicks magic-link</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-data wrap">Account created<br><small style="font-weight:400;color:#6b7280">auth_method = email<br>email_trial_expires_at = now+24h</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-alert wrap">24-hour trial<br>window starts</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Within 24h</span>
+          <span class="flow-node node-step" style="background:#dcfce7;border-color:#86efac;color:#166534">Basic features accessible</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data wrap">Platform collects:<br>phone number,<br>profile details</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-engage wrap">Explore features,<br>log data</span>
+        </div>
+
+        <div class="flow-branch-row">
+          <span class="branch-label">After 24h</span>
+          <span class="flow-node node-error wrap">Trial expired<br>Premium features locked</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-alert wrap">Subscription required<br>(BDApps CAAS)</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-action">Upgrade prompt</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FLOW 17: PROFILE COMPLETION POPUP (v1.2)                     -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">17</div>Profile Completion Flow (Post-OTP)
+      <span class="phase-tag phase-1">Phase 1</span>
+      <span style="font-size:9px;font-weight:700;color:#16a34a;background:#f0fdf4;padding:2px 8px;border-radius:10px;margin-left:4px">NEW v1.2</span>
+    </div>
+    <div class="section-desc">After successful OTP verification, a profile-completion popup appears approximately 1 minute after login. This step is necessary because OTP verification alone does not reliably store the user&rsquo;s phone number in the database.</div>
+    <div class="section-reqs">
+      <span class="req-badge">AUTH-11</span>
+      <span class="req-badge">ONBD-01</span>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-wrap">
+        <span class="flow-node node-start">OTP Verified</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-step wrap">User lands on<br>Dashboard</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-system wrap">~1 minute delay<br><small style="font-weight:400;color:#6b7280">timer / idle trigger</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action wrap">Profile Completion<br>Popup appears</span>
+      </div>
+
+      <div class="flow-wrap" style="margin-top:12px">
+        <span class="flow-arrow" style="visibility:hidden">&rarr;</span>
+        <span class="flow-node node-data wrap">Collect:<br><small style="font-weight:400;color:#6b7280">Full name<br>Verified phone number<br>Required profile details</small></span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-action">User fills &amp; submits</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-system wrap">Phone number stored<br>Profile status = complete</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-node node-end wrap">Popup dismissed<br>Normal app usage</span>
+      </div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-row">
+          <span class="branch-label">Dismiss</span>
+          <span class="flow-node node-alert wrap">User dismisses<br>popup</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-data wrap">Profile status =<br>incomplete</span>
+          <span class="flow-arrow">&rarr;</span>
+          <span class="flow-node node-alert wrap">Re-prompted on<br>next login</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FOOTER                                                        -->
+  <!-- ============================================================ -->
+  <div style="margin-top:64px;padding-top:24px;border-top:1.5px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div style="font-size:12px;color:#9ca3af">
+      <span style="font-weight:700;color:#0d9488">Vesta</span> &mdash; 17 User Journey Flow Diagrams &mdash; v1.2 Implementation Reference
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="badge badge-teal">Phase 1: Auth + Onboarding + i18n</span>
+      <span class="badge badge-blue">Phase 2: Core Tracking</span>
+      <span class="badge badge-orange">Phase 3: Engagement</span>
+      <span class="badge badge-purple">Phase 4: Admin</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
