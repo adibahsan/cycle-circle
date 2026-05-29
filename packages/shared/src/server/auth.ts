@@ -127,10 +127,22 @@ export interface AuthUser {
   profileCompleted: boolean
   emailTrialExpiresAt: Date | null
   role: string
+  suspendedAt: Date | null
+  deletedAt: Date | null
 }
 
 export async function getAuthUser(userId: string): Promise<AuthUser> {
   const user = await prisma.user.findUnique({ where: { id: userId } })
   if (!user) throw new ApiError(401, 'User not found', 'USER_NOT_FOUND')
+  if (user.suspendedAt) throw new ApiError(403, 'Account suspended', 'ACCOUNT_SUSPENDED')
+  if (user.deletedAt) throw new ApiError(401, 'User not found', 'USER_NOT_FOUND')
   return user as AuthUser
+}
+
+export async function requireAdminAuth(): Promise<JwtPayload> {
+  const payload = await requireAuth()
+  if (payload.role !== 'ADMIN') {
+    throw new ApiError(403, 'Admin access required', 'FORBIDDEN')
+  }
+  return payload
 }

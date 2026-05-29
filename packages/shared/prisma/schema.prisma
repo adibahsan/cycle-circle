@@ -82,6 +82,27 @@ enum JobStatus {
   FAILED
 }
 
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CyclePhase {
+  MENSTRUAL
+  FOLLICULAR
+  OVULATION
+  LUTEAL
+}
+
+enum SmsBroadcastStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  FAILED
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
@@ -95,14 +116,25 @@ model User {
   emailTrialExpiresAt DateTime?
   profileCompleted    Boolean            @default(false)
   role                Role               @default(USER)
+  suspendedAt         DateTime?
+  suspendedBy         String?
+  deletedAt           DateTime?
+  lastLoginAt         DateTime?
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
-  profiles      Profile[]
-  subscriptions Subscription[]
-  otpChallenges OtpChallenge[]
-  magicLinks    MagicLink[]
-  feedback      Feedback[]
+  profiles        Profile[]
+  subscriptions   Subscription[]
+  otpChallenges   OtpChallenge[]
+  magicLinks      MagicLink[]
+  feedback        Feedback[]
+  articles        Article[]
+  smsBroadcasts   SmsBroadcast[]
+  adminAuditLogs  AdminAuditLog[]
+
+  @@index([createdAt])
+  @@index([lastLoginAt])
+  @@index([deletedAt])
 }
 
 model Profile {
@@ -176,6 +208,9 @@ model Subscription {
   amount                Int?
   consecutiveFailures   Int                @default(0)
   gracePeriodEndsAt     DateTime?
+  adminOverride         Boolean            @default(false)
+  adminOverrideBy       String?
+  adminOverrideAt       DateTime?
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 
@@ -264,4 +299,71 @@ model Feedback {
   createdAt DateTime         @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Article {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  titleEn     String
+  titleBn     String?
+  bodyEn      String        @db.Text
+  bodyBn      String?       @db.Text
+  status      ArticleStatus @default(DRAFT)
+  categoryId  String?
+  cyclePhases CyclePhase[]  @default([])
+  authorId    String
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  category ArticleCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  author   User             @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([categoryId])
+  @@index([authorId])
+}
+
+model ArticleCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  articles Article[]
+}
+
+model SmsBroadcast {
+  id             String             @id @default(cuid())
+  message        String
+  scheduledFor   DateTime?
+  sentAt         DateTime?
+  status         SmsBroadcastStatus @default(DRAFT)
+  targetCount    Int?
+  deliveredCount Int?
+  failedCount    Int?
+  createdBy      String
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  action     String
+  targetType String
+  targetId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id], onDelete: Restrict)
+
+  @@index([adminId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
 }

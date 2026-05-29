@@ -1,4 +1,4 @@
-import { requireAuth, getAuthUser, AuthUser } from './auth'
+import { requireAuth, requireAdminAuth, getAuthUser, AuthUser } from './auth'
 import { handleApiError, ApiError } from './api-error'
 import { env } from '../utils/env'
 
@@ -56,6 +56,25 @@ export function withCronAuth(handler: (request: Request) => Promise<Response>) {
         throw new ApiError(401, 'Invalid cron secret', 'UNAUTHORIZED')
       }
       return handler(request)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+}
+
+/**
+ * Wraps a route handler with admin authentication.
+ * Verifies JWT, fetches the user, and enforces role === 'ADMIN'.
+ */
+export function withAdminAuth(handler: AuthedHandler) {
+  return async (request: Request, context: RouteContext): Promise<Response> => {
+    try {
+      const jwt = await requireAdminAuth()
+      const user = await getAuthUser(jwt.sub)
+      if (user.role !== 'ADMIN') {
+        throw new ApiError(403, 'Admin access required', 'FORBIDDEN')
+      }
+      return handler(request, { ...context, user })
     } catch (error) {
       return handleApiError(error)
     }

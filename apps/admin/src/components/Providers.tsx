@@ -1,0 +1,14 @@
+'use client'
+
+import { useEffect } from 'react'
+import { useAdminStore } from '@/lib/store'
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  const { theme } = useAdminStore()
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+  }, [theme])
+
+  return <>{children}</>
+}
