@@ -1,0 +1,2692 @@
+openapi: 3.1.0
+
+info:
+  title: Vesta API
+  version: 1.0.0
+  description: |
+    Complete API reference for Vesta — bilingual reproductive health platform for Bangladesh.
+
+    This spec covers three categories of endpoints:
+
+    1. **REST API Routes** — Traditional HTTP endpoints for auth, billing, webhooks, cron jobs, and health checks.
+       These are Next.js Route Handlers accessible via standard HTTP requests.
+
+    2. **Server Actions** (`/x-server-action/*`) — Next.js 16 Server Actions invoked via React RPC.
+       Not callable via curl/HTTP — they're compiled by Next.js into POST requests with internal routing.
+       Documented here for reference and type documentation.
+
+    3. **RSC Queries** (`/x-query/*`) — React Server Component query functions using `cache()`.
+       Server-only — executed during SSR/streaming. Not callable from the browser.
+
+    ### Authentication
+
+    Most REST routes and all Server Actions / RSC Queries require a valid JWT stored in an
+    HTTP-only cookie named `vesta_token`. The cookie is set by the OTP or magic-link auth flows.
+    Server Actions call `requireAuth()` which throws 401 on failure.
+    RSC Queries call `requireCurrentUser()` which throws "Unauthorized" on the same condition.
+
+    Cron endpoints additionally require `Authorization: Bearer <CRON_SECRET>`.
+    Webhook endpoints validate the source IP against the `BDAPPS_WEBHOOK_IPS` allowlist.
+
+  contact:
+    name: Vesta Dev Team
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://vesta.app
+    description: Production
+
+tags:
+  - name: Auth
+    description: Phone (OTP) and email (magic-link) authentication
+  - name: Billing
+    description: BDApps CAAS subscription management
+  - name: Webhooks
+    description: BDApps inbound event endpoints (IP-allowlisted)
+  - name: Cron
+    description: Scheduled jobs (CRON_SECRET protected)
+  - name: Health
+    description: Infrastructure health probes
+  - name: Server Actions - Profiles
+    description: Profile CRUD via Next.js Server Actions
+  - name: Server Actions - Tracking
+    description: Period log and symptom CRUD via Server Actions
+  - name: Server Actions - Feedback
+    description: Feedback submission via Server Actions
+  - name: Server Actions - User
+    description: User profile completion via Server Actions
+  - name: Server Actions - Settings
+    description: Notification preferences via Server Actions
+  - name: Queries - Auth
+    description: Auth state queries (RSC only)
+  - name: Queries - Profiles
+    description: Profile data queries (RSC only)
+  - name: Queries - Tracking
+    description: Dashboard, calendar, period log queries (RSC only)
+  - name: Queries - Predictions
+    description: Prediction queries (RSC only)
+  - name: Queries - Symptoms
+    description: Symptom log queries (RSC only)
+  - name: Dev
+    description: Development-only endpoints (disabled in production)
+
+paths:
+
+  # ===========================================================================
+  # Auth – OTP (BDApps phone-based)
+  # ===========================================================================
+
+  /api/auth/otp/request:
+    post:
+      operationId: requestOtp
+      summary: Send an OTP to a phone number via BDApps
+      description: |
+        Validates and normalises the MSISDN, enforces a rate limit of 3 requests
+        per phone number per 60 seconds, then calls the BDApps OTP API.
+        Creates an `OtpChallenge` record in the database with a 5-minute expiry.
+        Returns the `referenceNo` that must be passed to the verify endpoint.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone:
+                  type: string
+                  minLength: 1
+                  description: |
+                    BD mobile number in any format accepted by BDApps
+                    (e.g. `01712345678`, `+8801712345678`, `tel:8801712345678`).
+                    Normalised to `tel:880XXXXXXXXX` internally.
+      responses:
+        '200':
+          description: OTP dispatched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  referenceNo:
+                    type: string
+                    description: BDApps reference number — pass this to the verify endpoint
+                  message:
+                    type: string
+                    example: OTP sent
+        '400':
+          description: Zod validation failure (missing / blank phone)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '422':
+          description: Invalid MSISDN format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '429':
+          description: Rate limit exceeded (3 OTP requests per 60 s per number)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                error: Too many OTP requests. Try again in a minute.
+                code: RATE_LIMITED
+
+  /api/auth/otp/verify:
+    post:
+      operationId: verifyOtp
+      summary: Verify an OTP code and issue a session cookie
+      description: |
+        Rate-limited to 5 attempts per `referenceNo` per 5 minutes.
+        Looks up the `OtpChallenge` by `referenceNo` and validates that it is
+        not already verified, not expired, and that the OTP matches via the
+        BDApps verification API.
+
+        On success:
+        - Marks the challenge as verified.
+        - Upserts a `User` record keyed on the phone number (`authMethod = OTP`).
+        - Issues a HS256 JWT (30-day expiry) and sets an HTTP-only `vesta_token` cookie.
+        - Returns the JWT in the body alongside the user projection for client state hydration.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [referenceNo, otp]
+              properties:
+                referenceNo:
+                  type: string
+                  minLength: 1
+                  description: BDApps reference number returned by the request endpoint
+                otp:
+                  type: string
+                  minLength: 1
+                  description: One-time password received via SMS
+      responses:
+        '200':
+          description: Verification successful — session cookie set
+          headers:
+            Set-Cookie:
+              description: |
+                `vesta_token=<jwt>; HttpOnly; SameSite=Lax; Path=/; Secure` (Secure omitted in dev).
+                30-day expiry.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/OtpVerifyUserProjection'
+                  token:
+                    type: string
+                    description: Raw JWT string (also set as HttpOnly cookie)
+        '400':
+          description: Already verified, expired challenge, or invalid OTP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                already_verified:
+                  value: { error: OTP challenge already verified, code: ALREADY_VERIFIED }
+                expired:
+                  value: { error: OTP challenge has expired, code: CHALLENGE_EXPIRED }
+        '404':
+          description: OTP challenge not found for the given referenceNo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                error: OTP challenge not found
+                code: CHALLENGE_NOT_FOUND
+        '429':
+          description: Rate limit exceeded (5 verify attempts per referenceNo per 5 min)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                error: Too many verification attempts. Try again later.
+                code: RATE_LIMITED
+
+  # ===========================================================================
+  # Auth – Magic Link (email-based)
+  # ===========================================================================
+
+  /api/auth/magic-link/request:
+    post:
+      operationId: requestMagicLink
+      summary: Send a magic-link email
+      description: |
+        Validates the email address and enforces a rate limit of 3 magic-link
+        requests per email per hour. Creates a `MagicLink` record with a
+        UUID token and a 1-hour expiry, then sends a transactional email via
+        Resend (or Mailpit in dev) containing the callback URL.
+        The response is always 200 to prevent email enumeration.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Email address to send the magic link to
+      responses:
+        '200':
+          description: Email dispatched (always returned — does not confirm email existence)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Magic link sent
+        '400':
+          description: Zod validation failure (invalid email format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '429':
+          description: Rate limit exceeded (3 requests per email per hour)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                error: Too many magic link requests. Try again later.
+                code: RATE_LIMITED
+
+  /api/auth/magic-link/callback:
+    get:
+      operationId: magicLinkCallback
+      summary: Consume a magic-link token and redirect with a session cookie
+      description: |
+        Called by the link in the magic-link email. Validates the token UUID:
+        - Must exist in `MagicLink` table.
+        - Must not have `used = true`.
+        - Must not be past `expiresAt`.
+
+        On success:
+        - Marks the link as used.
+        - Upserts a `User` record keyed on email (`authMethod = EMAIL`).
+        - On first login only, grants a 24-hour email trial (`emailTrialExpiresAt`).
+        - Issues a HS256 JWT (30-day expiry) and sets an HTTP-only `vesta_token` cookie.
+        - Redirects to `/?auth=success` (HTTP 302).
+
+        On failure, `handleApiError` returns a JSON error response.
+      tags:
+        - Auth
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID token from the magic-link email
+      responses:
+        '302':
+          description: Token valid — redirects to `/?auth=success` with session cookie set
+          headers:
+            Set-Cookie:
+              description: |
+                `vesta_token=<jwt>; HttpOnly; SameSite=Lax; Path=/; Secure` (Secure omitted in dev).
+                30-day expiry.
+              schema:
+                type: string
+            Location:
+              schema:
+                type: string
+                example: /?auth=success
+        '400':
+          description: Missing token, invalid token, already used, or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                missing_token:
+                  value: { error: Missing token parameter, code: MISSING_TOKEN }
+                invalid_token:
+                  value: { error: Invalid or expired magic link, code: INVALID_TOKEN }
+                token_used:
+                  value: { error: Magic link has already been used, code: TOKEN_USED }
+                token_expired:
+                  value: { error: Magic link has expired, code: TOKEN_EXPIRED }
+
+  # ===========================================================================
+  # Auth – Session management
+  # ===========================================================================
+
+  /api/auth/logout:
+    post:
+      operationId: logout
+      summary: Invalidate the current session
+      description: |
+        Calls `logoutAndBlacklist()` which:
+        1. Reads the `vesta_token` cookie.
+        2. Adds the JWT's `jti` (or full token) to the Redis blacklist for the
+           remainder of the token's lifetime.
+        3. Clears the cookie.
+
+        No request body required. No auth check — safe to call even if the
+        cookie is already absent.
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Session invalidated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logged out
+
+  /api/auth/status:
+    get:
+      operationId: getAuthStatus
+      summary: Return the authenticated user's full profile
+      description: |
+        Protected by `withAuth` middleware — returns 401 if the `vesta_token`
+        cookie is absent or invalid. Fetches the `User` record from the database
+        and returns a safe projection that includes subscription and email trial
+        fields needed by the client to determine feature access.
+      tags:
+        - Auth
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Authenticated user record
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/AuthStatusUser'
+        '401':
+          description: Missing or invalid session cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  # ===========================================================================
+  # Auth – Dev login (development only)
+  # ===========================================================================
+
+  /api/auth/dev-login:
+    post:
+      operationId: devLogin
+      summary: Bypass OTP authentication for local development
+      description: |
+        Only active when `DEV_MODE` is enabled (`isDevModeEnabled()` returns true).
+        Disabled in production — returns 403 if `DEV_MODE` is not set.
+
+        Validates and normalises the phone number, upserts a `User` record, issues
+        a JWT, and sets the `vesta_token` cookie. Intended for local development
+        and integration test environments.
+      tags:
+        - Auth
+        - Dev
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone:
+                  type: string
+                  minLength: 1
+                  description: BD phone number (any format — normalised to `tel:880XXXXXXXXX`)
+      responses:
+        '200':
+          description: Login successful — session cookie set
+          headers:
+            Set-Cookie:
+              description: |
+                `vesta_token=<jwt>; HttpOnly; SameSite=Lax; Path=/` (no Secure in dev).
+                30-day expiry.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/DevLoginUser'
+                  token:
+                    type: string
+                    description: Raw JWT string
+        '400':
+          description: Validation error (blank phone)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Dev mode not enabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                error: Dev login is not available
+                code: DEV_MODE_DISABLED
+
+  # ===========================================================================
+  # Billing – BDApps CAAS
+  # ===========================================================================
+
+  /api/billing/subscribe:
+    post:
+      operationId: subscribe
+      summary: Initiate a BDApps CAAS direct-debit subscription
+      description: |
+        Protected by `withAuth` middleware. Requires the authenticated user to
+        have a phone number (BDApps OTP auth). The charge amount is fixed at
+        **BDT 5**.
+
+        Flow:
+        1. Creates a `CaasTransaction` record with `status = PENDING` before any charge.
+        2. Calls `caasDirectDebit(phone, externalTrxId, 5)` via the BDApps adapter.
+        3. On charge success: upserts the `Subscription` record (`status = PRO`),
+           updates `User.subscriptionStatus = PRO`, and marks the transaction `SUCCESS`.
+        4. On charge failure: marks the transaction `FAILED` and re-throws.
+        5. If the DB update fails after a successful charge, marks the transaction
+           `SUCCESS` (to preserve the charge record) before re-throwing.
+
+        Returns HTTP 201 on full success.
+      tags:
+        - Billing
+      security:
+        - cookieAuth: []
+      responses:
+        '201':
+          description: Subscription activated and transaction recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription:
+                    $ref: '#/components/schemas/Subscription'
+                  transaction:
+                    $ref: '#/components/schemas/CaasTransaction'
+        '400':
+          description: User has no phone number on file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                error: A phone number is required for CAAS billing. Please add your phone number.
+                code: PHONE_REQUIRED
+        '401':
+          description: Missing or invalid session cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '502':
+          description: BDApps CAAS API error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  # ===========================================================================
+  # Webhooks – SMS
+  # ===========================================================================
+
+  /api/webhooks/sms/receive:
+    post:
+      operationId: webhookSmsReceive
+      summary: Receive an inbound SMS from BDApps
+      description: |
+        Receives inbound SMS messages forwarded by BDApps. The source IP is
+        validated against the `BDAPPS_WEBHOOK_IPS` allowlist via
+        `validateWebhookSource()`. Returns 403 for unknown IPs.
+
+        Persists a `WebhookEvent` record of type `SMS_RECEIVE` with the
+        `messageId` as the idempotency key, then acknowledges with BDApps
+        status code `S1000`.
+      tags:
+        - Webhooks
+      security:
+        - bdappsIpAllowlist: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SmsReceivePayload'
+      responses:
+        '200':
+          description: Acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BdappsAck'
+        '403':
+          description: Source IP not in allowlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                error: Forbidden: unknown webhook source
+                code: FORBIDDEN
+
+  /api/webhooks/sms/report:
+    post:
+      operationId: webhookSmsReport
+      summary: Receive an SMS delivery report from BDApps
+      description: |
+        Receives SMS delivery status reports from BDApps. IP validation is
+        performed via `validateWebhookSource()`. Persists a `WebhookEvent`
+        record of type `SMS_REPORT` with `requestId` as the idempotency key.
+      tags:
+        - Webhooks
+      security:
+        - bdappsIpAllowlist: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SmsReportPayload'
+      responses:
+        '200':
+          description: Acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BdappsAck'
+        '403':
+          description: Source IP not in allowlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  # ===========================================================================
+  # Webhooks – USSD
+  # ===========================================================================
+
+  /api/webhooks/ussd/receive:
+    post:
+      operationId: webhookUssdReceive
+      summary: Receive a USSD session event from BDApps
+      description: |
+        Receives USSD session events from BDApps. IP validation via
+        `validateWebhookSource()`. Persists a `WebhookEvent` record of type
+        `USSD_RECEIVE` with `sessionId` as the idempotency key.
+      tags:
+        - Webhooks
+      security:
+        - bdappsIpAllowlist: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UssdReceivePayload'
+      responses:
+        '200':
+          description: Acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BdappsAck'
+        '403':
+          description: Source IP not in allowlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  # ===========================================================================
+  # Webhooks – Subscription
+  # ===========================================================================
+
+  /api/webhooks/subscription/notify:
+    post:
+      operationId: webhookSubscriptionNotify
+      summary: Receive a subscription status change notification from BDApps
+      description: |
+        Receives subscription lifecycle events (ACTIVE, INACTIVE, SUSPENDED,
+        EXPIRED) from BDApps. IP validation via `validateWebhookSource()`.
+
+        Idempotency key is `${subscriberId}:${timeStamp}`. BDApps `status` is
+        mapped to Vesta subscription status:
+        - `ACTIVE` → `PRO`
+        - `INACTIVE` / `SUSPENDED` / `EXPIRED` → `LAPSED`
+        - Anything else → `LAPSED`
+
+        Looks up the user by the `subscriberId` phone number (normalised to
+        `tel:880...` format), then updates both `User.subscriptionStatus` and
+        the latest `Subscription` record in a single request.
+      tags:
+        - Webhooks
+      security:
+        - bdappsIpAllowlist: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionNotifyPayload'
+      responses:
+        '200':
+          description: Acknowledged (even if the user is not found in the database)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BdappsAck'
+        '403':
+          description: Source IP not in allowlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  # ===========================================================================
+  # Cron – Daily Reminders
+  # ===========================================================================
+
+  /api/cron/daily-reminders:
+    post:
+      operationId: cronDailyReminders
+      summary: Send daily period, fertile-window, and logging reminders
+      description: |
+        Scheduled for **08:00 UTC** every day. Protected by `withCronAuth`
+        middleware which requires `Authorization: Bearer <CRON_SECRET>`.
+
+        Fetches all profiles with their latest prediction, notification
+        preferences, and most recent period log, then for each profile:
+
+        - **Period alert** (`periodAlert = true`): sends a notification when the
+          next predicted period is 0–2 days away.
+        - **Fertile window** (`fertileWindow = true`): sends a notification when
+          `fertileStart` falls exactly on today.
+        - **Logging reminder** (`loggingReminder = true`): sends a reminder when
+          the user has not logged a period in 3 or more days.
+
+        Notifications are sent via email (Resend) and/or SMS (BDApps), depending
+        on whether the user has email / phone and subscription status.
+        Errors per profile are caught and counted; the job always returns 200.
+      tags:
+        - Cron
+      security:
+        - cronSecret: []
+      responses:
+        '200':
+          description: Job completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyRemindersResult'
+        '401':
+          description: Missing or invalid CRON_SECRET
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  # ===========================================================================
+  # Cron – CAAS Balance Check
+  # ===========================================================================
+
+  /api/cron/caas-check:
+    post:
+      operationId: cronCaasCheck
+      summary: Verify BDApps CAAS balance for all PRO subscribers
+      description: |
+        Protected by `withCronAuth` middleware. Calls `caasGetBalance(phone)` for
+        every subscription where `status = PRO` in parallel using
+        `Promise.allSettled`.
+
+        Per subscription:
+        - If `statusCode === 'S1000'` (success): resets `consecutiveFailures` to 0.
+        - Otherwise: increments `consecutiveFailures`. If failures reach 3 or more,
+          downgrades the subscription to `LAPSED` and updates `User.subscriptionStatus`.
+
+        Returns counts of checked / healthy / failed subscriptions.
+      tags:
+        - Cron
+      security:
+        - cronSecret: []
+      responses:
+        '200':
+          description: CAAS check completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaasCheckResult'
+        '401':
+          description: Missing or invalid CRON_SECRET
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  # ===========================================================================
+  # Health – Database
+  # ===========================================================================
+
+  /api/health/db:
+    get:
+      operationId: healthDb
+      summary: PostgreSQL connectivity probe
+      description: |
+        Executes `SELECT 1` via Prisma and measures latency. Returns 200 on success,
+        503 on any database error. No authentication required.
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Database is reachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthOk'
+        '503':
+          description: Database unreachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthError'
+
+  # ===========================================================================
+  # Health – Redis
+  # ===========================================================================
+
+  /api/health/redis:
+    get:
+      operationId: healthRedis
+      summary: Upstash Redis connectivity probe
+      description: |
+        Issues a `PING` command via the Upstash Redis client and measures latency.
+        Returns 200 on success, 503 on any error. No authentication required.
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Redis is reachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthOk'
+        '503':
+          description: Redis unreachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthError'
+
+  # ===========================================================================
+  # Health – BDApps simulator
+  # ===========================================================================
+
+  /api/health/bdapps:
+    get:
+      operationId: healthBdapps
+      summary: BDApps simulator reachability probe
+      description: |
+        Issues a GET request to `BDAPPS_SIMULATOR_UI_URL` (default:
+        `http://localhost:10001/mchoice-tap-sdk`) with a 4-second timeout.
+        Considers any HTTP response with status < 500 as healthy.
+        Returns 200 on success, 503 on error or timeout. No authentication required.
+
+        In production this endpoint should point to the live BDApps API gateway.
+      tags:
+        - Health
+      responses:
+        '200':
+          description: BDApps endpoint reachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthServiceOk'
+        '503':
+          description: BDApps endpoint unreachable or timed out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthServiceError'
+
+  # ===========================================================================
+  # Health – Mailpit
+  # ===========================================================================
+
+  /api/health/mailpit:
+    get:
+      operationId: healthMailpit
+      summary: Mailpit (local email server) reachability probe
+      description: |
+        Issues a GET request to `MAILPIT_UI_URL` (default: `http://localhost:8025`)
+        with a 4-second timeout. Considers any HTTP response with status < 500
+        as healthy. Returns 200 on success, 503 on error or timeout.
+        No authentication required.
+
+        This probe is only meaningful in local development — in production the
+        email service is Resend and this health check is not used.
+      tags:
+        - Health
+        - Dev
+      responses:
+        '200':
+          description: Mailpit reachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthServiceOk'
+        '503':
+          description: Mailpit unreachable or timed out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthServiceError'
+
+  # ===========================================================================
+  # Health – Background worker
+  # ===========================================================================
+
+  /api/health/worker:
+    get:
+      operationId: healthWorker
+      summary: QStash background worker activity probe
+      description: |
+        Queries the `JobEvent` table for job activity in the past 5 minutes:
+        - `recentCompleted`: jobs with `status = COMPLETED` and `completedAt >= now - 5 min`
+        - `recentProcessing`: jobs with `status = PROCESSING` and `startedAt >= now - 5 min`
+        - `pendingQueue`: total jobs with `status = PENDING`
+
+        `active` is `true` when either `recentCompleted` or `recentProcessing` is > 0.
+        Returns 503 on any database error. No authentication required.
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Worker stats retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerHealthResult'
+        '503':
+          description: Database error while querying job events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthError'
+
+  # ===========================================================================
+  # Server Actions – Profiles
+  # ===========================================================================
+
+  /x-server-action/profiles/create:
+    post:
+      operationId: createProfile
+      summary: Create a new family profile
+      description: |
+        Creates a Prisma `Profile` record owned by the authenticated user.
+        A default `NotificationPreference` row is created alongside it.
+        If `lastPeriodStart` is supplied a `PeriodLog` is also bootstrapped
+        via `ensurePeriodLogFromProfile`.
+        Enforces a hard limit of 6 profiles per user.
+
+        **Note:** This is a Next.js 16 Server Action, not a traditional REST endpoint.
+        It is invoked via React RPC — not callable directly via HTTP.
+      tags:
+        - Server Actions - Profiles
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProfileInput'
+      responses:
+        '200':
+          description: Created profile record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          description: Zod validation error or business rule violation (e.g. >6 profiles)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '401':
+          description: Missing or invalid JWT cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+      x-side-effects:
+        - revalidatePath('/')
+        - ensurePeriodLogFromProfile (when lastPeriodStart is provided)
+
+  /x-server-action/profiles/rename:
+    post:
+      operationId: renameProfile
+      summary: Rename an existing profile
+      description: |
+        Updates the `name` field of a `Profile`. Verifies that the profile
+        belongs to the authenticated user before updating.
+
+        **Note:** This is a Next.js 16 Server Action — not callable via HTTP.
+      tags:
+        - Server Actions - Profiles
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenameProfileInput'
+      responses:
+        '200':
+          description: Updated profile record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          description: Name validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '401':
+          description: Missing or invalid JWT cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '404':
+          description: Profile not found or not owned by user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+      x-side-effects:
+        - revalidatePath('/')
+
+  /x-server-action/profiles/delete:
+    post:
+      operationId: deleteProfile
+      summary: Delete a profile
+      description: |
+        Permanently deletes a `Profile` and its cascaded children (period logs,
+        symptom logs, predictions, notification preferences).
+        Refuses deletion if the profile is the user's last remaining one.
+
+        **Note:** This is a Next.js 16 Server Action — not callable via HTTP.
+      tags:
+        - Server Actions - Profiles
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileIdInput'
+      responses:
+        '200':
+          description: Deletion successful (void return)
+        '400':
+          description: Cannot delete last profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '401':
+          description: Missing or invalid JWT cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '404':
+          description: Profile not found or not owned by user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+      x-side-effects:
+        - revalidatePath('/')
+
+  # ===========================================================================
+  # Server Actions – Tracking
+  # ===========================================================================
+
+  /x-server-action/tracking/create-period-log:
+    post:
+      operationId: createPeriodLog
+      summary: Log a new period
+      description: |
+        Creates a `PeriodLog` for the given profile. Validates that `endDate`
+        is on or after `startDate`. Ownership of the profile is verified.
+        Triggers an async `PREDICTION_RECALC` background job after persistence.
+
+        **Note:** This is a Next.js 16 Server Action — not callable via HTTP.
+      tags:
+        - Server Actions - Tracking
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePeriodLogInput'
+      responses:
+        '200':
+          description: Created period log record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodLog'
+        '400':
+          description: Validation error (e.g. endDate before startDate)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '401':
+          description: Missing or invalid JWT cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '404':
+          description: Profile not found or not owned by user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+      x-side-effects:
+        - enqueueJob('PREDICTION_RECALC', { profileId })
+        - revalidatePath('/')
+
+  /x-server-action/tracking/update-period-log:
+    post:
+      operationId: updatePeriodLog
+      summary: Update an existing period log
+      description: |
+        Partially updates a `PeriodLog` by its `id`. All fields are optional;
+        only supplied fields are written. Verifies ownership via the parent
+        profile. Triggers `PREDICTION_RECALC` after the update.
+
+        **Note:** This is a Next.js 16 Server Action — not callable via HTTP.
+      tags:
+        - Server Actions - Tracking
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePeriodLogInput'
+      responses:
+        '200':
+          description: Updated period log record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodLog'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '401':
+          description: Missing or invalid JWT cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '404':
+          description: Period log not found or not owned by user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+      x-side-effects:
+        - enqueueJob('PREDICTION_RECALC', { profileId })
+        - revalidatePath('/')
+
+  /x-server-action/tracking/delete-period-log:
+    post:
+      operationId: deletePeriodLog
+      summary: Delete a period log
+      description: |
+        Permanently deletes a `PeriodLog`. Verifies ownership.
+        Triggers `PREDICTION_RECALC` so future predictions are recalculated
+        from the remaining history.
+
+        **Note:** This is a Next.js 16 Server Action — not callable via HTTP.
+      tags:
+        - Server Actions - Tracking
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogIdInput'
+      responses:
+        '200':
+          description: Deletion successful (void return)
+        '401':
+          description: Missing or invalid JWT cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '404':
+          description: Period log not found or not owned by user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+      x-side-effects:
+        - enqueueJob('PREDICTION_RECALC', { profileId })
+        - revalidatePath('/')
+
+  /x-server-action/tracking/toggle-symptom:
+    post:
+      operationId: toggleSymptom
+      summary: Toggle a symptom log entry for a date
+      description: |
+        Idempotent toggle: if a `SymptomLog` entry already exists for
+        `(profileId, symptomId, date)` it is deleted; otherwise a new record
+        is created. This models checkbox-style symptom selection in the UI.
+        Ownership of the profile is verified before any write.
+
+        **Note:** This is a Next.js 16 Server Action — not callable via HTTP.
+      tags:
+        - Server Actions - Tracking
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToggleSymptomInput'
+      responses:
+        '200':
+          description: Toggle applied (void return)
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '401':
+          description: Missing or invalid JWT cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '404':
+          description: Profile not found or not owned by user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+      x-side-effects:
+        - revalidatePath('/')
+
+  # ===========================================================================
+  # Server Actions – Feedback
+  # ===========================================================================
+
+  /x-server-action/feedback/submit:
+    post:
+      operationId: submitFeedback
+      summary: Submit user feedback
+      description: |
+        Creates a `Feedback` record associated with the authenticated user.
+        The `profileId` field is optional; when provided it links the feedback
+        to a specific family profile (e.g. feature request for a particular
+        cycle). `rating` is only meaningful for `SATISFACTION` category entries
+        but is accepted for all categories.
+
+        **Note:** This is a Next.js 16 Server Action — not callable via HTTP.
+      tags:
+        - Server Actions - Feedback
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitFeedbackInput'
+      responses:
+        '200':
+          description: Created feedback record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '401':
+          description: Missing or invalid JWT cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+      x-side-effects:
+        - revalidatePath('/')
+
+  # ===========================================================================
+  # Server Actions – User
+  # ===========================================================================
+
+  /x-server-action/user/complete-profile:
+    post:
+      operationId: completeProfile
+      summary: Complete the authenticated user's account profile
+      description: |
+        Updates the `User` record with `fullName` and `phone`, then sets
+        `profileCompleted = true`. This action is called once after OTP
+        sign-up when the user fills in their details on the onboarding screen.
+        Returns only a safe projection of the updated user (no sensitive fields).
+
+        **Note:** This is a Next.js 16 Server Action — not callable via HTTP.
+      tags:
+        - Server Actions - User
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteProfileInput'
+      responses:
+        '200':
+          description: Safe user projection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProjection'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '401':
+          description: Missing or invalid JWT cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+      x-side-effects:
+        - revalidatePath('/')
+
+  # ===========================================================================
+  # Server Actions – Settings
+  # ===========================================================================
+
+  /x-server-action/settings/update-notification-prefs:
+    post:
+      operationId: updateNotificationPrefs
+      summary: Update notification preferences for a profile
+      description: |
+        Upserts the `NotificationPreference` row for the given profile.
+        All boolean flags are optional; omitting a flag leaves it unchanged.
+        Verifies that the profile belongs to the authenticated user.
+        On first call the record is created with defaults of `true` for any
+        omitted flags.
+
+        **Note:** This is a Next.js 16 Server Action — not callable via HTTP.
+      tags:
+        - Server Actions - Settings
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNotificationPrefsInput'
+      responses:
+        '200':
+          description: Current notification preference record (after upsert)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreference'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '401':
+          description: Missing or invalid JWT cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+        '404':
+          description: Profile not found or not owned by user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+      x-side-effects:
+        - revalidatePath('/')
+
+  # ===========================================================================
+  # RSC Queries – Auth
+  # ===========================================================================
+
+  /x-query/auth/current-user:
+    get:
+      operationId: getCurrentUser
+      summary: Resolve the currently authenticated user (nullable)
+      description: |
+        RSC query. Verifies the JWT cookie via `verifyAuth()`. Returns the
+        `AuthUser` object if valid, or `null` if unauthenticated or the token
+        is expired. Does NOT throw on auth failure — use `requireCurrentUser`
+        for pages that must be protected.
+        Memoised with React `cache()` per render tree.
+
+        **Note:** This is a React Server Component query — not callable from the browser.
+      tags:
+        - Queries - Auth
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: AuthUser object or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AuthUser'
+                  - type: 'null'
+
+  /x-query/auth/require-current-user:
+    get:
+      operationId: requireCurrentUser
+      summary: Resolve the authenticated user or throw Unauthorized
+      description: |
+        RSC query. Wraps `getCurrentUser` and throws `"Unauthorized"` if the
+        result is null. Used in protected Server Components to gate rendering.
+        Memoised with React `cache()` per render tree.
+
+        **Note:** This is a React Server Component query — not callable from the browser.
+      tags:
+        - Queries - Auth
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Resolved AuthUser
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUser'
+        '401':
+          description: No valid JWT cookie present
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+
+  # ===========================================================================
+  # RSC Queries – Profiles
+  # ===========================================================================
+
+  /x-query/profiles/list:
+    get:
+      operationId: getProfiles
+      summary: List all profiles for the authenticated user
+      description: |
+        RSC query. Returns all `Profile` records owned by the current user,
+        ordered by `createdAt` ascending (creation order). Returns an empty
+        array when the user has no profiles.
+        Memoised with React `cache()` per render tree.
+
+        **Note:** This is a React Server Component query — not callable from the browser.
+      tags:
+        - Queries - Profiles
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Array of profile records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Profile'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+
+  /x-query/profiles/get:
+    get:
+      operationId: getProfile
+      summary: Get a single profile with its latest prediction
+      description: |
+        RSC query. Fetches one `Profile` by ID and includes its associated
+        `Prediction` record. Returns `null` if the profile does not exist or
+        does not belong to the authenticated user.
+        Memoised with React `cache()` per render tree.
+
+        **Note:** This is a React Server Component query — not callable from the browser.
+      tags:
+        - Queries - Profiles
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: profileId
+          in: query
+          required: true
+          schema:
+            type: string
+            description: CUID of the target profile
+      responses:
+        '200':
+          description: Profile and prediction pair, or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ProfileWithPrediction'
+                  - type: 'null'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+
+  # ===========================================================================
+  # RSC Queries – Tracking
+  # ===========================================================================
+
+  /x-query/tracking/dashboard:
+    get:
+      operationId: getDashboardData
+      summary: Compute dashboard summary for a profile
+      description: |
+        RSC query. Derives real-time cycle analytics for the home screen:
+        current cycle day, current phase, countdown to next period, and a
+        summary of the last recorded period. All values are calculated from
+        the latest `PeriodLog` and `Prediction` rows. Returns `null` if the
+        profile is not found or not owned by the user.
+
+        Cycle phase classification:
+          - `menstrual`   – day 1 through periodLength
+          - `ovulatory`   – ovulationDay ± 1
+          - `follicular`  – after menstrual, before ovulatory
+          - `luteal`      – after ovulatory
+
+        Memoised with React `cache()` per render tree.
+
+        **Note:** This is a React Server Component query — not callable from the browser.
+      tags:
+        - Queries - Tracking
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: profileId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dashboard summary or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/DashboardData'
+                  - type: 'null'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+
+  /x-query/tracking/calendar:
+    get:
+      operationId: getCalendarData
+      summary: Get annotated calendar days for a profile and month
+      description: |
+        RSC query. Returns one `CalendarDay` object for every calendar day in
+        the requested month. Each day is annotated with boolean flags:
+          - `period`    – falls within a recorded period log range
+          - `fertile`   – falls within the fertile window (up to 5 days before ovulation)
+          - `ovulation` – the predicted ovulation date
+          - `predicted` – falls within the predicted next period range (future only)
+
+        `month` is a string in `YYYY-MM` format. Calls
+        `ensurePeriodLogFromProfile` to backfill a synthetic log from profile
+        defaults when no real logs exist.
+        Memoised with React `cache()` per render tree.
+
+        **Note:** This is a React Server Component query — not callable from the browser.
+      tags:
+        - Queries - Tracking
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: profileId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}$'
+            example: '2026-05'
+      responses:
+        '200':
+          description: Array of annotated calendar days or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/CalendarDay'
+                  - type: 'null'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+
+  /x-query/tracking/period-logs:
+    get:
+      operationId: getPeriodLogs
+      summary: List all period logs for a profile
+      description: |
+        RSC query. Returns all `PeriodLog` records for the profile ordered by
+        `startDate` descending (most recent first). Calls
+        `ensurePeriodLogFromProfile` before the query to guarantee at least one
+        synthetic log exists when the profile has never been logged manually.
+        Returns an empty array on authorization failure (does not throw).
+        Memoised with React `cache()` per render tree.
+
+        **Note:** This is a React Server Component query — not callable from the browser.
+      tags:
+        - Queries - Tracking
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: profileId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Array of period log records (may be empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PeriodLog'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+
+  # ===========================================================================
+  # RSC Queries – Predictions
+  # ===========================================================================
+
+  /x-query/predictions/get:
+    get:
+      operationId: getPrediction
+      summary: Get the latest prediction for a profile with tier explanation
+      description: |
+        RSC query. Returns the `Prediction` record for the profile together
+        with a human-readable `tierExplanation` string that describes which
+        ML tier generated the prediction:
+          - `AVERAGE` – Tier 1: rule-based from average cycle length
+          - `ARIMA`   – Tier 2: ARIMA model (requires ≥ 6 historical cycles)
+          - `LSTM`    – Tier 3: LSTM deep-learning model (requires ≥ 12 cycles)
+
+        Returns `null` for both `prediction` and `tierExplanation` when no
+        prediction has been computed yet. Returns outer `null` if the profile
+        is not found or not owned by the user.
+        Memoised with React `cache()` per render tree.
+
+        **Note:** This is a React Server Component query — not callable from the browser.
+      tags:
+        - Queries - Predictions
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: profileId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Prediction with tier explanation or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/PredictionWithTier'
+                  - type: 'null'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+
+  # ===========================================================================
+  # RSC Queries – Symptoms
+  # ===========================================================================
+
+  /x-query/symptoms/logs:
+    get:
+      operationId: getSymptomLogs
+      summary: List symptom logs for a profile, optionally filtered by date
+      description: |
+        RSC query. Returns `SymptomLog` records for the profile ordered by
+        `date` descending. When `date` (ISO 8601 `YYYY-MM-DD`) is supplied
+        only logs for that single calendar day are returned. Returns an empty
+        array on authorization failure (does not throw).
+        Memoised with React `cache()` per render tree.
+
+        **Note:** This is a React Server Component query — not callable from the browser.
+      tags:
+        - Queries - Symptoms
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: profileId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: '2026-05-29'
+      responses:
+        '200':
+          description: Array of symptom log records (may be empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SymptomLog'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+
+# =============================================================================
+# Component Schemas
+# =============================================================================
+
+components:
+
+  securitySchemes:
+
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: vesta_token
+      description: |
+        HS256 JWT (30-day expiry). Set as HttpOnly, SameSite=Lax, Secure in production.
+        Issued by `/api/auth/otp/verify`, `/api/auth/magic-link/callback`, or
+        `/api/auth/dev-login`. Invalidated by `/api/auth/logout` (token blacklisted in Redis).
+        REST routes use `withAuth()` middleware. Server Actions call `requireAuth()`.
+        RSC Queries call `requireCurrentUser()`.
+
+    cronSecret:
+      type: http
+      scheme: bearer
+      description: |
+        Shared secret from `CRON_SECRET` environment variable.
+        Required by all `/api/cron/*` endpoints via the `withCronAuth` middleware.
+        Example: `Authorization: Bearer my-secret-cron-token`.
+
+    bdappsIpAllowlist:
+      type: apiKey
+      in: header
+      name: x-real-ip
+      description: |
+        Source IP validated against the `BDAPPS_WEBHOOK_IPS` environment variable
+        (comma-separated list of allowed IPs) via `validateWebhookSource()`.
+        All `/api/webhooks/*` endpoints enforce this check and return 403 for
+        unknown sources.
+
+  schemas:
+
+    # -------------------------------------------------------------------------
+    # Shared error shapes
+    # -------------------------------------------------------------------------
+
+    ApiError:
+      type: object
+      description: |
+        Error shape returned by REST route handlers via `handleApiError()`.
+        Maps `ApiError` instances to their defined status code and code string.
+        Unhandled errors return 500.
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: |
+            Machine-readable error code. Known values:
+            `RATE_LIMITED`, `CHALLENGE_NOT_FOUND`, `ALREADY_VERIFIED`,
+            `CHALLENGE_EXPIRED`, `MISSING_TOKEN`, `INVALID_TOKEN`, `TOKEN_USED`,
+            `TOKEN_EXPIRED`, `PHONE_REQUIRED`, `FORBIDDEN`, `DEV_MODE_DISABLED`.
+
+    ActionError:
+      type: object
+      description: |
+        Generic error shape thrown by Server Actions or RSC query functions.
+        Next.js serialises these on the server and delivers them to the client
+        error boundary.
+      properties:
+        message:
+          type: string
+          description: Human-readable error description
+        digest:
+          type: string
+          description: |
+            Next.js error digest — opaque token linking server log to client
+            error boundary. Present only for unhandled server errors.
+
+    # -------------------------------------------------------------------------
+    # Enumerations
+    # -------------------------------------------------------------------------
+
+    ProfileRelation:
+      type: string
+      enum: [SELF, WIFE, SISTER, MOTHER, DAUGHTER, GIRLFRIEND]
+      description: The relationship of this profile to the account owner
+
+    FlowIntensity:
+      type: string
+      enum: [LIGHT, MEDIUM, HEAVY]
+      description: Menstrual flow intensity for a period log entry
+
+    SymptomCategory:
+      type: string
+      enum: [PHYSICAL, MOOD, DISCHARGE, LIFESTYLE]
+      description: Broad category grouping for symptom entries
+
+    FeedbackCategory:
+      type: string
+      enum: [BUG, FEATURE, GENERAL, SATISFACTION]
+      description: Classification of a feedback submission
+
+    PredictionTier:
+      type: string
+      enum: [AVERAGE, ARIMA, LSTM]
+      description: |
+        Algorithm tier used to generate a prediction:
+          AVERAGE – simple rule from average cycle length (any history)
+          ARIMA   – statistical time-series model (≥ 6 cycles)
+          LSTM    – deep-learning model (≥ 12 cycles)
+
+    CyclePhase:
+      type: string
+      enum: [menstrual, follicular, ovulatory, luteal]
+      description: Current phase of the menstrual cycle
+
+    SubscriptionStatus:
+      type: string
+      enum: [PRO, LAPSED, FREE]
+      description: |
+        User subscription tier:
+          PRO    – active BDApps CAAS subscriber
+          LAPSED – subscription lapsed (3 consecutive CAAS failures or BDApps INACTIVE/SUSPENDED/EXPIRED event)
+          FREE   – never subscribed
+
+    AuthMethod:
+      type: string
+      enum: [OTP, EMAIL]
+      description: How the user authenticated — OTP via BDApps phone, or magic-link via email
+
+    # -------------------------------------------------------------------------
+    # Auth response shapes
+    # -------------------------------------------------------------------------
+
+    OtpVerifyUserProjection:
+      type: object
+      description: Minimal user object returned by the OTP verify endpoint for client state hydration
+      properties:
+        id:
+          type: string
+          description: CUID primary key
+        phone:
+          type: string
+          nullable: true
+          description: Normalised phone number (tel:880XXXXXXXXX format)
+        profileCompleted:
+          type: boolean
+          description: Whether the user has completed the onboarding profile step
+
+    AuthStatusUser:
+      type: object
+      description: |
+        Full user projection returned by `GET /api/auth/status`. Includes fields
+        needed by the client to determine feature gating (subscription, email trial).
+      properties:
+        id:
+          type: string
+          description: CUID primary key
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        fullName:
+          type: string
+          nullable: true
+        authMethod:
+          $ref: '#/components/schemas/AuthMethod'
+        subscriptionStatus:
+          $ref: '#/components/schemas/SubscriptionStatus'
+        profileCompleted:
+          type: boolean
+        emailTrialExpiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            Timestamp after which the free email-auth trial expires. Null for
+            OTP users or if no trial was granted. Set once on first magic-link login.
+
+    DevLoginUser:
+      type: object
+      description: User projection returned by the dev-login endpoint
+      properties:
+        id:
+          type: string
+        phone:
+          type: string
+          description: Phone number with tel: prefix stripped
+        authMethod:
+          type: string
+          enum: [otp]
+        subscriptionStatus:
+          type: string
+          enum: [free]
+        language:
+          type: string
+          enum: [en]
+        profileCompleted:
+          type: boolean
+        fullName:
+          type: string
+          description: Empty string for dev-login users
+        createdAt:
+          type: string
+          format: date-time
+
+    AuthUser:
+      type: object
+      description: Resolved user object returned by auth query functions (RSC)
+      properties:
+        id:
+          type: string
+          description: CUID primary key of the User record
+        phone:
+          type: string
+          nullable: true
+        fullName:
+          type: string
+          nullable: true
+        profileCompleted:
+          type: boolean
+
+    # -------------------------------------------------------------------------
+    # Billing response shapes
+    # -------------------------------------------------------------------------
+
+    Subscription:
+      type: object
+      description: Prisma `Subscription` model — updated by `/api/billing/subscribe` and CAAS webhooks
+      properties:
+        id:
+          type: string
+          description: CUID primary key
+        userId:
+          type: string
+          description: CUID of the owning User
+        status:
+          $ref: '#/components/schemas/SubscriptionStatus'
+        bdappsSubscriberId:
+          type: string
+          nullable: true
+          description: BDApps subscriber ID (phone number used for billing)
+        amount:
+          type: number
+          description: BDT amount charged per cycle (currently fixed at 5)
+        consecutiveFailures:
+          type: integer
+          description: Number of consecutive CAAS balance-check failures. Subscription lapses at 3.
+        gracePeriodEndsAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CaasTransaction:
+      type: object
+      description: Prisma `CaasTransaction` model — one record per CAAS direct-debit attempt
+      properties:
+        id:
+          type: string
+          description: CUID primary key
+        externalTrxId:
+          type: string
+          description: UUID generated by Vesta, passed to BDApps as the external transaction ID
+        subscriptionId:
+          type: string
+          nullable: true
+          description: Set after the subscription record is created/updated
+        internalTrxId:
+          type: string
+          nullable: true
+          description: BDApps internal transaction ID (from debit response)
+        referenceId:
+          type: string
+          nullable: true
+          description: BDApps reference ID (from debit response)
+        amount:
+          type: number
+        status:
+          type: string
+          enum: [PENDING, SUCCESS, FAILED]
+          description: |
+            PENDING – record created before the charge attempt
+            SUCCESS – charge confirmed by BDApps
+            FAILED  – charge rejected or BDApps error
+
+    # -------------------------------------------------------------------------
+    # Webhook payload shapes
+    # -------------------------------------------------------------------------
+
+    SmsReceivePayload:
+      type: object
+      description: Inbound SMS event payload from BDApps
+      required: [sourceAddress, message, messageId, timeStamp]
+      properties:
+        sourceAddress:
+          type: string
+          description: Sender MSISDN (e.g. tel:8801712345678)
+        message:
+          type: string
+          description: SMS body text
+        messageId:
+          type: string
+          description: BDApps message ID — used as idempotency key
+        timeStamp:
+          type: string
+          description: BDApps event timestamp
+
+    SmsReportPayload:
+      type: object
+      description: SMS delivery report payload from BDApps
+      required: [destinationAddress, requestId, deliveryStatus, timeStamp]
+      properties:
+        destinationAddress:
+          type: string
+          description: Recipient MSISDN
+        requestId:
+          type: string
+          description: BDApps request ID — used as idempotency key
+        deliveryStatus:
+          type: string
+          description: Delivery status string from BDApps (e.g. DELIVERED, FAILED)
+        timeStamp:
+          type: string
+          description: BDApps event timestamp
+
+    UssdReceivePayload:
+      type: object
+      description: USSD session event payload from BDApps
+      required: [subscriberId, ussdContent, sessionId, status]
+      properties:
+        subscriberId:
+          type: string
+          description: Subscriber MSISDN
+        ussdContent:
+          type: string
+          description: USSD input string from the subscriber
+        sessionId:
+          type: string
+          description: BDApps USSD session ID — used as idempotency key
+        status:
+          type: string
+          description: USSD session status (e.g. CO — continue, END — end)
+
+    SubscriptionNotifyPayload:
+      type: object
+      description: Subscription lifecycle notification payload from BDApps
+      required: [subscriberId, status, timeStamp]
+      properties:
+        subscriberId:
+          type: string
+          description: |
+            Subscriber MSISDN. Normalised to `tel:880...` format internally
+            for database lookup. May arrive with or without the `tel:` prefix.
+        status:
+          type: string
+          description: |
+            BDApps subscription status. Mapped to Vesta statuses:
+            `ACTIVE` → `PRO`; `INACTIVE`/`SUSPENDED`/`EXPIRED` → `LAPSED`.
+          example: ACTIVE
+        reason:
+          type: string
+          description: Optional reason string for the status change
+        timeStamp:
+          type: string
+          description: BDApps event timestamp — used as part of idempotency key
+
+    BdappsAck:
+      type: object
+      description: Standard acknowledgement response for all BDApps webhook endpoints
+      properties:
+        statusCode:
+          type: string
+          example: S1000
+          description: BDApps success status code
+        statusDetail:
+          type: string
+          example: Received
+
+    # -------------------------------------------------------------------------
+    # Cron response shapes
+    # -------------------------------------------------------------------------
+
+    DailyRemindersResult:
+      type: object
+      description: Summary returned by the daily-reminders cron job
+      properties:
+        processed:
+          type: integer
+          description: Total number of profiles evaluated
+        periodAlerts:
+          type: integer
+          description: Number of period alert notifications sent
+        fertileAlerts:
+          type: integer
+          description: Number of fertile-window alert notifications sent
+        reminders:
+          type: integer
+          description: Number of logging reminder notifications sent
+        errors:
+          type: integer
+          description: Number of profiles that raised an error during notification dispatch
+
+    CaasCheckResult:
+      type: object
+      description: Summary returned by the CAAS balance-check cron job
+      properties:
+        checked:
+          type: integer
+          description: Number of PRO subscriptions evaluated
+        healthy:
+          type: integer
+          description: Number of subscriptions with a successful CAAS balance response (S1000)
+        failures:
+          type: integer
+          description: Number of subscriptions with a failed or error CAAS response
+
+    # -------------------------------------------------------------------------
+    # Health response shapes
+    # -------------------------------------------------------------------------
+
+    HealthOk:
+      type: object
+      description: Successful health probe response with latency measurement
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        latency:
+          type: integer
+          description: Round-trip time in milliseconds
+
+    HealthError:
+      type: object
+      description: Failed health probe response
+      properties:
+        status:
+          type: string
+          enum: [error]
+        message:
+          type: string
+          description: Stringified error message
+
+    HealthServiceOk:
+      type: object
+      description: Successful external-service health probe response
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        latency:
+          type: integer
+          description: Round-trip time in milliseconds
+        httpStatus:
+          type: integer
+          description: HTTP status code returned by the external service
+        url:
+          type: string
+          description: URL that was probed
+
+    HealthServiceError:
+      type: object
+      description: Failed external-service health probe response
+      properties:
+        status:
+          type: string
+          enum: [error]
+        latency:
+          type: integer
+          description: Elapsed milliseconds at point of failure
+        url:
+          type: string
+          description: URL that was probed
+        httpStatus:
+          type: integer
+          description: HTTP status code (present when a response was received)
+        message:
+          type: string
+          description: Error message or "Connection timed out"
+
+    WorkerHealthResult:
+      type: object
+      description: Background worker health probe response
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        latency:
+          type: integer
+          description: Database query round-trip time in milliseconds
+        worker:
+          type: object
+          properties:
+            active:
+              type: boolean
+              description: True when any job completed or started processing in the last 5 minutes
+            recentCompleted:
+              type: integer
+              description: Jobs with status COMPLETED and completedAt within the last 5 minutes
+            recentProcessing:
+              type: integer
+              description: Jobs with status PROCESSING and startedAt within the last 5 minutes
+            pendingQueue:
+              type: integer
+              description: Total jobs currently in PENDING status
+
+    # -------------------------------------------------------------------------
+    # Server Action request body schemas
+    # -------------------------------------------------------------------------
+
+    CreateProfileInput:
+      type: object
+      required: [name, relation]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Display name for the family member
+        relation:
+          $ref: '#/components/schemas/ProfileRelation'
+        cycleLength:
+          type: integer
+          minimum: 21
+          maximum: 45
+          default: 28
+          description: Average cycle length in days
+        periodLength:
+          type: integer
+          minimum: 1
+          maximum: 14
+          default: 5
+          description: Average period duration in days
+        lastPeriodStart:
+          type: string
+          format: date
+          description: |
+            ISO 8601 date of the most recent period start. When provided a
+            seed `PeriodLog` is created automatically.
+        goal:
+          type: string
+          maxLength: 500
+          description: Optional free-text health goal for this profile
+
+    RenameProfileInput:
+      type: object
+      required: [profileId, name]
+      properties:
+        profileId:
+          type: string
+          description: CUID of the profile to rename
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+
+    ProfileIdInput:
+      type: object
+      required: [profileId]
+      properties:
+        profileId:
+          type: string
+          description: CUID of the target profile
+
+    CreatePeriodLogInput:
+      type: object
+      required: [profileId, startDate, endDate, flowIntensity]
+      properties:
+        profileId:
+          type: string
+          description: CUID of the owning profile
+        startDate:
+          type: string
+          format: date
+          description: First day of the period (ISO 8601)
+        endDate:
+          type: string
+          format: date
+          description: Last day of the period (ISO 8601); must be >= startDate
+        flowIntensity:
+          $ref: '#/components/schemas/FlowIntensity'
+
+    UpdatePeriodLogInput:
+      type: object
+      required: [logId]
+      properties:
+        logId:
+          type: string
+          description: CUID of the period log to update
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        flowIntensity:
+          $ref: '#/components/schemas/FlowIntensity'
+
+    LogIdInput:
+      type: object
+      required: [logId]
+      properties:
+        logId:
+          type: string
+          description: CUID of the target log record
+
+    ToggleSymptomInput:
+      type: object
+      required: [profileId, date, category, symptomId, value]
+      properties:
+        profileId:
+          type: string
+          description: CUID of the owning profile
+        date:
+          type: string
+          format: date
+          description: Calendar day for the symptom entry (ISO 8601)
+        category:
+          $ref: '#/components/schemas/SymptomCategory'
+        symptomId:
+          type: string
+          minLength: 1
+          description: Identifier of the symptom definition (e.g. "cramps", "bloating")
+        value:
+          type: string
+          minLength: 1
+          description: Encoded value or severity for the symptom
+
+    SubmitFeedbackInput:
+      type: object
+      required: [category, message]
+      properties:
+        profileId:
+          type: string
+          description: Optional CUID of a related profile
+        category:
+          $ref: '#/components/schemas/FeedbackCategory'
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Star rating; most relevant for SATISFACTION category
+
+    CompleteProfileInput:
+      type: object
+      required: [fullName, phone]
+      properties:
+        fullName:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Full legal name of the account owner
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: Phone number (used for BDApps OTP — must match verified number)
+
+    UpdateNotificationPrefsInput:
+      type: object
+      required: [profileId]
+      properties:
+        profileId:
+          type: string
+          description: CUID of the profile whose prefs are being updated
+        periodAlert:
+          type: boolean
+          description: Notify before expected period start
+        fertileWindow:
+          type: boolean
+          description: Notify when fertile window opens
+        loggingReminder:
+          type: boolean
+          description: Daily reminder to log symptoms
+
+    # -------------------------------------------------------------------------
+    # Server Action / RSC Query return types (Prisma model projections)
+    # -------------------------------------------------------------------------
+
+    Profile:
+      type: object
+      description: Prisma `Profile` model – full record as returned from Prisma create/update
+      properties:
+        id:
+          type: string
+          description: CUID primary key
+        userId:
+          type: string
+          description: CUID of the owning User
+        name:
+          type: string
+        relation:
+          $ref: '#/components/schemas/ProfileRelation'
+        cycleLength:
+          type: integer
+          default: 28
+        periodLength:
+          type: integer
+          default: 5
+        lastPeriodStart:
+          type: string
+          format: date-time
+          nullable: true
+        goal:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProfileWithPrediction:
+      type: object
+      description: Compound return type from `getProfile` query
+      properties:
+        profile:
+          $ref: '#/components/schemas/Profile'
+        prediction:
+          oneOf:
+            - $ref: '#/components/schemas/Prediction'
+            - type: 'null'
+
+    PeriodLog:
+      type: object
+      description: Prisma `PeriodLog` model
+      properties:
+        id:
+          type: string
+        profileId:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        flowIntensity:
+          $ref: '#/components/schemas/FlowIntensity'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SymptomLog:
+      type: object
+      description: Prisma `SymptomLog` model
+      properties:
+        id:
+          type: string
+        profileId:
+          type: string
+        date:
+          type: string
+          format: date-time
+        category:
+          $ref: '#/components/schemas/SymptomCategory'
+        symptomId:
+          type: string
+        value:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Prediction:
+      type: object
+      description: Prisma `Prediction` model — computed by async background job
+      properties:
+        id:
+          type: string
+        profileId:
+          type: string
+        nextPeriodStart:
+          type: string
+          format: date-time
+          nullable: true
+        ovulationDay:
+          type: string
+          format: date-time
+          nullable: true
+        fertileStart:
+          type: string
+          format: date-time
+          nullable: true
+        fertileEnd:
+          type: string
+          format: date-time
+          nullable: true
+        tier:
+          $ref: '#/components/schemas/PredictionTier'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PredictionWithTier:
+      type: object
+      description: Compound return type from `getPrediction` query
+      properties:
+        prediction:
+          oneOf:
+            - $ref: '#/components/schemas/Prediction'
+            - type: 'null'
+        tierExplanation:
+          type: string
+          nullable: true
+          example: 'Tier 2: ARIMA model with 6+ cycles'
+
+    Feedback:
+      type: object
+      description: Prisma `Feedback` model
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        profileId:
+          type: string
+          nullable: true
+        category:
+          $ref: '#/components/schemas/FeedbackCategory'
+        message:
+          type: string
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    NotificationPreference:
+      type: object
+      description: Prisma `NotificationPreference` model
+      properties:
+        id:
+          type: string
+        profileId:
+          type: string
+        periodAlert:
+          type: boolean
+        fertileWindow:
+          type: boolean
+        loggingReminder:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserProjection:
+      type: object
+      description: |
+        Safe projection of the `User` model returned by `completeProfile`.
+        Excludes sensitive fields (tokens, internal flags).
+      properties:
+        id:
+          type: string
+        fullName:
+          type: string
+          nullable: true
+        profileCompleted:
+          type: boolean
+
+    DashboardData:
+      type: object
+      description: Computed real-time cycle analytics for the home screen
+      properties:
+        currentCycleDay:
+          type: integer
+          minimum: 1
+          description: Number of days since last period start (1-indexed)
+        currentPhase:
+          $ref: '#/components/schemas/CyclePhase'
+        countdownToNextPeriod:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Days until the next predicted (or estimated) period start
+        lastPeriod:
+          nullable: true
+          oneOf:
+            - $ref: '#/components/schemas/LastPeriodSummary'
+            - type: 'null'
+        prediction:
+          oneOf:
+            - $ref: '#/components/schemas/Prediction'
+            - type: 'null'
+
+    LastPeriodSummary:
+      type: object
+      description: Condensed summary of the most recent period log
+      properties:
+        startDate:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+          minimum: 1
+          description: Length of the period in days (inclusive of start and end)
+        flowIntensity:
+          $ref: '#/components/schemas/FlowIntensity'
+
+    CalendarDay:
+      type: object
+      description: Annotation for a single calendar day returned by `getCalendarData`
+      required: [date, period, fertile, ovulation, predicted]
+      properties:
+        date:
+          type: string
+          format: date
+          example: '2026-05-15'
+          description: ISO 8601 calendar date (YYYY-MM-DD)
+        period:
+          type: boolean
+          description: True if this day falls within a recorded period log
+        fertile:
+          type: boolean
+          description: True if this day is within the fertile window (up to 5 days before ovulation)
+        ovulation:
+          type: boolean
+          description: True if this is the predicted ovulation date
+        predicted:
+          type: boolean
+          description: True if this day is within the predicted next period range (future only)

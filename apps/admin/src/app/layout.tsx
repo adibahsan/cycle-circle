@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
-import { Geist } from 'next/font/google';
+import { Manrope } from 'next/font/google';
+import { Providers } from '@/components/Providers';
 import './globals.css';
 
-const geist = Geist({
+const manrope = Manrope({
   subsets: ['latin'],
-  variable: '--font-geist',
+  variable: '--font-display',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -14,9 +16,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={geist.variable}>
-      <body className="min-h-screen bg-gray-50 font-[var(--font-geist)] antialiased">
-        {children}
+    <html lang="en" className={manrope.variable} suppressHydrationWarning>
+      <body className="min-h-screen font-[var(--font-display)] antialiased">
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
