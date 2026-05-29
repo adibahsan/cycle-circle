@@ -1,20 +1,17 @@
 'use client';
 
+import { useId } from 'react';
+
 interface VestaLogoProps {
   size?: number;
   animate?: boolean;
   className?: string;
 }
 
-const GRADIENT_ID_STATIC = 'vesta-logo-gradient-static';
-const GRADIENT_ID_CRESCENT = 'vesta-logo-gradient-crescent';
-
-/** Pure SVG logo — no animation. */
 export function VestaLogoSVG({ size = 32, className }: Omit<VestaLogoProps, 'animate'>) {
-  // Unique IDs per instance to avoid SVG gradient collisions when rendered multiple times
-  const uid = Math.random().toString(36).slice(2, 7);
-  const gradId = `${GRADIENT_ID_STATIC}-${uid}`;
-  const crescentId = `${GRADIENT_ID_CRESCENT}-${uid}`;
+  const uid = useId();
+  const gradId = `vesta-grad-${uid}`;
+  const crescentId = `vesta-crescent-${uid}`;
 
   return (
     <svg

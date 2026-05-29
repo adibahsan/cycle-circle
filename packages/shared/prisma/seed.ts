@@ -1,6 +1,10 @@
 import { PrismaClient, AuthMethod, ProfileRelation, FlowIntensity, PredictionTier } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@vesta.health'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'admin123'
 
 /** Subtract `months` from a date, returning a new Date. */
 function subMonths(date: Date, months: number): Date {
@@ -165,6 +169,28 @@ async function main() {
   ])
 
   console.log('Notification preferences upserted for both profiles')
+
+  // ── Admin User ──────────────────────────────────────────────────────────────
+  const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12)
+
+  const adminUser = await prisma.user.upsert({
+    where: { email: ADMIN_EMAIL },
+    update: { role: 'ADMIN', passwordHash },
+    create: {
+      email: ADMIN_EMAIL,
+      fullName: 'Super Admin',
+      authMethod: AuthMethod.EMAIL,
+      role: 'ADMIN',
+      passwordHash,
+      profileCompleted: true,
+    },
+  })
+
+  console.log(`Admin user upserted: ${adminUser.email} (id: ${adminUser.id})`)
+  console.log(`  Login at http://localhost:3001/login`)
+  console.log(`  Email: ${ADMIN_EMAIL}`)
+  console.log(`  Password: ${ADMIN_PASSWORD}`)
+
   console.log('Seeding complete.')
 }
 

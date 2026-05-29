@@ -1,6 +1,6 @@
 import { cache } from 'react'
-import { prisma } from '@vesta/shared'
 import { requireCurrentUser } from './auth-queries'
+import { getProfileById } from '@vesta/shared/server/services'
 
 const TIER_EXPLANATIONS: Record<string, string> = {
   AVERAGE: 'Tier 1: Based on average cycle length',
@@ -10,10 +10,14 @@ const TIER_EXPLANATIONS: Record<string, string> = {
 
 export const getPrediction = cache(async (profileId: string) => {
   const user = await requireCurrentUser()
-  const profile = await prisma.profile.findUnique({ where: { id: profileId } })
-  if (!profile || profile.userId !== user.id) return null
+  let result: Awaited<ReturnType<typeof getProfileById>> | null = null
+  try {
+    result = await getProfileById(profileId, user.id)
+  } catch {
+    return null
+  }
 
-  const prediction = await prisma.prediction.findUnique({ where: { profileId: profile.id } })
+  const { prediction } = result
   const tierExplanation = prediction
     ? (TIER_EXPLANATIONS[prediction.tier] ?? 'Tier 1: Based on average cycle length')
     : null

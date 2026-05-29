@@ -74,6 +74,9 @@ function toTelUri(subscriberId: string): string {
 }
 
 function authFields() {
+  if (!env.BDAPPS_APP_ID || !env.BDAPPS_PASSWORD) {
+    throw new Error('BDAPPS_APP_ID and BDAPPS_PASSWORD must be set')
+  }
   return {
     applicationId: env.BDAPPS_APP_ID,
     password: env.BDAPPS_PASSWORD,

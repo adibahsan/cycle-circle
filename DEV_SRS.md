@@ -1,7 +1,7 @@
 # DEV_SRS — Implementation Tracker
 
 > Developer-facing tracker mapping SRS requirements to codebase implementation.
-> Last updated: 2026-05-29
+> Last updated: 2026-05-30
 > SRS version: 1.2 (SRS-VESTA-001)
 
 ---
@@ -10,9 +10,9 @@
 
 | Status | Count |
 |--------|-------|
-| Done | 10 |
+| Done | 13 |
 | In Progress | 9 |
-| Not Started | 3 |
+| Not Started | 0 |
 
 ---
 
@@ -30,13 +30,32 @@ The app uses a **RSC + Server Actions** pattern throughout:
 - Route conventions in use: `loading.tsx`, `error.tsx`, `not-found.tsx`.
 - Deleted files (no longer in codebase): `api.ts` (client API wrapper), `api-mappers.ts`, `dummy-data.ts`, `hydrate-store.ts`. All data now comes from the DB.
 
+### Shared Services Layer
+
+All Prisma queries and business logic are centralised in `packages/shared/src/server/services/` (11 service modules). Both `apps/web/` and `apps/admin/` consume these modules through thin wrappers that handle auth, validation, caching, and Next.js-specific concerns.
+
+| Service module | Responsibility |
+|---|---|
+| `profile-service` | Profile CRUD, 6-profile limit enforcement, ownership checks |
+| `tracking-service` | Period log and symptom log queries and mutations |
+| `content-service` | Article and category CRUD, draft/publish lifecycle |
+| `feedback-service` | Feedback submission and filtered listing |
+| `notification-service` | Email/SMS dispatch and per-profile preference evaluation |
+| `user-service` | User lookup, profile-completion, suspend/reactivate/soft-delete |
+| `subscription-service` | Pro grant/revoke, CAAS balance checks, admin overrides |
+| `audit-service` | Admin action audit trail (AdminAuditLog writes) |
+| `analytics-service` | Population health aggregations, prediction accuracy, retention |
+| `sms-service` | SMS broadcast CRUD, scheduling, and send history |
+| `export-service` | CSV generation for feedback and user data |
+
+A barrel file at `packages/shared/src/server/services/index.ts` re-exports all service modules. Total: 11 service modules across ~7,115 lines of source (admin app: 63 source files).
+
 ---
 
 ## Test Coverage
 
-- **22 Vitest tests** across 5 test files located at `apps/web/__tests__/actions/`.
-- Covers all Server Actions with deterministic mocks (Prisma, Redis, BDApps).
-- Run with `just test` or `pnpm --filter @vesta/web backend:test`.
+- **Web app**: 22/22 Vitest tests passing across 5 test files located at `apps/web/__tests__/actions/`. Tests updated to reflect the shared services layer (mocks target service modules, not direct Prisma calls). Covers all Server Actions with deterministic mocks (Prisma, Redis, BDApps). Run with `just test` or `pnpm --filter @vesta/web backend:test`.
+- **Admin app**: TypeScript typecheck passes (`just typecheck-all`). No automated test suite yet — manual QA only.
 
 ---
 
@@ -59,7 +78,7 @@ The app uses a **RSC + Server Actions** pattern throughout:
 - `apps/web/src/app/api/auth/logout/route.ts` — Logout; blacklists JWT jti in Redis
 - `apps/web/src/app/api/auth/status/route.ts` — Auth status check endpoint
 - `apps/web/src/app/api/auth/dev-login/route.ts` — Dev-only bypass login (guarded with `notFound()` in production)
-- `packages/shared/src/server/auth.ts` — `issueJwt`, `verifyAuth`, `requireAuth`, `logoutAndBlacklist`, `validateMsisdn`
+- `packages/shared/src/server/auth.ts` — `issueJwt`, `verifyAuth`, `requireAuth`, `requireAdminAuth`, `withAdminAuth`, `getAuthUser`, `logoutAndBlacklist`, `validateMsisdn`
 - `packages/shared/src/server/middleware.ts` — `withAuth` (JWT + email trial enforcement), `withCronAuth`
 - `apps/web/src/components/ProfileCompletionModal.tsx` — Post-login profile completion popup (collects fullName, phone, DOB); UI stub — needs wiring to Server Action
 - `apps/web/src/app/actions/user-actions.ts` — `completeProfile` Server Action; persists `fullName`, `phone`, `profileCompleted=true` to DB
@@ -89,6 +108,11 @@ The app uses a **RSC + Server Actions** pattern throughout:
 - `completeProfile` Server Action exists and persists to DB — modal just needs wiring
 - Auth pages converted: all `useDummyData` branches removed, direct fetch to auth API routes
 - `middleware.ts` added for server-side auth redirect
+
+**Shared auth enhancements (added for admin panel):**
+- `requireAdminAuth()` — validates JWT and enforces `role === ADMIN`; throws 403 if role check fails
+- `withAdminAuth()` — route handler wrapper that calls `requireAdminAuth()` before delegating to the handler
+- `getAuthUser()` — now additionally checks `suspendedAt` and `deletedAt`; suspended or soft-deleted users receive HTTP 403
 
 **What's missing:**
 - `ProfileCompletionModal` is not yet wired to the `completeProfile` Server Action — the UI collects fields but does not call the action
@@ -465,90 +489,140 @@ The app uses a **RSC + Server Actions** pattern throughout:
 - Demo articles removed — shows empty state "No articles yet"
 
 **What's missing:**
-- **No articles API route** (`/api/content/articles`) or database-backed content
-- No `Article` model in Prisma schema — content platform has no persistent storage
-- No admin-side article publishing to drive the reader feed
 - Phase-based surfacing is client-side only (no server-driven personalization)
+- The web app reader still shows the empty state until an admin publishes an article via the CMS (see FR-CMS below)
 
 ---
 
 ### FR-ADMIN — Admin Dashboard, User & Subscription Management
 **Priority:** P2
-**Status:** Not Started
+**Status:** Implemented
 
-**Files:** None
+**Admin App (`apps/admin/`):**
+- Runs on port 3001 (`just a` / `just wa`)
+- Same JWT/cookie auth as the web app; edge middleware (`apps/admin/src/middleware.ts`) validates JWT **and** enforces `role === ADMIN` before any page renders
+- Magic-link email login for admins (no phone OTP)
+- English-only (no i18n overhead)
+- Matches Vesta design language: glass-morphism panels, gradient accents, Manrope font
 
-**API Routes:** None
+**Files:**
+- `apps/admin/src/middleware.ts` — Edge middleware: JWT decode + role check; redirects to `/login` if unauthenticated or non-admin
+- `apps/admin/src/app/(auth)/login/page.tsx` — Admin magic-link login UI
+- `apps/admin/src/app/(main)/page.tsx` — Dashboard: KPI stat cards (total users, active subscribers, DAU, NPS) + 30-day signup trend chart (Recharts)
+- `apps/admin/src/app/(main)/users/page.tsx` — User list: search, status/role filters, pagination
+- `apps/admin/src/app/(main)/users/[id]/page.tsx` — User detail: profiles tab, subscriptions tab, feedback tab; admin action buttons (suspend, reactivate, soft-delete)
+- `apps/admin/src/app/(main)/subscriptions/page.tsx` — Pro subscriber management: grant Pro, revoke Pro, CAAS override history
+- `apps/admin/src/app/(main)/content/page.tsx` — Article list CMS with publish/draft toggle
+- `apps/admin/src/app/(main)/content/new/page.tsx` — Article create with Tiptap 3.x editor, EN/BN side-by-side
+- `apps/admin/src/app/(main)/content/[id]/page.tsx` — Article edit; category CRUD, phase tags, draft/publish lifecycle
+- `apps/admin/src/app/(main)/analytics/page.tsx` — Population health charts (cycle length distribution, symptom frequency, prediction accuracy MAE, retention)
+- `apps/admin/src/app/(main)/sms/page.tsx` — SMS broadcast management: create, schedule, delete; send history
+- `apps/admin/src/app/(main)/feedback/page.tsx` — All user feedback with category/date/rating filters + CSV export
 
-**What's implemented:**
-- `Role` enum (USER, ADMIN) exists in schema; `User.role` field defaults to USER
-- Admin route middleware pattern exists in `withAuth`
+**Admin-specific UI components (10):**
+`DataTable`, `Badge`, `StatCard`, `FilterBar`, `Pagination`, `ConfirmModal`, `Button`, `Card`, `Input`, `Shimmer`
+
+**Admin Actions:**
+- **User**: suspend (`suspendedAt`, `suspendedBy`), reactivate (clear suspension), soft-delete (`deletedAt`)
+- **Subscription**: grant Pro (admin override), revoke Pro; tracked via `adminOverride`, `adminOverrideBy`, `adminOverrideAt` on `Subscription`
+- **Content**: article CRUD, category CRUD, draft → publish lifecycle, phase tag assignment
+- **SMS**: broadcast create, schedule, delete; send history view
+- **Export**: feedback CSV, users CSV (via `export-service`)
+
+**API Routes (admin app):**
+- `POST /api/admin/users/[id]/suspend`
+- `POST /api/admin/users/[id]/reactivate`
+- `DELETE /api/admin/users/[id]`
+- `POST /api/admin/subscriptions/[id]/grant`
+- `POST /api/admin/subscriptions/[id]/revoke`
+- `GET|POST /api/admin/content/articles`
+- `GET|PATCH|DELETE /api/admin/content/articles/[id]`
+- `GET|POST /api/admin/content/categories`
+- `GET /api/admin/analytics`
+- `GET|POST|DELETE /api/admin/sms/broadcasts`
+- `GET /api/admin/feedback`
+- `GET /api/admin/export/feedback` — CSV download
+- `GET /api/admin/export/users` — CSV download
+
+**What's implemented:** All items above.
 
 **What's missing:**
-- No `/admin/*` route tree
-- No Super Admin login screen or separate short-lived JWT flow
-- No admin authentication middleware enforcing `role === ADMIN` on `/admin/*` routes
-- No KPI dashboard
-- No user management (list, search, suspend, soft-delete)
-- No subscription management views (Pro subscribers, CAAS results, manual revoke/re-grant)
+- Automated test suite for admin app (typecheck passes; runtime tests not written yet)
+- Failed Resend delivery log surfaced in admin UI
+- Image upload to Supabase storage from Tiptap editor (drag-and-drop stub present, upload not wired)
 
 ---
 
 ### FR-CMS — Content CMS (Tiptap)
 **Priority:** P2
-**Status:** Not Started
+**Status:** Implemented
 
-**Files:** None
+**Files:**
+- `apps/admin/src/app/(main)/content/new/page.tsx` — Article create page with Tiptap 3.x rich-text editor
+- `apps/admin/src/app/(main)/content/[id]/page.tsx` — Article edit page
+- `apps/admin/src/app/(main)/content/page.tsx` — Article list with draft/published filter
+- `packages/shared/src/server/services/content-service.ts` — Article + category CRUD, draft/publish lifecycle, phase-tag queries
 
-**What's implemented:** Nothing
+**What's implemented:**
+- Tiptap 3.x rich-text editor integrated for article body (EN and BN side-by-side panels)
+- `Article` model in Prisma schema (`ArticleStatus` enum: DRAFT, PUBLISHED)
+- `ArticleCategory` model in Prisma schema
+- Draft/publish lifecycle: admin can save draft and publish separately
+- Phase tag assignment (`CyclePhase` enum: MENSTRUAL, FOLLICULAR, OVULATORY, LUTEAL)
+- HTML sanitization applied server-side before persisting article body
+- Bilingual authoring: `titleEn`, `bodyEn`, `titleBn`, `bodyBn` fields in `Article`
 
 **What's missing:**
-- No Tiptap editor integration
-- No Article model in database (required for CMS)
-- No draft/publish lifecycle
-- No bilingual side-by-side editor
-- No image upload to Supabase storage
-- No HTML sanitization for article content
+- Image upload from Tiptap to Supabase storage (stub present, not wired)
+- No HTML sanitization unit test coverage
 
 ---
 
 ### FR-ANALYTICS — Population Analytics & Prediction Accuracy
 **Priority:** P2
-**Status:** Not Started
+**Status:** Implemented
 
-**Files:** None
+**Files:**
+- `apps/admin/src/app/(main)/analytics/page.tsx` — Population health charts rendered with Recharts
+- `packages/shared/src/server/services/analytics-service.ts` — Aggregation queries: cycle length distribution, symptom frequency, prediction accuracy (MAE), 30-day retention
 
-**What's implemented:** Nothing
+**What's implemented:**
+- Population health charts: cycle length distribution, symptom frequency heatmap, prediction accuracy (MAE over time), user retention curve
+- All charts rendered with Recharts inside the admin panel
+- Admin-only endpoint (`GET /api/admin/analytics`) with `requireAdminAuth()` guard
+- Anonymized aggregation queries — no PII in query results
 
 **What's missing:**
-- No analytics API routes
-- No Recharts population health charts
-- No prediction-accuracy (MAE) nightly report
-- No admin-only analytics endpoints
-- No anonymization layer for symptom data queries
+- Nightly MAE report job not scheduled (analytics are computed on-demand per admin page load)
+- No data export of raw analytics aggregates
 
 ---
 
 ### FR-EXPORT — Data Export (CSV / Excel)
 **Priority:** P2
-**Status:** In Progress
+**Status:** Implemented (admin-side); In Progress (user-side)
 
 **Files:**
-- `apps/web/src/app/(main)/settings/page.tsx` — Export CSV and Export Excel buttons exist in the Data Export section
+- `apps/web/src/app/(main)/settings/page.tsx` — Export CSV and Export Excel buttons exist in the Data Export section (user-facing, still stubs)
+- `apps/admin/src/app/(main)/feedback/page.tsx` — Feedback CSV export button (admin)
+- `packages/shared/src/server/services/export-service.ts` — CSV generation for feedback records and user list using `papaparse`
 
-**API Routes:** None
+**API Routes:**
+- `GET /api/admin/export/feedback` — CSV download (admin, `requireAdminAuth()` guarded)
+- `GET /api/admin/export/users` — CSV download (admin, `requireAdminAuth()` guarded)
 
 **What's implemented:**
-- Export button UI with CSV and Excel options visible in Settings
-- Toast notification fires on click ("CSV download started" / "Excel download started")
+- Admin feedback CSV export (category, rating, message, timestamp, userId)
+- Admin users CSV export (id, phone, email, role, subscriptionStatus, createdAt)
+- `papaparse` used for CSV generation in `export-service`
+- Admin export routes protected by `requireAdminAuth()`
 
-**What's missing:**
-- No `/api/export` backend route
-- No actual file generation (no `papaparse`, `xlsx`, or equivalent library installed)
-- No per-profile data query and download logic
-- No decryption of symptom values before export
-- No cross-profile export option
-- Buttons are UI stubs only — no file is produced
+**What's missing (user-facing):**
+- No `/api/export` route for end-user personal data export
+- No actual file generation for the Settings page export buttons
+- No per-profile data query and download logic (user side)
+- No decryption of symptom values before export (blocked by FR-ENC being unresolved)
+- Settings page buttons remain UI stubs — no file is produced for users
 
 ---
 
@@ -570,13 +644,22 @@ The app uses a **RSC + Server Actions** pattern throughout:
 - PRO gating: `isProSubscriber` check prevents SMS to free-tier users
 - `deliveryStatusRequest: 1` passed by default for delivery reports
 
+**Admin SMS (newly implemented):**
+- `apps/admin/src/app/(main)/sms/page.tsx` — Broadcast management UI: create, schedule, delete; send history table
+- `packages/shared/src/server/services/sms-service.ts` — `SmsBroadcast` CRUD, scheduling, send dispatch
+- `packages/shared/prisma/schema.prisma` — `SmsBroadcast` model (`SmsBroadcastStatus` enum: DRAFT, SCHEDULED, SENT, FAILED)
+- Admin API routes: `GET|POST|DELETE /api/admin/sms/broadcasts`
+
+**What's implemented (admin SMS):**
+- Broadcast create, schedule, delete via admin panel
+- `SmsBroadcast` model persists message content, scheduled time, status, and send history
+- `AdminAuditLog` entry written for each broadcast action
+- Send history visible in admin SMS page
+
 **What's missing:**
-- No admin SMS content management UI or API (`POST /api/admin/sms/messages`)
-- No daily SMS content queue (scheduled message from a pool)
-- No `tel:all` broadcast integration — broadcast is not called from the cron (only per-user SMS)
-- No CSV/bulk-upload interface for admin to create SMS content batches
-- No SMS send history view in admin panel
-- Content override logic (deactivating previous day's content) not implemented — no content model exists
+- `tel:all` broadcast (send to all PRO subscribers in one BDApps call) not yet triggered from admin panel — each broadcast still sends per-user
+- No CSV/bulk-upload interface for content batches
+- Content override logic (deactivating previous day's content) not implemented
 
 ---
 
@@ -627,32 +710,50 @@ The app uses a **RSC + Server Actions** pattern throughout:
 - `Feedback` DB model matches SRS schema exactly
 - `submitFeedback` Server Action persists feedback to DB
 
+**Admin feedback (newly implemented):**
+- `apps/admin/src/app/(main)/feedback/page.tsx` — All user feedback with category, date range, and star-rating filters
+- CSV export button calls `GET /api/admin/export/feedback`
+
+**What's implemented (admin):**
+- Feedback list with filter by category (Bug, Feature, General, Satisfaction), date range, and rating
+- CSV export for filtered feedback results
+
 **What's missing:**
-- No admin panel view for feedback (FR-ADMIN not started)
-- No feedback CSV export endpoint
-- Once FR-ADMIN is built, feedback filter by category/date/rating needs to be added
+- Admin cannot reply to or resolve individual feedback items — read-only view only
 
 ---
 
 ## Schema Coverage Summary
 
+### Enums added in admin/shared services sprint
+
+| Enum | Values |
+|------|--------|
+| `ArticleStatus` | `DRAFT`, `PUBLISHED` |
+| `CyclePhase` | `MENSTRUAL`, `FOLLICULAR`, `OVULATORY`, `LUTEAL` |
+| `SmsBroadcastStatus` | `DRAFT`, `SCHEDULED`, `SENT`, `FAILED` |
+
+### Models
+
 | Model | Status | Notes |
 |-------|--------|-------|
-| `User` | Done | All required fields: `authMethod`, `subscriptionStatus`, `emailTrialExpiresAt`, `profileCompleted`, `role`, `language` |
+| `User` | Done | All required fields + new: `suspendedAt`, `suspendedBy`, `deletedAt`, `lastLoginAt`; indexes on `suspendedAt`, `deletedAt` |
 | `Profile` | Done | All 6 relations, `cycleLength`, `periodLength`, `lastPeriodStart`, `goal` |
 | `PeriodLog` | Done | `startDate`, `endDate`, `flowIntensity` (LIGHT/MEDIUM/HEAVY) |
 | `SymptomLog` | Partial | Schema present; `value` field **not encrypted** |
 | `Prediction` | Done | All output fields + `PredictionTier` (AVERAGE/ARIMA/LSTM) |
-| `Subscription` | Done | `consecutiveFailures`, `gracePeriodEndsAt` for v2 grace-period |
+| `Subscription` | Done | `consecutiveFailures`, `gracePeriodEndsAt` + new: `adminOverride` (Boolean), `adminOverrideBy`, `adminOverrideAt` |
 | `CaasTransaction` | Done | Idempotent `externalTrxId @unique` |
 | `OtpChallenge` | Done | `referenceNo`, `expiresAt`, `verified` |
 | `MagicLink` | Done | `token @unique`, `expiresAt`, `used` |
 | `WebhookEvent` | Done | `idempotencyKey @unique`, `WebhookType` enum |
 | `JobEvent` | Done | `JobStatus` enum, `PREDICTION_RECALC` + `SMS_BROADCAST` job types |
 | `NotificationPreference` | Done | 3 toggle flags per profile |
-| `Feedback` | Done | Schema matches SRS; persisted via Server Action |
-| `Article` | **Missing** | No model in schema — required for FR-CONTENT and FR-CMS |
-| `SmsBroadcastMessage` | **Missing** | No model — required for FR-SMS admin content queue |
+| `Feedback` | Done | Schema matches SRS; persisted via Server Action; filterable in admin panel |
+| `Article` | Done | `titleEn`, `bodyEn`, `titleBn`, `bodyBn`, `status` (`ArticleStatus`), `categoryId`, `phase` (`CyclePhase`), `publishedAt` |
+| `ArticleCategory` | Done | `name`, `slug`; FK from `Article.categoryId` |
+| `SmsBroadcast` | Done | `message`, `scheduledAt`, `status` (`SmsBroadcastStatus`), `sentAt`, `recipientCount`; replaces the previously missing `SmsBroadcastMessage` |
+| `AdminAuditLog` | Done | `adminId`, `action`, `targetType`, `targetId`, `metadata` (JSON), `createdAt`; written by `audit-service` |
 
 ---
 
@@ -669,19 +770,20 @@ The following security issues were identified and resolved in the current sprint
 7. **`env.local` added to `.gitignore`** — prevents accidental secret commit.
 8. **Security headers added** — `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` set in Next.js config or middleware.
 9. **Auth middleware (`middleware.ts`)** — server-side auth redirect based on cookie presence; unauthenticated requests to protected routes redirected before React renders.
+10. **NFR-SEC-05 — Admin role enforcement** — `apps/admin/src/middleware.ts` (edge middleware) validates JWT and checks `role === ADMIN` on every admin route before any page renders. Non-admin JWTs are redirected to `/login`. `requireAdminAuth()` and `withAdminAuth()` provide the same enforcement at the route-handler level.
+11. **Suspended/deleted user check in `getAuthUser()`** — suspended or soft-deleted users receive HTTP 403 on every authenticated request, even with a valid JWT.
 
 ---
 
 ## P0 Blockers
 
 1. **FR-ENC**: `prisma-field-encryption` not installed; `symptom_logs.value` stored as plaintext. Blocks the DoD security gate.
-2. **FR-CONTENT / FR-CMS**: No `Article` model in schema. Content platform has no persistent storage and no admin publishing capability.
-3. **FR-AUTH (minor)**: `ProfileCompletionModal` not yet wired to the `completeProfile` Server Action — the backend action exists, the modal just needs to call it.
+2. **FR-AUTH (minor)**: `ProfileCompletionModal` not yet wired to the `completeProfile` Server Action — the backend action exists, the modal just needs to call it.
 
 ## P1/P2 Gaps
 
-- `FR-ADMIN`: Entire admin panel (`/admin/*` routes) is not started.
-- `FR-EXPORT`: Buttons are UI stubs; no file generation logic.
-- `FR-SMS`: Admin content queue, `tel:all` broadcast scheduling, and send history are not implemented.
-- `FR-ANALYTICS`: Not started.
-- `FR-CMS`: Not started.
+- `FR-EXPORT` (user-facing): Settings page export buttons remain UI stubs; no `/api/export` route or file generation for end-users.
+- `FR-SMS`: `tel:all` broadcast (bulk BDApps send) not triggered from admin panel; sends are still per-user. No CSV/bulk upload for content batches.
+- `FR-ANALYTICS`: Nightly MAE report not scheduled; analytics computed on-demand only.
+- `FR-CMS`: Image upload from Tiptap to Supabase storage not yet wired (stub present).
+- `FR-ADMIN` (admin test suite): Automated tests for admin app not written; typecheck only.

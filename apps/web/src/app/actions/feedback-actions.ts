@@ -2,8 +2,8 @@
 
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
-import { prisma } from '@vesta/shared'
 import { requireAuth, getAuthUser } from '@vesta/shared/server/auth'
+import { createFeedback } from '@vesta/shared/server/services'
 
 const feedbackSchema = z.object({
   profileId: z.string().min(1).optional(),
@@ -17,14 +17,11 @@ export async function submitFeedback(input: z.infer<typeof feedbackSchema>) {
   const user = await getAuthUser(jwt.sub)
   const data = feedbackSchema.parse(input)
 
-  const feedback = await prisma.feedback.create({
-    data: {
-      userId: user.id,
-      profileId: data.profileId,
-      category: data.category,
-      message: data.message,
-      rating: data.rating,
-    },
+  const feedback = await createFeedback(user.id, {
+    profileId: data.profileId,
+    category: data.category,
+    message: data.message,
+    rating: data.rating,
   })
 
   revalidatePath('/')

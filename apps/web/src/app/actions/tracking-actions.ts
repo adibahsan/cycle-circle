@@ -2,15 +2,14 @@
 
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
-import { prisma } from '@vesta/shared'
 import { requireAuth, getAuthUser } from '@vesta/shared/server/auth'
 import { enqueueJob } from '@vesta/shared/server/adapters/jobs'
-
-async function verifyProfileOwnership(profileId: string, userId: string) {
-  const profile = await prisma.profile.findUnique({ where: { id: profileId } })
-  if (!profile || profile.userId !== userId) throw new Error('Profile not found')
-  return profile
-}
+import {
+  createPeriodLog as svcCreatePeriodLog,
+  updatePeriodLog as svcUpdatePeriodLog,
+  deletePeriodLog as svcDeletePeriodLog,
+  toggleSymptomLog,
+} from '@vesta/shared/server/services'
 
 const createPeriodLogSchema = z.object({
   profileId: z.string().min(1),
@@ -24,22 +23,15 @@ export async function createPeriodLog(input: z.infer<typeof createPeriodLogSchem
   const user = await getAuthUser(jwt.sub)
   const data = createPeriodLogSchema.parse(input)
 
-  const start = new Date(data.startDate)
-  const end = new Date(data.endDate)
-  if (end < start) throw new Error('End date must be on or after start date')
-
-  await verifyProfileOwnership(data.profileId, user.id)
-
-  const log = await prisma.periodLog.create({
-    data: {
-      profileId: data.profileId,
-      startDate: start,
-      endDate: end,
-      flowIntensity: data.flowIntensity,
-    },
+  const { log, shouldRecalcPrediction } = await svcCreatePeriodLog(data.profileId, user.id, {
+    startDate: data.startDate,
+    endDate: data.endDate,
+    flowIntensity: data.flowIntensity,
   })
 
-  await enqueueJob('PREDICTION_RECALC', { profileId: data.profileId })
+  if (shouldRecalcPrediction) {
+    await enqueueJob('PREDICTION_RECALC', { profileId: data.profileId })
+  }
   revalidatePath('/')
   return log
 }
@@ -55,38 +47,24 @@ export async function updatePeriodLog(logId: string, input: z.infer<typeof updat
   const user = await getAuthUser(jwt.sub)
   const data = updatePeriodLogSchema.parse(input)
 
-  const log = await prisma.periodLog.findUnique({
-    where: { id: logId },
-    include: { profile: true },
-  })
-  if (!log || log.profile.userId !== user.id) throw new Error('Period log not found')
+  const { log, profileId, shouldRecalcPrediction } = await svcUpdatePeriodLog(logId, user.id, data)
 
-  const updated = await prisma.periodLog.update({
-    where: { id: logId },
-    data: {
-      ...(data.startDate !== undefined && { startDate: new Date(data.startDate) }),
-      ...(data.endDate !== undefined && { endDate: new Date(data.endDate) }),
-      ...(data.flowIntensity !== undefined && { flowIntensity: data.flowIntensity }),
-    },
-  })
-
-  await enqueueJob('PREDICTION_RECALC', { profileId: log.profileId })
+  if (shouldRecalcPrediction) {
+    await enqueueJob('PREDICTION_RECALC', { profileId })
+  }
   revalidatePath('/')
-  return updated
+  return log
 }
 
 export async function deletePeriodLog(logId: string) {
   const jwt = await requireAuth()
   const user = await getAuthUser(jwt.sub)
 
-  const log = await prisma.periodLog.findUnique({
-    where: { id: logId },
-    include: { profile: true },
-  })
-  if (!log || log.profile.userId !== user.id) throw new Error('Period log not found')
+  const { profileId, shouldRecalcPrediction } = await svcDeletePeriodLog(logId, user.id)
 
-  await prisma.periodLog.delete({ where: { id: logId } })
-  await enqueueJob('PREDICTION_RECALC', { profileId: log.profileId })
+  if (shouldRecalcPrediction) {
+    await enqueueJob('PREDICTION_RECALC', { profileId })
+  }
   revalidatePath('/')
 }
 
@@ -103,29 +81,12 @@ export async function toggleSymptom(input: z.infer<typeof createSymptomSchema>) 
   const user = await getAuthUser(jwt.sub)
   const data = createSymptomSchema.parse(input)
 
-  await verifyProfileOwnership(data.profileId, user.id)
-
-  const existing = await prisma.symptomLog.findFirst({
-    where: {
-      profileId: data.profileId,
-      symptomId: data.symptomId,
-      date: new Date(data.date),
-    },
+  await toggleSymptomLog(data.profileId, user.id, {
+    date: data.date,
+    category: data.category,
+    symptomId: data.symptomId,
+    value: data.value,
   })
-
-  if (existing) {
-    await prisma.symptomLog.delete({ where: { id: existing.id } })
-  } else {
-    await prisma.symptomLog.create({
-      data: {
-        profileId: data.profileId,
-        date: new Date(data.date),
-        category: data.category,
-        symptomId: data.symptomId,
-        value: data.value,
-      },
-    })
-  }
 
   revalidatePath('/')
 }
