@@ -62,7 +62,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <VestaLogo size={28} animate={false} />
         {!sidebarCollapsed && (
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold gradient-primary bg-clip-text text-transparent leading-tight">
+            <h1 className="text-lg font-bold leading-tight" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               Vesta Admin
             </h1>
           </div>
@@ -184,7 +184,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--color-border)]">
           <div className="flex items-center gap-3">
             <VestaLogo size={24} animate={false} />
-            <span className="text-lg font-bold gradient-primary bg-clip-text text-transparent">
+            <span className="text-lg font-bold" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               Vesta Admin
             </span>
           </div>
@@ -248,7 +248,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
             <div className="flex items-center gap-2">
               <VestaLogo size={22} animate={false} />
-              <span className="text-base font-bold gradient-primary bg-clip-text text-transparent">
+              <span className="text-base font-bold" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 Vesta Admin
               </span>
             </div>

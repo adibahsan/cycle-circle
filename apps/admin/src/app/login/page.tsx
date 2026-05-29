@@ -53,7 +53,7 @@ export default function AdminLoginPage() {
           <div className="flex flex-col items-center gap-3 mb-8">
             <VestaLogo size={48} animate />
             <div className="text-center">
-              <h1 className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 Vesta Admin
               </h1>
               <p className="text-sm text-[var(--color-text-muted)] mt-1">
