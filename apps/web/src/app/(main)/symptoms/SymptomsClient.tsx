@@ -140,7 +140,7 @@ function SymptomChip({ icon, name, selected, category, onToggle }: SymptomChipPr
       onClick={onToggle}
       whileTap={{ scale: 0.92 }}
       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-      className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition-all duration-200 w-full relative"
+      className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition-colors duration-200 w-full relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
       style={{
         background: selected ? colors.bg : 'var(--color-bg-card)',
         borderColor: selected ? colors.border : 'var(--color-border)',
@@ -164,7 +164,7 @@ function SymptomChip({ icon, name, selected, category, onToggle }: SymptomChipPr
           className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center"
           style={{ background: colors.text }}
         >
-          <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+          <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
             <path d="M1.5 4l2 2 3-3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </motion.span>
@@ -277,6 +277,16 @@ export function SymptomsClient({
         ref={dateStripRef}
         className="flex gap-1 overflow-x-auto scrollbar-hide py-2 -mx-4 px-4"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        role="group"
+        aria-label="Select date"
+        onKeyDown={(e) => {
+          const currentIndex = dates.findIndex((d) => format(d, 'yyyy-MM-dd') === date);
+          if (e.key === 'ArrowRight' && currentIndex < dates.length - 1) {
+            handleDateSelect(dates[currentIndex + 1]);
+          } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+            handleDateSelect(dates[currentIndex - 1]);
+          }
+        }}
       >
         {dates.map((d) => {
           const key = format(d, 'yyyy-MM-dd');
@@ -300,6 +310,7 @@ export function SymptomsClient({
         className="relative mt-3 mb-4"
       >
         <div
+          role="tablist"
           className="flex gap-1 rounded-2xl p-1"
           style={{ background: 'var(--color-bg-secondary)' }}
         >
@@ -320,8 +331,10 @@ export function SymptomsClient({
             return (
               <button
                 key={key}
+                role="tab"
+                aria-selected={isActive}
                 onClick={() => setActiveCategory(key)}
-                className="relative flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-semibold transition-colors duration-200 z-10"
+                className="relative flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-semibold transition-colors duration-200 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
                 style={{
                   color: isActive ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
                 }}
@@ -382,6 +395,8 @@ export function SymptomsClient({
         <motion.div
           key="summary-bar"
           initial={false}
+          aria-live="polite"
+          aria-atomic="true"
           className="fixed bottom-[60px] md:bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-xl px-4 z-30 pointer-events-none"
         >
           <AnimatePresence mode="wait">
@@ -411,7 +426,7 @@ export function SymptomsClient({
               >
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                       <path d="M2 8.5l3.5 3.5L13 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>

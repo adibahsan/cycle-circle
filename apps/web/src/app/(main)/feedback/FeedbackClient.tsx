@@ -106,7 +106,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
             onMouseLeave={() => setHovered(0)}
             onClick={() => onChange(value === star ? 0 : star)}
             aria-label={`${star} star${star !== 1 ? 's' : ''}`}
-            className="p-0.5 transition-colors focus:outline-none"
+            className="p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
           >
             <Star
               size={28}
@@ -147,6 +147,7 @@ function StarDisplay({ rating }: { rating?: number | null }) {
           fill={s <= rating ? 'var(--color-primary)' : 'transparent'}
           stroke={s <= rating ? 'var(--color-primary)' : 'var(--color-border)'}
           strokeWidth={1.8}
+          aria-hidden="true"
         />
       ))}
     </div>
@@ -274,7 +275,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                         'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
                     }}
                   >
-                    <CheckCircle2 size={32} className="text-white" />
+                    <CheckCircle2 size={32} className="text-white" aria-hidden="true" />
                   </motion.div>
                   <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-1">
                     {t('feedback.success')}
@@ -300,7 +301,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                           type="button"
                           whileTap={{ scale: 0.96 }}
                           onClick={() => setSelectedCategory(cat.id)}
-                          className="relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all duration-200 text-center"
+                          className="relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-colors duration-200 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                           style={
                             isSelected
                               ? { borderColor: cat.color, backgroundColor: cat.bg }
@@ -361,20 +362,21 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
 
                   {/* Message textarea */}
                   <div className="mb-5">
-                    <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-2">
+                    <label htmlFor="feedback-message" className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-2 block">
                       {t('feedback.messageLabel')}{' '}
                       <span className="text-[var(--color-text-muted)] normal-case font-normal tracking-normal">
                         ({t('feedback.optional')})
                       </span>
-                    </p>
+                    </label>
                     <div className="relative">
                       <textarea
+                        id="feedback-message"
                         rows={4}
                         maxLength={MAX_CHARS}
                         value={message}
                         onChange={e => setMessage(e.target.value)}
                         placeholder={t('feedback.message')}
-                        className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-all duration-200"
+                        className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200"
                       />
                       <span
                         className="absolute bottom-2.5 right-3 text-[10px] font-medium"
@@ -396,6 +398,9 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                   )}
 
                   {/* Submit */}
+                  <div aria-live="polite" aria-atomic="true" className="sr-only">
+                    {submitting ? t('feedback.submitting') : ''}
+                  </div>
                   <Button
                     fullWidth
                     size="lg"
@@ -405,7 +410,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                   >
                     {submitting ? (
                       <span className="flex items-center gap-2">
-                        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                           <circle
                             className="opacity-25"
                             cx="12"

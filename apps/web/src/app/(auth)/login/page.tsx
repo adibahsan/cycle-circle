@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { Phone, Shield, ChevronRight } from 'lucide-react';
@@ -156,21 +157,23 @@ export default function LoginPage() {
             <input
               type="tel"
               inputMode="numeric"
-              placeholder="01XXXXXXXXX"
+              name="phone"
+              autoComplete="tel"
+              placeholder="01XXXXXXXXX…"
               value={phone}
               onChange={handlePhoneChange}
               maxLength={11}
-              className={`w-full pl-20 pr-4 py-3.5 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-all duration-200 text-base tracking-widest font-medium ${
+              className={`w-full pl-20 pr-4 py-3.5 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors duration-200 text-base tracking-widest font-medium ${
                 error ? 'border-red-400 focus:ring-red-300' : 'border-[var(--color-border)]'
               }`}
             />
             {phone.length === 11 && !error && (
               <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="9" fill="currentColor" fillOpacity="0.15"/><path d="M5 9l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="9" fill="currentColor" fillOpacity="0.15"/><path d="M5 9l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </span>
             )}
           </div>
-          {error && <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1"><span>⚠</span>{error}</p>}
+          {error && <p aria-live="polite" className="mt-1.5 text-sm text-red-500 flex items-center gap-1"><span>⚠</span>{error}</p>}
         </div>
 
         <Button
@@ -182,7 +185,7 @@ export default function LoginPage() {
         >
           {loading ? (
             <span className="flex items-center gap-2">
-              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
@@ -190,7 +193,7 @@ export default function LoginPage() {
             </span>
           ) : (
             <span className="flex items-center gap-2">
-              <Phone size={18} />
+              <Phone size={18} aria-hidden="true" />
               {devMode ? 'Continue (dev)' : t('auth.sendOtp')}
             </span>
           )}
@@ -205,13 +208,13 @@ export default function LoginPage() {
         animate="show"
         className="mt-4 text-center"
       >
-        <button
-          onClick={() => router.push('/email-login')}
+        <Link
+          href="/email-login"
           className="inline-flex items-center gap-1.5 text-sm text-[var(--color-secondary)] font-semibold hover:underline underline-offset-2 transition-colors"
         >
           {t('auth.emailFallback')}
-          <ChevronRight size={14} />
-        </button>
+          <ChevronRight size={14} aria-hidden="true" />
+        </Link>
       </motion.div>
 
       {/* ── Trust footer ── */}
@@ -230,9 +233,9 @@ export default function LoginPage() {
         </div>
         <p className="text-[11px] text-[var(--color-text-muted)] text-center leading-relaxed px-6">
           By continuing you agree to Vesta&apos;s{' '}
-          <span className="text-[var(--color-secondary)] font-medium">Privacy Policy</span>{' '}
+          <Link href="/privacy" className="text-[var(--color-secondary)] font-medium hover:underline underline-offset-2">Privacy Policy</Link>{' '}
           &amp;{' '}
-          <span className="text-[var(--color-secondary)] font-medium">Terms of Service</span>
+          <Link href="/terms" className="text-[var(--color-secondary)] font-medium hover:underline underline-offset-2">Terms of Service</Link>
         </p>
       </motion.div>
     </div>

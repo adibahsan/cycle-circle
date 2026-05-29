@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import {
   format,
   startOfMonth,
@@ -105,6 +105,7 @@ function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
   const { date, isPeriod, isFertile, isOvulation, isFuturePredicted } = meta
   const today = new Date()
   const isToday = isSameDay(date, today)
+  const prefersReducedMotion = useReducedMotion()
 
   let bgColor = 'transparent'
   let textColor = isCurrentMonth ? 'var(--color-text-primary)' : 'var(--color-text-muted)'
@@ -124,7 +125,7 @@ function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
   return (
     <button
       onClick={onClick}
-      className={`relative flex flex-col items-center justify-center aspect-square w-full rounded-xl transition-all duration-150 active:scale-95${(isPeriod || isFertile || isOvulation) && isCurrentMonth ? ' hover:scale-105' : ''}`}
+      className={`relative flex flex-col items-center justify-center aspect-square w-full rounded-xl transition-colors duration-150 active:scale-95${(isPeriod || isFertile || isOvulation) && isCurrentMonth ? ' hover:scale-105' : ''}`}
       style={{
         backgroundColor: isSelected
           ? isPeriod
@@ -143,7 +144,7 @@ function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
         <motion.div
           className="absolute inset-0.5 rounded-[10px] border-2 pointer-events-none"
           style={{ borderColor: 'var(--color-text-primary)' }}
-          animate={{ opacity: [0.6, 1, 0.6] }}
+          animate={prefersReducedMotion ? {} : { opacity: [0.6, 1, 0.6] }}
           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
         />
       )}
@@ -223,9 +224,10 @@ function DayDetail({ date, meta, onClose }: DayDetailProps) {
           </h3>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-1.5 rounded-full hover:bg-[var(--color-bg-secondary)] transition-colors"
           >
-            <X size={14} className="text-[var(--color-text-muted)]" />
+            <X size={14} className="text-[var(--color-text-muted)]" aria-hidden="true" />
           </button>
         </div>
 
@@ -275,6 +277,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
   const { t } = useTranslation()
   const { language } = useAppStore()
   const dateLocale = language === 'bn' ? bn : undefined
+  const prefersReducedMotion = useReducedMotion()
 
   const today = new Date()
   const currentMonth = useMemo(() => {
@@ -368,14 +371,16 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
       <motion.div
         className="absolute -top-8 -right-8 w-40 h-40 rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(232,71,108,0.07) 0%, transparent 70%)' }}
-        animate={{ y: [0, -10, 0], x: [0, 6, 0] }}
+        animate={prefersReducedMotion ? {} : { y: [0, -10, 0], x: [0, 6, 0] }}
         transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+        aria-hidden="true"
       />
       <motion.div
         className="absolute bottom-24 -left-10 w-32 h-32 rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(123,197,174,0.06) 0%, transparent 70%)' }}
-        animate={{ y: [0, 10, 0], x: [0, -5, 0] }}
+        animate={prefersReducedMotion ? {} : { y: [0, 10, 0], x: [0, -5, 0] }}
         transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+        aria-hidden="true"
       />
 
       {/* ── Month Header ─────────────────────────────────────── */}
@@ -388,9 +393,10 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={prevMonth}
+              aria-label="Previous month"
               className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors"
             >
-              <ChevronLeft size={20} className="text-[var(--color-text-secondary)]" />
+              <ChevronLeft size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
             </button>
 
             <motion.h2
@@ -405,9 +411,10 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
 
             <button
               onClick={nextMonth}
+              aria-label="Next month"
               className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors"
             >
-              <ChevronRight size={20} className="text-[var(--color-text-secondary)]" />
+              <ChevronRight size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
             </button>
           </div>
 
@@ -498,7 +505,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
                       <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.nextPeriod')}</span>
                     </div>
                     <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                      {format(parseISO(firstPredictedPeriod.date), 'MMM d', { locale: dateLocale })}
+                      {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(firstPredictedPeriod.date))}
                     </span>
                   </div>
                 )}
@@ -509,7 +516,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
                       <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.ovulationDayLabel')}</span>
                     </div>
                     <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                      {format(parseISO(ovulationDay.date), 'MMM d', { locale: dateLocale })}
+                      {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(ovulationDay.date))}
                     </span>
                   </div>
                 )}
@@ -520,9 +527,9 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
                       <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.fertileWindow')}</span>
                     </div>
                     <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                      {format(parseISO(fertileStart.date), 'MMM d', { locale: dateLocale })}
+                      {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(fertileStart.date))}
                       {' – '}
-                      {format(parseISO(fertileEnd.date), 'MMM d', { locale: dateLocale })}
+                      {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(fertileEnd.date))}
                     </span>
                   </div>
                 )}

@@ -65,15 +65,14 @@ export function DataTable<T extends Record<string, unknown>>({
               <th
                 key={col.key}
                 style={col.width ? { width: col.width } : undefined}
-                onClick={() => handleSort(col)}
-                className={clsx(
-                  'sticky top-0 bg-[var(--color-bg-secondary)] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] first:pl-5 last:pr-5',
-                  col.sortable && 'cursor-pointer select-none hover:text-[var(--color-text-primary)] transition-colors'
-                )}
+                className="sticky top-0 bg-[var(--color-bg-secondary)] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] first:pl-5 last:pr-5"
               >
-                <span className="inline-flex items-center gap-1">
-                  {col.header}
-                  {col.sortable && (
+                {col.sortable ? (
+                  <button
+                    onClick={() => handleSort(col)}
+                    className="inline-flex items-center gap-1 select-none hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded"
+                  >
+                    {col.header}
                     <span className="flex flex-col leading-none opacity-50">
                       <span
                         className={clsx('text-[10px]', {
@@ -92,8 +91,10 @@ export function DataTable<T extends Record<string, unknown>>({
                         ▼
                       </span>
                     </span>
-                  )}
-                </span>
+                  </button>
+                ) : (
+                  <span className="inline-flex items-center gap-1">{col.header}</span>
+                )}
               </th>
             ))}
           </tr>
@@ -123,10 +124,13 @@ export function DataTable<T extends Record<string, unknown>>({
               <tr
                 key={keyExtractor ? keyExtractor(row) : idx}
                 onClick={() => onRowClick?.(row)}
+                onKeyDown={onRowClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRowClick(row); } } : undefined}
+                tabIndex={onRowClick ? 0 : undefined}
+                role={onRowClick ? 'button' : undefined}
                 className={clsx(
                   'border-b border-[var(--color-border)] last:border-0 transition-colors duration-150',
                   'hover:bg-[var(--color-bg-secondary)]',
-                  onRowClick && 'cursor-pointer'
+                  onRowClick && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-rose-500'
                 )}
               >
                 {columns.map((col) => (

@@ -87,7 +87,7 @@ function PhaseBadges({ phases }: { phases: string[] }) {
 
 function formatDate(d: Date | null | string) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-US', {
+  return new Date(d).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -205,10 +205,11 @@ export function ContentClient({ data, categories }: ContentClientProps) {
               e.stopPropagation()
               router.push(`/content/${row.id}`)
             }}
-            className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors"
+            className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+            aria-label="Edit article"
             title="Edit article"
           >
-            <Pencil size={13} />
+            <Pencil size={13} aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -216,12 +217,13 @@ export function ContentClient({ data, categories }: ContentClientProps) {
               e.stopPropagation()
               setDeleteTarget(row)
             }}
-            className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+            aria-label="Delete article"
             title="Delete article"
           >
-            <Trash2 size={13} />
+            <Trash2 size={13} aria-hidden="true" />
           </button>
-          <ChevronRight size={14} className="text-[var(--color-text-muted)] ml-0.5" />
+          <ChevronRight size={14} className="text-[var(--color-text-muted)] ml-0.5" aria-hidden="true" />
         </div>
       ),
     },

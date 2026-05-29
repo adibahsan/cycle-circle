@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Mail, Clock, Sparkles } from 'lucide-react';
@@ -25,7 +25,6 @@ function isValidEmail(email: string) {
 }
 
 export default function EmailLoginPage() {
-  const router = useRouter();
   const { t } = useTranslation();
 
   const [email, setEmail] = useState('');
@@ -71,17 +70,21 @@ export default function EmailLoginPage() {
   return (
     <div className="flex flex-col min-h-[calc(100dvh-4rem)]">
       {/* Back */}
-      <motion.button
+      <motion.div
         custom={0}
         variants={FADE_UP}
         initial="hidden"
         animate="show"
-        onClick={() => router.push('/login')}
-        className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] font-medium mb-6 hover:text-[var(--color-primary)] transition-colors self-start"
+        className="self-start"
       >
-        <ArrowLeft size={16} />
-        {t('auth.backToPhoneLogin')}
-      </motion.button>
+        <Link
+          href="/login"
+          className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] font-medium mb-6 hover:text-[var(--color-primary)] transition-colors"
+        >
+          <ArrowLeft size={16} aria-hidden="true" />
+          {t('auth.backToPhoneLogin')}
+        </Link>
+      </motion.div>
 
       <AnimatePresence mode="wait" initial={false}>
         {!sent ? (
@@ -137,6 +140,7 @@ export default function EmailLoginPage() {
             {/* Input */}
             <motion.div custom={3} variants={FADE_UP} initial="hidden" animate="show" className="mb-5">
               <Input
+                id="email"
                 label={t('auth.emailFallback').replace('Login with Email instead', 'Email address')}
                 type="email"
                 placeholder={t('auth.emailPlaceholder')}
@@ -159,7 +163,7 @@ export default function EmailLoginPage() {
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                     </svg>
@@ -167,7 +171,7 @@ export default function EmailLoginPage() {
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    <Sparkles size={18} />
+                    <Sparkles size={18} aria-hidden="true" />
                     {t('auth.sendMagicLink')}
                   </span>
                 )}
@@ -275,7 +279,7 @@ export default function EmailLoginPage() {
 
             <button
               onClick={() => { setSent(false); setEmail(''); }}
-              className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors w-full text-center"
+              className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors w-full text-center focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
             >
               Use a different email
             </button>
@@ -294,12 +298,12 @@ export default function EmailLoginPage() {
         >
           <p className="text-sm text-[var(--color-text-muted)]">
             Have a phone number?{' '}
-            <button
-              onClick={() => router.push('/login')}
+            <Link
+              href="/login"
               className="text-[var(--color-primary)] font-semibold hover:underline underline-offset-2"
             >
               Login with OTP
-            </button>
+            </Link>
           </p>
         </motion.div>
       )}

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { requireAdminUser } from '@/app/queries/auth-queries'
 import { getSubscriptions } from '@/app/queries/subscription-queries'
 import { SubscriptionsClient } from './SubscriptionsClient'

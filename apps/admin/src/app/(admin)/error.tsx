@@ -33,9 +33,9 @@ export default function AdminError({
           </svg>
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+          <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">
             Something went wrong
-          </h2>
+          </h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-1">
             An unexpected error occurred. Please try again.
           </p>
@@ -47,7 +47,7 @@ export default function AdminError({
         </div>
         <button
           onClick={reset}
-          className="px-5 py-2.5 rounded-xl gradient-primary text-white text-sm font-semibold shadow-soft hover:opacity-90 active:scale-[0.98] transition-all"
+          className="px-5 py-2.5 rounded-xl gradient-primary text-white text-sm font-semibold shadow-soft hover:opacity-90 active:scale-[0.98] transition-[opacity,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
         >
           Try again
         </button>

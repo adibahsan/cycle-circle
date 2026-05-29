@@ -3,6 +3,8 @@ import { requireAdminUser } from '@/app/queries/auth-queries'
 import { getArticle, getCategories } from '@/app/queries/content-queries'
 import { EditArticleClient } from './EditArticleClient'
 
+export const dynamic = 'force-dynamic'
+
 export default async function EditArticlePage({
   params,
 }: {

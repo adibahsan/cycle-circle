@@ -113,7 +113,7 @@ interface UserDetailClientProps {
 
 function formatDate(d: Date | null | undefined) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-US', {
+  return new Date(d).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -122,7 +122,7 @@ function formatDate(d: Date | null | undefined) {
 
 function formatDateTime(d: Date | null | undefined) {
   if (!d) return '—'
-  return new Date(d).toLocaleString('en-US', {
+  return new Date(d).toLocaleString(undefined, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -148,9 +148,9 @@ function StatusBadge({ status }: { status: UserStatus }) {
 type TabKey = 'profiles' | 'subscription' | 'feedback'
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-  { key: 'profiles', label: 'Profiles', icon: <Heart size={15} /> },
-  { key: 'subscription', label: 'Subscription', icon: <CreditCard size={15} /> },
-  { key: 'feedback', label: 'Feedback', icon: <MessageSquare size={15} /> },
+  { key: 'profiles', label: 'Profiles', icon: <Heart size={15} aria-hidden="true" /> },
+  { key: 'subscription', label: 'Subscription', icon: <CreditCard size={15} aria-hidden="true" /> },
+  { key: 'feedback', label: 'Feedback', icon: <MessageSquare size={15} aria-hidden="true" /> },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -194,7 +194,7 @@ function ProfilesTab({ profiles }: { profiles: Profile[] }) {
   if (profiles.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 py-12 text-[var(--color-text-muted)]">
-        <User size={36} className="opacity-30" />
+        <User size={36} aria-hidden="true" className="opacity-30" />
         <p className="text-sm">No profiles created yet.</p>
       </div>
     )
@@ -264,7 +264,7 @@ function ProfilesTab({ profiles }: { profiles: Profile[] }) {
                     key={log.id}
                     className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]"
                   >
-                    <Activity size={10} className="shrink-0 text-[var(--color-primary)] opacity-60" />
+                    <Activity size={10} aria-hidden="true" className="shrink-0 text-[var(--color-primary)] opacity-60" />
                     <span>
                       {formatDate(log.startDate)}
                       {log.endDate ? ` → ${formatDate(log.endDate)}` : ' (ongoing)'}
@@ -350,7 +350,7 @@ function SubscriptionTab({
                 className="flex items-center justify-between rounded-xl bg-[var(--color-bg-secondary)] px-4 py-3 text-sm"
               >
                 <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
-                  <Clock size={13} className="shrink-0" />
+                  <Clock size={13} aria-hidden="true" className="shrink-0" />
                   <span>{formatDateTime(tx.createdAt)}</span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -382,7 +382,7 @@ function SubscriptionTab({
 
       {subscriptions.length === 0 && (
         <div className="flex flex-col items-center gap-3 py-12 text-[var(--color-text-muted)]">
-          <CreditCard size={36} className="opacity-30" />
+          <CreditCard size={36} aria-hidden="true" className="opacity-30" />
           <p className="text-sm">No subscription history.</p>
         </div>
       )}
@@ -398,7 +398,7 @@ function FeedbackTab({ feedback }: { feedback: Feedback[] }) {
   if (feedback.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 py-12 text-[var(--color-text-muted)]">
-        <MessageSquare size={36} className="opacity-30" />
+        <MessageSquare size={36} aria-hidden="true" className="opacity-30" />
         <p className="text-sm">No feedback submitted yet.</p>
       </div>
     )
@@ -501,9 +501,9 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
       {/* Back button */}
       <button
         onClick={() => router.back()}
-        className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
       >
-        <ArrowLeft size={15} />
+        <ArrowLeft size={15} aria-hidden="true" />
         Back to users
       </button>
 
@@ -527,27 +527,27 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
               <div className="flex flex-wrap gap-3 text-sm text-[var(--color-text-muted)]">
                 {user.email && (
                   <span className="flex items-center gap-1.5">
-                    <Mail size={13} />
+                    <Mail size={13} aria-hidden="true" />
                     {user.email}
                   </span>
                 )}
                 {user.phone && (
                   <span className="flex items-center gap-1.5">
-                    <Phone size={13} />
+                    <Phone size={13} aria-hidden="true" />
                     {user.phone}
                   </span>
                 )}
                 <span className="flex items-center gap-1.5">
-                  <Smartphone size={13} />
+                  <Smartphone size={13} aria-hidden="true" />
                   {user.authMethod === 'PHONE_OTP' ? 'Phone OTP' : 'Magic Link'}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Calendar size={13} />
+                  <Calendar size={13} aria-hidden="true" />
                   Joined {formatDate(user.createdAt)}
                 </span>
                 {user.lastLoginAt && (
                   <span className="flex items-center gap-1.5">
-                    <Clock size={13} />
+                    <Clock size={13} aria-hidden="true" />
                     Last seen {formatDate(user.lastLoginAt)}
                   </span>
                 )}
@@ -565,7 +565,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
                   onClick={() => setModalAction('revoke')}
                   disabled={isPending}
                 >
-                  <Crown size={14} />
+                  <Crown size={14} aria-hidden="true" />
                   Revoke Pro
                 </Button>
               ) : (
@@ -575,7 +575,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
                   onClick={handleGrantPro}
                   loading={isPending}
                 >
-                  <Crown size={14} />
+                  <Crown size={14} aria-hidden="true" />
                   Grant Pro
                 </Button>
               )}
@@ -587,7 +587,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
                   onClick={handleReactivate}
                   loading={isPending}
                 >
-                  <CheckCircle size={14} />
+                  <CheckCircle size={14} aria-hidden="true" />
                   Reactivate
                 </Button>
               ) : (
@@ -597,7 +597,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
                   onClick={() => setModalAction('suspend')}
                   disabled={isPending}
                 >
-                  <Ban size={14} />
+                  <Ban size={14} aria-hidden="true" />
                   Suspend
                 </Button>
               )}
@@ -608,7 +608,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
                 onClick={() => setModalAction('delete')}
                 disabled={isPending}
               >
-                <Trash2 size={14} />
+                <Trash2 size={14} aria-hidden="true" />
                 Delete
               </Button>
             </div>
@@ -623,8 +623,8 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
 
         {/* Error banner */}
         {actionError && (
-          <div className="mt-4 flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-            <AlertCircle size={15} className="shrink-0" />
+          <div role="alert" className="mt-4 flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+            <AlertCircle size={15} aria-hidden="true" className="shrink-0" />
             {actionError}
           </div>
         )}
@@ -632,7 +632,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
         {/* Suspension note */}
         {isSuspended && user.suspendedAt && (
           <div className="mt-4 flex items-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
-            <Shield size={15} className="shrink-0" />
+            <Shield size={15} aria-hidden="true" className="shrink-0" />
             Suspended on {formatDateTime(user.suspendedAt)}
           </div>
         )}
@@ -641,17 +641,17 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="glass rounded-2xl border border-[var(--color-border)] p-4 shadow-soft text-center">
-          <p className="text-2xl font-bold text-[var(--color-text-primary)]">{user.profiles.length}</p>
+          <p className="text-2xl font-bold tabular-nums text-[var(--color-text-primary)]">{user.profiles.length}</p>
           <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Profiles</p>
         </div>
         <div className="glass rounded-2xl border border-[var(--color-border)] p-4 shadow-soft text-center">
-          <p className="text-2xl font-bold text-[var(--color-text-primary)]">
+          <p className="text-2xl font-bold tabular-nums text-[var(--color-text-primary)]">
             {user.profiles.reduce((sum, p) => sum + p._count.periodLogs, 0)}
           </p>
           <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Period Logs</p>
         </div>
         <div className="glass rounded-2xl border border-[var(--color-border)] p-4 shadow-soft text-center">
-          <p className="text-2xl font-bold text-[var(--color-text-primary)]">{user.feedback.length}</p>
+          <p className="text-2xl font-bold tabular-nums text-[var(--color-text-primary)]">{user.feedback.length}</p>
           <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Feedback</p>
         </div>
       </div>
@@ -662,7 +662,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 ${
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors transition-shadow duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
               activeTab === tab.key
                 ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-soft'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'

@@ -70,7 +70,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Collapse toggle — desktop only */}
         <button
           onClick={toggleSidebar}
-          className="hidden md:flex p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+          className="hidden md:flex p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
           aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
@@ -78,7 +78,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto" aria-label="Admin navigation">
         {!sidebarCollapsed && (
           <p className="px-3 mb-2 text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
             Navigation
@@ -92,7 +92,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               href={href}
               onClick={() => setMobileMenuOpen(false)}
               title={sidebarCollapsed ? label : undefined}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors group ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 group ${
                 sidebarCollapsed ? 'justify-center' : ''
               } ${
                 active
@@ -122,7 +122,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <button
           onClick={toggleTheme}
           title={sidebarCollapsed ? (theme === 'dark' ? 'Light mode' : 'Dark mode') : undefined}
-          className={`flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors ${
+          aria-label={sidebarCollapsed ? (theme === 'dark' ? 'Light mode' : 'Dark mode') : undefined}
+          className={`flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
             sidebarCollapsed ? 'w-10 h-10 justify-center px-0' : 'w-full'
           }`}
         >
@@ -135,7 +136,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <button
           onClick={handleLogout}
           title={sidebarCollapsed ? 'Sign out' : undefined}
-          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/8 transition-colors ${
+          aria-label={sidebarCollapsed ? 'Log out' : undefined}
+          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/8 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
             sidebarCollapsed ? 'w-10 h-10 justify-center px-0' : 'w-full'
           }`}
         >
@@ -150,7 +152,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-[var(--color-bg-primary)] flex">
       {/* ── Desktop Sidebar ── */}
       <aside
-        className={`hidden md:flex md:flex-col md:sticky md:top-0 md:h-screen md:shrink-0 glass border-r border-[var(--color-border)] z-40 transition-all duration-300 ${
+        className={`hidden md:flex md:flex-col md:sticky md:top-0 md:h-screen md:shrink-0 glass border-r border-[var(--color-border)] z-40 transition-[width] duration-300 ${
           sidebarCollapsed ? 'md:w-16' : 'md:w-64'
         }`}
       >
@@ -159,17 +161,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* ── Mobile Sidebar Overlay ── */}
       {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-40 md:hidden"
+        <button
+          type="button"
+          className="fixed inset-0 z-40 md:hidden w-full cursor-default"
           onClick={() => setMobileMenuOpen(false)}
-          aria-hidden="true"
+          aria-label="Close navigation menu"
+          tabIndex={-1}
         >
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-        </div>
+        </button>
       )}
 
       {/* Mobile Sidebar drawer */}
       <aside
+        role="dialog"
+        aria-label="Navigation menu"
+        aria-modal="true"
         className={`fixed top-0 left-0 h-full w-72 z-50 flex flex-col glass border-r border-[var(--color-border)] md:hidden transition-transform duration-300 ease-in-out ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
@@ -183,7 +190,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <button
             onClick={() => setMobileMenuOpen(false)}
-            className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+            className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
             aria-label="Close menu"
           >
             <X size={18} />
@@ -197,7 +204,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 key={href}
                 href={href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
                   active
                     ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
@@ -234,7 +241,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+              className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
               aria-label="Open menu"
             >
               <Menu size={18} />
@@ -248,7 +255,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors"
+            className="p-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}

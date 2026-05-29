@@ -81,15 +81,23 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
       >
         {/* Backdrop */}
         <motion.div
           className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           onClick={step === 'confirm' ? onCancel : undefined}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (step === 'confirm') onCancel(); } }}
+          role="button"
+          aria-label="Close dialog"
+          tabIndex={-1}
         />
 
         <motion.div
-          className="relative w-full max-w-md rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border)] overflow-hidden shadow-glow"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="bdapps-modal-title"
+          className="relative w-full max-w-md rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border)] overflow-hidden shadow-glow overscroll-contain"
           initial={{ y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
@@ -98,7 +106,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
           {/* Header stripe */}
           <div className="h-1.5 w-full gradient-primary" />
 
-          <div className="p-6">
+          <div className="p-6" aria-live="polite" aria-atomic="true">
             {step === 'confirm' && (
               <div className="space-y-5">
                 <div className="flex items-center gap-2">
@@ -109,7 +117,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                     <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
                       BDApps CAAS
                     </p>
-                    <p className="text-sm font-bold text-[var(--color-text-primary)]">Mobile Billing</p>
+                    <p id="bdapps-modal-title" className="text-sm font-bold text-[var(--color-text-primary)]">Mobile Billing</p>
                   </div>
                 </div>
 
@@ -381,7 +389,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
 
                 <button
                   onClick={handleUpgradeClick}
-                  className="w-full bg-white text-[var(--color-primary)] font-bold py-3.5 rounded-xl text-base hover:bg-white/90 active:scale-[0.98] transition-all duration-200 shadow-soft"
+                  className="w-full bg-white text-[var(--color-primary)] font-bold py-3.5 rounded-xl text-base hover:bg-white/90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                 >
                   Upgrade to Pro
                 </button>
@@ -430,16 +438,16 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               </div>
               <div className="px-2 py-3 flex justify-center items-center">
                 {free ? (
-                  <Check size={16} className="text-[var(--color-text-muted)]" />
+                  <Check size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
                 ) : (
-                  <X size={16} className="text-[var(--color-border)]" />
+                  <X size={16} className="text-[var(--color-border)]" aria-hidden="true" />
                 )}
               </div>
               <div className="px-2 py-3 flex justify-center items-center">
                 {pro ? (
-                  <Check size={16} className="text-[var(--color-primary)]" />
+                  <Check size={16} className="text-[var(--color-primary)]" aria-hidden="true" />
                 ) : (
-                  <X size={16} className="text-[var(--color-border)]" />
+                  <X size={16} className="text-[var(--color-border)]" aria-hidden="true" />
                 )}
               </div>
             </div>

@@ -71,14 +71,16 @@ function SegmentedControl<T extends string>({
   onChange: (v: T) => void
 }) {
   return (
-    <div className="flex items-center gap-0.5 p-0.5 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+    <div role="radiogroup" className="flex items-center gap-0.5 p-0.5 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
       {options.map(opt => {
         const active = opt.value === value
         return (
           <button
             key={opt.value}
+            role="radio"
+            aria-checked={active}
             onClick={() => onChange(opt.value)}
-            className={`relative flex-1 py-1.5 px-4 rounded-[10px] text-sm font-semibold transition-all duration-200 ${
+            className={`relative flex-1 py-1.5 px-4 rounded-[10px] text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
               active
                 ? 'text-white shadow-soft'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
@@ -103,16 +105,18 @@ function Toggle({
   checked,
   onChange,
   id,
+  label,
 }: {
   checked: boolean
   onChange: (v: boolean) => void
   id: string
+  label?: string
 }) {
   return (
     <button
       role="switch"
       aria-checked={checked}
-      aria-label={id}
+      aria-label={label ?? id}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
         checked ? 'gradient-primary' : 'bg-[var(--color-border)]'
@@ -145,7 +149,7 @@ function useToast() {
 
 function ToastStack({ toasts }: { toasts: ToastMsg[] }) {
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 w-full max-w-xs px-4 pointer-events-none">
+    <div aria-live="polite" aria-atomic="true" className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 w-full max-w-xs px-4 pointer-events-none">
       <AnimatePresence>
         {toasts.map(t => (
           <motion.div
@@ -167,7 +171,7 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: 
   return (
     <div className="flex items-center gap-2 mb-3">
       <div className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center shrink-0">
-        <Icon size={14} className="text-white" />
+        <Icon size={14} className="text-white" aria-hidden="true" />
       </div>
       <h2 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-wide">
         {title}
@@ -380,6 +384,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                     </div>
                     <Toggle
                       id={key}
+                      label={label}
                       checked={localPrefs[key]}
                       onChange={v => handleNotifChange(key, v)}
                     />
@@ -406,18 +411,18 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={handleExportCsv}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] transition-all duration-200"
+                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                   >
-                    <FileText size={22} className="text-[var(--color-secondary)]" />
+                    <FileText size={22} className="text-[var(--color-secondary)]" aria-hidden="true" />
                     <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
                       {t('settings.exportCsv')}
                     </span>
                   </button>
                   <button
                     onClick={handleExportExcel}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] transition-all duration-200"
+                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                   >
-                    <FileSpreadsheet size={22} className="text-[var(--color-primary)]" />
+                    <FileSpreadsheet size={22} className="text-[var(--color-primary)]" aria-hidden="true" />
                     <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
                       {t('settings.exportExcel')}
                     </span>

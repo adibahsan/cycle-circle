@@ -8,21 +8,22 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-export function Input({ label, error, className, ...props }: InputProps) {
+export function Input({ label, error, className, id, ...props }: InputProps & { id?: string }) {
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
+        <label htmlFor={id} className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
           {label}
         </label>
       )}
       <input
+        id={id}
         className={twMerge(clsx(
           'w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]',
           'text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]',
-          'focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]',
-          'transition-all duration-200',
-          error && 'border-red-400 focus:ring-red-300',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)]',
+          'transition-colors transition-shadow duration-200',
+          error && 'border-red-400 focus-visible:ring-red-300',
           className
         ))}
         {...props}

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { requireAdminUser } from '@/app/queries/auth-queries'
 import { getSmsBroadcasts } from '@/app/queries/sms-queries'
 import { SmsClient } from './SmsClient'

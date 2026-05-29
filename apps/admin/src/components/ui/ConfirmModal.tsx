@@ -50,7 +50,7 @@ export function ConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overscroll-contain"
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-modal-title"
@@ -66,7 +66,7 @@ export function ConfirmModal({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="relative z-10 w-full max-w-md rounded-2xl glass border border-[var(--color-border)] p-6 shadow-soft focus:outline-none"
+        className="relative z-10 w-full max-w-md rounded-2xl glass border border-[var(--color-border)] p-6 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
       >
         {/* Icon */}
         <div
