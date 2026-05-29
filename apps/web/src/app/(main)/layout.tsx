@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/lib/store';
-import { useDummyData } from '@vesta/shared/utils/config';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import VestaLogo from '@/components/ui/VestaLogo';
 import {
@@ -16,7 +14,6 @@ import {
   Settings,
   MessageSquare,
   Users,
-  Crown,
   CreditCard,
   Sun,
   Moon,
@@ -37,30 +34,13 @@ const SIDEBAR_EXTRA_ITEMS = [
 ];
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
   const { t } = useTranslation();
-  const { isAuthenticated, isHydrating, user, profiles, activeProfileId, setActiveProfile, theme, setTheme } = useAppStore();
+  const { theme, setTheme, activeProfileId: _activeProfileId } = useAppStore();
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
-
-  useEffect(() => {
-    if (!isAuthenticated) router.replace('/login');
-  }, [isAuthenticated, router]);
-
-  if (!isAuthenticated) return null;
-
-  if (!useDummyData && isHydrating) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-primary)]">
-        <p className="text-sm text-[var(--color-text-muted)]">Loading your data…</p>
-      </div>
-    );
-  }
-
-  const activeProfile = profiles.find(p => p.id === activeProfileId);
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-primary)] flex flex-col md:flex-row relative">
@@ -70,11 +50,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <div className="px-5 py-5 flex items-center gap-3">
           <VestaLogo size={28} animate={false} />
           <h1 className="text-xl font-bold gradient-primary bg-clip-text text-transparent">Vesta</h1>
-          {user?.subscriptionStatus === 'pro' && (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
-              <Crown size={10} /> PRO
-            </span>
-          )}
         </div>
 
         {/* Profile switcher */}
@@ -84,7 +59,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors"
           >
             <Users size={14} />
-            <span className="truncate">{activeProfile?.name ?? 'Profile'}</span>
+            <span className="truncate">Profile</span>
           </Link>
         </div>
 
@@ -161,15 +136,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-xs font-medium hover:border-[var(--color-primary)] transition-colors"
             >
               <Users size={12} />
-              <span>{activeProfile?.name ?? 'Profile'}</span>
+              <span>Profile</span>
             </Link>
           </div>
           <div className="flex items-center gap-2">
-            {user?.subscriptionStatus === 'pro' && (
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
-                <Crown size={10} /> PRO
-              </span>
-            )}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors"

@@ -6,13 +6,7 @@ import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { Phone, Shield, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import VestaLogo from '@/components/ui/VestaLogo';
-import { useAppStore } from '@/lib/store';
-import { auth, ApiClientError } from '@/lib/api';
-import { devMode, DEV_DEFAULT_PHONE, useDummyData } from '@vesta/shared/utils/config';
-import { hydrateFromApi } from '@/lib/hydrate-store';
-import { getPostAuthPath } from '@/lib/post-auth';
+import { devMode, DEV_DEFAULT_PHONE } from '@vesta/shared/utils/config';
 import '@vesta/shared/utils/i18n';
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -30,18 +24,15 @@ export default function LoginPage() {
   const router = useRouter();
   const { t } = useTranslation();
 
-  const login = useAppStore((s) => s.login);
-  const loginWithUser = useAppStore((s) => s.loginWithUser);
-
   const [phone, setPhone] = useState(devMode ? DEV_DEFAULT_PHONE : '');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   function validatePhone(value: string) {
     const digits = value.replace(/\D/g, '');
-    if (digits.length === 0) return 'Phone number is required';
-    if (digits.length !== 11) return 'Enter a valid 11-digit Bangladesh number';
-    if (!digits.startsWith('01')) return 'Number must start with 01';
+    if (digits.length === 0) return t('auth.phoneRequired');
+    if (digits.length !== 11) return t('auth.phoneInvalid');
+    if (!digits.startsWith('01')) return t('auth.phoneMustStart');
     return '';
   }
 
@@ -52,12 +43,6 @@ export default function LoginPage() {
   }
 
   async function handleSendOtp() {
-    if (useDummyData) {
-      login('otp');
-      router.replace('/dashboard');
-      return;
-    }
-
     const validationError = validatePhone(phone);
     if (validationError) {
       setError(validationError);
@@ -68,17 +53,19 @@ export default function LoginPage() {
 
     if (devMode) {
       try {
-        const { user } = await auth.devLogin(phone);
-        loginWithUser(user, 'otp');
-        await hydrateFromApi();
-        const { profiles } = useAppStore.getState();
-        router.replace(getPostAuthPath(profiles.length));
-      } catch (err) {
-        if (err instanceof ApiClientError) {
-          setError(err.message);
-        } else {
-          setError('Dev login failed. Ensure DEV_MODE=true on the server.');
+        const res = await fetch('/api/auth/dev-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          setError((body as { error?: string }).error ?? 'Dev login failed.');
+          return;
         }
+        router.replace('/dashboard');
+      } catch {
+        setError('Dev login failed. Ensure DEV_MODE=true on the server.');
       } finally {
         setLoading(false);
       }
@@ -86,16 +73,20 @@ export default function LoginPage() {
     }
 
     try {
-      const { referenceNo } = await auth.requestOtp(phone);
-      sessionStorage.setItem('vesta-otp-phone', phone);
-      sessionStorage.setItem('vesta-otp-ref', referenceNo);
-      router.push('/verify-otp');
-    } catch (err) {
-      if (err instanceof ApiClientError) {
-        setError(err.message);
-      } else {
-        setError('Failed to send OTP. Please try again.');
+      const res = await fetch('/api/auth/otp/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      const body = await res.json().catch(() => ({})) as { referenceNo?: string; error?: string };
+      if (!res.ok) {
+        setError(body.error ?? 'Failed to send OTP. Please try again.');
+        return;
       }
+      const { referenceNo } = body;
+      router.push(`/verify-otp?referenceNo=${encodeURIComponent(referenceNo ?? '')}&phone=${encodeURIComponent(phone)}`);
+    } catch {
+      setError('Failed to send OTP. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -117,7 +108,9 @@ export default function LoginPage() {
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           className="mb-4"
         >
-          <VestaLogo size={56} animate={true} />
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center shadow-soft">
+            <span className="text-white text-2xl font-bold">V</span>
+          </div>
         </motion.div>
 
         <h1
@@ -145,7 +138,7 @@ export default function LoginPage() {
           {t('auth.login')}
         </h2>
         <p className="text-sm text-[var(--color-text-muted)] mb-5">
-          {devMode && !useDummyData
+          {devMode
             ? 'Dev mode: sign in with phone only (OTP skipped, real database)'
             : 'Enter your phone number to receive a one-time code'}
         </p>
@@ -198,7 +191,7 @@ export default function LoginPage() {
           ) : (
             <span className="flex items-center gap-2">
               <Phone size={18} />
-              {devMode && !useDummyData ? 'Continue (dev)' : t('auth.sendOtp')}
+              {devMode ? 'Continue (dev)' : t('auth.sendOtp')}
             </span>
           )}
         </Button>
@@ -232,7 +225,7 @@ export default function LoginPage() {
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
           <Shield size={14} className="text-[var(--color-primary)]" />
           <span className="text-xs text-[var(--color-text-muted)]">
-            Your data is encrypted &amp; private
+            {t('onboarding.privacy')}
           </span>
         </div>
         <p className="text-[11px] text-[var(--color-text-muted)] text-center leading-relaxed px-6">

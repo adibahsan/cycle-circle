@@ -3,6 +3,7 @@ import { parseBody } from '@vesta/shared/server/validation'
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { issueJwt, setAuthCookie } from '@vesta/shared/server/auth'
 import { verifyOtp } from '@vesta/shared/server/adapters/bdapps'
+import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
 import { prisma } from '@vesta/shared'
 
 const bodySchema = z.object({
@@ -13,6 +14,11 @@ const bodySchema = z.object({
 export async function POST(request: Request): Promise<Response> {
   try {
     const body = await parseBody(request, bodySchema)
+
+    const rl = await checkRateLimit(`otp:verify:${body.referenceNo}`, 5, 300)
+    if (!rl.allowed) {
+      throw new ApiError(429, 'Too many verification attempts. Try again later.', 'RATE_LIMITED')
+    }
 
     const challenge = await prisma.otpChallenge.findFirst({
       where: { referenceNo: body.referenceNo },

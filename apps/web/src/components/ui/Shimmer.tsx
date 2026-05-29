@@ -1,5 +1,3 @@
-'use client';
-
 export function Shimmer({ className = '' }: { className?: string }) {
   return (
     <div

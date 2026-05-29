@@ -7,9 +7,6 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Mail, Clock, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useAppStore } from '@/lib/store';
-import { auth, ApiClientError } from '@/lib/api';
-import { useDummyData } from '@vesta/shared/utils/config';
 import '@vesta/shared/utils/i18n';
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -30,7 +27,6 @@ function isValidEmail(email: string) {
 export default function EmailLoginPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const login = useAppStore((s) => s.login);
 
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -43,43 +39,33 @@ export default function EmailLoginPage() {
   }
 
   async function handleSendMagicLink() {
-    if (useDummyData) {
-      setError('Email login in demo mode uses the simulate button below.');
-      return;
-    }
-
     if (!email.trim()) {
-      setError('Email address is required');
+      setError(t('auth.emailRequired'));
       return;
     }
     if (!isValidEmail(email)) {
-      setError('Enter a valid email address');
+      setError(t('auth.emailInvalid'));
       return;
     }
 
     setLoading(true);
     try {
-      await auth.requestMagicLink(email);
-      setSent(true);
-    } catch (err) {
-      if (err instanceof ApiClientError) {
-        setError(err.message);
-      } else {
-        setError('Failed to send magic link. Please try again.');
+      const res = await fetch('/api/auth/magic-link/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const body = await res.json().catch(() => ({})) as { error?: string };
+      if (!res.ok) {
+        setError(body.error ?? t('auth.sendMagicLinkFailed'));
+        return;
       }
+      setSent(true);
+    } catch {
+      setError(t('auth.sendMagicLinkFailed'));
     } finally {
       setLoading(false);
     }
-  }
-
-  // Simulate clicking the magic link from email (demo only).
-  // In production, the magic link callback route (/api/auth/magic-link/callback) handles
-  // token verification, sets the session, and redirects the user directly.
-  async function handleSimulatedMagicLink() {
-    setLoading(true);
-    await new Promise((res) => setTimeout(res, 800));
-    login('email');
-    router.replace('/onboarding');
   }
 
   return (
@@ -94,7 +80,7 @@ export default function EmailLoginPage() {
         className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] font-medium mb-6 hover:text-[var(--color-primary)] transition-colors self-start"
       >
         <ArrowLeft size={16} />
-        Back to phone login
+        {t('auth.backToPhoneLogin')}
       </motion.button>
 
       <AnimatePresence mode="wait" initial={false}>
@@ -287,42 +273,12 @@ export default function EmailLoginPage() {
               </ul>
             </motion.div>
 
-            {useDummyData && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.46, duration: 0.4 }}
-                className="w-full"
-              >
-                <Button
-                  fullWidth
-                  size="lg"
-                  onClick={handleSimulatedMagicLink}
-                  disabled={loading}
-                  variant="secondary"
-                  className="rounded-2xl text-sm font-semibold mb-3"
-                >
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                      </svg>
-                      Logging in…
-                    </span>
-                  ) : (
-                    '✉ Simulate clicking magic link (demo)'
-                  )}
-                </Button>
-
-                <button
-                  onClick={() => { setSent(false); setEmail(''); }}
-                  className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors w-full text-center"
-                >
-                  Use a different email
-                </button>
-              </motion.div>
-            )}
+            <button
+              onClick={() => { setSent(false); setEmail(''); }}
+              className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors w-full text-center"
+            >
+              Use a different email
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
