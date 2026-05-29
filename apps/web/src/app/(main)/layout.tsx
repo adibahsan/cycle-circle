@@ -65,7 +65,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
         {/* Main navigation */}
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto" aria-label="Main navigation">
-          <p className="px-3 mb-2 text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
+          <p className="px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
             Menu
           </p>
           {NAV_ITEMS.map(({ href, icon: Icon, labelKey }) => {
@@ -89,7 +89,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           {/* Divider */}
           <div className="my-3 border-t border-[var(--color-border)]" />
 
-          <p className="px-3 mb-2 text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
+          <p className="px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
             More
           </p>
           {SIDEBAR_EXTRA_ITEMS.map(({ href, icon: Icon, labelKey }) => {
@@ -174,7 +174,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 }`}
               >
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} />
-                <span className="text-[10px] font-medium">{t(labelKey)}</span>
+                <span className="text-[11px] font-medium">{t(labelKey)}</span>
               </Link>
             );
           })}

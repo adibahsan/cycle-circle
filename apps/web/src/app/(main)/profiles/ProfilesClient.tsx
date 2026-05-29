@@ -29,12 +29,12 @@ const RELATION_ICONS: Record<ProfileRelation, string> = {
 };
 
 const RELATION_COLORS: Record<ProfileRelation, { bg: string; text: string; border: string }> = {
-  self: { bg: 'rgba(232,71,108,0.1)', text: '#C93558', border: 'rgba(232,71,108,0.3)' },
-  wife: { bg: 'rgba(155,127,212,0.1)', text: '#7A5CB8', border: 'rgba(155,127,212,0.3)' },
-  sister: { bg: 'rgba(123,197,174,0.1)', text: '#2D8C72', border: 'rgba(123,197,174,0.3)' },
-  mother: { bg: 'rgba(255,140,107,0.1)', text: '#C4592A', border: 'rgba(255,140,107,0.3)' },
-  daughter: { bg: 'rgba(255,193,7,0.1)', text: '#9A7209', border: 'rgba(255,193,7,0.3)' },
-  girlfriend: { bg: 'rgba(232,71,108,0.08)', text: '#9B2D4A', border: 'rgba(232,71,108,0.25)' },
+  self: { bg: 'rgba(232,71,108,0.1)', text: '#E8476C', border: 'rgba(232,71,108,0.3)' },
+  wife: { bg: 'rgba(155,127,212,0.1)', text: '#9B7FD4', border: 'rgba(155,127,212,0.3)' },
+  sister: { bg: 'rgba(123,197,174,0.1)', text: '#4DAA8D', border: 'rgba(123,197,174,0.3)' },
+  mother: { bg: 'rgba(255,140,107,0.1)', text: '#E06B3C', border: 'rgba(255,140,107,0.3)' },
+  daughter: { bg: 'rgba(255,193,7,0.1)', text: '#D4A017', border: 'rgba(255,193,7,0.3)' },
+  girlfriend: { bg: 'rgba(232,71,108,0.08)', text: '#E8476C', border: 'rgba(232,71,108,0.25)' },
 };
 
 // Map Prisma uppercase enum to lowercase ProfileRelation
@@ -120,7 +120,7 @@ function ProfileCard({ profile, isActive, onSwitch, onDelete }: ProfileCardProps
     >
       <button
         onClick={onSwitch}
-        className="w-full text-left rounded-2xl border transition-colors duration-200 p-4 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+        className="w-full text-left rounded-2xl border transition-[color,background-color,border-color,box-shadow] duration-200 p-4 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
         style={{
           background: isActive
             ? 'linear-gradient(135deg, rgba(232,71,108,0.07) 0%, rgba(155,127,212,0.07) 100%)'

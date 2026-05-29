@@ -67,15 +67,15 @@ interface CategoryConfig {
 }
 
 const CATEGORIES: CategoryConfig[] = [
-  { id: 'bug', labelKey: 'feedback.bug', Icon: Bug, color: '#EF4444', bg: '#FEF2F2' },
+  { id: 'bug', labelKey: 'feedback.bug', Icon: Bug, color: '#EF4444', bg: 'rgba(239,68,68,0.08)' },
   {
     id: 'feature',
     labelKey: 'feedback.feature',
     Icon: Lightbulb,
     color: 'var(--color-secondary)',
-    bg: '#F5F0FF',
+    bg: 'rgba(155,127,212,0.08)',
   },
-  { id: 'general', labelKey: 'feedback.general', Icon: MessageSquare, color: '#3B82F6', bg: '#EFF6FF' },
+  { id: 'general', labelKey: 'feedback.general', Icon: MessageSquare, color: '#3B82F6', bg: 'rgba(59,130,246,0.08)' },
   {
     id: 'satisfaction',
     labelKey: 'feedback.satisfaction',
@@ -376,7 +376,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                         value={message}
                         onChange={e => setMessage(e.target.value)}
                         placeholder={t('feedback.message')}
-                        className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200"
+                        className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
                       />
                       <span
                         className="absolute bottom-2.5 right-3 text-[10px] font-medium"

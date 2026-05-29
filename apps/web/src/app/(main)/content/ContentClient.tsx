@@ -119,7 +119,7 @@ export function ContentClient({ articles, activePhase }: ContentClientProps) {
   return (
     <div className="py-4">
       <div className="mb-5">
-        <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
+        <h2 className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)]">
           {t('content.title')}
         </h2>
         <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
@@ -175,7 +175,7 @@ export function ContentClient({ articles, activePhase }: ContentClientProps) {
             <button
               key={article.id}
               onClick={() => setSelectedArticle(article)}
-              className="w-full text-left glass rounded-2xl p-4 hover:border-[var(--color-primary)]/30 transition-colors group focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+              className="w-full text-left glass rounded-2xl p-4 hover:border-[var(--color-primary)]/30 hover:shadow-soft transition-[color,background-color,border-color,box-shadow] duration-200 group focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
