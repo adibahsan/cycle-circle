@@ -102,7 +102,7 @@ export default function EmailLoginPage() {
                 className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-soft"
                 style={{ background: 'linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 100%)' }}
               >
-                <Mail size={28} color="white" strokeWidth={1.8} />
+                <Mail size={28} color="white" strokeWidth={1.8} aria-hidden="true" />
               </div>
               <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-1">
                 Email Login
@@ -125,7 +125,7 @@ export default function EmailLoginPage() {
                 borderStyle: 'dashed',
               }}
             >
-              <Clock size={16} className="mt-0.5 flex-shrink-0 text-[var(--color-secondary)]" />
+              <Clock size={16} className="mt-0.5 flex-shrink-0 text-[var(--color-secondary)]" aria-hidden="true" />
               <div>
                 <p className="text-sm font-semibold text-[var(--color-text-primary)] mb-0.5">
                   24-hour trial window
@@ -149,6 +149,8 @@ export default function EmailLoginPage() {
                 error={error}
                 autoComplete="email"
                 inputMode="email"
+                name="email"
+                spellCheck={false}
               />
             </motion.div>
 

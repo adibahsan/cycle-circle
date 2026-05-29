@@ -278,7 +278,7 @@ function PeriodLogModal({
         role="dialog"
         aria-modal="true"
         aria-label={isEdit ? t('dashboard.editPeriodLog') : t('dashboard.logPeriod')}
-        className="relative w-full max-w-md bg-[var(--color-bg-card)] rounded-t-3xl px-5 py-6 shadow-2xl"
+        className="relative w-full max-w-md max-h-[85dvh] overflow-y-auto overscroll-contain bg-[var(--color-bg-card)] rounded-t-3xl px-5 py-6 shadow-2xl"
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
@@ -335,10 +335,10 @@ function PeriodLogModal({
         </div>
 
         {/* Flow intensity */}
-        <div className="mb-6">
-          <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-2.5 uppercase tracking-wider">
+        <div role="group" aria-labelledby="flow-intensity-label" className="mb-6">
+          <span id="flow-intensity-label" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-2.5 uppercase tracking-wider">
             {t('dashboard.flowIntensity')}
-          </label>
+          </span>
           <div className="flex gap-2">
             {(['light', 'medium', 'heavy'] as FlowIntensity[]).map((f) => (
               <button
@@ -735,7 +735,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                   return (
                     <div
                       key={ph}
-                      className={`flex-1 rounded-lg px-1 py-2 md:py-3 flex flex-col items-center gap-1 transition-all ${
+                      className={`flex-1 rounded-lg px-1 py-2 md:py-3 flex flex-col items-center gap-1 transition-colors ${
                         isActive ? 'ring-2' : ''
                       }`}
                       style={{

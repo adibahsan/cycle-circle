@@ -115,7 +115,12 @@ export default function LoginPage() {
         </motion.div>
 
         <h1
-          className="text-3xl font-bold gradient-primary bg-clip-text text-transparent mb-1"
+          className="text-3xl font-bold mb-1"
+          style={{
+            background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
         >
           Vesta
         </h1>
@@ -159,6 +164,7 @@ export default function LoginPage() {
               inputMode="numeric"
               name="phone"
               autoComplete="tel"
+              spellCheck={false}
               placeholder="01XXXXXXXXX…"
               value={phone}
               onChange={handlePhoneChange}
@@ -226,7 +232,7 @@ export default function LoginPage() {
         className="mt-auto pt-8 pb-2 flex flex-col items-center gap-2"
       >
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
-          <Shield size={14} className="text-[var(--color-primary)]" />
+          <Shield size={14} className="text-[var(--color-primary)]" aria-hidden="true" />
           <span className="text-xs text-[var(--color-text-muted)]">
             {t('onboarding.privacy')}
           </span>

@@ -49,7 +49,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {/* Sidebar header / branding */}
         <div className="px-5 py-5 flex items-center gap-3">
           <VestaLogo size={28} animate={false} />
-          <h1 className="text-xl font-bold gradient-primary bg-clip-text text-transparent">Vesta</h1>
+          <h1 className="text-xl font-bold" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Vesta</h1>
         </div>
 
         {/* Profile switcher */}
@@ -58,7 +58,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             href="/profiles"
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors"
           >
-            <Users size={14} />
+            <Users size={14} aria-hidden="true" />
             <span className="truncate">Profile</span>
           </Link>
         </div>
@@ -80,7 +80,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
                 }`}
               >
-                <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} />
+                <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
                 <span className="text-sm font-semibold">{t(labelKey)}</span>
               </Link>
             );
@@ -104,7 +104,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
                 }`}
               >
-                <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} />
+                <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
                 <span className="text-sm font-semibold">{t(labelKey)}</span>
               </Link>
             );
@@ -131,12 +131,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <header className="sticky top-0 z-40 glass px-4 py-3 flex items-center justify-between md:hidden">
           <div className="flex items-center gap-3">
             <VestaLogo size={24} animate={false} />
-            <h1 className="text-xl font-bold gradient-primary bg-clip-text text-transparent">Vesta</h1>
+            <h1 className="text-xl font-bold" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Vesta</h1>
             <Link
               href="/profiles"
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-xs font-medium hover:border-[var(--color-primary)] transition-colors"
             >
-              <Users size={12} />
+              <Users size={12} aria-hidden="true" />
               <span>Profile</span>
             </Link>
           </div>
@@ -146,7 +146,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               className="p-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors"
               aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              {theme === 'dark' ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
             </button>
             <LanguageToggle />
           </div>
@@ -173,7 +173,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
                 }`}
               >
-                <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} />
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
                 <span className="text-[11px] font-medium">{t(labelKey)}</span>
               </Link>
             );
