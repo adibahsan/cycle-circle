@@ -313,7 +313,7 @@ function PeriodLogModal({
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             max={new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus:border-[var(--color-primary)] transition-colors"
+            className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
           />
         </div>
 
@@ -330,7 +330,7 @@ function PeriodLogModal({
             onChange={(e) => setEndDate(e.target.value)}
             min={startDate}
             max={new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus:border-[var(--color-primary)] transition-colors"
+            className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
           />
         </div>
 
@@ -372,7 +372,7 @@ function PeriodLogModal({
               key="saved"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-full py-3 rounded-xl bg-green-100 text-green-700 text-center font-semibold"
+              className="w-full py-3 rounded-xl bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-center font-semibold"
             >
               {t('dashboard.saved')}
             </motion.div>
@@ -540,7 +540,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.4 }}
-            className="mt-4 flex flex-col items-center gap-1"
+            className="mt-4 md:mt-0 flex flex-col items-center gap-1"
           >
             <div
               className="flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-sm font-semibold shadow-soft"
@@ -591,7 +591,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                   />
                 </div>
 
-                <p className="text-[10px] text-[var(--color-text-muted)]">
+                <p className="text-xs text-[var(--color-text-muted)]">
                   {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(prediction.nextPeriodStart))}
                 </p>
               </div>
@@ -746,12 +746,12 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       <span className="text-base md:text-lg">{getPhaseEmoji(ph as any)}</span>
                       <span
-                        className="text-[9px] md:text-[11px] font-bold text-center leading-tight"
+                        className="text-[11px] md:text-xs font-bold text-center leading-tight"
                         style={{ color }}
                       >
                         {t(labelKey)}
                       </span>
-                      <span className="text-[9px] md:text-[10px] text-[var(--color-text-muted)]">{days}d</span>
+                      <span className="text-[11px] md:text-xs text-[var(--color-text-muted)]">{days}d</span>
                     </div>
                   )
                 })}

@@ -26,25 +26,25 @@ const CATEGORY_COLORS: Record<SymptomCategory, { bg: string; border: string; tex
   physical: {
     bg: 'rgba(232,71,108,0.12)',
     border: 'rgba(232,71,108,0.35)',
-    text: '#C93558',
+    text: '#E8476C',
     ring: 'rgba(232,71,108,0.4)',
   },
   mood: {
     bg: 'rgba(155,127,212,0.12)',
     border: 'rgba(155,127,212,0.35)',
-    text: '#7A5CB8',
+    text: '#9B7FD4',
     ring: 'rgba(155,127,212,0.4)',
   },
   discharge: {
     bg: 'rgba(123,197,174,0.12)',
     border: 'rgba(123,197,174,0.35)',
-    text: '#2D8C72',
+    text: '#4DAA8D',
     ring: 'rgba(123,197,174,0.4)',
   },
   lifestyle: {
     bg: 'rgba(255,140,107,0.12)',
     border: 'rgba(255,140,107,0.35)',
-    text: '#C4592A',
+    text: '#E06B3C',
     ring: 'rgba(255,140,107,0.4)',
   },
 };
@@ -84,7 +84,7 @@ function DateChip({ date, isSelected, onSelect }: DateChipProps) {
   return (
     <button
       onClick={onSelect}
-      className="flex flex-col items-center gap-0.5 min-w-[48px] relative"
+      className="flex flex-col items-center gap-0.5 min-w-[48px] relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 rounded-xl"
       aria-label={format(date, 'MMMM d')}
     >
       <span

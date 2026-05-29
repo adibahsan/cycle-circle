@@ -411,7 +411,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={handleExportCsv}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                   >
                     <FileText size={22} className="text-[var(--color-secondary)]" aria-hidden="true" />
                     <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
@@ -420,7 +420,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                   </button>
                   <button
                     onClick={handleExportExcel}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                   >
                     <FileSpreadsheet size={22} className="text-[var(--color-primary)]" aria-hidden="true" />
                     <span className="text-xs font-semibold text-[var(--color-text-secondary)]">

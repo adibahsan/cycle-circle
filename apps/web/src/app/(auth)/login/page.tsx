@@ -115,8 +115,7 @@ export default function LoginPage() {
         </motion.div>
 
         <h1
-          className="text-3xl font-bold bg-clip-text text-transparent mb-1"
-          style={{ backgroundImage: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)' }}
+          className="text-3xl font-bold gradient-primary bg-clip-text text-transparent mb-1"
         >
           Vesta
         </h1>
@@ -146,7 +145,7 @@ export default function LoginPage() {
 
         {/* Phone input */}
         <div className="mb-5">
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
+          <label htmlFor="phone-input" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
             {t('auth.phone')}
           </label>
           <div className="relative">
@@ -155,6 +154,7 @@ export default function LoginPage() {
               🇧🇩 +88
             </span>
             <input
+              id="phone-input"
               type="tel"
               inputMode="numeric"
               name="phone"

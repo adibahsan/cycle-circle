@@ -125,7 +125,7 @@ function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
   return (
     <button
       onClick={onClick}
-      className={`relative flex flex-col items-center justify-center aspect-square w-full rounded-xl transition-colors duration-150 active:scale-95${(isPeriod || isFertile || isOvulation) && isCurrentMonth ? ' hover:scale-105' : ''}`}
+      className={`relative flex flex-col items-center justify-center aspect-square w-full rounded-xl transition-[color,background-color,transform] duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 focus-visible:ring-offset-1${(isPeriod || isFertile || isOvulation) && isCurrentMonth ? ' hover:scale-105' : ''}`}
       style={{
         backgroundColor: isSelected
           ? isPeriod

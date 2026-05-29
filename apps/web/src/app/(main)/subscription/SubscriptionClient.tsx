@@ -205,8 +205,8 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
 
             {step === 'error' && (
               <div className="flex flex-col items-center gap-4 py-4 text-center">
-                <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center">
-                  <X size={28} className="text-red-500" />
+                <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <X size={28} className="text-red-500 dark:text-red-400" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-[var(--color-text-primary)] mb-1">
