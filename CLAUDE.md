@@ -14,12 +14,13 @@
 
 ```
 apps/web/            Customer-facing Next.js 16 app (port 3000)
-apps/admin/          Admin panel Next.js app (port 3001, scaffold — Phase 04)
+apps/admin/          Admin panel Next.js app (port 3001)
 packages/shared/     @vesta/shared: Prisma, server logic, auth, adapters, types, utils
 ops/                 Docker Compose, BDApps simulator, vendor SDK
 docs/                SRS, knowledge base, client site
 .planning/           GSD planning (PROJECT.md, ROADMAP.md, REQUIREMENTS.md, STATE.md)
 scripts/             Build and sync scripts
+review/              UI audits, fix plans, architecture reviews
 ```
 
 ## Import Conventions
@@ -75,6 +76,83 @@ Next.js 16, React 19, TypeScript, Tailwind CSS v4, Zustand (client state), i18ne
 | Project vision | `.planning/PROJECT.md` |
 | Roadmap | `.planning/ROADMAP.md` |
 | Session continuity | `.planning/STATE.md` |
+| Web UI review | `review/WEB-UI-REVIEW.md` (2026-05-30) |
+| Admin UI review | `review/ADMIN-UI-REVIEW.md` (2026-05-30) |
+| Architecture fix plan | `review/FIX-PLAN.md` (2026-05-29) |
+
+---
+
+## Admin App
+
+Single Super Admin account (email/password login at `/login`). Seeded via `packages/shared/prisma/seed.ts` with env vars `ADMIN_EMAIL` / `ADMIN_PASSWORD` (defaults: `admin@vesta.health` / `admin123`).
+
+**Auth flow:** bcrypt password verification in `@vesta/shared/server/auth` (`verifyAdminLogin`), same JWT/cookie system as web app with `role=ADMIN` check in Edge proxy + server-side `requireAdminAuth()`.
+
+**Pages:** Dashboard, Users (list + detail), Subscriptions, Content/CMS (Tiptap 3.x rich-text editor with EN/BN side-by-side), Analytics (Recharts 3.x), SMS Broadcasts, Feedback.
+
+**Pattern:** RSC pages fetch data via `queries/*.ts` (thin `cache()` wrappers over shared services), pass to `*Client.tsx` components. Mutations go through `actions/*.ts` (thin `'use server'` wrappers over shared services + `revalidatePath`).
+
+**Env:** Admin needs only `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET` — does not need BDApps or CRON_SECRET (these are optional in shared env.ts).
+
+---
+
+## Shared Services Layer
+
+11 pure async service modules in `packages/shared/src/server/services/` — no Next.js dependencies. Both apps use thin wrappers (auth + validation + revalidatePath/cache).
+
+| Service | Scope |
+|---------|-------|
+| `profile-service` | CRUD, 6-profile cap, ownership checks |
+| `tracking-service` | Period logs, symptoms, dashboard/calendar data |
+| `content-service` | Article/category CRUD, published article listing |
+| `feedback-service` | Create, list, export feedback |
+| `notification-service` | Notification preference upsert |
+| `user-service` | Profile completion, suspend/reactivate/soft-delete |
+| `subscription-service` | Grant/revoke Pro, list subscriptions |
+| `audit-service` | Admin audit log creation |
+| `analytics-service` | Dashboard stats, trends, distributions, retention |
+| `sms-service` | Broadcast CRUD |
+| `export-service` | CSV generation (feedback, users) |
+
+Import via `@vesta/shared/server/services`.
+
+---
+
+## UI/Accessibility Guidelines
+
+Both apps share the same UI primitives (`Button`, `Input`, `Card`, etc.) and `globals.css`. When writing or modifying frontend code, follow these rules:
+
+### Must-follow rules
+
+- **No `transition-all`** — list specific properties (`transition-colors`, `transition-transform`)
+- **`focus-visible:ring-*`** on every interactive element — never remove outline without visible replacement
+- **`aria-hidden="true"`** on decorative icons (Lucide icons used as visual indicators)
+- **`aria-label`** on icon-only buttons (icon + no visible text = needs label)
+- **`<label htmlFor>`** linked to inputs via matching `id` — labels must be clickable
+- **`aria-live="polite"`** on regions that update asynchronously (toasts, confirmations, errors)
+- **`<Link>`** for navigation, `<button>` for actions — never `<div onClick>` for either
+- **Sanitize HTML** before `dangerouslySetInnerHTML` (use DOMPurify or equivalent)
+- **`role="dialog"` + `aria-modal` + ESC-to-close** on all modal/drawer overlays
+- **`overscroll-behavior: contain`** inside modals and drawers
+
+### Prefer
+
+- `focus-visible:` over `focus:` (avoids focus ring on mouse click)
+- `Intl.DateTimeFormat` / `Intl.NumberFormat` over hardcoded locale strings
+- `font-variant-numeric: tabular-nums` on number columns and counters
+- `@media (prefers-reduced-motion: reduce)` to disable/reduce animations
+- `color-scheme: dark` on `<html>` when dark theme is active
+- Semantic HTML (`<dialog>`, `<nav aria-label>`, `role="tablist"`) before custom ARIA
+- Placeholders ending with `…` (ellipsis character, not three dots)
+- `autocomplete` and `name` on all form inputs
+- `spellCheck={false}` on emails, codes, usernames
+
+### Review documents
+
+Full file-by-file audits with line numbers are in `review/`:
+- `review/WEB-UI-REVIEW.md` — web app audit (2026-05-30)
+- `review/ADMIN-UI-REVIEW.md` — admin app audit (2026-05-30)
+- `review/FIX-PLAN.md` — architecture migration plan (2026-05-29)
 
 ---
 

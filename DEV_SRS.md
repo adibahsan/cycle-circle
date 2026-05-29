@@ -1,7 +1,7 @@
 # DEV_SRS — Implementation Tracker
 
 > Developer-facing tracker mapping SRS requirements to codebase implementation.
-> Last updated: 2026-05-30
+> Last updated: 2026-05-30 (rev 2)
 > SRS version: 1.2 (SRS-VESTA-001)
 
 ---
@@ -10,9 +10,9 @@
 
 | Status | Count |
 |--------|-------|
-| Done | 13 |
-| In Progress | 9 |
-| Not Started | 0 |
+| Done / Implemented | 11 |
+| In Progress | 10 |
+| Not Started | 1 |
 
 ---
 
@@ -26,7 +26,7 @@ The app uses a **RSC + Server Actions** pattern throughout:
 - **Cached queries** (`apps/web/src/app/queries/`) use React `cache()` for request-level deduplication.
 - **Zustand store** (`apps/web/src/lib/store.ts`) holds UI-only state: theme, language, `activeProfileId`, `onboardingComplete`. All DB state removed.
 - **`next/font/google`** self-hosts Manrope + Noto Sans Bengali — no render-blocking external font requests.
-- **`middleware.ts`** (`apps/web/src/middleware.ts`) performs server-side auth redirect via cookie presence check.
+- **`proxy.ts`** (`apps/web/src/proxy.ts`) performs server-side auth redirect via cookie presence check (renamed from `middleware.ts` for Next.js 16 compatibility).
 - Route conventions in use: `loading.tsx`, `error.tsx`, `not-found.tsx`.
 - Deleted files (no longer in codebase): `api.ts` (client API wrapper), `api-mappers.ts`, `dummy-data.ts`, `hydrate-store.ts`. All data now comes from the DB.
 
@@ -49,6 +49,15 @@ All Prisma queries and business logic are centralised in `packages/shared/src/se
 | `export-service` | CSV generation for feedback and user data |
 
 A barrel file at `packages/shared/src/server/services/index.ts` re-exports all service modules. Total: 11 service modules across ~7,115 lines of source (admin app: 63 source files).
+
+### UI/Accessibility Review Status
+
+Both apps have been audited against the [Vercel Web Interface Guidelines](https://github.com/vercel-labs/web-interface-guidelines) (2026-05-30). Full file-by-file findings with line numbers are in:
+- `review/WEB-UI-REVIEW.md` — web app: ~100 findings
+- `review/ADMIN-UI-REVIEW.md` — admin app: ~90 findings
+- `review/FIX-PLAN.md` — architecture migration plan
+
+Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), missing `focus-visible:ring-*` on buttons (~45), decorative icons missing `aria-hidden="true"` (~45), form inputs without linked `<label>` (~13), missing `prefers-reduced-motion` handling, missing `color-scheme: dark`.
 
 ---
 
@@ -83,7 +92,7 @@ A barrel file at `packages/shared/src/server/services/index.ts` re-exports all s
 - `apps/web/src/components/ProfileCompletionModal.tsx` — Post-login profile completion popup (collects fullName, phone, DOB); UI stub — needs wiring to Server Action
 - `apps/web/src/app/actions/user-actions.ts` — `completeProfile` Server Action; persists `fullName`, `phone`, `profileCompleted=true` to DB
 - `apps/web/src/app/queries/auth-queries.ts` — Cached auth-related RSC queries
-- `apps/web/src/middleware.ts` — Next.js middleware; server-side auth redirect via cookie presence check
+- `apps/web/src/proxy.ts` — Next.js 16 proxy (renamed from middleware.ts); server-side auth redirect via cookie presence check
 
 **API Routes:**
 - `POST /api/auth/otp/request`
@@ -107,7 +116,7 @@ A barrel file at `packages/shared/src/server/services/index.ts` re-exports all s
 - `ProfileCompletionModal` UI component exists and collects required fields
 - `completeProfile` Server Action exists and persists to DB — modal just needs wiring
 - Auth pages converted: all `useDummyData` branches removed, direct fetch to auth API routes
-- `middleware.ts` added for server-side auth redirect
+- `proxy.ts` added for server-side auth redirect (Next.js 16 convention)
 
 **Shared auth enhancements (added for admin panel):**
 - `requireAdminAuth()` — validates JWT and enforces `role === ADMIN`; throws 403 if role check fails
@@ -474,23 +483,25 @@ A barrel file at `packages/shared/src/server/services/index.ts` re-exports all s
 
 ### FR-CONTENT — Bilingual Content Platform
 **Priority:** P1
-**Status:** In Progress
+**Status:** Done
 
 **Files:**
-- `apps/web/src/app/(main)/content/page.tsx` — Content RSC
-- `apps/web/src/app/(main)/content/ContentClient.tsx` — Client island; article list with phase-tab filter, expanded article modal with locale fallback indicator, reading progress bar
+- `apps/web/src/app/(main)/content/page.tsx` — Content RSC; fetches published articles server-side with optional `?phase=` filter
+- `apps/web/src/app/(main)/content/ContentClient.tsx` — Client island; article list with phase-tab filter, inline article detail view with bilingual support
+- `apps/web/src/app/queries/content-queries.ts` — `getPublishedArticles(phase?)` cached RSC query via `listPublishedArticles` from shared services
 
 **What's implemented:**
-- Article list UI with phase filtering (for-you, menstrual, follicular, ovulation, luteal, all)
-- Bilingual article display: renders `titleEn`/`bodyEn` or `titleBn`/`bodyBn`; falls back to English with "Bengali translation coming soon" banner
-- Phase tags and category badges
-- Reading progress bar and estimated reading time in expanded view
-- Language toggle switches article body without page reload
-- Demo articles removed — shows empty state "No articles yet"
+- Article list UI with phase filtering (all, menstrual, follicular, ovulation, luteal) via URL searchParams
+- Articles fetched server-side from DB via shared `listPublishedArticles` service (no dummy data)
+- Bilingual article display: renders `titleEn`/`bodyEn` or `titleBn`/`bodyBn` based on Zustand language state
+- Phase tags and category badges on article cards
+- Inline article detail view with rich HTML body rendering
+- Empty state with "No articles yet" message when no published articles exist
+- End-to-end content pipeline: articles created in admin CMS → published → visible in web app Learn section
 
 **What's missing:**
-- Phase-based surfacing is client-side only (no server-driven personalization)
-- The web app reader still shows the empty state until an admin publishes an article via the CMS (see FR-CMS below)
+- Phase-based surfacing is client-side only (no server-driven personalization based on user's current cycle phase)
+- `dangerouslySetInnerHTML` used for article body — needs HTML sanitization (DOMPurify) to prevent XSS (documented in `review/WEB-UI-REVIEW.md`)
 
 ---
 
@@ -500,27 +511,30 @@ A barrel file at `packages/shared/src/server/services/index.ts` re-exports all s
 
 **Admin App (`apps/admin/`):**
 - Runs on port 3001 (`just a` / `just wa`)
-- Same JWT/cookie auth as the web app; edge middleware (`apps/admin/src/middleware.ts`) validates JWT **and** enforces `role === ADMIN` before any page renders
-- Magic-link email login for admins (no phone OTP)
+- Same JWT/cookie auth as the web app; edge proxy (`apps/admin/src/proxy.ts`) validates JWT **and** enforces `role === ADMIN` before any page renders
+- Email/password login for admins (bcrypt-hashed via `verifyAdminLogin()` in `@vesta/shared/server/auth`; no OTP or magic-link)
+- Admin account seeded via `packages/shared/prisma/seed.ts` (env: `ADMIN_EMAIL` / `ADMIN_PASSWORD`, defaults: `admin@vesta.health` / `admin123`)
 - English-only (no i18n overhead)
 - Matches Vesta design language: glass-morphism panels, gradient accents, Manrope font
 
 **Files:**
-- `apps/admin/src/middleware.ts` — Edge middleware: JWT decode + role check; redirects to `/login` if unauthenticated or non-admin
-- `apps/admin/src/app/(auth)/login/page.tsx` — Admin magic-link login UI
-- `apps/admin/src/app/(main)/page.tsx` — Dashboard: KPI stat cards (total users, active subscribers, DAU, NPS) + 30-day signup trend chart (Recharts)
-- `apps/admin/src/app/(main)/users/page.tsx` — User list: search, status/role filters, pagination
-- `apps/admin/src/app/(main)/users/[id]/page.tsx` — User detail: profiles tab, subscriptions tab, feedback tab; admin action buttons (suspend, reactivate, soft-delete)
-- `apps/admin/src/app/(main)/subscriptions/page.tsx` — Pro subscriber management: grant Pro, revoke Pro, CAAS override history
-- `apps/admin/src/app/(main)/content/page.tsx` — Article list CMS with publish/draft toggle
-- `apps/admin/src/app/(main)/content/new/page.tsx` — Article create with Tiptap 3.x editor, EN/BN side-by-side
-- `apps/admin/src/app/(main)/content/[id]/page.tsx` — Article edit; category CRUD, phase tags, draft/publish lifecycle
-- `apps/admin/src/app/(main)/analytics/page.tsx` — Population health charts (cycle length distribution, symptom frequency, prediction accuracy MAE, retention)
-- `apps/admin/src/app/(main)/sms/page.tsx` — SMS broadcast management: create, schedule, delete; send history
-- `apps/admin/src/app/(main)/feedback/page.tsx` — All user feedback with category/date/rating filters + CSV export
+- `apps/admin/src/proxy.ts` — Edge proxy: JWT decode + role check; redirects to `/login` if unauthenticated or non-admin
+- `apps/admin/src/app/login/page.tsx` — Admin email/password login UI
+- `apps/admin/src/app/api/auth/login/route.ts` — POST handler: calls `verifyAdminLogin()`, issues JWT cookie
+- `apps/admin/src/app/api/auth/logout/route.ts` — POST handler: calls `logoutAndBlacklist()`
+- `apps/admin/src/app/(admin)/page.tsx` — Dashboard: KPI stat cards (total users, active subscribers, DAU, NPS) + 30-day signup trend chart (Recharts)
+- `apps/admin/src/app/(admin)/users/page.tsx` — User list: search, status/role filters, pagination
+- `apps/admin/src/app/(admin)/users/[id]/page.tsx` — User detail: profiles tab, subscriptions tab, feedback tab; admin action buttons (suspend, reactivate, soft-delete)
+- `apps/admin/src/app/(admin)/subscriptions/page.tsx` — Pro subscriber management: grant Pro, revoke Pro, CAAS override history
+- `apps/admin/src/app/(admin)/content/page.tsx` — Article list CMS with publish/draft toggle
+- `apps/admin/src/app/(admin)/content/new/page.tsx` — Article create with Tiptap 3.x editor, EN/BN side-by-side
+- `apps/admin/src/app/(admin)/content/[id]/page.tsx` — Article edit; category CRUD, phase tags, draft/publish lifecycle
+- `apps/admin/src/app/(admin)/analytics/page.tsx` — Population health charts (cycle length distribution, symptom frequency, prediction accuracy MAE, retention)
+- `apps/admin/src/app/(admin)/sms/page.tsx` — SMS broadcast management: create, schedule, delete; send history
+- `apps/admin/src/app/(admin)/feedback/page.tsx` — All user feedback with category/date/rating filters + CSV export
 
-**Admin-specific UI components (10):**
-`DataTable`, `Badge`, `StatCard`, `FilterBar`, `Pagination`, `ConfirmModal`, `Button`, `Card`, `Input`, `Shimmer`
+**Admin-specific UI components (11):**
+`DataTable`, `Badge`, `StatCard`, `FilterBar`, `Pagination`, `ConfirmModal`, `Button`, `Card`, `Input`, `Shimmer`, `TiptapEditor`
 
 **Admin Actions:**
 - **User**: suspend (`suspendedAt`, `suspendedBy`), reactivate (clear suspension), soft-delete (`deletedAt`)
@@ -529,20 +543,18 @@ A barrel file at `packages/shared/src/server/services/index.ts` re-exports all s
 - **SMS**: broadcast create, schedule, delete; send history view
 - **Export**: feedback CSV, users CSV (via `export-service`)
 
-**API Routes (admin app):**
-- `POST /api/admin/users/[id]/suspend`
-- `POST /api/admin/users/[id]/reactivate`
-- `DELETE /api/admin/users/[id]`
-- `POST /api/admin/subscriptions/[id]/grant`
-- `POST /api/admin/subscriptions/[id]/revoke`
-- `GET|POST /api/admin/content/articles`
-- `GET|PATCH|DELETE /api/admin/content/articles/[id]`
-- `GET|POST /api/admin/content/categories`
-- `GET /api/admin/analytics`
-- `GET|POST|DELETE /api/admin/sms/broadcasts`
-- `GET /api/admin/feedback`
-- `GET /api/admin/export/feedback` — CSV download
-- `GET /api/admin/export/users` — CSV download
+**Server Actions (admin app):**
+- `apps/admin/src/app/actions/user-actions.ts` — suspend, reactivate, softDelete, grantPro, revokePro
+- `apps/admin/src/app/actions/content-actions.ts` — article CRUD, category CRUD
+- `apps/admin/src/app/actions/sms-actions.ts` — broadcast create/delete
+- `apps/admin/src/app/actions/export-actions.ts` — CSV generation (feedback, users)
+
+**Cached Queries (admin app):**
+- `apps/admin/src/app/queries/` — dashboard, user, subscription, content, analytics, feedback, sms queries (all thin `cache()` wrappers over shared services)
+
+**API Routes (admin app — auth only):**
+- `POST /api/auth/login` — email/password authentication
+- `POST /api/auth/logout` — JWT blacklist + cookie clear
 
 **What's implemented:** All items above.
 
@@ -550,6 +562,7 @@ A barrel file at `packages/shared/src/server/services/index.ts` re-exports all s
 - Automated test suite for admin app (typecheck passes; runtime tests not written yet)
 - Failed Resend delivery log surfaced in admin UI
 - Image upload to Supabase storage from Tiptap editor (drag-and-drop stub present, upload not wired)
+- UI/accessibility issues documented in `review/ADMIN-UI-REVIEW.md` (2026-05-30): ~90 findings including missing focus styles, transition-all anti-pattern, keyboard-inaccessible DataTable rows
 
 ---
 
@@ -558,9 +571,9 @@ A barrel file at `packages/shared/src/server/services/index.ts` re-exports all s
 **Status:** Implemented
 
 **Files:**
-- `apps/admin/src/app/(main)/content/new/page.tsx` — Article create page with Tiptap 3.x rich-text editor
-- `apps/admin/src/app/(main)/content/[id]/page.tsx` — Article edit page
-- `apps/admin/src/app/(main)/content/page.tsx` — Article list with draft/published filter
+- `apps/admin/src/app/(admin)/content/new/page.tsx` — Article create page with Tiptap 3.x rich-text editor
+- `apps/admin/src/app/(admin)/content/[id]/page.tsx` — Article edit page
+- `apps/admin/src/app/(admin)/content/page.tsx` — Article list with draft/published filter
 - `packages/shared/src/server/services/content-service.ts` — Article + category CRUD, draft/publish lifecycle, phase-tag queries
 
 **What's implemented:**
@@ -583,7 +596,7 @@ A barrel file at `packages/shared/src/server/services/index.ts` re-exports all s
 **Status:** Implemented
 
 **Files:**
-- `apps/admin/src/app/(main)/analytics/page.tsx` — Population health charts rendered with Recharts
+- `apps/admin/src/app/(admin)/analytics/page.tsx` — Population health charts rendered with Recharts
 - `packages/shared/src/server/services/analytics-service.ts` — Aggregation queries: cycle length distribution, symptom frequency, prediction accuracy (MAE), 30-day retention
 
 **What's implemented:**
@@ -645,7 +658,7 @@ A barrel file at `packages/shared/src/server/services/index.ts` re-exports all s
 - `deliveryStatusRequest: 1` passed by default for delivery reports
 
 **Admin SMS (newly implemented):**
-- `apps/admin/src/app/(main)/sms/page.tsx` — Broadcast management UI: create, schedule, delete; send history table
+- `apps/admin/src/app/(admin)/sms/page.tsx` — Broadcast management UI: create, schedule, delete; send history table
 - `packages/shared/src/server/services/sms-service.ts` — `SmsBroadcast` CRUD, scheduling, send dispatch
 - `packages/shared/prisma/schema.prisma` — `SmsBroadcast` model (`SmsBroadcastStatus` enum: DRAFT, SCHEDULED, SENT, FAILED)
 - Admin API routes: `GET|POST|DELETE /api/admin/sms/broadcasts`
@@ -711,7 +724,7 @@ A barrel file at `packages/shared/src/server/services/index.ts` re-exports all s
 - `submitFeedback` Server Action persists feedback to DB
 
 **Admin feedback (newly implemented):**
-- `apps/admin/src/app/(main)/feedback/page.tsx` — All user feedback with category, date range, and star-rating filters
+- `apps/admin/src/app/(admin)/feedback/page.tsx` — All user feedback with category, date range, and star-rating filters
 - CSV export button calls `GET /api/admin/export/feedback`
 
 **What's implemented (admin):**
@@ -769,8 +782,9 @@ The following security issues were identified and resolved in the current sprint
 6. **Charge-before-record fix** — `CaasTransaction` created with PENDING status before the CAAS network call; prevents silent double-charge on retry.
 7. **`env.local` added to `.gitignore`** — prevents accidental secret commit.
 8. **Security headers added** — `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` set in Next.js config or middleware.
-9. **Auth middleware (`middleware.ts`)** — server-side auth redirect based on cookie presence; unauthenticated requests to protected routes redirected before React renders.
-10. **NFR-SEC-05 — Admin role enforcement** — `apps/admin/src/middleware.ts` (edge middleware) validates JWT and checks `role === ADMIN` on every admin route before any page renders. Non-admin JWTs are redirected to `/login`. `requireAdminAuth()` and `withAdminAuth()` provide the same enforcement at the route-handler level.
+9. **Auth proxy (`proxy.ts`)** — server-side auth redirect based on cookie presence; unauthenticated requests to protected routes redirected before React renders. Renamed from `middleware.ts` for Next.js 16 compatibility.
+10. **NFR-SEC-05 — Admin role enforcement** — `apps/admin/src/proxy.ts` (edge proxy) validates JWT and checks `role === ADMIN` on every admin route before any page renders. Non-admin JWTs are redirected to `/login`. `requireAdminAuth()` and `withAdminAuth()` provide the same enforcement at the route-handler level.
+12. **Admin email/password auth** — bcrypt-hashed passwords stored in `User.passwordHash`; `verifyAdminLogin()` in shared auth uses `bcryptjs` (dynamic import). Admin seed uses 12-round bcrypt hash.
 11. **Suspended/deleted user check in `getAuthUser()`** — suspended or soft-deleted users receive HTTP 403 on every authenticated request, even with a valid JWT.
 
 ---
@@ -787,3 +801,5 @@ The following security issues were identified and resolved in the current sprint
 - `FR-ANALYTICS`: Nightly MAE report not scheduled; analytics computed on-demand only.
 - `FR-CMS`: Image upload from Tiptap to Supabase storage not yet wired (stub present).
 - `FR-ADMIN` (admin test suite): Automated tests for admin app not written; typecheck only.
+- **UI/Accessibility** (both apps): ~190 findings documented in `review/WEB-UI-REVIEW.md` and `review/ADMIN-UI-REVIEW.md`. Highest-impact fixes: Button.tsx focus styles, Input.tsx label linking, globals.css reduced-motion + color-scheme, ContentClient.tsx HTML sanitization.
+- **DB migration pending**: Schema changes (passwordHash, admin models, new enums/indexes) not yet applied via `just db-migrate`. Seed not yet run.
