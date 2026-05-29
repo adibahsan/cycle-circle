@@ -185,7 +185,7 @@ model Subscription {
 
 model CaasTransaction {
   id             String   @id @default(cuid())
-  subscriptionId String
+  subscriptionId String?
   externalTrxId  String   @unique
   internalTrxId  String?
   referenceId    String?
@@ -193,7 +193,7 @@ model CaasTransaction {
   status         String
   createdAt      DateTime @default(now())
 
-  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 }
 
 model OtpChallenge {

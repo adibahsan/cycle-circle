@@ -18,8 +18,14 @@ export function validateWebhookSource(request: Request): boolean {
   // No whitelist configured — allow all (development / staging without IP pinning)
   if (allowedIps.length === 0) return true
 
+  // Prefer x-real-ip (set by the reverse proxy / Vercel edge, not by the client).
+  // Fall back to the first entry of x-forwarded-for only when x-real-ip is absent.
+  // If neither header is present, reject the request — we cannot verify the source.
+  const realIp = request.headers.get('x-real-ip')?.trim()
   const forwarded = request.headers.get('x-forwarded-for')
-  const ip = forwarded?.split(',')[0]?.trim() ?? ''
+  const ip = realIp ?? forwarded?.split(',')[0]?.trim()
+
+  if (!ip) return false
 
   return allowedIps.includes(ip)
 }

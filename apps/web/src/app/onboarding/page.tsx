@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
@@ -17,7 +17,9 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
+import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import { useAppStore } from '@/lib/store';
+import { createProfile } from '@/app/actions/profile-actions';
 import type { ProfileRelation } from '@vesta/shared/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -45,6 +47,16 @@ const RELATIONS: { value: ProfileRelation; labelKey: string }[] = [
   { value: 'daughter', labelKey: 'profiles.daughter' },
   { value: 'girlfriend', labelKey: 'profiles.girlfriend' },
 ];
+
+// Map frontend relation values to the DB enum values expected by the server action
+const RELATION_TO_DB: Record<ProfileRelation, 'SELF' | 'WIFE' | 'SISTER' | 'MOTHER' | 'DAUGHTER' | 'GIRLFRIEND'> = {
+  self: 'SELF',
+  wife: 'WIFE',
+  sister: 'SISTER',
+  mother: 'MOTHER',
+  daughter: 'DAUGHTER',
+  girlfriend: 'GIRLFRIEND',
+};
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -151,7 +163,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
           {t('onboarding.welcome')}
         </h1>
         <p className="text-[var(--color-text-secondary)] text-base leading-relaxed max-w-xs mx-auto">
-          Your personal cycle intelligence — private, bilingual, and built for you.
+          {t('onboarding.personalIntelligence')}
         </p>
       </div>
 
@@ -165,7 +177,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
             {t('onboarding.privacy')}
           </p>
           <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-            We never share your health information with anyone.
+            {t('onboarding.privacyNote')}
           </p>
         </div>
       </div>
@@ -228,7 +240,7 @@ function StepGoal({
         <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
           {t('onboarding.goal')}
         </h2>
-        <p className="text-sm text-[var(--color-text-muted)] mt-1">Choose one to personalise your experience</p>
+        <p className="text-sm text-[var(--color-text-muted)] mt-1">{t('onboarding.choosePersonalise')}</p>
       </div>
 
       <div className="flex flex-col gap-3">
@@ -307,10 +319,10 @@ function StepCycleHistory({
     <div className="flex flex-col gap-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
-          Tell us about your cycle
+          {t('onboarding.tellAboutCycle')}
         </h2>
         <p className="text-sm text-[var(--color-text-muted)] mt-1">
-          We'll use this to make accurate predictions
+          {t('onboarding.accuratePredictions')}
         </p>
       </div>
 
@@ -399,16 +411,16 @@ function StepProfile({
     <div className="flex flex-col gap-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
-          Who is this profile for?
+          {t('onboarding.whoIsProfile')}
         </h2>
         <p className="text-sm text-[var(--color-text-muted)] mt-1">
-          You can manage up to 6 profiles
+          {t('onboarding.manageProfiles')}
         </p>
       </div>
 
       {/* Relation chips */}
       <div>
-        <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-3">Relationship</p>
+        <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-3">{t('onboarding.relationship')}</p>
         <div className="flex flex-wrap gap-2">
           {RELATIONS.map(({ value, labelKey }) => {
             const isActive = relation === value;
@@ -432,8 +444,8 @@ function StepProfile({
       {/* Name input */}
       <div>
         <Input
-          label="Name *"
-          placeholder={relation === 'self' ? 'Your name' : `${t(`profiles.${relation}`)}\'s name`}
+          label={`${t('onboarding.nameLabel')} *`}
+          placeholder={relation === 'self' ? t('onboarding.namePlaceholder') : `${t(`profiles.${relation}`)}\'s name`}
           value={name}
           error={nameError}
           onChange={(e) => onName(e.target.value)}
@@ -488,25 +500,25 @@ function StepDone({
 
   const summaryItems = [
     {
-      label: 'Goal',
+      label: t('onboarding.goalLabel'),
       value: goalLabel,
     },
     {
-      label: 'Profile',
+      label: t('onboarding.profileLabel'),
       value: state.profileName
         ? `${state.profileName} (${t(`profiles.${state.profileRelation}`)})`
         : t(`profiles.${state.profileRelation}`),
     },
     {
-      label: 'Cycle length',
-      value: `${state.cycleLength} days`,
+      label: t('onboarding.cycleLengthLabel'),
+      value: `${state.cycleLength} ${t('onboarding.days')}`,
     },
     {
-      label: 'Period length',
-      value: `${state.periodLength} days`,
+      label: t('onboarding.periodLengthLabel'),
+      value: `${state.periodLength} ${t('onboarding.days')}`,
     },
     ...(state.lastPeriodDate
-      ? [{ label: 'Last period', value: new Date(state.lastPeriodDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) }]
+      ? [{ label: t('onboarding.lastPeriodLabel'), value: new Date(state.lastPeriodDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) }]
       : []),
   ];
 
@@ -561,16 +573,16 @@ function StepDone({
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-3xl font-bold text-[var(--color-text-primary)]">You're all set!</h2>
+        <h2 className="text-3xl font-bold text-[var(--color-text-primary)]">{t('onboarding.allSet')}</h2>
         <p className="text-[var(--color-text-secondary)] text-sm">
-          Vesta is personalised and ready for you.
+          {t('onboarding.personalised')}
         </p>
       </div>
 
       {/* Summary card */}
       <Card padding="md" className="w-full text-left">
         <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
-          Your Setup
+          {t('onboarding.yourSetup')}
         </p>
         <div className="divide-y divide-[var(--color-border)]">
           {summaryItems.map((item) => (
@@ -583,11 +595,11 @@ function StepDone({
       </Card>
 
       <Button size="lg" fullWidth onClick={onFinish} disabled={submitting} className="mt-2">
-        {submitting ? 'Saving…' : 'Go to Dashboard'}
+        {submitting ? `${t('common.loading')}` : t('onboarding.goToDashboard')}
       </Button>
 
       <p className="text-xs text-[var(--color-text-muted)] max-w-xs">
-        You can update any of these settings later in the Profiles & Settings screens.
+        {t('onboarding.settingsHint')}
       </p>
     </div>
   );
@@ -598,14 +610,7 @@ function StepDone({
 export default function OnboardingPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { profiles, setOnboardingComplete, addProfile } = useAppStore();
-
-  useEffect(() => {
-    if (profiles.length > 0) {
-      setOnboardingComplete(true);
-      router.replace('/dashboard');
-    }
-  }, [profiles.length, router, setOnboardingComplete]);
+  const { setOnboardingComplete, setActiveProfile } = useAppStore();
 
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState<1 | -1>(1);
@@ -646,13 +651,13 @@ export default function OnboardingPage() {
     if (currentStep === 3) {
       const trimmed = state.profileName.trim();
       if (trimmed.length < 2) {
-        errors.profileName = 'Enter a name (at least 2 characters)';
+        errors.profileName = t('onboarding.enterNameError');
       }
     }
 
     if (currentStep === 4) {
       if (!state.lastPeriodDate) {
-        errors.lastPeriodDate = 'Last period start date is required';
+        errors.lastPeriodDate = t('onboarding.lastPeriodRequired');
       }
     }
 
@@ -686,16 +691,15 @@ export default function OnboardingPage() {
     setStepErrors({});
 
     try {
-      await addProfile({
+      const profile = await createProfile({
         name: state.profileName.trim(),
-        relation: state.profileRelation,
+        relation: RELATION_TO_DB[state.profileRelation],
         cycleLength: state.cycleLength,
         periodLength: state.periodLength,
         lastPeriodStart: state.lastPeriodDate,
-        cycleHistory: [state.cycleLength],
-        predictionTier: 'average',
         goal: state.goal ? goalLabel(state.goal) : undefined,
       });
+      setActiveProfile(profile.id);
       setOnboardingComplete(true);
       router.replace('/dashboard');
     } catch (err) {
@@ -802,10 +806,14 @@ export default function OnboardingPage() {
           <div className="flex items-center justify-between py-4">
             {/* Vesta wordmark */}
             <span className="text-lg font-bold text-[var(--color-primary)]">Vesta</span>
-            {/* Step counter */}
-            <span className="text-xs font-medium text-[var(--color-text-muted)]">
-              {step} / {TOTAL_STEPS}
-            </span>
+            <div className="flex items-center gap-2">
+              {/* Language toggle */}
+              <LanguageToggle />
+              {/* Step counter */}
+              <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                {step} / {TOTAL_STEPS}
+              </span>
+            </div>
           </div>
           {/* Progress bar */}
           <ProgressBar step={step} />

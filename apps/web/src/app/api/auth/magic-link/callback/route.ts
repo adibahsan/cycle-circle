@@ -30,18 +30,15 @@ export async function GET(request: Request): Promise<Response> {
       data: { used: true },
     })
 
-    const emailTrialExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-
     const user = await prisma.user.upsert({
       where: { email: magicLink.email },
       create: {
         email: magicLink.email,
         authMethod: 'EMAIL',
-        emailTrialExpiresAt,
+        // Grant a 24-hour trial only on first login; never reset on subsequent logins
+        emailTrialExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
-      update: {
-        emailTrialExpiresAt,
-      },
+      update: {},
     })
 
     await prisma.magicLink.update({

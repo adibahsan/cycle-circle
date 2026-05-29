@@ -1,16 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAppStore } from '@/lib/store';
-import { auth, ApiClientError } from '@/lib/api';
-import { devMode, useDummyData } from '@vesta/shared/utils/config';
-import { hydrateFromApi } from '@/lib/hydrate-store';
-import { getPostAuthPath } from '@/lib/post-auth';
 import '@vesta/shared/utils/i18n';
 
 const OTP_LENGTH = 6;
@@ -29,8 +25,9 @@ const FADE_UP = {
 
 export default function VerifyOtpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useTranslation();
-  const loginWithUser = useAppStore((s) => s.loginWithUser);
+  const setOnboardingComplete = useAppStore((s) => s.setOnboardingComplete);
 
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [error, setError] = useState('');
@@ -38,23 +35,15 @@ export default function VerifyOtpPage() {
   const [success, setSuccess] = useState(false);
   const [countdown, setCountdown] = useState(RESEND_SECONDS);
   const [resending, setResending] = useState(false);
-  const [phone, setPhone] = useState('');
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
+  // phone and referenceNo from query params (set by login page) or sessionStorage fallback
+  // sessionStorage is only available on the client, so use lazy initializer
+  const phoneFromQuery = searchParams.get('phone');
+  const referenceNoFromQuery = searchParams.get('referenceNo') ?? '';
+  const phone = phoneFromQuery ?? (typeof window !== 'undefined' ? sessionStorage.getItem('vesta-otp-phone') : null) ?? '01XXXXXXXXX';
+
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  // Dummy / dev mode: OTP page is not used
-  useEffect(() => {
-    if (useDummyData || devMode) {
-      router.replace('/login');
-    }
-  }, [router]);
-
-  // Read phone from sessionStorage
-  useEffect(() => {
-    const stored = sessionStorage.getItem('vesta-otp-phone');
-    setPhone(stored ?? '01XXXXXXXXX');
-  }, []);
 
   // Countdown timer
   useEffect(() => {
@@ -116,26 +105,31 @@ export default function VerifyOtpPage() {
   async function handleVerify() {
     const code = digits.join('');
     if (code.length < OTP_LENGTH) {
-      setError(`Please enter all ${OTP_LENGTH} digits`);
+      setError(t('auth.otpAllDigits', { count: OTP_LENGTH }));
       return;
     }
 
     setLoading(true);
     try {
-      const referenceNo = sessionStorage.getItem('vesta-otp-ref') ?? '';
-      const { user } = await auth.verifyOtp(referenceNo, code);
-      setSuccess(true);
-      await new Promise((res) => setTimeout(res, 700)); // Keep success animation
-      loginWithUser(user, 'otp');
-      await hydrateFromApi();
-      const { profiles } = useAppStore.getState();
-      router.replace(getPostAuthPath(profiles.length));
-    } catch (err) {
-      if (err instanceof ApiClientError) {
-        setError(err.message);
-      } else {
-        setError('Verification failed. Please try again.');
+      const referenceNo = referenceNoFromQuery || sessionStorage.getItem('vesta-otp-ref') || '';
+      const res = await fetch('/api/auth/otp/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ referenceNo, code }),
+      });
+      const body = await res.json().catch(() => ({})) as { onboardingComplete?: boolean; error?: string };
+      if (!res.ok) {
+        setError(body.error ?? t('auth.verificationFailed'));
+        return;
       }
+      setSuccess(true);
+      await new Promise((res) => setTimeout(res, 700));
+      if (body.onboardingComplete) {
+        setOnboardingComplete(true);
+      }
+      router.replace('/dashboard');
+    } catch {
+      setError(t('auth.verificationFailed'));
     } finally {
       setLoading(false);
     }
@@ -146,10 +140,18 @@ export default function VerifyOtpPage() {
     setResending(true);
     setDigits(Array(OTP_LENGTH).fill(''));
     setError('');
-    const phone = sessionStorage.getItem('vesta-otp-phone') ?? '';
     try {
-      const { referenceNo } = await auth.requestOtp(phone);
-      sessionStorage.setItem('vesta-otp-ref', referenceNo);
+      const res = await fetch('/api/auth/otp/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      if (res.ok) {
+        const body = await res.json().catch(() => ({})) as { referenceNo?: string };
+        if (body.referenceNo) {
+          sessionStorage.setItem('vesta-otp-ref', body.referenceNo);
+        }
+      }
     } catch { /* still reset UI even if resend fails */ }
     setResending(false);
     setCountdown(RESEND_SECONDS);
@@ -289,7 +291,7 @@ export default function VerifyOtpPage() {
                 className="flex items-center gap-2"
               >
                 <CheckCircle2 size={20} />
-                Verified!
+                {t('auth.verified')}
               </motion.span>
             ) : loading ? (
               <motion.span
@@ -302,7 +304,7 @@ export default function VerifyOtpPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
-                Verifying…
+                {t('common.loading')}
               </motion.span>
             ) : (
               <motion.span key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -321,7 +323,7 @@ export default function VerifyOtpPage() {
         animate="show"
         className="flex flex-col items-center gap-1"
       >
-        <p className="text-sm text-[var(--color-text-muted)]">Didn&apos;t receive the code?</p>
+        <p className="text-sm text-[var(--color-text-muted)]">{t('auth.didNotReceive')}</p>
         <button
           onClick={handleResend}
           disabled={countdown > 0 || resending}
@@ -337,23 +339,16 @@ export default function VerifyOtpPage() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
-              Resending…
+              {t('common.loading')}
             </>
           ) : countdown > 0 ? (
             <span className="inline-flex items-center gap-1">
-              Resend in{' '}
-              <motion.span
-                animate={{ opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                className="tabular-nums font-bold"
-              >
-                {countdown}s
-              </motion.span>
+              {t('auth.resendIn', { seconds: countdown })}
             </span>
           ) : (
             <>
               <RefreshCw size={14} />
-              Resend OTP
+              {t('auth.resendOtp')}
             </>
           )}
         </button>
@@ -367,7 +362,7 @@ export default function VerifyOtpPage() {
         animate="show"
         className="mt-auto pt-6 text-center text-xs text-[var(--color-text-muted)]"
       >
-        This code expires in 10 minutes. Never share your OTP with anyone.
+        {t('auth.codeExpiry')}
       </motion.p>
 
       {/* Success overlay — full-screen scale+fade checkmark */}
@@ -395,7 +390,7 @@ export default function VerifyOtpPage() {
               transition={{ delay: 0.25, duration: 0.35 }}
               className="mt-5 text-lg font-bold text-[var(--color-text-primary)]"
             >
-              Verified!
+              {t('auth.verified')}
             </motion.p>
           </motion.div>
         )}

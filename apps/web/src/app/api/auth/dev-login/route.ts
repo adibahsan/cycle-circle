@@ -4,7 +4,23 @@ import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { issueJwt, setAuthCookie, validateMsisdn } from '@vesta/shared/server/auth'
 import { prisma } from '@vesta/shared'
 import { isDevModeEnabled } from '@vesta/shared/server/dev'
-import { mapPartialAuthUser } from '@/lib/api-mappers'
+
+function mapPartialAuthUser(raw: {
+  id: string
+  phone?: string | null
+  profileCompleted: boolean
+}) {
+  return {
+    id: raw.id,
+    phone: String(raw.phone ?? '').replace(/^tel:/, ''),
+    authMethod: 'otp' as const,
+    subscriptionStatus: 'free' as const,
+    language: 'en' as const,
+    profileCompleted: Boolean(raw.profileCompleted),
+    fullName: '',
+    createdAt: new Date().toISOString(),
+  }
+}
 
 const bodySchema = z.object({
   phone: z.string().min(1, 'Phone is required'),
