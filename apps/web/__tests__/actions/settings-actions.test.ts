@@ -1,23 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mockPrismaClient } from '../helpers/mock-prisma'
 import { MOCK_JWT, MOCK_AUTH_USER } from '../helpers/mock-auth'
 
 // --- mocks ---
-vi.mock('@vesta/shared', () => ({ prisma: mockPrismaClient }))
 vi.mock('@vesta/shared/server/auth', () => ({
   requireAuth: vi.fn().mockResolvedValue(MOCK_JWT),
   getAuthUser: vi.fn().mockResolvedValue(MOCK_AUTH_USER),
 }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+vi.mock('@vesta/shared/server/services', () => ({
+  upsertNotificationPrefs: vi.fn(),
+}))
 
 import { updateNotificationPrefs } from '../../src/app/actions/settings-actions'
+import * as svc from '@vesta/shared/server/services'
 import { revalidatePath } from 'next/cache'
-
-const MOCK_PROFILE = {
-  id: 'profile-1',
-  userId: 'user-1',
-  name: 'Alice',
-}
 
 const MOCK_NOTIF_PREF = {
   id: 'notif-1',
@@ -33,8 +29,7 @@ beforeEach(() => {
 
 describe('updateNotificationPrefs', () => {
   it('upserts notification preferences for the profile', async () => {
-    mockPrismaClient.profile.findUnique.mockResolvedValue(MOCK_PROFILE)
-    mockPrismaClient.notificationPreference.upsert.mockResolvedValue(MOCK_NOTIF_PREF)
+    vi.mocked(svc.upsertNotificationPrefs).mockResolvedValue(MOCK_NOTIF_PREF as never)
 
     const result = await updateNotificationPrefs({
       profileId: 'profile-1',
@@ -42,33 +37,20 @@ describe('updateNotificationPrefs', () => {
       loggingReminder: false,
     })
 
-    expect(mockPrismaClient.notificationPreference.upsert).toHaveBeenCalledWith({
-      where: { profileId: 'profile-1' },
-      create: {
-        profileId: 'profile-1',
-        periodAlert: false,
-        fertileWindow: true,
-        loggingReminder: false,
-      },
-      update: {
-        periodAlert: false,
-        loggingReminder: false,
-      },
+    expect(svc.upsertNotificationPrefs).toHaveBeenCalledWith('profile-1', 'user-1', {
+      periodAlert: false,
+      fertileWindow: undefined,
+      loggingReminder: false,
     })
     expect(result).toEqual(MOCK_NOTIF_PREF)
     expect(revalidatePath).toHaveBeenCalledWith('/')
   })
 
   it('throws when profile is not owned by the current user', async () => {
-    mockPrismaClient.profile.findUnique.mockResolvedValue({
-      ...MOCK_PROFILE,
-      userId: 'other-user-id',
-    })
+    vi.mocked(svc.upsertNotificationPrefs).mockRejectedValue(new Error('Profile not found'))
 
     await expect(
       updateNotificationPrefs({ profileId: 'profile-1', periodAlert: true }),
     ).rejects.toThrow('Profile not found')
-
-    expect(mockPrismaClient.notificationPreference.upsert).not.toHaveBeenCalled()
   })
 })

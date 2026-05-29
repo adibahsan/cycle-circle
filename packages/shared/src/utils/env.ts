@@ -7,9 +7,9 @@ const envSchema = z.object({
   // Redis
   REDIS_URL: z.string().default('redis://localhost:6379'),
 
-  // BDApps
-  BDAPPS_APP_ID: z.string().min(1, 'BDAPPS_APP_ID is required'),
-  BDAPPS_PASSWORD: z.string().min(1, 'BDAPPS_PASSWORD is required'),
+  // BDApps (required for web app, optional for admin)
+  BDAPPS_APP_ID: z.string().optional(),
+  BDAPPS_PASSWORD: z.string().optional(),
   BDAPPS_BASE_URL: z.string().default('https://developer.bdapps.com'),
   BDAPPS_WEBHOOK_IPS: z.string().optional(),
   BDAPPS_SIMULATOR_BASE_URL: z.string().optional(),
@@ -21,15 +21,14 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   MAILPIT_SMTP_URL: z.string().default('smtp://localhost:1025'),
 
-  // Cron
-  CRON_SECRET: z.string().min(1, 'CRON_SECRET is required'),
+  // Cron (required for web app, optional for admin)
+  CRON_SECRET: z.string().optional(),
 
   // Runtime
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
     .default('development'),
 
-  /** Skip OTP via POST /api/auth/dev-login. Ignored when NODE_ENV=production. */
   DEV_MODE: z
     .enum(['true', 'false'])
     .default('false')

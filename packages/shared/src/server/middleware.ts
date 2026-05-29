@@ -52,7 +52,7 @@ export function withCronAuth(handler: (request: Request) => Promise<Response>) {
     try {
       const authHeader = request.headers.get('authorization') ?? ''
       const [, token] = authHeader.split(' ')
-      if (!token || token !== env.CRON_SECRET) {
+      if (!env.CRON_SECRET || !token || token !== env.CRON_SECRET) {
         throw new ApiError(401, 'Invalid cron secret', 'UNAUTHORIZED')
       }
       return handler(request)

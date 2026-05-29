@@ -139,6 +139,22 @@ export async function getAuthUser(userId: string): Promise<AuthUser> {
   return user as AuthUser
 }
 
+export async function verifyAdminLogin(email: string, password: string): Promise<AuthUser> {
+  const bcrypt = await import('bcryptjs')
+  const user = await prisma.user.findUnique({ where: { email } })
+  if (!user || user.role !== 'ADMIN' || !user.passwordHash) {
+    throw new ApiError(401, 'Invalid email or password', 'INVALID_CREDENTIALS')
+  }
+  const valid = await bcrypt.compare(password, user.passwordHash)
+  if (!valid) {
+    throw new ApiError(401, 'Invalid email or password', 'INVALID_CREDENTIALS')
+  }
+  if (user.suspendedAt) throw new ApiError(403, 'Account suspended', 'ACCOUNT_SUSPENDED')
+  if (user.deletedAt) throw new ApiError(401, 'User not found', 'USER_NOT_FOUND')
+  await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
+  return user as AuthUser
+}
+
 export async function requireAdminAuth(): Promise<JwtPayload> {
   const payload = await requireAuth()
   if (payload.role !== 'ADMIN') {

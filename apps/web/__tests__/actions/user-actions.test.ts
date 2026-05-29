@@ -1,22 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mockPrismaClient } from '../helpers/mock-prisma'
 import { MOCK_JWT, MOCK_AUTH_USER } from '../helpers/mock-auth'
 
 // --- mocks ---
-vi.mock('@vesta/shared', () => ({ prisma: mockPrismaClient }))
 vi.mock('@vesta/shared/server/auth', () => ({
   requireAuth: vi.fn().mockResolvedValue(MOCK_JWT),
   getAuthUser: vi.fn().mockResolvedValue(MOCK_AUTH_USER),
 }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+vi.mock('@vesta/shared/server/services', () => ({
+  completeUserProfile: vi.fn(),
+}))
 
 import { completeProfile } from '../../src/app/actions/user-actions'
+import * as svc from '@vesta/shared/server/services'
 import { revalidatePath } from 'next/cache'
 
 const MOCK_UPDATED_USER = {
   id: 'user-1',
   fullName: 'Jane Doe',
-  phone: '+8801700000001',
   profileCompleted: true,
 }
 
@@ -26,20 +27,16 @@ beforeEach(() => {
 
 describe('completeProfile', () => {
   it('updates user with fullName, phone, and profileCompleted=true', async () => {
-    mockPrismaClient.user.update.mockResolvedValue(MOCK_UPDATED_USER)
+    vi.mocked(svc.completeUserProfile).mockResolvedValue(MOCK_UPDATED_USER as never)
 
     const result = await completeProfile({
       fullName: 'Jane Doe',
       phone: '+8801700000001',
     })
 
-    expect(mockPrismaClient.user.update).toHaveBeenCalledWith({
-      where: { id: 'user-1' },
-      data: {
-        fullName: 'Jane Doe',
-        phone: '+8801700000001',
-        profileCompleted: true,
-      },
+    expect(svc.completeUserProfile).toHaveBeenCalledWith('user-1', {
+      fullName: 'Jane Doe',
+      phone: '+8801700000001',
     })
     expect(result).toEqual({
       id: 'user-1',
@@ -54,6 +51,6 @@ describe('completeProfile', () => {
       completeProfile({ fullName: '', phone: '+8801700000001' }),
     ).rejects.toThrow()
 
-    expect(mockPrismaClient.user.update).not.toHaveBeenCalled()
+    expect(svc.completeUserProfile).not.toHaveBeenCalled()
   })
 })

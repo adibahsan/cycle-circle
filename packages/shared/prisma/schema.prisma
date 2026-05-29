@@ -110,6 +110,7 @@ model User {
   phone               String?            @unique
   email               String?            @unique
   fullName            String?
+  passwordHash        String?
   authMethod          AuthMethod
   subscriptionStatus  SubscriptionStatus @default(FREE)
   language            Language           @default(EN)

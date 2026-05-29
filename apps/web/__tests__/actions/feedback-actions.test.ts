@@ -1,16 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mockPrismaClient } from '../helpers/mock-prisma'
 import { MOCK_JWT, MOCK_AUTH_USER } from '../helpers/mock-auth'
 
 // --- mocks ---
-vi.mock('@vesta/shared', () => ({ prisma: mockPrismaClient }))
 vi.mock('@vesta/shared/server/auth', () => ({
   requireAuth: vi.fn().mockResolvedValue(MOCK_JWT),
   getAuthUser: vi.fn().mockResolvedValue(MOCK_AUTH_USER),
 }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+vi.mock('@vesta/shared/server/services', () => ({
+  createFeedback: vi.fn(),
+}))
 
 import { submitFeedback } from '../../src/app/actions/feedback-actions'
+import * as svc from '@vesta/shared/server/services'
 import { revalidatePath } from 'next/cache'
 
 const MOCK_FEEDBACK = {
@@ -29,7 +31,7 @@ beforeEach(() => {
 
 describe('submitFeedback', () => {
   it('creates feedback record with correct fields', async () => {
-    mockPrismaClient.feedback.create.mockResolvedValue(MOCK_FEEDBACK)
+    vi.mocked(svc.createFeedback).mockResolvedValue(MOCK_FEEDBACK as never)
 
     const result = await submitFeedback({
       category: 'GENERAL',
@@ -37,14 +39,11 @@ describe('submitFeedback', () => {
       rating: 5,
     })
 
-    expect(mockPrismaClient.feedback.create).toHaveBeenCalledWith({
-      data: {
-        userId: 'user-1',
-        profileId: undefined,
-        category: 'GENERAL',
-        message: 'Great app!',
-        rating: 5,
-      },
+    expect(svc.createFeedback).toHaveBeenCalledWith('user-1', {
+      profileId: undefined,
+      category: 'GENERAL',
+      message: 'Great app!',
+      rating: 5,
     })
     expect(result).toEqual(MOCK_FEEDBACK)
     expect(revalidatePath).toHaveBeenCalledWith('/')
@@ -59,6 +58,6 @@ describe('submitFeedback', () => {
       }),
     ).rejects.toThrow()
 
-    expect(mockPrismaClient.feedback.create).not.toHaveBeenCalled()
+    expect(svc.createFeedback).not.toHaveBeenCalled()
   })
 })

@@ -40,6 +40,16 @@
 | I-5 | **Resend domain not verified** — Transactional email from a custom domain requires DNS verification in the Resend dashboard. Without this, emails may be rejected or land in spam. | MEDIUM | Resend dashboard |
 | I-6 | **Upstash Redis/QStash not provisioned** — No production Upstash accounts exist. Must be created and connection strings obtained. | HIGH | Upstash console |
 
+### Admin Panel Blockers
+
+| # | Blocker | Severity | Location |
+|---|---------|----------|----------|
+| A-1 | **Admin models not in schema** — `Article`, `ArticleCategory`, `SmsBroadcast`, `AdminAuditLog` models are required by FR-CONTENT/FR-CMS and FR-SMS but do not exist in `schema.prisma`. Cannot deploy a functional admin panel without them. | HIGH | `packages/shared/prisma/schema.prisma` |
+| A-2 | **Admin user seeding** — There is no self-registration for admin accounts. The first admin must be created via a DB seed or direct SQL before the admin panel is usable in production. | HIGH | `packages/shared/prisma/seed.ts` |
+| A-3 | **Admin app not on Vercel** — A separate Vercel project for `apps/admin/` has not been created or connected to the GitHub repo. | HIGH | Vercel dashboard |
+| A-4 | **Admin cookie isolation on subdomains** — `vesta_token` cookies set on `app.vesta-app.com` are not shared with `admin.vesta-app.com` by default. The admin app has its own magic-link login flow but this has not been end-to-end tested in a real subdomain context. | MEDIUM | `apps/admin/src/` |
+| A-5 | **Tiptap bundle size** — The Tiptap rich-text editor adds approximately 200 KB to the admin bundle. Dynamic imports are not yet configured. | LOW | `apps/admin/` |
+
 ### Code Blockers
 
 | # | Blocker | Notes |
@@ -321,20 +331,82 @@ Before announcing launch:
 
 ---
 
-### 7. Domain and DNS
+### 7. Admin Panel — Separate Vercel Project
 
-**Step 7.1 — Purchase domain** (if not already owned)
+The admin app (`apps/admin/`) must be deployed as its own Vercel project, independent of the web app project created in §2.
+
+**Step 7.1 — Create admin Vercel project**
+1. Go to [vercel.com](https://vercel.com) → Add New → Project.
+2. Import the same `cycle-circle` GitHub repository.
+3. Framework preset: **Next.js**.
+4. Root directory: `apps/admin` (this is how Vercel distinguishes the two apps within the monorepo).
+5. Use the **same Vercel account** — both projects share Hobby-tier limits (bandwidth, invocation count, cron slots). The admin app has no cron jobs, so this does not consume the web app's 2 cron slots.
+
+**Step 7.2 — Admin build settings**
+In the admin Vercel project settings:
+- Root directory: `apps/admin`
+- Build command: `pnpm --filter @vesta/admin build` (or `next build` if Vercel resolves workspace deps automatically)
+- Install command: `pnpm install --frozen-lockfile`
+- Node version: 20.x
+
+**Step 7.3 — Admin environment variables**
+Set the following in the admin Vercel project → Environment Variables → Production:
+
+| Variable | Description | Notes |
+|----------|-------------|-------|
+| `DATABASE_URL` | Same Supabase PostgreSQL pooler connection string as web app | Must be identical — same database |
+| `UPSTASH_REDIS_REST_URL` | Same Upstash Redis REST endpoint | Shared session store |
+| `UPSTASH_REDIS_REST_TOKEN` | Same Upstash Redis REST token | Shared session store |
+| `JWT_SECRET` | **Must be identical to the web app's `JWT_SECRET`** | Shared so both apps can verify each other's tokens |
+| `NEXT_PUBLIC_ADMIN_URL` | Admin app's production URL (e.g., `https://admin.vesta-app.com`) | Used in magic-link callback URLs |
+| `RESEND_API_KEY` | Same Resend API key | Admin sends magic-link emails |
+| `NODE_ENV` | `production` | Auto-set by Vercel |
+
+**Step 7.4 — Admin domain**
+Configure a subdomain for the admin app: `admin.vesta-app.com` (or `admin.[your-domain].com`). In your domain registrar:
+
+| Type | Name | Value | Purpose |
+|------|------|-------|---------|
+| CNAME | `admin` | `cname.vercel-dns.com` | Admin Vercel project |
+
+Vercel auto-provisions SSL for the subdomain.
+
+**Step 7.5 — Cookie isolation on subdomains**
+
+> **Critical:** Cookies set on `app.vesta-app.com` (or `vesta-app.com`) without an explicit `domain` attribute are NOT shared with `admin.vesta-app.com`. This is browser Same-Origin policy.
+
+The admin app handles this correctly by design: it has its own magic-link login flow and sets its own `vesta_token` cookie on the admin subdomain after verifying the JWT. Both apps can verify each other's tokens because they share the same `JWT_SECRET`. Concretely:
+
+- A user authenticated on `app.vesta-app.com` is **not** automatically authenticated on `admin.vesta-app.com`.
+- An admin must log in via the admin magic-link flow (`/admin/login`) on the admin domain.
+- The JWT payload includes the `role` field — admin middleware rejects tokens where `role !== 'ADMIN'`.
+- `JWT_SECRET` must be identical across both Vercel projects so tokens signed in one app can be verified in the other if needed.
+
+**Step 7.6 — Shared services layer**
+
+Both apps import business logic from `@vesta/shared/server/services`. This has deployment implications:
+
+- Any change to a shared service affects **both** the web app and admin app simultaneously.
+- Always test both apps after changing shared service code.
+- Schema changes require `prisma generate` (run `just db-generate`) before rebuilding either app.
+- **Deployment order**: always run database migrations (`prisma migrate deploy`) BEFORE deploying either app. Both apps must be compatible with the same schema version.
+
+---
+
+### 8. Domain and DNS
+
+**Step 8.1 — Purchase domain** (if not already owned)
 Recommended: a `.app` or `.io` TLD. `.app` domains enforce HTTPS at the registry level.
 
-**Step 7.2 — Configure DNS**
+**Step 8.2 — Configure DNS**
 In your domain registrar's DNS panel:
 - Add Vercel nameservers OR add the A/CNAME records Vercel provides after connecting the custom domain.
 - Vercel provides: `76.76.21.21` (A record) for apex domains, `cname.vercel-dns.com` (CNAME) for subdomains.
 
-**Step 7.3 — SSL**
+**Step 8.3 — SSL**
 Vercel automatically provisions and renews Let's Encrypt SSL certificates. No manual action needed after domain is connected.
 
-**Step 7.4 — Email subdomain** (for Resend)
+**Step 8.4 — Email subdomain** (for Resend)
 Add a `mail.` subdomain (or similar) for Resend DKIM/SPF. Recommend a subdomain so your root domain's email reputation is separate from transactional mail.
 
 ---
@@ -375,12 +447,29 @@ All variables must be set in Vercel → Project Settings → Environment Variabl
 
 - `REDIS_URL` — Replace with `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (see Infrastructure §3)
 
+### Admin App Environment Variables
+
+The admin Vercel project requires its own set of environment variables. Set these in the **admin** Vercel project settings (not the web app project):
+
+| Variable | Description | Notes |
+|----------|-------------|-------|
+| `DATABASE_URL` | Same Supabase pooler URL as web app | Must point to the same database |
+| `UPSTASH_REDIS_REST_URL` | Same as web app | Shared cache/session store |
+| `UPSTASH_REDIS_REST_TOKEN` | Same as web app | Shared cache/session store |
+| `JWT_SECRET` | **Identical to web app `JWT_SECRET`** | Critical — see cookie note below |
+| `NEXT_PUBLIC_ADMIN_URL` | `https://admin.[your-domain].com` | Used for magic-link callback URLs |
+| `RESEND_API_KEY` | Same as web app (or a separate key) | Admin sends magic-link emails |
+| `NODE_ENV` | `production` | Auto-set by Vercel |
+
+> **JWT_SECRET must match across both apps.** If `JWT_SECRET` differs between the web app and admin app, tokens issued by one cannot be verified by the other. Use the same cryptographically random value in both Vercel projects.
+
 ### Important Security Notes
 
-- `JWT_SECRET` must be at least 32 characters (enforced by `env.ts`). Recommend 64+ characters.
+- `JWT_SECRET` must be at least 32 characters (enforced by `env.ts`). Recommend 64+ characters. **The same value must be used in both the web app and admin app Vercel projects.**
 - `PRISMA_FIELD_ENCRYPTION_KEY` must be stored securely. Rotating this key requires re-encrypting all existing encrypted fields. Do not rotate without a migration plan.
 - Never expose `CRON_SECRET` publicly. Vercel sends it as the `Authorization: Bearer` header when invoking cron endpoints.
 - `BDAPPS_PASSWORD` is equivalent to an API key. Treat with the same security as a private key.
+- The admin app does not need `BDAPPS_*` or `QSTASH_*` variables unless admin SMS broadcast is wired to QStash.
 
 ---
 
@@ -444,6 +533,65 @@ prisma.$use(async (params, next) => {
 ```
 
 This is a non-trivial change that requires careful integration with the auth layer.
+
+### Admin Panel Schema Migration
+
+The admin panel requires a new migration before it can be deployed. The following additions to `schema.prisma` must be authored and applied:
+
+**New models:**
+- `Article` — CMS content with `title`, `slug`, `content` (Tiptap JSON), `status` (ArticleStatus enum), `categoryId`, `authorId`, `publishedAt`
+- `ArticleCategory` — taxonomy for articles
+- `SmsBroadcast` — bulk SMS job queue with `status` (SmsBroadcastStatus enum), target segment, message body, sent/failed counts
+- `AdminAuditLog` — immutable audit trail for admin actions (who did what, when, on which entity)
+
+**Additions to existing models:**
+- `User`: `suspendedAt DateTime?`, `suspendedBy String?`, `deletedAt DateTime?` (soft-delete), `lastLoginAt DateTime?`
+- `Subscription`: admin override fields (`adminOverrideNote String?`, `adminOverriddenAt DateTime?`, `adminOverriddenBy String?`)
+
+**New enums:**
+- `ArticleStatus`: `DRAFT`, `PUBLISHED`, `ARCHIVED`
+- `CyclePhase`: `MENSTRUAL`, `FOLLICULAR`, `OVULATION`, `LUTEAL` (for article tagging and analytics)
+- `SmsBroadcastStatus`: `PENDING`, `SENDING`, `COMPLETED`, `FAILED`, `CANCELLED`
+
+**Create and apply the migration:**
+```bash
+# From packages/shared/
+pnpm db:migrate -- --name add_admin_models
+```
+
+Edit the generated migration SQL as needed, then apply to production:
+```bash
+DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres" \
+  pnpm --filter @vesta/shared db:migrate:deploy
+```
+
+### Admin Seed Data
+
+Unlike the main user seed (which must NOT run in production), admin user creation is required:
+
+```typescript
+// packages/shared/prisma/seed-admin.ts (separate from the dev seed)
+await prisma.user.upsert({
+  where: { phone: '+8801XXXXXXXXX' }, // or email for magic-link
+  update: { role: 'ADMIN' },
+  create: {
+    phone: '+8801XXXXXXXXX',
+    role: 'ADMIN',
+    subscriptionStatus: 'FREE',
+  },
+})
+```
+
+Run this targeted seed once after the initial migration:
+```bash
+DIRECT_URL="postgresql://..." pnpm --filter @vesta/shared exec ts-node prisma/seed-admin.ts
+```
+
+Alternatively, create the admin user directly via Supabase SQL editor:
+```sql
+INSERT INTO "users" (id, phone, role, "subscriptionStatus", "createdAt", "updatedAt")
+VALUES (gen_random_uuid(), '+8801XXXXXXXXX', 'ADMIN', 'FREE', now(), now());
+```
 
 ### Seed Data
 
@@ -518,8 +666,9 @@ Vercel creates a preview deployment for every PR. To avoid running cron jobs or 
 
 | Type | Name | Value | Purpose |
 |------|------|-------|---------|
-| A | `@` (apex) | `76.76.21.21` | Vercel production |
+| A | `@` (apex) | `76.76.21.21` | Vercel production (web app) |
 | CNAME | `www` | `cname.vercel-dns.com` | Vercel www redirect |
+| CNAME | `admin` | `cname.vercel-dns.com` | Vercel admin app subdomain |
 | TXT | `@` | SPF record from Resend | Email authentication |
 | CNAME | `mail._domainkey` | DKIM from Resend | Email signing |
 | TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:dmarc@[domain]` | DMARC policy |
@@ -625,6 +774,27 @@ Work through this list in order. Each item is a gate; do not skip forward.
 - [ ] Supabase dashboard bookmarked and storage size noted as baseline
 - [ ] Resend delivery rate baseline established (send 5 test emails, verify all delivered)
 - [ ] Vercel function logs reviewed for any errors from first 24 hours of traffic
+
+### Phase 9 — Admin Panel Deployment
+
+- [ ] Admin panel schema migration authored (Article, ArticleCategory, SmsBroadcast, AdminAuditLog models + User/Subscription additions)
+- [ ] New enums added to schema: `ArticleStatus`, `CyclePhase`, `SmsBroadcastStatus`
+- [ ] Admin migration applied to production Supabase via `prisma migrate deploy`
+- [ ] Initial admin user created in production database (`role: 'ADMIN'`, with phone/email for magic link login)
+- [ ] Admin Vercel project created and connected to GitHub repo (root directory: `apps/admin`)
+- [ ] Admin environment variables set in admin Vercel project (especially `JWT_SECRET` matching web app)
+- [ ] `NEXT_PUBLIC_ADMIN_URL` set to production admin URL
+- [ ] Admin subdomain DNS record configured (`admin.[domain]` → `cname.vercel-dns.com`)
+- [ ] Admin Vercel project custom domain connected and SSL provisioned
+- [ ] Admin app deploys successfully (check Vercel build logs)
+- [ ] Admin login flow verified end-to-end: magic-link request → email received via Resend → click link → JWT issued → admin dashboard loads
+- [ ] Admin middleware verified: attempt to access admin dashboard with a non-ADMIN role JWT → redirected to login
+- [ ] Admin middleware verified: attempt to access admin dashboard with no cookie → redirected to login
+- [ ] Resend configured to send admin magic-link emails from verified domain
+- [ ] Tiptap editor: Bengali text renders correctly in article editor (test with sample Bangla content)
+- [ ] Recharts/analytics charts render correctly in production build (no SSR issues)
+- [ ] Both web app and admin app verified working after shared service changes (test both login flows after any `@vesta/shared` update)
+- [ ] Add UptimeRobot check for admin app: ping `GET https://admin.[domain]/api/health` every 5 minutes
 
 ---
 
@@ -734,18 +904,65 @@ Priority events to monitor: BDApps API errors, CAAS charge failures, Resend fail
 3. If 6.13.x introduces a security vulnerability, file an issue with `prisma-field-encryption` maintainers before proceeding.
 4. Lock the version in `pnpm-lock.yaml` and add a comment in `package.json` explaining the constraint.
 
-### 10. No Admin Panel (P2 but Operationally Critical)
+### 10. Admin Cookie Isolation on Separate Subdomains
 
-**Risk level:** MEDIUM (operational)
+**Risk level:** MEDIUM
 
-**Scenario:** FR-ADMIN is not started. There is no way to manage users, view subscriptions, inspect feedback, or publish articles without direct database access. At launch, the team will need raw Supabase SQL queries or Prisma Studio (`just studio`) for all admin tasks.
+**Scenario:** When the web app runs on `app.vesta-app.com` and the admin app runs on `admin.vesta-app.com`, session cookies set by one app are not automatically available to the other. Browser Same-Origin policy scopes cookies to the exact domain that set them unless the `domain` attribute is explicitly set to the parent domain (e.g., `.vesta-app.com`).
+
+**Design decision:** The admin app uses its own independent login flow (magic-link email → JWT set on admin subdomain). This is intentionally separate from the user-facing OTP flow. Admin users must always log in on the admin subdomain.
 
 **Mitigation:**
-- Grant Supabase dashboard access to team members who need it.
-- Document common admin queries (suspend user, grant/revoke Pro, view feedback) as SQL snippets in an internal wiki.
-- Prioritise FR-ADMIN for v1.1 immediately after launch.
+- Do NOT attempt to share cookies across subdomains by setting `domain=.vesta-app.com` — this would allow a web-app session to authenticate against admin endpoints, which is a security regression.
+- Keep admin login fully independent. The `JWT_SECRET` being shared means both apps can issue tokens that either can verify, but each app only accepts its own login flow.
+- Test admin login end-to-end on the real subdomain before launch. Local dev (same `localhost` origin) may mask this issue.
 
-### 11. Email Trial Infinite Reset — Fixed, But Verify
+### 11. Admin User Creation — No Self-Registration
+
+**Risk level:** HIGH (operational blocker)
+
+**Scenario:** There is no UI for creating admin users. The first admin account must be bootstrapped via direct database insert or a one-time seed script. Without this, the admin panel is unreachable even after deployment.
+
+**Mitigation:**
+- Create the initial admin user via Supabase SQL editor immediately after running the admin migration.
+- Document the SQL snippet in an internal runbook (phone or email field, `role: 'ADMIN'`).
+- Never expose an admin-creation API endpoint without strong authentication (e.g., a separate management token, or IP restriction).
+
+### 12. Tiptap Bundle Size in Admin
+
+**Risk level:** LOW
+
+**Scenario:** Tiptap (rich text editor for article authoring) adds approximately 200 KB to the admin JavaScript bundle. This increases initial load time for the admin panel, though this is a lower priority than the user-facing web app.
+
+**Mitigation:**
+- Use Next.js dynamic imports for the Tiptap editor component: `const TiptapEditor = dynamic(() => import('@/components/TiptapEditor'), { ssr: false })`. This defers the 200 KB until the editor is actually opened.
+- Avoid including Tiptap in any admin pages that do not need it (list views, user management, analytics).
+
+### 13. Analytics Query Performance at Scale
+
+**Risk level:** MEDIUM (future concern)
+
+**Scenario:** Population-level admin analytics queries (cycle length distribution across all users, retention cohorts, symptom frequency heatmaps) require aggregating across all `period_logs` and `symptom_logs` rows. On a large dataset these queries may be slow on the Supabase free tier, which shares compute resources.
+
+**Mitigation:**
+- For launch: limit admin analytics to simple counts and date-range filters. Avoid cross-table aggregations with no date bounds.
+- Post-launch: add indexes on `period_logs.start_date` and `symptom_logs.created_at` for time-series queries.
+- At scale: consider Postgres materialized views refreshed nightly, or caching aggregated stats in Upstash Redis.
+
+### 14. Previously: No Admin Panel (Resolved — Admin App Scaffolded)
+
+**Risk level:** LOW (monitoring)
+
+**Previous scenario:** FR-ADMIN was not started. There was no way to manage users, view subscriptions, or publish articles without direct database access.
+
+**Current state:** The admin app (`apps/admin/`) is scaffolded and being developed. For the period between web app launch and admin app deployment, the team should:
+- Grant Supabase dashboard access to team members who need it.
+- Use Prisma Studio (`just studio`) for local inspection.
+- Document common admin SQL queries (suspend user, grant/revoke Pro, view feedback) as an internal runbook.
+
+Prioritise completing and deploying the admin app for v1.1.
+
+### 15. Email Trial Infinite Reset — Fixed, But Verify
 
 **Risk level:** LOW (fixed, verify in production)
 
@@ -753,7 +970,7 @@ Priority events to monitor: BDApps API errors, CAAS charge failures, Resend fail
 
 **Verification:** Log in via magic-link → check DB for `emailTrialExpiresAt`. Log in again via magic-link → confirm `emailTrialExpiresAt` has not changed.
 
-### 12. No Automated UI Tests
+### 16. No Automated UI Tests
 
 **Risk level:** MEDIUM (long-term quality)
 
@@ -822,11 +1039,13 @@ Alert threshold: 80 emails in a single day triggers a review of the QStash dispa
 
 | Service | Free Limit | Approximate Users Before Upgrade |
 |---------|------------|----------------------------------|
-| Vercel Hobby | 100 GB bandwidth, 1M invocations/month, 10s timeout | ~5,000–10,000 MAU before bandwidth concern; timeout concern hits at much lower scale if QStash not implemented |
-| Supabase Free | 500 MB database, 1 GB file storage, no backups | ~2,000–5,000 users with symptom data (encrypted blobs are larger; estimate 5–10 MB per active user per month of logging) |
-| Upstash Redis Free | 10,000 commands/day, 256 MB | ~500–1,000 DAU (each login = ~3–5 Redis ops; each OTP = ~3 ops; rate limit checks = 2 ops) |
+| Vercel Hobby (web app) | 100 GB bandwidth, 1M invocations/month, 10s timeout | ~5,000–10,000 MAU before bandwidth concern; timeout concern hits at much lower scale if QStash not implemented |
+| Vercel Hobby (admin app) | Shared with web app project OR a second Hobby account ($0) | Admin traffic is negligible; the admin app is a separate Vercel project. On Hobby, each GitHub repo can have multiple projects on the same account sharing the same Hobby limits. |
+| Supabase Free | 500 MB database, 1 GB file storage, no backups | ~2,000–5,000 users with symptom data (encrypted blobs are larger; estimate 5–10 MB per active user per month of logging). Article content and admin audit logs add marginal storage. |
+| Supabase Storage (article images) | 1 GB file storage (included in free tier) | Article image uploads via the admin CMS fit within free tier at launch scale. |
+| Upstash Redis Free | 10,000 commands/day, 256 MB | ~500–1,000 DAU (each login = ~3–5 Redis ops; each OTP = ~3 ops; rate limit checks = 2 ops). Admin sessions add minimal Redis overhead. |
 | Upstash QStash Free | 500 messages/day | ~500 notifications/day maximum across all users |
-| Resend Free | 3,000 emails/month, 100/day | ~100 active users receiving daily notifications (period alert + fertile alert + reminder = 3 emails/user potentially) |
+| Resend Free | 3,000 emails/month, 100/day | ~100 active users receiving daily notifications (period alert + fertile alert + reminder = 3 emails/user potentially). Admin magic-link emails add ~1–2 emails/day at most. |
 
 ### Upgrade Triggers and Costs
 
@@ -857,6 +1076,8 @@ Upgrade Supabase to Pro immediately once the first paying subscriber exists (bef
 
 ## Appendix: Key File Locations
 
+### Web App
+
 | What | Where |
 |------|-------|
 | Next.js config | `apps/web/next.config.ts` |
@@ -864,6 +1085,19 @@ Upgrade Supabase to Pro immediately once the first paying subscriber exists (bef
 | Cron: daily reminders | `apps/web/src/app/api/cron/daily-reminders/route.ts` |
 | Cron: CAAS check | `apps/web/src/app/api/cron/caas-check/route.ts` |
 | Webhook endpoints | `apps/web/src/app/api/webhooks/` |
+
+### Admin App
+
+| What | Where |
+|------|-------|
+| Admin Next.js config | `apps/admin/next.config.ts` |
+| Admin auth middleware | `apps/admin/src/middleware.ts` |
+| Admin login flow | `apps/admin/src/app/` |
+
+### Shared Package
+
+| What | Where |
+|------|-------|
 | Environment schema | `packages/shared/src/utils/env.ts` |
 | Prisma schema | `packages/shared/prisma/schema.prisma` |
 | Migrations | `packages/shared/prisma/migrations/` |
@@ -872,4 +1106,10 @@ Upgrade Supabase to Pro immediately once the first paying subscriber exists (bef
 | Email templates | `packages/shared/src/server/email-templates.ts` |
 | Auth logic | `packages/shared/src/server/auth.ts` |
 | Shared middleware | `packages/shared/src/server/middleware.ts` |
+| Shared services | `packages/shared/src/server/services/` |
+
+### Infrastructure
+
+| What | Where |
+|------|-------|
 | Docker local dev | `ops/docker/compose.yml` |
