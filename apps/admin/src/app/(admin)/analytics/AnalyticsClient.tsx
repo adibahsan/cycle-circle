@@ -367,7 +367,7 @@ function TierBadges({ data }: { data: PredictionAccuracy[] }) {
 
 function formatWeek(dateStr: string) {
   const d = new Date(dateStr)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
 function RetentionTooltip({
@@ -508,7 +508,7 @@ function RetentionRates({ data }: { data: UserRetention[] }) {
             {formatWeek(d.week)}
           </p>
           <p
-            className="text-lg font-bold"
+            className="text-lg font-bold tabular-nums"
             style={{ color: d.rate >= 50 ? GREEN : d.rate >= 25 ? AMBER : PRIMARY }}
           >
             {d.rate}%

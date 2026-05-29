@@ -70,7 +70,7 @@ const STATUS_OPTIONS = [
 
 function formatDate(d: Date | null | undefined) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-US', {
+  return new Date(d).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -80,7 +80,7 @@ function formatDate(d: Date | null | undefined) {
 function formatAmount(cents: number | null | undefined) {
   if (cents == null) return '—'
   // BDApps amounts are in paisa (1/100 BDT)
-  return `৳${(cents / 100).toFixed(2)}`
+  return `৳${new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100)}`
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -210,13 +210,13 @@ export function SubscriptionsClient({ data }: SubscriptionsClientProps) {
           </p>
           {row.user.email && (
             <div className="flex items-center gap-1 text-xs text-[var(--color-text-secondary)]">
-              <Mail size={11} className="shrink-0" />
+              <Mail size={11} aria-hidden="true" className="shrink-0" />
               <span className="truncate max-w-[160px]">{row.user.email}</span>
             </div>
           )}
           {row.user.phone && (
             <div className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
-              <Smartphone size={11} className="shrink-0" />
+              <Smartphone size={11} aria-hidden="true" className="shrink-0" />
               <span>{row.user.phone}</span>
             </div>
           )}
@@ -232,7 +232,7 @@ export function SubscriptionsClient({ data }: SubscriptionsClientProps) {
       key: 'amount',
       header: 'Amount',
       render: (row) => (
-        <span className="text-sm text-[var(--color-text-secondary)] font-mono">
+        <span className="text-sm tabular-nums text-[var(--color-text-secondary)] font-mono">
           {formatAmount(row.amount)}
         </span>
       ),
@@ -243,11 +243,11 @@ export function SubscriptionsClient({ data }: SubscriptionsClientProps) {
       render: (row) => {
         const count = row.consecutiveFailures
         if (count === 0) {
-          return <span className="text-sm text-[var(--color-text-muted)]">0</span>
+          return <span className="text-sm tabular-nums text-[var(--color-text-muted)]">0</span>
         }
         return (
           <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-600 dark:text-amber-400">
-            <AlertTriangle size={13} />
+            <AlertTriangle size={13} aria-hidden="true" />
             {count}
           </span>
         )
@@ -285,7 +285,7 @@ export function SubscriptionsClient({ data }: SubscriptionsClientProps) {
         return (
           <span className="inline-flex items-center gap-1">
             <Badge variant="info" size="sm">
-              <ShieldCheck size={11} className="mr-1" />
+              <ShieldCheck size={11} aria-hidden="true" className="mr-1" />
               Override
             </Badge>
           </span>
@@ -339,7 +339,7 @@ export function SubscriptionsClient({ data }: SubscriptionsClientProps) {
             </p>
           </div>
           <div className="hidden sm:flex items-center gap-2 rounded-xl border border-[var(--color-border)] glass px-4 py-2.5">
-            <CreditCard size={16} className="text-[var(--color-primary)]" />
+            <CreditCard size={16} aria-hidden="true" className="text-[var(--color-primary)]" />
             <span className="text-sm font-medium text-[var(--color-text-secondary)]">
               BDApps CAAS
             </span>
@@ -350,7 +350,7 @@ export function SubscriptionsClient({ data }: SubscriptionsClientProps) {
         <FilterBar
           searchValue=""
           onSearchChange={() => {}}
-          searchPlaceholder="Filter subscriptions…"
+          showSearch={false}
           filters={[
             {
               key: 'status',

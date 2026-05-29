@@ -54,7 +54,7 @@ function getUserStatus(user: UserRow): 'active' | 'suspended' | 'deleted' {
 
 function formatDate(d: Date | null) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-US', {
+  return new Date(d).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -65,7 +65,7 @@ function AuthMethodBadge({ method }: { method: string }) {
   const isPhone = method === 'PHONE_OTP'
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
-      {isPhone ? <Phone size={12} /> : <Mail size={12} />}
+      {isPhone ? <Phone size={12} aria-hidden="true" /> : <Mail size={12} aria-hidden="true" />}
       {isPhone ? 'OTP' : 'Email'}
     </span>
   )
@@ -94,13 +94,13 @@ const COLUMNS: Column<UserRow>[] = [
       <div className="space-y-0.5">
         {row.email && (
           <div className="flex items-center gap-1 text-xs text-[var(--color-text-secondary)]">
-            <Mail size={11} className="shrink-0" />
+            <Mail size={11} aria-hidden="true" className="shrink-0" />
             <span className="truncate max-w-[160px]">{row.email}</span>
           </div>
         )}
         {row.phone && (
           <div className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
-            <Smartphone size={11} className="shrink-0" />
+            <Smartphone size={11} aria-hidden="true" className="shrink-0" />
             <span>{row.phone}</span>
           </div>
         )}
@@ -121,7 +121,7 @@ const COLUMNS: Column<UserRow>[] = [
     key: 'profiles',
     header: 'Profiles',
     render: (row) => (
-      <span className="text-sm text-[var(--color-text-secondary)]">
+      <span className="text-sm tabular-nums text-[var(--color-text-secondary)]">
         {row._count.profiles}
       </span>
     ),
@@ -141,7 +141,7 @@ const COLUMNS: Column<UserRow>[] = [
     header: 'Last Login',
     sortable: true,
     render: (row) => (
-      <span className="text-sm text-[var(--color-text-muted)]">
+      <span className="text-sm tabular-nums text-[var(--color-text-muted)]">
         {formatDate(row.lastLoginAt)}
       </span>
     ),
@@ -151,7 +151,7 @@ const COLUMNS: Column<UserRow>[] = [
     header: 'Created',
     sortable: true,
     render: (row) => (
-      <span className="text-sm text-[var(--color-text-muted)]">
+      <span className="text-sm tabular-nums text-[var(--color-text-muted)]">
         {formatDate(row.createdAt)}
       </span>
     ),
@@ -160,7 +160,7 @@ const COLUMNS: Column<UserRow>[] = [
     key: 'action',
     header: '',
     render: () => (
-      <ChevronRight size={16} className="text-[var(--color-text-muted)]" />
+      <ChevronRight size={16} aria-hidden="true" className="text-[var(--color-text-muted)]" />
     ),
     width: '40px',
   },

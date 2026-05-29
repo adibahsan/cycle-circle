@@ -57,6 +57,10 @@
 }
 
 @layer base {
+  :root {
+    color-scheme: dark light;
+  }
+
   body {
     font-family: var(--font-display);
     background-color: var(--color-bg-primary);
@@ -131,11 +135,20 @@
 
 /* Glass card hover enhancement */
 .glass-hover {
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .glass-hover:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(232, 71, 108, 0.08), 0 0 0 1px rgba(232, 71, 108, 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Smooth page transition fade */

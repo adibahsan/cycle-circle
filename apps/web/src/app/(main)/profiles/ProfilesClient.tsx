@@ -66,7 +66,7 @@ function Stepper({ label, value, min, max, onChange, unit = 'days' }: StepperPro
         <button
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
-          className="w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+          className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
           style={{
             background: 'var(--color-bg-secondary)',
             borderColor: 'var(--color-border)',
@@ -82,7 +82,7 @@ function Stepper({ label, value, min, max, onChange, unit = 'days' }: StepperPro
         <button
           onClick={() => onChange(Math.min(max, value + 1))}
           disabled={value >= max}
-          className="w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+          className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
           style={{
             background: 'var(--color-bg-secondary)',
             borderColor: 'var(--color-border)',
@@ -120,7 +120,7 @@ function ProfileCard({ profile, isActive, onSwitch, onDelete }: ProfileCardProps
     >
       <button
         onClick={onSwitch}
-        className="w-full text-left rounded-2xl border transition-all duration-200 p-4 relative overflow-hidden"
+        className="w-full text-left rounded-2xl border transition-colors duration-200 p-4 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
         style={{
           background: isActive
             ? 'linear-gradient(135deg, rgba(232,71,108,0.07) 0%, rgba(155,127,212,0.07) 100%)'
@@ -203,7 +203,7 @@ function ProfileCard({ profile, isActive, onSwitch, onDelete }: ProfileCardProps
                   e.stopPropagation();
                   onDelete();
                 }}
-                className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-110"
+                className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                 style={{
                   background: 'rgba(232,71,108,0.08)',
                   border: '1px solid rgba(232,71,108,0.2)',
@@ -303,7 +303,7 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
         {/* Name */}
         <Input
           label="Name"
-          placeholder="e.g. Nusrat"
+          placeholder="e.g. Nusrat…"
           value={name}
           onChange={(e) => {
             setName(e.target.value);
@@ -327,7 +327,7 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
                 <button
                   key={rel}
                   onClick={() => setRelation(rel)}
-                  className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border text-center transition-all duration-150"
+                  className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                   style={{
                     background: isSelected ? colors.bg : 'var(--color-bg-secondary)',
                     borderColor: isSelected ? colors.border : 'var(--color-border)',
@@ -402,13 +402,17 @@ function DeleteDialog({ profileName, onConfirm, onCancel }: DeleteDialogProps) {
       className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-8"
       style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
       onClick={onCancel}
+      onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
     >
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-dialog-title"
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 40 }}
         transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-        className="w-full max-w-md rounded-2xl p-5"
+        className="w-full max-w-md rounded-2xl p-5 overscroll-contain"
         style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}
         onClick={(e: MouseEvent) => e.stopPropagation()}
       >
@@ -417,7 +421,7 @@ function DeleteDialog({ profileName, onConfirm, onCancel }: DeleteDialogProps) {
             <Trash2 size={18} color="#E8476C" />
           </div>
           <div>
-            <h3 className="font-bold text-[var(--color-text-primary)]">Remove Profile</h3>
+            <h3 id="delete-dialog-title" className="font-bold text-[var(--color-text-primary)]">Remove Profile</h3>
             <p className="text-sm text-[var(--color-text-muted)]">
               Remove <strong>{profileName}</strong>?
             </p>
@@ -432,7 +436,7 @@ function DeleteDialog({ profileName, onConfirm, onCancel }: DeleteDialogProps) {
           </Button>
           <button
             onClick={onConfirm}
-            className="flex-1 py-2 rounded-xl text-sm font-bold text-white transition-all active:scale-95"
+            className="flex-1 py-2 rounded-xl text-sm font-bold text-white transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
             style={{ background: 'var(--color-primary)' }}
           >
             {t('common.delete')}
@@ -540,6 +544,9 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
         </div>
 
         {/* Switch confirmation toast */}
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
+          {justSwitched ? `Switched to ${profiles.find((p) => p.id === justSwitched)?.name}` : ''}
+        </div>
         <AnimatePresence>
           {justSwitched && (
             <motion.div
@@ -593,14 +600,14 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                 ) : (
                   <button
                     onClick={() => setShowForm(true)}
-                    className="w-full rounded-2xl border border-dashed p-4 flex items-center justify-center gap-2.5 transition-all duration-200 group hover:border-[var(--color-primary)]"
+                    className="w-full rounded-2xl border border-dashed p-4 flex items-center justify-center gap-2.5 transition-colors duration-200 group hover:border-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                     style={{
                       borderColor: 'var(--color-border)',
                       background: 'var(--color-bg-secondary)',
                     }}
                   >
                     <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 group-hover:scale-105"
+                      className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
                       style={{
                         background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
                       }}

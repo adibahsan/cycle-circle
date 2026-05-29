@@ -24,9 +24,10 @@ function ToolbarButton({ onClick, active, title, children }: ToolbarButtonProps)
     <button
       type="button"
       title={title}
+      aria-label={title}
       onClick={onClick}
       className={clsx(
-        'inline-flex items-center justify-center h-8 w-8 rounded-lg text-sm font-semibold transition-all duration-150',
+        'inline-flex items-center justify-center h-8 w-8 rounded-lg text-sm font-semibold transition-colors transition-shadow duration-150 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500',
         active
           ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)]'
           : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]'
@@ -71,9 +72,9 @@ export function TiptapEditor({
   if (!editor) return null
 
   return (
-    <div className="border border-[var(--color-border)] rounded-xl overflow-hidden bg-[var(--color-bg-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary)]/30 focus-within:border-[var(--color-primary)] transition-all duration-200">
+    <div className="border border-[var(--color-border)] rounded-xl overflow-hidden bg-[var(--color-bg-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary)]/30 focus-within:border-[var(--color-primary)] transition-colors transition-shadow duration-200">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 px-3 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+      <div role="toolbar" aria-label="Text formatting" className="flex flex-wrap items-center gap-0.5 px-3 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
         {/* Text style */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -195,6 +196,7 @@ export function TiptapEditor({
       <EditorContent
         editor={editor}
         style={{ minHeight }}
+        aria-label="Article content"
         className="px-4 py-3 [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[inherit] [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h2]:text-xl [&_.ProseMirror_h2]:font-bold [&_.ProseMirror_h2]:mt-4 [&_.ProseMirror_h2]:mb-2 [&_.ProseMirror_h3]:text-base [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_h3]:mt-3 [&_.ProseMirror_h3]:mb-1 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-[var(--color-primary)]/40 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:text-[var(--color-text-secondary)] [&_.ProseMirror_blockquote]:italic [&_.ProseMirror_code]:bg-[var(--color-bg-secondary)] [&_.ProseMirror_code]:px-1.5 [&_.ProseMirror_code]:py-0.5 [&_.ProseMirror_code]:rounded [&_.ProseMirror_code]:font-mono [&_.ProseMirror_code]:text-xs [&_.is-editor-empty]:before:content-[attr(data-placeholder)] [&_.is-editor-empty]:before:text-[var(--color-text-muted)] [&_.is-editor-empty]:before:pointer-events-none [&_.is-editor-empty]:before:float-left [&_.is-editor-empty]:before:h-0"
       />
     </div>

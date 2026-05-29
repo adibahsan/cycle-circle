@@ -29,7 +29,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             'w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]',
             'text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]',
             'focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]',
-            'transition-all duration-200',
+            'transition-colors transition-shadow duration-200',
             error && 'border-red-400 focus:ring-red-300',
             className
           )}

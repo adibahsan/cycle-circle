@@ -2,6 +2,8 @@ import { requireAdminUser } from '@/app/queries/auth-queries'
 import { getCategories } from '@/app/queries/content-queries'
 import { ArticleEditorClient } from './ArticleEditorClient'
 
+export const dynamic = 'force-dynamic'
+
 export default async function NewArticlePage() {
   await requireAdminUser()
   const categories = await getCategories()

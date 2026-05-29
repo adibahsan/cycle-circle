@@ -37,11 +37,12 @@ export function Pagination({
     <div className="flex flex-wrap items-center justify-between gap-4 py-3 text-sm">
       {/* Page size selector */}
       <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
-        <span>Rows per page:</span>
+        <label htmlFor="page-size-select" className="whitespace-nowrap">Rows per page:</label>
         <select
+          id="page-size-select"
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-1 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-all duration-200"
+          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-1 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
         >
           {PAGE_SIZES.map((s) => (
             <option key={s} value={s}>
@@ -59,7 +60,8 @@ export function Pagination({
           className={clsx(
             'flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors duration-150',
             'hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]',
-            'disabled:opacity-40 disabled:cursor-not-allowed'
+            'disabled:opacity-40 disabled:cursor-not-allowed',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500'
           )}
           aria-label="Previous page"
         >
@@ -78,8 +80,10 @@ export function Pagination({
             <button
               key={page}
               onClick={() => onPageChange(page)}
+              aria-current={page === currentPage ? 'page' : undefined}
               className={clsx(
                 'flex h-8 w-8 items-center justify-center rounded-lg border text-sm font-medium transition-colors duration-150',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500',
                 page === currentPage
                   ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
                   : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]'
@@ -96,7 +100,8 @@ export function Pagination({
           className={clsx(
             'flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors duration-150',
             'hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]',
-            'disabled:opacity-40 disabled:cursor-not-allowed'
+            'disabled:opacity-40 disabled:cursor-not-allowed',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500'
           )}
           aria-label="Next page"
         >

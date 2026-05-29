@@ -16,7 +16,8 @@ export function LanguageToggle() {
   return (
     <button
       onClick={toggle}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors"
+      aria-label="Switch language"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
     >
       <span className={language === 'en' ? 'font-bold text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}>EN</span>
       <span className="text-[var(--color-text-muted)]">/</span>

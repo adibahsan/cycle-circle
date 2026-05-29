@@ -109,7 +109,7 @@ function NumberStepper({
       <button
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
-        className="w-10 h-10 rounded-full border-2 border-[var(--color-primary)] text-[var(--color-primary)] flex items-center justify-center font-bold text-lg transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[var(--color-primary)] hover:text-white"
+        className="w-10 h-10 rounded-full border-2 border-[var(--color-primary)] text-[var(--color-primary)] flex items-center justify-center font-bold text-lg transition-colors active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[var(--color-primary)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
         aria-label="Decrease"
       >
         −
@@ -123,7 +123,7 @@ function NumberStepper({
       <button
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
-        className="w-10 h-10 rounded-full border-2 border-[var(--color-primary)] text-[var(--color-primary)] flex items-center justify-center font-bold text-lg transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[var(--color-primary)] hover:text-white"
+        className="w-10 h-10 rounded-full border-2 border-[var(--color-primary)] text-[var(--color-primary)] flex items-center justify-center font-bold text-lg transition-colors active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[var(--color-primary)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
         aria-label="Increase"
       >
         +
@@ -250,7 +250,7 @@ function StepGoal({
             <button
               key={g.value}
               onClick={() => onSelect(g.value)}
-              className={`w-full rounded-2xl p-4 border-2 text-left transition-all duration-200 active:scale-[0.98] ${
+              className={`w-full rounded-2xl p-4 border-2 text-left transition-colors duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
                 isActive
                   ? 'border-[var(--color-primary)] shadow-[0_0_0_4px_rgba(232,71,108,0.12)]'
                   : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/40'
@@ -259,7 +259,7 @@ function StepGoal({
             >
               <div className="flex items-center gap-4">
                 <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all"
+                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors"
                   style={{
                     background: isActive ? g.bg : 'var(--color-bg-secondary)',
                     color: g.accent,
@@ -344,7 +344,7 @@ function StepCycleHistory({
         {/* Visual track */}
         <div className="h-1.5 rounded-full bg-[var(--color-bg-secondary)] overflow-hidden">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] transition-all duration-200"
+            className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] transition-[width] duration-200"
             style={{ width: `${((cycleLength - 21) / (45 - 21)) * 100}%` }}
           />
         </div>
@@ -367,7 +367,7 @@ function StepCycleHistory({
         </div>
         <div className="h-1.5 rounded-full bg-[var(--color-bg-secondary)] overflow-hidden">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] transition-all duration-200"
+            className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] transition-[width] duration-200"
             style={{ width: `${((periodLength - 1) / (10 - 1)) * 100}%` }}
           />
         </div>
@@ -428,7 +428,7 @@ function StepProfile({
               <button
                 key={value}
                 onClick={() => onRelation(value)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all duration-150 active:scale-95 ${
+                className={`px-4 py-2 rounded-full text-sm font-semibold border-2 transition-colors duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
                   isActive
                     ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-[0_0_0_3px_rgba(232,71,108,0.18)]'
                     : 'bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-primary)]/50'
@@ -518,7 +518,7 @@ function StepDone({
       value: `${state.periodLength} ${t('onboarding.days')}`,
     },
     ...(state.lastPeriodDate
-      ? [{ label: t('onboarding.lastPeriodLabel'), value: new Date(state.lastPeriodDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) }]
+      ? [{ label: t('onboarding.lastPeriodLabel'), value: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(state.lastPeriodDate + 'T00:00:00')) }]
       : []),
   ];
 
@@ -772,9 +772,11 @@ export default function OnboardingPage() {
       case 5:
         return (
           <>
-            {stepErrors.submit && (
-              <p className="mb-4 text-sm text-red-500 text-center">{stepErrors.submit}</p>
-            )}
+            <div aria-live="polite" aria-atomic="true">
+              {stepErrors.submit && (
+                <p className="mb-4 text-sm text-red-500 text-center">{stepErrors.submit}</p>
+              )}
+            </div>
             <StepDone state={state} onFinish={handleFinish} submitting={submitting} />
           </>
         );
@@ -847,8 +849,8 @@ export default function OnboardingPage() {
         {step >= 2 && step <= 4 && (
           <div className="sticky bottom-0 z-20 bg-[var(--color-bg-primary)]/95 backdrop-blur-sm border-t border-[var(--color-border)] px-5 py-4">
             <div className="flex gap-3 max-w-md mx-auto">
-              <Button variant="outline" size="lg" onClick={goBack} className="w-14 shrink-0 px-0">
-                <ChevronLeft size={20} />
+              <Button variant="outline" size="lg" onClick={goBack} aria-label="Go back" className="w-14 shrink-0 px-0">
+                <ChevronLeft size={20} aria-hidden="true" />
               </Button>
               <Button
                 size="lg"

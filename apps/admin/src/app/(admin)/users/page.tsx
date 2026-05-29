@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { requireAdminUser } from '@/app/queries/auth-queries'
 import { getUsers } from '@/app/queries/user-queries'
 import { UsersClient } from './UsersClient'

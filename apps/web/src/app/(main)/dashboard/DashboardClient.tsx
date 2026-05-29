@@ -3,9 +3,8 @@
 import { useState, useCallback, useTransition, type MouseEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence } from 'motion/react'
-import { format, parseISO } from 'date-fns'
-import { bn } from 'date-fns/locale/bn'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
+import { parseISO } from 'date-fns'
 import Link from 'next/link'
 import { X, CalendarDays, Activity, ChevronRight, Droplets } from 'lucide-react'
 
@@ -234,6 +233,10 @@ function PeriodLogModal({
   const [saved, setSaved] = useState(false)
   const [isPending, startTransition] = useTransition()
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') onClose()
+  }
+
   const isEdit = Boolean(existingLogId)
 
   const handleSave = () => {
@@ -264,7 +267,7 @@ function PeriodLogModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose} onKeyDown={handleKeyDown}>
       <motion.div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         initial={{ opacity: 0 }}
@@ -272,6 +275,9 @@ function PeriodLogModal({
         exit={{ opacity: 0 }}
       />
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label={isEdit ? t('dashboard.editPeriodLog') : t('dashboard.logPeriod')}
         className="relative w-full max-w-md bg-[var(--color-bg-card)] rounded-t-3xl px-5 py-6 shadow-2xl"
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
@@ -288,38 +294,43 @@ function PeriodLogModal({
           </h2>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-2 rounded-full hover:bg-[var(--color-bg-secondary)] transition-colors"
           >
-            <X size={18} className="text-[var(--color-text-muted)]" />
+            <X size={18} className="text-[var(--color-text-muted)]" aria-hidden="true" />
           </button>
         </div>
 
         {/* Start date */}
         <div className="mb-4">
-          <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
+          <label htmlFor="period-start-date" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
             {t('dashboard.startDate')}
           </label>
           <input
+            id="period-start-date"
+            name="startDate"
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             max={new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+            className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus:border-[var(--color-primary)] transition-colors"
           />
         </div>
 
         {/* End date */}
         <div className="mb-5">
-          <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
+          <label htmlFor="period-end-date" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
             {t('dashboard.endDate')}
           </label>
           <input
+            id="period-end-date"
+            name="endDate"
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             min={startDate}
             max={new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+            className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus:border-[var(--color-primary)] transition-colors"
           />
         </div>
 
@@ -333,7 +344,7 @@ function PeriodLogModal({
               <button
                 key={f}
                 onClick={() => setFlow(f)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
                   flow === f
                     ? 'text-white shadow-soft'
                     : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]'
@@ -354,6 +365,7 @@ function PeriodLogModal({
         </div>
 
         {/* Save */}
+        <div aria-live="polite">
         <AnimatePresence mode="wait">
           {saved ? (
             <motion.div
@@ -378,6 +390,7 @@ function PeriodLogModal({
             </motion.div>
           )}
         </AnimatePresence>
+        </div>
       </motion.div>
     </div>
   )
@@ -389,7 +402,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   const { t } = useTranslation()
   const router = useRouter()
   const { activeProfileId: storeProfileId, setActiveProfile, language } = useAppStore()
-  const dateLocale = language === 'bn' ? bn : undefined
+  const prefersReducedMotion = useReducedMotion()
 
   // Determine the effective profile: prefer the one passed from server, but
   // allow the store's value to override on the client after hydration.
@@ -491,17 +504,17 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   return (
     <>
       {/* Background blobs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10" aria-hidden="true">
         <motion.div
           className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-[0.07]"
           style={{ background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)' }}
-          animate={{ x: [0, 15, 0], y: [0, -10, 0] }}
+          animate={prefersReducedMotion ? {} : { x: [0, 15, 0], y: [0, -10, 0] }}
           transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
           className="absolute -bottom-32 -left-20 w-80 h-80 rounded-full opacity-[0.05]"
           style={{ background: 'radial-gradient(circle, var(--color-secondary) 0%, transparent 70%)' }}
-          animate={{ x: [0, -10, 0], y: [0, 12, 0] }}
+          animate={prefersReducedMotion ? {} : { x: [0, -10, 0], y: [0, 12, 0] }}
           transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
         />
       </div>
@@ -554,13 +567,13 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             <Card padding="md" className="h-full">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-1.5">
-                  <CalendarDays size={14} className="text-[var(--color-primary)]" />
+                  <CalendarDays size={14} className="text-[var(--color-primary)]" aria-hidden="true" />
                   <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                     {t('dashboard.nextPeriodCard')}
                   </span>
                 </div>
                 <div
-                  className="text-4xl font-extrabold leading-none"
+                  className="text-4xl font-extrabold leading-none tabular-nums"
                   style={{ color: 'var(--color-primary)' }}
                 >
                   {daysUntilNext}
@@ -579,7 +592,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 </div>
 
                 <p className="text-[10px] text-[var(--color-text-muted)]">
-                  {format(parseISO(prediction.nextPeriodStart), 'MMM d', { locale: dateLocale })}
+                  {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(prediction.nextPeriodStart))}
                 </p>
               </div>
             </Card>
@@ -594,7 +607,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             <Card padding="md" className="h-full">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-1.5">
-                  <Droplets size={14} className="text-[var(--color-primary)]" />
+                  <Droplets size={14} className="text-[var(--color-primary)]" aria-hidden="true" />
                   <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                     {t('dashboard.lastPeriod')}
                   </span>
@@ -602,7 +615,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 {lastPeriodDisplay ? (
                   <>
                     <p className="text-sm font-bold text-[var(--color-text-primary)]">
-                      {format(parseISO(lastPeriodDisplay.startDate), 'MMM d', { locale: dateLocale })}
+                      {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(lastPeriodDisplay.startDate))}
                     </p>
                     <p className="text-xs text-[var(--color-text-muted)]">
                       {lastPeriodDisplay.duration}d duration
@@ -682,16 +695,14 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 >
                   🩸 {t('dashboard.logPeriod')}
                 </Button>
-                <Link href="/symptoms" className="block">
-                  <button className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-secondary)] transition-colors">
-                    <div className="flex items-center gap-1.5">
-                      <Activity size={12} className="text-[var(--color-secondary)]" />
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
-                        {t('dashboard.logSymptoms')}
-                      </span>
-                    </div>
-                    <ChevronRight size={12} className="text-[var(--color-text-muted)]" />
-                  </button>
+                <Link href="/symptoms" className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-secondary)] transition-colors">
+                  <div className="flex items-center gap-1.5">
+                    <Activity size={12} className="text-[var(--color-secondary)]" aria-hidden="true" />
+                    <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                      {t('dashboard.logSymptoms')}
+                    </span>
+                  </div>
+                  <ChevronRight size={12} className="text-[var(--color-text-muted)]" aria-hidden="true" />
                 </Link>
               </div>
             </Card>
@@ -764,9 +775,9 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('dashboard.fertileWindow')}</span>
                   </div>
                   <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                    {format(parseISO(prediction.fertileStart), 'MMM d', { locale: dateLocale })}
+                    {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(prediction.fertileStart))}
                     {' – '}
-                    {format(parseISO(prediction.fertileEnd), 'MMM d', { locale: dateLocale })}
+                    {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(prediction.fertileEnd))}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[var(--color-bg-secondary)]">
@@ -775,7 +786,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('dashboard.ovulationDay')}</span>
                   </div>
                   <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                    {format(parseISO(prediction.ovulationDay), 'MMM d', { locale: dateLocale })}
+                    {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(prediction.ovulationDay))}
                   </span>
                 </div>
               </div>

@@ -23,7 +23,7 @@ export function Button({
     <button
       disabled={disabled || loading}
       className={clsx(
-        'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 active:scale-[0.97] cursor-pointer select-none',
+        'inline-flex items-center justify-center font-semibold rounded-xl transition-colors duration-200 active:scale-[0.97] cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500',
         {
           'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)] shadow-soft':
             variant === 'primary',

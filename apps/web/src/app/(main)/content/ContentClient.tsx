@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { BookOpen, ChevronRight } from 'lucide-react'
+import DOMPurify from 'dompurify'
 import { useAppStore } from '@/lib/store'
 import { getPhaseColor, getPhaseEmoji } from '@vesta/shared/utils/cycle-utils'
 import '@vesta/shared/utils/i18n'
@@ -76,7 +77,7 @@ export function ContentClient({ articles, activePhase }: ContentClientProps) {
       <div className="py-4">
         <button
           onClick={() => setSelectedArticle(null)}
-          className="flex items-center gap-1 text-sm text-[var(--color-primary)] font-medium mb-4 hover:underline"
+          className="flex items-center gap-1 text-sm text-[var(--color-primary)] font-medium mb-4 hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
         >
           ← {t('content.backToArticles')}
         </button>
@@ -108,7 +109,7 @@ export function ContentClient({ articles, activePhase }: ContentClientProps) {
 
           <div
             className="prose prose-sm max-w-none text-[var(--color-text-secondary)] [&_h2]:text-[var(--color-text-primary)] [&_h3]:text-[var(--color-text-primary)] [&_strong]:text-[var(--color-text-primary)] [&_a]:text-[var(--color-primary)]"
-            dangerouslySetInnerHTML={{ __html: getBody(selectedArticle) }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(getBody(selectedArticle)) }}
           />
         </article>
       </div>
@@ -136,7 +137,7 @@ export function ContentClient({ articles, activePhase }: ContentClientProps) {
               <button
                 key={tab.id}
                 onClick={() => handleFilterChange(tab.id)}
-                className="flex-none flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 active:scale-95 whitespace-nowrap"
+                className="flex-none flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors duration-200 active:scale-95 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                 style={
                   isActive
                     ? { backgroundColor: accent, borderColor: accent, color: '#fff' }
@@ -159,7 +160,7 @@ export function ContentClient({ articles, activePhase }: ContentClientProps) {
       {articles.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-14 h-14 rounded-2xl bg-[var(--color-bg-secondary)] flex items-center justify-center mb-3">
-            <BookOpen size={24} className="text-[var(--color-text-muted)]" />
+            <BookOpen size={24} className="text-[var(--color-text-muted)]" aria-hidden="true" />
           </div>
           <p className="text-sm font-semibold text-[var(--color-text-secondary)]">
             {t('content.noArticles')}
@@ -174,7 +175,7 @@ export function ContentClient({ articles, activePhase }: ContentClientProps) {
             <button
               key={article.id}
               onClick={() => setSelectedArticle(article)}
-              className="w-full text-left glass rounded-2xl p-4 hover:border-[var(--color-primary)]/30 transition-colors group"
+              className="w-full text-left glass rounded-2xl p-4 hover:border-[var(--color-primary)]/30 transition-colors group focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -209,6 +210,7 @@ export function ContentClient({ articles, activePhase }: ContentClientProps) {
                 <ChevronRight
                   size={16}
                   className="text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors mt-1 shrink-0"
+                  aria-hidden="true"
                 />
               </div>
             </button>

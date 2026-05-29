@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 
 interface VestaLogoProps {
   size?: number;
@@ -99,9 +99,10 @@ export function VestaLogoSVG({ size = 32, className }: Omit<VestaLogoProps, 'ani
 
 /** Animated version of the logo — gentle breathing / pulse effect. */
 export function VestaLogoAnimated({ size = 32, className }: Omit<VestaLogoProps, 'animate'>) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.div
-      animate={{ scale: [1, 1.06, 1] }}
+      animate={prefersReducedMotion ? undefined : { scale: [1, 1.06, 1] }}
       transition={{
         duration: 4,
         repeat: Infinity,

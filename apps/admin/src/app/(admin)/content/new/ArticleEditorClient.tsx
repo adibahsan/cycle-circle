@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { ArrowLeft, Save, Eye, Archive, FileText } from 'lucide-react'
 import { TiptapEditor } from '@/components/TiptapEditor'
 import { Button } from '@/components/ui/Button'
@@ -43,6 +44,13 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
   const [cyclePhases, setCyclePhases] = useState<string[]>([])
   const [status, setStatus] = useState('DRAFT')
   const [error, setError] = useState<string | null>(null)
+  const [isDirty, setIsDirty] = useState(false)
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault() }
+    if (isDirty) window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isDirty])
 
   function togglePhase(phase: string) {
     setCyclePhases((prev) =>
@@ -83,28 +91,28 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
     <div className="space-y-6">
       {/* Back + actions bar */}
       <div className="flex items-center justify-between gap-4">
-        <button
-          type="button"
-          onClick={() => router.push('/content')}
-          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+        <Link
+          href="/content"
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
         >
-          <ArrowLeft size={15} />
+          <ArrowLeft size={15} aria-hidden="true" />
           Back to Content
-        </button>
+        </Link>
         <Button
           variant="primary"
           size="sm"
           onClick={handleSave}
           loading={isPending}
           disabled={isPending}
+          className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
         >
-          <Save size={15} />
+          <Save size={15} aria-hidden="true" />
           Save Article
         </Button>
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+        <div aria-live="polite" className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
           {error}
         </div>
       )}
@@ -119,28 +127,34 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                <label htmlFor="title-en" className="block text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                   English Title <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id="title-en"
                   type="text"
+                  name="titleEn"
+                  autoComplete="off"
                   value={titleEn}
-                  onChange={(e) => setTitleEn(e.target.value)}
+                  onChange={(e) => { setTitleEn(e.target.value); setIsDirty(true) }}
                   placeholder="Article title in English…"
-                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3.5 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-all duration-200"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3.5 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                <label htmlFor="title-bn" className="block text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                   Bengali Title
                 </label>
                 <input
+                  id="title-bn"
                   type="text"
+                  name="titleBn"
+                  autoComplete="off"
                   value={titleBn}
-                  onChange={(e) => setTitleBn(e.target.value)}
+                  onChange={(e) => { setTitleBn(e.target.value); setIsDirty(true) }}
                   placeholder="বাংলায় শিরোনাম…"
                   lang="bn"
-                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3.5 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-all duration-200"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3.5 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
                 />
               </div>
             </div>
@@ -207,8 +221,8 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
                   <button
                     key={opt.value}
                     type="button"
-                    onClick={() => setStatus(opt.value)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all duration-150 ${
+                    onClick={() => { setStatus(opt.value); setIsDirty(true) }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-colors transition-shadow duration-150 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
                       isSelected
                         ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/8'
                         : 'border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)]'
@@ -236,9 +250,11 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
               Category
             </h3>
             <select
+              id="article-category"
+              aria-label="Category"
               value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-all duration-200"
+              onChange={(e) => { setCategoryId(e.target.value); setIsDirty(true) }}
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
             >
               <option value="">No category</option>
               {categories.map((cat) => (
@@ -260,7 +276,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
                 return (
                   <label
                     key={phase.value}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer transition-all duration-150 ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer transition-colors transition-shadow duration-150 ${
                       checked
                         ? 'border-[var(--color-primary)]/40 bg-[var(--color-primary)]/6'
                         : 'border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)]'
@@ -298,8 +314,9 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
             onClick={handleSave}
             loading={isPending}
             disabled={isPending}
+            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
           >
-            <Save size={16} />
+            <Save size={16} aria-hidden="true" />
             Save Article
           </Button>
         </div>

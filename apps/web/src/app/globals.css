@@ -58,6 +58,9 @@
 }
 
 @layer base {
+  :root {
+    color-scheme: dark light;
+  }
   body {
     font-family: var(--font-display);
     background-color: var(--color-bg-primary);
@@ -132,7 +135,7 @@
 
 /* Glass card hover enhancement */
 .glass-hover {
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: background-color 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .glass-hover:hover {
   transform: translateY(-2px);
@@ -146,4 +149,13 @@
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -60,7 +60,7 @@ function statusBadge(status: string) {
 
 function formatDate(d: Date | null) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-US', {
+  return new Date(d).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -139,6 +139,7 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="create-broadcast-title"
+      style={{ overscrollBehavior: 'contain' }}
     >
       {/* Backdrop */}
       <div
@@ -187,7 +188,8 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
               rows={4}
               maxLength={480}
               placeholder="Type your SMS message here…"
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-all duration-200 resize-none"
+              name="message"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200 resize-none"
             />
             <div className="flex justify-between text-xs text-[var(--color-text-muted)]">
               <span>{Math.ceil(charCount / 160)} SMS credit{Math.ceil(charCount / 160) !== 1 ? 's' : ''}</span>
@@ -215,7 +217,9 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
                 value={scheduledFor}
                 onChange={(e) => setScheduledFor(e.target.value)}
                 min={new Date().toISOString().slice(0, 16)}
-                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] pl-9 pr-4 py-3 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-all duration-200"
+                name="scheduledAt"
+              autoComplete="off"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] pl-9 pr-4 py-3 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
               />
             </div>
           </div>
@@ -363,7 +367,7 @@ export function SmsClient({ data }: SmsClientProps) {
       key: 'targetCount',
       header: 'Target',
       render: (row) => (
-        <span className="text-sm text-[var(--color-text-secondary)]">
+        <span className="text-sm text-[var(--color-text-secondary)] tabular-nums">
           {row.targetCount?.toLocaleString() ?? '—'}
         </span>
       ),
@@ -372,7 +376,7 @@ export function SmsClient({ data }: SmsClientProps) {
       key: 'deliveredCount',
       header: 'Delivered',
       render: (row) => (
-        <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+        <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">
           {row.deliveredCount?.toLocaleString() ?? '—'}
         </span>
       ),
@@ -381,7 +385,7 @@ export function SmsClient({ data }: SmsClientProps) {
       key: 'failedCount',
       header: 'Failed',
       render: (row) => (
-        <span className="text-sm text-red-500 dark:text-red-400 font-medium">
+        <span className="text-sm text-red-500 dark:text-red-400 font-medium tabular-nums">
           {row.failedCount?.toLocaleString() ?? '—'}
         </span>
       ),

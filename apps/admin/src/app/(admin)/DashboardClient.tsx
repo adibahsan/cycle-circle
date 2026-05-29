@@ -35,7 +35,7 @@ interface DashboardClientProps {
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
 function formatNumber(n: number) {
@@ -114,22 +114,22 @@ export function DashboardClient({ stats, userTrend }: DashboardClientProps) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="glass rounded-2xl border border-[var(--color-border)] p-5 flex items-center gap-4 shadow-soft">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-bg-secondary)] text-[var(--color-primary)]">
-            <Users size={20} />
+            <Users size={20} aria-hidden="true" />
           </div>
           <div>
             <p className="text-xs font-medium text-[var(--color-text-muted)]">Total Profiles</p>
-            <p className="text-xl font-bold text-[var(--color-text-primary)]">
+            <p className="text-xl font-bold tabular-nums text-[var(--color-text-primary)]">
               {formatNumber(stats.totalProfiles)}
             </p>
           </div>
         </div>
         <div className="glass rounded-2xl border border-[var(--color-border)] p-5 flex items-center gap-4 shadow-soft">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-bg-secondary)] text-[var(--color-primary)]">
-            {growthPositive ? <TrendingUp size={20} /> : <TrendingDown size={20} className="text-red-500" />}
+            {growthPositive ? <TrendingUp size={20} aria-hidden="true" /> : <TrendingDown size={20} aria-hidden="true" className="text-red-500" />}
           </div>
           <div>
             <p className="text-xs font-medium text-[var(--color-text-muted)]">New Users This Week</p>
-            <p className="text-xl font-bold text-[var(--color-text-primary)]">
+            <p className="text-xl font-bold tabular-nums text-[var(--color-text-primary)]">
               {formatNumber(stats.newUsersThisWeek)}
             </p>
           </div>
@@ -137,7 +137,7 @@ export function DashboardClient({ stats, userTrend }: DashboardClientProps) {
         <div className="glass rounded-2xl border border-[var(--color-border)] p-5 flex items-center gap-4 shadow-soft">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-bg-secondary)]">
             <span
-              className={`text-sm font-bold ${growthPositive ? 'text-emerald-600' : 'text-red-500'}`}
+              className={`text-sm font-bold tabular-nums ${growthPositive ? 'text-emerald-600' : 'text-red-500'}`}
             >
               {growthPositive ? '+' : ''}{stats.userGrowth}%
             </span>

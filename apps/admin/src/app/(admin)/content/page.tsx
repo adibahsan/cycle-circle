@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { requireAdminUser } from '@/app/queries/auth-queries'
 import { getArticles, getCategories } from '@/app/queries/content-queries'
 import { ContentClient } from './ContentClient'
