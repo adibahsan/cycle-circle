@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "AuthMethod" AS ENUM ('OTP', 'EMAIL');
 
@@ -31,18 +34,44 @@ CREATE TYPE "WebhookType" AS ENUM ('SMS_RECEIVE', 'SMS_REPORT', 'USSD_RECEIVE', 
 -- CreateEnum
 CREATE TYPE "JobStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED');
 
+-- CreateEnum
+CREATE TYPE "ArticleStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
+
+-- CreateEnum
+CREATE TYPE "CyclePhase" AS ENUM ('MENSTRUAL', 'FOLLICULAR', 'OVULATION', 'LUTEAL');
+
+-- CreateEnum
+CREATE TYPE "SmsBroadcastStatus" AS ENUM ('DRAFT', 'SCHEDULED', 'SENDING', 'SENT', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "EmailType" AS ENUM ('MAGIC_LINK', 'PERIOD_ALERT', 'FERTILE_ALERT', 'LOGGING_REMINDER');
+
+-- CreateEnum
+CREATE TYPE "EmailStatus" AS ENUM ('SENT', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "EmailProvider" AS ENUM ('RESEND', 'SMTP');
+
+-- CreateEnum
+CREATE TYPE "DeliveryStatus" AS ENUM ('PENDING', 'DELIVERED', 'BOUNCED', 'COMPLAINED', 'DELAYED');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "phone" TEXT,
     "email" TEXT,
     "fullName" TEXT,
+    "passwordHash" TEXT,
     "authMethod" "AuthMethod" NOT NULL,
     "subscriptionStatus" "SubscriptionStatus" NOT NULL DEFAULT 'FREE',
     "language" "Language" NOT NULL DEFAULT 'EN',
     "emailTrialExpiresAt" TIMESTAMP(3),
     "profileCompleted" BOOLEAN NOT NULL DEFAULT false,
     "role" "Role" NOT NULL DEFAULT 'USER',
+    "suspendedAt" TIMESTAMP(3),
+    "suspendedBy" TEXT,
+    "deletedAt" TIMESTAMP(3),
+    "lastLoginAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -117,6 +146,9 @@ CREATE TABLE "Subscription" (
     "amount" INTEGER,
     "consecutiveFailures" INTEGER NOT NULL DEFAULT 0,
     "gracePeriodEndsAt" TIMESTAMP(3),
+    "adminOverride" BOOLEAN NOT NULL DEFAULT false,
+    "adminOverrideBy" TEXT,
+    "adminOverrideAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -126,7 +158,7 @@ CREATE TABLE "Subscription" (
 -- CreateTable
 CREATE TABLE "CaasTransaction" (
     "id" TEXT NOT NULL,
-    "subscriptionId" TEXT NOT NULL,
+    "subscriptionId" TEXT,
     "externalTrxId" TEXT NOT NULL,
     "internalTrxId" TEXT,
     "referenceId" TEXT,
@@ -215,11 +247,98 @@ CREATE TABLE "Feedback" (
     CONSTRAINT "Feedback_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "Article" (
+    "id" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "titleEn" TEXT NOT NULL,
+    "titleBn" TEXT,
+    "bodyEn" TEXT NOT NULL,
+    "bodyBn" TEXT,
+    "status" "ArticleStatus" NOT NULL DEFAULT 'DRAFT',
+    "categoryId" TEXT,
+    "cyclePhases" "CyclePhase"[] DEFAULT ARRAY[]::"CyclePhase"[],
+    "authorId" TEXT NOT NULL,
+    "publishedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Article_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ArticleCategory" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ArticleCategory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SmsBroadcast" (
+    "id" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "scheduledFor" TIMESTAMP(3),
+    "sentAt" TIMESTAMP(3),
+    "status" "SmsBroadcastStatus" NOT NULL DEFAULT 'DRAFT',
+    "targetCount" INTEGER,
+    "deliveredCount" INTEGER,
+    "failedCount" INTEGER,
+    "createdBy" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SmsBroadcast_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AdminAuditLog" (
+    "id" TEXT NOT NULL,
+    "adminId" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "targetType" TEXT NOT NULL,
+    "targetId" TEXT NOT NULL,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AdminAuditLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmailLog" (
+    "id" TEXT NOT NULL,
+    "type" "EmailType" NOT NULL,
+    "to" TEXT NOT NULL,
+    "subject" TEXT NOT NULL,
+    "status" "EmailStatus" NOT NULL,
+    "error" TEXT,
+    "provider" "EmailProvider" NOT NULL,
+    "resendId" TEXT,
+    "deliveryStatus" "DeliveryStatus" NOT NULL DEFAULT 'PENDING',
+    "userId" TEXT,
+    "profileId" TEXT,
+    "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmailLog_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_phone_key" ON "User"("phone");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE INDEX "User_createdAt_idx" ON "User"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "User_lastLoginAt_idx" ON "User"("lastLoginAt");
+
+-- CreateIndex
+CREATE INDEX "User_deletedAt_idx" ON "User"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "PeriodLog_profileId_idx" ON "PeriodLog"("profileId");
@@ -244,6 +363,51 @@ CREATE UNIQUE INDEX "WebhookEvent_idempotencyKey_key" ON "WebhookEvent"("idempot
 
 -- CreateIndex
 CREATE UNIQUE INDEX "NotificationPreference_profileId_key" ON "NotificationPreference"("profileId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Article_slug_key" ON "Article"("slug");
+
+-- CreateIndex
+CREATE INDEX "Article_status_idx" ON "Article"("status");
+
+-- CreateIndex
+CREATE INDEX "Article_categoryId_idx" ON "Article"("categoryId");
+
+-- CreateIndex
+CREATE INDEX "Article_authorId_idx" ON "Article"("authorId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ArticleCategory_name_key" ON "ArticleCategory"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ArticleCategory_slug_key" ON "ArticleCategory"("slug");
+
+-- CreateIndex
+CREATE INDEX "SmsBroadcast_status_idx" ON "SmsBroadcast"("status");
+
+-- CreateIndex
+CREATE INDEX "SmsBroadcast_scheduledFor_idx" ON "SmsBroadcast"("scheduledFor");
+
+-- CreateIndex
+CREATE INDEX "AdminAuditLog_adminId_idx" ON "AdminAuditLog"("adminId");
+
+-- CreateIndex
+CREATE INDEX "AdminAuditLog_targetType_targetId_idx" ON "AdminAuditLog"("targetType", "targetId");
+
+-- CreateIndex
+CREATE INDEX "AdminAuditLog_createdAt_idx" ON "AdminAuditLog"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "EmailLog_to_idx" ON "EmailLog"("to");
+
+-- CreateIndex
+CREATE INDEX "EmailLog_type_profileId_sentAt_idx" ON "EmailLog"("type", "profileId", "sentAt");
+
+-- CreateIndex
+CREATE INDEX "EmailLog_resendId_idx" ON "EmailLog"("resendId");
+
+-- CreateIndex
+CREATE INDEX "EmailLog_sentAt_idx" ON "EmailLog"("sentAt");
 
 -- AddForeignKey
 ALTER TABLE "Profile" ADD CONSTRAINT "Profile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -274,3 +438,22 @@ ALTER TABLE "NotificationPreference" ADD CONSTRAINT "NotificationPreference_prof
 
 -- AddForeignKey
 ALTER TABLE "Feedback" ADD CONSTRAINT "Feedback_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Article" ADD CONSTRAINT "Article_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "ArticleCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Article" ADD CONSTRAINT "Article_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SmsBroadcast" ADD CONSTRAINT "SmsBroadcast_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AdminAuditLog" ADD CONSTRAINT "AdminAuditLog_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmailLog" ADD CONSTRAINT "EmailLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmailLog" ADD CONSTRAINT "EmailLog_profileId_fkey" FOREIGN KEY ("profileId") REFERENCES "Profile"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
