@@ -217,7 +217,8 @@ export async function getDashboardData(profileId: string, userId: string) {
     const lastStart = new Date(lastPeriod.startDate)
     lastStart.setHours(0, 0, 0, 0)
     const diffMs = today.getTime() - lastStart.getTime()
-    currentCycleDay = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1)
+    const rawCycleDay = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1)
+    currentCycleDay = Math.min(rawCycleDay, profile.cycleLength)
 
     let ovulationDayInCycle = estimatedOvulationDayInCycle
     if (prediction?.ovulationDay) {
@@ -238,18 +239,16 @@ export async function getDashboardData(profileId: string, userId: string) {
   if (prediction?.nextPeriodStart) {
     const nextStart = new Date(prediction.nextPeriodStart)
     nextStart.setHours(0, 0, 0, 0)
-    countdownToNextPeriod = Math.max(
-      0,
-      Math.ceil((nextStart.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
+    countdownToNextPeriod = Math.ceil(
+      (nextStart.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
     )
   } else if (lastPeriod) {
     const lastStart = new Date(lastPeriod.startDate)
     lastStart.setHours(0, 0, 0, 0)
     const nextEstimated = new Date(lastStart)
     nextEstimated.setDate(nextEstimated.getDate() + profile.cycleLength)
-    countdownToNextPeriod = Math.max(
-      0,
-      Math.ceil((nextEstimated.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
+    countdownToNextPeriod = Math.ceil(
+      (nextEstimated.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
     )
   }
 
@@ -347,18 +346,18 @@ export async function getCalendarData(
       cycleStart.setHours(0, 0, 0, 0)
 
       // Predicted period days — mark as both period and predicted
-      if (cycleStart > today) {
-        const periodEnd = new Date(cycleStart)
-        periodEnd.setDate(periodEnd.getDate() + periodLength - 1)
-        const d = new Date(cycleStart)
-        while (d <= periodEnd) {
-          if (d >= monthStart && d <= monthEnd) {
-            const ds = toLocalDateStr(d)
+      const periodEnd = new Date(cycleStart)
+      periodEnd.setDate(periodEnd.getDate() + periodLength - 1)
+      const d = new Date(cycleStart)
+      while (d <= periodEnd) {
+        if (d >= monthStart && d <= monthEnd) {
+          const ds = toLocalDateStr(d)
+          if (!periodDates.has(ds)) {
             predictedDates.add(ds)
             periodDates.add(ds)
           }
-          d.setDate(d.getDate() + 1)
         }
+        d.setDate(d.getDate() + 1)
       }
 
       // Ovulation = next period start - 14 days

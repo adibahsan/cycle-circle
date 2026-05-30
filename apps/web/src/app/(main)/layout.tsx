@@ -40,7 +40,7 @@ const SIDEBAR_EXTRA_ITEMS = [
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { t } = useTranslation();
-  const { theme, setTheme, activeProfileId: _activeProfileId } = useAppStore();
+  const { theme, setTheme, activeProfileName } = useAppStore();
 
   const [showCompletionModal, setShowCompletionModal] = useState(false);
 
@@ -89,7 +89,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors"
           >
             <Users size={14} aria-hidden="true" />
-            <span className="truncate">Profile</span>
+            <span className="truncate">{activeProfileName || 'Profile'}</span>
           </Link>
         </div>
 
@@ -167,7 +167,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-xs font-medium hover:border-[var(--color-primary)] transition-colors"
             >
               <Users size={12} aria-hidden="true" />
-              <span>Profile</span>
+              <span className="truncate">{activeProfileName || 'Profile'}</span>
             </Link>
           </div>
           <div className="flex items-center gap-2">
