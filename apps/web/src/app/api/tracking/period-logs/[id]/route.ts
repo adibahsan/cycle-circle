@@ -2,8 +2,7 @@ import { z } from 'zod'
 import { withAuth } from '@vesta/shared/server/middleware'
 import { handleApiError } from '@vesta/shared/server/api-error'
 import { parseBody } from '@vesta/shared/server/validation'
-import { updatePeriodLog, deletePeriodLog } from '@vesta/shared/server/services'
-import { enqueueJob } from '@vesta/shared/server/adapters/jobs'
+import { updatePeriodLog, deletePeriodLog, recalculatePrediction } from '@vesta/shared/server/services'
 import type { AuthUser } from '@vesta/shared/server/auth'
 
 type RouteContext = { params: Promise<Record<string, string>>; user: AuthUser }
@@ -25,7 +24,7 @@ export const PATCH = withAuth(async (request, { params, user }: RouteContext) =>
       flowIntensity: body.flowIntensity,
     })
 
-    await enqueueJob('PREDICTION_RECALC', { profileId })
+    await recalculatePrediction(profileId)
 
     return Response.json({ log })
   } catch (error) {
@@ -38,7 +37,7 @@ export const DELETE = withAuth(async (request, { params, user }: RouteContext) =
     const { id } = await params
     const { profileId } = await deletePeriodLog(id, user.id)
 
-    await enqueueJob('PREDICTION_RECALC', { profileId })
+    await recalculatePrediction(profileId)
 
     return Response.json({ message: 'Period log deleted' })
   } catch (error) {

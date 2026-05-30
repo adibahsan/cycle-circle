@@ -2,8 +2,7 @@ import { z } from 'zod'
 import { withAuth } from '@vesta/shared/server/middleware'
 import { handleApiError } from '@vesta/shared/server/api-error'
 import { parseBody, parseSearchParams } from '@vesta/shared/server/validation'
-import { listPeriodLogs, createPeriodLog } from '@vesta/shared/server/services'
-import { enqueueJob } from '@vesta/shared/server/adapters/jobs'
+import { listPeriodLogs, createPeriodLog, recalculatePrediction } from '@vesta/shared/server/services'
 import type { AuthUser } from '@vesta/shared/server/auth'
 
 const getParamsSchema = z.object({
@@ -36,7 +35,7 @@ export const POST = withAuth(async (request, { user }: { user: AuthUser }) => {
       flowIntensity: body.flowIntensity,
     })
 
-    await enqueueJob('PREDICTION_RECALC', { profileId: body.profileId })
+    await recalculatePrediction(body.profileId)
 
     return Response.json({ log }, { status: 201 })
   } catch (error) {

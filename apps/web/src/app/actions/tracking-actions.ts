@@ -3,12 +3,12 @@
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { requireAuth, getAuthUser } from '@vesta/shared/server/auth'
-import { enqueueJob } from '@vesta/shared/server/adapters/jobs'
 import {
   createPeriodLog as svcCreatePeriodLog,
   updatePeriodLog as svcUpdatePeriodLog,
   deletePeriodLog as svcDeletePeriodLog,
   toggleSymptomLog,
+  recalculatePrediction,
 } from '@vesta/shared/server/services'
 
 const createPeriodLogSchema = z.object({
@@ -30,7 +30,7 @@ export async function createPeriodLog(input: z.infer<typeof createPeriodLogSchem
   })
 
   if (shouldRecalcPrediction) {
-    await enqueueJob('PREDICTION_RECALC', { profileId: data.profileId })
+    await recalculatePrediction(data.profileId)
   }
   revalidatePath('/')
   return log
@@ -50,7 +50,7 @@ export async function updatePeriodLog(logId: string, input: z.infer<typeof updat
   const { log, profileId, shouldRecalcPrediction } = await svcUpdatePeriodLog(logId, user.id, data)
 
   if (shouldRecalcPrediction) {
-    await enqueueJob('PREDICTION_RECALC', { profileId })
+    await recalculatePrediction(profileId)
   }
   revalidatePath('/')
   return log
@@ -63,7 +63,7 @@ export async function deletePeriodLog(logId: string) {
   const { profileId, shouldRecalcPrediction } = await svcDeletePeriodLog(logId, user.id)
 
   if (shouldRecalcPrediction) {
-    await enqueueJob('PREDICTION_RECALC', { profileId })
+    await recalculatePrediction(profileId)
   }
   revalidatePath('/')
 }
