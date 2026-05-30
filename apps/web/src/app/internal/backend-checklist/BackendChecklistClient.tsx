@@ -18,7 +18,6 @@ interface HealthMap {
   redis: ServiceHealth
   bdapps: ServiceHealth
   mailpit: ServiceHealth
-  worker: ServiceHealth
 }
 
 interface TestResult {
@@ -212,7 +211,6 @@ export default function BackendChecklistClient() {
     redis: { status: 'unchecked' },
     bdapps: { status: 'unchecked' },
     mailpit: { status: 'unchecked' },
-    worker: { status: 'unchecked' },
   })
 
   // Accordion state
@@ -286,7 +284,6 @@ export default function BackendChecklistClient() {
       checkHealth('redis', '/api/health/redis'),
       checkHealth('bdapps', '/api/health/bdapps'),
       checkHealth('mailpit', '/api/health/mailpit'),
-      checkHealth('worker', '/api/health/worker'),
     ])
   }
 
@@ -361,7 +358,6 @@ export default function BackendChecklistClient() {
     { key: 'redis', label: 'Redis', url: '/api/health/redis', icon: '⚡' },
     { key: 'bdapps', label: 'BDApps Simulator', url: '/api/health/bdapps', icon: '📡', external: 'http://localhost:10001/mchoice-tap-sdk' },
     { key: 'mailpit', label: 'Mailpit', url: '/api/health/mailpit', icon: '📧', external: 'http://localhost:8025' },
-    { key: 'worker', label: 'Worker', url: '/api/health/worker', icon: '⚙️' },
   ]
 
   // ── Accordion toggle

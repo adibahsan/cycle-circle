@@ -16,8 +16,7 @@
     "db:studio": "pnpm --filter @vesta/shared db:studio",
     "db:reset": "pnpm --filter @vesta/shared db:reset",
     "backend:test": "vitest run",
-    "backend:test:watch": "vitest",
-    "worker": "node --import tsx/esm ../../packages/shared/src/server/worker-process.ts"
+    "backend:test:watch": "vitest"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

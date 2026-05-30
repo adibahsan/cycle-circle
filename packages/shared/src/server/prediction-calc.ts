@@ -52,5 +52,5 @@ export async function recalculatePrediction(profileId: string) {
     create: { profileId, tier, nextPeriodStart, ovulationDay, fertileStart, fertileEnd, confidence }
   })
 
-  console.log(`[worker] Prediction updated for profile ${profileId}: tier=${tier}, confidence=${confidence}`)
+  console.log(`[prediction] Updated for profile ${profileId}: tier=${tier}, confidence=${confidence}`)
 }

@@ -3,7 +3,6 @@ import { withAuth } from '@vesta/shared/server/middleware'
 import { handleApiError } from '@vesta/shared/server/api-error'
 import { parseBody } from '@vesta/shared/server/validation'
 import { listProfiles, createProfile } from '@vesta/shared/server/services'
-import { enqueueJob } from '@vesta/shared/server/adapters/jobs'
 import type { AuthUser } from '@vesta/shared/server/auth'
 
 const createProfileSchema = z.object({
