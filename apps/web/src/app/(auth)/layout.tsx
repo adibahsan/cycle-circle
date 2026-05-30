@@ -68,14 +68,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="relative z-10 px-12 lg:px-16 max-w-lg"
         >
-          <h1
-            className="text-5xl lg:text-6xl font-bold mb-4"
-            style={{
-              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
+          <h1 className="text-5xl lg:text-6xl font-bold mb-4 text-[var(--color-primary)]">
             Vesta
           </h1>
           <p className="text-lg lg:text-xl text-[var(--color-text-secondary)] leading-relaxed mb-6">
