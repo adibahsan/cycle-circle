@@ -2,8 +2,10 @@
 
 import { z } from 'zod'
 import { revalidateTag } from 'next/cache'
+import { cookies } from 'next/headers'
 import { requireAuth, getAuthUser } from '@vesta/shared/server/auth'
 import {
+  assertProfileOwnership,
   createProfile as svcCreateProfile,
   renameProfile as svcRenameProfile,
   updateProfile as svcUpdateProfile,
@@ -79,6 +81,24 @@ export async function deleteProfile(profileId: string) {
   const user = await getAuthUser(jwt.sub)
 
   await svcRemoveProfile(profileId, user.id)
+  const cookieStore = await cookies()
+  if (cookieStore.get('vesta_active_profile')?.value === profileId) {
+    cookieStore.delete('vesta_active_profile')
+  }
   revalidateTag(`profiles:${user.id}`, { expire: 0 })
   revalidateTag(`tracking:${profileId}`, { expire: 0 })
+}
+
+export async function setActiveProfileCookie(profileId: string) {
+  const jwt = await requireAuth()
+  const user = await getAuthUser(jwt.sub)
+  await assertProfileOwnership(profileId, user.id)
+  const cookieStore = await cookies()
+  cookieStore.set('vesta_active_profile', profileId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+  })
 }

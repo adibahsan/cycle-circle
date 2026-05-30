@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/app/queries/auth-queries'
-import { getProfiles } from '@/app/queries/profile-queries'
+import { getProfiles, getActiveProfileId } from '@/app/queries/profile-queries'
 import { getDashboardData } from '@/app/queries/tracking-queries'
 import { DashboardClient } from './DashboardClient'
 
@@ -16,7 +16,7 @@ export default async function DashboardPage({
   if (profiles.length === 0) redirect('/onboarding')
 
   const params = await searchParams
-  const profileId = params.profileId || profiles[0].id
+  const profileId = await getActiveProfileId(profiles, params.profileId)
   const dashboardData = await getDashboardData(profileId)
 
   return (

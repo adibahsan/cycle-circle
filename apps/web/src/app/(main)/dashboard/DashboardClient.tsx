@@ -23,6 +23,7 @@ import type { FlowIntensity, ProfileRelation } from '@vesta/shared/types'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { PeriodLogModal, FLOW_COLORS } from '@/components/PeriodLogModal'
+import { setActiveProfileCookie } from '@/app/actions/profile-actions'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -211,17 +212,15 @@ function CycleRing({
 export function DashboardClient({ profiles, user: _user, activeProfileId, dashboardData }: Props) {
   const { t } = useTranslation()
   const router = useRouter()
-  const { activeProfileId: storeProfileId, setActiveProfile, language } = useAppStore()
+  const { setActiveProfile, language } = useAppStore()
   const prefersReducedMotion = useReducedMotion()
 
-  // Determine the effective profile: prefer the one passed from server, but
-  // allow the store's value to override on the client after hydration.
-  const effectiveProfileId = storeProfileId || activeProfileId
-  const profile = profiles.find((p) => p.id === effectiveProfileId) ?? profiles[0]
+  const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
 
   useEffect(() => {
     if (profile) {
       setActiveProfile(profile.id, profile.name)
+      setActiveProfileCookie(profile.id)
     }
   }, [profile?.id, profile?.name, setActiveProfile])
 
