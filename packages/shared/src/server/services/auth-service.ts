@@ -22,8 +22,9 @@ export async function completeMagicLinkAuth(magicLinkId: string, email: string) 
       email,
       authMethod: 'EMAIL',
       emailTrialExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      lastLoginAt: new Date(),
     },
-    update: {},
+    update: { lastLoginAt: new Date() },
   })
 
   await prisma.magicLink.update({
@@ -57,8 +58,9 @@ export async function completeOtpAuth(challengeId: string, phone: string) {
     create: {
       phone,
       authMethod: 'OTP',
+      lastLoginAt: new Date(),
     },
-    update: {},
+    update: { lastLoginAt: new Date() },
   })
 
   await prisma.otpChallenge.update({
@@ -75,7 +77,8 @@ export async function upsertUserByPhone(phone: string) {
     create: {
       phone,
       authMethod: 'OTP',
+      lastLoginAt: new Date(),
     },
-    update: {},
+    update: { lastLoginAt: new Date() },
   })
 }
