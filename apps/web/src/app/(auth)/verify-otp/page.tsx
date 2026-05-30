@@ -115,9 +115,10 @@ export default function VerifyOtpPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ referenceNo, otp: code }),
       });
-      const body = await res.json().catch(() => ({})) as { error?: string; user?: { profileCompleted?: boolean } };
+      const body = await res.json().catch(() => ({})) as { error?: string | { message: string }; user?: { profileCompleted?: boolean } };
       if (!res.ok) {
-        setError(body.error ?? t('auth.verificationFailed'));
+        const msg = typeof body.error === 'object' ? body.error?.message : body.error;
+        setError(msg ?? t('auth.verificationFailed'));
         return;
       }
       setSuccess(true);
