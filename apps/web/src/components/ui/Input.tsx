@@ -32,11 +32,17 @@ export function Input({ label, error, className, id, ...props }: InputProps & { 
         ))}
         {...props}
       />
-      {error && (
-        <p id={errorId} role="alert" className="mt-1 text-sm text-red-500">
-          {error}
-        </p>
-      )}
+      <p
+        id={errorId}
+        role="alert"
+        aria-hidden={!error}
+        className={clsx(
+          'mt-1 text-sm text-red-500 min-h-[20px] transition-opacity duration-150',
+          error ? 'opacity-100' : 'opacity-0'
+        )}
+      >
+        {error || '\u00A0'}
+      </p>
     </div>
   );
 }

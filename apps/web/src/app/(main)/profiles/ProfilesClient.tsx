@@ -434,11 +434,16 @@ function AddProfileForm({ onClose, onSubmit, serverError }: AddProfileFormProps)
             }`}
             style={{ borderColor: lastPeriodError ? undefined : 'var(--color-border)' }}
           />
-          {lastPeriodError && (
-            <p id="last-period-date-error" role="alert" className="mt-1 text-sm text-red-500">
-              {lastPeriodError}
-            </p>
-          )}
+          <p
+            id="last-period-date-error"
+            role="alert"
+            aria-hidden={!lastPeriodError}
+            className={`mt-1 text-sm text-red-500 min-h-[20px] transition-opacity duration-150 ${
+              lastPeriodError ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            {lastPeriodError || '\u00A0'}
+          </p>
         </div>
 
         {/* Flow intensity */}
@@ -471,11 +476,16 @@ function AddProfileForm({ onClose, onSubmit, serverError }: AddProfileFormProps)
         </div>
 
         {/* Actions */}
-        {serverError && (
-          <p role="alert" aria-live="polite" className="text-sm text-red-500 text-center">
-            {serverError}
-          </p>
-        )}
+        <p
+          role="alert"
+          aria-live="polite"
+          aria-hidden={!serverError}
+          className={`text-sm text-red-500 text-center min-h-[20px] transition-opacity duration-150 ${
+            serverError ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          {serverError || '\u00A0'}
+        </p>
         <div className="flex gap-2 pt-1">
           <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
             {t('common.cancel')}
@@ -649,11 +659,16 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError }: EditProfil
           </div>
 
           {/* Actions */}
-          {serverError && (
-            <p role="alert" aria-live="polite" className="text-sm text-red-500 text-center">
-              {serverError}
-            </p>
-          )}
+          <p
+            role="alert"
+            aria-live="polite"
+            aria-hidden={!serverError}
+            className={`text-sm text-red-500 text-center min-h-[20px] transition-opacity duration-150 ${
+              serverError ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            {serverError || '\u00A0'}
+          </p>
           <div className="flex gap-2 pt-1">
             <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
               {t('common.cancel')}
@@ -715,11 +730,16 @@ function DeleteDialog({ profileName, error, onConfirm, onCancel }: DeleteDialogP
         <p className="text-sm text-[var(--color-text-secondary)] mb-4">
           All symptom logs and data for this profile will be permanently deleted.
         </p>
-        {error && (
-          <p role="alert" aria-live="polite" className="text-sm text-red-500 text-center mb-4">
-            {error}
-          </p>
-        )}
+        <p
+          role="alert"
+          aria-live="polite"
+          aria-hidden={!error}
+          className={`text-sm text-red-500 text-center mb-4 min-h-[20px] transition-opacity duration-150 ${
+            error ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          {error || '\u00A0'}
+        </p>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={onCancel} className="flex-1">
             {t('common.cancel')}

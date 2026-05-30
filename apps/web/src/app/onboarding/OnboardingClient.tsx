@@ -208,9 +208,11 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
 
 function StepGoal({
   selected,
+  goalError,
   onSelect,
 }: {
   selected: Goal;
+  goalError?: string;
   onSelect: (g: Goal) => void;
 }) {
   const { t } = useTranslation();
@@ -256,6 +258,15 @@ function StepGoal({
           {t('onboarding.goal')}
         </h2>
         <p className="text-sm text-[var(--color-text-muted)] mt-1">{t('onboarding.choosePersonalise')}</p>
+        <p
+          role="alert"
+          aria-hidden={!goalError}
+          className={`mt-2 text-sm text-red-500 min-h-[20px] transition-opacity duration-150 ${
+            goalError ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          {goalError || '\u00A0'}
+        </p>
       </div>
 
       <div className="flex flex-col gap-3">
@@ -395,6 +406,7 @@ function StepCycleHistory({
       {/* Last period date */}
       <Card padding="md">
         <Input
+          id="onboarding-last-period-date"
           label={`${t('onboarding.lastPeriod')} *`}
           type="date"
           value={lastPeriodDate}
@@ -501,6 +513,7 @@ function StepProfile({
       {relation !== 'self' && (
         <div>
           <Input
+            id="onboarding-user-name"
             label={`${t('onboarding.yourNameLabel', 'Your name')} *`}
             placeholder="Your name"
             value={userName}
@@ -514,6 +527,7 @@ function StepProfile({
       {/* Name input */}
       <div>
         <Input
+          id="onboarding-profile-name"
           label={`${t('onboarding.nameLabel')} *`}
           placeholder={relation === 'self' ? t('onboarding.namePlaceholder') : `${t(`profiles.${relation}`)}\'s name`}
           value={name}
@@ -550,12 +564,8 @@ function StepProfile({
 
 function StepDone({
   state,
-  onFinish,
-  submitting = false,
 }: {
   state: OnboardingState;
-  onFinish: () => void;
-  submitting?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -668,10 +678,6 @@ function StepDone({
         </div>
       </Card>
 
-      <Button size="lg" fullWidth onClick={onFinish} disabled={submitting} className="mt-2">
-        {submitting ? `${t('common.loading')}` : t('onboarding.goToDashboard')}
-      </Button>
-
       <p className="text-xs text-[var(--color-text-muted)] max-w-xs">
         {t('onboarding.settingsHint')}
       </p>
@@ -701,6 +707,7 @@ export default function OnboardingClient() {
   });
 
   const [stepErrors, setStepErrors] = useState<{
+    goal?: string;
     profileName?: string;
     userName?: string;
     lastPeriodDate?: string;
@@ -725,13 +732,26 @@ export default function OnboardingClient() {
   function validateStep(currentStep: number): boolean {
     const errors: typeof stepErrors = {};
 
+    if (currentStep === 2) {
+      if (!state.goal) {
+        errors.goal = t('onboarding.goalRequired');
+      }
+    }
+
     if (currentStep === 3) {
       const trimmed = state.profileName.trim();
-      if (trimmed.length < 2) {
+      if (!trimmed) {
+        errors.profileName = t('profiles.nameRequired');
+      } else if (trimmed.length < 2) {
         errors.profileName = t('onboarding.enterNameError');
       }
-      if (state.profileRelation !== 'self' && state.userName.trim().length < 2) {
-        errors.userName = t('onboarding.enterNameError');
+      if (state.profileRelation !== 'self') {
+        const trimmedUserName = state.userName.trim();
+        if (!trimmedUserName) {
+          errors.userName = t('profiles.nameRequired');
+        } else if (trimmedUserName.length < 2) {
+          errors.userName = t('onboarding.enterNameError');
+        }
       }
     }
 
@@ -762,6 +782,10 @@ export default function OnboardingClient() {
   // ── Final submission ──
 
   async function handleFinish() {
+    if (!validateStep(2)) {
+      setStep(2);
+      return;
+    }
     if (!validateStep(3)) {
       setStep(3);
       return;
@@ -824,7 +848,11 @@ export default function OnboardingClient() {
         return (
           <StepGoal
             selected={state.goal}
-            onSelect={(g) => setState((s) => ({ ...s, goal: g }))}
+            goalError={stepErrors.goal}
+            onSelect={(g) => {
+              setState((s) => ({ ...s, goal: g }));
+              if (stepErrors.goal) setStepErrors((e) => ({ ...e, goal: undefined }));
+            }}
           />
         );
       case 3:
@@ -843,7 +871,12 @@ export default function OnboardingClient() {
               setState((s) => ({ ...s, userName: v }));
               if (stepErrors.userName) setStepErrors((e) => ({ ...e, userName: undefined }));
             }}
-            onRelation={(v) => setState((s) => ({ ...s, profileRelation: v }))}
+            onRelation={(v) => {
+              setState((s) => ({ ...s, profileRelation: v }));
+              if (v === 'self' && stepErrors.userName) {
+                setStepErrors((e) => ({ ...e, userName: undefined }));
+              }
+            }}
           />
         );
       case 4:
@@ -867,11 +900,17 @@ export default function OnboardingClient() {
         return (
           <>
             <div aria-live="polite" aria-atomic="true">
-              {stepErrors.submit && (
-                <p className="mb-4 text-sm text-red-500 text-center">{stepErrors.submit}</p>
-              )}
+              <p
+                role="alert"
+                aria-hidden={!stepErrors.submit}
+                className={`mb-4 text-sm text-red-500 text-center min-h-[20px] transition-opacity duration-150 ${
+                  stepErrors.submit ? 'opacity-100' : 'opacity-0'
+                }`}
+              >
+                {stepErrors.submit || '\u00A0'}
+              </p>
             </div>
-            <StepDone state={state} onFinish={handleFinish} submitting={submitting} />
+            <StepDone state={state} />
           </>
         );
       default:
@@ -939,28 +978,31 @@ export default function OnboardingClient() {
           </AnimatePresence>
         </div>
 
-        {/* Fixed bottom navigation bar — shown for steps 2–4 */}
-        {step >= 2 && step <= 4 && (
+        {/* Fixed bottom navigation bar — shown for steps 2–5 */}
+        {step >= 2 && step <= 5 && (
           <div className="sticky bottom-0 z-20 bg-[var(--color-bg-primary)]/95 backdrop-blur-sm border-t border-[var(--color-border)] px-5 py-4">
             <div className="flex gap-3 max-w-md mx-auto">
-              <Button variant="outline" size="lg" onClick={goBack} aria-label="Go back" className="w-14 shrink-0 px-0">
+              <Button variant="outline" size="lg" onClick={goBack} aria-label={t('common.back')} className="w-14 shrink-0 px-0">
                 <ChevronLeft size={20} aria-hidden="true" />
               </Button>
-              <Button
-                size="lg"
-                fullWidth
-                onClick={goNext}
-                disabled={
-                  (step === 2 && !state.goal) ||
-                  (step === 3 && (
-                    state.profileName.trim().length < 2 ||
-                    (state.profileRelation !== 'self' && state.userName.trim().length < 2)
-                  )) ||
-                  (step === 4 && !state.lastPeriodDate)
-                }
-              >
-                {t('onboarding.next')} <ChevronRight size={18} className="ml-1" />
-              </Button>
+              {step === 5 ? (
+                <Button
+                  size="lg"
+                  fullWidth
+                  onClick={handleFinish}
+                  disabled={submitting}
+                >
+                  {submitting ? t('common.loading') : t('onboarding.goToDashboard')}
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  fullWidth
+                  onClick={goNext}
+                >
+                  {t('onboarding.next')} <ChevronRight size={18} className="ml-1" />
+                </Button>
+              )}
             </div>
           </div>
         )}
