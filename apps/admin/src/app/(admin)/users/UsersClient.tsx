@@ -1,18 +1,20 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useTransition } from 'react'
+import { useCallback, useState, useTransition } from 'react'
 import {
   Phone,
   Mail,
   ChevronRight,
   Smartphone,
-  MessageSquare,
+  Download,
 } from 'lucide-react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
+import { exportUsersCsv } from '@/app/actions/export-actions'
 
 type UserRow = {
   id: string
@@ -36,6 +38,8 @@ interface UsersClientProps {
     page: number
     pageSize: number
     totalPages: number
+    sort: string
+    order: 'asc' | 'desc'
   }
 }
 
@@ -171,11 +175,14 @@ export function UsersClient({ data }: UsersClientProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
+  const [exporting, setExporting] = useState(false)
 
   const currentSearch = searchParams.get('search') ?? ''
   const currentStatus = searchParams.get('status') ?? 'active'
   const currentPage = data.page
   const currentPageSize = data.pageSize
+  const currentSort = data.sort
+  const currentOrder = data.order
 
   const updateParams = useCallback(
     (updates: Record<string, string | number>) => {
@@ -212,8 +219,28 @@ export function UsersClient({ data }: UsersClientProps) {
     updateParams({ pageSize, page: 1 })
   }
 
+  function handleSortChange(key: string, order: 'asc' | 'desc') {
+    updateParams({ sort: key, order, page: 1 })
+  }
+
   function handleRowClick(row: UserRow) {
     router.push(`/users/${row.id}`)
+  }
+
+  async function handleExport() {
+    setExporting(true)
+    try {
+      const csv = await exportUsersCsv()
+      const blob = new Blob([csv], { type: 'text/csv' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `users-${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setExporting(false)
+    }
   }
 
   return (
@@ -226,6 +253,16 @@ export function UsersClient({ data }: UsersClientProps) {
             {data.total.toLocaleString()} total users
           </p>
         </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleExport}
+          loading={exporting}
+          disabled={exporting}
+        >
+          <Download size={15} />
+          {exporting ? 'Exporting…' : 'Export CSV'}
+        </Button>
       </div>
 
       {/* Filters */}
@@ -251,6 +288,9 @@ export function UsersClient({ data }: UsersClientProps) {
         emptyMessage="No users match your filters."
         onRowClick={handleRowClick}
         keyExtractor={(row) => row.id}
+        sortKey={currentSort}
+        sortOrder={currentOrder}
+        onSortChange={handleSortChange}
       />
 
       {/* Pagination */}

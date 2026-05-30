@@ -7,6 +7,8 @@ interface FeedbackListParams {
   pageSize?: number
   category?: string
   minRating?: number
+  dateFrom?: Date
+  dateTo?: Date
 }
 
 export const getFeedbackList = cache(async (params: FeedbackListParams = {}) => {

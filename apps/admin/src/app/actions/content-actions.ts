@@ -6,6 +6,7 @@ import {
   updateArticle as svcUpdateArticle,
   removeArticle,
   createCategory as svcCreateCategory,
+  updateCategory as svcUpdateCategory,
   removeCategory,
 } from '@vesta/shared/server/services'
 import { revalidatePath } from 'next/cache'
@@ -63,6 +64,15 @@ export async function createCategory(name: string) {
   await requireAdminAuth()
 
   const category = await svcCreateCategory(name)
+
+  revalidatePath('/content')
+  return category
+}
+
+export async function updateCategory(id: string, name: string) {
+  await requireAdminAuth()
+
+  const category = await svcUpdateCategory(id, name)
 
   revalidatePath('/content')
   return category

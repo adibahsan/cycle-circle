@@ -26,7 +26,7 @@ import {
 import { useAppStore } from '@/lib/store'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { updateNotificationPrefs } from '@/app/actions/settings-actions'
+import { updateNotificationPrefs, exportUserDataCsv } from '@/app/actions/settings-actions'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { Language, Theme } from '@vesta/shared/types'
 
@@ -260,9 +260,42 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
     }
   }
 
-  // ── Export handlers (placeholder) ──
-  const handleExportCsv = () => showToast('CSV download started')
-  const handleExportExcel = () => showToast('Excel download started')
+  // ── Export handlers ──
+  const triggerDownload = (csv: string, filename: string) => {
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleExportCsv = async () => {
+    showToast('Preparing CSV export…')
+    try {
+      const { csv, filename } = await exportUserDataCsv()
+      triggerDownload(csv, filename)
+      showToast('CSV downloaded')
+    } catch {
+      showToast('Export failed. Please try again.')
+    }
+  }
+
+  const handleExportExcel = async () => {
+    showToast('Preparing export…')
+    try {
+      const { csv, filename } = await exportUserDataCsv()
+      // Export as CSV with an xlsx extension so Excel opens it natively
+      const xlsxFilename = filename.replace('.csv', '.xlsx.csv')
+      triggerDownload(csv, xlsxFilename)
+      showToast('File downloaded')
+    } catch {
+      showToast('Export failed. Please try again.')
+    }
+  }
 
   // ── Logout ──
   const handleLogout = async () => {

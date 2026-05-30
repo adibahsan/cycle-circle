@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { useAppStore } from '@/lib/store';
 import '@vesta/shared/utils/i18n';
 
 const OTP_LENGTH = 6;
@@ -27,7 +26,6 @@ export default function VerifyOtpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useTranslation();
-  const setOnboardingComplete = useAppStore((s) => s.setOnboardingComplete);
 
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [error, setError] = useState('');
@@ -115,18 +113,15 @@ export default function VerifyOtpPage() {
       const res = await fetch('/api/auth/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ referenceNo, code }),
+        body: JSON.stringify({ referenceNo, otp: code }),
       });
-      const body = await res.json().catch(() => ({})) as { onboardingComplete?: boolean; error?: string };
+      const body = await res.json().catch(() => ({})) as { error?: string };
       if (!res.ok) {
         setError(body.error ?? t('auth.verificationFailed'));
         return;
       }
       setSuccess(true);
       await new Promise((res) => setTimeout(res, 700));
-      if (body.onboardingComplete) {
-        setOnboardingComplete(true);
-      }
       router.replace('/dashboard');
     } catch {
       setError(t('auth.verificationFailed'));

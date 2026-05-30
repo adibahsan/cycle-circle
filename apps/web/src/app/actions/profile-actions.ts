@@ -6,6 +6,7 @@ import { requireAuth, getAuthUser } from '@vesta/shared/server/auth'
 import {
   createProfile as svcCreateProfile,
   renameProfile as svcRenameProfile,
+  updateProfile as svcUpdateProfile,
   removeProfile as svcRemoveProfile,
 } from '@vesta/shared/server/services'
 
@@ -34,6 +35,30 @@ export async function renameProfile(profileId: string, name: string) {
   const user = await getAuthUser(jwt.sub)
 
   const updated = await svcRenameProfile(profileId, user.id, z.string().min(1).max(100).parse(name))
+
+  revalidatePath('/')
+  return updated
+}
+
+const updateProfileSchema = z.object({
+  profileId: z.string().min(1),
+  name: z.string().min(1).max(100).optional(),
+  relation: z.enum(['SELF', 'WIFE', 'SISTER', 'MOTHER', 'DAUGHTER', 'GIRLFRIEND']).optional(),
+  cycleLength: z.number().int().min(21).max(45).optional(),
+  periodLength: z.number().int().min(1).max(14).optional(),
+})
+
+export async function updateProfile(input: z.infer<typeof updateProfileSchema>) {
+  const jwt = await requireAuth()
+  const user = await getAuthUser(jwt.sub)
+  const data = updateProfileSchema.parse(input)
+
+  const updated = await svcUpdateProfile(data.profileId, user.id, {
+    name: data.name,
+    relation: data.relation,
+    cycleLength: data.cycleLength,
+    periodLength: data.periodLength,
+  })
 
   revalidatePath('/')
   return updated
