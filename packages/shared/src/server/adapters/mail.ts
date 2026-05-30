@@ -7,7 +7,7 @@ import { prisma } from '../db'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const EMAIL_FROM = 'Vesta <noreply@vesta.app>'
+const EMAIL_FROM = env.RESEND_FROM_EMAIL
 
 // ─── Resend client (null in dev when RESEND_API_KEY is absent) ────────────────
 
