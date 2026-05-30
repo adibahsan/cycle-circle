@@ -245,6 +245,9 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
   const [contactEmail, setContactEmail] = useState('')
   const [contactPhone, setContactPhone] = useState('')
   const [contactSaving, setContactSaving] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   // ── Language handler ──
   const handleLanguageChange = (lang: Language) => {
@@ -322,6 +325,8 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
   }
 
   const handleExportCsv = async () => {
+    if (exporting) return
+    setExporting(true)
     showToast('Preparing CSV export…')
     try {
       const { csv, filename } = await exportUserDataCsv()
@@ -329,24 +334,31 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
       showToast('CSV downloaded')
     } catch {
       showToast('Export failed. Please try again.')
+    } finally {
+      setExporting(false)
     }
   }
 
   const handleExportExcel = async () => {
+    if (exporting) return
+    setExporting(true)
     showToast('Preparing export…')
     try {
       const { csv, filename } = await exportUserDataCsv()
-      // Export as CSV with an xlsx extension so Excel opens it natively
       const xlsxFilename = filename.replace('.csv', '.xlsx.csv')
       triggerDownload(csv, xlsxFilename)
       showToast('File downloaded')
     } catch {
       showToast('Export failed. Please try again.')
+    } finally {
+      setExporting(false)
     }
   }
 
   // ── Logout ──
   const handleLogout = async () => {
+    if (loggingOut) return
+    setLoggingOut(true)
     try {
       await fetch('/api/auth/logout', { method: 'POST' })
     } catch {
@@ -492,7 +504,8 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={handleExportCsv}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                    disabled={exporting}
+                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                   >
                     <FileText size={22} className="text-[var(--color-secondary)]" aria-hidden="true" />
                     <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
@@ -501,7 +514,8 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                   </button>
                   <button
                     onClick={handleExportExcel}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                    disabled={exporting}
+                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                   >
                     <FileSpreadsheet size={22} className="text-[var(--color-primary)]" aria-hidden="true" />
                     <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
@@ -653,8 +667,8 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                   <Button
                     variant="outline"
                     fullWidth
-                    onClick={handleLogout}
-                    className="border-red-300 text-red-500 hover:bg-red-50 hover:border-red-400 dark:hover:bg-red-950/20"
+                    onClick={() => setShowLogoutConfirm(true)}
+                    className="border-red-300 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900 dark:hover:text-red-100 dark:hover:border-red-700"
                   >
                     <LogOut size={15} className="mr-2" />
                     {t('settings.logout')}
@@ -707,6 +721,47 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
         {/* Bottom spacer */}
         <div className="h-4" />
       </div>
+
+      {showLogoutConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={() => setShowLogoutConfirm(false)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setShowLogoutConfirm(false) }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm logout"
+        >
+          <div
+            className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-6 mx-4 max-w-sm w-full shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">
+              {t('settings.logout')}
+            </h3>
+            <p className="text-sm text-[var(--color-text-muted)] mb-5">
+              Are you sure you want to log out?
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                fullWidth
+                onClick={() => setShowLogoutConfirm(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={() => { setShowLogoutConfirm(false); handleLogout() }}
+                disabled={loggingOut}
+                className="bg-red-500 hover:bg-red-600 border-0"
+              >
+                {loggingOut ? 'Logging out…' : 'Log out'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

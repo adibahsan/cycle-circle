@@ -106,12 +106,13 @@ function Stepper({ label, value, min, max, onChange, unit = 'days' }: StepperPro
 interface ProfileCardProps {
   profile: Profile;
   isActive: boolean;
+  isSwitching?: boolean;
   onSwitch: () => void;
   onDelete: () => void;
   onEdit: () => void;
 }
 
-function ProfileCard({ profile, isActive, onSwitch, onDelete, onEdit }: ProfileCardProps) {
+function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdit }: ProfileCardProps) {
   const { t } = useTranslation();
   const relation = normalizeRelation(profile.relation);
   const colors = RELATION_COLORS[relation];
@@ -126,6 +127,7 @@ function ProfileCard({ profile, isActive, onSwitch, onDelete, onEdit }: ProfileC
     >
       <button
         onClick={onSwitch}
+        disabled={isSwitching}
         className="w-full text-left rounded-2xl border transition-[color,background-color,border-color,box-shadow] duration-200 p-4 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
         style={{
           background: isActive
@@ -247,6 +249,7 @@ function ProfileCard({ profile, isActive, onSwitch, onDelete, onEdit }: ProfileC
 interface AddProfileFormProps {
   onClose: () => void;
   serverError?: string;
+  disabled?: boolean;
   onSubmit: (data: {
     name: string;
     relation: ProfileRelation;
@@ -257,7 +260,7 @@ interface AddProfileFormProps {
   }) => void;
 }
 
-function AddProfileForm({ onClose, onSubmit, serverError }: AddProfileFormProps) {
+function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfileFormProps) {
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [relation, setRelation] = useState<ProfileRelation>('sister');
@@ -490,7 +493,7 @@ function AddProfileForm({ onClose, onSubmit, serverError }: AddProfileFormProps)
           <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
             {t('common.cancel')}
           </Button>
-          <Button size="sm" onClick={handleSubmit} className="flex-1">
+          <Button size="sm" onClick={handleSubmit} disabled={disabled} className="flex-1">
             {t('profiles.createProfile')}
           </Button>
         </div>
@@ -505,6 +508,7 @@ interface EditProfileFormProps {
   profile: Profile;
   onClose: () => void;
   serverError?: string;
+  disabled?: boolean;
   onSubmit: (data: {
     name: string;
     relation: ProfileRelation;
@@ -513,7 +517,7 @@ interface EditProfileFormProps {
   }) => void;
 }
 
-function EditProfileForm({ profile, onClose, onSubmit, serverError }: EditProfileFormProps) {
+function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: EditProfileFormProps) {
   const { t } = useTranslation();
   const [name, setName] = useState(profile.name);
   const [relation, setRelation] = useState<ProfileRelation>(normalizeRelation(profile.relation));
@@ -673,7 +677,7 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError }: EditProfil
             <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
               {t('common.cancel')}
             </Button>
-            <Button size="sm" onClick={handleSubmit} className="flex-1">
+            <Button size="sm" onClick={handleSubmit} disabled={disabled} className="flex-1">
               {t('profiles.saveChanges')}
             </Button>
           </div>
@@ -690,9 +694,10 @@ interface DeleteDialogProps {
   error?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  disabled?: boolean;
 }
 
-function DeleteDialog({ profileName, error, onConfirm, onCancel }: DeleteDialogProps) {
+function DeleteDialog({ profileName, error, onConfirm, onCancel, disabled }: DeleteDialogProps) {
   const { t } = useTranslation();
   return (
     <motion.div
@@ -746,7 +751,8 @@ function DeleteDialog({ profileName, error, onConfirm, onCancel }: DeleteDialogP
           </Button>
           <button
             onClick={onConfirm}
-            className="flex-1 py-2 rounded-xl text-sm font-bold text-white transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+            disabled={disabled}
+            className="flex-1 py-2 rounded-xl text-sm font-bold text-white transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
             style={{ background: 'var(--color-primary)' }}
           >
             {t('common.delete')}
@@ -773,6 +779,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
   const [editTarget, setEditTarget] = useState<Profile | null>(null);
   const [justSwitched, setJustSwitched] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [isSwitching, setIsSwitching] = useState(false);
   const [addError, setAddError] = useState('');
   const [editError, setEditError] = useState('');
   const [deleteError, setDeleteError] = useState('');
@@ -795,7 +802,8 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
   const atMax = profiles.length >= MAX_PROFILES;
 
   async function handleSwitchProfile(id: string, name: string) {
-    if (id === activeProfileId) return;
+    if (id === activeProfileId || isSwitching) return;
+    setIsSwitching(true);
     setActiveProfile(id, name);
     setJustSwitched(id);
     await setActiveProfileCookie(id);
@@ -901,6 +909,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                 key={profile.id}
                 profile={profile}
                 isActive={profile.id === activeProfileId}
+                isSwitching={isSwitching}
                 onSwitch={() => handleSwitchProfile(profile.id, profile.name)}
                 onDelete={() => {
                   setDeleteError('');
@@ -948,6 +957,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                 onClose={closeAddForm}
                 serverError={addError}
                 onSubmit={handleAddProfile}
+                disabled={isPending}
               />
             ) : (
               <motion.div
@@ -1036,6 +1046,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             error={deleteError}
             onConfirm={handleDeleteConfirm}
             onCancel={closeDeleteDialog}
+            disabled={isPending}
           />
         )}
       </AnimatePresence>
@@ -1049,6 +1060,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             onClose={closeEditForm}
             serverError={editError}
             onSubmit={handleEditSubmit}
+            disabled={isPending}
           />
         )}
       </AnimatePresence>
