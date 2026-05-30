@@ -219,10 +219,11 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 16 }}
-      transition={{ duration: 0.25 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      layout
     >
       <Card padding="md">
         <div className="flex items-center justify-between mb-3">
@@ -237,7 +238,7 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
           <button
             onClick={onClose}
             aria-label="Close"
-            className="p-1.5 rounded-full hover:bg-[var(--color-bg-secondary)] transition-colors"
+            className="p-1.5 rounded-full hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
           >
             <X size={14} className="text-[var(--color-text-muted)]" aria-hidden="true" />
           </button>
@@ -420,6 +421,20 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
   return (
     <div className="flex flex-col gap-4 py-3 relative overflow-hidden">
 
+      {/* ── Page header ── */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
+          {t('nav.calendar', 'Calendar')}
+        </h1>
+        <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
+          {format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}
+        </p>
+      </motion.div>
+
       {/* ── Decorative blobs ── */}
       <motion.div
         className="absolute -top-8 -right-8 w-40 h-40 rounded-full pointer-events-none"
@@ -436,161 +451,175 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
         aria-hidden="true"
       />
 
-      {/* ── Month Header ─────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <Card padding="md">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={prevMonth}
-              aria-label="Previous month"
-              className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors"
-            >
-              <ChevronLeft size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
-            </button>
+      {/* ── Desktop: side-by-side layout (calendar + detail panel) ── */}
+      <div className="flex flex-col lg:flex-row gap-4">
 
-            <motion.h2
-              key={format(currentMonth, 'yyyy-MM')}
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25 }}
-              className="text-base font-bold text-[var(--color-text-primary)]"
-            >
-              {format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}
-            </motion.h2>
-
-            <button
-              onClick={nextMonth}
-              aria-label="Next month"
-              className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors"
-            >
-              <ChevronRight size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
-            </button>
-          </div>
-
-          {/* Day-of-week headers */}
-          <div className="grid grid-cols-7 mb-1 md:mb-2">
-            {DOW.map((d) => (
-              <div key={d} className="flex items-center justify-center">
-                <span className="text-[10px] md:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
-                  {d}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar grid */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={format(currentMonth, 'yyyy-MM')}
-              initial={{ opacity: 0, x: 12 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -12 }}
-              transition={{ duration: 0.22 }}
-              className="grid grid-cols-7 gap-0.5 md:gap-1"
-            >
-              {gridDays.map((date) => {
-                const dateStr = format(date, 'yyyy-MM-dd')
-                const meta = dayMetaMap.get(dateStr)!
-                const inMonth = isSameMonth(date, currentMonth)
-                const isSelected = selectedDate ? isSameDay(date, selectedDate) : false
-
-                return (
-                  <DayCell
-                    key={dateStr}
-                    meta={meta}
-                    isCurrentMonth={inMonth}
-                    isSelected={isSelected}
-                    onClick={() => handleDayClick(date)}
-                  />
-                )
-              })}
-            </motion.div>
-          </AnimatePresence>
-        </Card>
-      </motion.div>
-
-      {/* ── Legend + Day Detail + Monthly Summary ──────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Legend */}
+        {/* ── Calendar card (constrained width on desktop) ── */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
-          className="md:col-span-2"
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="lg:w-[480px] lg:shrink-0"
         >
-          <Card padding="sm">
-            <Legend />
+          <Card padding="md">
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={prevMonth}
+                aria-label="Previous month"
+                className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors"
+              >
+                <ChevronLeft size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
+              </button>
+
+              <motion.h2
+                key={format(currentMonth, 'yyyy-MM')}
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="text-base font-bold text-[var(--color-text-primary)]"
+              >
+                {format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}
+              </motion.h2>
+
+              <button
+                onClick={nextMonth}
+                aria-label="Next month"
+                className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors"
+              >
+                <ChevronRight size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Day-of-week headers */}
+            <div className="grid grid-cols-7 mb-1 md:mb-2">
+              {DOW.map((d) => (
+                <div key={d} className="flex items-center justify-center">
+                  <span className="text-[10px] md:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                    {d}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar grid */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={format(currentMonth, 'yyyy-MM')}
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -12 }}
+                transition={{ duration: 0.22 }}
+                className="grid grid-cols-7 gap-0.5 md:gap-1"
+              >
+                {gridDays.map((date) => {
+                  const dateStr = format(date, 'yyyy-MM-dd')
+                  const meta = dayMetaMap.get(dateStr)!
+                  const inMonth = isSameMonth(date, currentMonth)
+                  const isSelected = selectedDate ? isSameDay(date, selectedDate) : false
+
+                  return (
+                    <DayCell
+                      key={dateStr}
+                      meta={meta}
+                      isCurrentMonth={inMonth}
+                      isSelected={isSelected}
+                      onClick={() => handleDayClick(date)}
+                    />
+                  )
+                })}
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Legend — inside the calendar card on desktop */}
+            <div className="mt-4 pt-3 border-t border-[var(--color-border)]">
+              <Legend />
+            </div>
           </Card>
         </motion.div>
 
-        {/* Day Detail */}
-        <AnimatePresence>
-          {selectedDate && selectedMeta && (
-            <DayDetail
-              key={format(selectedDate, 'yyyy-MM-dd')}
-              date={selectedDate}
-              meta={selectedMeta}
-              symptoms={selectedSymptoms}
-              onClose={() => setSelectedDate(null)}
-            />
-          )}
-        </AnimatePresence>
+        {/* ── Right panel: Day Detail + Monthly Summary (sticky on desktop) ── */}
+        <div className="flex-1 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start min-w-0">
 
-        {/* Monthly Summary */}
-        {(firstPredictedPeriod || ovulationDay || fertileStart) && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.4 }}
-          >
-            <Card padding="md">
-              <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
-                {t('calendar.thisCycle')}
-              </h3>
-              <div className="flex flex-col gap-2">
-                {firstPredictedPeriod && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-menstrual)' }} />
-                      <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.nextPeriod')}</span>
+          {/* Day Detail */}
+          <AnimatePresence mode="wait">
+            {selectedDate && selectedMeta && (
+              <DayDetail
+                key={format(selectedDate, 'yyyy-MM-dd')}
+                date={selectedDate}
+                meta={selectedMeta}
+                symptoms={selectedSymptoms}
+                onClose={() => setSelectedDate(null)}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* Monthly Summary */}
+          {(firstPredictedPeriod || ovulationDay || fertileStart) && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+            >
+              <Card padding="md">
+                <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
+                  {t('calendar.thisCycle')}
+                </h3>
+                <div className="flex flex-col gap-2">
+                  {firstPredictedPeriod && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-menstrual)' }} />
+                        <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.nextPeriod')}</span>
+                      </div>
+                      <span className="text-xs font-bold text-[var(--color-text-primary)]">
+                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(firstPredictedPeriod.date))}
+                      </span>
                     </div>
-                    <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                      {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(firstPredictedPeriod.date))}
-                    </span>
-                  </div>
-                )}
-                {ovulationDay && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-ovulation)' }} />
-                      <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.ovulationDayLabel')}</span>
+                  )}
+                  {ovulationDay && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-ovulation)' }} />
+                        <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.ovulationDayLabel')}</span>
+                      </div>
+                      <span className="text-xs font-bold text-[var(--color-text-primary)]">
+                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(ovulationDay.date))}
+                      </span>
                     </div>
-                    <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                      {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(ovulationDay.date))}
-                    </span>
-                  </div>
-                )}
-                {fertileStart && fertileEnd && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-fertile)' }} />
-                      <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.fertileWindow')}</span>
+                  )}
+                  {fertileStart && fertileEnd && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-fertile)' }} />
+                        <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.fertileWindow')}</span>
+                      </div>
+                      <span className="text-xs font-bold text-[var(--color-text-primary)]">
+                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(fertileStart.date))}
+                        {' – '}
+                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(fertileEnd.date))}
+                      </span>
                     </div>
-                    <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                      {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(fertileStart.date))}
-                      {' – '}
-                      {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(fertileEnd.date))}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </Card>
-          </motion.div>
-        )}
+                  )}
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Empty state when no day selected */}
+          {!selectedDate && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.3 }}
+            >
+              <Card padding="md">
+                <p className="text-sm text-[var(--color-text-muted)] text-center py-4">
+                  {t('calendar.selectDay', 'Tap a day to see details')}
+                </p>
+              </Card>
+            </motion.div>
+          )}
+        </div>
       </div>
     </div>
   )
