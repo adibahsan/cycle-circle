@@ -11,6 +11,8 @@ import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input } from '@/components/ui/Input'
 import { createSmsBroadcast, deleteSmsBroadcast, sendSmsBroadcast } from '@/app/actions/sms-actions'
+import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
 
 type SmsBroadcast = {
   id: string
@@ -465,23 +467,21 @@ export function SmsClient({ data }: SmsClientProps) {
 
   return (
     <div className="space-y-6 page-enter">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">SMS Broadcasts</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-            {data.total.toLocaleString()} broadcast{data.total !== 1 ? 's' : ''} total
-          </p>
-        </div>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => setCreateOpen(true)}
-        >
-          <Plus size={15} />
-          New Broadcast
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="SMS Broadcasts"
+        description={`${data.total.toLocaleString()} broadcast${data.total !== 1 ? 's' : ''} total`}
+        tags={[adminCacheTags.sms]}
+        actions={
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus size={15} />
+            New Broadcast
+          </Button>
+        }
+      />
 
       {/* Filters */}
       <FilterBar

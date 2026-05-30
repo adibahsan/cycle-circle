@@ -14,6 +14,8 @@ import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
 import { Pagination } from '@/components/ui/Pagination'
 import { StatCard } from '@/components/ui/StatCard'
+import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -272,13 +274,11 @@ export function EmailsClient({ data, stats }: EmailsClientProps) {
 
   return (
     <div className="space-y-6 page-enter">
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Email Logs</h1>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-          {data.total.toLocaleString()} email{data.total !== 1 ? 's' : ''} total
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Email Logs"
+        description={`${data.total.toLocaleString()} email${data.total !== 1 ? 's' : ''} total`}
+        tags={[adminCacheTags.emails]}
+      />
 
       {/* Stats grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

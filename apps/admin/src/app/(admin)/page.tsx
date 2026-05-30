@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic'
-
 import { requireAdminUser } from '@/app/queries/auth-queries'
 import { getDashboardStats, getUserTrend } from '@/app/queries/dashboard-queries'
 import { DashboardClient } from './DashboardClient'

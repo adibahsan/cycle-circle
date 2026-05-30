@@ -7,7 +7,14 @@ import {
   softDeleteUser as svcSoftDeleteUser,
 } from '@vesta/shared/server/services'
 import { grantPro, revokePro } from '@vesta/shared/server/services'
-import { revalidatePath } from 'next/cache'
+import { revalidateTag } from 'next/cache'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
+
+function revalidateUserTags(userId: string) {
+  revalidateTag(adminCacheTags.users, { expire: 0 })
+  revalidateTag(adminCacheTags.user(userId), { expire: 0 })
+  revalidateTag(adminCacheTags.dashboard, { expire: 0 })
+}
 
 export async function suspendUser(userId: string, reason?: string) {
   const jwt = await requireAdminAuth()
@@ -15,8 +22,7 @@ export async function suspendUser(userId: string, reason?: string) {
 
   await svcSuspendUser(userId, admin.id, reason)
 
-  revalidatePath('/users')
-  revalidatePath(`/users/${userId}`)
+  revalidateUserTags(userId)
   return { success: true }
 }
 
@@ -26,8 +32,7 @@ export async function reactivateUser(userId: string) {
 
   await svcReactivateUser(userId, admin.id)
 
-  revalidatePath('/users')
-  revalidatePath(`/users/${userId}`)
+  revalidateUserTags(userId)
   return { success: true }
 }
 
@@ -37,7 +42,7 @@ export async function softDeleteUser(userId: string) {
 
   await svcSoftDeleteUser(userId, admin.id)
 
-  revalidatePath('/users')
+  revalidateUserTags(userId)
   return { success: true }
 }
 
@@ -47,9 +52,8 @@ export async function grantProAccess(userId: string) {
 
   await grantPro(userId, admin.id)
 
-  revalidatePath('/users')
-  revalidatePath(`/users/${userId}`)
-  revalidatePath('/subscriptions')
+  revalidateUserTags(userId)
+  revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
   return { success: true }
 }
 
@@ -59,8 +63,7 @@ export async function revokeProAccess(userId: string) {
 
   await revokePro(userId, admin.id)
 
-  revalidatePath('/users')
-  revalidatePath(`/users/${userId}`)
-  revalidatePath('/subscriptions')
+  revalidateUserTags(userId)
+  revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
   return { success: true }
 }

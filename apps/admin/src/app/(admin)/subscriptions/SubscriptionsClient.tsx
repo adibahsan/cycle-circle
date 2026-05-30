@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { grantProAccess, revokeProAccess } from '@/app/actions/user-actions'
+import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types — mirror the Prisma include shape from getSubscriptions
@@ -328,23 +330,19 @@ export function SubscriptionsClient({ data }: SubscriptionsClientProps) {
   return (
     <>
       <div className="space-y-6 page-enter">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
-              Subscriptions
-            </h1>
-            <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-              {data.total.toLocaleString()} total subscriptions
-            </p>
-          </div>
-          <div className="hidden sm:flex items-center gap-2 rounded-xl border border-[var(--color-border)] glass px-4 py-2.5">
-            <CreditCard size={16} aria-hidden="true" className="text-[var(--color-primary)]" />
-            <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-              BDApps CAAS
-            </span>
-          </div>
-        </div>
+        <AdminPageHeader
+          title="Subscriptions"
+          description={`${data.total.toLocaleString()} total subscriptions`}
+          tags={[adminCacheTags.subscriptions]}
+          actions={
+            <div className="hidden sm:flex items-center gap-2 rounded-xl border border-[var(--color-border)] glass px-4 py-2.5">
+              <CreditCard size={16} aria-hidden="true" className="text-[var(--color-primary)]" />
+              <span className="text-sm font-medium text-[var(--color-text-secondary)]">
+                BDApps CAAS
+              </span>
+            </div>
+          }
+        />
 
         {/* Filters — no search field, just status filter */}
         <FilterBar

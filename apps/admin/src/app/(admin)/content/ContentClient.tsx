@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input } from '@/components/ui/Input'
 import { deleteArticle, createCategory, updateCategory, deleteCategory } from '@/app/actions/content-actions'
+import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
 
 type ArticleRow = {
   id: string
@@ -317,33 +319,31 @@ export function ContentClient({ data, categories }: ContentClientProps) {
 
   return (
     <div className="space-y-6 page-enter">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Content</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-            {data.total.toLocaleString()} article{data.total !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setShowCategoryManager(true)}
-            variant="secondary"
-            size="sm"
-          >
-            <Tags size={15} aria-hidden="true" />
-            Manage Categories
-          </Button>
-          <Button
-            onClick={() => router.push('/content/new')}
-            variant="primary"
-            size="sm"
-          >
-            <Plus size={15} aria-hidden="true" />
-            New Article
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Content"
+        description={`${data.total.toLocaleString()} article${data.total !== 1 ? 's' : ''}`}
+        tags={[adminCacheTags.content]}
+        actions={
+          <>
+            <Button
+              onClick={() => setShowCategoryManager(true)}
+              variant="secondary"
+              size="sm"
+            >
+              <Tags size={15} aria-hidden="true" />
+              Manage Categories
+            </Button>
+            <Button
+              onClick={() => router.push('/content/new')}
+              variant="primary"
+              size="sm"
+            >
+              <Plus size={15} aria-hidden="true" />
+              New Article
+            </Button>
+          </>
+        }
+      />
 
       {/* Filters */}
       <FilterBar
