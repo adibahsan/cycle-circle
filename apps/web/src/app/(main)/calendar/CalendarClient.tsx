@@ -18,11 +18,13 @@ import {
   parseISO,
 } from 'date-fns'
 import { bn } from 'date-fns/locale/bn'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Pencil } from 'lucide-react'
 
 import { Card } from '@/components/ui/Card'
 import { useAppStore } from '@/lib/store'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
+import { PeriodLogModal } from '@/components/PeriodLogModal'
+import type { FlowIntensity } from '@vesta/shared/types'
 import '@vesta/shared/utils/i18n'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -332,9 +334,10 @@ const PAGE_SIZE = 6
 interface RecentPeriodsProps {
   periodLogs: PeriodLog[]
   language: string
+  onEditLog: (log: PeriodLog) => void
 }
 
-function RecentPeriods({ periodLogs, language }: RecentPeriodsProps) {
+function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) {
   const [page, setPage] = useState(0)
   const prefersReducedMotion = useReducedMotion()
 
@@ -381,15 +384,17 @@ function RecentPeriods({ periodLogs, language }: RecentPeriodsProps) {
                 const flow = FLOW_STYLES[log.flowIntensity] ?? FLOW_STYLES.MEDIUM
 
                 return (
-                  <motion.div
+                  <motion.button
                     key={log.id}
                     role="listitem"
                     initial={prefersReducedMotion ? {} : { opacity: 0, x: -6 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="flex items-center justify-between gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0"
+                    onClick={() => onEditLog(log)}
+                    aria-label={`Edit period log starting ${fmt.format(start)}`}
+                    className="w-full flex items-center justify-between gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0 cursor-pointer hover:bg-[var(--color-bg-secondary)] rounded-lg px-1 -mx-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
                   >
-                    <div className="flex flex-col gap-0.5 min-w-0">
+                    <div className="flex flex-col gap-0.5 min-w-0 text-left">
                       <span className="text-xs font-semibold text-[var(--color-text-primary)] tabular-nums">
                         {fmt.format(start)}
                         <span className="mx-1 text-[var(--color-text-muted)]">→</span>
@@ -399,13 +404,16 @@ function RecentPeriods({ periodLogs, language }: RecentPeriodsProps) {
                         {days} {days === 1 ? 'day' : 'days'}
                       </span>
                     </div>
-                    <span
-                      className="shrink-0 px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                      style={{ backgroundColor: flow.bg, color: flow.text }}
-                    >
-                      {flow.label}
-                    </span>
-                  </motion.div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span
+                        className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                        style={{ backgroundColor: flow.bg, color: flow.text }}
+                      >
+                        {flow.label}
+                      </span>
+                      <Pencil size={12} className="text-[var(--color-text-muted)]" aria-hidden="true" />
+                    </div>
+                  </motion.button>
                 )
               })}
             </div>
@@ -458,6 +466,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
   }, [month])
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [editingLog, setEditingLog] = useState<PeriodLog | null>(null)
 
   // Build the API calendar lookup map
   const apiCalendarMap = useMemo(() => {
@@ -491,7 +500,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
         isPeriod: apiDay?.period ?? false,
         isFertile: apiDay?.fertile ?? false,
         isOvulation: apiDay?.ovulation ?? false,
-        isFuturePredicted: apiDay ? (apiDay.predicted && isFuture) : false,
+        isFuturePredicted: apiDay?.predicted ?? false,
       })
     }
     return map
@@ -755,9 +764,30 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
           )}
 
           {/* Recent Periods */}
-          <RecentPeriods periodLogs={periodLogs} language={language} />
+          <RecentPeriods periodLogs={periodLogs} language={language} onEditLog={setEditingLog} />
         </div>
       </div>
+
+      {/* ── Edit Period Log Modal ── */}
+      <AnimatePresence>
+        {editingLog && (
+          <PeriodLogModal
+            key="edit-period-modal"
+            profileId={editingLog.profileId}
+            existingLogId={editingLog.id}
+            initialStart={toDateStr(editingLog.startDate)}
+            initialEnd={toDateStr(editingLog.endDate)}
+            initialFlow={editingLog.flowIntensity.toLowerCase() as FlowIntensity}
+            onClose={() => setEditingLog(null)}
+            onSaved={() => router.refresh()}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
+}
+
+function toDateStr(d: Date | string): string {
+  if (typeof d === 'string') return d.includes('T') ? d.slice(0, 10) : d
+  return d.toISOString().slice(0, 10)
 }

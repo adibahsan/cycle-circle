@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useCallback, useTransition, type MouseEvent } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { parseISO } from 'date-fns'
 import Link from 'next/link'
-import { X, CalendarDays, Activity, ChevronRight, Droplets } from 'lucide-react'
+import { CalendarDays, Activity, ChevronRight, Droplets } from 'lucide-react'
 
 import { useAppStore } from '@/lib/store'
 import '@vesta/shared/utils/i18n'
@@ -22,10 +22,7 @@ import {
 import type { FlowIntensity, ProfileRelation } from '@vesta/shared/types'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import {
-  createPeriodLog,
-  updatePeriodLog,
-} from '@/app/actions/tracking-actions'
+import { PeriodLogModal, FLOW_COLORS } from '@/components/PeriodLogModal'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -97,23 +94,6 @@ function normalizeFlow(f: string): FlowIntensity {
   return f.toLowerCase() as FlowIntensity
 }
 
-/** UI FlowIntensity -> Prisma enum */
-function toActionFlow(f: FlowIntensity): 'LIGHT' | 'MEDIUM' | 'HEAVY' {
-  return f.toUpperCase() as 'LIGHT' | 'MEDIUM' | 'HEAVY'
-}
-
-const FLOW_LABELS: Record<FlowIntensity, string> = {
-  light: 'Light',
-  medium: 'Medium',
-  heavy: 'Heavy',
-}
-
-const FLOW_COLORS: Record<FlowIntensity, string> = {
-  light: '#F2728E',
-  medium: '#E8476C',
-  heavy: '#C93558',
-}
-
 // ─── Circular Progress ────────────────────────────────────────────────────────
 
 function CycleRing({
@@ -121,19 +101,29 @@ function CycleRing({
   cycleLength,
   phase,
   phaseColor,
+  isLate = false,
+  daysLate = 0,
 }: {
   cycleDay: number
   cycleLength: number
   phase: string
   phaseColor: string
+  isLate?: boolean
+  daysLate?: number
 }) {
   const { t } = useTranslation()
+  const prefersReducedMotion = useReducedMotion()
   const SIZE = 220
   const STROKE = 16
   const RADIUS = (SIZE - STROKE) / 2
   const CIRCUMFERENCE = 2 * Math.PI * RADIUS
   const progress = cycleDay / cycleLength
   const offset = CIRCUMFERENCE * (1 - progress)
+
+  const ringColor = isLate ? 'var(--color-menstrual)' : phaseColor
+  const centerNumber = isLate ? daysLate : cycleDay
+  const centerColor = isLate ? 'var(--color-menstrual)' : phaseColor
+  const centerLabel = isLate ? t('dashboard.late') : t('dashboard.day')
 
   return (
     <div className="relative flex items-center justify-center" style={{ width: SIZE, height: SIZE }}>
@@ -166,13 +156,24 @@ function CycleRing({
           cy={SIZE / 2}
           r={RADIUS}
           fill="none"
-          stroke={phaseColor}
+          stroke={ringColor}
           strokeWidth={STROKE}
           strokeLinecap="round"
           strokeDasharray={CIRCUMFERENCE}
           initial={{ strokeDashoffset: CIRCUMFERENCE }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.2, ease: 'easeOut' }}
+          animate={
+            isLate && !prefersReducedMotion
+              ? { strokeDashoffset: offset, opacity: [1, 0.7, 1] }
+              : { strokeDashoffset: offset }
+          }
+          transition={
+            isLate && !prefersReducedMotion
+              ? {
+                  strokeDashoffset: { duration: 1.2, ease: 'easeOut' },
+                  opacity: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
+                }
+              : { duration: 1.2, ease: 'easeOut' }
+          }
           filter="url(#glow)"
         />
       </svg>
@@ -188,9 +189,9 @@ function CycleRing({
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
           className="text-5xl font-bold"
-          style={{ color: phaseColor }}
+          style={{ color: centerColor }}
         >
-          {cycleDay}
+          {centerNumber}
         </motion.div>
         <motion.div
           initial={{ opacity: 0 }}
@@ -198,199 +199,8 @@ function CycleRing({
           transition={{ delay: 0.6 }}
           className="text-sm font-medium text-[var(--color-text-muted)] tracking-widest uppercase"
         >
-          {t('dashboard.day')}
+          {centerLabel}
         </motion.div>
-      </motion.div>
-    </div>
-  )
-}
-
-// ─── Period Logging Modal ─────────────────────────────────────────────────────
-
-interface LogModalProps {
-  profileId: string
-  existingLogId?: string
-  initialStart?: string
-  initialEnd?: string
-  initialFlow?: FlowIntensity
-  onClose: () => void
-  onSaved: () => void
-}
-
-function PeriodLogModal({
-  profileId,
-  existingLogId,
-  initialStart = '',
-  initialEnd = '',
-  initialFlow = 'medium',
-  onClose,
-  onSaved,
-}: LogModalProps) {
-  const { t } = useTranslation()
-  const [startDate, setStartDate] = useState(initialStart)
-  const [endDate, setEndDate] = useState(initialEnd)
-  const [flow, setFlow] = useState<FlowIntensity>(initialFlow)
-  const [saved, setSaved] = useState(false)
-  const [isPending, startTransition] = useTransition()
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') onClose()
-  }
-
-  const isEdit = Boolean(existingLogId)
-
-  const handleSave = () => {
-    if (!startDate || !endDate) return
-    startTransition(async () => {
-      try {
-        if (isEdit && existingLogId) {
-          await updatePeriodLog(existingLogId, {
-            startDate,
-            endDate,
-            flowIntensity: toActionFlow(flow),
-          })
-        } else {
-          await createPeriodLog({
-            profileId,
-            startDate,
-            endDate,
-            flowIntensity: toActionFlow(flow),
-          })
-        }
-        setSaved(true)
-        onSaved()
-        setTimeout(onClose, 700)
-      } catch (err) {
-        console.error('Failed to save period log:', err)
-      }
-    })
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose} onKeyDown={handleKeyDown}>
-      <motion.div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      />
-      <motion.div
-        role="dialog"
-        aria-modal="true"
-        aria-label={isEdit ? t('dashboard.editPeriodLog') : t('dashboard.logPeriod')}
-        className="relative w-full max-w-md max-h-[85dvh] overflow-y-auto overscroll-contain bg-[var(--color-bg-card)] rounded-t-3xl px-5 py-6 shadow-2xl"
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-        onClick={(e: MouseEvent) => e.stopPropagation()}
-      >
-        {/* Handle */}
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--color-border)]" />
-
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
-            {isEdit ? t('dashboard.editPeriodLog') : t('dashboard.logPeriod')}
-          </h2>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="p-2 rounded-full hover:bg-[var(--color-bg-secondary)] transition-colors"
-          >
-            <X size={18} className="text-[var(--color-text-muted)]" aria-hidden="true" />
-          </button>
-        </div>
-
-        {/* Start date */}
-        <div className="mb-4">
-          <label htmlFor="period-start-date" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
-            {t('dashboard.startDate')}
-          </label>
-          <input
-            id="period-start-date"
-            name="startDate"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
-          />
-        </div>
-
-        {/* End date */}
-        <div className="mb-5">
-          <label htmlFor="period-end-date" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
-            {t('dashboard.endDate')}
-          </label>
-          <input
-            id="period-end-date"
-            name="endDate"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            min={startDate}
-            max={new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
-          />
-        </div>
-
-        {/* Flow intensity */}
-        <div role="group" aria-labelledby="flow-intensity-label" className="mb-6">
-          <span id="flow-intensity-label" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-2.5 uppercase tracking-wider">
-            {t('dashboard.flowIntensity')}
-          </span>
-          <div className="flex gap-2">
-            {(['light', 'medium', 'heavy'] as FlowIntensity[]).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFlow(f)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
-                  flow === f
-                    ? 'text-white shadow-soft'
-                    : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]'
-                }`}
-                style={
-                  flow === f
-                    ? { backgroundColor: FLOW_COLORS[f], borderColor: FLOW_COLORS[f] }
-                    : {}
-                }
-              >
-                <span className="mr-1">
-                  {f === 'light' ? '💧' : f === 'medium' ? '🩸' : '🌊'}
-                </span>
-                {FLOW_LABELS[f]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Save */}
-        <div aria-live="polite">
-        <AnimatePresence mode="wait">
-          {saved ? (
-            <motion.div
-              key="saved"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="w-full py-3 rounded-xl bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-center font-semibold"
-            >
-              {t('dashboard.saved')}
-            </motion.div>
-          ) : (
-            <motion.div key="save-btn">
-              <Button
-                variant="primary"
-                fullWidth
-                size="lg"
-                onClick={handleSave}
-                disabled={!startDate || !endDate || isPending}
-              >
-                {isPending ? t('common.loading') : isEdit ? t('dashboard.updateLog') : t('dashboard.savePeriod')}
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        </div>
       </motion.div>
     </div>
   )
@@ -408,6 +218,12 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   // allow the store's value to override on the client after hydration.
   const effectiveProfileId = storeProfileId || activeProfileId
   const profile = profiles.find((p) => p.id === effectiveProfileId) ?? profiles[0]
+
+  useEffect(() => {
+    if (profile) {
+      setActiveProfile(profile.id, profile.name)
+    }
+  }, [profile?.id, profile?.name, setActiveProfile])
 
   const [showModal, setShowModal] = useState(false)
   const [editLogId, setEditLogId] = useState<string | undefined>(undefined)
@@ -467,6 +283,9 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   const daysUntilNext =
     dashboardData?.countdownToNextPeriod ??
     getDaysUntilNextPeriod(cycleDay, profile.cycleLength)
+
+  const isPeriodLate = (daysUntilNext ?? 0) < 0
+  const daysLate = Math.abs(daysUntilNext ?? 0)
 
   // Build prediction object for display
   const serverPrediction = dashboardData?.prediction
@@ -533,6 +352,8 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             cycleLength={profile.cycleLength}
             phase={phase}
             phaseColor={phaseColor}
+            isLate={isPeriodLate}
+            daysLate={daysLate}
           />
 
           {/* Phase label */}
@@ -542,16 +363,27 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             transition={{ delay: 0.7, duration: 0.4 }}
             className="mt-4 md:mt-0 flex flex-col items-center gap-1"
           >
-            <div
-              className="flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-sm font-semibold shadow-soft"
-              style={{ backgroundColor: phaseColor }}
-            >
-              <span>{phaseEmoji}</span>
-              <span>{phaseLabel} Phase</span>
-            </div>
-            <p className="text-xs text-[var(--color-text-muted)] mt-1">
-              {t('dashboard.dayOf', { day: cycleDay, total: profile.cycleLength })}
-            </p>
+            {(() => {
+              const displayPhaseLabel = isPeriodLate ? t('dashboard.periodLate') : `${phaseLabel} Phase`
+              const displayPhaseColor = isPeriodLate ? 'var(--color-menstrual)' : phaseColor
+              const displayPhaseEmoji = isPeriodLate ? '🩸' : phaseEmoji
+              return (
+                <>
+                  <div
+                    className="flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-sm font-semibold shadow-soft"
+                    style={{ backgroundColor: displayPhaseColor }}
+                  >
+                    <span>{displayPhaseEmoji}</span>
+                    <span>{displayPhaseLabel}</span>
+                  </div>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                    {isPeriodLate
+                      ? t('dashboard.daysOverdue', { days: daysLate })
+                      : t('dashboard.dayOf', { day: cycleDay, total: profile.cycleLength })}
+                  </p>
+                </>
+              )
+            })()}
           </motion.div>
         </motion.div>
 
@@ -569,24 +401,26 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 <div className="flex items-center gap-1.5">
                   <CalendarDays size={14} className="text-[var(--color-primary)]" aria-hidden="true" />
                   <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
-                    {t('dashboard.nextPeriodCard')}
+                    {(daysUntilNext ?? 0) < 0 ? t('dashboard.periodLate') : t('dashboard.nextPeriodCard')}
                   </span>
                 </div>
                 <div
                   className="text-4xl font-extrabold leading-none tabular-nums"
-                  style={{ color: 'var(--color-primary)' }}
+                  style={{ color: (daysUntilNext ?? 0) < 0 ? 'var(--color-menstrual)' : 'var(--color-primary)' }}
                 >
-                  {daysUntilNext}
+                  {Math.abs(daysUntilNext ?? 0)}
                 </div>
-                <p className="text-xs text-[var(--color-text-muted)]">{t('dashboard.daysAway')}</p>
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  {(daysUntilNext ?? 0) < 0 ? t('dashboard.daysLate') : t('dashboard.daysAway')}
+                </p>
 
                 {/* Mini bar */}
                 <div className="h-1.5 rounded-full bg-[var(--color-border)] mt-1 overflow-hidden">
                   <motion.div
                     className="h-full rounded-full"
-                    style={{ backgroundColor: 'var(--color-primary)' }}
+                    style={{ backgroundColor: (daysUntilNext ?? 0) < 0 ? 'var(--color-menstrual)' : 'var(--color-primary)' }}
                     initial={{ width: 0 }}
-                    animate={{ width: `${((profile.cycleLength - (daysUntilNext ?? 0)) / profile.cycleLength) * 100}%` }}
+                    animate={{ width: `${Math.min(100, ((profile.cycleLength - Math.max(0, daysUntilNext ?? 0)) / profile.cycleLength) * 100)}%` }}
                     transition={{ delay: 0.6, duration: 0.8, ease: 'easeOut' }}
                   />
                 </div>

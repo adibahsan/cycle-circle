@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
@@ -22,11 +22,14 @@ import {
   FileText,
   Lock,
   Info,
+  Mail,
+  Phone,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { updateNotificationPrefs, exportUserDataCsv } from '@/app/actions/settings-actions'
+import { updateContactInfo } from '@/app/actions/user-actions'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { Language, Theme } from '@vesta/shared/types'
 
@@ -217,7 +220,7 @@ function AccountRow({
 export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientProps) {
   const { t, i18n } = useTranslation()
   const router = useRouter()
-  const { language, setLanguage, theme, setTheme, activeProfileId } = useAppStore()
+  const { language, setLanguage, theme, setTheme, activeProfileId, setActiveProfile } = useAppStore()
 
   const { toasts, show: showToast } = useToast()
 
@@ -225,11 +228,23 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
   const activeProfile = profiles.find(p => p.id === activeProfileId) ?? profiles[0]
   const activePrefs = notifPrefs.find(p => p.profileId === activeProfile?.id)
 
+  useEffect(() => {
+    if (activeProfile) {
+      setActiveProfile(activeProfile.id, activeProfile.name)
+    }
+  }, [activeProfile?.id, activeProfile?.name, setActiveProfile])
+
   const [localPrefs, setLocalPrefs] = useState({
     periodAlert: activePrefs?.periodAlert ?? true,
     fertileWindow: activePrefs?.fertileWindow ?? true,
     loggingReminder: activePrefs?.loggingReminder ?? true,
   })
+
+  const [addingEmail, setAddingEmail] = useState(false)
+  const [addingPhone, setAddingPhone] = useState(false)
+  const [contactEmail, setContactEmail] = useState('')
+  const [contactPhone, setContactPhone] = useState('')
+  const [contactSaving, setContactSaving] = useState(false)
 
   // ── Language handler ──
   const handleLanguageChange = (lang: Language) => {
@@ -257,6 +272,39 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
       // Revert on error
       setLocalPrefs(localPrefs)
       showToast('Failed to save preferences')
+    }
+  }
+
+  // ── Contact info handlers ──
+  const handleAddEmail = async () => {
+    if (!contactEmail) return
+    setContactSaving(true)
+    try {
+      await updateContactInfo({ email: contactEmail })
+      showToast('Email added successfully')
+      setAddingEmail(false)
+      setContactEmail('')
+      router.refresh()
+    } catch {
+      showToast('Failed to add email. It may already be in use.')
+    } finally {
+      setContactSaving(false)
+    }
+  }
+
+  const handleAddPhone = async () => {
+    if (!contactPhone) return
+    setContactSaving(true)
+    try {
+      await updateContactInfo({ phone: contactPhone })
+      showToast('Phone number added successfully')
+      setAddingPhone(false)
+      setContactPhone('')
+      router.refresh()
+    } catch {
+      showToast('Failed to add phone. Please enter a valid Bangladesh number.')
+    } finally {
+      setContactSaving(false)
     }
   }
 
@@ -479,7 +527,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[var(--color-text-muted)]">Phone</span>
                       <span className="text-xs font-semibold text-[var(--color-text-primary)] font-mono">
-                        +{user.phone}
+                        {user.phone.startsWith('+') ? user.phone : `+${user.phone}`}
                       </span>
                     </div>
                   )}
@@ -491,6 +539,89 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                       </span>
                     </div>
                   )}
+
+                  {/* Add missing email */}
+                  {!user.email && (
+                    <div className="pt-1 border-t border-[var(--color-border)]">
+                      {addingEmail ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="email"
+                            name="email"
+                            autoComplete="email"
+                            placeholder="Enter email address…"
+                            value={contactEmail}
+                            onChange={(e) => setContactEmail(e.target.value)}
+                            className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+                            spellCheck={false}
+                          />
+                          <button
+                            onClick={handleAddEmail}
+                            disabled={!contactEmail || contactSaving}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white gradient-primary disabled:opacity-50 transition-opacity"
+                          >
+                            {contactSaving ? '...' : 'Save'}
+                          </button>
+                          <button
+                            onClick={() => { setAddingEmail(false); setContactEmail('') }}
+                            className="px-2 py-1.5 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setAddingEmail(true)}
+                          className="flex items-center gap-2 w-full py-1 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                        >
+                          <Mail size={12} aria-hidden="true" />
+                          Add Email
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Add missing phone */}
+                  {!user.phone && (
+                    <div className="pt-1 border-t border-[var(--color-border)]">
+                      {addingPhone ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="tel"
+                            name="phone"
+                            autoComplete="tel"
+                            placeholder="01XXXXXXXXX"
+                            value={contactPhone}
+                            onChange={(e) => setContactPhone(e.target.value)}
+                            className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+                            spellCheck={false}
+                          />
+                          <button
+                            onClick={handleAddPhone}
+                            disabled={!contactPhone || contactSaving}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white gradient-primary disabled:opacity-50 transition-opacity"
+                          >
+                            {contactSaving ? '...' : 'Save'}
+                          </button>
+                          <button
+                            onClick={() => { setAddingPhone(false); setContactPhone('') }}
+                            className="px-2 py-1.5 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setAddingPhone(true)}
+                          className="flex items-center gap-2 w-full py-1 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                        >
+                          <Phone size={12} aria-hidden="true" />
+                          Add Phone Number
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between pt-1 border-t border-[var(--color-border)]">
                     <span className="text-xs text-[var(--color-text-muted)]">Plan</span>
                     <span

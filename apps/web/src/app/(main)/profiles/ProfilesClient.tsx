@@ -794,9 +794,9 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
 
   const atMax = profiles.length >= MAX_PROFILES;
 
-  function handleSwitchProfile(id: string) {
+  function handleSwitchProfile(id: string, name: string) {
     if (id === activeProfileId) return;
-    setActiveProfile(id);
+    setActiveProfile(id, name);
     setJustSwitched(id);
     router.push(`/dashboard?profileId=${id}`);
     setTimeout(() => setJustSwitched(null), 1500);
@@ -900,7 +900,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                 key={profile.id}
                 profile={profile}
                 isActive={profile.id === activeProfileId}
-                onSwitch={() => handleSwitchProfile(profile.id)}
+                onSwitch={() => handleSwitchProfile(profile.id, profile.name)}
                 onDelete={() => {
                   setDeleteError('');
                   setDeleteTarget({ id: profile.id, name: profile.name });

@@ -225,6 +225,19 @@ export async function updateUserName(userId: string, fullName: string) {
   return prisma.user.update({ where: { id: userId }, data: { fullName } })
 }
 
+export async function updateUserContact(
+  userId: string,
+  data: { email?: string; phone?: string },
+) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...(data.email !== undefined && { email: data.email }),
+      ...(data.phone !== undefined && { phone: data.phone }),
+    },
+  })
+}
+
 export async function getUserByPhone(phone: string) {
   return prisma.user.findFirst({
     where: { phone },

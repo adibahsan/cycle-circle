@@ -12,7 +12,8 @@ interface AppStore {
 
   // Active profile selection (UI state only)
   activeProfileId: string
-  setActiveProfile: (id: string) => void
+  activeProfileName: string
+  setActiveProfile: (id: string, name?: string) => void
 
   // Onboarding
   onboardingComplete: boolean
@@ -29,7 +30,8 @@ export const useAppStore = create<AppStore>()(
       setTheme: (theme) => set({ theme }),
 
       activeProfileId: '',
-      setActiveProfile: (activeProfileId) => set({ activeProfileId }),
+      activeProfileName: '',
+      setActiveProfile: (activeProfileId, name) => set({ activeProfileId, activeProfileName: name ?? '' }),
 
       onboardingComplete: false,
       setOnboardingComplete: (onboardingComplete) => set({ onboardingComplete }),
