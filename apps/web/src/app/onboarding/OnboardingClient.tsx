@@ -762,8 +762,12 @@ export default function OnboardingClient() {
   // ── Final submission ──
 
   async function handleFinish() {
-    if (!validateStep(3) || !validateStep(4)) {
+    if (!validateStep(3)) {
       setStep(3);
+      return;
+    }
+    if (!validateStep(4)) {
+      setStep(4);
       return;
     }
 

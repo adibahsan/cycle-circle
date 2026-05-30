@@ -246,6 +246,7 @@ function ProfileCard({ profile, isActive, onSwitch, onDelete, onEdit }: ProfileC
 
 interface AddProfileFormProps {
   onClose: () => void;
+  serverError?: string;
   onSubmit: (data: {
     name: string;
     relation: ProfileRelation;
@@ -256,7 +257,7 @@ interface AddProfileFormProps {
   }) => void;
 }
 
-function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
+function AddProfileForm({ onClose, onSubmit, serverError }: AddProfileFormProps) {
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [relation, setRelation] = useState<ProfileRelation>('sister');
@@ -264,18 +265,28 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
   const [periodLength, setPeriodLength] = useState(5);
   const [nameError, setNameError] = useState('');
   const [lastPeriodDate, setLastPeriodDate] = useState('');
+  const [lastPeriodError, setLastPeriodError] = useState('');
   const [flowIntensity, setFlowIntensity] = useState<'light' | 'medium' | 'heavy'>('medium');
 
   function handleSubmit() {
     const trimmed = name.trim();
+    let hasError = false;
+
     if (!trimmed) {
-      setNameError('Name is required');
-      return;
+      setNameError(t('profiles.nameRequired'));
+      hasError = true;
+    } else if (trimmed.length < 2) {
+      setNameError(t('profiles.nameMinLength'));
+      hasError = true;
     }
-    if (trimmed.length < 2) {
-      setNameError('Name must be at least 2 characters');
-      return;
+
+    if (!lastPeriodDate) {
+      setLastPeriodError(t('profiles.lastPeriodRequired'));
+      hasError = true;
     }
+
+    if (hasError) return;
+
     onSubmit({
       name: trimmed,
       relation,
@@ -328,7 +339,8 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
       <div className="px-5 py-4 flex flex-col gap-4">
         {/* Name */}
         <Input
-          label="Name"
+          id="add-profile-name"
+          label={t('onboarding.nameLabel')}
           placeholder="e.g. Nusrat…"
           value={name}
           onChange={(e) => {
@@ -408,13 +420,25 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
             id="last-period-date"
             type="date"
             value={lastPeriodDate}
-            onChange={(e) => setLastPeriodDate(e.target.value)}
+            onChange={(e) => {
+              setLastPeriodDate(e.target.value);
+              if (lastPeriodError) setLastPeriodError('');
+            }}
             max={new Date().toISOString().slice(0, 10)}
             min={new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
             required
-            className="w-full rounded-xl border px-3 py-2.5 text-sm font-medium text-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 transition-colors duration-150"
-            style={{ borderColor: 'var(--color-border)' }}
+            aria-invalid={!!lastPeriodError}
+            aria-describedby={lastPeriodError ? 'last-period-date-error' : undefined}
+            className={`w-full rounded-xl border px-3 py-2.5 text-sm font-medium text-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 transition-colors duration-150 ${
+              lastPeriodError ? 'border-red-400 focus-visible:ring-red-300' : ''
+            }`}
+            style={{ borderColor: lastPeriodError ? undefined : 'var(--color-border)' }}
           />
+          {lastPeriodError && (
+            <p id="last-period-date-error" role="alert" className="mt-1 text-sm text-red-500">
+              {lastPeriodError}
+            </p>
+          )}
         </div>
 
         {/* Flow intensity */}
@@ -447,12 +471,17 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
         </div>
 
         {/* Actions */}
+        {serverError && (
+          <p role="alert" aria-live="polite" className="text-sm text-red-500 text-center">
+            {serverError}
+          </p>
+        )}
         <div className="flex gap-2 pt-1">
           <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
             {t('common.cancel')}
           </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={!lastPeriodDate} className="flex-1">
-            Create Profile
+          <Button size="sm" onClick={handleSubmit} className="flex-1">
+            {t('profiles.createProfile')}
           </Button>
         </div>
       </div>
@@ -465,6 +494,7 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
 interface EditProfileFormProps {
   profile: Profile;
   onClose: () => void;
+  serverError?: string;
   onSubmit: (data: {
     name: string;
     relation: ProfileRelation;
@@ -473,7 +503,7 @@ interface EditProfileFormProps {
   }) => void;
 }
 
-function EditProfileForm({ profile, onClose, onSubmit }: EditProfileFormProps) {
+function EditProfileForm({ profile, onClose, onSubmit, serverError }: EditProfileFormProps) {
   const { t } = useTranslation();
   const [name, setName] = useState(profile.name);
   const [relation, setRelation] = useState<ProfileRelation>(normalizeRelation(profile.relation));
@@ -484,11 +514,11 @@ function EditProfileForm({ profile, onClose, onSubmit }: EditProfileFormProps) {
   function handleSubmit() {
     const trimmed = name.trim();
     if (!trimmed) {
-      setNameError('Name is required');
+      setNameError(t('profiles.nameRequired'));
       return;
     }
     if (trimmed.length < 2) {
-      setNameError('Name must be at least 2 characters');
+      setNameError(t('profiles.nameMinLength'));
       return;
     }
     onSubmit({ name: trimmed, relation, cycleLength, periodLength });
@@ -533,7 +563,7 @@ function EditProfileForm({ profile, onClose, onSubmit }: EditProfileFormProps) {
               <Pencil size={15} color="#fff" />
             </div>
             <h3 id="edit-profile-dialog-title" className="font-bold text-[var(--color-text-primary)] text-base">
-              Edit Profile
+              {t('profiles.editProfile')}
             </h3>
           </div>
           <button
@@ -549,7 +579,8 @@ function EditProfileForm({ profile, onClose, onSubmit }: EditProfileFormProps) {
         <div className="px-5 py-4 flex flex-col gap-4">
           {/* Name */}
           <Input
-            label="Name"
+            id="edit-profile-name"
+            label={t('onboarding.nameLabel')}
             placeholder="e.g. Nusrat…"
             value={name}
             onChange={(e) => {
@@ -618,12 +649,17 @@ function EditProfileForm({ profile, onClose, onSubmit }: EditProfileFormProps) {
           </div>
 
           {/* Actions */}
+          {serverError && (
+            <p role="alert" aria-live="polite" className="text-sm text-red-500 text-center">
+              {serverError}
+            </p>
+          )}
           <div className="flex gap-2 pt-1">
             <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
               {t('common.cancel')}
             </Button>
             <Button size="sm" onClick={handleSubmit} className="flex-1">
-              Save Changes
+              {t('profiles.saveChanges')}
             </Button>
           </div>
         </div>
@@ -636,11 +672,12 @@ function EditProfileForm({ profile, onClose, onSubmit }: EditProfileFormProps) {
 
 interface DeleteDialogProps {
   profileName: string;
+  error?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-function DeleteDialog({ profileName, onConfirm, onCancel }: DeleteDialogProps) {
+function DeleteDialog({ profileName, error, onConfirm, onCancel }: DeleteDialogProps) {
   const { t } = useTranslation();
   return (
     <motion.div
@@ -678,6 +715,11 @@ function DeleteDialog({ profileName, onConfirm, onCancel }: DeleteDialogProps) {
         <p className="text-sm text-[var(--color-text-secondary)] mb-4">
           All symptom logs and data for this profile will be permanently deleted.
         </p>
+        {error && (
+          <p role="alert" aria-live="polite" className="text-sm text-red-500 text-center mb-4">
+            {error}
+          </p>
+        )}
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={onCancel} className="flex-1">
             {t('common.cancel')}
@@ -711,6 +753,24 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
   const [editTarget, setEditTarget] = useState<Profile | null>(null);
   const [justSwitched, setJustSwitched] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [addError, setAddError] = useState('');
+  const [editError, setEditError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+
+  function closeAddForm() {
+    setShowForm(false);
+    setAddError('');
+  }
+
+  function closeEditForm() {
+    setEditTarget(null);
+    setEditError('');
+  }
+
+  function closeDeleteDialog() {
+    setDeleteTarget(null);
+    setDeleteError('');
+  }
 
   const atMax = profiles.length >= MAX_PROFILES;
 
@@ -731,6 +791,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
     flowIntensity: 'LIGHT' | 'MEDIUM' | 'HEAVY';
   }) {
     setIsPending(true);
+    setAddError('');
     try {
       await createProfile({
         name: data.name,
@@ -740,8 +801,10 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
         lastPeriodStart: data.lastPeriodStart,
         flowIntensity: data.flowIntensity,
       });
-      setShowForm(false);
+      closeAddForm();
     } catch (err) {
+      const message = err instanceof Error ? err.message : t('profiles.serverError');
+      setAddError(message);
       console.error('Failed to add profile:', err);
     } finally {
       setIsPending(false);
@@ -751,10 +814,13 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
   async function handleDeleteConfirm() {
     if (!deleteTarget) return;
     setIsPending(true);
+    setDeleteError('');
     try {
       await deleteProfile(deleteTarget.id);
-      setDeleteTarget(null);
+      closeDeleteDialog();
     } catch (err) {
+      const message = err instanceof Error ? err.message : t('profiles.serverError');
+      setDeleteError(message);
       console.error('Failed to delete profile:', err);
     } finally {
       setIsPending(false);
@@ -769,6 +835,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
   }) {
     if (!editTarget) return;
     setIsPending(true);
+    setEditError('');
     try {
       await updateProfile({
         profileId: editTarget.id,
@@ -777,8 +844,10 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
         cycleLength: data.cycleLength,
         periodLength: data.periodLength,
       });
-      setEditTarget(null);
+      closeEditForm();
     } catch (err) {
+      const message = err instanceof Error ? err.message : t('profiles.serverError');
+      setEditError(message);
       console.error('Failed to update profile:', err);
     } finally {
       setIsPending(false);
@@ -812,8 +881,14 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                 profile={profile}
                 isActive={profile.id === activeProfileId}
                 onSwitch={() => handleSwitchProfile(profile.id)}
-                onDelete={() => setDeleteTarget({ id: profile.id, name: profile.name })}
-                onEdit={() => setEditTarget(profile)}
+                onDelete={() => {
+                  setDeleteError('');
+                  setDeleteTarget({ id: profile.id, name: profile.name });
+                }}
+                onEdit={() => {
+                  setEditError('');
+                  setEditTarget(profile);
+                }}
               />
             ))}
           </AnimatePresence>
@@ -849,7 +924,8 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             {showForm ? (
               <AddProfileForm
                 key="form"
-                onClose={() => setShowForm(false)}
+                onClose={closeAddForm}
+                serverError={addError}
                 onSubmit={handleAddProfile}
               />
             ) : (
@@ -875,7 +951,10 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                   </div>
                 ) : (
                   <button
-                    onClick={() => setShowForm(true)}
+                    onClick={() => {
+                      setAddError('');
+                      setShowForm(true);
+                    }}
                     className="w-full rounded-2xl border border-dashed p-4 flex items-center justify-center gap-2.5 transition-colors duration-200 group hover:border-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                     style={{
                       borderColor: 'var(--color-border)',
@@ -933,8 +1012,9 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
         {deleteTarget && (
           <DeleteDialog
             profileName={deleteTarget.name}
+            error={deleteError}
             onConfirm={handleDeleteConfirm}
-            onCancel={() => setDeleteTarget(null)}
+            onCancel={closeDeleteDialog}
           />
         )}
       </AnimatePresence>
@@ -945,7 +1025,8 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
           <EditProfileForm
             key={editTarget.id}
             profile={editTarget}
-            onClose={() => setEditTarget(null)}
+            onClose={closeEditForm}
+            serverError={editError}
             onSubmit={handleEditSubmit}
           />
         )}
