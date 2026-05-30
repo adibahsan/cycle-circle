@@ -1,6 +1,6 @@
 import { differenceInDays } from 'date-fns'
 import { withCronAuth } from '@vesta/shared/server/middleware'
-import { prisma } from '@vesta/shared'
+import { getProfilesForReminders } from '@vesta/shared/server/services'
 import {
   sendPeriodAlert,
   sendFertileAlert,
@@ -24,21 +24,7 @@ export const POST = withCronAuth(async () => {
   let reminders = 0
   let errors = 0
 
-  // Fetch all profiles with the data needed to evaluate every notification type
-  const profilesWithData = await prisma.profile.findMany({
-    include: {
-      user: true,
-      predictions: {
-        orderBy: { createdAt: 'desc' },
-        take: 1,
-      },
-      notificationPref: true,
-      periodLogs: {
-        orderBy: { startDate: 'desc' },
-        take: 1,
-      },
-    },
-  })
+  const profilesWithData = await getProfilesForReminders()
 
   for (const profile of profilesWithData) {
     const prefs = profile.notificationPref
@@ -48,11 +34,9 @@ export const POST = withCronAuth(async () => {
     const isProSubscriber = user.subscriptionStatus === 'PRO'
     const { language } = user
 
-    // The most recent prediction for this profile (if any)
     const prediction = profile.predictions[0] ?? null
 
     try {
-      // ── Period alert: prediction within 0–2 days ───────────────────────────
       if (prefs.periodAlert && prediction) {
         const daysUntil = differenceInDays(prediction.nextPeriodStart, today)
         if (daysUntil >= 0 && daysUntil <= 2) {
@@ -72,7 +56,6 @@ export const POST = withCronAuth(async () => {
         }
       }
 
-      // ── Fertile window: starts today ───────────────────────────────────────
       if (prefs.fertileWindow && prediction) {
         const fertileStartDiff = differenceInDays(prediction.fertileStart, today)
         if (fertileStartDiff === 0) {
@@ -95,7 +78,6 @@ export const POST = withCronAuth(async () => {
         }
       }
 
-      // ── Logging reminder: no log in 3+ days ───────────────────────────────
       if (prefs.loggingReminder) {
         const lastLog = profile.periodLogs[0] ?? null
         const daysSince = lastLog

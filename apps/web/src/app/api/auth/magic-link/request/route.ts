@@ -3,7 +3,7 @@ import { parseBody } from '@vesta/shared/server/validation'
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
 import { sendMagicLinkEmail } from '@vesta/shared/server/adapters/mail'
-import { prisma } from '@vesta/shared'
+import { createMagicLink } from '@vesta/shared/server/services'
 
 const bodySchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -22,13 +22,7 @@ export async function POST(request: Request): Promise<Response> {
     const token = crypto.randomUUID()
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
 
-    await prisma.magicLink.create({
-      data: {
-        email,
-        token,
-        expiresAt,
-      },
-    })
+    await createMagicLink(email, token, expiresAt)
 
     const appUrl = process.env.APP_URL ?? 'http://localhost:3000'
     const magicLinkUrl = `${appUrl}/api/auth/magic-link/callback?token=${token}`

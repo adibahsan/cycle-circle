@@ -1,23 +1,12 @@
 import { z } from 'zod'
 import { withAuth } from '@vesta/shared/server/middleware'
-import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
+import { handleApiError } from '@vesta/shared/server/api-error'
 import { parseBody } from '@vesta/shared/server/validation'
-import { prisma } from '@vesta/shared'
+import { updatePeriodLog, deletePeriodLog } from '@vesta/shared/server/services'
 import { enqueueJob } from '@vesta/shared/server/adapters/jobs'
 import type { AuthUser } from '@vesta/shared/server/auth'
 
 type RouteContext = { params: Promise<Record<string, string>>; user: AuthUser }
-
-async function getOwnedLog(logId: string, userId: string) {
-  const log = await prisma.periodLog.findUnique({
-    where: { id: logId },
-    include: { profile: true },
-  })
-  if (!log || log.profile.userId !== userId) {
-    throw new ApiError(404, 'Period log not found', 'LOG_NOT_FOUND')
-  }
-  return log
-}
 
 const patchSchema = z.object({
   startDate: z.string().optional(),
@@ -28,22 +17,17 @@ const patchSchema = z.object({
 export const PATCH = withAuth(async (request, { params, user }: RouteContext) => {
   try {
     const { id } = await params
-    const log = await getOwnedLog(id, user.id)
-
     const body = await parseBody(request, patchSchema)
 
-    const updated = await prisma.periodLog.update({
-      where: { id },
-      data: {
-        ...(body.startDate !== undefined && { startDate: new Date(body.startDate) }),
-        ...(body.endDate !== undefined && { endDate: new Date(body.endDate) }),
-        ...(body.flowIntensity !== undefined && { flowIntensity: body.flowIntensity }),
-      },
+    const { log, profileId } = await updatePeriodLog(id, user.id, {
+      startDate: body.startDate,
+      endDate: body.endDate,
+      flowIntensity: body.flowIntensity,
     })
 
-    await enqueueJob('PREDICTION_RECALC', { profileId: log.profileId })
+    await enqueueJob('PREDICTION_RECALC', { profileId })
 
-    return Response.json({ log: updated })
+    return Response.json({ log })
   } catch (error) {
     return handleApiError(error)
   }
@@ -52,10 +36,9 @@ export const PATCH = withAuth(async (request, { params, user }: RouteContext) =>
 export const DELETE = withAuth(async (request, { params, user }: RouteContext) => {
   try {
     const { id } = await params
-    const log = await getOwnedLog(id, user.id)
+    const { profileId } = await deletePeriodLog(id, user.id)
 
-    await prisma.periodLog.delete({ where: { id } })
-    await enqueueJob('PREDICTION_RECALC', { profileId: log.profileId })
+    await enqueueJob('PREDICTION_RECALC', { profileId })
 
     return Response.json({ message: 'Period log deleted' })
   } catch (error) {

@@ -4,7 +4,7 @@ import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { issueJwt, setAuthCookie } from '@vesta/shared/server/auth'
 import { verifyOtp } from '@vesta/shared/server/adapters/bdapps'
 import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
-import { prisma } from '@vesta/shared'
+import { findOtpChallenge, completeOtpAuth } from '@vesta/shared/server/services'
 
 const bodySchema = z.object({
   referenceNo: z.string().min(1, 'referenceNo is required'),
@@ -20,9 +20,7 @@ export async function POST(request: Request): Promise<Response> {
       throw new ApiError(429, 'Too many verification attempts. Try again later.', 'RATE_LIMITED')
     }
 
-    const challenge = await prisma.otpChallenge.findFirst({
-      where: { referenceNo: body.referenceNo },
-    })
+    const challenge = await findOtpChallenge(body.referenceNo)
 
     if (!challenge) {
       throw new ApiError(404, 'OTP challenge not found', 'CHALLENGE_NOT_FOUND')
@@ -36,24 +34,7 @@ export async function POST(request: Request): Promise<Response> {
 
     await verifyOtp(body.referenceNo, body.otp)
 
-    await prisma.otpChallenge.update({
-      where: { id: challenge.id },
-      data: { verified: true },
-    })
-
-    const user = await prisma.user.upsert({
-      where: { phone: challenge.phone },
-      create: {
-        phone: challenge.phone,
-        authMethod: 'OTP',
-      },
-      update: {},
-    })
-
-    await prisma.otpChallenge.update({
-      where: { id: challenge.id },
-      data: { userId: user.id },
-    })
+    const user = await completeOtpAuth(challenge.id, challenge.phone)
 
     const token = await issueJwt({
       sub: user.id,

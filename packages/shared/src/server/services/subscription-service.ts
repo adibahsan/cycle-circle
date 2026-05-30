@@ -72,6 +72,141 @@ export async function revokePro(userId: string, adminId: string) {
   return { success: true }
 }
 
+export async function createCaasTransaction(externalTrxId: string, amount: number) {
+  return prisma.caasTransaction.create({
+    data: { externalTrxId, amount, status: 'PENDING' },
+  })
+}
+
+export async function updateCaasTransaction(
+  id: string,
+  data: {
+    status: 'SUCCESS' | 'FAILED'
+    subscriptionId?: string
+    internalTrxId?: string | null
+    referenceId?: string | null
+  },
+) {
+  return prisma.caasTransaction.update({
+    where: { id },
+    data: {
+      status: data.status,
+      ...(data.subscriptionId !== undefined && { subscriptionId: data.subscriptionId }),
+      ...(data.internalTrxId !== undefined && { internalTrxId: data.internalTrxId }),
+      ...(data.referenceId !== undefined && { referenceId: data.referenceId }),
+    },
+  })
+}
+
+export async function upsertProSubscription(
+  userId: string,
+  phone: string,
+  amount: number,
+) {
+  const existing = await prisma.subscription.findFirst({ where: { userId } })
+
+  if (existing) {
+    return prisma.subscription.update({
+      where: { id: existing.id },
+      data: {
+        status: 'PRO',
+        bdappsSubscriberId: phone,
+        amount,
+        consecutiveFailures: 0,
+        gracePeriodEndsAt: null,
+      },
+    })
+  }
+
+  return prisma.subscription.create({
+    data: {
+      userId,
+      status: 'PRO',
+      bdappsSubscriberId: phone,
+      amount,
+    },
+  })
+}
+
+export async function markUserPro(userId: string) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { subscriptionStatus: 'PRO' },
+  })
+}
+
+export async function handleSubscriptionWebhook(
+  phone: string,
+  newStatus: 'PRO' | 'LAPSED' | 'FREE',
+) {
+  const user = await prisma.user.findFirst({
+    where: { phone },
+    include: {
+      subscriptions: { orderBy: { createdAt: 'desc' }, take: 1 },
+    },
+  })
+
+  if (!user) return null
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { subscriptionStatus: newStatus },
+  })
+
+  if (user.subscriptions.length > 0) {
+    await prisma.subscription.update({
+      where: { id: user.subscriptions[0].id },
+      data: {
+        status: newStatus,
+        ...(newStatus === 'PRO' && { consecutiveFailures: 0, gracePeriodEndsAt: null }),
+      },
+    })
+  }
+
+  return user
+}
+
+export async function listProSubscriptions() {
+  return prisma.subscription.findMany({
+    where: { status: 'PRO' },
+    include: { user: { select: { phone: true } } },
+  })
+}
+
+export async function recordSubscriptionCheckResult(
+  subscriptionId: string,
+  userId: string,
+  healthy: boolean,
+  currentFailures: number,
+) {
+  if (healthy) {
+    await prisma.subscription.update({
+      where: { id: subscriptionId },
+      data: { consecutiveFailures: 0 },
+    })
+    return { lapsed: false }
+  }
+
+  const newFailures = currentFailures + 1
+  await prisma.subscription.update({
+    where: { id: subscriptionId },
+    data: {
+      consecutiveFailures: newFailures,
+      status: newFailures >= 3 ? 'LAPSED' : 'PRO',
+    },
+  })
+
+  if (newFailures >= 3) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { subscriptionStatus: 'LAPSED' },
+    })
+    return { lapsed: true }
+  }
+
+  return { lapsed: false }
+}
+
 export interface SubscriptionListParams {
   page?: number
   pageSize?: number

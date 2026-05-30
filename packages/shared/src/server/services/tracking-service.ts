@@ -155,6 +155,29 @@ export async function getSymptomLogs(profileId: string, userId: string, date?: s
   })
 }
 
+export async function getPrediction(profileId: string, userId: string) {
+  const profile = await prisma.profile.findUnique({ where: { id: profileId } })
+  if (!profile || profile.userId !== userId) return null
+  return prisma.prediction.findUnique({ where: { profileId } })
+}
+
+export async function getProfilesForReminders() {
+  return prisma.profile.findMany({
+    include: {
+      user: true,
+      predictions: {
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      },
+      notificationPref: true,
+      periodLogs: {
+        orderBy: { startDate: 'desc' },
+        take: 1,
+      },
+    },
+  })
+}
+
 // ── Phase calculation ──────────────────────────────────────────────────────────
 
 type CyclePhase = 'menstrual' | 'follicular' | 'ovulatory' | 'luteal'
