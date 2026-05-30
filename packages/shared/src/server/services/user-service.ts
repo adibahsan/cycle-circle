@@ -220,3 +220,37 @@ export async function softDeleteUser(userId: string, adminId: string) {
 export async function getUserById(userId: string) {
   return prisma.user.findUnique({ where: { id: userId } })
 }
+
+export async function getUserByPhone(phone: string) {
+  return prisma.user.findFirst({
+    where: { phone },
+    include: {
+      subscriptions: { orderBy: { createdAt: 'desc' }, take: 1 },
+    },
+  })
+}
+
+export async function getUserDetailForAdmin(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      profiles: {
+        include: {
+          periodLogs: { orderBy: { startDate: 'desc' }, take: 5 },
+          predictions: true,
+          notificationPref: true,
+          _count: { select: { periodLogs: true, symptomLogs: true } },
+        },
+      },
+      subscriptions: {
+        include: {
+          caasTransactions: { orderBy: { createdAt: 'desc' }, take: 10 },
+        },
+      },
+      feedback: { orderBy: { createdAt: 'desc' }, take: 10 },
+    },
+  })
+
+  if (!user) throw new Error('User not found')
+  return user
+}

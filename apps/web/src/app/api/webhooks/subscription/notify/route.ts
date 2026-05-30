@@ -1,6 +1,6 @@
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { validateWebhookSource, persistWebhookEvent } from '@vesta/shared/server/adapters/webhooks'
-import { prisma } from '@vesta/shared'
+import { handleSubscriptionWebhook } from '@vesta/shared/server/services'
 
 type SubscriptionStatus = 'PRO' | 'LAPSED' | 'FREE'
 
@@ -35,34 +35,11 @@ export async function POST(request: Request): Promise<Response> {
 
     const newStatus = mapBdappsStatus(payload.status)
 
-    // Normalize subscriberId to tel: format for lookup
     const phone = payload.subscriberId.startsWith('tel:')
       ? payload.subscriberId
       : `tel:${payload.subscriberId}`
 
-    const user = await prisma.user.findFirst({
-      where: { phone },
-      include: {
-        subscriptions: { orderBy: { createdAt: 'desc' }, take: 1 },
-      },
-    })
-
-    if (user) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { subscriptionStatus: newStatus },
-      })
-
-      if (user.subscriptions.length > 0) {
-        await prisma.subscription.update({
-          where: { id: user.subscriptions[0].id },
-          data: {
-            status: newStatus,
-            ...(newStatus === 'PRO' && { consecutiveFailures: 0, gracePeriodEndsAt: null }),
-          },
-        })
-      }
-    }
+    await handleSubscriptionWebhook(phone, newStatus)
 
     return Response.json({ statusCode: 'S1000', statusDetail: 'Received' })
   } catch (error) {

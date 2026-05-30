@@ -1,22 +1,11 @@
 import { withCronAuth } from '@vesta/shared/server/middleware'
 import { handleApiError } from '@vesta/shared/server/api-error'
-import { prisma } from '@vesta/shared'
+import { listProSubscriptions, recordSubscriptionCheckResult } from '@vesta/shared/server/services'
 import { caasGetBalance } from '@vesta/shared/server/adapters/bdapps'
-
-interface ProSubscription {
-  id: string
-  userId: string
-  bdappsSubscriberId: string | null
-  consecutiveFailures: number
-  user: { phone: string | null }
-}
 
 export const POST = withCronAuth(async (_request) => {
   try {
-    const proSubscriptions = await prisma.subscription.findMany({
-      where: { status: 'PRO' },
-      include: { user: { select: { phone: true } } },
-    }) as ProSubscription[]
+    const proSubscriptions = await listProSubscriptions()
 
     let checked = 0
     let healthy = 0
@@ -30,46 +19,26 @@ export const POST = withCronAuth(async (_request) => {
         checked++
         try {
           const result = await caasGetBalance(phone)
-          if (result.statusCode === 'S1000') {
-            healthy++
-            await prisma.subscription.update({
-              where: { id: sub.id },
-              data: { consecutiveFailures: 0 },
-            })
-          } else {
-            failures++
-            const newFailures = sub.consecutiveFailures + 1
-            await prisma.subscription.update({
-              where: { id: sub.id },
-              data: {
-                consecutiveFailures: newFailures,
-                status: newFailures >= 3 ? 'LAPSED' : 'PRO',
-              },
-            })
-            if (newFailures >= 3) {
-              await prisma.user.update({
-                where: { id: sub.userId },
-                data: { subscriptionStatus: 'LAPSED' },
-              })
-            }
-          }
+          const isHealthy = result.statusCode === 'S1000'
+
+          if (isHealthy) healthy++
+          else failures++
+
+          await recordSubscriptionCheckResult(
+            sub.id,
+            sub.userId,
+            isHealthy,
+            sub.consecutiveFailures,
+          )
         } catch (err) {
           failures++
-          const newFailures = sub.consecutiveFailures + 1
           console.error(`CAAS balance check failed for sub ${sub.id}:`, err)
-          await prisma.subscription.update({
-            where: { id: sub.id },
-            data: {
-              consecutiveFailures: newFailures,
-              status: newFailures >= 3 ? 'LAPSED' : 'PRO',
-            },
-          })
-          if (newFailures >= 3) {
-            await prisma.user.update({
-              where: { id: sub.userId },
-              data: { subscriptionStatus: 'LAPSED' },
-            })
-          }
+          await recordSubscriptionCheckResult(
+            sub.id,
+            sub.userId,
+            false,
+            sub.consecutiveFailures,
+          )
         }
       }),
     )

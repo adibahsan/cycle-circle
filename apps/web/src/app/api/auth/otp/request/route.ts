@@ -4,7 +4,7 @@ import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { validateMsisdn } from '@vesta/shared/server/auth'
 import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
 import { requestOtp } from '@vesta/shared/server/adapters/bdapps'
-import { prisma } from '@vesta/shared'
+import { createOtpChallenge } from '@vesta/shared/server/services'
 
 const bodySchema = z.object({
   phone: z.string().min(1, 'Phone is required'),
@@ -24,13 +24,7 @@ export async function POST(request: Request): Promise<Response> {
     const result = await requestOtp(normalizedPhone)
 
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
-    await prisma.otpChallenge.create({
-      data: {
-        phone: normalizedPhone,
-        referenceNo: result.referenceNo,
-        expiresAt,
-      },
-    })
+    await createOtpChallenge(normalizedPhone, result.referenceNo, expiresAt)
 
     return Response.json({ referenceNo: result.referenceNo, message: 'OTP sent' })
   } catch (error) {

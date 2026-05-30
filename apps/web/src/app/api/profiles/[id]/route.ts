@@ -1,29 +1,16 @@
 import { z } from 'zod'
 import { withAuth } from '@vesta/shared/server/middleware'
-import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
+import { handleApiError } from '@vesta/shared/server/api-error'
 import { parseBody } from '@vesta/shared/server/validation'
-import { prisma } from '@vesta/shared'
+import { getProfileById, updateProfile, removeProfile } from '@vesta/shared/server/services'
 import type { AuthUser } from '@vesta/shared/server/auth'
 
 type RouteContext = { params: Promise<Record<string, string>>; user: AuthUser }
 
-async function getOwnedProfile(profileId: string, userId: string) {
-  const profile = await prisma.profile.findUnique({ where: { id: profileId } })
-  if (!profile || profile.userId !== userId) {
-    throw new ApiError(404, 'Profile not found', 'PROFILE_NOT_FOUND')
-  }
-  return profile
-}
-
 export const GET = withAuth(async (request, { params, user }: RouteContext) => {
   try {
     const { id } = await params
-    const profile = await getOwnedProfile(id, user.id)
-
-    const prediction = await prisma.prediction.findUnique({
-      where: { profileId: profile.id },
-    })
-
+    const { profile, prediction } = await getProfileById(id, user.id)
     return Response.json({ profile, prediction })
   } catch (error) {
     return handleApiError(error)
@@ -40,18 +27,13 @@ const patchSchema = z.object({
 export const PATCH = withAuth(async (request, { params, user }: RouteContext) => {
   try {
     const { id } = await params
-    await getOwnedProfile(id, user.id)
-
     const body = await parseBody(request, patchSchema)
 
-    const updated = await prisma.profile.update({
-      where: { id },
-      data: {
-        ...(body.name !== undefined && { name: body.name }),
-        ...(body.cycleLength !== undefined && { cycleLength: body.cycleLength }),
-        ...(body.periodLength !== undefined && { periodLength: body.periodLength }),
-        ...(body.goal !== undefined && { goal: body.goal }),
-      },
+    const updated = await updateProfile(id, user.id, {
+      name: body.name,
+      cycleLength: body.cycleLength,
+      periodLength: body.periodLength,
+      goal: body.goal,
     })
 
     return Response.json({ profile: updated })
@@ -63,15 +45,7 @@ export const PATCH = withAuth(async (request, { params, user }: RouteContext) =>
 export const DELETE = withAuth(async (request, { params, user }: RouteContext) => {
   try {
     const { id } = await params
-    await getOwnedProfile(id, user.id)
-
-    const totalProfiles = await prisma.profile.count({ where: { userId: user.id } })
-    if (totalProfiles <= 1) {
-      throw new ApiError(400, 'Cannot delete your last profile', 'LAST_PROFILE')
-    }
-
-    await prisma.profile.delete({ where: { id } })
-
+    await removeProfile(id, user.id)
     return Response.json({ message: 'Profile deleted' })
   } catch (error) {
     return handleApiError(error)

@@ -1,10 +1,9 @@
 import { z } from 'zod'
 import { withAuth } from '@vesta/shared/server/middleware'
-import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
+import { handleApiError } from '@vesta/shared/server/api-error'
 import { parseBody, parseSearchParams } from '@vesta/shared/server/validation'
-import { prisma } from '@vesta/shared'
+import { listPeriodLogs, createPeriodLog } from '@vesta/shared/server/services'
 import { enqueueJob } from '@vesta/shared/server/adapters/jobs'
-import { ensurePeriodLogFromProfile } from '@vesta/shared/server/period-log-sync'
 import type { AuthUser } from '@vesta/shared/server/auth'
 
 const getParamsSchema = z.object({
@@ -18,25 +17,10 @@ const createLogSchema = z.object({
   flowIntensity: z.enum(['LIGHT', 'MEDIUM', 'HEAVY']),
 })
 
-async function verifyProfileOwnership(profileId: string, userId: string) {
-  const profile = await prisma.profile.findUnique({ where: { id: profileId } })
-  if (!profile || profile.userId !== userId) {
-    throw new ApiError(404, 'Profile not found', 'PROFILE_NOT_FOUND')
-  }
-  return profile
-}
-
 export const GET = withAuth(async (request, { user }: { user: AuthUser }) => {
   try {
     const params = await parseSearchParams(request, getParamsSchema)
-    const profile = await verifyProfileOwnership(params.profileId, user.id)
-    await ensurePeriodLogFromProfile(profile)
-
-    const logs = await prisma.periodLog.findMany({
-      where: { profileId: params.profileId },
-      orderBy: { startDate: 'desc' },
-    })
-
+    const logs = await listPeriodLogs(params.profileId, user.id)
     return Response.json({ logs })
   } catch (error) {
     return handleApiError(error)
@@ -46,15 +30,10 @@ export const GET = withAuth(async (request, { user }: { user: AuthUser }) => {
 export const POST = withAuth(async (request, { user }: { user: AuthUser }) => {
   try {
     const body = await parseBody(request, createLogSchema)
-    await verifyProfileOwnership(body.profileId, user.id)
-
-    const log = await prisma.periodLog.create({
-      data: {
-        profileId: body.profileId,
-        startDate: new Date(body.startDate),
-        endDate: new Date(body.endDate),
-        flowIntensity: body.flowIntensity,
-      },
+    const { log } = await createPeriodLog(body.profileId, user.id, {
+      startDate: body.startDate,
+      endDate: body.endDate,
+      flowIntensity: body.flowIntensity,
     })
 
     await enqueueJob('PREDICTION_RECALC', { profileId: body.profileId })

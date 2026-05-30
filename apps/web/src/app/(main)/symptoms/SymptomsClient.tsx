@@ -9,8 +9,7 @@ import { bn } from 'date-fns/locale/bn';
 import { useAppStore } from '@/lib/store';
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data';
 import { toggleSymptom } from '@/app/actions/tracking-actions';
-import type { Profile, SymptomLog } from '@prisma/client';
-import type { SymptomCategory } from '@vesta/shared/types';
+import type { Profile, PrismaSymptomLog, SymptomCategory } from '@vesta/shared/types';
 import '@vesta/shared/utils/i18n';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -57,7 +56,7 @@ function toDbCategory(
 }
 
 // Map Prisma uppercase SymptomCategory to lowercase
-function normalizeCategory(category: SymptomLog['category']): SymptomCategory {
+function normalizeCategory(category: PrismaSymptomLog['category']): SymptomCategory {
   return category.toLowerCase() as SymptomCategory;
 }
 
@@ -188,7 +187,7 @@ interface SymptomsClientProps {
   profiles: Profile[];
   activeProfileId: string;
   date: string;
-  symptomLogs: SymptomLog[];
+  symptomLogs: PrismaSymptomLog[];
 }
 
 export function SymptomsClient({

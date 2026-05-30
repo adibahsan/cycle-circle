@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import { withAuth } from '@vesta/shared/server/middleware'
-import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
+import { handleApiError } from '@vesta/shared/server/api-error'
 import { parseBody, parseSearchParams } from '@vesta/shared/server/validation'
-import { prisma } from '@vesta/shared'
+import { getSymptomLogs, toggleSymptomLog } from '@vesta/shared/server/services'
 import type { AuthUser } from '@vesta/shared/server/auth'
 
 const getParamsSchema = z.object({
@@ -18,32 +18,10 @@ const createSymptomSchema = z.object({
   value: z.string().min(1, 'value is required'),
 })
 
-async function verifyProfileOwnership(profileId: string, userId: string) {
-  const profile = await prisma.profile.findUnique({ where: { id: profileId } })
-  if (!profile || profile.userId !== userId) {
-    throw new ApiError(404, 'Profile not found', 'PROFILE_NOT_FOUND')
-  }
-  return profile
-}
-
 export const GET = withAuth(async (request, { user }: { user: AuthUser }) => {
   try {
     const params = await parseSearchParams(request, getParamsSchema)
-    await verifyProfileOwnership(params.profileId, user.id)
-
-    const where: Record<string, unknown> = { profileId: params.profileId }
-    if (params.date) {
-      const day = new Date(params.date)
-      const nextDay = new Date(day)
-      nextDay.setDate(nextDay.getDate() + 1)
-      where.date = { gte: day, lt: nextDay }
-    }
-
-    const logs = await prisma.symptomLog.findMany({
-      where,
-      orderBy: { date: 'desc' },
-    })
-
+    const logs = await getSymptomLogs(params.profileId, user.id, params.date)
     return Response.json({ logs })
   } catch (error) {
     return handleApiError(error)
@@ -53,19 +31,17 @@ export const GET = withAuth(async (request, { user }: { user: AuthUser }) => {
 export const POST = withAuth(async (request, { user }: { user: AuthUser }) => {
   try {
     const body = await parseBody(request, createSymptomSchema)
-    await verifyProfileOwnership(body.profileId, user.id)
-
-    const log = await prisma.symptomLog.create({
-      data: {
-        profileId: body.profileId,
-        date: new Date(body.date),
-        category: body.category,
-        symptomId: body.symptomId,
-        value: body.value,
-      },
+    const result = await toggleSymptomLog(body.profileId, user.id, {
+      date: body.date,
+      category: body.category,
+      symptomId: body.symptomId,
+      value: body.value,
     })
 
-    return Response.json({ log }, { status: 201 })
+    if (result.action === 'created') {
+      return Response.json({ log: result.log }, { status: 201 })
+    }
+    return Response.json({ message: 'Symptom log toggled' })
   } catch (error) {
     return handleApiError(error)
   }

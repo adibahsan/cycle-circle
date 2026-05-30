@@ -22,6 +22,16 @@ export async function createFeedback(
   })
 }
 
+// ── User-facing list ──────────────────────────────────────────────────────
+
+export async function listUserFeedback(userId: string, take = 20) {
+  return prisma.feedback.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+    take,
+  })
+}
+
 // ── Admin list ─────────────────────────────────────────────────────────────────
 
 export async function listFeedback(

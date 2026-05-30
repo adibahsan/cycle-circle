@@ -82,6 +82,7 @@ export async function updateProfile(
     relation?: 'SELF' | 'WIFE' | 'SISTER' | 'MOTHER' | 'DAUGHTER' | 'GIRLFRIEND'
     cycleLength?: number
     periodLength?: number
+    goal?: string | null
   },
 ) {
   await assertProfileOwnership(profileId, userId)
@@ -92,6 +93,7 @@ export async function updateProfile(
       ...(data.relation !== undefined && { relation: data.relation }),
       ...(data.cycleLength !== undefined && { cycleLength: data.cycleLength }),
       ...(data.periodLength !== undefined && { periodLength: data.periodLength }),
+      ...(data.goal !== undefined && { goal: data.goal }),
     },
   })
 }

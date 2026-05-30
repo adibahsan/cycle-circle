@@ -1,7 +1,7 @@
 import { withAuth } from '@vesta/shared/server/middleware'
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { parseSearchParams } from '@vesta/shared/server/validation'
-import { prisma } from '@vesta/shared'
+import { getPrediction } from '@vesta/shared/server/services'
 import { z } from 'zod'
 import type { AuthUser } from '@vesta/shared/server/auth'
 
@@ -19,14 +19,10 @@ export const GET = withAuth(async (request, { user }: { user: AuthUser }) => {
   try {
     const params = await parseSearchParams(request, paramsSchema)
 
-    const profile = await prisma.profile.findUnique({ where: { id: params.profileId } })
-    if (!profile || profile.userId !== user.id) {
+    const prediction = await getPrediction(params.profileId, user.id)
+    if (prediction === null) {
       throw new ApiError(404, 'Profile not found', 'PROFILE_NOT_FOUND')
     }
-
-    const prediction = await prisma.prediction.findUnique({
-      where: { profileId: profile.id },
-    })
 
     const tierExplanation = prediction
       ? (TIER_EXPLANATIONS[prediction.tier] ?? 'Tier 1: Based on average cycle length')

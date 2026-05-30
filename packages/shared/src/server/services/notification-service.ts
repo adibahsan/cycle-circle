@@ -1,5 +1,11 @@
 import { prisma } from '../db'
 
+export async function listNotificationPrefs(profileIds: string[]) {
+  return prisma.notificationPreference.findMany({
+    where: { profileId: { in: profileIds } },
+  })
+}
+
 export async function upsertNotificationPrefs(
   profileId: string,
   userId: string,
