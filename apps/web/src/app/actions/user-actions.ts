@@ -1,7 +1,7 @@
 'use server'
 
 import { z } from 'zod'
-import { revalidatePath } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 import { requireAuth, getAuthUser } from '@vesta/shared/server/auth'
 import { completeUserProfile } from '@vesta/shared/server/services'
 
@@ -20,6 +20,7 @@ export async function completeProfile(input: z.infer<typeof completeProfileSchem
     phone: data.phone,
   })
 
-  revalidatePath('/')
+  revalidateTag(`user:${user.id}`, { expire: 0 })
+  revalidateTag(`profiles:${user.id}`, { expire: 0 })
   return updated
 }

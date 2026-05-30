@@ -1,7 +1,7 @@
 'use server'
 
 import { z } from 'zod'
-import { revalidatePath } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 import { requireAuth, getAuthUser } from '@vesta/shared/server/auth'
 import { upsertNotificationPrefs, listProfiles, listPeriodLogs, getSymptomLogs } from '@vesta/shared/server/services'
 
@@ -23,7 +23,7 @@ export async function updateNotificationPrefs(input: z.infer<typeof updatePrefsS
     loggingReminder: data.loggingReminder,
   })
 
-  revalidatePath('/')
+  revalidateTag(`notifications:${data.profileId}`, { expire: 0 })
   return updated
 }
 
