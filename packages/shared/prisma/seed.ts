@@ -25,10 +25,10 @@ async function main() {
 
   // ── Demo User ──────────────────────────────────────────────────────────────
   const demoUser = await prisma.user.upsert({
-    where: { phone: 'tel:8801712345678' },
+    where: { phone: '+8801712345678' },
     update: {},
     create: {
-      phone: 'tel:8801712345678',
+      phone: '+8801712345678',
       fullName: 'Demo User',
       authMethod: AuthMethod.OTP,
       profileCompleted: true,

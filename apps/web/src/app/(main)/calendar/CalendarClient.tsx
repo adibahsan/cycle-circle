@@ -65,12 +65,23 @@ interface SymptomLog {
   value: string
 }
 
+interface PeriodLog {
+  id: string
+  profileId: string
+  startDate: Date | string
+  endDate: Date | string
+  flowIntensity: string
+  createdAt: Date | string
+  updatedAt: Date | string
+}
+
 interface Props {
   profiles: PrismaProfile[]
   activeProfileId: string
   month: string
   days: CalendarDay[] | null
   symptomLogs: SymptomLog[]
+  periodLogs: PeriodLog[]
 }
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
@@ -308,9 +319,132 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
   )
 }
 
+// ─── Recent Periods ────────────────────────────────────────────────────────────
+
+const FLOW_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  LIGHT: { bg: 'var(--color-fertile)', text: '#fff', label: 'Light' },
+  MEDIUM: { bg: '#F59E0B', text: '#fff', label: 'Medium' },
+  HEAVY: { bg: 'var(--color-menstrual)', text: '#fff', label: 'Heavy' },
+}
+
+const PAGE_SIZE = 6
+
+interface RecentPeriodsProps {
+  periodLogs: PeriodLog[]
+  language: string
+}
+
+function RecentPeriods({ periodLogs, language }: RecentPeriodsProps) {
+  const [page, setPage] = useState(0)
+  const prefersReducedMotion = useReducedMotion()
+
+  const totalPages = Math.ceil(periodLogs.length / PAGE_SIZE)
+  const slice = periodLogs.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+
+  const fmt = new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : 'en-US', {
+    month: 'short',
+    day: 'numeric',
+  })
+
+  function toDate(val: Date | string): Date {
+    return val instanceof Date ? val : new Date(val)
+  }
+
+  function durationDays(start: Date | string, end: Date | string): number {
+    const s = toDate(start)
+    const e = toDate(end)
+    return Math.max(1, Math.round((e.getTime() - s.getTime()) / 86_400_000) + 1)
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5, duration: 0.4 }}
+    >
+      <Card padding="md">
+        <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
+          Recent Periods
+        </h3>
+
+        {periodLogs.length === 0 ? (
+          <p className="text-xs text-[var(--color-text-muted)] text-center py-3">
+            No period logs yet
+          </p>
+        ) : (
+          <>
+            <div className="flex flex-col gap-2" role="list">
+              {slice.map((log) => {
+                const start = toDate(log.startDate)
+                const end = toDate(log.endDate)
+                const days = durationDays(log.startDate, log.endDate)
+                const flow = FLOW_STYLES[log.flowIntensity] ?? FLOW_STYLES.MEDIUM
+
+                return (
+                  <motion.div
+                    key={log.id}
+                    role="listitem"
+                    initial={prefersReducedMotion ? {} : { opacity: 0, x: -6 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center justify-between gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0"
+                  >
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="text-xs font-semibold text-[var(--color-text-primary)] tabular-nums">
+                        {fmt.format(start)}
+                        <span className="mx-1 text-[var(--color-text-muted)]">→</span>
+                        {fmt.format(end)}
+                      </span>
+                      <span className="text-[11px] text-[var(--color-text-muted)]">
+                        {days} {days === 1 ? 'day' : 'days'}
+                      </span>
+                    </div>
+                    <span
+                      className="shrink-0 px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                      style={{ backgroundColor: flow.bg, color: flow.text }}
+                    >
+                      {flow.label}
+                    </span>
+                  </motion.div>
+                )
+              })}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-3 pt-2 border-t border-[var(--color-border)]">
+                <button
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  aria-label="Previous page of period logs"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
+                >
+                  <ChevronLeft size={12} aria-hidden="true" />
+                  Prev
+                </button>
+                <span className="text-[11px] text-[var(--color-text-muted)] tabular-nums">
+                  {page + 1} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={page === totalPages - 1}
+                  aria-label="Next page of period logs"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
+                >
+                  Next
+                  <ChevronRight size={12} aria-hidden="true" />
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </Card>
+    </motion.div>
+  )
+}
+
 // ─── Calendar Client ───────────────────────────────────────────────────────────
 
-export function CalendarClient({ profiles: _profiles, activeProfileId: _activeProfileId, month, days, symptomLogs }: Props) {
+export function CalendarClient({ profiles: _profiles, activeProfileId: _activeProfileId, month, days, symptomLogs, periodLogs }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const { language } = useAppStore()
@@ -619,6 +753,9 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
               </Card>
             </motion.div>
           )}
+
+          {/* Recent Periods */}
+          <RecentPeriods periodLogs={periodLogs} language={language} />
         </div>
       </div>
     </div>

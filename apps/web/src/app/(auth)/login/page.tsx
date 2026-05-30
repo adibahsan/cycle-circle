@@ -59,12 +59,12 @@ export default function LoginPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone }),
         });
+        const data = await res.json().catch(() => ({})) as { error?: string; user?: { profileCompleted?: boolean } };
         if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          setError((body as { error?: string }).error ?? 'Dev login failed.');
+          setError(data.error ?? 'Dev login failed.');
           return;
         }
-        router.replace('/dashboard');
+        router.replace(data.user?.profileCompleted ? '/dashboard' : '/onboarding');
       } catch {
         setError('Dev login failed. Ensure DEV_MODE=true on the server.');
       } finally {

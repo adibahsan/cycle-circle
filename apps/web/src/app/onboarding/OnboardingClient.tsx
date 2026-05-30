@@ -25,15 +25,30 @@ import type { ProfileRelation } from '@vesta/shared/types';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Goal = 'tracking' | 'conceive' | 'perimenopause' | null;
+type FlowIntensity = 'light' | 'medium' | 'heavy';
 
 interface OnboardingState {
   goal: Goal;
   cycleLength: number;
   periodLength: number;
   lastPeriodDate: string;
+  flowIntensity: FlowIntensity;
   profileName: string;
+  userName: string;
   profileRelation: ProfileRelation;
 }
+
+const FLOW_LABELS: Record<FlowIntensity, string> = {
+  light: 'Light',
+  medium: 'Medium',
+  heavy: 'Heavy',
+};
+
+const FLOW_COLORS: Record<FlowIntensity, string> = {
+  light: '#F2728E',
+  medium: '#E8476C',
+  heavy: '#C93558',
+};
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -297,17 +312,21 @@ function StepCycleHistory({
   periodLength,
   lastPeriodDate,
   lastPeriodError,
+  flowIntensity,
   onCycleLength,
   onPeriodLength,
   onLastPeriodDate,
+  onFlowIntensity,
 }: {
   cycleLength: number;
   periodLength: number;
   lastPeriodDate: string;
   lastPeriodError?: string;
+  flowIntensity: FlowIntensity;
   onCycleLength: (v: number) => void;
   onPeriodLength: (v: number) => void;
   onLastPeriodDate: (v: string) => void;
+  onFlowIntensity: (v: FlowIntensity) => void;
 }) {
   const { t } = useTranslation();
 
@@ -386,6 +405,37 @@ function StepCycleHistory({
         />
       </Card>
 
+      {/* Flow intensity */}
+      <Card padding="md" className="space-y-3">
+        <div>
+          <p className="font-semibold text-[var(--color-text-primary)]">{t('dashboard.flowIntensity', 'Flow intensity')}</p>
+          <p className="text-xs text-[var(--color-text-muted)]">How heavy is your usual flow?</p>
+        </div>
+        <div className="flex gap-2" role="group" aria-label="Flow intensity">
+          {(['light', 'medium', 'heavy'] as FlowIntensity[]).map((f) => (
+            <button
+              key={f}
+              onClick={() => onFlowIntensity(f)}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
+                flowIntensity === f
+                  ? 'text-white shadow-soft'
+                  : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]'
+              }`}
+              style={
+                flowIntensity === f
+                  ? { backgroundColor: FLOW_COLORS[f], borderColor: FLOW_COLORS[f] }
+                  : {}
+              }
+            >
+              <span className="mr-1" aria-hidden="true">
+                {f === 'light' ? '💧' : f === 'medium' ? '🩸' : '🌊'}
+              </span>
+              {FLOW_LABELS[f]}
+            </button>
+          ))}
+        </div>
+      </Card>
+
     </div>
   );
 }
@@ -395,14 +445,20 @@ function StepCycleHistory({
 function StepProfile({
   name,
   nameError,
+  userName,
+  userNameError,
   relation,
   onName,
+  onUserName,
   onRelation,
 }: {
   name: string;
   nameError?: string;
+  userName: string;
+  userNameError?: string;
   relation: ProfileRelation;
   onName: (v: string) => void;
+  onUserName: (v: string) => void;
   onRelation: (v: ProfileRelation) => void;
 }) {
   const { t } = useTranslation();
@@ -440,6 +496,20 @@ function StepProfile({
           })}
         </div>
       </div>
+
+      {/* Your name input — only shown for non-self profiles */}
+      {relation !== 'self' && (
+        <div>
+          <Input
+            label={`${t('onboarding.yourNameLabel', 'Your name')} *`}
+            placeholder="Your name"
+            value={userName}
+            error={userNameError}
+            onChange={(e) => onUserName(e.target.value)}
+            maxLength={40}
+          />
+        </div>
+      )}
 
       {/* Name input */}
       <div>
@@ -520,6 +590,10 @@ function StepDone({
     ...(state.lastPeriodDate
       ? [{ label: t('onboarding.lastPeriodLabel'), value: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(state.lastPeriodDate + 'T00:00:00')) }]
       : []),
+    {
+      label: t('dashboard.flowIntensity', 'Flow intensity'),
+      value: `${state.flowIntensity === 'light' ? '💧' : state.flowIntensity === 'medium' ? '🩸' : '🌊'} ${state.flowIntensity.charAt(0).toUpperCase() + state.flowIntensity.slice(1)}`,
+    },
   ];
 
   // CSS-only confetti dots
@@ -620,12 +694,15 @@ export default function OnboardingClient() {
     cycleLength: 28,
     periodLength: 5,
     lastPeriodDate: '',
+    flowIntensity: 'medium' as FlowIntensity,
     profileName: '',
+    userName: '',
     profileRelation: 'self',
   });
 
   const [stepErrors, setStepErrors] = useState<{
     profileName?: string;
+    userName?: string;
     lastPeriodDate?: string;
     submit?: string;
   }>({});
@@ -652,6 +729,9 @@ export default function OnboardingClient() {
       const trimmed = state.profileName.trim();
       if (trimmed.length < 2) {
         errors.profileName = t('onboarding.enterNameError');
+      }
+      if (state.profileRelation !== 'self' && state.userName.trim().length < 2) {
+        errors.userName = t('onboarding.enterNameError');
       }
     }
 
@@ -697,8 +777,9 @@ export default function OnboardingClient() {
         cycleLength: state.cycleLength,
         periodLength: state.periodLength,
         lastPeriodStart: state.lastPeriodDate,
+        flowIntensity: state.flowIntensity.toUpperCase() as 'LIGHT' | 'MEDIUM' | 'HEAVY',
         goal: state.goal ? goalLabel(state.goal) : undefined,
-        userName: state.profileRelation === 'self' ? state.profileName.trim() : undefined,
+        userName: state.profileRelation === 'self' ? state.profileName.trim() : state.userName.trim() || undefined,
       });
       setActiveProfile(profile.id);
       setOnboardingComplete(true);
@@ -747,10 +828,16 @@ export default function OnboardingClient() {
           <StepProfile
             name={state.profileName}
             nameError={stepErrors.profileName}
+            userName={state.userName}
+            userNameError={stepErrors.userName}
             relation={state.profileRelation}
             onName={(v) => {
               setState((s) => ({ ...s, profileName: v }));
               if (stepErrors.profileName) setStepErrors((e) => ({ ...e, profileName: undefined }));
+            }}
+            onUserName={(v) => {
+              setState((s) => ({ ...s, userName: v }));
+              if (stepErrors.userName) setStepErrors((e) => ({ ...e, userName: undefined }));
             }}
             onRelation={(v) => setState((s) => ({ ...s, profileRelation: v }))}
           />
@@ -762,12 +849,14 @@ export default function OnboardingClient() {
             periodLength={state.periodLength}
             lastPeriodDate={state.lastPeriodDate}
             lastPeriodError={stepErrors.lastPeriodDate}
+            flowIntensity={state.flowIntensity}
             onCycleLength={(v) => setState((s) => ({ ...s, cycleLength: v }))}
             onPeriodLength={(v) => setState((s) => ({ ...s, periodLength: v }))}
             onLastPeriodDate={(v) => {
               setState((s) => ({ ...s, lastPeriodDate: v }));
               if (stepErrors.lastPeriodDate) setStepErrors((e) => ({ ...e, lastPeriodDate: undefined }));
             }}
+            onFlowIntensity={(v) => setState((s) => ({ ...s, flowIntensity: v }))}
           />
         );
       case 5:
@@ -859,7 +948,10 @@ export default function OnboardingClient() {
                 onClick={goNext}
                 disabled={
                   (step === 2 && !state.goal) ||
-                  (step === 3 && state.profileName.trim().length < 2) ||
+                  (step === 3 && (
+                    state.profileName.trim().length < 2 ||
+                    (state.profileRelation !== 'self' && state.userName.trim().length < 2)
+                  )) ||
                   (step === 4 && !state.lastPeriodDate)
                 }
               >

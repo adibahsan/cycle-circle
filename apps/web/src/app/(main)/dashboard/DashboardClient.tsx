@@ -478,7 +478,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         ovulationDay: toDateString(serverPrediction.ovulationDay),
         fertileStart: toDateString(serverPrediction.fertileStart),
         fertileEnd: toDateString(serverPrediction.fertileEnd),
-        confidence: Math.round(serverPrediction.confidence),
+        confidence: Math.round(serverPrediction.confidence * 100),
         tier: serverPrediction.tier as 'average' | 'arima',
       }
     : localPrediction

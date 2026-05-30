@@ -16,6 +16,12 @@ import '@vesta/shared/utils/i18n';
 
 const MAX_PROFILES = 6;
 
+const FLOW_COLORS: Record<'light' | 'medium' | 'heavy', string> = {
+  light: '#F2728E',
+  medium: '#E8476C',
+  heavy: '#C93558',
+};
+
 const RELATIONS: ProfileRelation[] = ['self', 'wife', 'sister', 'mother', 'daughter', 'girlfriend'];
 
 const RELATION_ICONS: Record<ProfileRelation, string> = {
@@ -246,6 +252,7 @@ interface AddProfileFormProps {
     cycleLength: number;
     periodLength: number;
     lastPeriodStart: string;
+    flowIntensity: 'LIGHT' | 'MEDIUM' | 'HEAVY';
   }) => void;
 }
 
@@ -256,6 +263,8 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
   const [cycleLength, setCycleLength] = useState(28);
   const [periodLength, setPeriodLength] = useState(5);
   const [nameError, setNameError] = useState('');
+  const [lastPeriodDate, setLastPeriodDate] = useState('');
+  const [flowIntensity, setFlowIntensity] = useState<'light' | 'medium' | 'heavy'>('medium');
 
   function handleSubmit() {
     const trimmed = name.trim();
@@ -272,7 +281,8 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
       relation,
       cycleLength,
       periodLength,
-      lastPeriodStart: new Date().toISOString().slice(0, 10),
+      lastPeriodStart: lastPeriodDate,
+      flowIntensity: flowIntensity.toUpperCase() as 'LIGHT' | 'MEDIUM' | 'HEAVY',
     });
   }
 
@@ -386,12 +396,62 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
           />
         </div>
 
+        {/* Last period date */}
+        <div>
+          <label
+            htmlFor="last-period-date"
+            className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5"
+          >
+            Last period start *
+          </label>
+          <input
+            id="last-period-date"
+            type="date"
+            value={lastPeriodDate}
+            onChange={(e) => setLastPeriodDate(e.target.value)}
+            max={new Date().toISOString().slice(0, 10)}
+            min={new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+            required
+            className="w-full rounded-xl border px-3 py-2.5 text-sm font-medium text-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 transition-colors duration-150"
+            style={{ borderColor: 'var(--color-border)' }}
+          />
+        </div>
+
+        {/* Flow intensity */}
+        <div>
+          <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Flow intensity</p>
+          <div className="flex gap-2" role="group" aria-label="Flow intensity">
+            {(['light', 'medium', 'heavy'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFlowIntensity(f)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
+                  flowIntensity === f
+                    ? 'text-white shadow-soft'
+                    : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]'
+                }`}
+                style={
+                  flowIntensity === f
+                    ? { backgroundColor: FLOW_COLORS[f], borderColor: FLOW_COLORS[f] }
+                    : {}
+                }
+                aria-pressed={flowIntensity === f}
+              >
+                <span className="mr-1" aria-hidden="true">
+                  {f === 'light' ? '💧' : f === 'medium' ? '🩸' : '🌊'}
+                </span>
+                {f === 'light' ? 'Light' : f === 'medium' ? 'Medium' : 'Heavy'}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Actions */}
         <div className="flex gap-2 pt-1">
           <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
             {t('common.cancel')}
           </Button>
-          <Button size="sm" onClick={handleSubmit} className="flex-1">
+          <Button size="sm" onClick={handleSubmit} disabled={!lastPeriodDate} className="flex-1">
             Create Profile
           </Button>
         </div>
@@ -668,6 +728,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
     cycleLength: number;
     periodLength: number;
     lastPeriodStart: string;
+    flowIntensity: 'LIGHT' | 'MEDIUM' | 'HEAVY';
   }) {
     setIsPending(true);
     try {
@@ -677,6 +738,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
         cycleLength: data.cycleLength,
         periodLength: data.periodLength,
         lastPeriodStart: data.lastPeriodStart,
+        flowIntensity: data.flowIntensity,
       });
       setShowForm(false);
     } catch (err) {

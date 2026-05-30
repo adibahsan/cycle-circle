@@ -70,6 +70,7 @@ async function fetchWithRetry(
 
 function toTelUri(subscriberId: string): string {
   if (subscriberId.startsWith('tel:')) return subscriberId
+  if (subscriberId.startsWith('+88')) return `tel:88${subscriberId.slice(3)}`
   return `tel:${subscriberId}`
 }
 

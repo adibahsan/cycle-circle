@@ -115,14 +115,14 @@ export default function VerifyOtpPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ referenceNo, otp: code }),
       });
-      const body = await res.json().catch(() => ({})) as { error?: string };
+      const body = await res.json().catch(() => ({})) as { error?: string; user?: { profileCompleted?: boolean } };
       if (!res.ok) {
         setError(body.error ?? t('auth.verificationFailed'));
         return;
       }
       setSuccess(true);
       await new Promise((res) => setTimeout(res, 700));
-      router.replace('/dashboard');
+      router.replace(body.user?.profileCompleted ? '/dashboard' : '/onboarding');
     } catch {
       setError(t('auth.verificationFailed'));
     } finally {

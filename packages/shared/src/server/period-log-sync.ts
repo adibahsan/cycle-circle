@@ -1,4 +1,4 @@
-import type { PeriodLog, Profile } from '@prisma/client'
+import type { FlowIntensity, PeriodLog, Profile } from '@prisma/client'
 import { prisma } from './db'
 import { enqueueJob } from './adapters/jobs'
 
@@ -28,7 +28,7 @@ export function addPeriodDatesInRange(
  * create an initial PeriodLog and seed a Tier 1 Prediction synchronously so the
  * dashboard/calendar have data immediately — without waiting for the async worker.
  */
-export async function ensurePeriodLogFromProfile(profile: Profile): Promise<PeriodLog | null> {
+export async function ensurePeriodLogFromProfile(profile: Profile, flowIntensity?: FlowIntensity): Promise<PeriodLog | null> {
   if (!profile.lastPeriodStart) return null
 
   const existing = await prisma.periodLog.findFirst({
@@ -47,7 +47,7 @@ export async function ensurePeriodLogFromProfile(profile: Profile): Promise<Peri
       profileId: profile.id,
       startDate,
       endDate,
-      flowIntensity: 'MEDIUM',
+      flowIntensity: flowIntensity ?? 'MEDIUM',
     },
   })
 
