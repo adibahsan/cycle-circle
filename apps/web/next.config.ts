@@ -3,6 +3,11 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@vesta/shared'],
+  experimental: {
+    staleTimes: {
+      dynamic: 300,
+    },
+  },
   async headers() {
     return [
       {

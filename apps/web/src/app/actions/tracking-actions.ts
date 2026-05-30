@@ -1,7 +1,7 @@
 'use server'
 
 import { z } from 'zod'
-import { revalidatePath } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 import { requireAuth, getAuthUser } from '@vesta/shared/server/auth'
 import {
   createPeriodLog as svcCreatePeriodLog,
@@ -32,7 +32,7 @@ export async function createPeriodLog(input: z.infer<typeof createPeriodLogSchem
   if (shouldRecalcPrediction) {
     await recalculatePrediction(data.profileId)
   }
-  revalidatePath('/')
+  revalidateTag(`tracking:${data.profileId}`, { expire: 0 })
   return log
 }
 
@@ -52,7 +52,7 @@ export async function updatePeriodLog(logId: string, input: z.infer<typeof updat
   if (shouldRecalcPrediction) {
     await recalculatePrediction(profileId)
   }
-  revalidatePath('/')
+  revalidateTag(`tracking:${profileId}`, { expire: 0 })
   return log
 }
 
@@ -65,7 +65,7 @@ export async function deletePeriodLog(logId: string) {
   if (shouldRecalcPrediction) {
     await recalculatePrediction(profileId)
   }
-  revalidatePath('/')
+  revalidateTag(`tracking:${profileId}`, { expire: 0 })
 }
 
 const createSymptomSchema = z.object({
@@ -88,5 +88,5 @@ export async function toggleSymptom(input: z.infer<typeof createSymptomSchema>) 
     value: data.value,
   })
 
-  revalidatePath('/')
+  revalidateTag(`symptoms:${data.profileId}`, { expire: 0 })
 }
