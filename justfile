@@ -95,6 +95,26 @@ db-nuke:
     {{shared}} db:seed
     @echo "Database nuked and re-seeded."
 
+# Backup database to ops/backups/ (uses DIRECT_URL from .env.local)
+db-backup:
+    @mkdir -p ops/backups
+    pg_dump "${DIRECT_URL}" \
+        --format=plain \
+        --no-acl \
+        --no-owner \
+        --file=ops/backups/vesta-backup-$(date +%Y%m%d-%H%M%S).sql
+    @echo "Backup saved to ops/backups/"
+
+# Backup any database by passing connection string: just db-backup-url <url>
+db-backup-url url:
+    @mkdir -p ops/backups
+    pg_dump "{{url}}" \
+        --format=plain \
+        --no-acl \
+        --no-owner \
+        --file=ops/backups/vesta-backup-$(date +%Y%m%d-%H%M%S).sql
+    @echo "Backup saved to ops/backups/"
+
 # ─── DEV ────────────────────────────────────────────────
 
 # Full local dev setup: copy env, start infra, reset db, run dev server
