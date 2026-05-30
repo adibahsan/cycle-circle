@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import { useAppStore } from '@/lib/store';
-import { createProfile } from '@/app/actions/profile-actions';
+import { createProfile, setActiveProfileCookie } from '@/app/actions/profile-actions';
 import type { ProfileRelation } from '@vesta/shared/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -809,6 +809,7 @@ export default function OnboardingClient() {
         goal: state.goal ? goalLabel(state.goal) : undefined,
         userName: state.profileRelation === 'self' ? state.profileName.trim() : state.userName.trim() || undefined,
       });
+      await setActiveProfileCookie(profile.id);
       setActiveProfile(profile.id);
       setOnboardingComplete(true);
       router.replace('/dashboard');

@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight, Pencil } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import type { Profile, ProfileRelation } from '@vesta/shared/types';
-import { createProfile, deleteProfile, updateProfile } from '@/app/actions/profile-actions';
+import { createProfile, deleteProfile, updateProfile, setActiveProfileCookie } from '@/app/actions/profile-actions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import '@vesta/shared/utils/i18n';
@@ -794,11 +794,12 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
 
   const atMax = profiles.length >= MAX_PROFILES;
 
-  function handleSwitchProfile(id: string, name: string) {
+  async function handleSwitchProfile(id: string, name: string) {
     if (id === activeProfileId) return;
     setActiveProfile(id, name);
     setJustSwitched(id);
-    router.push(`/dashboard?profileId=${id}`);
+    await setActiveProfileCookie(id);
+    router.push('/dashboard');
     setTimeout(() => setJustSwitched(null), 1500);
   }
 
