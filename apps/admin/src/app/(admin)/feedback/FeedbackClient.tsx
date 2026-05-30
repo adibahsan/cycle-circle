@@ -168,6 +168,13 @@ export function FeedbackClient({ data }: FeedbackClientProps) {
     updateParams({ pageSize, page: 1 })
   }
 
+  const handleRowClick = useCallback(
+    (row: FeedbackItem) => {
+      router.push(`/feedback/${row.id}`)
+    },
+    [router],
+  )
+
   const filteredItems = searchTerm.trim()
     ? data.items.filter((item) => {
         const term = searchTerm.toLowerCase()
@@ -289,6 +296,7 @@ export function FeedbackClient({ data }: FeedbackClientProps) {
         data={filteredItems as unknown as FeedbackItem[]}
         emptyMessage="No feedback matches your filters."
         keyExtractor={(row) => row.id}
+        onRowClick={handleRowClick}
       />
 
       {/* Pagination */}

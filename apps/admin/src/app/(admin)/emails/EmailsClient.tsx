@@ -159,6 +159,13 @@ export function EmailsClient({ data, stats }: EmailsClientProps) {
   const currentDeliveryStatus = searchParams.get('deliveryStatus') ?? 'all'
   const currentSearch = searchParams.get('search') ?? ''
 
+  const handleRowClick = useCallback(
+    (row: EmailLogItem) => {
+      router.push(`/emails/${row.id}`)
+    },
+    [router],
+  )
+
   const updateParams = useCallback(
     (updates: Record<string, string | number>) => {
       const params = new URLSearchParams(searchParams.toString())
@@ -344,6 +351,7 @@ export function EmailsClient({ data, stats }: EmailsClientProps) {
         data={data.items}
         emptyMessage="No email logs match your filters."
         keyExtractor={(row) => row.id}
+        onRowClick={handleRowClick}
       />
 
       {/* Pagination */}
