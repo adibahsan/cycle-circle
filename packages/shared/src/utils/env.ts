@@ -3,9 +3,11 @@ import { z } from 'zod'
 const envSchema = z.object({
   // Database
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  // Direct DB connection for migrations (bypasses PgBouncer)
+  DIRECT_URL: z.string().optional(),
 
   // Redis
-  REDIS_URL: z.string().default('redis://localhost:6379'),
+  REDIS_URL: z.string().optional(),
 
   // BDApps (required for web app, optional for admin)
   BDAPPS_APP_ID: z.string().optional(),

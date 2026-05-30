@@ -2,9 +2,13 @@ import { withCronAuth } from '@vesta/shared/server/middleware'
 import { handleApiError } from '@vesta/shared/server/api-error'
 import { listProSubscriptions, recordSubscriptionCheckResult } from '@vesta/shared/server/services'
 import { caasGetBalance } from '@vesta/shared/server/adapters/bdapps'
+import { prisma } from '@vesta/shared'
 
 export const POST = withCronAuth(async (_request) => {
   try {
+    // Keep Supabase Free tier alive (auto-pauses after 7 days of inactivity)
+    await prisma.$queryRaw`SELECT 1`
+
     const proSubscriptions = await listProSubscriptions()
 
     let checked = 0
