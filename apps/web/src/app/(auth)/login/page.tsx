@@ -109,19 +109,12 @@ export default function LoginPage() {
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           className="mb-4"
         >
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center shadow-soft">
+          <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary)] flex items-center justify-center shadow-soft">
             <span className="text-white text-2xl font-bold">V</span>
           </div>
         </motion.div>
 
-        <h1
-          className="text-3xl font-bold mb-1"
-          style={{
-            background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
+        <h1 className="text-3xl font-bold mb-1 text-[var(--color-primary)]">
           Vesta
         </h1>
         <p className="text-sm text-[var(--color-text-muted)] text-center leading-relaxed px-4">
