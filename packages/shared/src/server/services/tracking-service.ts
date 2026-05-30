@@ -304,7 +304,7 @@ export async function getCalendarData(
   const periodDates = new Set<string>()
   const predictedDates = new Set<string>()
   const fertileDates = new Set<string>()
-  let ovulationDateStr: string | null = null
+  const ovulationDates = new Set<string>()
 
   for (const log of periodLogs) {
     addPeriodDatesInRange(
@@ -316,48 +316,66 @@ export async function getCalendarData(
     )
   }
 
+  // Determine the anchor for forward projections.
+  // If a Prediction record exists, use it as cycle 1 and project cycles 2-3.
+  // Otherwise, estimate from the most recent period log.
+  let anchorPeriodStart: Date | null = null
+
   if (prediction?.nextPeriodStart) {
-    const predStart = new Date(prediction.nextPeriodStart)
-    predStart.setHours(0, 0, 0, 0)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    if (predStart > today) {
-      const predEnd = new Date(predStart)
-      predEnd.setDate(predEnd.getDate() + profile.periodLength - 1)
-      const cur = new Date(predStart)
-      while (cur <= predEnd) {
-        if (cur >= monthStart && cur <= monthEnd) {
-          predictedDates.add(cur.toISOString().slice(0, 10))
-        }
-        cur.setDate(cur.getDate() + 1)
-      }
+    anchorPeriodStart = new Date(prediction.nextPeriodStart)
+  } else {
+    const lastLog = await prisma.periodLog.findFirst({
+      where: { profileId: profile.id },
+      orderBy: { startDate: 'desc' },
+    })
+    if (lastLog) {
+      anchorPeriodStart = new Date(lastLog.startDate)
+      anchorPeriodStart.setDate(anchorPeriodStart.getDate() + profile.cycleLength)
     }
   }
 
-  if (prediction?.ovulationDay) {
-    const ovDate = new Date(prediction.ovulationDay)
-    ovDate.setHours(0, 0, 0, 0)
-    if (ovDate >= monthStart && ovDate <= monthEnd) {
-      ovulationDateStr = ovDate.toISOString().slice(0, 10)
-    }
-    for (let offset = -5; offset <= 0; offset++) {
-      const fertileDate = new Date(ovDate)
-      fertileDate.setDate(fertileDate.getDate() + offset)
-      if (fertileDate >= monthStart && fertileDate <= monthEnd) {
-        fertileDates.add(fertileDate.toISOString().slice(0, 10))
+  // Project up to 3 future cycles (period, fertile window, ovulation)
+  if (anchorPeriodStart) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const { cycleLength, periodLength } = profile
+
+    for (let cycle = 0; cycle < 3; cycle++) {
+      const cycleStart = new Date(anchorPeriodStart)
+      cycleStart.setDate(cycleStart.getDate() + cycle * cycleLength)
+      cycleStart.setHours(0, 0, 0, 0)
+
+      // Predicted period days — mark as both period and predicted
+      if (cycleStart > today) {
+        const periodEnd = new Date(cycleStart)
+        periodEnd.setDate(periodEnd.getDate() + periodLength - 1)
+        const d = new Date(cycleStart)
+        while (d <= periodEnd) {
+          if (d >= monthStart && d <= monthEnd) {
+            const ds = d.toISOString().slice(0, 10)
+            predictedDates.add(ds)
+            periodDates.add(ds)
+          }
+          d.setDate(d.getDate() + 1)
+        }
       }
-    }
-  } else if (prediction?.fertileStart && prediction?.fertileEnd) {
-    const fStart = new Date(prediction.fertileStart)
-    const fEnd = new Date(prediction.fertileEnd)
-    fStart.setHours(0, 0, 0, 0)
-    fEnd.setHours(0, 0, 0, 0)
-    const cur = new Date(fStart)
-    while (cur <= fEnd) {
-      if (cur >= monthStart && cur <= monthEnd) {
-        fertileDates.add(cur.toISOString().slice(0, 10))
+
+      // Ovulation = next period start - 14 days
+      const ovDay = new Date(cycleStart)
+      ovDay.setDate(ovDay.getDate() - 14)
+      ovDay.setHours(0, 0, 0, 0)
+      if (ovDay >= monthStart && ovDay <= monthEnd) {
+        ovulationDates.add(ovDay.toISOString().slice(0, 10))
       }
-      cur.setDate(cur.getDate() + 1)
+
+      // Fertile window = ovulation - 5 days to ovulation + 1 day
+      for (let offset = -5; offset <= 1; offset++) {
+        const fDay = new Date(ovDay)
+        fDay.setDate(fDay.getDate() + offset)
+        if (fDay >= monthStart && fDay <= monthEnd) {
+          fertileDates.add(fDay.toISOString().slice(0, 10))
+        }
+      }
     }
   }
 
@@ -369,7 +387,7 @@ export async function getCalendarData(
       date: dateStr,
       period: periodDates.has(dateStr),
       fertile: fertileDates.has(dateStr),
-      ovulation: dateStr === ovulationDateStr,
+      ovulation: ovulationDates.has(dateStr),
       predicted: predictedDates.has(dateStr),
     })
     cur.setDate(cur.getDate() + 1)
