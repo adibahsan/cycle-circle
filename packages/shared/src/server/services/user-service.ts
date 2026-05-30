@@ -221,6 +221,10 @@ export async function getUserById(userId: string) {
   return prisma.user.findUnique({ where: { id: userId } })
 }
 
+export async function updateUserName(userId: string, fullName: string) {
+  return prisma.user.update({ where: { id: userId }, data: { fullName } })
+}
+
 export async function getUserByPhone(phone: string) {
   return prisma.user.findFirst({
     where: { phone },

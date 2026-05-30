@@ -8,6 +8,7 @@ import {
   renameProfile as svcRenameProfile,
   updateProfile as svcUpdateProfile,
   removeProfile as svcRemoveProfile,
+  updateUserName as svcUpdateUserName,
 } from '@vesta/shared/server/services'
 
 const createProfileSchema = z.object({
@@ -17,6 +18,7 @@ const createProfileSchema = z.object({
   periodLength: z.number().int().min(1).max(14).optional(),
   lastPeriodStart: z.string().optional(),
   goal: z.string().max(500).optional(),
+  userName: z.string().max(200).optional(),
 })
 
 export async function createProfile(input: z.infer<typeof createProfileSchema>) {
@@ -25,6 +27,10 @@ export async function createProfile(input: z.infer<typeof createProfileSchema>) 
   const data = createProfileSchema.parse(input)
 
   const profile = await svcCreateProfile(user.id, data)
+
+  if (data.userName) {
+    await svcUpdateUserName(user.id, data.userName)
+  }
 
   revalidatePath('/')
   return profile
