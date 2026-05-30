@@ -77,6 +77,28 @@ export async function listFeedback(
   }
 }
 
+// ── Admin detail ─────────────────────────────────────────────────────────────
+
+export async function getFeedbackById(id: string) {
+  const feedback = await prisma.feedback.findUnique({
+    where: { id },
+    include: {
+      user: { select: { id: true, fullName: true, email: true, phone: true } },
+    },
+  })
+
+  if (!feedback) return null
+
+  const profile = feedback.profileId
+    ? await prisma.profile.findUnique({
+        where: { id: feedback.profileId },
+        select: { id: true, name: true, relation: true },
+      })
+    : null
+
+  return { ...feedback, profile }
+}
+
 // ── Admin export ───────────────────────────────────────────────────────────────
 
 export async function exportFeedbackRows() {

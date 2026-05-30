@@ -1,7 +1,7 @@
 import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { requireAdminUser } from './auth-queries'
-import { listFeedback } from '@vesta/shared/server/services'
+import { listFeedback, getFeedbackById } from '@vesta/shared/server/services'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
 interface FeedbackListParams {
@@ -30,6 +30,15 @@ export const getFeedbackList = cache(async (params: FeedbackListParams = {}) => 
   return unstable_cache(
     () => listFeedback(params),
     feedbackCacheKey(params),
+    { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getFeedbackDetail = cache(async (id: string) => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => getFeedbackById(id),
+    ['admin-feedback-detail', id],
     { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
   )()
 })

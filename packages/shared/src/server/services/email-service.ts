@@ -95,7 +95,7 @@ export async function getEmailLogById(id: string) {
   return prisma.emailLog.findUnique({
     where: { id },
     include: {
-      user: { select: { id: true, fullName: true, email: true } },
+      user: { select: { id: true, fullName: true, email: true, language: true } },
       profile: { select: { id: true, name: true } },
     },
   })
