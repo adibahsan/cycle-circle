@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
 import { exportFeedbackCsv } from '@/app/actions/export-actions'
+import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
 
 type FeedbackItem = {
   id: string
@@ -240,25 +242,23 @@ export function FeedbackClient({ data }: FeedbackClientProps) {
 
   return (
     <div className="space-y-6 page-enter">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Feedback</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-            {data.total.toLocaleString()} submission{data.total !== 1 ? 's' : ''} total
-          </p>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleExport}
-          loading={exporting}
-          disabled={exporting}
-        >
-          <Download size={15} />
-          {exporting ? 'Exporting…' : 'Export CSV'}
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Feedback"
+        description={`${data.total.toLocaleString()} submission${data.total !== 1 ? 's' : ''} total`}
+        tags={[adminCacheTags.feedback]}
+        actions={
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleExport}
+            loading={exporting}
+            disabled={exporting}
+          >
+            <Download size={15} />
+            {exporting ? 'Exporting…' : 'Export CSV'}
+          </Button>
+        }
+      />
 
       {/* Filters */}
       <FilterBar

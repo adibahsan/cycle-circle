@@ -6,6 +6,8 @@ import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
 import { Pagination } from '@/components/ui/Pagination'
+import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
 
 type AuditLogRow = {
   id: string
@@ -213,13 +215,11 @@ export function AuditLogClient({ data }: AuditLogClientProps) {
 
   return (
     <div className="space-y-6 page-enter">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Audit Logs</h1>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-          {data.total.toLocaleString()} total entries
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Audit Logs"
+        description={`${data.total.toLocaleString()} total entries`}
+        tags={[adminCacheTags.auditLogs]}
+      />
 
       {/* Filters */}
       <FilterBar

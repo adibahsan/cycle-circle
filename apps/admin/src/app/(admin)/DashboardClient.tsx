@@ -19,6 +19,8 @@ import {
 } from 'lucide-react'
 import { StatCard } from '@/components/ui/StatCard'
 import { Card } from '@/components/ui/Card'
+import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
 
 interface DashboardClientProps {
   stats: {
@@ -77,13 +79,11 @@ export function DashboardClient({ stats, userTrend }: DashboardClientProps) {
 
   return (
     <div className="space-y-8 page-enter">
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Dashboard</h1>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-          Platform overview — last updated just now
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Dashboard"
+        description="Platform overview — last updated just now"
+        tags={[adminCacheTags.dashboard]}
+      />
 
       {/* Stat cards grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

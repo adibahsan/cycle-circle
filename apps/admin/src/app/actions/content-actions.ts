@@ -9,7 +9,15 @@ import {
   updateCategory as svcUpdateCategory,
   removeCategory,
 } from '@vesta/shared/server/services'
-import { revalidatePath } from 'next/cache'
+import { revalidateTag } from 'next/cache'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
+
+function revalidateContentTags(articleId?: string) {
+  revalidateTag(adminCacheTags.content, { expire: 0 })
+  if (articleId) {
+    revalidateTag(adminCacheTags.article(articleId), { expire: 0 })
+  }
+}
 
 export async function createArticle(data: {
   titleEn: string
@@ -25,7 +33,7 @@ export async function createArticle(data: {
 
   const article = await svcCreateArticle(admin.id, data)
 
-  revalidatePath('/content')
+  revalidateContentTags()
   return article
 }
 
@@ -45,8 +53,7 @@ export async function updateArticle(
 
   const article = await svcUpdateArticle(id, data)
 
-  revalidatePath('/content')
-  revalidatePath(`/content/${id}`)
+  revalidateContentTags(id)
   return article
 }
 
@@ -56,7 +63,7 @@ export async function deleteArticle(id: string) {
 
   await removeArticle(id, admin.id)
 
-  revalidatePath('/content')
+  revalidateContentTags(id)
   return { success: true }
 }
 
@@ -65,7 +72,7 @@ export async function createCategory(name: string) {
 
   const category = await svcCreateCategory(name)
 
-  revalidatePath('/content')
+  revalidateContentTags()
   return category
 }
 
@@ -74,7 +81,7 @@ export async function updateCategory(id: string, name: string) {
 
   const category = await svcUpdateCategory(id, name)
 
-  revalidatePath('/content')
+  revalidateContentTags()
   return category
 }
 
@@ -83,6 +90,6 @@ export async function deleteCategory(id: string) {
 
   await removeCategory(id)
 
-  revalidatePath('/content')
+  revalidateContentTags()
   return { success: true }
 }

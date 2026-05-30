@@ -1,0 +1,3 @@
+DATABASE_URL=postgresql://vesta:vesta_dev@localhost:5431/vesta_dev
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=local-dev-jwt-secret-minimum-32-characters-long-enough

@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { getEmailPreviewHtml } from './actions'
+import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 
 type TemplateKey = 'period-alert' | 'fertile-window' | 'logging-reminder'
 type Language = 'en' | 'bn'
@@ -38,13 +39,11 @@ export function EmailPreviewClient() {
         Back to Email Logs
       </Link>
 
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Email Preview</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Preview transactional email templates as they appear to recipients.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Email Preview"
+        description="Preview transactional email templates as they appear to recipients."
+        tags={[]}
+      />
 
       {/* Controls card */}
       <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-gray-100">

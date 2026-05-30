@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic'
-
 import { requireAdminUser } from '@/app/queries/auth-queries'
 import { getEmailLogList, getEmailLogStatsData } from '@/app/queries/email-queries'
 import { EmailsClient } from './EmailsClient'
