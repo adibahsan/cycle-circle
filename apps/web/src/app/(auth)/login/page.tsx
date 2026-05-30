@@ -52,36 +52,16 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    if (devMode) {
-      try {
-        const res = await fetch('/api/auth/dev-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone }),
-        });
-        const data = await res.json().catch(() => ({})) as { error?: string; user?: { profileCompleted?: boolean } };
-        if (!res.ok) {
-          setError(data.error ?? 'Dev login failed.');
-          return;
-        }
-        router.replace(data.user?.profileCompleted ? '/dashboard' : '/onboarding');
-      } catch {
-        setError('Dev login failed. Ensure DEV_MODE=true on the server.');
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-
     try {
       const res = await fetch('/api/auth/otp/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
       });
-      const body = await res.json().catch(() => ({})) as { referenceNo?: string; error?: string };
+      const body = await res.json().catch(() => ({})) as { referenceNo?: string; error?: string | { message: string } };
       if (!res.ok) {
-        setError(body.error ?? 'Failed to send OTP. Please try again.');
+        const msg = typeof body.error === 'object' ? body.error?.message : body.error;
+        setError(msg ?? 'Failed to send OTP. Please try again.');
         return;
       }
       const { referenceNo } = body;
@@ -137,7 +117,7 @@ export default function LoginPage() {
         </h2>
         <p className="text-sm text-[var(--color-text-muted)] mb-5">
           {devMode
-            ? 'Dev mode: sign in with phone only (OTP skipped, real database)'
+            ? 'Dev mode: OTP verification with test codes'
             : 'Enter your phone number to receive a one-time code'}
         </p>
 
@@ -188,12 +168,12 @@ export default function LoginPage() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
-              {devMode ? 'Signing in…' : 'Sending…'}
+              {'Sending…'}
             </span>
           ) : (
             <span className="flex items-center gap-2">
               <Phone size={18} aria-hidden="true" />
-              {devMode ? 'Continue (dev)' : t('auth.sendOtp')}
+              {devMode ? `${t('auth.sendOtp')} (dev)` : t('auth.sendOtp')}
             </span>
           )}
         </Button>

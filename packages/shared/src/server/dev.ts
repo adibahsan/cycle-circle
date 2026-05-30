@@ -1,6 +1,6 @@
 import { env } from '../utils/env'
 
-/** Dev-only auth bypass. Never enabled in production even if DEV_MODE=true. */
+/** Dev OTP codes enabled when DEV_MODE=true, regardless of environment. */
 export function isDevModeEnabled(): boolean {
-  return env.DEV_MODE && env.NODE_ENV !== 'production'
+  return env.DEV_MODE
 }

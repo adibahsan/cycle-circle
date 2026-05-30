@@ -5,6 +5,8 @@ import { issueJwt, setAuthCookie } from '@vesta/shared/server/auth'
 import { verifyOtp } from '@vesta/shared/server/adapters/bdapps'
 import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
 import { findOtpChallenge, completeOtpAuth } from '@vesta/shared/server/services'
+import { isDevModeEnabled } from '@vesta/shared/server/dev'
+import { DEV_OTP_CODES } from '@vesta/shared/utils/config'
 
 const bodySchema = z.object({
   referenceNo: z.string().min(1, 'referenceNo is required'),
@@ -32,7 +34,13 @@ export async function POST(request: Request): Promise<Response> {
       throw new ApiError(400, 'OTP challenge has expired', 'CHALLENGE_EXPIRED')
     }
 
-    await verifyOtp(body.referenceNo, body.otp)
+    if (isDevModeEnabled()) {
+      if (!DEV_OTP_CODES.includes(body.otp)) {
+        throw new ApiError(400, 'Invalid OTP code', 'INVALID_OTP')
+      }
+    } else {
+      await verifyOtp(body.referenceNo, body.otp)
+    }
 
     const user = await completeOtpAuth(challenge.id, challenge.phone)
 
