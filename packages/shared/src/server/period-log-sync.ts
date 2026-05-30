@@ -2,6 +2,14 @@ import type { FlowIntensity, PeriodLog, Profile } from '@prisma/client'
 import { prisma } from './db'
 import { enqueueJob } from './adapters/jobs'
 
+/** Format a Date as YYYY-MM-DD in local timezone (avoids UTC shift from toISOString). */
+export function toLocalDateStr(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 /** Add each day in [start, end] that falls within [monthStart, monthEnd] to periodDates. */
 export function addPeriodDatesInRange(
   start: Date,
@@ -17,7 +25,7 @@ export function addPeriodDatesInRange(
 
   while (cur <= endDay) {
     if (cur >= monthStart && cur <= monthEnd) {
-      periodDates.add(cur.toISOString().slice(0, 10))
+      periodDates.add(toLocalDateStr(cur))
     }
     cur.setDate(cur.getDate() + 1)
   }

@@ -3,6 +3,7 @@ import {
   getLatestPeriodLog,
   ensurePeriodLogFromProfile,
   addPeriodDatesInRange,
+  toLocalDateStr,
 } from '../period-log-sync'
 
 // ── Ownership helpers ──────────────────────────────────────────────────────────
@@ -352,7 +353,7 @@ export async function getCalendarData(
         const d = new Date(cycleStart)
         while (d <= periodEnd) {
           if (d >= monthStart && d <= monthEnd) {
-            const ds = d.toISOString().slice(0, 10)
+            const ds = toLocalDateStr(d)
             predictedDates.add(ds)
             periodDates.add(ds)
           }
@@ -365,7 +366,7 @@ export async function getCalendarData(
       ovDay.setDate(ovDay.getDate() - 14)
       ovDay.setHours(0, 0, 0, 0)
       if (ovDay >= monthStart && ovDay <= monthEnd) {
-        ovulationDates.add(ovDay.toISOString().slice(0, 10))
+        ovulationDates.add(toLocalDateStr(ovDay))
       }
 
       // Fertile window = ovulation - 5 days to ovulation + 1 day
@@ -373,7 +374,7 @@ export async function getCalendarData(
         const fDay = new Date(ovDay)
         fDay.setDate(fDay.getDate() + offset)
         if (fDay >= monthStart && fDay <= monthEnd) {
-          fertileDates.add(fDay.toISOString().slice(0, 10))
+          fertileDates.add(toLocalDateStr(fDay))
         }
       }
     }
@@ -382,7 +383,7 @@ export async function getCalendarData(
   const days: CalendarDay[] = []
   const cur = new Date(monthStart)
   while (cur <= monthEnd) {
-    const dateStr = cur.toISOString().slice(0, 10)
+    const dateStr = toLocalDateStr(cur)
     days.push({
       date: dateStr,
       period: periodDates.has(dateStr),
