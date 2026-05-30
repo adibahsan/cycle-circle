@@ -1,11 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/lib/store';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import VestaLogo from '@/components/ui/VestaLogo';
+import { ProfileCompletionModal } from '@/components/ProfileCompletionModal';
 import {
   Home,
   CalendarDays,
@@ -18,6 +20,8 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
+
+const PROFILE_MODAL_DISMISSED_KEY = 'vesta_profile_modal_dismissed';
 
 const NAV_ITEMS = [
   { href: '/dashboard', icon: Home, labelKey: 'nav.dashboard' },
@@ -37,6 +41,32 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const { t } = useTranslation();
   const { theme, setTheme, activeProfileId: _activeProfileId } = useAppStore();
+
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+
+  useEffect(() => {
+    // Only show once per browser session — if already dismissed, skip the fetch entirely
+    if (sessionStorage.getItem(PROFILE_MODAL_DISMISSED_KEY)) return;
+
+    let cancelled = false;
+    fetch('/api/auth/status')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { user?: { profileCompleted?: boolean; authMethod?: string } } | null) => {
+        if (cancelled) return;
+        const user = data?.user;
+        if (user && user.profileCompleted === false && user.authMethod === 'EMAIL') {
+          setShowCompletionModal(true);
+        }
+      })
+      .catch(() => {/* silently ignore — modal is non-critical */});
+
+    return () => { cancelled = true; };
+  }, []);
+
+  function handleModalClose() {
+    setShowCompletionModal(false);
+    sessionStorage.setItem(PROFILE_MODAL_DISMISSED_KEY, '1');
+  }
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -180,6 +210,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           })}
         </div>
       </nav>
+
+      {/* ── Profile Completion Modal ── */}
+      <ProfileCompletionModal
+        open={showCompletionModal}
+        onClose={handleModalClose}
+      />
     </div>
   );
 }

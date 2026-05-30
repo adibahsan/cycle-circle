@@ -123,8 +123,8 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
 
                 <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-4 space-y-2">
                   <p className="text-sm text-[var(--color-text-muted)]">Charge to mobile balance</p>
-                  <p className="text-2xl font-bold text-[var(--color-text-primary)]">৳99</p>
-                  <p className="text-xs text-[var(--color-text-muted)]">per month · Vesta Pro</p>
+                  <p className="text-2xl font-bold text-[var(--color-text-primary)]">৳5</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">per day · Vesta Pro</p>
                   <div className="pt-2 border-t border-[var(--color-border)]">
                     <p className="text-xs text-[var(--color-text-secondary)]">Billing number</p>
                     <p className="text-sm font-semibold text-[var(--color-text-primary)] font-mono">
@@ -134,7 +134,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                 </div>
 
                 <p className="text-xs text-[var(--color-text-muted)] text-center leading-relaxed">
-                  By confirming, ৳99 will be deducted from your mobile balance each month. Cancel
+                  By confirming, ৳5 will be deducted from your mobile balance each day. Cancel
                   anytime.
                 </p>
 
@@ -251,7 +251,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
       const res = await fetch('/api/billing/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: 99 }),
+        body: JSON.stringify({ amount: 5 }),
       })
       if (!res.ok) throw new Error('Subscribe request failed')
       setUpgradeStep('success')
@@ -365,8 +365,8 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
 
                 <div>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl font-extrabold text-white">৳99</span>
-                    <span className="text-white/70 text-sm">/month</span>
+                    <span className="text-3xl font-extrabold text-white">৳5</span>
+                    <span className="text-white/70 text-sm">/day</span>
                   </div>
                   <p className="text-white/60 text-xs mt-0.5">
                     Charged to your mobile balance via BDApps

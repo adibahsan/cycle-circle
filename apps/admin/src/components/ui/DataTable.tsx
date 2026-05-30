@@ -19,6 +19,10 @@ interface DataTableProps<T> {
   emptyMessage?: string;
   onRowClick?: (row: T) => void;
   keyExtractor?: (row: T) => string | number;
+  /** When provided, sorting pushes URL params instead of sorting client-side. */
+  sortKey?: string | null;
+  sortOrder?: 'asc' | 'desc';
+  onSortChange?: (key: string, order: 'asc' | 'desc') => void;
 }
 
 type SortDirection = 'asc' | 'desc';
@@ -30,31 +34,47 @@ export function DataTable<T extends Record<string, unknown>>({
   emptyMessage = 'No data found.',
   onRowClick,
   keyExtractor,
+  sortKey: controlledSortKey,
+  sortOrder: controlledSortOrder,
+  onSortChange,
 }: DataTableProps<T>) {
-  const [sortKey, setSortKey] = useState<string | null>(null);
-  const [sortDir, setSortDir] = useState<SortDirection>('asc');
+  // Internal state used only when onSortChange is not provided (client-side sort)
+  const [localSortKey, setLocalSortKey] = useState<string | null>(null);
+  const [localSortDir, setLocalSortDir] = useState<SortDirection>('asc');
+
+  const isControlled = typeof onSortChange === 'function';
+  const sortKey = isControlled ? (controlledSortKey ?? null) : localSortKey;
+  const sortDir = isControlled ? (controlledSortOrder ?? 'asc') : localSortDir;
 
   function handleSort(col: Column<T>) {
     if (!col.sortable) return;
-    if (sortKey === col.key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    if (isControlled) {
+      const nextOrder = sortKey === col.key && sortDir === 'asc' ? 'desc' : 'asc';
+      onSortChange!(col.key, nextOrder);
     } else {
-      setSortKey(col.key);
-      setSortDir('asc');
+      if (localSortKey === col.key) {
+        setLocalSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setLocalSortKey(col.key);
+        setLocalSortDir('asc');
+      }
     }
   }
 
-  const sortedData = sortKey
-    ? [...data].sort((a, b) => {
-        const aVal = a[sortKey] as string | number | null | undefined;
-        const bVal = b[sortKey] as string | number | null | undefined;
-        if (aVal === bVal) return 0;
-        if (aVal == null) return sortDir === 'asc' ? 1 : -1;
-        if (bVal == null) return sortDir === 'asc' ? -1 : 1;
-        const cmp = aVal < bVal ? -1 : 1;
-        return sortDir === 'asc' ? cmp : -cmp;
-      })
-    : data;
+  // Client-side sort is only applied when not controlled (no onSortChange).
+  // When controlled, the server is responsible for returning sorted data.
+  const sortedData =
+    !isControlled && sortKey
+      ? [...data].sort((a, b) => {
+          const aVal = a[sortKey] as string | number | null | undefined;
+          const bVal = b[sortKey] as string | number | null | undefined;
+          if (aVal === bVal) return 0;
+          if (aVal == null) return sortDir === 'asc' ? 1 : -1;
+          if (bVal == null) return sortDir === 'asc' ? -1 : 1;
+          const cmp = aVal < bVal ? -1 : 1;
+          return sortDir === 'asc' ? cmp : -cmp;
+        })
+      : data;
 
   return (
     <div className="w-full overflow-auto rounded-2xl border border-[var(--color-border)] glass">

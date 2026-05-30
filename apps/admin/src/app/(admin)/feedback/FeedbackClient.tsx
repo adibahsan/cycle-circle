@@ -125,6 +125,7 @@ export function FeedbackClient({ data }: FeedbackClientProps) {
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
   const [exporting, setExporting] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
 
   const currentCategory = searchParams.get('category') ?? 'all'
   const currentMinRating = searchParams.get('minRating') ?? 'all'
@@ -164,6 +165,17 @@ export function FeedbackClient({ data }: FeedbackClientProps) {
   function handlePageSizeChange(pageSize: number) {
     updateParams({ pageSize, page: 1 })
   }
+
+  const filteredItems = searchTerm.trim()
+    ? data.items.filter((item) => {
+        const term = searchTerm.toLowerCase()
+        return (
+          item.message.toLowerCase().includes(term) ||
+          (item.user.fullName ?? '').toLowerCase().includes(term) ||
+          (item.user.email ?? '').toLowerCase().includes(term)
+        )
+      })
+    : data.items
 
   async function handleExport() {
     setExporting(true)
@@ -250,8 +262,8 @@ export function FeedbackClient({ data }: FeedbackClientProps) {
 
       {/* Filters */}
       <FilterBar
-        searchValue=""
-        onSearchChange={() => {}}
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
         searchPlaceholder="Search feedback…"
         filters={[
           {
@@ -274,7 +286,7 @@ export function FeedbackClient({ data }: FeedbackClientProps) {
       {/* Table */}
       <DataTable
         columns={COLUMNS}
-        data={data.items as unknown as FeedbackItem[]}
+        data={filteredItems as unknown as FeedbackItem[]}
         emptyMessage="No feedback matches your filters."
         keyExtractor={(row) => row.id}
       />

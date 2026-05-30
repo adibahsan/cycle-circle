@@ -22,6 +22,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 
 import { Card } from '@/components/ui/Card'
 import { useAppStore } from '@/lib/store'
+import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
 import '@vesta/shared/utils/i18n'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -55,11 +56,21 @@ interface DayMeta {
   isFuturePredicted: boolean
 }
 
+interface SymptomLog {
+  id: string
+  profileId: string
+  date: Date
+  category: string
+  symptomId: string
+  value: string
+}
+
 interface Props {
   profiles: PrismaProfile[]
   activeProfileId: string
   month: string
   days: CalendarDay[] | null
+  symptomLogs: SymptomLog[]
 }
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
@@ -195,10 +206,11 @@ function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
 interface DayDetailProps {
   date: Date
   meta: DayMeta
+  symptoms: SymptomLog[]
   onClose: () => void
 }
 
-function DayDetail({ date, meta, onClose }: DayDetailProps) {
+function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
   const { t } = useTranslation()
   const { language } = useAppStore()
   const dateLocale = language === 'bn' ? bn : undefined
@@ -264,7 +276,32 @@ function DayDetail({ date, meta, onClose }: DayDetailProps) {
           )}
         </div>
 
-        <p className="text-xs text-[var(--color-text-muted)]">{t('calendar.noSymptomsLogged')}</p>
+        {/* Symptoms */}
+        {symptoms.length === 0 ? (
+          <p className="text-xs text-[var(--color-text-muted)]">{t('calendar.noSymptomsLogged')}</p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {symptoms.map((log) => {
+              const symptomDef = SYMPTOMS_DATA.find((s) => s.id === log.symptomId)
+              if (!symptomDef) return null
+              const name = language === 'bn' ? symptomDef.nameBn : symptomDef.nameEn
+              return (
+                <div
+                  key={log.id}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
+                  style={{
+                    background: 'var(--color-bg-secondary)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text-secondary)',
+                  }}
+                >
+                  <span aria-hidden="true">{symptomDef.icon}</span>
+                  <span>{name}</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </Card>
     </motion.div>
   )
@@ -272,7 +309,7 @@ function DayDetail({ date, meta, onClose }: DayDetailProps) {
 
 // ─── Calendar Client ───────────────────────────────────────────────────────────
 
-export function CalendarClient({ profiles: _profiles, activeProfileId: _activeProfileId, month, days }: Props) {
+export function CalendarClient({ profiles: _profiles, activeProfileId: _activeProfileId, month, days, symptomLogs }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const { language } = useAppStore()
@@ -325,9 +362,25 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
     return map
   }, [gridDays, apiCalendarMap, today])
 
+  // Build a per-date symptom map from server-provided logs
+  const symptomsByDate = useMemo(() => {
+    const map = new Map<string, SymptomLog[]>()
+    for (const log of symptomLogs) {
+      const dateStr = format(new Date(log.date), 'yyyy-MM-dd')
+      const existing = map.get(dateStr) ?? []
+      existing.push(log)
+      map.set(dateStr, existing)
+    }
+    return map
+  }, [symptomLogs])
+
   const selectedMeta = selectedDate
     ? dayMetaMap.get(format(selectedDate, 'yyyy-MM-dd'))
     : null
+
+  const selectedSymptoms = selectedDate
+    ? (symptomsByDate.get(format(selectedDate, 'yyyy-MM-dd')) ?? [])
+    : []
 
   // Month navigation — update the URL so the RSC re-fetches data
   const prevMonth = () => {
@@ -481,6 +534,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
               key={format(selectedDate, 'yyyy-MM-dd')}
               date={selectedDate}
               meta={selectedMeta}
+              symptoms={selectedSymptoms}
               onClose={() => setSelectedDate(null)}
             />
           )}

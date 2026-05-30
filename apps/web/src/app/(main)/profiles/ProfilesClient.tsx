@@ -4,11 +4,11 @@ import { useState, type MouseEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight } from 'lucide-react';
+import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight, Pencil } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import type { Profile } from '@prisma/client';
 import type { ProfileRelation } from '@vesta/shared/types';
-import { createProfile, deleteProfile } from '@/app/actions/profile-actions';
+import { createProfile, deleteProfile, updateProfile } from '@/app/actions/profile-actions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import '@vesta/shared/utils/i18n';
@@ -103,9 +103,10 @@ interface ProfileCardProps {
   isActive: boolean;
   onSwitch: () => void;
   onDelete: () => void;
+  onEdit: () => void;
 }
 
-function ProfileCard({ profile, isActive, onSwitch, onDelete }: ProfileCardProps) {
+function ProfileCard({ profile, isActive, onSwitch, onDelete, onEdit }: ProfileCardProps) {
   const { t } = useTranslation();
   const relation = normalizeRelation(profile.relation);
   const colors = RELATION_COLORS[relation];
@@ -196,6 +197,22 @@ function ProfileCard({ profile, isActive, onSwitch, onDelete }: ProfileCardProps
               <ChevronRight size={16} className="text-[var(--color-text-muted)]" />
             )}
 
+            {/* Edit button — always visible */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+              style={{
+                background: 'rgba(155,127,212,0.1)',
+                border: '1px solid rgba(155,127,212,0.25)',
+              }}
+              aria-label={`Edit ${profile.name}`}
+            >
+              <Pencil size={13} color="#9B7FD4" aria-hidden="true" />
+            </button>
+
             {/* Delete — only for non-active profiles */}
             {!isActive && (
               <button
@@ -210,7 +227,7 @@ function ProfileCard({ profile, isActive, onSwitch, onDelete }: ProfileCardProps
                 }}
                 aria-label={`${t('common.delete')} ${profile.name}`}
               >
-                <Trash2 size={13} color="#E8476C" />
+                <Trash2 size={13} color="#E8476C" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -384,6 +401,178 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
   );
 }
 
+// ─── Edit Profile Form ────────────────────────────────────────────────────────
+
+interface EditProfileFormProps {
+  profile: Profile;
+  onClose: () => void;
+  onSubmit: (data: {
+    name: string;
+    relation: ProfileRelation;
+    cycleLength: number;
+    periodLength: number;
+  }) => void;
+}
+
+function EditProfileForm({ profile, onClose, onSubmit }: EditProfileFormProps) {
+  const { t } = useTranslation();
+  const [name, setName] = useState(profile.name);
+  const [relation, setRelation] = useState<ProfileRelation>(normalizeRelation(profile.relation));
+  const [cycleLength, setCycleLength] = useState(profile.cycleLength);
+  const [periodLength, setPeriodLength] = useState(profile.periodLength);
+  const [nameError, setNameError] = useState('');
+
+  function handleSubmit() {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setNameError('Name is required');
+      return;
+    }
+    if (trimmed.length < 2) {
+      setNameError('Name must be at least 2 characters');
+      return;
+    }
+    onSubmit({ name: trimmed, relation, cycleLength, periodLength });
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-8"
+      style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+    >
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-profile-dialog-title"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 40 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+        className="w-full max-w-md rounded-2xl border overflow-hidden overscroll-contain"
+        style={{
+          background: 'var(--color-bg-card)',
+          borderColor: 'var(--color-primary)',
+          boxShadow: '0 0 0 2px rgba(232,71,108,0.15), 0 8px 32px rgba(232,71,108,0.1)',
+        }}
+        onClick={(e: MouseEvent) => e.stopPropagation()}
+      >
+        {/* Form header */}
+        <div
+          className="flex items-center justify-between px-5 py-4 border-b"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <div className="flex items-center gap-2">
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)' }}
+            >
+              <Pencil size={15} color="#fff" />
+            </div>
+            <h3 id="edit-profile-dialog-title" className="font-bold text-[var(--color-text-primary)] text-base">
+              Edit Profile
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
+            style={{ background: 'var(--color-bg-secondary)' }}
+            aria-label={t('common.cancel')}
+          >
+            <X size={14} className="text-[var(--color-text-muted)]" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 flex flex-col gap-4">
+          {/* Name */}
+          <Input
+            label="Name"
+            placeholder="e.g. Nusrat…"
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (nameError) setNameError('');
+            }}
+            error={nameError}
+            maxLength={30}
+            autoFocus
+          />
+
+          {/* Relation picker */}
+          <div>
+            <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+              Relation
+            </p>
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+              {RELATIONS.map((rel) => {
+                const isSelected = relation === rel;
+                const colors = RELATION_COLORS[rel];
+                return (
+                  <button
+                    key={rel}
+                    onClick={() => setRelation(rel)}
+                    className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                    style={{
+                      background: isSelected ? colors.bg : 'var(--color-bg-secondary)',
+                      borderColor: isSelected ? colors.border : 'var(--color-border)',
+                      boxShadow: isSelected ? `0 0 0 1.5px ${colors.border}` : 'none',
+                    }}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="text-lg leading-none">{RELATION_ICONS[rel]}</span>
+                    <span
+                      className="text-[11px] font-semibold"
+                      style={{ color: isSelected ? colors.text : 'var(--color-text-muted)' }}
+                    >
+                      {t(`profiles.${rel}`)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Steppers */}
+          <div
+            className="rounded-xl p-3 flex flex-col gap-3"
+            style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}
+          >
+            <Stepper
+              label="Cycle length"
+              value={cycleLength}
+              min={21}
+              max={45}
+              onChange={setCycleLength}
+            />
+            <div style={{ height: '1px', background: 'var(--color-border)' }} />
+            <Stepper
+              label="Period length"
+              value={periodLength}
+              min={1}
+              max={10}
+              onChange={setPeriodLength}
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
+              {t('common.cancel')}
+            </Button>
+            <Button size="sm" onClick={handleSubmit} className="flex-1">
+              Save Changes
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // ─── Delete Confirm Dialog ────────────────────────────────────────────────────
 
 interface DeleteDialogProps {
@@ -460,6 +649,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
 
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [editTarget, setEditTarget] = useState<Profile | null>(null);
   const [justSwitched, setJustSwitched] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -510,6 +700,30 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
     }
   }
 
+  async function handleEditSubmit(data: {
+    name: string;
+    relation: ProfileRelation;
+    cycleLength: number;
+    periodLength: number;
+  }) {
+    if (!editTarget) return;
+    setIsPending(true);
+    try {
+      await updateProfile({
+        profileId: editTarget.id,
+        name: data.name,
+        relation: toDbRelation(data.relation),
+        cycleLength: data.cycleLength,
+        periodLength: data.periodLength,
+      });
+      setEditTarget(null);
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+    } finally {
+      setIsPending(false);
+    }
+  }
+
   return (
     <>
       <div className="flex flex-col min-h-[calc(100dvh-8rem)] pb-6">
@@ -538,6 +752,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                 isActive={profile.id === activeProfileId}
                 onSwitch={() => handleSwitchProfile(profile.id)}
                 onDelete={() => setDeleteTarget({ id: profile.id, name: profile.name })}
+                onEdit={() => setEditTarget(profile)}
               />
             ))}
           </AnimatePresence>
@@ -659,6 +874,18 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             profileName={deleteTarget.name}
             onConfirm={handleDeleteConfirm}
             onCancel={() => setDeleteTarget(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Edit profile dialog */}
+      <AnimatePresence>
+        {editTarget && (
+          <EditProfileForm
+            key={editTarget.id}
+            profile={editTarget}
+            onClose={() => setEditTarget(null)}
+            onSubmit={handleEditSubmit}
           />
         )}
       </AnimatePresence>

@@ -31,28 +31,32 @@ export async function createProfile(
     goal?: string
   },
 ) {
-  const count = await prisma.profile.count({ where: { userId } })
-  if (count >= 6) throw new Error('Maximum of 6 profiles allowed')
+  const profile = await prisma.$transaction(async (tx) => {
+    const count = await tx.profile.count({ where: { userId } })
+    if (count >= 6) throw new Error('Maximum of 6 profiles allowed')
 
-  const profile = await prisma.profile.create({
-    data: {
-      userId,
-      name: data.name,
-      relation: data.relation,
-      cycleLength: data.cycleLength ?? 28,
-      periodLength: data.periodLength ?? 5,
-      lastPeriodStart: data.lastPeriodStart ? new Date(data.lastPeriodStart) : undefined,
-      goal: data.goal,
-    },
-  })
+    const created = await tx.profile.create({
+      data: {
+        userId,
+        name: data.name,
+        relation: data.relation,
+        cycleLength: data.cycleLength ?? 28,
+        periodLength: data.periodLength ?? 5,
+        lastPeriodStart: data.lastPeriodStart ? new Date(data.lastPeriodStart) : undefined,
+        goal: data.goal,
+      },
+    })
 
-  await prisma.notificationPreference.create({
-    data: {
-      profileId: profile.id,
-      periodAlert: true,
-      fertileWindow: true,
-      loggingReminder: true,
-    },
+    await tx.notificationPreference.create({
+      data: {
+        profileId: created.id,
+        periodAlert: true,
+        fertileWindow: true,
+        loggingReminder: true,
+      },
+    })
+
+    return created
   })
 
   if (data.lastPeriodStart) {
@@ -67,6 +71,28 @@ export async function renameProfile(profileId: string, userId: string, name: str
   return prisma.profile.update({
     where: { id: profileId },
     data: { name },
+  })
+}
+
+export async function updateProfile(
+  profileId: string,
+  userId: string,
+  data: {
+    name?: string
+    relation?: 'SELF' | 'WIFE' | 'SISTER' | 'MOTHER' | 'DAUGHTER' | 'GIRLFRIEND'
+    cycleLength?: number
+    periodLength?: number
+  },
+) {
+  await assertProfileOwnership(profileId, userId)
+  return prisma.profile.update({
+    where: { id: profileId },
+    data: {
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.relation !== undefined && { relation: data.relation }),
+      ...(data.cycleLength !== undefined && { cycleLength: data.cycleLength }),
+      ...(data.periodLength !== undefined && { periodLength: data.periodLength }),
+    },
   })
 }
 

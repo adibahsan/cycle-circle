@@ -30,14 +30,22 @@ export async function listFeedback(
     pageSize?: number
     category?: string
     minRating?: number
+    dateFrom?: Date
+    dateTo?: Date
   } = {},
 ) {
-  const { page = 1, pageSize = 20, category, minRating } = params
+  const { page = 1, pageSize = 20, category, minRating, dateFrom, dateTo } = params
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {}
   if (category && category !== 'all') where.category = category
   if (minRating) where.rating = { gte: minRating }
+  if (dateFrom || dateTo) {
+    where.createdAt = {
+      ...(dateFrom ? { gte: dateFrom } : {}),
+      ...(dateTo ? { lte: dateTo } : {}),
+    }
+  }
 
   const [items, total] = await Promise.all([
     prisma.feedback.findMany({

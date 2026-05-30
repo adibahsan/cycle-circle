@@ -128,6 +128,8 @@ export async function updateArticle(
     if (existing && !existing.publishedAt) {
       updateData.publishedAt = new Date()
     }
+  } else if (data.status === 'DRAFT' || data.status === 'ARCHIVED') {
+    updateData.publishedAt = null
   }
 
   if (data.cyclePhases) {
@@ -160,6 +162,11 @@ export async function removeArticle(id: string, adminId: string) {
 export async function createCategory(name: string) {
   const slug = slugify(name)
   return prisma.articleCategory.create({ data: { name, slug } })
+}
+
+export async function updateCategory(id: string, name: string) {
+  const slug = slugify(name)
+  return prisma.articleCategory.update({ where: { id }, data: { name, slug } })
 }
 
 export async function removeCategory(id: string) {
