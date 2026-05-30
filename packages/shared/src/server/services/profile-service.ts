@@ -1,3 +1,4 @@
+import type { FlowIntensity } from '@prisma/client'
 import { prisma } from '../db'
 import { ensurePeriodLogFromProfile } from '../period-log-sync'
 
@@ -28,6 +29,7 @@ export async function createProfile(
     cycleLength?: number
     periodLength?: number
     lastPeriodStart?: string
+    flowIntensity?: FlowIntensity
     goal?: string
   },
 ) {
@@ -60,7 +62,7 @@ export async function createProfile(
   })
 
   if (data.lastPeriodStart) {
-    await ensurePeriodLogFromProfile(profile)
+    await ensurePeriodLogFromProfile(profile, data.flowIntensity)
   }
 
   return profile

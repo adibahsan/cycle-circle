@@ -12,7 +12,7 @@ function mapPartialAuthUser(raw: {
 }) {
   return {
     id: raw.id,
-    phone: String(raw.phone ?? '').replace(/^tel:/, ''),
+    phone: String(raw.phone ?? '').replace(/^\+/, ''),
     authMethod: 'otp' as const,
     subscriptionStatus: 'free' as const,
     language: 'en' as const,
