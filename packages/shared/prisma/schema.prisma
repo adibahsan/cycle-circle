@@ -103,6 +103,31 @@ enum SmsBroadcastStatus {
   FAILED
 }
 
+enum EmailType {
+  MAGIC_LINK
+  PERIOD_ALERT
+  FERTILE_ALERT
+  LOGGING_REMINDER
+}
+
+enum EmailStatus {
+  SENT
+  FAILED
+}
+
+enum EmailProvider {
+  RESEND
+  SMTP
+}
+
+enum DeliveryStatus {
+  PENDING
+  DELIVERED
+  BOUNCED
+  COMPLAINED
+  DELAYED
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
@@ -132,6 +157,7 @@ model User {
   articles        Article[]
   smsBroadcasts   SmsBroadcast[]
   adminAuditLogs  AdminAuditLog[]
+  emailLogs       EmailLog[]
 
   @@index([createdAt])
   @@index([lastLoginAt])
@@ -155,6 +181,7 @@ model Profile {
   symptomLogs      SymptomLog[]
   predictions      Prediction[]
   notificationPref NotificationPreference?
+  emailLogs        EmailLog[]
 }
 
 model PeriodLog {
@@ -367,4 +394,28 @@ model AdminAuditLog {
   @@index([adminId])
   @@index([targetType, targetId])
   @@index([createdAt])
+}
+
+model EmailLog {
+  id             String         @id @default(cuid())
+  type           EmailType
+  to             String
+  subject        String
+  status         EmailStatus
+  error          String?
+  provider       EmailProvider
+  resendId       String?
+  deliveryStatus DeliveryStatus @default(PENDING)
+  userId         String?
+  profileId      String?
+  sentAt         DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  profile Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+
+  @@index([to])
+  @@index([type, profileId, sentAt])
+  @@index([resendId])
+  @@index([sentAt])
 }

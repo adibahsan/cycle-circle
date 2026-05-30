@@ -1,6 +1,6 @@
 import { differenceInDays } from 'date-fns'
 import { withCronAuth } from '@vesta/shared/server/middleware'
-import { getProfilesForReminders } from '@vesta/shared/server/services'
+import { getProfilesForReminders, wasEmailSentToday } from '@vesta/shared/server/services'
 import {
   sendPeriodAlert,
   sendFertileAlert,
@@ -23,6 +23,7 @@ export const POST = withCronAuth(async () => {
   let fertileAlerts = 0
   let reminders = 0
   let errors = 0
+  let skipped = 0
 
   const profilesWithData = await getProfilesForReminders()
 
@@ -40,41 +41,53 @@ export const POST = withCronAuth(async () => {
       if (prefs.periodAlert && prediction) {
         const daysUntil = differenceInDays(prediction.nextPeriodStart, today)
         if (daysUntil >= 0 && daysUntil <= 2) {
-          await sendPeriodAlert({
-            email: user.email,
-            phone: user.phone,
-            userName: user.fullName ?? 'User',
-            profileName: profile.name,
-            language,
-            predictedDate: prediction.nextPeriodStart
-              .toISOString()
-              .split('T')[0]!,
-            daysUntil,
-            isProSubscriber,
-          })
-          periodAlerts++
+          if (await wasEmailSentToday('PERIOD_ALERT', profile.id)) {
+            skipped++
+          } else {
+            await sendPeriodAlert({
+              email: user.email,
+              phone: user.phone,
+              userName: user.fullName ?? 'User',
+              profileName: profile.name,
+              language,
+              predictedDate: prediction.nextPeriodStart
+                .toISOString()
+                .split('T')[0]!,
+              daysUntil,
+              isProSubscriber,
+              userId: user.id,
+              profileId: profile.id,
+            })
+            periodAlerts++
+          }
         }
       }
 
       if (prefs.fertileWindow && prediction) {
         const fertileStartDiff = differenceInDays(prediction.fertileStart, today)
         if (fertileStartDiff === 0) {
-          await sendFertileAlert({
-            email: user.email,
-            phone: user.phone,
-            userName: user.fullName ?? 'User',
-            profileName: profile.name,
-            language,
-            fertileStart: prediction.fertileStart
-              .toISOString()
-              .split('T')[0]!,
-            fertileEnd: prediction.fertileEnd.toISOString().split('T')[0]!,
-            ovulationDate: prediction.ovulationDay
-              .toISOString()
-              .split('T')[0]!,
-            isProSubscriber,
-          })
-          fertileAlerts++
+          if (await wasEmailSentToday('FERTILE_ALERT', profile.id)) {
+            skipped++
+          } else {
+            await sendFertileAlert({
+              email: user.email,
+              phone: user.phone,
+              userName: user.fullName ?? 'User',
+              profileName: profile.name,
+              language,
+              fertileStart: prediction.fertileStart
+                .toISOString()
+                .split('T')[0]!,
+              fertileEnd: prediction.fertileEnd.toISOString().split('T')[0]!,
+              ovulationDate: prediction.ovulationDay
+                .toISOString()
+                .split('T')[0]!,
+              isProSubscriber,
+              userId: user.id,
+              profileId: profile.id,
+            })
+            fertileAlerts++
+          }
         }
       }
 
@@ -84,16 +97,22 @@ export const POST = withCronAuth(async () => {
           ? differenceInDays(today, lastLog.startDate)
           : 999
         if (daysSince >= 3) {
-          await sendLoggingReminder({
-            email: user.email,
-            phone: user.phone,
-            userName: user.fullName ?? 'User',
-            profileName: profile.name,
-            language,
-            daysSinceLastLog: daysSince,
-            isProSubscriber,
-          })
-          reminders++
+          if (await wasEmailSentToday('LOGGING_REMINDER', profile.id)) {
+            skipped++
+          } else {
+            await sendLoggingReminder({
+              email: user.email,
+              phone: user.phone,
+              userName: user.fullName ?? 'User',
+              profileName: profile.name,
+              language,
+              daysSinceLastLog: daysSince,
+              isProSubscriber,
+              userId: user.id,
+              profileId: profile.id,
+            })
+            reminders++
+          }
         }
       }
     } catch (err) {
@@ -111,5 +130,6 @@ export const POST = withCronAuth(async () => {
     fertileAlerts,
     reminders,
     errors,
+    skipped,
   })
 })

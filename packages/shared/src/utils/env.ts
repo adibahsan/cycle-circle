@@ -20,6 +20,7 @@ const envSchema = z.object({
   // Email
   RESEND_API_KEY: z.string().optional(),
   MAILPIT_SMTP_URL: z.string().default('smtp://localhost:1025'),
+  RESEND_WEBHOOK_SECRET: z.string().optional(),
 
   // Cron (required for web app, optional for admin)
   CRON_SECRET: z.string().optional(),
