@@ -1,12 +1,46 @@
-export const openApiSpec = {
+type CallbackTargets = {
+  smsReceive: string;
+  smsReport: string;
+  ussdReceive: string;
+  subscriptionNotify: string;
+  caasNotify: string;
+};
+
+type OpenApiOptions = {
+  publicBaseUrl?: string;
+  callbackBaseUrl?: string;
+};
+
+const DEFAULT_PUBLIC_BASE_URL = 'http://localhost:7010';
+const CALLBACK_PATHS = {
+  smsReceive: '/api/webhooks/sms/receive',
+  smsReport: '/api/webhooks/sms/report',
+  ussdReceive: '/api/webhooks/ussd/receive',
+  subscriptionNotify: '/api/webhooks/subscription/notify',
+  caasNotify: '/api/webhooks/caas/notify',
+} as const;
+
+export function createOpenApiSpec(options: OpenApiOptions = {}) {
+  const publicBaseUrl = trimTrailingSlash(options.publicBaseUrl || DEFAULT_PUBLIC_BASE_URL);
+  const callbackTargets = buildCallbackTargets(options.callbackBaseUrl);
+
+  return {
   openapi: '3.0.3',
   info: {
     title: 'Vesta BDApps REST Simulator',
     version: '1.0.0',
     description:
-      'Local BDApps-compatible simulator for OTP, subscription, and CAAS development flows.',
+      [
+        'Local BDApps-compatible simulator for OTP, subscription, and CAAS development flows.',
+        '',
+        'Callback URL configuration for apps/web:',
+        '- BDAPPS_WEBHOOK_BASE_URL derives all real /api/webhooks/* callback URLs.',
+        '- Per-route variables can override a single callback URL: BDAPPS_SMS_RECEIVE_WEBHOOK_URL, BDAPPS_SMS_REPORT_WEBHOOK_URL, BDAPPS_USSD_RECEIVE_WEBHOOK_URL, BDAPPS_SUBSCRIPTION_NOTIFY_WEBHOOK_URL, BDAPPS_CAAS_NOTIFY_WEBHOOK_URL.',
+        '- BDAPPS_SIMULATOR_CALLBACK_BASE_URL is the development fallback for local simulator callbacks.',
+      ].join('\n'),
   },
-  servers: [{ url: 'http://localhost:7010' }],
+  servers: [{ url: publicBaseUrl }],
+  'x-vesta-callback-targets': callbackTargets,
   tags: [
     { name: 'health' },
     { name: 'otp' },
@@ -350,8 +384,34 @@ export const openApiSpec = {
           simulator: { type: 'string', example: 'vesta-bdapps-rest-simulator' },
           subscribers: { type: 'number', example: 1 },
           transactions: { type: 'number', example: 0 },
+          publicBaseUrl: { type: 'string', example: 'http://127.0.0.1:7010' },
+          callbackBaseUrl: { type: 'string', nullable: true, example: 'http://app:3000' },
         },
       },
     },
   },
-} as const;
+  } as const;
+}
+
+export const openApiSpec = createOpenApiSpec();
+
+function buildCallbackTargets(callbackBaseUrl?: string): CallbackTargets | null {
+  if (!callbackBaseUrl) return null;
+
+  const baseUrl = trimTrailingSlash(callbackBaseUrl);
+  return {
+    smsReceive: joinUrl(baseUrl, CALLBACK_PATHS.smsReceive),
+    smsReport: joinUrl(baseUrl, CALLBACK_PATHS.smsReport),
+    ussdReceive: joinUrl(baseUrl, CALLBACK_PATHS.ussdReceive),
+    subscriptionNotify: joinUrl(baseUrl, CALLBACK_PATHS.subscriptionNotify),
+    caasNotify: joinUrl(baseUrl, CALLBACK_PATHS.caasNotify),
+  };
+}
+
+function joinUrl(baseUrl: string, path: string) {
+  return new URL(path.replace(/^\/+/, ''), `${baseUrl}/`).toString().replace(/\/+$/, '');
+}
+
+function trimTrailingSlash(value: string) {
+  return value.replace(/\/+$/, '');
+}

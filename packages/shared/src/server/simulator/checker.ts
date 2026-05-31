@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
+import { env } from '../../utils/env'
+import {
+  resolveSimulatorCaptureUrls,
+  resolveSimulatorConfig,
+  resolveWebhookUrls,
+} from './urls'
 
 export type SimulatorEventType =
   | 'sms.receive'
   | 'sms.report'
   | 'ussd.receive'
-  | 'subscription.notify';
+  | 'subscription.notify'
+  | 'caas.notify';
 
 export interface SimulatorEvent {
   id: string;
@@ -34,7 +41,7 @@ declare global {
 }
 
 export function isSimulatorCheckerEnabled() {
-  return process.env.NODE_ENV !== 'production' || process.env.ENABLE_BDAPPS_SIMULATOR_CHECKER === 'true';
+  return env.NODE_ENV !== 'production' || env.ENABLE_BDAPPS_SIMULATOR_CHECKER;
 }
 
 export function disabledResponse() {
@@ -45,27 +52,23 @@ export function disabledResponse() {
 }
 
 export function simulatorConfig(request?: Request) {
-  const restBaseUrl = process.env.BDAPPS_SIMULATOR_BASE_URL || 'http://127.0.0.1:7002';
-  const uiUrl = process.env.BDAPPS_SIMULATOR_UI_URL || 'http://localhost:10001/mchoice-tap-sdk';
-  const callbackBaseUrl =
-    process.env.BDAPPS_SIMULATOR_CALLBACK_BASE_URL || inferCallbackBaseUrl(request) || 'http://host.docker.internal:3000';
-
-  return {
-    restBaseUrl: trimTrailingSlash(restBaseUrl),
-    uiUrl,
-    callbackBaseUrl: trimTrailingSlash(callbackBaseUrl),
-  };
+  return resolveSimulatorConfig(request);
 }
 
 export function callbackUrls(request?: Request) {
-  const { callbackBaseUrl } = simulatorConfig(request);
+  return resolveWebhookUrls(request);
+}
 
-  return {
-    smsReceive: `${callbackBaseUrl}/api/simulator-check/webhooks/sms/receive`,
-    smsReport: `${callbackBaseUrl}/api/simulator-check/webhooks/sms/report`,
-    ussdReceive: `${callbackBaseUrl}/api/simulator-check/webhooks/ussd/receive`,
-    subscriptionNotify: `${callbackBaseUrl}/api/simulator-check/webhooks/subscription/notify`,
-  };
+export function simulatorCaptureUrls(request?: Request) {
+  return resolveSimulatorCaptureUrls(request);
+}
+
+export function bdappsWebhookUrls(request?: Request) {
+  return callbackUrls(request);
+}
+
+export function simulatorCheckCallbackUrls(request?: Request) {
+  return simulatorCaptureUrls(request);
 }
 
 export function defaultPayloads() {
@@ -263,16 +266,4 @@ function findStatusCode(value: unknown): string | null {
   }
 
   return null;
-}
-
-function trimTrailingSlash(value: string) {
-  return value.replace(/\/+$/, '');
-}
-
-function inferCallbackBaseUrl(request?: Request) {
-  const host = request?.headers.get('host');
-  if (!host) return null;
-
-  const port = host.split(':')[1];
-  return port ? `http://host.docker.internal:${port}` : 'http://host.docker.internal';
 }

@@ -17,6 +17,8 @@ services:
       BDAPPS_BASE_URL: http://bdapps-api-simulator:7010
       BDAPPS_SIMULATOR_BASE_URL: http://bdapps-api-simulator:7010
       BDAPPS_SIMULATOR_UI_URL: http://localhost:10001/mchoice-tap-sdk
+      BDAPPS_WEBHOOK_BASE_URL: http://app:3000
+      BDAPPS_SIMULATOR_CALLBACK_BASE_URL: http://app:3000
       JWT_SECRET: local-dev-jwt-secret-minimum-32-characters-long
       CRON_SECRET: local-cron-secret
       NODE_ENV: development
@@ -103,6 +105,8 @@ services:
       - "7010:7010"
     environment:
       PORT: "7010"
+      BDAPPS_SIMULATOR_PUBLIC_BASE_URL: http://127.0.0.1:7010
+      BDAPPS_SIMULATOR_CALLBACK_BASE_URL: http://app:3000
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:7010/health"]

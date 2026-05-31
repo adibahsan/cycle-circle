@@ -17,6 +17,14 @@ from the official/vendor TAP SDK simulator under `ops/simulator/bdapps`.
 pnpm --filter @vesta/bdapps-simulator dev
 ```
 
+Useful environment options:
+
+| Variable | Purpose |
+| --- | --- |
+| `PORT` | REST simulator port. Defaults to `7010`. |
+| `BDAPPS_SIMULATOR_PUBLIC_BASE_URL` | OpenAPI `servers[0].url`, useful when Docker publishes the simulator at `http://127.0.0.1:7010`. |
+| `BDAPPS_SIMULATOR_CALLBACK_BASE_URL` | Optional callback base shown in Swagger as the resolved `apps/web` callback targets. |
+
 The service keeps all state in memory. Restarting it resets subscribers,
 OTP challenges, balances, and CAAS transactions.
 

@@ -1,6 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { randomInt, randomUUID } from 'node:crypto';
-import { openApiSpec } from './openapi.js';
+import { createOpenApiSpec } from './openapi.js';
 
 type SubscriptionStatus = 'REGISTERED' | 'UNREGISTERED';
 
@@ -29,6 +29,12 @@ interface CaasTransaction {
 }
 
 const PORT = Number(process.env.PORT ?? 7010);
+const PUBLIC_BASE_URL = trimTrailingSlash(
+  process.env.BDAPPS_SIMULATOR_PUBLIC_BASE_URL ?? `http://localhost:${PORT}`,
+);
+const CALLBACK_BASE_URL = process.env.BDAPPS_SIMULATOR_CALLBACK_BASE_URL
+  ? trimTrailingSlash(process.env.BDAPPS_SIMULATOR_CALLBACK_BASE_URL)
+  : undefined;
 const FIXED_OTPS = new Set(['420420', '840840']);
 const subscribers = new Map<string, SubscriberState>();
 const otpChallenges = new Map<string, OtpChallenge>();
@@ -67,12 +73,14 @@ async function route(request: IncomingMessage, response: ServerResponse) {
       simulator: 'vesta-bdapps-rest-simulator',
       subscribers: subscribers.size,
       transactions: caasTransactions.size,
+      publicBaseUrl: PUBLIC_BASE_URL,
+      callbackBaseUrl: CALLBACK_BASE_URL ?? null,
     });
     return;
   }
 
   if (method === 'GET' && path === '/openapi.json') {
-    sendJson(response, 200, openApiSpec);
+    sendJson(response, 200, openApiSpec());
     return;
   }
 
@@ -438,6 +446,10 @@ function asString(value: unknown) {
 }
 
 function docsHtml() {
+  const callbackText = CALLBACK_BASE_URL
+    ? `Callback base: ${escapeHtml(CALLBACK_BASE_URL)}`
+    : 'Callback base: not configured';
+
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -448,9 +460,22 @@ function docsHtml() {
     <style>
       body { margin: 0; background: #f7faf9; }
       .fallback { padding: 16px 24px; font-family: system-ui, sans-serif; }
+      .config {
+        padding: 10px 24px;
+        font: 13px/1.4 system-ui, sans-serif;
+        background: #eef6f4;
+        color: #16423c;
+        border-bottom: 1px solid #c9e4de;
+      }
+      .config code { background: #fff; padding: 2px 5px; border-radius: 4px; }
     </style>
   </head>
   <body>
+    <div class="config">
+      <strong>OpenAPI server:</strong> <code>${escapeHtml(PUBLIC_BASE_URL)}</code>
+      <span>&nbsp;|&nbsp;</span>
+      <strong>${callbackText}</strong>
+    </div>
     <div id="swagger-ui">
       <div class="fallback">
         <h1>Vesta BDApps REST Simulator</h1>
@@ -467,4 +492,24 @@ function docsHtml() {
     </script>
   </body>
 </html>`;
+}
+
+function openApiSpec() {
+  return createOpenApiSpec({
+    publicBaseUrl: PUBLIC_BASE_URL,
+    callbackBaseUrl: CALLBACK_BASE_URL,
+  });
+}
+
+function trimTrailingSlash(value: string) {
+  return value.replace(/\/+$/, '');
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }

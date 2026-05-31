@@ -14,7 +14,19 @@ const envSchema = z.object({
   BDAPPS_PASSWORD: z.string().optional(),
   BDAPPS_BASE_URL: z.string().default('https://developer.bdapps.com'),
   BDAPPS_WEBHOOK_IPS: z.string().optional(),
+  BDAPPS_WEBHOOK_BASE_URL: z.string().optional(),
+  BDAPPS_SMS_RECEIVE_WEBHOOK_URL: z.string().optional(),
+  BDAPPS_SMS_REPORT_WEBHOOK_URL: z.string().optional(),
+  BDAPPS_USSD_RECEIVE_WEBHOOK_URL: z.string().optional(),
+  BDAPPS_SUBSCRIPTION_NOTIFY_WEBHOOK_URL: z.string().optional(),
+  BDAPPS_CAAS_NOTIFY_WEBHOOK_URL: z.string().optional(),
   BDAPPS_SIMULATOR_BASE_URL: z.string().optional(),
+  BDAPPS_SIMULATOR_UI_URL: z.string().optional(),
+  BDAPPS_SIMULATOR_CALLBACK_BASE_URL: z.string().optional(),
+  ENABLE_BDAPPS_SIMULATOR_CHECKER: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
 
   // Auth
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),

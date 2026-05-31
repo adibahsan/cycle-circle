@@ -5,6 +5,7 @@ import {
   defaultPayloads,
   disabledResponse,
   isSimulatorCheckerEnabled,
+  simulatorCaptureUrls,
   simulatorConfig,
 } from '@vesta/shared/server/simulator/checker';
 
@@ -20,6 +21,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     config,
     callbacks: callbackUrls(request),
+    simulatorCallbacks: simulatorCaptureUrls(request),
     defaults: defaultPayloads(),
     checks: {
       ui,

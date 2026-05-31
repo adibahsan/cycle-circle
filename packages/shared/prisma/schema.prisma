@@ -74,6 +74,7 @@ enum WebhookType {
   SMS_REPORT
   USSD_RECEIVE
   SUBSCRIPTION_NOTIFY
+  CAAS_NOTIFY
 }
 
 enum JobStatus {

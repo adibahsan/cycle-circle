@@ -78,6 +78,13 @@ just up        # Start all services including both simulators
 just down      # Stop everything
 just simulator # Start only the vendor-backed simulator
 just simulator-api # Start only the API simulator on port 7010
+pnpm dev:simulator # Run the REST API simulator directly on the host
 ```
+
+For BDApps callback testing, set `BDAPPS_WEBHOOK_BASE_URL` in `apps/web/.env.local`.
+The app derives real callback URLs for SMS, USSD, subscription, and CAAS under
+`/api/webhooks/*`; per-route `BDAPPS_*_WEBHOOK_URL` values can override any one
+callback. Docker Compose uses `http://app:3000` so the simulator can call the
+web app inside the same network.
 
 See [ops/simulator/bdapps/README.md](ops/simulator/bdapps/README.md) for the vendor simulator ports and smoke tests.
