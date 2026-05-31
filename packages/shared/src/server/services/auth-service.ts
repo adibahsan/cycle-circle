@@ -1,4 +1,7 @@
+import { AuthMethod as PrismaAuthMethod } from '@prisma/client'
 import { prisma } from '../db'
+import { validateMsisdn } from '../auth'
+import { markUserPro, upsertProSubscription } from './subscription-service'
 
 export async function createMagicLink(email: string, token: string, expiresAt: Date) {
   return prisma.magicLink.create({
@@ -81,4 +84,29 @@ export async function upsertUserByPhone(phone: string) {
     },
     update: { lastLoginAt: new Date() },
   })
+}
+
+export async function completeSubscriptionLogin(
+  phone: string,
+  bdappsSubscriberId: string,
+  amount: number,
+) {
+  const normalizedPhone = validateMsisdn(phone)
+
+  const user = await prisma.user.upsert({
+    where: { phone: normalizedPhone },
+    create: {
+      phone: normalizedPhone,
+      authMethod: PrismaAuthMethod.SUBSCRIPTION,
+      lastLoginAt: new Date(),
+    },
+    update: {
+      authMethod: PrismaAuthMethod.SUBSCRIPTION,
+      lastLoginAt: new Date(),
+    },
+  })
+
+  await upsertProSubscription(user.id, bdappsSubscriberId || normalizedPhone, amount)
+
+  return markUserPro(user.id)
 }

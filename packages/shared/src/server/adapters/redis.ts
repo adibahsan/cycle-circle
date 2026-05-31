@@ -12,6 +12,7 @@ type RedisGlobal = { redis: RedisType | null }
 const globalForRedis = globalThis as unknown as RedisGlobal
 
 let _redis: RedisType | null = null
+let loggedRedisConnectionError = false
 
 if (process.env.REDIS_URL) {
   if (globalForRedis.redis) {
@@ -21,7 +22,21 @@ if (process.env.REDIS_URL) {
     // when REDIS_URL is not configured.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Redis = require('ioredis') as typeof import('ioredis').default
-    _redis = new Redis(process.env.REDIS_URL)
+    _redis = new Redis(process.env.REDIS_URL, {
+      // Fail fast when Redis is down so callers can fallback to memory.
+      maxRetriesPerRequest: 1,
+      enableOfflineQueue: false,
+      lazyConnect: true,
+    })
+    _redis.on('error', (error: unknown) => {
+      if (!loggedRedisConnectionError) {
+        loggedRedisConnectionError = true
+        console.warn(
+          '[redis] connection unavailable; using in-memory fallback',
+          error instanceof Error ? error.message : error,
+        )
+      }
+    })
     if (process.env.NODE_ENV !== 'production') globalForRedis.redis = _redis
   }
 }
@@ -47,8 +62,12 @@ export async function blacklistJti(
   expiresInSeconds: number,
 ): Promise<void> {
   if (redis) {
-    await redis.set(`blacklist:${jti}`, '1', 'EX', expiresInSeconds)
-    return
+    try {
+      await redis.set(`blacklist:${jti}`, '1', 'EX', expiresInSeconds)
+      return
+    } catch {
+      // Fall through to in-memory fallback when Redis is unavailable.
+    }
   }
   memBlacklist.set(`blacklist:${jti}`, Date.now() + expiresInSeconds * 1000)
 }
@@ -58,7 +77,11 @@ export async function blacklistJti(
  */
 export async function isJtiBlacklisted(jti: string): Promise<boolean> {
   if (redis) {
-    return (await redis.exists(`blacklist:${jti}`)) === 1
+    try {
+      return (await redis.exists(`blacklist:${jti}`)) === 1
+    } catch {
+      // Fall through to in-memory fallback when Redis is unavailable.
+    }
   }
   const key = `blacklist:${jti}`
   const expiry = memBlacklist.get(key)
@@ -96,22 +119,26 @@ export async function checkRateLimit(
   const windowStart = now - windowSeconds * 1000
 
   if (redis) {
-    const multi = redis.multi()
-    // Remove entries older than the window
-    multi.zremrangebyscore(key, 0, windowStart)
-    // Record current request with score = timestamp, member = unique timestamp
-    multi.zadd(key, now, `${now}-${Math.random()}`)
-    // Count entries in the current window
-    multi.zcard(key)
-    // Reset the TTL so the key expires after the window
-    multi.expire(key, windowSeconds)
+    try {
+      const multi = redis.multi()
+      // Remove entries older than the window
+      multi.zremrangebyscore(key, 0, windowStart)
+      // Record current request with score = timestamp, member = unique timestamp
+      multi.zadd(key, now, `${now}-${Math.random()}`)
+      // Count entries in the current window
+      multi.zcard(key)
+      // Reset the TTL so the key expires after the window
+      multi.expire(key, windowSeconds)
 
-    const results = await multi.exec()
-    const count = (results?.[2]?.[1] as number) ?? 0
+      const results = await multi.exec()
+      const count = (results?.[2]?.[1] as number) ?? 0
 
-    return {
-      allowed: count <= limit,
-      remaining: Math.max(0, limit - count),
+      return {
+        allowed: count <= limit,
+        remaining: Math.max(0, limit - count),
+      }
+    } catch {
+      // Fall through to in-memory fallback when Redis is unavailable.
     }
   }
 

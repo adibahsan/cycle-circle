@@ -83,6 +83,8 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 
 **API handlers:** 38 under `apps/web/src/app/api/` (auth, profiles, tracking, predictions, billing, webhooks, cron, health, simulator-check).
 
+**Auth login options:** OTP (`/login` → `/verify-otp`), email magic-link (`/email-login`), and BDApps subscription login (`/api/auth/subscription/status`, `/api/auth/subscription/request`). The existing OTP and email deep-link routes remain unchanged.
+
 ### Admin App Route Inventory (rev 3)
 
 | Area | Routes |

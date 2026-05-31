@@ -62,6 +62,8 @@ const API_SECTIONS = [
     endpoints: [
       { method: 'POST', path: '/api/auth/otp/request', desc: 'Request an OTP for a phone number' },
       { method: 'POST', path: '/api/auth/otp/verify', desc: 'Verify OTP and issue JWT session cookie' },
+      { method: 'POST', path: '/api/auth/subscription/status', desc: 'Check BDApps subscription status and log in registered subscribers' },
+      { method: 'POST', path: '/api/auth/subscription/request', desc: 'Request BDApps subscription registration for phone login' },
       { method: 'POST', path: '/api/auth/magic-link/request', desc: 'Send magic-link email fallback' },
       { method: 'GET', path: '/api/auth/magic-link/callback', desc: 'Consume magic-link token, issue session' },
       { method: 'POST', path: '/api/auth/logout', desc: 'Invalidate session (JWT blacklist)' },
@@ -122,6 +124,21 @@ const API_SECTIONS = [
       { method: 'POST', path: '/api/webhooks/ussd/receive', desc: 'USSD session message from BDApps' },
       { method: 'POST', path: '/api/webhooks/subscription/notify', desc: 'Subscription event notification' },
     ],
+  },
+]
+
+const AUTH_LOGIN_OPTIONS = [
+  {
+    label: 'Phone OTP',
+    detail: '/login → /verify-otp',
+  },
+  {
+    label: 'Email magic-link',
+    detail: '/email-login fallback',
+  },
+  {
+    label: 'Subscription login',
+    detail: '/api/auth/subscription/status + request',
   },
 ]
 
@@ -564,6 +581,31 @@ export default function BackendChecklistClient() {
         {/* ── Section 3: API Reference ──────────────────────────────────────── */}
         <section>
           <SectionHeader icon="📚" title="API Endpoints Reference" className="mb-4" />
+
+          <div className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-muted)]">
+                  Login options
+                </p>
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                  The auth surface now exposes three entry points without changing the existing OTP and email deep-link routes.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {AUTH_LOGIN_OPTIONS.map((option) => (
+                <div
+                  key={option.label}
+                  className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2"
+                >
+                  <div className="text-sm font-semibold">{option.label}</div>
+                  <div className="mt-1 text-xs text-[var(--color-text-muted)]">{option.detail}</div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div className="space-y-2">
             {API_SECTIONS.map((section) => {

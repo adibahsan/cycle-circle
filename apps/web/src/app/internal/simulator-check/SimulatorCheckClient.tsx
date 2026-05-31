@@ -168,13 +168,6 @@ export function SimulatorCheckClient() {
     void loadCallbacks();
   }, [loadCallbacks, loadPreflight]);
 
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      void loadCallbacks();
-    }, 3000);
-    return () => window.clearInterval(interval);
-  }, [loadCallbacks]);
-
   async function runFlow(flow: FlowDefinition) {
     setRunning((current) => ({ ...current, [flow.id]: true }));
     setErrors((current) => ({ ...current, [flow.id]: '' }));

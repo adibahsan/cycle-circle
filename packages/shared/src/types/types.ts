@@ -1,7 +1,7 @@
 export type CyclePhase = 'menstrual' | 'follicular' | 'ovulation' | 'luteal';
 export type FlowIntensity = 'light' | 'medium' | 'heavy';
 export type SubscriptionStatus = 'free' | 'pro' | 'lapsed';
-export type AuthMethod = 'otp' | 'email';
+export type AuthMethod = 'otp' | 'email' | 'subscription';
 export type Language = 'en' | 'bn';
 export type Theme = 'light' | 'dark';
 export type ProfileRelation = 'self' | 'wife' | 'sister' | 'mother' | 'daughter' | 'girlfriend';

@@ -14,6 +14,20 @@ function getBaseUrl(): string {
 
 const RETRY_DELAYS = [1000, 2000, 4000]
 
+function logBdappsExchange(
+  url: string,
+  requestBody: Record<string, unknown>,
+  responseBody: Record<string, unknown>,
+) {
+  if (env.NODE_ENV !== 'development') return
+
+  const baseUrl = getBaseUrl()
+  const endpoint = url.startsWith(baseUrl) ? url.slice(baseUrl.length) : url
+  const safeRequest = { ...requestBody, password: '[REDACTED]' }
+
+  console.info('[bdapps]', endpoint, { request: safeRequest, response: responseBody })
+}
+
 async function fetchWithRetry(
   url: string,
   body: Record<string, unknown>,
@@ -37,10 +51,14 @@ async function fetchWithRetry(
       }
 
       const data = (await response.json()) as Record<string, unknown>
+      logBdappsExchange(url, body, data)
 
       // BDApps uses "S1000" as the success status code
       const statusCode = data.statusCode as string | undefined
       if (statusCode !== undefined && statusCode !== 'S1000') {
+        if (env.NODE_ENV === 'development') {
+          console.warn('[bdapps] non-success status', statusCode, data)
+        }
         throw new ApiError(
           502,
           `BDApps error: ${statusCode}`,

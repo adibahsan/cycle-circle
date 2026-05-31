@@ -225,18 +225,25 @@ const FLOWS: FlowNode[] = [
   // GROUP 3: AUTH & USERS
   // ══════════════════════════════════════════════════════
   {
-    id: 'otp-login', name: 'OTP Login', desc: 'Phone → BDApps OTP → verify → JWT → dashboard. Rate limited (3/60s). Validates Bangladeshi MSISDN. Upserts User.',
+    id: 'otp-login', name: 'OTP Login', desc: 'Phone → BDApps OTP → verify → JWT → dashboard. One of three login options. Rate limited (3/60s). Validates Bangladeshi MSISDN. Upserts User.',
     group: 3, type: 'auth', status: 'complete', deps: ['bdapps-client', 'redis-adapter', 'prisma-client', 'jwt-middleware', 'rate-limiting'],
     api: ['/api/auth/otp/request', '/api/auth/otp/verify'], store: ['login'],
     files: ['src/app/(auth)/login/page.tsx', 'src/app/(auth)/verify-otp/page.tsx', 'src/app/api/auth/otp/request/route.ts', 'src/app/api/auth/otp/verify/route.ts'],
     steps: ['User enters phone, taps Send OTP', 'validateMsisdn normalizes to tel:88...', 'checkRateLimit (3 req/60s)', 'BDApps requestOtp with retry', 'Store OtpChallenge in DB', 'User enters 6-digit code', 'BDApps verifyOtp', 'Upsert User (authMethod=OTP)', 'issueJwt + setAuthCookie', 'Navigate to /dashboard or /onboarding'],
   },
   {
-    id: 'magic-link', name: 'Magic Link Login', desc: 'Email → UUID token → Resend email → callback → JWT + 24h trial → dashboard. Rate limited (3/3600s).',
+    id: 'magic-link', name: 'Magic Link Login', desc: 'Email → UUID token → Resend email → callback → JWT + 24h trial → dashboard. One of three login options. Rate limited (3/3600s).',
     group: 3, type: 'auth', status: 'partial', deps: ['mail-adapter', 'redis-adapter', 'prisma-client', 'jwt-middleware', 'rate-limiting'],
     api: ['/api/auth/magic-link/request', '/api/auth/magic-link/callback'], store: ['login'],
     files: ['src/app/(auth)/email-login/page.tsx', 'src/app/api/auth/magic-link/request/route.ts', 'src/app/api/auth/magic-link/callback/route.ts'],
     steps: ['User enters email, taps Send', 'checkRateLimit (3/3600s)', 'Generate UUID token, store MagicLink (1h expiry)', 'sendMagicLinkEmail via Resend', 'User clicks email link', 'GET /callback validates token, marks used', 'Upsert User (authMethod=EMAIL, trial=24h)', 'issueJwt + setAuthCookie', 'Redirect to /?auth=success'],
+  },
+  {
+    id: 'subscription-login', name: 'Subscription Login', desc: 'Phone → BDApps subscription status → JWT + Pro sync. One of three login options. Manual status checks are client-cooled for 60s and server rate limited.',
+    group: 3, type: 'auth', status: 'complete', deps: ['bdapps-client', 'redis-adapter', 'prisma-client', 'jwt-middleware', 'rate-limiting'],
+    api: ['/api/auth/subscription/status', '/api/auth/subscription/request'], store: ['login'],
+    files: ['src/app/(auth)/login/page.tsx', 'src/app/api/auth/subscription/status/route.ts', 'src/app/api/auth/subscription/request/route.ts', 'packages/shared/src/server/services/auth-service.ts'],
+    steps: ['User enters phone in Subscription tab', 'validateMsisdn normalizes the number', 'checkRateLimit protects status/request calls', 'BDApps getStatus checks registration', 'If UNREGISTERED, user can send subscription action=1', 'If REGISTERED, upsert User (authMethod=SUBSCRIPTION)', 'Sync local PRO subscription', 'issueJwt + setAuthCookie', 'Navigate to /dashboard or /onboarding'],
   },
   {
     id: 'logout', name: 'Logout', desc: 'JWT jti blacklisted in Redis with remaining TTL. Cookie cleared. Zustand store resets auth state. Fire-and-forget API call.',

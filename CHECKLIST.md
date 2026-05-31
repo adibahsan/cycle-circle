@@ -9,7 +9,7 @@
 
 ## Week 1–2: P0 (Must Have) — Core Platform
 
-### FR-AUTH — Phone Authentication + Email Fallback + Profile Completion
+### FR-AUTH — Phone Authentication + Email Fallback + Subscription Login + Profile Completion
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
@@ -19,6 +19,8 @@
 | 4 | 24-hour trial notice for email users | DONE | Dashed-border notice on form + sent state |
 | 5 | Profile completion popup (~1 min post-login) | PARTIAL | Component built, 60s timer in store, but **never mounted in layout** — dead code |
 | 6 | JWT/session management (simulated) | DONE | Zustand persist, isAuthenticated guard, authMethod tracking |
+
+Login options now include OTP, email magic-link, and BDApps subscription login through `/api/auth/subscription/status` and `/api/auth/subscription/request`. The existing `/verify-otp` and `/email-login` routes are unchanged.
 
 ### FR-PROFILE — Multi-Profile Account Management
 

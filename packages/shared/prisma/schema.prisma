@@ -16,6 +16,7 @@ datasource db {
 enum AuthMethod {
   OTP
   EMAIL
+  SUBSCRIPTION
 }
 
 enum SubscriptionStatus {
