@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, AlertTriangle, RefreshCw } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { getEmailLogPreviewHtml } from '@/app/actions/email-preview-actions'
+import { refreshEmailDeliveryStatus } from '@/app/actions/email-delivery-actions'
 
 type EmailLogDetail = {
   id: string
@@ -42,6 +43,22 @@ function statusBadge(status: string) {
   )
 }
 
+function deliveryBadge(status: string) {
+  const variant =
+    status === 'DELIVERED'
+      ? 'success'
+      : status === 'BOUNCED' || status === 'COMPLAINED'
+        ? 'danger'
+        : status === 'DELAYED'
+          ? 'warning'
+          : 'neutral'
+  return (
+    <Badge variant={variant} size="sm">
+      {status}
+    </Badge>
+  )
+}
+
 function formatDateTime(d: Date) {
   return new Date(d).toLocaleString(undefined, {
     month: 'short',
@@ -70,6 +87,21 @@ export function EmailDetailClient({ log }: EmailDetailClientProps) {
   const [previewSubject, setPreviewSubject] = useState<string>(log.subject)
   const [previewError, setPreviewError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [deliveryStatus, setDeliveryStatus] = useState(log.deliveryStatus)
+  const [refreshError, setRefreshError] = useState<string | null>(null)
+  const [isRefreshing, startRefresh] = useTransition()
+
+  function handleRefreshStatus() {
+    if (!log.resendId) return
+    startRefresh(async () => {
+      setRefreshError(null)
+      const result = await refreshEmailDeliveryStatus(log.id)
+      setDeliveryStatus(result.deliveryStatus)
+      if (result.error) {
+        setRefreshError(result.error)
+      }
+    })
+  }
 
   useEffect(() => {
     startTransition(async () => {
@@ -122,7 +154,30 @@ export function EmailDetailClient({ log }: EmailDetailClientProps) {
           <MetaRow label="Subject">{previewSubject}</MetaRow>
           <MetaRow label="Status">{statusBadge(log.status)}</MetaRow>
           <MetaRow label="Delivery">
-            <Badge variant="neutral" size="sm">{log.deliveryStatus}</Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              {deliveryBadge(deliveryStatus)}
+              {log.resendId && (
+                <button
+                  type="button"
+                  onClick={handleRefreshStatus}
+                  disabled={isRefreshing}
+                  aria-label="Refresh delivery status from Resend"
+                  className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-2 py-1 text-xs font-medium text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-50"
+                >
+                  <RefreshCw
+                    size={13}
+                    aria-hidden="true"
+                    className={isRefreshing ? 'animate-spin' : undefined}
+                  />
+                  {isRefreshing ? 'Refreshing…' : 'Refresh'}
+                </button>
+              )}
+              {refreshError && (
+                <span role="alert" className="text-xs text-red-600">
+                  {refreshError}
+                </span>
+              )}
+            </div>
           </MetaRow>
           <MetaRow label="Provider">{log.provider}</MetaRow>
           <MetaRow label="Sent">{formatDateTime(log.sentAt)}</MetaRow>
