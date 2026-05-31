@@ -1,0 +1,15 @@
+# Render Blueprint — BDApps REST simulator only (free tier).
+# Deploy: Render Dashboard → New → Blueprint → connect this repo.
+# After first deploy, set BDAPPS_SIMULATOR_PUBLIC_BASE_URL to the service URL.
+
+services:
+  - type: web
+    name: vesta-bdapps-simulator
+    runtime: docker
+    plan: free
+    dockerfilePath: ./apps/bdapps-simulator/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: BDAPPS_SIMULATOR_PUBLIC_BASE_URL
+        sync: false
