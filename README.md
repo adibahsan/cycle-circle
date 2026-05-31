@@ -69,11 +69,15 @@ HTML_TO_DOCX_DIR=/tmp/vesta-html-to-docx node scripts/build-srs-docx.mjs
 
 ## BDApps Simulator
 
-The simulator stack lives under `ops/simulator/bdapps/` and uses the vendor SDK at `ops/vendor/bdapps/sdk-standalone-1.2.68/`.
+The vendor simulator stack lives under `ops/simulator/bdapps/` and uses the SDK at `ops/vendor/bdapps/sdk-standalone-1.2.68/`.
+
+The workspace Docker stack also exposes `bdapps-api-simulator` on `http://127.0.0.1:7010` for the host-run web app. Its Swagger docs are at `http://127.0.0.1:7010/docs`.
 
 ```bash
-just up        # Start all services including simulator
+just up        # Start all services including both simulators
 just down      # Stop everything
+just simulator # Start only the vendor-backed simulator
+just simulator-api # Start only the API simulator on port 7010
 ```
 
-See [ops/simulator/bdapps/README.md](ops/simulator/bdapps/README.md) for ports and smoke tests.
+See [ops/simulator/bdapps/README.md](ops/simulator/bdapps/README.md) for the vendor simulator ports and smoke tests.

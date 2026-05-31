@@ -22,7 +22,7 @@ typecheck-all:
 
 # ─── DOCKER ─────────────────────────────────────────────
 
-# Start all services (postgres, redis, mailpit, bdapps-simulator, worker, app)
+# Start all services (postgres, redis, mailpit, vendor bdapps-simulator, bdapps-api-simulator, worker, app)
 up:
     {{compose}} up -d --build --remove-orphans
 
@@ -38,6 +38,14 @@ simulator:
 # Stop only the Dockerized BDApps simulator
 simulator-down:
     {{bdapps_simulator_compose}} down
+
+# Start only the API-only BDApps simulator on port 7010
+simulator-api:
+    {{compose}} up -d --build bdapps-api-simulator --remove-orphans
+
+# Stop only the API-only BDApps simulator
+simulator-api-down:
+    {{compose}} stop bdapps-api-simulator
 
 # Stop all docker services
 down:

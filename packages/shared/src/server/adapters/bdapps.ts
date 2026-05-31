@@ -52,7 +52,7 @@ async function fetchWithRetry(
     } catch (error) {
       lastError = error
       // Do not retry ApiErrors that come from a well-formed BDApps response
-      if (error instanceof ApiError && error.code?.startsWith('BDAPPS_S')) {
+      if (error instanceof ApiError && /^BDAPPS_[SE]/.test(error.code ?? '')) {
         throw error
       }
       if (attempt < RETRY_DELAYS.length) {
@@ -82,6 +82,11 @@ function authFields() {
     applicationId: env.BDAPPS_APP_ID,
     password: env.BDAPPS_PASSWORD,
   }
+}
+
+function normalizeSubscriptionStatus(status: unknown): SubscriptionState {
+  const normalized = String(status).trim().replace(/\.+$/, '').toUpperCase()
+  return normalized === 'REGISTERED' ? 'REGISTERED' : 'UNREGISTERED'
 }
 
 // ─── OTP ─────────────────────────────────────────────────────────────────────
@@ -198,6 +203,67 @@ export async function caasGetBalance(
     accountType: data.accountType as string,
     accountStatus: data.accountStatus as string,
     chargeableBalance: data.chargeableBalance as string,
+  }
+}
+
+// ─── Subscription ────────────────────────────────────────────────────────────
+
+export type SubscriptionAction = '0' | '1'
+export type SubscriptionState = 'REGISTERED' | 'UNREGISTERED'
+
+export interface SubscriptionStatusResult {
+  statusCode: string
+  statusDetail?: string
+  subscriptionStatus: SubscriptionState
+  subscriberId?: string
+}
+
+/**
+ * Query the current BDApps subscription state for a subscriber.
+ */
+export async function subscriptionGetStatus(
+  subscriberId: string,
+): Promise<SubscriptionStatusResult> {
+  const url = `${getBaseUrl()}/subscription/getStatus`
+  const data = await fetchWithRetry(url, {
+    ...authFields(),
+    subscriberId: toTelUri(subscriberId),
+  })
+  return {
+    statusCode: data.statusCode as string,
+    statusDetail: data.statusDetail as string | undefined,
+    subscriptionStatus: normalizeSubscriptionStatus(data.subscriptionStatus),
+    subscriberId: data.subscriberId as string | undefined,
+  }
+}
+
+export interface SubscriptionSendResult {
+  statusCode: string
+  statusDetail?: string
+  subscriptionStatus: SubscriptionState
+  subscriberId?: string
+}
+
+/**
+ * Request a BDApps subscription action for the subscriber.
+ *
+ * action: 0 = unsubscribe, 1 = subscribe
+ */
+export async function subscriptionSend(
+  subscriberId: string,
+  action: SubscriptionAction,
+): Promise<SubscriptionSendResult> {
+  const url = `${getBaseUrl()}/subscription/send`
+  const data = await fetchWithRetry(url, {
+    ...authFields(),
+    subscriberId: toTelUri(subscriberId),
+    action,
+  })
+  return {
+    statusCode: data.statusCode as string,
+    statusDetail: data.statusDetail as string | undefined,
+    subscriptionStatus: normalizeSubscriptionStatus(data.subscriptionStatus),
+    subscriberId: data.subscriberId as string | undefined,
   }
 }
 

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "pnpm --filter @vesta/web dev",
     "dev:admin": "pnpm --filter @vesta/admin dev",
+    "dev:simulator": "pnpm --filter @vesta/bdapps-simulator dev",
     "build": "pnpm --filter @vesta/web build",
     "build:admin": "pnpm --filter @vesta/admin build",
     "typecheck": "pnpm -r typecheck",
@@ -17,6 +18,12 @@
     "docs:check": "node scripts/sync-netlify-docs.mjs --check",
     "docker:dev": "docker compose -f ops/docker/compose.yml up -d --build",
     "docker:down": "docker compose -f ops/docker/compose.yml down",
-    "docker:logs": "docker compose -f ops/docker/compose.yml logs -f"
+    "docker:logs": "docker compose -f ops/docker/compose.yml logs -f",
+    "simulator-api": "pnpm run simulator:api",
+    "simulator-api-down": "pnpm run simulator:api-down",
+    "simulator-api:dev": "pnpm --filter @vesta/bdapps-simulator dev",
+    "simulator-api:test": "pnpm --filter @vesta/bdapps-simulator test",
+    "simulator:api": "docker compose -f ops/docker/compose.yml up -d --build bdapps-api-simulator --remove-orphans",
+    "simulator:api-down": "docker compose -f ops/docker/compose.yml stop bdapps-api-simulator"
   }
 }

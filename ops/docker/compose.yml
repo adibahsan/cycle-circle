@@ -14,8 +14,8 @@ services:
       REDIS_URL: redis://redis:6379
       BDAPPS_APP_ID: APP_SIMULATOR
       BDAPPS_PASSWORD: simulator_password
-      BDAPPS_BASE_URL: http://bdapps-simulator:7000
-      BDAPPS_SIMULATOR_BASE_URL: http://bdapps-simulator:7000
+      BDAPPS_BASE_URL: http://bdapps-api-simulator:7010
+      BDAPPS_SIMULATOR_BASE_URL: http://bdapps-api-simulator:7010
       BDAPPS_SIMULATOR_UI_URL: http://localhost:10001/mchoice-tap-sdk
       JWT_SECRET: local-dev-jwt-secret-minimum-32-characters-long
       CRON_SECRET: local-cron-secret
@@ -94,6 +94,22 @@ services:
       timeout: 10s
       retries: 5
       start_period: 90s
+
+  bdapps-api-simulator:
+    build:
+      context: ../..
+      dockerfile: apps/bdapps-simulator/Dockerfile
+    ports:
+      - "7010:7010"
+    environment:
+      PORT: "7010"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:7010/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   postgres_data:

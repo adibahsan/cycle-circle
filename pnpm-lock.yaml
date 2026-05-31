@@ -78,6 +78,18 @@ importers:
         specifier: ~5.8.2
         version: 5.8.3
 
+  apps/bdapps-simulator:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.14.0
+        version: 22.19.19
+      tsx:
+        specifier: ^4.22.3
+        version: 4.22.3
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
+
   apps/web:
     dependencies:
       '@prisma/client':

@@ -6,7 +6,11 @@ import {
   upsertProSubscription,
   markUserPro,
 } from '@vesta/shared/server/services'
-import { caasDirectDebit } from '@vesta/shared/server/adapters/bdapps'
+import {
+  caasDirectDebit,
+  subscriptionGetStatus,
+  subscriptionSend,
+} from '@vesta/shared/server/adapters/bdapps'
 import type { AuthUser } from '@vesta/shared/server/auth'
 
 const SUBSCRIPTION_AMOUNT_BDT = 5
@@ -23,7 +27,27 @@ export const POST = withAuth(async (request, { user }: { user: AuthUser }) => {
 
     const externalTrxId = crypto.randomUUID()
 
-    const pendingTransaction = await createCaasTransaction(externalTrxId, SUBSCRIPTION_AMOUNT_BDT)
+    const initialStatus = await subscriptionGetStatus(user.phone)
+    let subscriptionStatus = initialStatus.subscriptionStatus
+
+    if (subscriptionStatus === 'UNREGISTERED') {
+      await subscriptionSend(user.phone, '1')
+      const refreshedStatus = await subscriptionGetStatus(user.phone)
+      subscriptionStatus = refreshedStatus.subscriptionStatus
+    }
+
+    if (subscriptionStatus !== 'REGISTERED') {
+      throw new ApiError(
+        502,
+        'BDApps subscription registration failed',
+        'BDAPPS_SUBSCRIPTION_REGISTRATION_FAILED',
+      )
+    }
+
+    const pendingTransaction = await createCaasTransaction(
+      externalTrxId,
+      SUBSCRIPTION_AMOUNT_BDT,
+    )
 
     let debitResult: Awaited<ReturnType<typeof caasDirectDebit>>
     try {

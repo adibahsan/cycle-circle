@@ -116,7 +116,6 @@ export async function forwardToSimulator(path: string, payload: unknown): Promis
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-      cache: 'no-store',
     });
     const body = await parseResponseBody(response);
 
@@ -147,7 +146,7 @@ export async function checkUrl(url: string) {
   const startedAt = Date.now();
 
   try {
-    const response = await fetchWithTimeout(url, { method: 'GET', cache: 'no-store' }, 3500);
+    const response = await fetchWithTimeout(url, { method: 'GET' }, 3500);
     return {
       ok: response.status > 0 && response.status < 500,
       status: response.status,
