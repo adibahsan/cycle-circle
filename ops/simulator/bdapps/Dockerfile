@@ -10,7 +10,7 @@ RUN apt-get update \
 
 WORKDIR /opt/tap-sdk
 
-COPY vendor/bdapps/sdk-standalone-1.2.68/ ./
+COPY ops/vendor/bdapps/sdk-standalone-1.2.68/ ./
 COPY ops/simulator/bdapps/entrypoint.sh /entrypoint.sh
 
 # tap-simulator prefers wrapper-linux-x86-32 when executable; Jammy amd64 image has no 32-bit glibc.

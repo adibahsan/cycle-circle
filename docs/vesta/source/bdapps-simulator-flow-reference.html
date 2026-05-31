@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BDApps Pro API Flows with Local Simulator</title>
+  <style>
+    :root {
+      --paper: #f6f3ed;
+      --paper-strong: #fffdf7;
+      --ink: #17211b;
+      --muted: #617067;
+      --line: #d8d0c2;
+      --line-strong: #b7aa96;
+      --green: #2f6f4e;
+      --green-soft: #dfeee3;
+      --mint: #8bc7a2;
+      --amber: #936b13;
+      --amber-soft: #fff0bf;
+      --red: #a33a2c;
+      --red-soft: #ffe1dc;
+      --blue: #315d7f;
+      --blue-soft: #e0eef7;
+      --violet: #61547b;
+      --violet-soft: #ede8f5;
+      --code: #102018;
+      --code-line: #24352b;
+      --shadow: 0 18px 50px rgb(56 45 26 / 13%);
+      --radius: 8px;
+      --sans: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+      --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+      --mono: "SFMono-Regular", "Cascadia Code", "Liberation Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(90deg, rgb(47 111 78 / 5%) 1px, transparent 1px),
+        linear-gradient(180deg, rgb(47 111 78 / 4%) 1px, transparent 1px),
+        var(--paper);
+      background-size: 44px 44px;
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.55;
+      letter-spacing: 0;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: var(--green);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    button,
+    summary {
+      font: inherit;
+    }
+
+    .skip-link {
+      position: fixed;
+      left: 12px;
+      top: 12px;
+      z-index: 20;
+      transform: translateY(-160%);
+      border: 1px solid var(--ink);
+      border-radius: 6px;
+      background: var(--paper-strong);
+      padding: 8px 12px;
+      color: var(--ink);
+      transition: transform 160ms ease;
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+      outline: 3px solid var(--mint);
+      outline-offset: 2px;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .rail {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: rgb(255 253 247 / 84%);
+      padding: 22px 18px;
+      backdrop-filter: blur(10px);
+    }
+
+    .rail h2 {
+      margin: 0 0 14px;
+      font-family: var(--serif);
+      font-size: 20px;
+      line-height: 1.12;
+    }
+
+    .rail small {
+      display: block;
+      margin-bottom: 18px;
+      color: var(--muted);
+    }
+
+    .toc {
+      display: grid;
+      gap: 4px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .toc a {
+      display: block;
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .toc a:hover,
+    .toc a:focus-visible {
+      background: var(--green-soft);
+      text-decoration: none;
+      outline: none;
+    }
+
+    .main {
+      min-width: 0;
+    }
+
+    .mobile-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: none;
+      gap: 8px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--line);
+      background: rgb(255 253 247 / 92%);
+      padding: 10px 12px;
+      backdrop-filter: blur(12px);
+    }
+
+    .mobile-nav a {
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper-strong);
+      padding: 7px 10px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .hero {
+      border-bottom: 1px solid var(--line);
+      background:
+        radial-gradient(circle at 16% 10%, rgb(139 199 162 / 32%), transparent 34%),
+        linear-gradient(135deg, var(--paper-strong), #eef4ed 55%, #f7efe0);
+      padding: 54px 48px 42px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      background: rgb(255 253 247 / 78%);
+      padding: 7px 10px;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .hero h1 {
+      max-width: 980px;
+      margin: 18px 0 14px;
+      font-family: var(--serif);
+      font-size: clamp(40px, 6vw, 86px);
+      line-height: 0.94;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 840px;
+      margin: 0;
+      color: #435148;
+      font-size: 18px;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .badge,
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper-strong);
+      padding: 6px 10px;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .pill.simulator {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .pill.warning {
+      background: var(--amber-soft);
+      color: var(--amber);
+    }
+
+    section {
+      padding: 34px 48px;
+    }
+
+    section + section {
+      border-top: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: grid;
+      gap: 8px;
+      max-width: 900px;
+      margin-bottom: 20px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(30px, 4vw, 52px);
+      line-height: 1;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid.four {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgb(255 253 247 / 88%);
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .card.pad {
+      padding: 18px;
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .meta-list {
+      display: grid;
+      gap: 9px;
+      margin: 14px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .meta-list li {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr);
+      gap: 10px;
+      border-top: 1px solid rgb(216 208 194 / 70%);
+      padding-top: 9px;
+      font-size: 13px;
+    }
+
+    .meta-list strong {
+      color: var(--ink);
+    }
+
+    code,
+    .mono {
+      font-family: var(--mono);
+      font-size: 0.94em;
+    }
+
+    code {
+      border: 1px solid rgb(216 208 194 / 85%);
+      border-radius: 5px;
+      background: rgb(255 253 247 / 72%);
+      padding: 1px 5px;
+      overflow-wrap: anywhere;
+    }
+
+    .copyable {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius);
+      background: var(--code);
+      color: #e5f0e8;
+      min-width: 0;
+    }
+
+    .copyable pre {
+      margin: 0;
+      overflow: auto;
+      padding: 42px 16px 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.55;
+      white-space: pre;
+    }
+
+    .copy-label {
+      position: absolute;
+      left: 12px;
+      top: 9px;
+      color: #9ec4ac;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .copy-btn {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      border: 1px solid rgb(255 255 255 / 18%);
+      border-radius: 6px;
+      background: rgb(255 255 255 / 9%);
+      color: #f7fff9;
+      cursor: pointer;
+      padding: 5px 8px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .copy-btn:focus-visible {
+      outline: 3px solid var(--mint);
+      outline-offset: 2px;
+    }
+
+    .note {
+      border: 1px solid #e3c978;
+      border-left: 5px solid var(--amber);
+      border-radius: var(--radius);
+      background: var(--amber-soft);
+      padding: 14px 16px;
+      color: #4d380b;
+    }
+
+    .note strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .diagram {
+      display: grid;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, #fffdf7, #eff5ef);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .lane {
+      display: grid;
+      grid-template-columns: 1fr 42px 1fr 42px 1fr;
+      align-items: stretch;
+      gap: 10px;
+    }
+
+    .node {
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--paper-strong);
+      padding: 12px;
+      min-height: 86px;
+      min-width: 0;
+    }
+
+    .node strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+
+    .node span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .arrow {
+      align-self: center;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 10px;
+      counter-reset: steps;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+    }
+
+    .step::before {
+      counter-increment: steps;
+      content: counter(steps);
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      background: var(--green);
+      color: white;
+      font-weight: 900;
+      font-size: 13px;
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgb(255 253 247 / 84%);
+      overflow: hidden;
+    }
+
+    details + details {
+      margin-top: 10px;
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 15px 16px;
+      font-weight: 900;
+      list-style-position: inside;
+    }
+
+    summary:focus-visible {
+      outline: 3px solid var(--mint);
+      outline-offset: -3px;
+    }
+
+    .detail-body {
+      display: grid;
+      gap: 14px;
+      border-top: 1px solid var(--line);
+      padding: 16px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper-strong);
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #efe7d8;
+      color: #3d382e;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .tabs {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper-strong);
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .tab-list {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--line);
+      padding: 10px;
+    }
+
+    .tab-list button {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+      padding: 8px 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .tab-list button[aria-selected="true"] {
+      border-color: var(--green);
+      background: var(--green);
+      color: white;
+    }
+
+    .tab-panel {
+      display: none;
+      padding: 14px;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .status {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper-strong);
+      padding: 12px;
+    }
+
+    .status code {
+      display: inline-block;
+      margin-bottom: 8px;
+      font-weight: 900;
+    }
+
+    .footer {
+      border-top: 1px solid var(--line);
+      padding: 28px 48px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .preflight {
+      display: grid;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper-strong);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .preflight-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .secondary-btn {
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: #f9f5eb;
+      color: var(--ink);
+      cursor: pointer;
+      padding: 8px 11px;
+      font-weight: 900;
+    }
+
+    .secondary-btn:focus-visible {
+      outline: 3px solid var(--mint);
+      outline-offset: 2px;
+    }
+
+    .preflight-output {
+      margin: 0;
+      overflow: auto;
+      border-radius: 6px;
+      background: #f1eadf;
+      padding: 12px;
+      color: #463d31;
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 1180px) {
+      .grid.four,
+      .grid.three {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .status-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 900px) {
+      .shell {
+        display: block;
+      }
+
+      .rail {
+        display: none;
+      }
+
+      .mobile-nav {
+        display: flex;
+      }
+
+      .hero,
+      section,
+      .footer {
+        padding-left: 22px;
+        padding-right: 22px;
+      }
+
+      .hero p,
+      .section-head p,
+      .card p,
+      .meta-list span {
+        overflow-wrap: anywhere;
+      }
+
+      .grid.two,
+      .grid.three,
+      .grid.four {
+        grid-template-columns: 1fr;
+      }
+
+      .lane {
+        grid-template-columns: 1fr;
+      }
+
+      .arrow {
+        transform: rotate(90deg);
+      }
+
+      .meta-list li {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="shell">
+    <aside class="rail" aria-label="Table of contents">
+      <h2>BDApps Flow Reference</h2>
+      <small>Standalone local simulator field guide.</small>
+      <ol class="toc">
+        <li><a href="#orientation">Orientation</a></li>
+        <li><a href="#environment">Environment</a></li>
+        <li><a href="#layers">Mental Model</a></li>
+        <li><a href="#catalog">Flow Catalog</a></li>
+        <li><a href="#callbacks">Callbacks</a></li>
+        <li><a href="#sequences">Sequences</a></li>
+        <li><a href="#routes">Route Map</a></li>
+        <li><a href="#payloads">Payloads</a></li>
+        <li><a href="#status-codes">Status Codes</a></li>
+        <li><a href="#testing">What Is Tested</a></li>
+        <li><a href="#troubleshooting">Troubleshooting</a></li>
+      </ol>
+    </aside>
+
+    <main id="main" class="main">
+      <nav class="mobile-nav" aria-label="Mobile table of contents">
+        <a href="#environment">Environment</a>
+        <a href="#layers">Model</a>
+        <a href="#catalog">Flows</a>
+        <a href="#callbacks">Callbacks</a>
+        <a href="#payloads">Payloads</a>
+        <a href="#troubleshooting">Troubleshooting</a>
+      </nav>
+
+      <header class="hero" id="orientation">
+        <span class="eyebrow">Local docs artifact</span>
+        <h1>BDApps Pro API Flows with Local Simulator</h1>
+        <p>
+          A visual map for understanding SMS, USSD, and CAAS flows against the Dockerized
+          BDApps simulator. This page is simulator-direct only: TAP UI plus the simulator
+          REST API base. It does not involve <code>apps/web</code>, project API routes, auth,
+          billing, subscriptions, or product UI.
+        </p>
+        <div class="badge-row" aria-label="Reference layers">
+          <span class="badge">Simulator UI</span>
+          <span class="badge">Simulator REST</span>
+          <span class="badge">Direct cURL</span>
+          <span class="badge">Optional service receiver</span>
+        </div>
+      </header>
+
+      <section id="environment" aria-labelledby="environment-title">
+        <div class="section-head">
+          <h2 id="environment-title">Environment Map</h2>
+          <p>
+            Use this when the simulator is running from Docker. The simulator keeps REST on
+            container port <code>7000</code>, while this repo maps the host-facing REST port to
+            <code>7002</code> to avoid macOS port conflicts.
+          </p>
+        </div>
+
+        <div class="grid two">
+          <div class="card pad">
+            <h3>Run paths</h3>
+            <ul class="meta-list">
+              <li><strong>Simulator only</strong><span><code>just simulator</code>, or <code>cd ops/simulator/bdapps</code> then <code>docker compose up -d</code></span></li>
+              <li><strong>REST base</strong><span><code>http://127.0.0.1:7002</code> from your host terminal</span></li>
+              <li><strong>UI</strong><span><code>http://localhost:10001/mchoice-tap-sdk</code></span></li>
+            </ul>
+          </div>
+
+          <div class="preflight" aria-live="polite">
+            <div class="preflight-row">
+              <div>
+                <h3 style="margin:0">Direct health checks</h3>
+                <p style="margin:4px 0 0;color:var(--muted);font-size:14px">
+                  Use these without starting <code>apps/web</code>.
+                </p>
+              </div>
+            </div>
+            <pre class="preflight-output">curl -fsS -o /dev/null -w "%{http_code}\n" http://localhost:10001/mchoice-tap-sdk
+curl -i http://127.0.0.1:7002/</pre>
+          </div>
+        </div>
+
+        <div class="table-wrap" style="margin-top:14px">
+          <table>
+            <thead>
+              <tr>
+                <th>Purpose</th>
+                <th>Local value</th>
+                <th>How to read it</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Simulator UI</td>
+                <td><code>http://localhost:10001/mchoice-tap-sdk</code></td>
+                <td>Open this in the browser to view phone screens, MO forms, CAAS balance controls, and status selectors.</td>
+              </tr>
+              <tr>
+                <td>Host REST base</td>
+                <td><code>http://localhost:7002</code></td>
+                <td>Use this from your host browser or terminal. It maps to container port <code>7000</code>.</td>
+              </tr>
+              <tr>
+                <td>Container REST base</td>
+                <td><code>http://bdapps-simulator:7000</code></td>
+                <td>Use this from another service inside the Docker Compose network.</td>
+              </tr>
+              <tr>
+                <td>Optional receiver base</td>
+                <td><code>http://host.docker.internal:&lt;port&gt;</code></td>
+                <td>Use only if you run your own standalone receiver for simulator UI MO callbacks.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card pad" style="margin-top:14px">
+          <h3>UI-first testing loop</h3>
+          <p>
+            Keep <code>http://localhost:10001/mchoice-tap-sdk</code> open as the visual console.
+            Pick the matching <code>SMS</code>, <code>USSD</code>, or <code>CAAS</code> tab, send the API
+            request directly to <code>http://127.0.0.1:7002</code>, then watch the simulator screen update.
+          </p>
+          <ul class="meta-list">
+            <li><strong>SMS and OTP-style messages</strong><span>Call <code>/sms/send</code>; the text appears in <code>Customers Phone</code> and <code>Messages sent to Customer</code>. For an OTP test, send the OTP as the SMS body.</span></li>
+            <li><strong>USSD</strong><span>Call <code>/ussd/send</code> with a stable <code>sessionId</code>; inspect the USSD tab's simulated phone/session state.</span></li>
+            <li><strong>CAAS</strong><span>Set balance and forced status in the CAAS tab first; call balance or debit endpoints, then query again to confirm the account state.</span></li>
+          </ul>
+          <p>
+            For a customer-to-service-to-customer loop, first send MO from the simulator UI into a
+            standalone receiver URL that you control, then send the service response back with
+            <code>/sms/send</code> or <code>/ussd/send</code>. This guide does not use
+            <code>apps/web</code> for that receiver.
+          </p>
+        </div>
+      </section>
+
+      <section id="layers" aria-labelledby="layers-title">
+        <div class="section-head">
+          <h2 id="layers-title">Direct Simulator Mental Model</h2>
+          <p>
+            Keep this page scoped to the simulator. The UI is where you observe state; the REST API
+            is how you trigger MT SMS, USSD prompts, balance queries, and debits.
+          </p>
+        </div>
+
+        <div class="diagram" aria-label="Direct simulator system model">
+          <div class="lane">
+            <div class="node">
+              <strong>TAP Simulator UI</strong>
+              <span>Open <code>http://localhost:10001/mchoice-tap-sdk</code> to view phone screens and CAAS account state.</span>
+            </div>
+            <div class="arrow" aria-hidden="true">-&gt;</div>
+            <div class="node">
+              <strong>Simulator REST API</strong>
+              <span>Call <code>http://127.0.0.1:7002/sms/send</code>, <code>/ussd/send</code>, and CAAS endpoints directly.</span>
+            </div>
+            <div class="arrow" aria-hidden="true">-&gt;</div>
+            <div class="node">
+              <strong>Optional standalone receiver</strong>
+              <span>Only needed when using simulator UI MO forms. It can be any test service outside <code>apps/web</code>.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="note" style="margin-top:14px">
+          <strong>Important boundary</strong>
+          MT SMS, USSD MT, CAAS balance, and CAAS debit can be tested directly against the simulator.
+          MO callbacks from the simulator UI require some HTTP receiver, but that receiver is outside
+          this direct simulator guide.
+        </div>
+      </section>
+
+      <section id="catalog" aria-labelledby="catalog-title">
+        <div class="section-head">
+          <h2 id="catalog-title">Flow Catalog</h2>
+          <p>Each card names the goal, path, payload focus, and success signal.</p>
+        </div>
+
+        <div class="grid four">
+          <article class="card pad">
+            <span class="pill simulator">Outbound</span>
+            <h3>SMS MT</h3>
+            <p>Send an SMS or OTP-style message to the phone simulated by the BDApps UI.</p>
+            <ul class="meta-list">
+              <li><strong>Simulator</strong><span><code>/sms/send</code></span></li>
+              <li><strong>Fields</strong><span><code>applicationId</code>, <code>password</code>, <code>message</code>, <code>destinationAddresses</code></span></li>
+              <li><strong>Success</strong><span><code>S1000</code> and message visible on simulator phone.</span></li>
+            </ul>
+          </article>
+
+          <article class="card pad">
+            <span class="pill simulator">Session</span>
+            <h3>USSD MT/MO</h3>
+            <p>Stateful menu-style session using <code>sessionId</code> and <code>ussdOperation</code>.</p>
+            <ul class="meta-list">
+              <li><strong>Simulator</strong><span><code>/ussd/send</code></span></li>
+              <li><strong>Fields</strong><span><code>sessionId</code>, <code>ussdOperation</code>, <code>destinationAddress</code></span></li>
+              <li><strong>Success</strong><span><code>S1000</code> and session prompt visible in UI.</span></li>
+            </ul>
+          </article>
+
+          <article class="card pad">
+            <span class="pill simulator">CAAS</span>
+            <h3>CAAS Balance</h3>
+            <p>Reads simulator-held account state, balance, account type, and account status.</p>
+            <ul class="meta-list">
+              <li><strong>Simulator</strong><span><code>/caas/balance/query</code></span></li>
+              <li><strong>Fields</strong><span><code>subscriberId</code>, <code>paymentInstrumentName</code>, <code>currency</code></span></li>
+              <li><strong>Success</strong><span><code>chargeableBalance</code> with <code>S1000</code>.</span></li>
+            </ul>
+          </article>
+
+          <article class="card pad">
+            <span class="pill simulator">Charge</span>
+            <h3>CAAS Direct Debit</h3>
+            <p>Charges the simulator account and shows success or balance-related failures.</p>
+            <ul class="meta-list">
+              <li><strong>Simulator</strong><span><code>/caas/direct/debit</code></span></li>
+              <li><strong>Fields</strong><span><code>externalTrxId</code>, <code>amount</code>, <code>subscriberId</code></span></li>
+              <li><strong>Success</strong><span><code>internalTrxId</code> and <code>S1000</code>.</span></li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="callbacks" aria-labelledby="callbacks-title">
+        <div class="section-head">
+          <h2 id="callbacks-title">Simulator UI MO Callbacks</h2>
+          <p>
+            The simulator UI can send MO SMS and USSD payloads to any HTTP URL you provide.
+            For this direct guide, use your own standalone receiver if you need to inspect those
+            inbound payloads. Do not route these examples through <code>apps/web</code>.
+          </p>
+        </div>
+
+        <div class="grid two">
+          <article class="card pad">
+            <h3>SMS MO to your receiver</h3>
+            <p>Simulator posts a subscriber-originated SMS to your standalone test service.</p>
+            <ul class="meta-list">
+              <li><strong>Example URL</strong><span><code>http://host.docker.internal:5555/mo-receiver</code></span></li>
+              <li><strong>UI location</strong><span><code>SMS</code> tab, <code>Send Message To Application</code>.</span></li>
+              <li><strong>Visible reply</strong><span>Send a follow-up MT response through <code>/sms/send</code>.</span></li>
+            </ul>
+          </article>
+
+          <article class="card pad">
+            <h3>SMS report to your receiver</h3>
+            <p>Delivery status report for an MT request with delivery report enabled.</p>
+            <ul class="meta-list">
+              <li><strong>Example URL</strong><span><code>http://host.docker.internal:5555/sms-report</code></span></li>
+              <li><strong>UI option</strong><span>Tick delivery report required, then provide the report URL.</span></li>
+              <li><strong>Join key</strong><span><code>requestId</code> ties report back to the original send.</span></li>
+            </ul>
+          </article>
+
+          <article class="card pad">
+            <h3>USSD MO to your receiver</h3>
+            <p>Simulator posts a subscriber-originated USSD step to your standalone test service.</p>
+            <ul class="meta-list">
+              <li><strong>Example URL</strong><span><code>http://host.docker.internal:5555/ussd-receiver</code></span></li>
+              <li><strong>UI location</strong><span><code>USSD</code> tab customer/session form.</span></li>
+              <li><strong>Session</strong><span><code>sessionId</code> persists across the conversation.</span></li>
+            </ul>
+          </article>
+
+          <article class="card pad">
+            <h3>Receiver boundary</h3>
+            <p>The receiver is not part of the simulator API. It is only a target URL for MO callbacks.</p>
+            <ul class="meta-list">
+              <li><strong>Direct MT</strong><span>Use simulator REST for the visible response.</span></li>
+              <li><strong>No web app</strong><span>No project API route is required for this guide.</span></li>
+              <li><strong>Docker host</strong><span>Use <code>host.docker.internal</code> when receiver runs on the host.</span></li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="sequences" aria-labelledby="sequences-title">
+        <div class="section-head">
+          <h2 id="sequences-title">Step-by-Step Sequences</h2>
+          <p>Use these when you need to know who calls whom and what to inspect afterward.</p>
+        </div>
+
+        <details open>
+          <summary>SMS MT: direct API sends to simulator phone</summary>
+          <div class="detail-body">
+            <div class="timeline">
+              <div class="step"><div><strong>Open the SMS tab</strong><br>Use the simulator UI as the phone screen. Keep <code>Customers Phone</code> and <code>Messages sent to Customer</code> visible.</div></div>
+              <div class="step"><div><strong>Send request directly to simulator</strong><br><span class="mono">POST http://127.0.0.1:7002/sms/send</span></div></div>
+              <div class="step"><div><strong>Simulator validates fields</strong><br>It returns <code>S1000</code> or an error code, sometimes nested in <code>destinationResponses</code>.</div></div>
+              <div class="step"><div><strong>Inspect result</strong><br>Look at the API response and the simulator Customer Phone / Messages sent to Customer panels. To mimic an OTP screen, send a message such as <code>Your OTP is 420420</code>.</div></div>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>SMS MO and delivery report: simulator calls your receiver</summary>
+          <div class="detail-body">
+            <div class="timeline">
+              <div class="step"><div><strong>Open simulator SMS MO screen</strong><br>Set the URL to a standalone receiver such as <code>http://host.docker.internal:5555/mo-receiver</code>.</div></div>
+              <div class="step"><div><strong>Optional report URL</strong><br>Tick Delivery Report Required and paste the SMS report callback URL.</div></div>
+              <div class="step"><div><strong>Send from simulator</strong><br>The simulator sends the MO payload to your receiver and expects <code>S1000</code>.</div></div>
+              <div class="step"><div><strong>Inspect receiver log</strong><br>Confirm your standalone receiver saw the payload.</div></div>
+              <div class="step"><div><strong>Send visible reply</strong><br>To see a confirmation or OTP on the simulator phone, follow with an SMS MT request to <code>/sms/send</code>.</div></div>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>USSD: stateful session round trip</summary>
+          <div class="detail-body">
+            <div class="timeline">
+              <div class="step"><div><strong>Open the USSD tab</strong><br>Use the simulator UI to see the customer-facing USSD prompt and session state.</div></div>
+              <div class="step"><div><strong>Start or continue a session</strong><br>Use <code>mo-init</code> or <code>mo-cont</code> from simulator UI, or <code>mt-cont</code> with direct <code>/ussd/send</code>.</div></div>
+              <div class="step"><div><strong>Preserve session id</strong><br>The same <code>sessionId</code> must travel through each leg.</div></div>
+              <div class="step"><div><strong>Send visible reply</strong><br>Use <code>/ussd/send</code> to return the service prompt or confirmation to the simulator USSD screen.</div></div>
+              <div class="step"><div><strong>End when needed</strong><br>Use <code>mt-fin</code> when the app closes the session.</div></div>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>CAAS balance and direct debit</summary>
+          <div class="detail-body">
+            <div class="timeline">
+              <div class="step"><div><strong>Open the CAAS tab</strong><br>Use this tab as the account-state control panel before calling CAAS APIs.</div></div>
+              <div class="step"><div><strong>Set simulator account state</strong><br>Use simulator UI to set balance, account type, account status, and optional error status.</div></div>
+              <div class="step"><div><strong>Query balance</strong><br>Call simulator <code>/caas/balance/query</code> directly.</div></div>
+              <div class="step"><div><strong>Debit amount</strong><br>Call simulator <code>/caas/direct/debit</code> directly with a unique <code>externalTrxId</code>.</div></div>
+              <div class="step"><div><strong>Inspect and test failure</strong><br>Re-query balance after success. Lower balance or force status code to see insufficient-balance and simulator-error behavior.</div></div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section id="routes" aria-labelledby="routes-title">
+        <div class="section-head">
+          <h2 id="routes-title">Route Mapping</h2>
+          <p>This table keeps the standalone simulator paths separate from optional receiver URLs.</p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Flow</th>
+                <th>Simulator direct</th>
+                <th>Optional receiver</th>
+                <th>What it proves</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>SMS MT</td>
+                <td><code>POST /sms/send</code></td>
+                <td>Not needed</td>
+                <td>Request shape, simulator reachability, and phone UI rendering.</td>
+              </tr>
+              <tr>
+                <td>USSD MT</td>
+                <td><code>POST /ussd/send</code></td>
+                <td>Not needed</td>
+                <td>USSD payload shape and session status response.</td>
+              </tr>
+              <tr>
+                <td>CAAS balance</td>
+                <td><code>POST /caas/balance/query</code></td>
+                <td>Not needed</td>
+                <td>Simulator account state and balance response fields.</td>
+              </tr>
+              <tr>
+                <td>CAAS direct debit</td>
+                <td><code>POST /caas/direct/debit</code></td>
+                <td>Not needed</td>
+                <td>Charge success, transaction ids, and insufficient-balance behavior.</td>
+              </tr>
+              <tr>
+                <td>SMS receive</td>
+                <td>Simulator UI callback</td>
+                <td><code>http://host.docker.internal:5555/mo-receiver</code></td>
+                <td>MO payload shape from simulator UI to your receiver.</td>
+              </tr>
+              <tr>
+                <td>SMS report</td>
+                <td>Simulator UI delivery report callback</td>
+                <td><code>http://host.docker.internal:5555/sms-report</code></td>
+                <td>Delivery status callback shape and correlation id.</td>
+              </tr>
+              <tr>
+                <td>USSD receive</td>
+                <td>Simulator UI callback</td>
+                <td><code>http://host.docker.internal:5555/ussd-receiver</code></td>
+                <td>Session callback payload and acknowledgement behavior.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="payloads" aria-labelledby="payloads-title">
+        <div class="section-head">
+          <h2 id="payloads-title">Payload Reference</h2>
+          <p>Minimal examples for direct simulator REST calls and optional standalone receiver payloads. Use the cURL guide when you need copy-paste terminal commands.</p>
+        </div>
+
+        <div class="tabs" data-tabs>
+          <div class="tab-list" role="tablist" aria-label="Payload examples">
+            <button id="tab-sms" type="button" role="tab" aria-selected="true" aria-controls="panel-sms" data-tab="sms">SMS</button>
+            <button id="tab-ussd" type="button" role="tab" aria-selected="false" aria-controls="panel-ussd" data-tab="ussd">USSD</button>
+            <button id="tab-caas" type="button" role="tab" aria-selected="false" aria-controls="panel-caas" data-tab="caas">CAAS</button>
+            <button id="tab-webhooks" type="button" role="tab" aria-selected="false" aria-controls="panel-webhooks" data-tab="webhooks">Webhooks</button>
+          </div>
+
+          <div id="panel-sms" class="tab-panel active" role="tabpanel" aria-labelledby="tab-sms" data-panel="sms">
+            <div class="grid two">
+              <div class="copyable">
+                <span class="copy-label">SMS MT or OTP-style request</span>
+                <button class="copy-btn" type="button" data-copy>Copy</button>
+                <pre>{
+  "applicationId": "APP_000006",
+  "password": "password",
+  "message": "Your OTP is 420420",
+  "destinationAddresses": ["tel:8801812345678"],
+  "deliveryStatusRequest": "0",
+  "version": "1.0"
+}</pre>
+              </div>
+              <div class="copyable">
+                <span class="copy-label">SMS report callback</span>
+                <button class="copy-btn" type="button" data-copy>Copy</button>
+                <pre>{
+  "destinationAddress": "tel:8801812345678",
+  "requestId": "local-sms-mt-001",
+  "deliveryStatus": "DELIVERED",
+  "timeStamp": "20260518210100"
+}</pre>
+              </div>
+            </div>
+          </div>
+
+          <div id="panel-ussd" class="tab-panel" role="tabpanel" aria-labelledby="tab-ussd" data-panel="ussd">
+            <div class="grid two">
+              <div class="copyable">
+                <span class="copy-label">USSD MT request</span>
+                <button class="copy-btn" type="button" data-copy>Copy</button>
+                <pre>{
+  "applicationId": "APP_003117",
+  "password": "password",
+  "version": "1.0",
+  "sessionId": "local-session-001",
+  "ussdOperation": "mt-cont",
+  "destinationAddress": "tel:8801812345678",
+  "message": "Welcome. Reply 1 to continue."
+}</pre>
+              </div>
+              <div class="copyable">
+                <span class="copy-label">USSD MO callback</span>
+                <button class="copy-btn" type="button" data-copy>Copy</button>
+                <pre>{
+  "applicationId": "APP_003117",
+  "sessionId": "local-session-001",
+  "ussdOperation": "mo-init",
+  "sourceAddress": "tel:8801812345678",
+  "message": "1",
+  "requestId": "local-ussd-mo-001",
+  "encoding": "0",
+  "version": "1.0"
+}</pre>
+              </div>
+            </div>
+          </div>
+
+          <div id="panel-caas" class="tab-panel" role="tabpanel" aria-labelledby="tab-caas" data-panel="caas">
+            <div class="grid two">
+              <div class="copyable">
+                <span class="copy-label">CAAS balance</span>
+                <button class="copy-btn" type="button" data-copy>Copy</button>
+                <pre>{
+  "applicationId": "APP_000010",
+  "password": "password",
+  "subscriberId": "tel:8801812345678",
+  "paymentInstrumentName": "Mobile Account",
+  "currency": "BDT"
+}</pre>
+              </div>
+              <div class="copyable">
+                <span class="copy-label">CAAS direct debit</span>
+                <button class="copy-btn" type="button" data-copy>Copy</button>
+                <pre>{
+  "externalTrxId": "vesta-local-001",
+  "amount": "5",
+  "applicationId": "APP_000010",
+  "password": "password",
+  "subscriberId": "tel:8801812345678",
+  "paymentInstrumentName": "Mobile Account",
+  "currency": "BDT",
+  "accountId": "8801812345678"
+}</pre>
+              </div>
+            </div>
+          </div>
+
+          <div id="panel-webhooks" class="tab-panel" role="tabpanel" aria-labelledby="tab-webhooks" data-panel="webhooks">
+            <div class="grid two">
+              <div class="copyable">
+                <span class="copy-label">SMS receive callback</span>
+                <button class="copy-btn" type="button" data-copy>Copy</button>
+                <pre>{
+  "applicationId": "APP_000006",
+  "sourceAddress": "tel:8801812345678",
+  "message": "hello vesta",
+  "requestId": "local-sms-mo-001",
+  "encoding": "0",
+  "version": "1.0",
+  "timeStamp": "20260518210030"
+}</pre>
+              </div>
+              <div class="copyable">
+                <span class="copy-label">Standalone receiver note</span>
+                <button class="copy-btn" type="button" data-copy>Copy</button>
+                <pre>Use a URL like:
+http://host.docker.internal:5555/mo-receiver
+
+Then send the visible reply through:
+POST http://127.0.0.1:7002/sms/send</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="status-codes" aria-labelledby="status-title">
+        <div class="section-head">
+          <h2 id="status-title">Status Code Cheat Sheet</h2>
+          <p>Keep the common codes visible while testing. The simulator guide and API appendix do not always phrase every code identically.</p>
+        </div>
+
+        <div class="status-grid">
+          <div class="status"><code>S1000</code><p>Success. The request was accepted or the callback acknowledgement succeeded.</p></div>
+          <div class="status"><code>E1312</code><p>Malformed or invalid request. Check required fields and JSON shape.</p></div>
+          <div class="status"><code>E1313</code><p>Authentication failed. Check application id and password.</p></div>
+          <div class="status"><code>E1325</code><p>Insufficient fund or invalid MSISDN wording depending on guide context. Use with care.</p></div>
+          <div class="status"><code>E1326</code><p>Insufficient balance or charging not allowed in common CAAS tests.</p></div>
+          <div class="status"><code>E1360</code><p>Internal error. Useful for generic failure-path checks.</p></div>
+          <div class="status"><code>E1361</code><p>System error. Useful for generic failure-path checks.</p></div>
+          <div class="status"><code>P1001</code><p>Partial success. Triggered by special simulator number <code>9900000</code>.</p></div>
+        </div>
+
+        <div class="note" style="margin-top:14px">
+          <strong>Special numbers</strong>
+          The simulator can return fixed responses for selected numbers. Useful examples: <code>9900000</code> -> <code>P1001</code>, <code>9900001</code> -> <code>E1300</code>, <code>9900014</code> -> <code>E1313</code>, <code>9900026</code> -> <code>E1325</code>, <code>9900061</code> -> <code>E1360</code>, <code>9900062</code> -> <code>E1361</code>.
+        </div>
+      </section>
+
+      <section id="testing" aria-labelledby="testing-title">
+        <div class="section-head">
+          <h2 id="testing-title">What Is Actually Tested?</h2>
+          <p>The same looking payload can prove very different things depending on the path you send it through.</p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Test level</th>
+                <th>Path</th>
+                <th>What it proves</th>
+                <th>What it does not prove</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="pill simulator">Simulator direct</span></td>
+                <td><code>http://localhost:7002/*</code></td>
+                <td>The vendor simulator accepts the JSON shape and returns expected status codes.</td>
+                <td>Any application business logic, persistence, auth, or webhook handling.</td>
+              </tr>
+              <tr>
+                <td><span class="pill simulator">Simulator UI MO</span></td>
+                <td><code>http://host.docker.internal:&lt;port&gt;/*</code></td>
+                <td>The simulator can POST subscriber-originated payloads to a receiver you control.</td>
+                <td>That the receiver is part of this repo or that it sends replies automatically.</td>
+              </tr>
+              <tr>
+                <td><span class="pill simulator">CAAS UI state</span></td>
+                <td><code>CAAS</code> tab plus direct CAAS endpoints</td>
+                <td>Balance, account status, success, and insufficient-balance simulator behavior.</td>
+                <td>Real charging or production billing contracts.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="troubleshooting" aria-labelledby="trouble-title">
+        <div class="section-head">
+          <h2 id="trouble-title">Troubleshooting</h2>
+          <p>Fast checks for the usual local simulator snags.</p>
+        </div>
+
+        <div class="grid two">
+          <div class="card pad">
+            <h3>REST root returns 404</h3>
+            <p>That can be normal. Test endpoint-specific POSTs such as <code>/sms/send</code> or <code>/caas/balance/query</code>.</p>
+          </div>
+          <div class="card pad">
+            <h3>Port 7000 is busy</h3>
+            <p>macOS often uses port <code>7000</code>. This repo maps host <code>7002</code> to container <code>7000</code>.</p>
+          </div>
+          <div class="card pad">
+            <h3>Callback URL fails</h3>
+            <p>If simulator runs in Docker and your standalone receiver runs on the host, use <code>host.docker.internal</code>, not <code>localhost</code>, in simulator callback fields.</p>
+          </div>
+          <div class="card pad">
+            <h3>Auth error</h3>
+            <p><code>E1313</code> usually means the simulator rejected the app id or password pair. Use the sample local values unless testing failure paths.</p>
+          </div>
+          <div class="card pad">
+            <h3>Insufficient balance</h3>
+            <p>Set enough balance in the simulator CAAS UI before direct debit, or use the failure deliberately to confirm error handling.</p>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        Source-of-truth file: <code>docs/vesta/source/bdapps-simulator-flow-reference.html</code>.
+        Companion command guide: <code>docs/vesta/source/bdapps-simulator-curl-flow-guide.md</code>.
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      function setCopied(button, text) {
+        var original = button.textContent;
+        button.textContent = text;
+        window.setTimeout(function () {
+          button.textContent = original;
+        }, 1400);
+      }
+
+      document.querySelectorAll("[data-copy]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          var block = button.closest(".copyable");
+          var pre = block && block.querySelector("pre");
+          if (!pre) return;
+
+          navigator.clipboard.writeText(pre.textContent).then(function () {
+            setCopied(button, "Copied");
+          }).catch(function () {
+            setCopied(button, "Select text");
+          });
+        });
+      });
+
+      document.querySelectorAll("[data-tabs]").forEach(function (tabs) {
+        var tabButtons = tabs.querySelectorAll("[data-tab]");
+        var panels = tabs.querySelectorAll("[data-panel]");
+
+        tabButtons.forEach(function (button) {
+          button.addEventListener("click", function () {
+            var target = button.getAttribute("data-tab");
+            tabButtons.forEach(function (item) {
+              item.setAttribute("aria-selected", String(item === button));
+            });
+            panels.forEach(function (panel) {
+              panel.classList.toggle("active", panel.getAttribute("data-panel") === target);
+            });
+          });
+        });
+      });
+
+    })();
+  </script>
+</body>
+</html>

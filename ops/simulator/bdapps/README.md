@@ -1,8 +1,8 @@
 # BDApps TAP SDK Simulator (Docker)
 
-Reproducible Linux image for the vendor bundle under `vendor/bdapps/sdk-standalone-1.2.68/`: Jetty UI on **10001**, REST simulator on **7000** (SMS/USSD/CaaS per the BDApps guides).
+Reproducible Linux image for the vendor bundle under `ops/vendor/bdapps/sdk-standalone-1.2.68/`: Jetty UI on **10001**, REST simulator on **7000** (SMS/USSD/CaaS per the BDApps guides).
 
-The `vendor/bdapps/sdk-standalone-1.2.68/` runtime is intentionally kept in the repo because this Docker image copies the vendor SDK directly. Generated sample-app build outputs under `vendor/bdapps/sample-applications/**/target/` should not be committed.
+The `ops/vendor/bdapps/sdk-standalone-1.2.68/` runtime is intentionally kept in the repo because this Docker image copies the vendor SDK directly. Generated sample-app build outputs under `ops/vendor/bdapps/sample-applications/**/target/` should not be committed.
 
 ## Prerequisites
 
@@ -23,29 +23,31 @@ ports:
 
 REST URLs on the host become `http://localhost:7002/...` while the container still uses `7000` internally.
 
-## Build and run
+## Run
 
 From this directory:
 
 ```bash
-docker compose up --build
+docker compose up -d
 ```
 
-Or build from the **repository root**:
+Or from the repository root:
 
 ```bash
-docker build -f ops/simulator/bdapps/Dockerfile -t bdapps-tap-simulator:local .
-docker run --rm -p 10001:10001 -p 7000:7000 --platform linux/amd64 bdapps-tap-simulator:local
+just simulator
 ```
+
+The Compose file runs the published image `adibahsan/bdapps-tap-simulator:1.2.68`, so normal simulator startup does not build from the local vendor SDK. Keep the Dockerfile for image maintenance only.
 
 ## URLs
 
 | Purpose | URL |
 |--------|-----|
 | Simulator Web UI | http://localhost:10001/mchoice-tap-sdk |
-| REST (SMS MT, USSD MT, CaaS, …) | http://localhost:7000/… (e.g. `/sms/send`, `/ussd/send`, `/caas/balance/query`) |
+| REST from host | http://localhost:7002/... (e.g. `/sms/send`, `/ussd/send`, `/caas/balance/query`) |
+| REST inside container | http://bdapps-simulator:7000/... |
 
-Sample scripts under `vendor/bdapps/sample-applications/` use `http://localhost:7000/...`; with the default compose mapping, that matches the container.
+Sample scripts under `ops/vendor/bdapps/sample-applications/` use `http://localhost:7000/...`; when running from the host with this compose file, use `http://localhost:7002/...` instead because host `7002` maps to container `7000`.
 
 ## Environment variables
 
@@ -69,7 +71,7 @@ If you change these, update the Compose **`ports:`** mapping so the **container*
 2. **REST SMS send** (minimal body; align fields with [BDApps Pro API Guide.pdf](../../../vendor/bdapps/BDApps%20Pro%20API%20Guide.pdf))
 
    ```bash
-   curl -sS -X POST "http://localhost:7000/sms/send" \
+   curl -sS -X POST "http://localhost:7002/sms/send" \
      -H "Content-Type: application/json" \
      -d '{"password":"password","message":"Docker smoke test","destinationAddresses":["tel:8801812345678"],"applicationId":"APP_000006","deliveryStatusRequest":"0","version":"1.0"}'
    ```
@@ -85,7 +87,7 @@ If you change these, update the Compose **`ports:`** mapping so the **container*
 
 ## Clean WAR / reproducible builds
 
-The entrypoint **rewrites** `WEB-INF/classes/tap-sim.properties` inside `lib/mchoice-tap-sdk.war` on every container start so `TAP_REST_PORT` is applied. Do not rely on a host-only patch (e.g. macOS moving REST to 7001) being baked into the image: keep `vendor/bdapps/sdk-standalone-1.2.68` as close to vendor defaults as possible. If the WAR on disk was modified manually, restore from backup or re-extract the original distribution before committing.
+The entrypoint **rewrites** `WEB-INF/classes/tap-sim.properties` inside `lib/mchoice-tap-sdk.war` on every container start so `TAP_REST_PORT` is applied. Do not rely on a host-only patch (e.g. macOS moving REST to 7001) being baked into the image: keep `ops/vendor/bdapps/sdk-standalone-1.2.68` as close to vendor defaults as possible. If the WAR on disk was modified manually, restore from backup or re-extract the original distribution before committing.
 
 ## Stop
 

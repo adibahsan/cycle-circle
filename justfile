@@ -2,6 +2,7 @@ set dotenv-filename := "apps/web/.env.local"
 set dotenv-load
 
 compose := "docker compose -f ops/docker/compose.yml"
+bdapps_simulator_compose := "docker compose -f ops/simulator/bdapps/compose.yml"
 web := "pnpm --filter @vesta/web"
 admin := "pnpm --filter @vesta/admin"
 shared := "pnpm --filter @vesta/shared"
@@ -28,6 +29,15 @@ up:
 # Start only infrastructure (postgres, redis, mailpit) — run Next.js locally
 infra:
     {{compose}} up -d postgres redis mailpit --remove-orphans --wait
+
+# Start only the Dockerized BDApps simulator
+simulator:
+    {{bdapps_simulator_compose}} down --remove-orphans
+    {{bdapps_simulator_compose}} up -d --remove-orphans
+
+# Stop only the Dockerized BDApps simulator
+simulator-down:
+    {{bdapps_simulator_compose}} down
 
 # Stop all docker services
 down:

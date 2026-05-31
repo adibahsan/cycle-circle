@@ -79,9 +79,7 @@ services:
     restart: unless-stopped
 
   bdapps-simulator:
-    build:
-      context: ../..
-      dockerfile: ops/simulator/bdapps/Dockerfile
+    image: adibahsan/bdapps-tap-simulator:1.2.68
     platform: linux/amd64
     ports:
       - "10001:10001"

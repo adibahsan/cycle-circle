@@ -1,10 +1,6 @@
 services:
   bdapps-simulator:
-    build:
-      context: ../../..
-      dockerfile: ops/simulator/bdapps/Dockerfile
-    image: bdapps-tap-simulator:local
-    container_name: bdapps-tap-simulator
+    image: adibahsan/bdapps-tap-simulator:1.2.68
     # Native wrapper is linux/x86_64 only — required on Apple Silicon and arm64 Linux hosts.
     platform: linux/amd64
     ports:

@@ -1,25 +1,63 @@
-# BDApps Simulator cURL Flow Guide
+# BDApps Simulator Direct cURL Flow Guide
 
-This guide provides copy-paste cURL checks for the local Dockerized BDApps simulator and the Vesta simulator checker endpoints.
+This guide is for understanding the Dockerized BDApps TAP simulator directly. It uses only:
+
+- Simulator UI: `http://localhost:10001/mchoice-tap-sdk`
+- Simulator REST API base from host: `http://127.0.0.1:7002`
+
+It does not require the project web app or any project API route.
 
 ## Local Defaults
 
 | Purpose | URL |
 | --- | --- |
 | Simulator Web UI | `http://localhost:10001/mchoice-tap-sdk` |
-| Simulator REST base | `http://127.0.0.1:7002` |
-| Vesta checker page | `http://localhost:3001/internal/simulator-check` |
-| Vesta checker API base | `http://localhost:3001/api/simulator-check` |
-| Callback URL base for simulator UI | `http://host.docker.internal:3001` |
+| Simulator REST base from host | `http://127.0.0.1:7002` |
+| Simulator REST base inside Compose network | `http://bdapps-simulator:7000` |
 
 Use `127.0.0.1:7002` for terminal cURL requests to avoid localhost/IPv6 loopback quirks.
 
-## Prerequisites
+## Start
 
-- The BDApps simulator container is already running.
-- The Vesta checker app is running if testing callbacks.
-- The current Vesta checker dev server is on port `3001`.
-- If the checker runs on another port, replace every `3001` below with that port.
+From the repository root:
+
+```bash
+just simulator
+```
+
+Or from the simulator directory:
+
+```bash
+cd ops/simulator/bdapps
+docker compose up -d
+```
+
+Then open:
+
+```text
+http://localhost:10001/mchoice-tap-sdk
+```
+
+## UI-First Testing Loop
+
+Use the TAP Simulator UI as the thing you watch:
+
+1. Open `http://localhost:10001/mchoice-tap-sdk`.
+2. Select `SMS`, `USSD`, or `CAAS`.
+3. Configure the screen state where needed.
+4. Run the matching direct simulator cURL command from this guide.
+5. Watch the simulator UI update.
+
+What you can do directly with simulator UI plus simulator REST:
+
+| Flow | How you trigger it | What you watch |
+| --- | --- | --- |
+| SMS confirmation / OTP-style message | `POST /sms/send` | `SMS` tab `Customers Phone` and `Messages sent to Customer` |
+| USSD service prompt | `POST /ussd/send` | `USSD` tab simulated phone/session area |
+| CAAS balance | Configure CAAS tab, then `POST /caas/balance/query` | JSON response should match configured account state |
+| CAAS debit | Configure CAAS tab, then `POST /caas/direct/debit` | Re-query balance and check success/error status |
+
+MO callbacks are different: the simulator UI `Send Message To Application` form needs an application URL to POST into. If you do not want to involve `apps/web`, point it at any standalone test receiver you control. The visible reply still comes from a follow-up direct REST call to `/sms/send` or `/ussd/send`.
 
 ## Status Code Notes
 
@@ -51,21 +89,11 @@ curl -i "http://127.0.0.1:7002/"
 
 Expected: any HTTP response, commonly `404`. A connection error means the REST simulator is not reachable.
 
-### 1.3 Vesta Checker Preflight
-
-```bash
-curl -sS "http://localhost:3001/api/simulator-check/preflight"
-```
-
-Expected: JSON containing `config`, `callbacks`, `defaults`, and `checks`.
-
-## 2. Outbound Simulator API Flows
-
-These commands call the BDApps simulator directly.
-
-### 2.1 SMS MT: Send SMS to Simulator Phone
+## 2. SMS: Send Confirmation or OTP-Style Message to Simulator Phone
 
 Endpoint from the BDApps guide: `POST /sms/send`.
+
+Open the simulator `SMS` tab first. Keep `Customers Phone` and `Messages sent to Customer` visible.
 
 ```bash
 curl -sS -X POST "http://127.0.0.1:7002/sms/send" \
@@ -73,18 +101,61 @@ curl -sS -X POST "http://127.0.0.1:7002/sms/send" \
   -d '{
     "applicationId": "APP_000006",
     "password": "password",
-    "message": "Vesta simulator SMS MT smoke test",
+    "message": "Your OTP is 420420",
     "destinationAddresses": ["tel:8801812345678"],
     "deliveryStatusRequest": "0",
     "version": "1.0"
   }'
 ```
 
-Expected: JSON response with top-level or nested `statusCode: "S1000"`.
+Expected API result: JSON response with top-level or nested `statusCode: "S1000"`.
 
-### 2.2 USSD MT: Send USSD Message
+Expected UI result:
+
+- The `SMS` tab `Customers Phone` screen shows `Your OTP is 420420`.
+- The send is listed under `Messages sent to Customer`.
+
+Use the same endpoint for any confirmation message:
+
+```bash
+curl -sS -X POST "http://127.0.0.1:7002/sms/send" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "applicationId": "APP_000006",
+    "password": "password",
+    "message": "Your request has been received",
+    "destinationAddresses": ["tel:8801812345678"],
+    "deliveryStatusRequest": "0",
+    "version": "1.0"
+  }'
+```
+
+The bundled TAP simulator covers SMS, USSD, and CAAS. It does not expose a documented OTP-specific `/otp/request` simulator flow in the vendor guides, so local OTP-screen testing should be represented as an OTP-style SMS MT message.
+
+## 3. SMS UI MO Then Visible Reply
+
+Use this only if you have a standalone receiver URL outside `apps/web`.
+
+1. Open the simulator `SMS` tab.
+2. In `Send Message To Application`, set `URL` to your receiver, for example:
+
+   ```text
+   http://host.docker.internal:5555/mo-receiver
+   ```
+
+3. Enter a customer message such as `SEND OTP`.
+4. Choose `S1000:Success`.
+5. Click `Send`.
+6. Confirm your receiver saw the inbound payload.
+7. Run the `/sms/send` cURL from section 2 to send the confirmation or OTP-style message back to the simulator phone.
+
+This models the visual loop without `apps/web`: simulator customer sends an MO payload to a service API you control, then the service sends an MT SMS back through the simulator REST API.
+
+## 4. USSD: Send Service Prompt to Simulator Phone
 
 Endpoint from the BDApps guide: `POST /ussd/send`.
+
+Open the simulator `USSD` tab first.
 
 ```bash
 curl -sS -X POST "http://127.0.0.1:7002/ussd/send" \
@@ -96,15 +167,54 @@ curl -sS -X POST "http://127.0.0.1:7002/ussd/send" \
     "sessionId": "local-session-001",
     "ussdOperation": "mt-cont",
     "destinationAddress": "tel:8801812345678",
-    "message": "Welcome to Vesta"
+    "message": "Welcome. Reply 1 to continue."
   }'
 ```
 
-Expected: JSON response with `statusCode: "S1000"` when the simulator accepts the request.
+Expected API result: JSON response with `statusCode: "S1000"` when the simulator accepts the request.
 
-### 2.3 CAAS Query Balance
+Expected UI result:
+
+- The `USSD` tab simulated phone/session area shows the prompt.
+- Follow-up messages should reuse the same `sessionId`.
+- Use `mt-fin` when you want to end the session.
+
+Example session close:
+
+```bash
+curl -sS -X POST "http://127.0.0.1:7002/ussd/send" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "applicationId": "APP_003117",
+    "password": "password",
+    "version": "1.0",
+    "sessionId": "local-session-001",
+    "ussdOperation": "mt-fin",
+    "destinationAddress": "tel:8801812345678",
+    "message": "Thank you. Your request is complete."
+  }'
+```
+
+## 5. USSD UI MO Then Visible Reply
+
+Use this only if you have a standalone receiver URL outside `apps/web`.
+
+1. Open the simulator `USSD` tab.
+2. Set the application URL to your receiver, for example:
+
+   ```text
+   http://host.docker.internal:5555/ussd-receiver
+   ```
+
+3. Start a customer session with a service code such as `*213#`, `mo-init`, and status `S1000`.
+4. Confirm your receiver saw the inbound payload and noted the `sessionId`.
+5. Run `/ussd/send` with the same `sessionId` to send the service prompt back to the simulator screen.
+
+## 6. CAAS Balance Query
 
 Endpoint from the BDApps guide: `POST /caas/balance/query`.
+
+Open the simulator `CAAS` tab first. Set the account balance, account type, account status, and status code in the UI.
 
 ```bash
 curl -sS -X POST "http://127.0.0.1:7002/caas/balance/query" \
@@ -118,11 +228,13 @@ curl -sS -X POST "http://127.0.0.1:7002/caas/balance/query" \
   }'
 ```
 
-Expected: JSON response with account fields and `statusCode: "S1000"` for success.
+Expected: JSON response with account fields and `statusCode: "S1000"` for success. Compare the returned balance fields to the state configured in the CAAS UI.
 
-### 2.4 CAAS Direct Debit
+## 7. CAAS Direct Debit
 
 Endpoint from the BDApps guide: `POST /caas/direct/debit`.
+
+Set a CAAS UI balance greater than the debit amount for the success path.
 
 ```bash
 curl -sS -X POST "http://127.0.0.1:7002/caas/direct/debit" \
@@ -144,221 +256,34 @@ Expected:
 - `S1000` when the simulator account has enough balance.
 - `E1326` or another CAAS error when balance or simulator status is configured to fail.
 
-## 3. Vesta Checker Proxy Flows
+After a successful debit, re-run the balance query to confirm the remaining balance changed.
 
-These commands call the local Vesta checker, which forwards to the simulator and returns the raw request, raw response, and interpreted status.
+## 8. Failure Injection
 
-### 3.1 SMS MT Through Checker
+### 8.1 Authentication Error
 
 ```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/sms/send" \
+curl -sS -X POST "http://127.0.0.1:7002/sms/send" \
   -H "Content-Type: application/json" \
   -d '{
     "applicationId": "APP_000006",
-    "password": "password",
-    "message": "Vesta checker SMS MT smoke test",
-    "destinationAddresses": ["tel:8801812345678"],
+    "password": "wrong-password",
+    "message": "Auth failure smoke test",
+    "destinationAddresses": ["tel:9900014"],
     "deliveryStatusRequest": "0",
     "version": "1.0"
   }'
 ```
 
-Expected: `interpretedStatus: "success"` and simulator `statusCode: "S1000"`.
+Expected: authentication-style failure such as `E1313`.
 
-### 3.2 USSD MT Through Checker
+### 8.2 Insufficient Balance
 
-```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/ussd/send" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "applicationId": "APP_003117",
-    "password": "password",
-    "version": "1.0",
-    "sessionId": "local-session-001",
-    "ussdOperation": "mt-cont",
-    "destinationAddress": "tel:8801812345678",
-    "message": "Welcome to Vesta"
-  }'
-```
+In the CAAS tab, set a low balance or force an insufficient-balance status. Then run the direct debit command again.
 
-### 3.3 CAAS Balance Through Checker
+Expected: insufficient-balance-style failure such as `E1326`.
 
-```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/caas/balance" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "applicationId": "APP_000010",
-    "password": "password",
-    "subscriberId": "tel:8801812345678",
-    "paymentInstrumentName": "Mobile Account",
-    "currency": "BDT"
-  }'
-```
-
-### 3.4 CAAS Direct Debit Through Checker
-
-```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/caas/direct-debit" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "externalTrxId": "vesta-local-002",
-    "amount": "5",
-    "applicationId": "APP_000010",
-    "password": "password",
-    "subscriberId": "tel:8801812345678",
-    "paymentInstrumentName": "Mobile Account",
-    "currency": "BDT",
-    "accountId": "8801812345678"
-  }'
-```
-
-## 4. Inbound Callback Flows
-
-These commands simulate callbacks arriving at Vesta. They do not require the BDApps simulator UI; they test the local checker callback receivers directly.
-
-### 4.1 SMS MO Receive Callback
-
-Equivalent checker callback URL for the simulator UI:
-
-```text
-http://host.docker.internal:3001/api/simulator-check/webhooks/sms/receive
-```
-
-Terminal test:
-
-```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/webhooks/sms/receive" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "applicationId": "APP_000006",
-    "sourceAddress": "tel:8801812345678",
-    "message": "hello vesta",
-    "requestId": "local-sms-mo-001",
-    "encoding": "0",
-    "version": "1.0",
-    "timeStamp": "20260518210030"
-  }'
-```
-
-Expected: checker response with `statusCode: "S1000"` and an event with `type: "sms.receive"`.
-
-### 4.2 SMS Delivery Report Callback
-
-Equivalent checker callback URL for the simulator UI:
-
-```text
-http://host.docker.internal:3001/api/simulator-check/webhooks/sms/report
-```
-
-Terminal test:
-
-```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/webhooks/sms/report" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "destinationAddress": "tel:8801812345678",
-    "requestId": "local-sms-mt-001",
-    "deliveryStatus": "DELIVERED",
-    "timeStamp": "20260518210100"
-  }'
-```
-
-Expected: checker response with `statusCode: "S1000"` and an event with `type: "sms.report"`.
-
-### 4.3 USSD Receive Callback
-
-Equivalent checker callback URL for the simulator UI:
-
-```text
-http://host.docker.internal:3001/api/simulator-check/webhooks/ussd/receive
-```
-
-Terminal test:
-
-```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/webhooks/ussd/receive" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "applicationId": "APP_003117",
-    "sessionId": "local-session-001",
-    "ussdOperation": "mo-init",
-    "sourceAddress": "tel:8801812345678",
-    "message": "1",
-    "requestId": "local-ussd-mo-001",
-    "encoding": "0",
-    "version": "1.0"
-  }'
-```
-
-Expected: checker response with `statusCode: "S1000"` and an event with `type: "ussd.receive"`.
-
-### 4.4 Subscription / CAAS Notify Callback
-
-Equivalent checker callback URL for the simulator UI:
-
-```text
-http://host.docker.internal:3001/api/simulator-check/webhooks/subscription/notify
-```
-
-Terminal test:
-
-```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/webhooks/subscription/notify" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "subscriberId": "tel:8801812345678",
-    "status": "ACTIVE",
-    "reason": "local simulator callback smoke test",
-    "timeStamp": "20260518210200"
-  }'
-```
-
-Expected: checker response with `statusCode: "S1000"` and an event with `type: "subscription.notify"`.
-
-## 5. Callback Log Commands
-
-### 5.1 Read Callback Log
-
-```bash
-curl -sS "http://localhost:3001/api/simulator-check/callbacks"
-```
-
-Expected: JSON object with an `events` array.
-
-### 5.2 Clear Callback Log
-
-```bash
-curl -sS -X DELETE "http://localhost:3001/api/simulator-check/callbacks"
-```
-
-Expected: `{"events":[]}`.
-
-## 6. Simulator UI Manual Flow Notes
-
-Use the simulator UI at:
-
-```text
-http://localhost:10001/mchoice-tap-sdk
-```
-
-For SMS MO:
-
-- Set the application URL to `http://host.docker.internal:3001/api/simulator-check/webhooks/sms/receive`.
-- If delivery reports are enabled, set delivery report URL to `http://host.docker.internal:3001/api/simulator-check/webhooks/sms/report`.
-- Use status/error code `S1000` for a happy-path run.
-
-For USSD MO:
-
-- Set the application URL to `http://host.docker.internal:3001/api/simulator-check/webhooks/ussd/receive`.
-- Use service code such as `*213#`.
-- Use status/error code `S1000` for a happy-path run.
-
-For CAAS:
-
-- Use the simulator UI to set balance, account type, account status, and status code.
-- Run query balance and direct debit cURL commands afterward to verify how the configured state affects responses.
-
-## 7. Troubleshooting
+## 9. Troubleshooting
 
 ### cURL cannot connect to `127.0.0.1:7002`
 
@@ -372,28 +297,18 @@ ports:
 
 ### Simulator UI works but REST root returns `404`
 
-That can be normal. Test endpoint-specific POSTs such as `/sms/send` and `/caas/balance/query`.
+That can be normal. Test endpoint-specific POSTs such as `/sms/send`, `/ussd/send`, and `/caas/balance/query`.
 
-### Callback URLs do not work from simulator UI
+### Simulator UI cannot call your standalone receiver
 
-Use `host.docker.internal` when the simulator runs in Docker and Vesta runs on the host:
-
-```text
-http://host.docker.internal:3001/api/simulator-check/webhooks/sms/receive
-```
-
-If Vesta runs inside the same Docker Compose network later, use the service DNS name instead, for example:
+If the receiver runs on your host and the simulator runs in Docker, the URL in the simulator UI should usually use `host.docker.internal`, for example:
 
 ```text
-http://app:3000/api/simulator-check/webhooks/sms/receive
+http://host.docker.internal:5555/mo-receiver
 ```
 
-### Direct simulator calls work but checker proxy calls time out
+If the receiver is another Compose service, use the service DNS name and container port instead.
 
-Confirm the checker app can use:
+### Direct CAAS debit always fails
 
-```text
-BDAPPS_SIMULATOR_BASE_URL=http://127.0.0.1:7002
-```
-
-The checker uses a longer timeout for simulator POSTs because the Java simulator can be slow on first request.
+Open the CAAS tab and confirm the configured balance is higher than the debit amount, the account status is active, and the forced status/error code is set to a success path.
