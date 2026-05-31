@@ -28,6 +28,10 @@ Useful environment options:
 The service keeps all state in memory. Restarting it resets subscribers,
 OTP challenges, balances, and CAAS transactions.
 
+When you run the simulator locally, it also writes compact request and
+response logs to the console. Sensitive values are redacted before they
+reach stdout or stderr so you can inspect traffic without leaking secrets.
+
 Seeded subscribers:
 
 | Subscriber | State |

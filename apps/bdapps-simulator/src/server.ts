@@ -39,6 +39,7 @@ const FIXED_OTPS = new Set(['420420', '840840']);
 const subscribers = new Map<string, SubscriberState>();
 const otpChallenges = new Map<string, OtpChallenge>();
 const caasTransactions = new Map<string, CaasTransaction>();
+const SENSITIVE_FIELD_PATTERN = /(?:password|authorization|token|secret|otp|debugOtp)/i;
 
 seedState();
 
@@ -61,6 +62,7 @@ server.listen(PORT, () => {
 async function route(request: IncomingMessage, response: ServerResponse) {
   const method = request.method ?? 'GET';
   const path = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`).pathname;
+  logRequest(method, path, getRemoteAddress(request));
 
   if (method === 'OPTIONS') {
     sendJson(response, 204, null);
@@ -95,6 +97,7 @@ async function route(request: IncomingMessage, response: ServerResponse) {
   }
 
   const body = await readJsonBody(request);
+  logRequestBody(method, path, body);
 
   switch (path) {
     case '/otp/request':
@@ -411,6 +414,7 @@ async function readJsonBody(request: IncomingMessage): Promise<Record<string, un
 }
 
 function sendJson(response: ServerResponse, statusCode: number, body: unknown) {
+  logResponse('json', statusCode, body);
   response.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
@@ -425,6 +429,10 @@ function sendJson(response: ServerResponse, statusCode: number, body: unknown) {
 }
 
 function sendHtml(response: ServerResponse, html: string) {
+  logResponse('html', 200, {
+    length: html.length,
+    preview: html.slice(0, 200),
+  });
   response.writeHead(200, {
     'Content-Type': 'text/html; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
@@ -503,6 +511,68 @@ function openApiSpec() {
 
 function trimTrailingSlash(value: string) {
   return value.replace(/\/+$/, '');
+}
+
+function logRequest(method: string, path: string, remoteAddress: string | null) {
+  console.log(
+    JSON.stringify({
+      event: 'request.received',
+      method,
+      path,
+      remoteAddress,
+    }),
+  );
+}
+
+function logRequestBody(method: string, path: string, body: Record<string, unknown>) {
+  if (method !== 'POST') return;
+  console.log(
+    JSON.stringify({
+      event: 'request.body',
+      method,
+      path,
+      body: redactForLog(body),
+    }),
+  );
+}
+
+function logResponse(kind: 'json' | 'html', statusCode: number, body: unknown) {
+  console.log(
+    JSON.stringify({
+      event: 'response.sent',
+      kind,
+      statusCode,
+      body: kind === 'json' ? redactForLog(body) : body,
+    }),
+  );
+}
+
+function redactForLog(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => redactForLog(entry));
+  }
+
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+      key,
+      SENSITIVE_FIELD_PATTERN.test(key) ? '[REDACTED]' : redactForLog(entry),
+    ]),
+  );
+}
+
+function getRemoteAddress(request: IncomingMessage) {
+  const forwardedFor = request.headers['x-forwarded-for'];
+  if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
+    return forwardedFor.split(',')[0]?.trim() ?? request.socket.remoteAddress ?? null;
+  }
+  if (Array.isArray(forwardedFor) && forwardedFor.length > 0) {
+    return forwardedFor[0] ?? request.socket.remoteAddress ?? null;
+  }
+  return request.socket.remoteAddress ?? null;
 }
 
 function escapeHtml(value: string) {

@@ -9,7 +9,7 @@ const password = 'simulator_password';
 test('BDApps simulator supports OTP, subscription, CAAS, and deterministic failures', async (t) => {
   const port = String(18000 + Math.floor(Math.random() * 1000));
   const server = spawnServer(port);
-  t.after(() => stopServer(server));
+  t.after(() => stopServer(server.childProcess));
 
   await waitForHealth(port);
 
@@ -83,14 +83,25 @@ test('BDApps simulator supports OTP, subscription, CAAS, and deterministic failu
     amount: 5,
   });
   assert.equal(lowBalance.statusCode, 'E1326');
+
+  await waitForLogOutput(server.output);
+  assert.equal(hasRequestLog(server.output), true);
+  assert.equal(hasResponseLog(server.output), true);
+  assert.equal(server.output.text().includes(password), false);
+  assert.equal(server.output.text().includes('"otp":"420420"'), false);
+  assert.match(server.output.text(), /\[REDACTED\]/);
 });
 
 function spawnServer(port: string) {
   const serverPath = fileURLToPath(new URL('./server.js', import.meta.url));
-  return spawn(process.execPath, [serverPath], {
+  const childProcess = spawn(process.execPath, [serverPath], {
     env: { ...process.env, PORT: port },
-    stdio: 'ignore',
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
+  const output = new LogBuffer();
+  attachOutput(childProcess.stdout, output);
+  attachOutput(childProcess.stderr, output);
+  return { childProcess, output };
 }
 
 async function waitForHealth(port: string) {
@@ -117,4 +128,45 @@ async function post(port: string, path: string, body: Record<string, unknown>) {
 
 function stopServer(server: ChildProcess) {
   if (!server.killed) server.kill();
+}
+
+function attachOutput(stream: NodeJS.ReadableStream | null, output: LogBuffer) {
+  if (!stream) return;
+  stream.setEncoding('utf8');
+  stream.on('data', (chunk: string) => {
+    output.push(chunk);
+  });
+}
+
+function hasRequestLog(output: LogBuffer) {
+  return output.lines().some((line) => /\b(request|received)\b/i.test(line));
+}
+
+function hasResponseLog(output: LogBuffer) {
+  return output.lines().some((line) => /\b(response|sent)\b/i.test(line));
+}
+
+async function waitForLogOutput(output: LogBuffer) {
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    if (hasRequestLog(output) && hasResponseLog(output)) return;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  assert.fail(`Expected request and response logs, saw:\n${output.text()}`);
+}
+
+class LogBuffer {
+  #chunks: string[] = [];
+
+  push(chunk: string) {
+    this.#chunks.push(chunk);
+  }
+
+  text() {
+    return this.#chunks.join('');
+  }
+
+  lines() {
+    return this.text().split(/\r?\n/).filter(Boolean);
+  }
 }
