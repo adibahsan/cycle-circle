@@ -1,11 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/lib/store';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import VestaLogo from '@/components/ui/VestaLogo';
+import { ProfileCompletionModal } from '@/components/ProfileCompletionModal';
 import {
   Home,
   CalendarDays,
@@ -18,6 +20,8 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
+
+const PROFILE_MODAL_DISMISSED_KEY = 'vesta_profile_modal_dismissed';
 
 const NAV_ITEMS = [
   { href: '/dashboard', icon: Home, labelKey: 'nav.dashboard' },
@@ -36,7 +40,33 @@ const SIDEBAR_EXTRA_ITEMS = [
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { t } = useTranslation();
-  const { theme, setTheme, activeProfileId: _activeProfileId } = useAppStore();
+  const { theme, setTheme, activeProfileName } = useAppStore();
+
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+
+  useEffect(() => {
+    // Only show once per browser session — if already dismissed, skip the fetch entirely
+    if (sessionStorage.getItem(PROFILE_MODAL_DISMISSED_KEY)) return;
+
+    let cancelled = false;
+    fetch('/api/auth/status')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { user?: { profileCompleted?: boolean; authMethod?: string } } | null) => {
+        if (cancelled) return;
+        const user = data?.user;
+        if (user && user.profileCompleted === false && user.authMethod === 'EMAIL') {
+          setShowCompletionModal(true);
+        }
+      })
+      .catch(() => {/* silently ignore — modal is non-critical */});
+
+    return () => { cancelled = true; };
+  }, []);
+
+  function handleModalClose() {
+    setShowCompletionModal(false);
+    sessionStorage.setItem(PROFILE_MODAL_DISMISSED_KEY, '1');
+  }
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -49,17 +79,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {/* Sidebar header / branding */}
         <div className="px-5 py-5 flex items-center gap-3">
           <VestaLogo size={28} animate={false} />
-          <h1 className="text-xl font-bold" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Vesta</h1>
+          <h1 className="text-xl font-bold text-[var(--color-primary)]">Vesta</h1>
         </div>
 
         {/* Profile switcher */}
         <div className="px-4 mb-4">
           <Link
             href="/profiles"
+            prefetch={true}
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors"
           >
             <Users size={14} aria-hidden="true" />
-            <span className="truncate">Profile</span>
+            <span className="truncate">{activeProfileName || 'Profile'}</span>
           </Link>
         </div>
 
@@ -74,6 +105,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <Link
                 key={href}
                 href={href}
+                prefetch={true}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
                   isActive
                     ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
@@ -98,6 +130,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <Link
                 key={href}
                 href={href}
+                prefetch={true}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
                   isActive
                     ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
@@ -131,13 +164,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <header className="sticky top-0 z-40 glass px-4 py-3 flex items-center justify-between md:hidden">
           <div className="flex items-center gap-3">
             <VestaLogo size={24} animate={false} />
-            <h1 className="text-xl font-bold" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Vesta</h1>
+            <h1 className="text-xl font-bold text-[var(--color-primary)]">Vesta</h1>
             <Link
               href="/profiles"
+              prefetch={true}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-xs font-medium hover:border-[var(--color-primary)] transition-colors"
             >
               <Users size={12} aria-hidden="true" />
-              <span>Profile</span>
+              <span className="truncate">{activeProfileName || 'Profile'}</span>
             </Link>
           </div>
           <div className="flex items-center gap-2">
@@ -167,6 +201,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <Link
                 key={href}
                 href={href}
+                prefetch={true}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${
                   isActive
                     ? 'text-[var(--color-primary)]'
@@ -180,6 +215,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           })}
         </div>
       </nav>
+
+      {/* ── Profile Completion Modal ── */}
+      <ProfileCompletionModal
+        open={showCompletionModal}
+        onClose={handleModalClose}
+      />
     </div>
   );
 }

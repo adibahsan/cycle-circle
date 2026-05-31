@@ -1,0 +1,17 @@
+{
+  "buildCommand": "cd ../.. && pnpm --filter @vesta/shared db:generate && pnpm --filter @vesta/web build",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "regions": ["sin1"],
+  "crons": [
+    {
+      "path": "/api/cron/daily-reminders",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/caas-check",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}

@@ -97,9 +97,9 @@
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | AES-256-GCM encryption | DONE | `prisma-field-encryption` 1.6.0 with AES-256-GCM via `PRISMA_FIELD_ENCRYPTION_KEY` |
-| 2 | prisma-field-encryption integration | DONE | `app/src/server/db.ts` uses `$extends(fieldEncryptionExtension())` — Prisma 7 API |
-| 3 | Transparent decrypt in application layer | DONE | `SymptomLog.value` annotated `/// @encrypted`, auto-decrypt on read |
+| 1 | AES-256-GCM encryption | NOT STARTED | Deferred to later phase. prisma-field-encryption not yet installed. |
+| 2 | prisma-field-encryption integration | NOT STARTED | Deferred to later phase. prisma-field-encryption not yet installed. |
+| 3 | Transparent decrypt in application layer | NOT STARTED | Deferred to later phase. prisma-field-encryption not yet installed. |
 
 ### FR-SESSION — Session Store & JWT Blacklist
 
@@ -188,21 +188,21 @@
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | Super Admin role | PARTIAL | `Role` enum (USER/ADMIN) on User model in schema. No admin UI or middleware yet |
-| 2 | Admin KPI dashboard | NOT STARTED | No /admin route tree |
-| 3 | User management (list/search/suspend) | NOT STARTED | — |
-| 4 | Subscription management | NOT STARTED | — |
-| 5 | Admin session + middleware | NOT STARTED | — |
-| 6 | /admin route tree | NOT STARTED | Directory doesn't exist |
+| 1 | Super Admin role | DONE | `Role` enum (USER/ADMIN) on User model; bcrypt login via `verifyAdminLogin`; JWT cookie with role=ADMIN |
+| 2 | Admin KPI dashboard | DONE | `apps/admin/` — dashboard with Recharts analytics, KPI cards, user/subscription stats |
+| 3 | User management (list/search/suspend) | DONE | Users list with search, filter, pagination, suspend/reactivate/delete actions; URL-based sorting |
+| 4 | Subscription management | DONE | Subscriptions page with grant/revoke Pro, list view |
+| 5 | Admin session + middleware | DONE | Edge proxy with role=ADMIN check + `requireAdminAuth()` server-side guard |
+| 6 | /admin route tree | DONE | `apps/admin/src/app/(admin)/` — dashboard, users, subscriptions, content/CMS, analytics, SMS broadcasts, feedback |
 
 ### FR-CMS — Content CMS (Tiptap)
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | Tiptap 3.x rich-text editor | NOT STARTED | Not in package.json |
-| 2 | Side-by-side EN/BN editing | NOT STARTED | — |
-| 3 | Phase-tag & category selectors | NOT STARTED | — |
-| 4 | Draft/publish lifecycle | NOT STARTED | Article type has `published` field (model-ready) |
+| 1 | Tiptap 3.x rich-text editor | DONE | `apps/admin/` content page uses Tiptap 3.x |
+| 2 | Side-by-side EN/BN editing | DONE | EN + BN editors rendered side-by-side |
+| 3 | Phase-tag & category selectors | DONE | Phase and category selectors on article form |
+| 4 | Draft/publish lifecycle | DONE | DRAFT/PUBLISHED/ARCHIVED status; publishedAt cleared on revert to DRAFT/ARCHIVED |
 | 5 | Image upload (Supabase storage) | NOT STARTED | — |
 | 6 | HTML sanitisation | NOT STARTED | — |
 
@@ -210,10 +210,10 @@
 
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
-| 1 | Population health charts (Recharts) | NOT STARTED | Recharts not in package.json |
-| 2 | Cycle-length distribution chart | NOT STARTED | — |
-| 3 | Common symptoms by phase chart | NOT STARTED | — |
-| 4 | Retention curves | NOT STARTED | — |
+| 1 | Population health charts (Recharts) | DONE | `apps/admin/` analytics page uses Recharts 3.x |
+| 2 | Cycle-length distribution chart | DONE | Distribution chart in admin analytics |
+| 3 | Common symptoms by phase chart | DONE | Symptoms-by-phase chart in admin analytics |
+| 4 | Retention curves | DONE | Retention chart in admin analytics |
 | 5 | Prediction accuracy report (MAE) | NOT STARTED | — |
 | 6 | Nightly accuracy computation job | NOT STARTED | — |
 
@@ -237,7 +237,7 @@
 | 2 | NFR-I18N-01: All UI strings in EN + BN | PARTIAL | i18n file complete, ~20+ hardcoded strings remain |
 | 3 | NFR-I18N-02: Bengali no-overflow at 375px | PARTIAL | Layout uses overflow patterns, no formal test |
 | 4 | NFR-PERF-01: Period log→prediction <10s | DONE | Synchronous/reactive, instant in prototype |
-| 5 | NFR-SEC-01: Field encryption at rest | DONE | `prisma-field-encryption` AES-256-GCM on `SymptomLog.value` via `/// @encrypted` annotation |
+| 5 | NFR-SEC-01: Field encryption at rest | NOT STARTED | Deferred to later phase. prisma-field-encryption not yet installed. |
 | 6 | NFR-SEC-06: JWT HttpOnly/Secure/SameSite | DONE | `app/src/server/auth.ts` — `setAuthCookie()` sets HttpOnly, Secure (prod), SameSite=Lax |
 
 ---

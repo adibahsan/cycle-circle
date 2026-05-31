@@ -5,7 +5,7 @@ export function getCurrentCycleDay(lastPeriodStart: string, cycleLength: number)
   const today = startOfDay(new Date());
   const lastPeriod = startOfDay(new Date(lastPeriodStart));
   const daysSince = differenceInDays(today, lastPeriod);
-  return (daysSince % cycleLength) + 1;
+  return Math.min(daysSince + 1, cycleLength);
 }
 
 export function getCurrentPhase(cycleDay: number, periodLength: number, cycleLength: number): CyclePhase {

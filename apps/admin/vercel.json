@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd ../.. && pnpm --filter @vesta/shared db:generate && pnpm --filter @vesta/admin build",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "regions": ["sin1"]
+}

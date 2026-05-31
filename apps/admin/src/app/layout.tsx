@@ -9,9 +9,21 @@ const manrope = Manrope({
   display: 'swap',
 });
 
+const siteUrl = 'https://test-vesta-admin.velirasolutions.com';
+
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
-  title: 'Vesta Admin',
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: 'Vesta Admin',
+    template: '%s | Vesta Admin',
+  },
   description: 'Admin panel for the Vesta reproductive health platform',
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

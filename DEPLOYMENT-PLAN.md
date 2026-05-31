@@ -2,7 +2,7 @@
 
 > Generated: 2026-05-29
 > Branch: adib/backend-integration
-> Target: Vercel Hobby + Supabase Free + Upstash Free + Resend Free ($0/month)
+> Target: Vercel Hobby + Supabase Free + Resend Free ($0/month)
 
 ---
 
@@ -12,12 +12,12 @@
 
 | # | Blocker | Severity | Location |
 |---|---------|----------|----------|
-| S-1 | **FR-ENC not implemented** — `prisma-field-encryption` is not installed; `symptom_logs.value` is stored as plaintext in PostgreSQL. This directly fails DoD gate "Security #1" (NFR-SEC-01). | CRITICAL P0 | `packages/shared/package.json` |
+| S-1 | **FR-ENC not implemented** — `prisma-field-encryption` is not installed; `symptom_logs.value` is stored as plaintext in PostgreSQL. This directly fails DoD gate "Security #1" (NFR-SEC-01). Deferred to v2. DB connection is TLS-encrypted in transit. | DEFERRED | `packages/shared/package.json` |
 | S-2 | **Prisma version mismatch** — SRS pins Prisma to 6.13.x for `prisma-field-encryption` compatibility; current version is 6.19.3. Installing `prisma-field-encryption` may require a downgrade to 6.13.x. Verify library compatibility before releasing. | HIGH | `packages/shared/package.json` |
-| S-3 | **RLS migration is a stub** — `20260526235330_add_rls/migration.sql` contains only a comment ("RLS deferred: policies will be re-added in a future migration"). RLS is not active. Data isolation depends entirely on application-layer `userId` checks, with no database-level enforcement. | HIGH | `packages/shared/prisma/migrations/20260526235330_add_rls/migration.sql` |
+| S-3 | **RLS not active** — RLS not active — deferred to v2. Single `0_init` migration covers full schema. App-layer ownership checks enforced. | HIGH | `packages/shared/prisma/migrations/` |
 | S-4 | **BDAPPS_WEBHOOK_IPS not enforced in dev** — `validateWebhookSource` is permissive when the env var is absent. Ensure it is set and enforced in production before registering webhook URLs in BDApps portal. | MEDIUM | `packages/shared/src/server/adapters/webhooks.ts` |
-| S-5 | **Missing HSTS header** — `next.config.ts` sets `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, and `X-DNS-Prefetch-Control` but does NOT set `Strict-Transport-Security`. Add this before going live. | MEDIUM | `apps/web/next.config.ts` |
-| S-6 | **No Content Security Policy** — There is no CSP header in `next.config.ts` or middleware. Add a strict CSP to prevent XSS and satisfy NFR-SEC-04 (no third-party analytics touching health data). | MEDIUM | `apps/web/next.config.ts` |
+| S-5 | **Missing HSTS header** — `next.config.ts` sets `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, and `X-DNS-Prefetch-Control` but does NOT set `Strict-Transport-Security`. Add this before going live. | RESOLVED | `apps/web/next.config.ts` |
+| S-6 | **No Content Security Policy** — There is no CSP header in `next.config.ts` or middleware. Add a strict CSP to prevent XSS and satisfy NFR-SEC-04 (no third-party analytics touching health data). | RESOLVED | `apps/web/next.config.ts` |
 | S-7 | **JWT_SECRET must be rotated** — Local dev secret (`local-dev-jwt-secret-minimum-32-characters-long`) must never appear in production. Generate a cryptographically random 64-character secret. | HIGH | Vercel env vars |
 
 ### Data Integrity Blockers
@@ -35,16 +35,16 @@
 |---|---------|----------|-------|
 | I-1 | **Supabase project not provisioned** — No production Supabase project exists yet. Must be created and migrations applied before launch. | CRITICAL | See Infrastructure Setup §1 |
 | I-2 | **Vercel project not connected to repo** — No `vercel.json` exists in the repository. Must be created to configure cron jobs. | CRITICAL | See Infrastructure Setup §2 |
-| I-3 | **QStash not wired** — The SRS requires prediction recalc and email delivery to be dispatched to QStash workers. Currently, prediction recalc uses a local `JobEvent` table + standalone worker process (not available on Vercel), and email notifications are sent synchronously in the cron handler. No QStash account is provisioned and no QStash publish call exists in the codebase. | HIGH | `apps/web/src/app/api/cron/daily-reminders/route.ts` |
+| I-3 | **QStash not wired** — DEFERRED to v2. Synchronous cron is sufficient for <100 users. Daily-reminders runs within 10s Vercel timeout at initial scale. | DEFERRED | `apps/web/src/app/api/cron/daily-reminders/route.ts` |
 | I-4 | **BDApps production credentials not obtained** — Current config uses simulator credentials. Must register a production BDApps application and obtain `applicationId`/`password`. | HIGH | BDApps developer portal |
 | I-5 | **Resend domain not verified** — Transactional email from a custom domain requires DNS verification in the Resend dashboard. Without this, emails may be rejected or land in spam. | MEDIUM | Resend dashboard |
-| I-6 | **Upstash Redis/QStash not provisioned** — No production Upstash accounts exist. Must be created and connection strings obtained. | HIGH | Upstash console |
+| I-6 | **Upstash Redis/QStash not provisioned** — DEFERRED. In-memory fallback used for rate limiting and JWT blacklisting. No Redis or QStash provisioning needed for v1. | DEFERRED | Upstash console |
 
 ### Admin Panel Blockers
 
 | # | Blocker | Severity | Location |
 |---|---------|----------|----------|
-| A-1 | **Admin models not in schema** — `Article`, `ArticleCategory`, `SmsBroadcast`, `AdminAuditLog` models are required by FR-CONTENT/FR-CMS and FR-SMS but do not exist in `schema.prisma`. Cannot deploy a functional admin panel without them. | HIGH | `packages/shared/prisma/schema.prisma` |
+| A-1 | **Admin models not in schema** — `Article`, `ArticleCategory`, `SmsBroadcast`, `AdminAuditLog` models are required by FR-CONTENT/FR-CMS and FR-SMS but do not exist in `schema.prisma`. Cannot deploy a functional admin panel without them. | RESOLVED | `packages/shared/prisma/schema.prisma` |
 | A-2 | **Admin user seeding** — There is no self-registration for admin accounts. The first admin must be created via a DB seed or direct SQL before the admin panel is usable in production. | HIGH | `packages/shared/prisma/seed.ts` |
 | A-3 | **Admin app not on Vercel** — A separate Vercel project for `apps/admin/` has not been created or connected to the GitHub repo. | HIGH | Vercel dashboard |
 | A-4 | **Admin cookie isolation on subdomains** — `vesta_token` cookies set on `app.vesta-app.com` are not shared with `admin.vesta-app.com` by default. The admin app has its own magic-link login flow but this has not been end-to-end tested in a real subdomain context. | MEDIUM | `apps/admin/src/` |
@@ -54,12 +54,20 @@
 
 | # | Blocker | Notes |
 |---|---------|-------|
-| C-1 | **ProfileCompletionModal not wired** — The modal collects `fullName`, `phone`, `DOB` but does not call `completeProfile` Server Action. The backend action exists. This is a straightforward 5-line wiring task. | `apps/web/src/components/ProfileCompletionModal.tsx` |
+| C-1 | **ProfileCompletionModal not wired** — The modal collects `fullName`, `phone`, `DOB` but does not call `completeProfile` Server Action. The backend action exists. This is a straightforward 5-line wiring task. | RESOLVED — ProfileCompletionModal is wired to `completeProfile` server action. | `apps/web/src/components/ProfileCompletionModal.tsx` |
 | C-2 | **OTP 60-second resend cooldown not server-side validated** — Only UI enforces cooldown; backend only enforces the 3/minute rate limit. A client bypassing the UI can request more frequently than intended. | `apps/web/src/app/api/auth/otp/request/route.ts` |
 | C-3 | **Profile completion not re-prompted on subsequent logins** — `profileCompleted` field exists but `middleware.ts` does not redirect incomplete-profile users. | `apps/web/src/middleware.ts` |
-| C-4 | **QStash not used for notification dispatch** — The daily-reminders cron calls `sendPeriodAlert`, `sendFertileAlert`, `sendLoggingReminder` synchronously in a `for` loop. With many users this could exceed the 10-second Vercel Hobby timeout. Must be refactored to dispatch each notification as a QStash job. | `apps/web/src/app/api/cron/daily-reminders/route.ts` |
-| C-5 | **Worker process not deployable on Vercel** — `packages/shared/src/server/worker-process.ts` is a long-running Node process that polls `JobEvent`. This cannot run on Vercel serverless. Prediction recalculation must be moved to QStash or triggered differently. | `packages/shared/src/server/worker-process.ts` |
-| C-6 | **env.ts does not include Upstash REST vars** — `REDIS_URL` assumes a native Redis connection string (`redis://`). Upstash on Vercel requires REST API vars (`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`). The Redis adapter must switch to `@upstash/redis` (HTTP client). | `packages/shared/src/utils/env.ts` |
+| C-4 | **QStash not used for notification dispatch** — The daily-reminders cron calls `sendPeriodAlert`, `sendFertileAlert`, `sendLoggingReminder` synchronously in a `for` loop. DEFERRED to v2. Synchronous email loop works within 10s timeout for <100 users. | `apps/web/src/app/api/cron/daily-reminders/route.ts` |
+| C-5 | **Worker process not deployable on Vercel** — `packages/shared/src/server/worker-process.ts` is a long-running Node process that polls `JobEvent`. This cannot run on Vercel serverless. Prediction recalculation must be moved to QStash or triggered differently. | RESOLVED — Worker process removed. `recalculatePrediction()` is called inline in server actions and API routes. | `packages/shared/src/server/worker-process.ts` |
+| C-6 | **env.ts does not include Upstash REST vars** — `REDIS_URL` assumes a native Redis connection string (`redis://`). Upstash on Vercel requires REST API vars (`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`). The Redis adapter must switch to `@upstash/redis` (HTTP client). | DEFERRED. In-memory Map fallback used when REDIS_URL absent. App works without Redis dependency. | `packages/shared/src/utils/env.ts` |
+
+---
+
+### Email Infrastructure (Implemented)
+- EmailLog model tracks all sends (type, status, provider, delivery status)
+- Resend for production email, Mailpit SMTP for dev
+- Resend webhook endpoint for delivery status tracking
+- Duplicate send prevention via `wasEmailSentToday()` in cron
 
 ---
 
@@ -212,64 +220,28 @@ After first deploy, configure the custom domain in Vercel → Domains. Vercel au
 
 ---
 
-### 3. Upstash Redis
+### 3. Upstash Redis — DEFERRED
 
-**Step 3.1 — Create database**
-1. Go to [console.upstash.com](https://console.upstash.com) → Create Database.
-2. Name: `vesta-prod`. Region: `ap-southeast-1` (Singapore).
-3. Type: Regional (not Global — saves cost at free tier).
-4. Enable TLS (required).
+Redis is **not required for v1**. The application uses an in-memory Map fallback for JWT blacklisting and rate limiting when `REDIS_URL` is absent.
 
-**Step 3.2 — Obtain credentials**
-From the database details page:
-- `UPSTASH_REDIS_REST_URL` — the `https://` REST endpoint
-- `UPSTASH_REDIS_REST_TOKEN` — the REST token
+**Limitations of in-memory mode:**
+- State resets on Vercel cold starts (acceptable for low traffic)
+- No cross-instance persistence (acceptable for single-instance Hobby plan)
 
-**Step 3.3 — Update Redis adapter**
-The current `redis.ts` adapter uses `ioredis` (TCP connection via `redis://` URL). Vercel serverless does not support persistent TCP connections well; Upstash recommends the HTTP REST client. Update the adapter to use `@upstash/redis`:
-
-```bash
-pnpm --filter @vesta/shared add @upstash/redis
-```
-
-Update `packages/shared/src/server/adapters/redis.ts` to use `new Redis({ url, token })` from `@upstash/redis`.
-
-Update `packages/shared/src/utils/env.ts` to replace `REDIS_URL` with:
-```typescript
-UPSTASH_REDIS_REST_URL: z.string().min(1),
-UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
-```
+**When to add Upstash Redis:**
+- When rate limiting must persist across cold starts
+- When scaling beyond single Vercel instance
+- Install `@upstash/redis` (HTTP client) and set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`
 
 ---
 
-### 4. Upstash QStash
+### 4. Upstash QStash — DEFERRED
 
-**Step 4.1 — Access QStash**
-QStash is available from the same Upstash console. No separate account needed.
+QStash is **not required for v1**. The daily-reminders cron sends notifications synchronously, which completes within the 10-second Vercel Hobby timeout for <100 users.
 
-**Step 4.2 — Obtain credentials**
-- `QSTASH_URL` — `https://qstash.upstash.io/v2/publish/`
-- `QSTASH_TOKEN` — signing token for publishing messages
-- `QSTASH_CURRENT_SIGNING_KEY` + `QSTASH_NEXT_SIGNING_KEY` — for verifying inbound QStash requests at your endpoints
-
-**Step 4.3 — Wire QStash for notification dispatch (pre-release task)**
-Currently the daily-reminders cron sends all emails synchronously. This must change:
-
-1. The cron handler (`/api/cron/daily-reminders`) should iterate profiles, then for each profile that needs a notification, publish a QStash message to a new endpoint (e.g., `/api/jobs/send-notification`).
-2. The `/api/jobs/send-notification` handler receives the job payload, validates the QStash signature, and calls Resend.
-3. QStash handles retry on failure, decoupling Resend delivery from the 10-second cron window.
-
-```bash
-pnpm --filter @vesta/shared add @upstash/qstash
-```
-
-**Step 4.4 — Wire QStash for prediction recalculation (pre-release task)**
-The standalone worker process (`worker-process.ts`) polls `JobEvent` and cannot run on Vercel. Replace it:
-
-1. In `tracking-actions.ts`, after creating/updating a period log, publish a QStash message to `/api/jobs/recalculate-prediction`.
-2. The `/api/jobs/recalculate-prediction` handler validates the QStash signature and calls `recalculatePrediction`.
-
-This eliminates the need for the Docker `worker` service in production.
+**When to add QStash:**
+- When daily-reminders cron approaches the 10s timeout (~100+ users with notifications)
+- Install `@upstash/qstash`, refactor cron to publish jobs, create `/api/jobs/send-notification` endpoint
 
 ---
 
@@ -420,32 +392,24 @@ All variables must be set in Vercel → Project Settings → Environment Variabl
 | Variable | Description | How to generate / obtain |
 |----------|-------------|--------------------------|
 | `DATABASE_URL` | Supabase PostgreSQL pooler connection string (PgBouncer Transaction mode, port 6543) | Supabase → Settings → Database → Connection Pooling |
+| `DIRECT_URL` | Direct Supabase connection for migrations (non-pooled, port 5432) | Supabase → Settings → Database → Direct connection |
 | `JWT_SECRET` | Cryptographically random secret, minimum 64 characters | `openssl rand -base64 48` or `node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"` |
-| `PRISMA_FIELD_ENCRYPTION_KEY` | AES-256-GCM key for `prisma-field-encryption` | Generated by `prisma-field-encryption` CLI: `npx prisma-field-encryption generate-key` |
 | `CRON_SECRET` | Shared secret for authenticating Vercel Cron requests | `openssl rand -base64 32` |
 | `BDAPPS_APP_ID` | BDApps production application identifier | BDApps developer portal |
 | `BDAPPS_PASSWORD` | BDApps production application password | BDApps developer portal |
 | `BDAPPS_WEBHOOK_IPS` | Comma-separated list of BDApps IP addresses allowed to call webhook endpoints | Request from BDApps support |
 | `RESEND_API_KEY` | Resend transactional email API key | Resend dashboard → API Keys |
-| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint (`https://...`) | Upstash console → Redis database |
-| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token | Upstash console → Redis database |
-| `QSTASH_TOKEN` | Upstash QStash publish token | Upstash console → QStash |
-| `QSTASH_CURRENT_SIGNING_KEY` | QStash signing key for verifying inbound messages | Upstash console → QStash |
-| `QSTASH_NEXT_SIGNING_KEY` | QStash next signing key (rotation) | Upstash console → QStash |
 | `NODE_ENV` | Must be `production` | Set literally |
 
 ### Optional / Conditional
 
 | Variable | Description | Notes |
 |----------|-------------|-------|
+| `REDIS_URL` | Redis connection string | Optional. When absent, in-memory fallback is used for rate limiting and JWT blacklisting. |
 | `BDAPPS_BASE_URL` | BDApps API base URL | Defaults to `https://developer.bdapps.com`; do NOT set in production |
 | `BDAPPS_SIMULATOR_BASE_URL` | Simulator URL | Do NOT set in production |
 | `DEV_MODE` | Enables dev-login bypass | Must be `false` (or absent) in production; `dev-login` route returns `notFound()` in production regardless |
 | `MAILPIT_SMTP_URL` | Local email capture | Do NOT set in production |
-
-### Variables NOT Needed in Production
-
-- `REDIS_URL` — Replace with `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (see Infrastructure §3)
 
 ### Admin App Environment Variables
 
@@ -454,8 +418,6 @@ The admin Vercel project requires its own set of environment variables. Set thes
 | Variable | Description | Notes |
 |----------|-------------|-------|
 | `DATABASE_URL` | Same Supabase pooler URL as web app | Must point to the same database |
-| `UPSTASH_REDIS_REST_URL` | Same as web app | Shared cache/session store |
-| `UPSTASH_REDIS_REST_TOKEN` | Same as web app | Shared cache/session store |
 | `JWT_SECRET` | **Identical to web app `JWT_SECRET`** | Critical — see cookie note below |
 | `NEXT_PUBLIC_ADMIN_URL` | `https://admin.[your-domain].com` | Used for magic-link callback URLs |
 | `RESEND_API_KEY` | Same as web app (or a separate key) | Admin sends magic-link emails |
@@ -466,7 +428,6 @@ The admin Vercel project requires its own set of environment variables. Set thes
 ### Important Security Notes
 
 - `JWT_SECRET` must be at least 32 characters (enforced by `env.ts`). Recommend 64+ characters. **The same value must be used in both the web app and admin app Vercel projects.**
-- `PRISMA_FIELD_ENCRYPTION_KEY` must be stored securely. Rotating this key requires re-encrypting all existing encrypted fields. Do not rotate without a migration plan.
 - Never expose `CRON_SECRET` publicly. Vercel sends it as the `Authorization: Bearer` header when invoking cron endpoints.
 - `BDAPPS_PASSWORD` is equivalent to an API key. Treat with the same security as a private key.
 - The admin app does not need `BDAPPS_*` or `QSTASH_*` variables unless admin SMS broadcast is wired to QStash.
@@ -477,6 +438,8 @@ The admin Vercel project requires its own set of environment variables. Set thes
 
 ### Running the Initial Migration
 
+The database uses a single `0_init` migration covering the full schema.
+
 Prisma `migrate deploy` (not `migrate dev`) is used for production:
 
 ```bash
@@ -485,12 +448,12 @@ DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres"
   pnpm --filter @vesta/shared db:migrate:deploy
 ```
 
-If using PgBouncer pooler, update `schema.prisma` to add `directUrl`:
+The `schema.prisma` includes `directUrl` for migration support:
 ```prisma
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")      // pooler URL for runtime
-  directUrl = env("DIRECT_URL")        // direct URL for migrations
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 ```
 
@@ -618,20 +581,14 @@ Prisma does not support automatic rollback. If a migration fails in production:
 
 ```json
 {
-  "buildCommand": "pnpm --filter @vesta/shared db:migrate:deploy && pnpm --filter @vesta/web build",
+  "buildCommand": "pnpm --filter @vesta/shared db:generate && pnpm --filter @vesta/web build",
   "installCommand": "pnpm install --frozen-lockfile",
-  "outputDirectory": "apps/web/.next",
   "framework": "nextjs",
+  "outputDirectory": "apps/web/.next",
   "regions": ["sin1"],
   "crons": [
-    {
-      "path": "/api/cron/daily-reminders",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/caas-check",
-      "schedule": "0 2 * * *"
-    }
+    { "path": "/api/cron/daily-reminders", "schedule": "0 8 * * *" },
+    { "path": "/api/cron/caas-check", "schedule": "0 2 * * *" }
   ]
 }
 ```
@@ -834,7 +791,7 @@ Work through this list in order. Each item is a gate; do not skip forward.
 
 ### 4. Field Encryption Not Implemented (FR-ENC)
 
-**Risk level:** CRITICAL — DoD blocker**
+**Risk level:** DEFERRED — v2
 
 **Scenario:** `symptom_logs.value` (which contains sensitive reproductive health data — symptoms like "spotting", "cramping", mood states, discharge types) is stored as plaintext in PostgreSQL. A database dump or direct SQL access exposes all health data without protection.
 
@@ -856,13 +813,13 @@ Work through this list in order. Each item is a gate; do not skip forward.
 
 ### 6. QStash Not Wired — Synchronous Notification Sending
 
-**Risk level:** HIGH
+**Risk level:** DEFERRED — v2
 
-**Scenario:** The SRS architecture requires QStash for all async work. Neither notification dispatch nor prediction recalculation uses QStash. The worker process cannot run on Vercel at all.
+**Scenario:** The SRS architecture requires QStash for all async work. Neither notification dispatch nor prediction recalculation uses QStash. However, prediction recalculation is now called inline in server actions, and synchronous email sending is acceptable for <100 users at initial scale.
 
-**Mitigation:** See Code Blockers C-4 and C-5. Both must be resolved before production. The `@upstash/qstash` library provides a simple `client.publish({ url, body })` API.
+**When to implement:** When the daily-reminders cron approaches the 10-second timeout (~100+ users with notifications enabled). At that point, refactor to dispatch each notification as a QStash job.
 
-**Double-sending risk:** When moving to QStash, implement idempotency in the notification job handlers. A QStash retry on a failed handler could send the same email twice. Use the existing `idempotencyKey` pattern (already used in `WebhookEvent`) for job deduplication.
+**Double-sending risk (when implemented):** When moving to QStash, implement idempotency in the notification job handlers. A QStash retry on a failed handler could send the same email twice. Use the existing `idempotencyKey` pattern (already used in `WebhookEvent`) for job deduplication.
 
 ### 7. No Error Monitoring
 
@@ -1004,13 +961,6 @@ Weekly checks:
 
 Alert threshold: trigger Supabase Pro upgrade when storage exceeds 400 MB.
 
-### Upstash Redis and QStash
-
-- Redis: monitor daily command count vs. 10,000/day limit and memory vs. 256 MB
-- QStash: monitor message count vs. 500/day limit
-
-From the Upstash console, set email alerts for 80% of free tier limits.
-
 ### Resend Dashboard
 
 - Monitor delivered vs. bounced vs. complained rates daily.
@@ -1039,12 +989,10 @@ Alert threshold: 80 emails in a single day triggers a review of the QStash dispa
 
 | Service | Free Limit | Approximate Users Before Upgrade |
 |---------|------------|----------------------------------|
-| Vercel Hobby (web app) | 100 GB bandwidth, 1M invocations/month, 10s timeout | ~5,000–10,000 MAU before bandwidth concern; timeout concern hits at much lower scale if QStash not implemented |
+| Vercel Hobby (web app) | 100 GB bandwidth, 1M invocations/month, 10s timeout | ~5,000–10,000 MAU before bandwidth concern; synchronous cron becomes a concern at ~100+ users |
 | Vercel Hobby (admin app) | Shared with web app project OR a second Hobby account ($0) | Admin traffic is negligible; the admin app is a separate Vercel project. On Hobby, each GitHub repo can have multiple projects on the same account sharing the same Hobby limits. |
-| Supabase Free | 500 MB database, 1 GB file storage, no backups | ~2,000–5,000 users with symptom data (encrypted blobs are larger; estimate 5–10 MB per active user per month of logging). Article content and admin audit logs add marginal storage. |
+| Supabase Free | 500 MB database, 1 GB file storage, no backups | ~2,000–5,000 users with symptom data (estimate 5–10 MB per active user per month of logging). Article content and admin audit logs add marginal storage. |
 | Supabase Storage (article images) | 1 GB file storage (included in free tier) | Article image uploads via the admin CMS fit within free tier at launch scale. |
-| Upstash Redis Free | 10,000 commands/day, 256 MB | ~500–1,000 DAU (each login = ~3–5 Redis ops; each OTP = ~3 ops; rate limit checks = 2 ops). Admin sessions add minimal Redis overhead. |
-| Upstash QStash Free | 500 messages/day | ~500 notifications/day maximum across all users |
 | Resend Free | 3,000 emails/month, 100/day | ~100 active users receiving daily notifications (period alert + fertile alert + reminder = 3 emails/user potentially). Admin magic-link emails add ~1–2 emails/day at most. |
 
 ### Upgrade Triggers and Costs
@@ -1054,8 +1002,8 @@ Alert threshold: 80 emails in a single day triggers a review of the QStash dispa
 | Supabase auto-pause becomes customer-visible | Supabase Pro | +$25/month |
 | DB storage > 400 MB | Supabase Pro | +$25/month |
 | Daily email count consistently approaching 100 | Resend Starter (50K/month) | +$20/month |
-| Daily notifications > 400/day | Upstash QStash PAYG | ~$1–5/month |
-| Redis commands > 8,000/day | Upstash Redis PAYG | ~$0.20 per 100K commands |
+| Cron timeout issues at >100 users | Upstash QStash PAYG | ~$1–5/month |
+| Rate limiting must persist across cold starts | Upstash Redis PAYG | ~$0.20 per 100K commands |
 | Cron timeout issues | Vercel Pro | +$20/month |
 | Functions > 10 seconds needed | Vercel Pro | +$20/month |
 | Bandwidth > 80 GB/month | Vercel Pro | +$20/month |

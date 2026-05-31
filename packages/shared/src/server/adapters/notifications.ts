@@ -1,35 +1,11 @@
-import { Resend } from 'resend'
-import { env } from '../../utils/env'
 import { smsSend } from './bdapps'
+import { sendEmail } from './mail'
 import {
   periodAlertEmail,
   fertileWindowEmail,
   loggingReminderEmail,
 } from '../email-templates'
 import type { Language } from '@prisma/client'
-
-// ─── Resend client (null in dev when RESEND_API_KEY is absent) ────────────────
-
-const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null
-
-// ─── Internal helper ──────────────────────────────────────────────────────────
-
-async function sendEmail(
-  to: string,
-  subject: string,
-  html: string,
-): Promise<void> {
-  if (!resend) {
-    console.log(`[DEV] Email → ${to}: ${subject}`)
-    return
-  }
-  await resend.emails.send({
-    from: 'Vesta <noreply@vesta.app>',
-    to,
-    subject,
-    html,
-  })
-}
 
 // ─── Period Alert ─────────────────────────────────────────────────────────────
 
@@ -42,12 +18,18 @@ export async function sendPeriodAlert(params: {
   predictedDate: string
   daysUntil: number
   isProSubscriber: boolean
+  userId?: string
+  profileId?: string
 }): Promise<void> {
   const { subject, html } = periodAlertEmail(params)
 
   // Email: all users with an email address
   if (params.email) {
-    await sendEmail(params.email, subject, html)
+    await sendEmail(params.email, subject, html, {
+      type: 'PERIOD_ALERT',
+      userId: params.userId,
+      profileId: params.profileId,
+    })
   }
 
   // SMS: only Pro subscribers with a phone number
@@ -74,12 +56,18 @@ export async function sendFertileAlert(params: {
   fertileEnd: string
   ovulationDate: string
   isProSubscriber: boolean
+  userId?: string
+  profileId?: string
 }): Promise<void> {
   const { subject, html } = fertileWindowEmail(params)
 
   // Email: all users with an email address
   if (params.email) {
-    await sendEmail(params.email, subject, html)
+    await sendEmail(params.email, subject, html, {
+      type: 'FERTILE_ALERT',
+      userId: params.userId,
+      profileId: params.profileId,
+    })
   }
 
   // SMS: only Pro subscribers with a phone number
@@ -104,12 +92,18 @@ export async function sendLoggingReminder(params: {
   language: Language
   daysSinceLastLog: number
   isProSubscriber: boolean
+  userId?: string
+  profileId?: string
 }): Promise<void> {
   const { subject, html } = loggingReminderEmail(params)
 
   // Email: all users with an email address
   if (params.email) {
-    await sendEmail(params.email, subject, html)
+    await sendEmail(params.email, subject, html, {
+      type: 'LOGGING_REMINDER',
+      userId: params.userId,
+      profileId: params.profileId,
+    })
   }
 
   // SMS: only Pro subscribers with a phone number

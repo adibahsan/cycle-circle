@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { useAppStore } from '@/lib/store';
 import '@vesta/shared/utils/i18n';
 
 const OTP_LENGTH = 6;
@@ -27,7 +26,6 @@ export default function VerifyOtpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useTranslation();
-  const setOnboardingComplete = useAppStore((s) => s.setOnboardingComplete);
 
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [error, setError] = useState('');
@@ -115,19 +113,17 @@ export default function VerifyOtpPage() {
       const res = await fetch('/api/auth/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ referenceNo, code }),
+        body: JSON.stringify({ referenceNo, otp: code }),
       });
-      const body = await res.json().catch(() => ({})) as { onboardingComplete?: boolean; error?: string };
+      const body = await res.json().catch(() => ({})) as { error?: string | { message: string }; user?: { profileCompleted?: boolean } };
       if (!res.ok) {
-        setError(body.error ?? t('auth.verificationFailed'));
+        const msg = typeof body.error === 'object' ? body.error?.message : body.error;
+        setError(msg ?? t('auth.verificationFailed'));
         return;
       }
       setSuccess(true);
       await new Promise((res) => setTimeout(res, 700));
-      if (body.onboardingComplete) {
-        setOnboardingComplete(true);
-      }
-      router.replace('/dashboard');
+      router.replace(body.user?.profileCompleted ? '/dashboard' : '/onboarding');
     } catch {
       setError(t('auth.verificationFailed'));
     } finally {
@@ -184,10 +180,7 @@ export default function VerifyOtpPage() {
         animate="show"
         className="mb-7"
       >
-        <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-soft"
-          style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)' }}
-        >
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-soft bg-[var(--color-primary)]">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
             <rect x="4" y="8" width="20" height="15" rx="3" stroke="white" strokeWidth="2" />
             <path d="M4 12l10 7 10-7" stroke="white" strokeWidth="2" strokeLinecap="round" />
@@ -253,8 +246,7 @@ export default function VerifyOtpPage() {
         {/* Progress bar */}
         <div className="mt-3 h-1 rounded-full bg-[var(--color-border)] overflow-hidden">
           <motion.div
-            className="h-full rounded-full"
-            style={{ background: 'linear-gradient(90deg, var(--color-primary), var(--color-secondary))' }}
+            className="h-full rounded-full bg-[var(--color-primary)]"
             animate={{ width: `${(filled / OTP_LENGTH) * 100}%` }}
             transition={{ duration: 0.2 }}
           />
@@ -381,8 +373,7 @@ export default function VerifyOtpPage() {
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.05 }}
-              className="w-24 h-24 rounded-full flex items-center justify-center shadow-[0_8px_40px_rgba(232,71,108,0.4)]"
-              style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)' }}
+              className="w-24 h-24 rounded-full flex items-center justify-center shadow-[0_8px_40px_rgba(232,71,108,0.4)] bg-[var(--color-primary)]"
             >
               <CheckCircle2 size={44} className="text-white" strokeWidth={2} />
             </motion.div>

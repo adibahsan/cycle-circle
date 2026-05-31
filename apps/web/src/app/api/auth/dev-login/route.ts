@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { parseBody } from '@vesta/shared/server/validation'
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { issueJwt, setAuthCookie, validateMsisdn } from '@vesta/shared/server/auth'
-import { prisma } from '@vesta/shared'
+import { upsertUserByPhone } from '@vesta/shared/server/services'
 import { isDevModeEnabled } from '@vesta/shared/server/dev'
 
 function mapPartialAuthUser(raw: {
@@ -12,7 +12,7 @@ function mapPartialAuthUser(raw: {
 }) {
   return {
     id: raw.id,
-    phone: String(raw.phone ?? '').replace(/^tel:/, ''),
+    phone: String(raw.phone ?? '').replace(/^\+/, ''),
     authMethod: 'otp' as const,
     subscriptionStatus: 'free' as const,
     language: 'en' as const,
@@ -35,14 +35,7 @@ export async function POST(request: Request): Promise<Response> {
     const body = await parseBody(request, bodySchema)
     const normalizedPhone = validateMsisdn(body.phone)
 
-    const user = await prisma.user.upsert({
-      where: { phone: normalizedPhone },
-      create: {
-        phone: normalizedPhone,
-        authMethod: 'OTP',
-      },
-      update: {},
-    })
+    const user = await upsertUserByPhone(normalizedPhone)
 
     const token = await issueJwt({
       sub: user.id,

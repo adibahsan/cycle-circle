@@ -2,8 +2,8 @@ import { notFound } from 'next/navigation'
 import { requireAdminUser } from '@/app/queries/auth-queries'
 import { getArticle, getCategories } from '@/app/queries/content-queries'
 import { EditArticleClient } from './EditArticleClient'
-
-export const dynamic = 'force-dynamic'
+import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
 
 export default async function EditArticlePage({
   params,
@@ -22,12 +22,11 @@ export default async function EditArticlePage({
 
   return (
     <div className="space-y-6 page-enter">
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Edit Article</h1>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)] truncate max-w-lg">
-          {article.titleEn}
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Edit Article"
+        description={article.titleEn}
+        tags={[adminCacheTags.article(id), adminCacheTags.content]}
+      />
       <EditArticleClient article={article} categories={categories} />
     </div>
   )

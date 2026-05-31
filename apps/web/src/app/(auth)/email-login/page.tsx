@@ -98,10 +98,7 @@ export default function EmailLoginPage() {
           >
             {/* Header */}
             <motion.div custom={1} variants={FADE_UP} initial="hidden" animate="show" className="mb-7">
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-soft"
-                style={{ background: 'linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 100%)' }}
-              >
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-soft bg-[var(--color-primary)]">
                 <Mail size={28} color="white" strokeWidth={1.8} aria-hidden="true" />
               </div>
               <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-1">
@@ -197,10 +194,7 @@ export default function EmailLoginPage() {
               transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               className="relative mb-6"
             >
-              <div
-                className="w-24 h-24 rounded-3xl flex items-center justify-center shadow-glow"
-                style={{ background: 'linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 100%)' }}
-              >
+              <div className="w-24 h-24 rounded-3xl flex items-center justify-center shadow-glow bg-[var(--color-primary)]">
                 <Mail size={44} color="white" strokeWidth={1.5} />
               </div>
               {/* Sparkles orbiting */}

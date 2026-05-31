@@ -1,4 +1,5 @@
 import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 import { requireCurrentUser } from './auth-queries'
 import { getProfileById } from '@vesta/shared/server/services'
 
@@ -12,7 +13,11 @@ export const getPrediction = cache(async (profileId: string) => {
   const user = await requireCurrentUser()
   let result: Awaited<ReturnType<typeof getProfileById>> | null = null
   try {
-    result = await getProfileById(profileId, user.id)
+    result = await unstable_cache(
+      () => getProfileById(profileId, user.id),
+      ['prediction', profileId],
+      { tags: [`tracking:${profileId}`], revalidate: 300 }
+    )()
   } catch {
     return null
   }

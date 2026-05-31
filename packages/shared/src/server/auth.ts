@@ -106,7 +106,7 @@ export async function logoutAndBlacklist(): Promise<void> {
 /**
  * Validates a Bangladeshi MSISDN. Accepts formats:
  *   01XXXXXXXXX, 8801XXXXXXXXX, +8801XXXXXXXXX, tel:8801XXXXXXXXX
- * Returns the normalized tel: format used by BDApps.
+ * Returns the normalized +88 international format for DB storage.
  */
 export function validateMsisdn(phone: string): string {
   const cleaned = phone.replace(/\s+/g, '')
@@ -114,7 +114,7 @@ export function validateMsisdn(phone: string): string {
   if (!match) {
     throw new ApiError(400, 'Invalid Bangladeshi phone number', 'INVALID_PHONE')
   }
-  return `tel:88${match[1]}`
+  return `+880${match[1]}`
 }
 
 export interface AuthUser {

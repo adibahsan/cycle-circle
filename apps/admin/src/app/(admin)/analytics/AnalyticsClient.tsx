@@ -16,6 +16,8 @@ import {
   CartesianGrid,
 } from 'recharts'
 import { Card } from '@/components/ui/Card'
+import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -530,13 +532,11 @@ export function AnalyticsClient({
 }: AnalyticsClientProps) {
   return (
     <div className="space-y-8 page-enter">
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Analytics</h1>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-          Platform health metrics and cycle intelligence insights
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Analytics"
+        description="Platform health metrics and cycle intelligence insights"
+        tags={[adminCacheTags.analytics]}
+      />
 
       {/* Charts grid — 2 columns on lg+, single column on mobile */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

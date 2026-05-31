@@ -8,13 +8,8 @@ interface VestaLogoProps {
   className?: string;
 }
 
-const GRADIENT_ID = 'vesta-logo-gradient';
-
-/** Pure SVG logo — rounded square with gradient and bold "V". */
+/** Pure SVG logo — rounded square with solid pink and bold "V". */
 export function VestaLogoSVG({ size = 32, className }: Omit<VestaLogoProps, 'animate'>) {
-  const uid = Math.random().toString(36).slice(2, 7);
-  const gradId = `${GRADIENT_ID}-${uid}`;
-
   return (
     <svg
       width={size}
@@ -25,13 +20,7 @@ export function VestaLogoSVG({ size = 32, className }: Omit<VestaLogoProps, 'ani
       role="img"
       className={className}
     >
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#E8476C" />
-          <stop offset="100%" stopColor="#9B7FD4" />
-        </linearGradient>
-      </defs>
-      <rect width="48" height="48" rx="12" fill={`url(#${gradId})`} />
+      <rect width="48" height="48" rx="12" fill="#E8476C" />
       <text
         x="24"
         y="33"

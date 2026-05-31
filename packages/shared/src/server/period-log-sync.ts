@@ -1,6 +1,14 @@
-import type { PeriodLog, Profile } from '@prisma/client'
+import type { FlowIntensity, PeriodLog, Profile } from '@prisma/client'
 import { prisma } from './db'
-import { enqueueJob } from './adapters/jobs'
+import { recalculatePrediction } from './prediction-calc'
+
+/** Format a Date as YYYY-MM-DD in local timezone (avoids UTC shift from toISOString). */
+export function toLocalDateStr(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 
 /** Add each day in [start, end] that falls within [monthStart, monthEnd] to periodDates. */
 export function addPeriodDatesInRange(
@@ -17,7 +25,7 @@ export function addPeriodDatesInRange(
 
   while (cur <= endDay) {
     if (cur >= monthStart && cur <= monthEnd) {
-      periodDates.add(cur.toISOString().slice(0, 10))
+      periodDates.add(toLocalDateStr(cur))
     }
     cur.setDate(cur.getDate() + 1)
   }
@@ -25,9 +33,10 @@ export function addPeriodDatesInRange(
 
 /**
  * If the profile has lastPeriodStart but no period logs yet (e.g. from onboarding),
- * create an initial PeriodLog so dashboard/calendar can display it.
+ * create an initial PeriodLog and recalculate the prediction synchronously so the
+ * dashboard/calendar have data immediately.
  */
-export async function ensurePeriodLogFromProfile(profile: Profile): Promise<PeriodLog | null> {
+export async function ensurePeriodLogFromProfile(profile: Profile, flowIntensity?: FlowIntensity): Promise<PeriodLog | null> {
   if (!profile.lastPeriodStart) return null
 
   const existing = await prisma.periodLog.findFirst({
@@ -46,11 +55,11 @@ export async function ensurePeriodLogFromProfile(profile: Profile): Promise<Peri
       profileId: profile.id,
       startDate,
       endDate,
-      flowIntensity: 'MEDIUM',
+      flowIntensity: flowIntensity ?? 'MEDIUM',
     },
   })
 
-  await enqueueJob('PREDICTION_RECALC', { profileId: profile.id })
+  await recalculatePrediction(profile.id)
 
   return created
 }

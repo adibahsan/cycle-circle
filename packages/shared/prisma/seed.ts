@@ -25,10 +25,10 @@ async function main() {
 
   // ── Demo User ──────────────────────────────────────────────────────────────
   const demoUser = await prisma.user.upsert({
-    where: { phone: 'tel:8801712345678' },
+    where: { phone: '+8801712345678' },
     update: {},
     create: {
-      phone: 'tel:8801712345678',
+      phone: '+8801712345678',
       fullName: 'Demo User',
       authMethod: AuthMethod.OTP,
       profileCompleted: true,
@@ -115,34 +115,71 @@ async function main() {
 
   console.log(`Period logs upserted: ${periodLogSeeds.length}`)
 
-  // ── Prediction (Tier 1 / AVERAGE) ──────────────────────────────────────────
-  const nextPeriodStart = addDays(subMonths(today, 1), 28)
-  const ovulationDay = addDays(nextPeriodStart, -14)
-  const fertileStart = addDays(ovulationDay, -5)
-  const fertileEnd = addDays(ovulationDay, 1)
-
-  await prisma.prediction.upsert({
-    where: { profileId: selfProfile.id },
-    update: {
-      tier: PredictionTier.AVERAGE,
-      nextPeriodStart,
-      ovulationDay,
-      fertileStart,
-      fertileEnd,
-      confidence: 0.75,
+  // ── Period Logs for wife profile (last 2 months) ────────────────────────────
+  const wifeLogSeeds = [
+    {
+      id: `seed-period-log-1-${wifeProfile.id}`,
+      profileId: wifeProfile.id,
+      startDate: subMonths(today, 2),
+      endDate: addDays(subMonths(today, 2), 4),
+      flowIntensity: FlowIntensity.MEDIUM,
     },
-    create: {
-      profileId: selfProfile.id,
-      tier: PredictionTier.AVERAGE,
-      nextPeriodStart,
-      ovulationDay,
-      fertileStart,
-      fertileEnd,
-      confidence: 0.75,
+    {
+      id: `seed-period-log-2-${wifeProfile.id}`,
+      profileId: wifeProfile.id,
+      startDate: subMonths(today, 1),
+      endDate: addDays(subMonths(today, 1), 4),
+      flowIntensity: FlowIntensity.MEDIUM,
     },
-  })
+  ]
 
-  console.log('Prediction upserted for self profile')
+  await prisma.$transaction(
+    wifeLogSeeds.map((log) =>
+      prisma.periodLog.upsert({
+        where: { id: log.id },
+        update: {},
+        create: log,
+      }),
+    ),
+  )
+
+  console.log(`Wife period logs upserted: ${wifeLogSeeds.length}`)
+
+  // ── Predictions (Tier 1 / AVERAGE) for both profiles ──────────────────────
+  function seedPrediction(profileId: string, lastPeriodStart: Date, cycleLength: number) {
+    const nextPeriodStart = addDays(lastPeriodStart, cycleLength)
+    const ovulationDay = addDays(nextPeriodStart, -14)
+    const fertileStart = addDays(ovulationDay, -5)
+    const fertileEnd = addDays(ovulationDay, 1)
+
+    return prisma.prediction.upsert({
+      where: { profileId },
+      update: {
+        tier: PredictionTier.AVERAGE,
+        nextPeriodStart,
+        ovulationDay,
+        fertileStart,
+        fertileEnd,
+        confidence: 0.75,
+      },
+      create: {
+        profileId,
+        tier: PredictionTier.AVERAGE,
+        nextPeriodStart,
+        ovulationDay,
+        fertileStart,
+        fertileEnd,
+        confidence: 0.75,
+      },
+    })
+  }
+
+  await Promise.all([
+    seedPrediction(selfProfile.id, subMonths(today, 1), selfProfile.cycleLength),
+    seedPrediction(wifeProfile.id, subMonths(today, 1), wifeProfile.cycleLength),
+  ])
+
+  console.log('Predictions upserted for both profiles')
 
   // ── Notification Preferences ───────────────────────────────────────────────
   await prisma.$transaction([

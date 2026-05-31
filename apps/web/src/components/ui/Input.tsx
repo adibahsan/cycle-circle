@@ -9,6 +9,8 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export function Input({ label, error, className, id, ...props }: InputProps & { id?: string }) {
+  const errorId = id ? `${id}-error` : undefined;
+
   return (
     <div className="w-full">
       {label && (
@@ -18,6 +20,8 @@ export function Input({ label, error, className, id, ...props }: InputProps & { 
       )}
       <input
         id={id}
+        aria-invalid={!!error}
+        aria-describedby={error && errorId ? errorId : undefined}
         className={twMerge(clsx(
           'w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]',
           'text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]',
@@ -28,7 +32,17 @@ export function Input({ label, error, className, id, ...props }: InputProps & { 
         ))}
         {...props}
       />
-      {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+      <p
+        id={errorId}
+        role="alert"
+        aria-hidden={!error}
+        className={clsx(
+          'mt-1 text-sm text-red-500 min-h-[20px] transition-opacity duration-150',
+          error ? 'opacity-100' : 'opacity-0'
+        )}
+      >
+        {error || '\u00A0'}
+      </p>
     </div>
   );
 }

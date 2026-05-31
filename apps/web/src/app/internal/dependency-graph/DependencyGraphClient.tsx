@@ -200,11 +200,11 @@ const FLOWS: FlowNode[] = [
     steps: ['enqueueJob(type, payload): create PENDING JobEvent', 'claimNextJob: raw SQL FOR UPDATE SKIP LOCKED', 'Returns claimed job record', 'completeJob(id): set COMPLETED + completedAt', 'failJob(id, error): set FAILED + lastError'],
   },
   {
-    id: 'worker-loop', name: 'Worker Process', desc: 'Standalone Node.js polling loop (2s interval). Claims jobs, dispatches PREDICTION_RECALC (weighted moving average), SEND_EMAIL (stub), SMS_BROADCAST (stub).',
-    group: 2, type: 'infra', status: 'partial', deps: ['prisma-client', 'job-queue'],
+    id: 'worker-loop', name: 'Prediction Recalc (Inline)', desc: 'Prediction recalculation is now called directly inline after period log mutations. No separate worker process.',
+    group: 2, type: 'infra', status: 'complete', deps: ['prisma-client', 'job-queue'],
     api: [], store: [],
-    files: ['src/server/worker-process.ts'],
-    steps: ['pollLoop: while(true) every 2s', 'Claim PENDING job atomically', 'processJob dispatches by type', 'PREDICTION_RECALC: full recalculation', 'SEND_EMAIL / SMS_BROADCAST: stub console.log', 'Mark COMPLETED or FAILED'],
+    files: ['src/server/prediction-calc.ts'],
+    steps: ['recalculatePrediction called inline after period log create/update/delete', 'Loads all PeriodLogs, computes cycle lengths', 'Selects tier (AVERAGE/<6 or ARIMA/>=6)', 'Upserts Prediction record'],
   },
   {
     id: 'notifications-adapter', name: 'Notifications', desc: 'Dispatches period alerts, fertile window alerts, logging reminders. Email to all users, SMS to PRO subscribers only. Bilingual EN/BN.',
@@ -320,10 +320,10 @@ const FLOWS: FlowNode[] = [
     steps: ['Verify ownership, parse month param', 'Fetch PeriodLogs overlapping month', 'Fetch stored Prediction', 'Build date Sets: period, predicted, fertile, ovulation', 'Return CalendarDay[] array'],
   },
   {
-    id: 'prediction-worker', name: 'Prediction Recalc', desc: 'PREDICTION_RECALC job handler. Loads all logs, computes cycle lengths, selects tier (AVERAGE/<6 or ARIMA/>=6), weighted moving average, upserts Prediction.',
-    group: 4, type: 'prediction', status: 'complete', deps: ['worker-loop', 'prisma-client'],
+    id: 'prediction-worker', name: 'Prediction Recalc', desc: 'recalculatePrediction called inline after period log mutations. Loads all logs, computes cycle lengths, selects tier (AVERAGE/<6 or ARIMA/>=6), weighted moving average, upserts Prediction.',
+    group: 4, type: 'prediction', status: 'complete', deps: ['prisma-client'],
     api: [], store: [],
-    files: ['src/server/worker-process.ts'],
+    files: ['src/server/prediction-calc.ts'],
     steps: ['Load all PeriodLogs for profile (ASC)', 'Compute cycle lengths (day diffs, filter 0<d<90)', 'Tier: ARIMA if >=6 cycles, else AVERAGE', 'AVERAGE: arithmetic mean', 'ARIMA: weighted [1,1.5,2,2.5,3,3.5] over last 6', 'nextPeriodStart = lastLog + avgCycle', 'ovulationDay = nextPeriod - 14d', 'fertileStart = ovulation - 5d, fertileEnd = ovulation + 1d', 'confidence = min(0.95, 0.5 + count*0.05)', 'Upsert Prediction record'],
   },
   {
@@ -482,11 +482,11 @@ const FLOWS: FlowNode[] = [
     steps: ['Hydrate checklist from localStorage', 'checkAllHealth: fan out to 5 endpoints', 'Setup steps with progress bar', 'API endpoint reference accordion', 'Quick Test Panel: fire real API calls', 'Docker commands with clipboard copy'],
   },
   {
-    id: 'health-checks', name: 'Health Checks', desc: '5 health endpoints: /api/health/db (SELECT 1), /redis (PING), /bdapps (curl simulator), /mailpit (curl UI), /worker (JobEvent stats).',
-    group: 6, type: 'infra', status: 'complete', deps: ['docker-postgres', 'docker-redis', 'docker-bdapps-sim', 'docker-mailpit', 'docker-worker'],
-    api: ['/api/health/db', '/api/health/redis', '/api/health/bdapps', '/api/health/mailpit', '/api/health/worker'], store: [],
-    files: ['src/app/api/health/db/route.ts', 'src/app/api/health/redis/route.ts', 'src/app/api/health/bdapps/route.ts', 'src/app/api/health/mailpit/route.ts', 'src/app/api/health/worker/route.ts'],
-    steps: ['DB: prisma.$queryRaw SELECT 1 + latency', 'Redis: redis.ping() + latency', 'BDApps: fetch simulator UI (4s timeout)', 'Mailpit: fetch web UI (4s timeout)', 'Worker: count PENDING/COMPLETED/PROCESSING jobs'],
+    id: 'health-checks', name: 'Health Checks', desc: '4 health endpoints: /api/health/db (SELECT 1), /redis (PING), /bdapps (curl simulator), /mailpit (curl UI).',
+    group: 6, type: 'infra', status: 'complete', deps: ['docker-postgres', 'docker-redis', 'docker-bdapps-sim', 'docker-mailpit'],
+    api: ['/api/health/db', '/api/health/redis', '/api/health/bdapps', '/api/health/mailpit'], store: [],
+    files: ['src/app/api/health/db/route.ts', 'src/app/api/health/redis/route.ts', 'src/app/api/health/bdapps/route.ts', 'src/app/api/health/mailpit/route.ts'],
+    steps: ['DB: prisma.$queryRaw SELECT 1 + latency', 'Redis: redis.ping() + latency', 'BDApps: fetch simulator UI (4s timeout)', 'Mailpit: fetch web UI (4s timeout)'],
   },
 ];
 

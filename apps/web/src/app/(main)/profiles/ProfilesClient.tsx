@@ -4,11 +4,10 @@ import { useState, type MouseEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight } from 'lucide-react';
+import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight, Pencil } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import type { Profile } from '@prisma/client';
-import type { ProfileRelation } from '@vesta/shared/types';
-import { createProfile, deleteProfile } from '@/app/actions/profile-actions';
+import type { Profile, ProfileRelation } from '@vesta/shared/types';
+import { createProfile, deleteProfile, updateProfile, setActiveProfileCookie } from '@/app/actions/profile-actions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import '@vesta/shared/utils/i18n';
@@ -16,6 +15,12 @@ import '@vesta/shared/utils/i18n';
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const MAX_PROFILES = 6;
+
+const FLOW_COLORS: Record<'light' | 'medium' | 'heavy', string> = {
+  light: '#F2728E',
+  medium: '#E8476C',
+  heavy: '#C93558',
+};
 
 const RELATIONS: ProfileRelation[] = ['self', 'wife', 'sister', 'mother', 'daughter', 'girlfriend'];
 
@@ -101,11 +106,13 @@ function Stepper({ label, value, min, max, onChange, unit = 'days' }: StepperPro
 interface ProfileCardProps {
   profile: Profile;
   isActive: boolean;
+  isSwitching?: boolean;
   onSwitch: () => void;
   onDelete: () => void;
+  onEdit: () => void;
 }
 
-function ProfileCard({ profile, isActive, onSwitch, onDelete }: ProfileCardProps) {
+function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdit }: ProfileCardProps) {
   const { t } = useTranslation();
   const relation = normalizeRelation(profile.relation);
   const colors = RELATION_COLORS[relation];
@@ -120,6 +127,7 @@ function ProfileCard({ profile, isActive, onSwitch, onDelete }: ProfileCardProps
     >
       <button
         onClick={onSwitch}
+        disabled={isSwitching}
         className="w-full text-left rounded-2xl border transition-[color,background-color,border-color,box-shadow] duration-200 p-4 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
         style={{
           background: isActive
@@ -196,6 +204,22 @@ function ProfileCard({ profile, isActive, onSwitch, onDelete }: ProfileCardProps
               <ChevronRight size={16} className="text-[var(--color-text-muted)]" />
             )}
 
+            {/* Edit button — always visible */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+              style={{
+                background: 'rgba(155,127,212,0.1)',
+                border: '1px solid rgba(155,127,212,0.25)',
+              }}
+              aria-label={`Edit ${profile.name}`}
+            >
+              <Pencil size={13} color="#9B7FD4" aria-hidden="true" />
+            </button>
+
             {/* Delete — only for non-active profiles */}
             {!isActive && (
               <button
@@ -210,7 +234,7 @@ function ProfileCard({ profile, isActive, onSwitch, onDelete }: ProfileCardProps
                 }}
                 aria-label={`${t('common.delete')} ${profile.name}`}
               >
-                <Trash2 size={13} color="#E8476C" />
+                <Trash2 size={13} color="#E8476C" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -224,39 +248,55 @@ function ProfileCard({ profile, isActive, onSwitch, onDelete }: ProfileCardProps
 
 interface AddProfileFormProps {
   onClose: () => void;
+  serverError?: string;
+  disabled?: boolean;
   onSubmit: (data: {
     name: string;
     relation: ProfileRelation;
     cycleLength: number;
     periodLength: number;
     lastPeriodStart: string;
+    flowIntensity: 'LIGHT' | 'MEDIUM' | 'HEAVY';
   }) => void;
 }
 
-function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
+function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfileFormProps) {
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [relation, setRelation] = useState<ProfileRelation>('sister');
   const [cycleLength, setCycleLength] = useState(28);
   const [periodLength, setPeriodLength] = useState(5);
   const [nameError, setNameError] = useState('');
+  const [lastPeriodDate, setLastPeriodDate] = useState('');
+  const [lastPeriodError, setLastPeriodError] = useState('');
+  const [flowIntensity, setFlowIntensity] = useState<'light' | 'medium' | 'heavy'>('medium');
 
   function handleSubmit() {
     const trimmed = name.trim();
+    let hasError = false;
+
     if (!trimmed) {
-      setNameError('Name is required');
-      return;
+      setNameError(t('profiles.nameRequired'));
+      hasError = true;
+    } else if (trimmed.length < 2) {
+      setNameError(t('profiles.nameMinLength'));
+      hasError = true;
     }
-    if (trimmed.length < 2) {
-      setNameError('Name must be at least 2 characters');
-      return;
+
+    if (!lastPeriodDate) {
+      setLastPeriodError(t('profiles.lastPeriodRequired'));
+      hasError = true;
     }
+
+    if (hasError) return;
+
     onSubmit({
       name: trimmed,
       relation,
       cycleLength,
       periodLength,
-      lastPeriodStart: new Date().toISOString().slice(0, 10),
+      lastPeriodStart: lastPeriodDate,
+      flowIntensity: flowIntensity.toUpperCase() as 'LIGHT' | 'MEDIUM' | 'HEAVY',
     });
   }
 
@@ -302,7 +342,8 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
       <div className="px-5 py-4 flex flex-col gap-4">
         {/* Name */}
         <Input
-          label="Name"
+          id="add-profile-name"
+          label={t('onboarding.nameLabel')}
           placeholder="e.g. Nusrat…"
           value={name}
           onChange={(e) => {
@@ -370,16 +411,278 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
           />
         </div>
 
+        {/* Last period date */}
+        <div>
+          <label
+            htmlFor="last-period-date"
+            className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5"
+          >
+            Last period start *
+          </label>
+          <input
+            id="last-period-date"
+            type="date"
+            value={lastPeriodDate}
+            onChange={(e) => {
+              setLastPeriodDate(e.target.value);
+              if (lastPeriodError) setLastPeriodError('');
+            }}
+            max={new Date().toISOString().slice(0, 10)}
+            min={new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+            required
+            aria-invalid={!!lastPeriodError}
+            aria-describedby={lastPeriodError ? 'last-period-date-error' : undefined}
+            className={`w-full rounded-xl border px-3 py-2.5 text-sm font-medium text-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 transition-colors duration-150 ${
+              lastPeriodError ? 'border-red-400 focus-visible:ring-red-300' : ''
+            }`}
+            style={{ borderColor: lastPeriodError ? undefined : 'var(--color-border)' }}
+          />
+          <p
+            id="last-period-date-error"
+            role="alert"
+            aria-hidden={!lastPeriodError}
+            className={`mt-1 text-sm text-red-500 min-h-[20px] transition-opacity duration-150 ${
+              lastPeriodError ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            {lastPeriodError || '\u00A0'}
+          </p>
+        </div>
+
+        {/* Flow intensity */}
+        <div>
+          <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Flow intensity</p>
+          <div className="flex gap-2" role="group" aria-label="Flow intensity">
+            {(['light', 'medium', 'heavy'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFlowIntensity(f)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
+                  flowIntensity === f
+                    ? 'text-white shadow-soft'
+                    : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]'
+                }`}
+                style={
+                  flowIntensity === f
+                    ? { backgroundColor: FLOW_COLORS[f], borderColor: FLOW_COLORS[f] }
+                    : {}
+                }
+                aria-pressed={flowIntensity === f}
+              >
+                <span className="mr-1" aria-hidden="true">
+                  {f === 'light' ? '💧' : f === 'medium' ? '🩸' : '🌊'}
+                </span>
+                {f === 'light' ? 'Light' : f === 'medium' ? 'Medium' : 'Heavy'}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Actions */}
+        <p
+          role="alert"
+          aria-live="polite"
+          aria-hidden={!serverError}
+          className={`text-sm text-red-500 text-center min-h-[20px] transition-opacity duration-150 ${
+            serverError ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          {serverError || '\u00A0'}
+        </p>
         <div className="flex gap-2 pt-1">
           <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
             {t('common.cancel')}
           </Button>
-          <Button size="sm" onClick={handleSubmit} className="flex-1">
-            Create Profile
+          <Button size="sm" onClick={handleSubmit} disabled={disabled} className="flex-1">
+            {t('profiles.createProfile')}
           </Button>
         </div>
       </div>
+    </motion.div>
+  );
+}
+
+// ─── Edit Profile Form ────────────────────────────────────────────────────────
+
+interface EditProfileFormProps {
+  profile: Profile;
+  onClose: () => void;
+  serverError?: string;
+  disabled?: boolean;
+  onSubmit: (data: {
+    name: string;
+    relation: ProfileRelation;
+    cycleLength: number;
+    periodLength: number;
+  }) => void;
+}
+
+function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: EditProfileFormProps) {
+  const { t } = useTranslation();
+  const [name, setName] = useState(profile.name);
+  const [relation, setRelation] = useState<ProfileRelation>(normalizeRelation(profile.relation));
+  const [cycleLength, setCycleLength] = useState(profile.cycleLength);
+  const [periodLength, setPeriodLength] = useState(profile.periodLength);
+  const [nameError, setNameError] = useState('');
+
+  function handleSubmit() {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setNameError(t('profiles.nameRequired'));
+      return;
+    }
+    if (trimmed.length < 2) {
+      setNameError(t('profiles.nameMinLength'));
+      return;
+    }
+    onSubmit({ name: trimmed, relation, cycleLength, periodLength });
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-8"
+      style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+    >
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-profile-dialog-title"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 40 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+        className="w-full max-w-md rounded-2xl border overflow-hidden overscroll-contain"
+        style={{
+          background: 'var(--color-bg-card)',
+          borderColor: 'var(--color-primary)',
+          boxShadow: '0 0 0 2px rgba(232,71,108,0.15), 0 8px 32px rgba(232,71,108,0.1)',
+        }}
+        onClick={(e: MouseEvent) => e.stopPropagation()}
+      >
+        {/* Form header */}
+        <div
+          className="flex items-center justify-between px-5 py-4 border-b"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <div className="flex items-center gap-2">
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)' }}
+            >
+              <Pencil size={15} color="#fff" />
+            </div>
+            <h3 id="edit-profile-dialog-title" className="font-bold text-[var(--color-text-primary)] text-base">
+              {t('profiles.editProfile')}
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
+            style={{ background: 'var(--color-bg-secondary)' }}
+            aria-label={t('common.cancel')}
+          >
+            <X size={14} className="text-[var(--color-text-muted)]" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 flex flex-col gap-4">
+          {/* Name */}
+          <Input
+            id="edit-profile-name"
+            label={t('onboarding.nameLabel')}
+            placeholder="e.g. Nusrat…"
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (nameError) setNameError('');
+            }}
+            error={nameError}
+            maxLength={30}
+            autoFocus
+          />
+
+          {/* Relation picker */}
+          <div>
+            <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+              Relation
+            </p>
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+              {RELATIONS.map((rel) => {
+                const isSelected = relation === rel;
+                const colors = RELATION_COLORS[rel];
+                return (
+                  <button
+                    key={rel}
+                    onClick={() => setRelation(rel)}
+                    className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                    style={{
+                      background: isSelected ? colors.bg : 'var(--color-bg-secondary)',
+                      borderColor: isSelected ? colors.border : 'var(--color-border)',
+                      boxShadow: isSelected ? `0 0 0 1.5px ${colors.border}` : 'none',
+                    }}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="text-lg leading-none">{RELATION_ICONS[rel]}</span>
+                    <span
+                      className="text-[11px] font-semibold"
+                      style={{ color: isSelected ? colors.text : 'var(--color-text-muted)' }}
+                    >
+                      {t(`profiles.${rel}`)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Steppers */}
+          <div
+            className="rounded-xl p-3 flex flex-col gap-3"
+            style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}
+          >
+            <Stepper
+              label="Cycle length"
+              value={cycleLength}
+              min={21}
+              max={45}
+              onChange={setCycleLength}
+            />
+            <div style={{ height: '1px', background: 'var(--color-border)' }} />
+            <Stepper
+              label="Period length"
+              value={periodLength}
+              min={1}
+              max={10}
+              onChange={setPeriodLength}
+            />
+          </div>
+
+          {/* Actions */}
+          <p
+            role="alert"
+            aria-live="polite"
+            aria-hidden={!serverError}
+            className={`text-sm text-red-500 text-center min-h-[20px] transition-opacity duration-150 ${
+              serverError ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            {serverError || '\u00A0'}
+          </p>
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
+              {t('common.cancel')}
+            </Button>
+            <Button size="sm" onClick={handleSubmit} disabled={disabled} className="flex-1">
+              {t('profiles.saveChanges')}
+            </Button>
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
@@ -388,11 +691,13 @@ function AddProfileForm({ onClose, onSubmit }: AddProfileFormProps) {
 
 interface DeleteDialogProps {
   profileName: string;
+  error?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  disabled?: boolean;
 }
 
-function DeleteDialog({ profileName, onConfirm, onCancel }: DeleteDialogProps) {
+function DeleteDialog({ profileName, error, onConfirm, onCancel, disabled }: DeleteDialogProps) {
   const { t } = useTranslation();
   return (
     <motion.div
@@ -430,13 +735,24 @@ function DeleteDialog({ profileName, onConfirm, onCancel }: DeleteDialogProps) {
         <p className="text-sm text-[var(--color-text-secondary)] mb-4">
           All symptom logs and data for this profile will be permanently deleted.
         </p>
+        <p
+          role="alert"
+          aria-live="polite"
+          aria-hidden={!error}
+          className={`text-sm text-red-500 text-center mb-4 min-h-[20px] transition-opacity duration-150 ${
+            error ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          {error || '\u00A0'}
+        </p>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={onCancel} className="flex-1">
             {t('common.cancel')}
           </Button>
           <button
             onClick={onConfirm}
-            className="flex-1 py-2 rounded-xl text-sm font-bold text-white transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+            disabled={disabled}
+            className="flex-1 py-2 rounded-xl text-sm font-bold text-white transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
             style={{ background: 'var(--color-primary)' }}
           >
             {t('common.delete')}
@@ -460,16 +776,38 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
 
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [editTarget, setEditTarget] = useState<Profile | null>(null);
   const [justSwitched, setJustSwitched] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [isSwitching, setIsSwitching] = useState(false);
+  const [addError, setAddError] = useState('');
+  const [editError, setEditError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+
+  function closeAddForm() {
+    setShowForm(false);
+    setAddError('');
+  }
+
+  function closeEditForm() {
+    setEditTarget(null);
+    setEditError('');
+  }
+
+  function closeDeleteDialog() {
+    setDeleteTarget(null);
+    setDeleteError('');
+  }
 
   const atMax = profiles.length >= MAX_PROFILES;
 
-  function handleSwitchProfile(id: string) {
-    if (id === activeProfileId) return;
-    setActiveProfile(id);
+  async function handleSwitchProfile(id: string, name: string) {
+    if (id === activeProfileId || isSwitching) return;
+    setIsSwitching(true);
+    setActiveProfile(id, name);
     setJustSwitched(id);
-    router.push(`/dashboard?profileId=${id}`);
+    await setActiveProfileCookie(id);
+    router.push('/dashboard');
     setTimeout(() => setJustSwitched(null), 1500);
   }
 
@@ -479,8 +817,10 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
     cycleLength: number;
     periodLength: number;
     lastPeriodStart: string;
+    flowIntensity: 'LIGHT' | 'MEDIUM' | 'HEAVY';
   }) {
     setIsPending(true);
+    setAddError('');
     try {
       await createProfile({
         name: data.name,
@@ -488,9 +828,12 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
         cycleLength: data.cycleLength,
         periodLength: data.periodLength,
         lastPeriodStart: data.lastPeriodStart,
+        flowIntensity: data.flowIntensity,
       });
-      setShowForm(false);
+      closeAddForm();
     } catch (err) {
+      const message = err instanceof Error ? err.message : t('profiles.serverError');
+      setAddError(message);
       console.error('Failed to add profile:', err);
     } finally {
       setIsPending(false);
@@ -500,11 +843,41 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
   async function handleDeleteConfirm() {
     if (!deleteTarget) return;
     setIsPending(true);
+    setDeleteError('');
     try {
       await deleteProfile(deleteTarget.id);
-      setDeleteTarget(null);
+      closeDeleteDialog();
     } catch (err) {
+      const message = err instanceof Error ? err.message : t('profiles.serverError');
+      setDeleteError(message);
       console.error('Failed to delete profile:', err);
+    } finally {
+      setIsPending(false);
+    }
+  }
+
+  async function handleEditSubmit(data: {
+    name: string;
+    relation: ProfileRelation;
+    cycleLength: number;
+    periodLength: number;
+  }) {
+    if (!editTarget) return;
+    setIsPending(true);
+    setEditError('');
+    try {
+      await updateProfile({
+        profileId: editTarget.id,
+        name: data.name,
+        relation: toDbRelation(data.relation),
+        cycleLength: data.cycleLength,
+        periodLength: data.periodLength,
+      });
+      closeEditForm();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('profiles.serverError');
+      setEditError(message);
+      console.error('Failed to update profile:', err);
     } finally {
       setIsPending(false);
     }
@@ -536,8 +909,16 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                 key={profile.id}
                 profile={profile}
                 isActive={profile.id === activeProfileId}
-                onSwitch={() => handleSwitchProfile(profile.id)}
-                onDelete={() => setDeleteTarget({ id: profile.id, name: profile.name })}
+                isSwitching={isSwitching}
+                onSwitch={() => handleSwitchProfile(profile.id, profile.name)}
+                onDelete={() => {
+                  setDeleteError('');
+                  setDeleteTarget({ id: profile.id, name: profile.name });
+                }}
+                onEdit={() => {
+                  setEditError('');
+                  setEditTarget(profile);
+                }}
               />
             ))}
           </AnimatePresence>
@@ -573,8 +954,10 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             {showForm ? (
               <AddProfileForm
                 key="form"
-                onClose={() => setShowForm(false)}
+                onClose={closeAddForm}
+                serverError={addError}
                 onSubmit={handleAddProfile}
+                disabled={isPending}
               />
             ) : (
               <motion.div
@@ -599,7 +982,10 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                   </div>
                 ) : (
                   <button
-                    onClick={() => setShowForm(true)}
+                    onClick={() => {
+                      setAddError('');
+                      setShowForm(true);
+                    }}
                     className="w-full rounded-2xl border border-dashed p-4 flex items-center justify-center gap-2.5 transition-colors duration-200 group hover:border-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                     style={{
                       borderColor: 'var(--color-border)',
@@ -657,8 +1043,24 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
         {deleteTarget && (
           <DeleteDialog
             profileName={deleteTarget.name}
+            error={deleteError}
             onConfirm={handleDeleteConfirm}
-            onCancel={() => setDeleteTarget(null)}
+            onCancel={closeDeleteDialog}
+            disabled={isPending}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Edit profile dialog */}
+      <AnimatePresence>
+        {editTarget && (
+          <EditProfileForm
+            key={editTarget.id}
+            profile={editTarget}
+            onClose={closeEditForm}
+            serverError={editError}
+            onSubmit={handleEditSubmit}
+            disabled={isPending}
           />
         )}
       </AnimatePresence>

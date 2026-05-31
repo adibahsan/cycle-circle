@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   ArrowLeft,
   Phone,
@@ -25,6 +26,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { RefetchButton } from '@/components/ui/RefetchButton'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
 import {
   suspendUser,
   reactivateUser,
@@ -78,8 +81,8 @@ interface Profile {
 
 interface Feedback {
   id: string
-  type?: string | null
-  content?: string | null
+  category: string
+  message: string
   rating?: number | null
   createdAt: Date
 }
@@ -394,6 +397,13 @@ function SubscriptionTab({
 // Feedback Tab
 // ─────────────────────────────────────────────────────────────────────────────
 
+const FEEDBACK_CATEGORY_LABELS: Record<string, string> = {
+  BUG: 'Bug',
+  FEATURE: 'Feature',
+  GENERAL: 'General',
+  SATISFACTION: 'Satisfaction',
+}
+
 function FeedbackTab({ feedback }: { feedback: Feedback[] }) {
   if (feedback.length === 0) {
     return (
@@ -412,25 +422,31 @@ function FeedbackTab({ feedback }: { feedback: Feedback[] }) {
           className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 shadow-soft space-y-2"
         >
           <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-2">
-              {fb.type && (
-                <Badge variant="info" size="sm">{fb.type}</Badge>
-              )}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="info" size="sm">
+                {FEEDBACK_CATEGORY_LABELS[fb.category] ?? fb.category}
+              </Badge>
               {fb.rating != null && (
                 <span className="text-xs text-[var(--color-text-muted)]">
                   Rating: {fb.rating}/5
                 </span>
               )}
             </div>
-            <span className="shrink-0 text-xs text-[var(--color-text-muted)]">
-              {formatDate(fb.createdAt)}
-            </span>
+            <div className="flex shrink-0 items-center gap-3">
+              <span className="text-xs text-[var(--color-text-muted)]">
+                {formatDate(fb.createdAt)}
+              </span>
+              <Link
+                href={`/feedback/${fb.id}`}
+                className="text-xs font-medium text-[var(--color-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
+              >
+                View
+              </Link>
+            </div>
           </div>
-          {fb.content && (
-            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-              {fb.content}
-            </p>
-          )}
+          <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed line-clamp-3">
+            {fb.message}
+          </p>
         </div>
       ))}
     </div>
@@ -498,14 +514,16 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
 
   return (
     <div className="space-y-6 page-enter">
-      {/* Back button */}
-      <button
-        onClick={() => router.back()}
-        className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
-      >
-        <ArrowLeft size={15} aria-hidden="true" />
-        Back to users
-      </button>
+      <div className="flex items-center justify-between gap-4">
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+        >
+          <ArrowLeft size={15} aria-hidden="true" />
+          Back to users
+        </button>
+        <RefetchButton tags={[adminCacheTags.user(user.id), adminCacheTags.users]} />
+      </div>
 
       {/* User header card */}
       <div className="glass rounded-2xl border border-[var(--color-border)] p-6 shadow-soft">

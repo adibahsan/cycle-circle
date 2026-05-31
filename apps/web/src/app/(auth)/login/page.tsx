@@ -52,36 +52,16 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    if (devMode) {
-      try {
-        const res = await fetch('/api/auth/dev-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone }),
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          setError((body as { error?: string }).error ?? 'Dev login failed.');
-          return;
-        }
-        router.replace('/dashboard');
-      } catch {
-        setError('Dev login failed. Ensure DEV_MODE=true on the server.');
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-
     try {
       const res = await fetch('/api/auth/otp/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
       });
-      const body = await res.json().catch(() => ({})) as { referenceNo?: string; error?: string };
+      const body = await res.json().catch(() => ({})) as { referenceNo?: string; error?: string | { message: string } };
       if (!res.ok) {
-        setError(body.error ?? 'Failed to send OTP. Please try again.');
+        const msg = typeof body.error === 'object' ? body.error?.message : body.error;
+        setError(msg ?? 'Failed to send OTP. Please try again.');
         return;
       }
       const { referenceNo } = body;
@@ -109,19 +89,12 @@ export default function LoginPage() {
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           className="mb-4"
         >
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center shadow-soft">
+          <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary)] flex items-center justify-center shadow-soft">
             <span className="text-white text-2xl font-bold">V</span>
           </div>
         </motion.div>
 
-        <h1
-          className="text-3xl font-bold mb-1"
-          style={{
-            background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
+        <h1 className="text-3xl font-bold mb-1 text-[var(--color-primary)]">
           Vesta
         </h1>
         <p className="text-sm text-[var(--color-text-muted)] text-center leading-relaxed px-4">
@@ -144,7 +117,7 @@ export default function LoginPage() {
         </h2>
         <p className="text-sm text-[var(--color-text-muted)] mb-5">
           {devMode
-            ? 'Dev mode: sign in with phone only (OTP skipped, real database)'
+            ? 'Dev mode: OTP verification with test codes'
             : 'Enter your phone number to receive a one-time code'}
         </p>
 
@@ -195,12 +168,12 @@ export default function LoginPage() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
-              {devMode ? 'Signing in…' : 'Sending…'}
+              {'Sending…'}
             </span>
           ) : (
             <span className="flex items-center gap-2">
               <Phone size={18} aria-hidden="true" />
-              {devMode ? 'Continue (dev)' : t('auth.sendOtp')}
+              {devMode ? `${t('auth.sendOtp')} (dev)` : t('auth.sendOtp')}
             </span>
           )}
         </Button>

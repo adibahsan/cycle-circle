@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/app/queries/auth-queries'
-import { getProfiles } from '@/app/queries/profile-queries'
+import { getProfiles, getActiveProfileId } from '@/app/queries/profile-queries'
 import { getSymptomLogs } from '@/app/queries/symptom-queries'
 import { SymptomsClient } from './SymptomsClient'
 
@@ -16,7 +16,7 @@ export default async function SymptomsPage({
   if (profiles.length === 0) redirect('/onboarding')
 
   const params = await searchParams
-  const profileId = params.profileId || profiles[0].id
+  const profileId = await getActiveProfileId(profiles, params.profileId)
   const today = new Date().toISOString().slice(0, 10)
   const date = params.date || today
   const symptomLogs = await getSymptomLogs(profileId, date)

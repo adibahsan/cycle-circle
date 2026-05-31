@@ -10,7 +10,9 @@ import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input } from '@/components/ui/Input'
-import { createSmsBroadcast, deleteSmsBroadcast } from '@/app/actions/sms-actions'
+import { createSmsBroadcast, deleteSmsBroadcast, sendSmsBroadcast } from '@/app/actions/sms-actions'
+import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
 
 type SmsBroadcast = {
   id: string
@@ -71,6 +73,10 @@ function formatDate(d: Date | null) {
 
 function canDelete(status: string) {
   return status === 'DRAFT' || status === 'SCHEDULED' || status === 'FAILED'
+}
+
+function canSend(status: string) {
+  return status === 'DRAFT'
 }
 
 // ─── Create Broadcast Modal ─────────────────────────────────────────────────
@@ -272,6 +278,9 @@ export function SmsClient({ data }: SmsClientProps) {
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<SmsBroadcast | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [sendTarget, setSendTarget] = useState<SmsBroadcast | null>(null)
+  const [sending, setSending] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
 
   const currentStatus = searchParams.get('status') ?? 'all'
   const currentPage = data.page
@@ -324,6 +333,26 @@ export function SmsClient({ data }: SmsClientProps) {
       setDeleting(false)
     }
   }
+
+  async function handleSend() {
+    if (!sendTarget) return
+    setSending(true)
+    try {
+      await sendSmsBroadcast(sendTarget.id)
+      setSendTarget(null)
+      router.refresh()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const filteredBroadcasts = searchTerm.trim()
+    ? data.broadcasts.filter((b) =>
+        b.message.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : data.broadcasts
 
   const COLUMNS: Column<SmsBroadcast>[] = [
     {
@@ -402,48 +431,62 @@ export function SmsClient({ data }: SmsClientProps) {
     {
       key: 'actions',
       header: '',
-      width: '48px',
-      render: (row) =>
-        canDelete(row.status) ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setDeleteTarget(row)
-            }}
-            className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            aria-label="Delete broadcast"
-            title="Delete"
-          >
-            <Trash2 size={15} />
-          </button>
-        ) : null,
+      width: '80px',
+      render: (row) => (
+        <div className="flex items-center gap-1">
+          {canSend(row.status) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setSendTarget(row)
+              }}
+              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors"
+              aria-label="Send broadcast"
+              title="Send Now"
+            >
+              <Send size={15} aria-hidden="true" />
+            </button>
+          )}
+          {canDelete(row.status) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setDeleteTarget(row)
+              }}
+              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              aria-label="Delete broadcast"
+              title="Delete"
+            >
+              <Trash2 size={15} aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      ),
     },
   ]
 
   return (
     <div className="space-y-6 page-enter">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">SMS Broadcasts</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-            {data.total.toLocaleString()} broadcast{data.total !== 1 ? 's' : ''} total
-          </p>
-        </div>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => setCreateOpen(true)}
-        >
-          <Plus size={15} />
-          New Broadcast
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="SMS Broadcasts"
+        description={`${data.total.toLocaleString()} broadcast${data.total !== 1 ? 's' : ''} total`}
+        tags={[adminCacheTags.sms]}
+        actions={
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus size={15} />
+            New Broadcast
+          </Button>
+        }
+      />
 
       {/* Filters */}
       <FilterBar
-        searchValue=""
-        onSearchChange={() => {}}
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
         searchPlaceholder="Search broadcasts…"
         filters={[
           {
@@ -459,7 +502,7 @@ export function SmsClient({ data }: SmsClientProps) {
       {/* Table */}
       <DataTable
         columns={COLUMNS}
-        data={data.broadcasts as unknown as SmsBroadcast[]}
+        data={filteredBroadcasts as unknown as SmsBroadcast[]}
         emptyMessage="No broadcasts match your filters."
         keyExtractor={(row) => row.id}
       />
@@ -478,6 +521,22 @@ export function SmsClient({ data }: SmsClientProps) {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onCreated={handleCreated}
+      />
+
+      {/* Send Confirm */}
+      <ConfirmModal
+        open={Boolean(sendTarget)}
+        onClose={() => setSendTarget(null)}
+        onConfirm={handleSend}
+        title="Send Broadcast Now?"
+        message={
+          sendTarget
+            ? `Send "${sendTarget.message.slice(0, 60)}${sendTarget.message.length > 60 ? '…' : ''}" to all subscribers? This action cannot be undone.`
+            : ''
+        }
+        confirmLabel="Send Now"
+        variant="warning"
+        loading={sending}
       />
 
       {/* Delete Confirm */}

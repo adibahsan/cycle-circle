@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic'
-
 import { requireAdminUser } from '@/app/queries/auth-queries'
 import { getUsers } from '@/app/queries/user-queries'
 import { UsersClient } from './UsersClient'
@@ -16,6 +14,8 @@ export default async function UsersPage({
     pageSize: Number(params.pageSize) || 20,
     search: params.search,
     status: (params.status as 'all' | 'active' | 'suspended' | 'deleted') || 'active',
+    sort: params.sort,
+    order: (params.order as 'asc' | 'desc') || 'desc',
   })
   return <UsersClient data={data} />
 }

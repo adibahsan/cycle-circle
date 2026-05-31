@@ -1,6 +1,6 @@
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { issueJwt, setAuthCookie } from '@vesta/shared/server/auth'
-import { prisma } from '@vesta/shared'
+import { findMagicLink, completeMagicLinkAuth } from '@vesta/shared/server/services'
 
 export async function GET(request: Request): Promise<Response> {
   try {
@@ -11,9 +11,7 @@ export async function GET(request: Request): Promise<Response> {
       throw new ApiError(400, 'Missing token parameter', 'MISSING_TOKEN')
     }
 
-    const magicLink = await prisma.magicLink.findUnique({
-      where: { token },
-    })
+    const magicLink = await findMagicLink(token)
 
     if (!magicLink) {
       throw new ApiError(400, 'Invalid or expired magic link', 'INVALID_TOKEN')
@@ -25,26 +23,7 @@ export async function GET(request: Request): Promise<Response> {
       throw new ApiError(400, 'Magic link has expired', 'TOKEN_EXPIRED')
     }
 
-    await prisma.magicLink.update({
-      where: { id: magicLink.id },
-      data: { used: true },
-    })
-
-    const user = await prisma.user.upsert({
-      where: { email: magicLink.email },
-      create: {
-        email: magicLink.email,
-        authMethod: 'EMAIL',
-        // Grant a 24-hour trial only on first login; never reset on subsequent logins
-        emailTrialExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
-      update: {},
-    })
-
-    await prisma.magicLink.update({
-      where: { id: magicLink.id },
-      data: { userId: user.id },
-    })
+    const user = await completeMagicLinkAuth(magicLink.id, magicLink.email)
 
     const jwtToken = await issueJwt({
       sub: user.id,

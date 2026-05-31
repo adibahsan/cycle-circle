@@ -11,6 +11,8 @@ import {
   BarChart3,
   MessageSquare,
   MessageCircle,
+  ScrollText,
+  Mail,
   Sun,
   Moon,
   LogOut,
@@ -30,6 +32,8 @@ const NAV_ITEMS = [
   { href: '/analytics', icon: BarChart3, label: 'Analytics' },
   { href: '/sms', icon: MessageSquare, label: 'SMS Broadcasts' },
   { href: '/feedback', icon: MessageCircle, label: 'Feedback' },
+  { href: '/emails', icon: Mail, label: 'Emails' },
+  { href: '/audit-logs', icon: ScrollText, label: 'Audit Logs' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
