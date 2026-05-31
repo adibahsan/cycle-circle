@@ -1,18 +1,22 @@
 # DEV_SRS — Implementation Tracker
 
 > Developer-facing tracker mapping SRS requirements to codebase implementation.
-> Last updated: 2026-05-30 (rev 2)
+> Last updated: 2026-05-31 (rev 3)
 > SRS version: 1.2 (SRS-VESTA-001)
+> Related: [`TESTING.md`](TESTING.md) — manual QA guide for testers
 
 ---
 
 ## Quick Status
 
-| Status | Count |
-|--------|-------|
-| Done / Implemented | 11 |
-| In Progress | 10 |
-| Not Started | 1 |
+| Status | Count | FR IDs |
+|--------|-------|--------|
+| Done / Implemented | 11 | FR-PROFILE, FR-TRACK, FR-DASH, FR-CAL, FR-GATE, FR-SESSION, FR-CONTENT, FR-ADMIN, FR-CMS, FR-ANALYTICS, FR-WEBHOOK |
+| In Progress | 9 | FR-AUTH, FR-SYMP, FR-PRED, FR-ONBOARD, FR-BILL, FR-I18N, FR-NOTIF, FR-SMS, FR-FEEDBACK |
+| Partial (usable, gaps remain) | 1 | FR-EXPORT |
+| Not Started | 1 | FR-ENC |
+
+**Rev 3 changes (2026-05-31):** Live codebase audit of `apps/web` (18 user routes, 38 API handlers) and `apps/admin` (16 page routes, 10 query modules, 8 action modules). Corrected FR-AUTH (modal wired), FR-SMS (`tel:all` via `sms-service`), FR-EXPORT (CSV Server Action live). Documented admin Emails + Audit Logs sections and operational endpoints (health checks, simulator, Resend webhook).
 
 ---
 
@@ -65,6 +69,68 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 
 - **Web app**: 22/22 Vitest tests passing across 5 test files located at `apps/web/__tests__/actions/`. Tests updated to reflect the shared services layer (mocks target service modules, not direct Prisma calls). Covers all Server Actions with deterministic mocks (Prisma, Redis, BDApps). Run with `just test` or `pnpm --filter @vesta/web backend:test`.
 - **Admin app**: TypeScript typecheck passes (`just typecheck-all`). No automated test suite yet — manual QA only.
+- **Manual QA**: See [`TESTING.md`](TESTING.md) for environment setup, test accounts, and per-FR scenarios.
+
+### Web App Route Inventory (rev 3)
+
+| Area | Routes |
+|------|--------|
+| Auth | `/login`, `/verify-otp`, `/email-login` |
+| Onboarding | `/onboarding` |
+| Main app | `/dashboard`, `/calendar`, `/symptoms`, `/content`, `/settings`, `/profiles`, `/feedback`, `/subscription` |
+| Legal | `/privacy`, `/terms` |
+| Internal (dev) | `/internal/backend-checklist`, `/internal/simulator-check`, `/internal/dependency-graph` |
+
+**API handlers:** 38 under `apps/web/src/app/api/` (auth, profiles, tracking, predictions, billing, webhooks, cron, health, simulator-check).
+
+### Admin App Route Inventory (rev 3)
+
+| Area | Routes |
+|------|--------|
+| Auth | `/login` |
+| Core (SRS) | `/`, `/users`, `/users/[id]`, `/subscriptions`, `/content`, `/content/new`, `/content/[id]`, `/analytics`, `/sms`, `/feedback`, `/feedback/[id]` |
+| Beyond SRS | `/emails`, `/emails/[id]`, `/emails/preview`, `/audit-logs` |
+
+**Admin surface:** 15 `*Client.tsx` components, 10 query modules, 8 global action modules (+ colocated email preview action).
+
+---
+
+## Open Items by Priority
+
+### P0 — Blockers (DoD / security gate)
+
+| ID | Item | File / note |
+|----|------|-------------|
+| FR-ENC | `prisma-field-encryption` not installed; `symptom_logs.value` stored as plaintext | `packages/shared/package.json`, `schema.prisma` |
+| FR-AUTH | Profile completion: modal wired to `completeProfile`, but only shown for `authMethod === EMAIL` + `profileCompleted === false`; SRS expects ~1 min post-OTP for all incomplete users; dismiss uses `sessionStorage` (not re-prompt on next login) | `(main)/layout.tsx`, `ProfileCompletionModal.tsx` |
+
+### P1 — Should-have gaps
+
+| ID | Item | File / note |
+|----|------|-------------|
+| FR-NOTIF | QStash not confirmed; cron runs email/SMS synchronously (Vercel 10s risk at scale); Resend webhook at `/api/webhooks/resend` not tied to admin delivery UI | `api/cron/daily-reminders/route.ts` |
+| FR-SYMP | Symptom `value` not encrypted (blocked by FR-ENC) | `tracking-service` |
+| FR-SMS | Admin broadcast send uses `tel:all` in `sms-service`; no CSV bulk-upload; no content-override (deactivate previous day) | `sms-service.ts` L114 |
+| FR-FEEDBACK | Admin read-only + CSV; no reply/resolve workflow | `FeedbackDetailClient.tsx` |
+| FR-I18N | `User.language` DB sync unverified; BN email template bodies need content QA | `i18n.ts`, `email-templates.ts` |
+
+### P2 — Could-have / polish
+
+| ID | Item | File / note |
+|----|------|-------------|
+| FR-EXPORT | CSV export via `exportUserDataCsv` Server Action works; no `/api/export` route; Excel button downloads CSV; UI copy says "active profile only" but export includes all profiles; symptom values plaintext until FR-ENC | `settings-actions.ts`, `SettingsClient.tsx` |
+| FR-CMS | Tiptap image upload to Supabase not wired | `TiptapEditor.tsx` |
+| FR-ANALYTICS | Nightly MAE cron not scheduled; on-demand admin page load only | `analytics-service.ts` |
+| FR-ADMIN | No automated admin test suite; subscription list has no detail route | `apps/admin/` |
+| UI/A11y | ~190 findings in `review/WEB-UI-REVIEW.md`, `review/ADMIN-UI-REVIEW.md` | Both apps |
+
+### Operational (not SRS FRs, useful for QA)
+
+| Endpoint / page | Purpose |
+|-----------------|---------|
+| `GET /api/health/db`, `redis`, `bdapps`, `mailpit`, `worker` | Infra readiness |
+| `/internal/simulator-check` + `/api/simulator-check/*` | BDApps OTP/CAAS/SMS/USSD without real Robi network |
+| `POST /api/webhooks/resend` | Resend delivery events (inbound) |
 
 ---
 
@@ -89,7 +155,8 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 - `apps/web/src/app/api/auth/dev-login/route.ts` — Dev-only bypass login (guarded with `notFound()` in production)
 - `packages/shared/src/server/auth.ts` — `issueJwt`, `verifyAuth`, `requireAuth`, `requireAdminAuth`, `withAdminAuth`, `getAuthUser`, `logoutAndBlacklist`, `validateMsisdn`
 - `packages/shared/src/server/middleware.ts` — `withAuth` (JWT + email trial enforcement), `withCronAuth`
-- `apps/web/src/components/ProfileCompletionModal.tsx` — Post-login profile completion popup (collects fullName, phone, DOB); UI stub — needs wiring to Server Action
+- `apps/web/src/components/ProfileCompletionModal.tsx` — Post-login profile completion modal (fullName, phone); calls `completeProfile` Server Action
+- `apps/web/src/app/(main)/layout.tsx` — Mounts `ProfileCompletionModal`; opens when `/api/auth/status` returns `profileCompleted === false` and `authMethod === 'EMAIL'`
 - `apps/web/src/app/actions/user-actions.ts` — `completeProfile` Server Action; persists `fullName`, `phone`, `profileCompleted=true` to DB
 - `apps/web/src/app/queries/auth-queries.ts` — Cached auth-related RSC queries
 - `apps/web/src/proxy.ts` — Next.js 16 proxy (renamed from middleware.ts); server-side auth redirect via cookie presence check
@@ -113,8 +180,8 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 - Email magic-link fallback via Resend with rate limiting (3/hr)
 - 24-hour email trial window: `emailTrialExpiresAt` tracked on User record; `withAuth` enforces HTTP 402 after expiry; trial set only on user creation (not reset on every login)
 - `authMethod` (OTP | EMAIL) stored on User
-- `ProfileCompletionModal` UI component exists and collects required fields
-- `completeProfile` Server Action exists and persists to DB — modal just needs wiring
+- `ProfileCompletionModal` mounted in main layout; submits via `completeProfile` Server Action
+- Modal shown for email-auth users with incomplete profile (fetched from `/api/auth/status`)
 - Auth pages converted: all `useDummyData` branches removed, direct fetch to auth API routes
 - `proxy.ts` added for server-side auth redirect (Next.js 16 convention)
 
@@ -124,9 +191,10 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 - `getAuthUser()` — now additionally checks `suspendedAt` and `deletedAt`; suspended or soft-deleted users receive HTTP 403
 
 **What's missing:**
-- `ProfileCompletionModal` is not yet wired to the `completeProfile` Server Action — the UI collects fields but does not call the action
+- SRS expects profile-completion nudge ~1 min after **OTP** login; current trigger is **email users only** (`authMethod === 'EMAIL'`), not OTP
+- Dismissal stored in `sessionStorage` (`vesta_profile_modal_dismissed`) — does not re-prompt on next login per SRS
 - The 60-second OTP resend cooldown is implemented in UI but not validated server-side (only the 3-per-minute rate limit exists)
-- Profile completion status (`profileCompleted` field) is not re-prompted on subsequent logins via server-side check
+- DOB not collected in modal (SRS mentions "required profile details" — only fullName + phone implemented)
 
 ---
 
@@ -501,7 +569,8 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 
 **What's missing:**
 - Phase-based surfacing is client-side only (no server-driven personalization based on user's current cycle phase)
-- `dangerouslySetInnerHTML` used for article body — needs HTML sanitization (DOMPurify) to prevent XSS (documented in `review/WEB-UI-REVIEW.md`)
+- No `/content/[slug]` route — articles open in inline reader on `/content`
+- Client-side DOMPurify sanitization in `ContentClient.tsx` before `dangerouslySetInnerHTML` (verify coverage in QA; server sanitization on CMS persist only)
 
 ---
 
@@ -516,6 +585,7 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 - Admin account seeded via `packages/shared/prisma/seed.ts` (env: `ADMIN_EMAIL` / `ADMIN_PASSWORD`, defaults: `admin@vesta.health` / `admin123`)
 - English-only (no i18n overhead)
 - Matches Vesta design language: glass-morphism panels, gradient accents, Manrope font
+- **Beyond SRS scope (implemented):** Email delivery logs (`/emails`), template preview (`/emails/preview`), audit log viewer (`/audit-logs`)
 
 **Files:**
 - `apps/admin/src/proxy.ts` — Edge proxy: JWT decode + role check; redirects to `/login` if unauthenticated or non-admin
@@ -532,9 +602,15 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 - `apps/admin/src/app/(admin)/analytics/page.tsx` — Population health charts (cycle length distribution, symptom frequency, prediction accuracy MAE, retention)
 - `apps/admin/src/app/(admin)/sms/page.tsx` — SMS broadcast management: create, schedule, delete; send history
 - `apps/admin/src/app/(admin)/feedback/page.tsx` — All user feedback with category/date/rating filters + CSV export
+- `apps/admin/src/app/(admin)/feedback/[id]/page.tsx` — Feedback detail view (`FeedbackDetailClient`)
+- `apps/admin/src/app/(admin)/emails/page.tsx` — Email delivery log list + stats (`EmailsClient`)
+- `apps/admin/src/app/(admin)/emails/[id]/page.tsx` — Email log detail + HTML preview + delivery refresh
+- `apps/admin/src/app/(admin)/emails/preview/page.tsx` — Bilingual template preview (period/fertile/logging reminders)
+- `apps/admin/src/app/(admin)/audit-logs/page.tsx` — Admin action audit trail (`AuditLogClient`)
 
-**Admin-specific UI components (11):**
-`DataTable`, `Badge`, `StatCard`, `FilterBar`, `Pagination`, `ConfirmModal`, `Button`, `Card`, `Input`, `Shimmer`, `TiptapEditor`
+**Admin-specific UI components (11 primitives + 15 feature clients):**
+Primitives: `DataTable`, `Badge`, `StatCard`, `FilterBar`, `Pagination`, `ConfirmModal`, `Button`, `Card`, `Input`, `Shimmer`, `TiptapEditor`, `AdminPageHeader`, `RefetchButton`, `VestaLogo`
+Feature clients: `DashboardClient`, `UsersClient`, `UserDetailClient`, `SubscriptionsClient`, `ContentClient`, `ArticleEditorClient`, `EditArticleClient`, `AnalyticsClient`, `SmsClient`, `FeedbackClient`, `FeedbackDetailClient`, `EmailsClient`, `EmailDetailClient`, `EmailPreviewClient`, `AuditLogClient`
 
 **Admin Actions:**
 - **User**: suspend (`suspendedAt`, `suspendedBy`), reactivate (clear suspension), soft-delete (`deletedAt`)
@@ -546,11 +622,14 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 **Server Actions (admin app):**
 - `apps/admin/src/app/actions/user-actions.ts` — suspend, reactivate, softDelete, grantPro, revokePro
 - `apps/admin/src/app/actions/content-actions.ts` — article CRUD, category CRUD
-- `apps/admin/src/app/actions/sms-actions.ts` — broadcast create/delete
+- `apps/admin/src/app/actions/sms-actions.ts` — `createSmsBroadcast`, `deleteSmsBroadcast`, `sendSmsBroadcast`
 - `apps/admin/src/app/actions/export-actions.ts` — CSV generation (feedback, users)
+- `apps/admin/src/app/actions/email-delivery-actions.ts` — `refreshEmailDeliveryStatus`
+- `apps/admin/src/app/actions/email-preview-actions.ts` — `getEmailLogPreviewHtml`
+- `apps/admin/src/app/actions/cache-actions.ts` — `revalidateAdminTags`
 
 **Cached Queries (admin app):**
-- `apps/admin/src/app/queries/` — dashboard, user, subscription, content, analytics, feedback, sms queries (all thin `cache()` wrappers over shared services)
+- `apps/admin/src/app/queries/` — `auth-queries`, `dashboard-queries`, `user-queries`, `subscription-queries`, `content-queries`, `analytics-queries`, `sms-queries`, `feedback-queries`, `email-queries`, `audit-queries` (thin `cache()` wrappers over shared services)
 
 **API Routes (admin app — auth only):**
 - `POST /api/auth/login` — email/password authentication
@@ -613,29 +692,30 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 
 ### FR-EXPORT — Data Export (CSV / Excel)
 **Priority:** P2
-**Status:** Implemented (admin-side); In Progress (user-side)
+**Status:** Partial — admin CSV done; user CSV via Server Action (no REST route; Excel label misleading)
 
 **Files:**
-- `apps/web/src/app/(main)/settings/page.tsx` — Export CSV and Export Excel buttons exist in the Data Export section (user-facing, still stubs)
-- `apps/admin/src/app/(main)/feedback/page.tsx` — Feedback CSV export button (admin)
+- `apps/web/src/app/(main)/settings/SettingsClient.tsx` — Export CSV / Export Excel buttons call `exportUserDataCsv`
+- `apps/web/src/app/actions/settings-actions.ts` — `exportUserDataCsv()` — period + symptom rows for **all** user profiles
+- `apps/admin/src/app/(admin)/feedback/page.tsx` — Feedback CSV export button (admin)
 - `packages/shared/src/server/services/export-service.ts` — CSV generation for feedback records and user list using `papaparse`
 
 **API Routes:**
-- `GET /api/admin/export/feedback` — CSV download (admin, `requireAdminAuth()` guarded)
-- `GET /api/admin/export/users` — CSV download (admin, `requireAdminAuth()` guarded)
+- Admin: export via Server Actions `exportFeedbackCsv`, `exportUsersCsv` (no dedicated REST routes in admin app)
+- User: no `/api/export` route — download triggered from Settings via Server Action only
 
 **What's implemented:**
 - Admin feedback CSV export (category, rating, message, timestamp, userId)
 - Admin users CSV export (id, phone, email, role, subscriptionStatus, createdAt)
-- `papaparse` used for CSV generation in `export-service`
-- Admin export routes protected by `requireAdminAuth()`
+- User CSV download from Settings — period logs + symptom log metadata across all profiles
+- `papaparse` used for CSV generation in `export-service` (admin exports)
 
 **What's missing (user-facing):**
-- No `/api/export` route for end-user personal data export
-- No actual file generation for the Settings page export buttons
-- No per-profile data query and download logic (user side)
-- No decryption of symptom values before export (blocked by FR-ENC being unresolved)
-- Settings page buttons remain UI stubs — no file is produced for users
+- No dedicated `/api/export` REST route
+- "Export Excel" button produces CSV (same as CSV button) — no `.xlsx` generation
+- Settings UI copy says "active profile only" but `exportUserDataCsv` exports **all** profiles (copy bug)
+- Symptom `value` not decrypted in export (blocked by FR-ENC)
+- No true Excel format per SRS
 
 ---
 
@@ -669,10 +749,13 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 - `AdminAuditLog` entry written for each broadcast action
 - Send history visible in admin SMS page
 
+**What's implemented (admin SMS send):**
+- `sendSmsBroadcast` in `sms-service.ts` calls `smsSend(message, ['tel:all'])` — BDApps broadcast to all subscribers in one API call
+
 **What's missing:**
-- `tel:all` broadcast (send to all PRO subscribers in one BDApps call) not yet triggered from admin panel — each broadcast still sends per-user
 - No CSV/bulk-upload interface for content batches
 - Content override logic (deactivating previous day's content) not implemented
+- SMS delivery report webhook does not update per-broadcast status in admin UI
 
 ---
 
@@ -685,6 +768,7 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 - `apps/web/src/app/api/webhooks/sms/report/route.ts` — SMS delivery report; persists `SMS_REPORT` event
 - `apps/web/src/app/api/webhooks/ussd/receive/route.ts` — USSD events; persists `USSD_RECEIVE` event
 - `apps/web/src/app/api/webhooks/subscription/notify/route.ts` — Subscription status changes; persists `SUBSCRIPTION_NOTIFY`, maps BDApps status → PRO/LAPSED, updates `User.subscriptionStatus` and `Subscription.status`
+- `apps/web/src/app/api/webhooks/resend/route.ts` — Resend delivery events (inbound email provider webhook)
 - `packages/shared/src/server/adapters/webhooks.ts` — `validateWebhookSource` (IP whitelist via `BDAPPS_WEBHOOK_IPS` env; uses `x-real-ip` header set by infra, not spoofable `x-forwarded-for`), `persistWebhookEvent` (idempotency by key)
 - `packages/shared/prisma/schema.prisma` — `WebhookEvent` model with `idempotencyKey @unique`
 
@@ -723,13 +807,14 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 - `Feedback` DB model matches SRS schema exactly
 - `submitFeedback` Server Action persists feedback to DB
 
-**Admin feedback (newly implemented):**
-- `apps/admin/src/app/(admin)/feedback/page.tsx` — All user feedback with category, date range, and star-rating filters
-- CSV export button calls `GET /api/admin/export/feedback`
+**Admin feedback:**
+- `apps/admin/src/app/(admin)/feedback/page.tsx` — List with category, date range, star-rating filters + CSV export
+- `apps/admin/src/app/(admin)/feedback/[id]/page.tsx` — Detail view (message, rating, user link, metadata)
 
 **What's implemented (admin):**
 - Feedback list with filter by category (Bug, Feature, General, Satisfaction), date range, and rating
-- CSV export for filtered feedback results
+- CSV export via `exportFeedbackCsv` Server Action
+- Feedback detail page at `/feedback/[id]`
 
 **What's missing:**
 - Admin cannot reply to or resolve individual feedback items — read-only view only
@@ -792,12 +877,12 @@ The following security issues were identified and resolved in the current sprint
 ## P0 Blockers
 
 1. **FR-ENC**: `prisma-field-encryption` not installed; `symptom_logs.value` stored as plaintext. Blocks the DoD security gate.
-2. **FR-AUTH (minor)**: `ProfileCompletionModal` not yet wired to the `completeProfile` Server Action — the backend action exists, the modal just needs to call it.
+2. **FR-AUTH**: Profile completion modal wired to `completeProfile`, but trigger scope differs from SRS (email-only, sessionStorage dismiss — see Open Items).
 
 ## P1/P2 Gaps
 
-- `FR-EXPORT` (user-facing): Settings page export buttons remain UI stubs; no `/api/export` route or file generation for end-users.
-- `FR-SMS`: `tel:all` broadcast (bulk BDApps send) not triggered from admin panel; sends are still per-user. No CSV/bulk upload for content batches.
+- `FR-EXPORT` (user-facing): CSV download works via Server Action; no `/api/export` route; Excel button is CSV-only; UI copy mismatch on profile scope.
+- `FR-SMS`: `tel:all` implemented in `sms-service`; no CSV bulk-upload or content-override logic.
 - `FR-ANALYTICS`: Nightly MAE report not scheduled; analytics computed on-demand only.
 - `FR-CMS`: Image upload from Tiptap to Supabase storage not yet wired (stub present).
 - `FR-ADMIN` (admin test suite): Automated tests for admin app not written; typecheck only.
