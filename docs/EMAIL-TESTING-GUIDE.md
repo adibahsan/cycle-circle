@@ -78,7 +78,7 @@ Expected: An email titled **"Your Vesta Login Link"** (or Bengali equivalent) ap
 **DB check:**
 
 ```bash
-docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev -c "
+docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev -c "
 SELECT type, status, provider, \"to\", \"sentAt\"::timestamp(0)
 FROM \"EmailLog\"
 WHERE type = 'MAGIC_LINK'
@@ -98,7 +98,7 @@ Expected row: `type=MAGIC_LINK`, `status=SENT`, `provider=SMTP`.
 **Step 1 — Set up the prediction to trigger:**
 
 ```bash
-docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev -c "
+docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev -c "
 UPDATE \"Prediction\"
 SET
   \"nextPeriodStart\" = CURRENT_DATE + INTERVAL '1 day',
@@ -114,7 +114,7 @@ This sets `nextPeriodStart` to tomorrow (within the 0–2 day window) while push
 **Step 2 — Confirm notification pref is enabled:**
 
 ```bash
-docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev -c "
+docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev -c "
 SELECT \"periodAlert\", \"fertileWindow\", \"loggingReminder\"
 FROM \"NotificationPreference\"
 WHERE \"profileId\" = 'cmpshs8pr0004gslgvbld847t';
@@ -124,7 +124,7 @@ WHERE \"profileId\" = 'cmpshs8pr0004gslgvbld847t';
 If `periodAlert` is `false`, enable it:
 
 ```bash
-docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev -c "
+docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev -c "
 UPDATE \"NotificationPreference\"
 SET \"periodAlert\" = true
 WHERE \"profileId\" = 'cmpshs8pr0004gslgvbld847t';
@@ -163,7 +163,7 @@ Expected response:
 **Step 1 — Set fertile window to start today, period away:**
 
 ```bash
-docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev -c "
+docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev -c "
 UPDATE \"Prediction\"
 SET
   \"fertileStart\"    = CURRENT_DATE,
@@ -179,7 +179,7 @@ WHERE \"profileId\" = 'cmpshs8pr0004gslgvbld847t';
 **Step 3 — Clear today's EmailLog entries** (if you already ran the cron today, dedup will skip — reset first):
 
 ```bash
-docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev -c "
+docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev -c "
 DELETE FROM \"EmailLog\"
 WHERE \"profileId\" = 'cmpshs8pr0004gslgvbld847t'
   AND type IN ('PERIOD_ALERT', 'FERTILE_ALERT', 'LOGGING_REMINDER')
@@ -214,7 +214,7 @@ The test profile's last period log is already 10+ days old, so no date manipulat
 **Step 3 — Set dates so period alert and fertile alert don't fire** (optional — keeps the response clean):
 
 ```bash
-docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev -c "
+docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev -c "
 UPDATE \"Prediction\"
 SET
   \"nextPeriodStart\" = CURRENT_DATE + INTERVAL '10 days',
@@ -244,7 +244,7 @@ Expected: `"reminders": 1`
 Set the prediction to hit all three conditions simultaneously:
 
 ```bash
-docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev -c "
+docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev -c "
 UPDATE \"Prediction\"
 SET
   \"nextPeriodStart\" = CURRENT_DATE + INTERVAL '1 day',
@@ -277,7 +277,7 @@ Three emails appear in Mailpit.
 ### Full log view:
 
 ```bash
-docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev -c "
+docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev -c "
 SELECT type, status, provider, \"to\", \"deliveryStatus\", \"sentAt\"::timestamp(0)
 FROM \"EmailLog\"
 ORDER BY \"sentAt\" DESC
@@ -288,7 +288,7 @@ LIMIT 20;
 ### Filter by type:
 
 ```bash
-docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev -c "
+docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev -c "
 SELECT id, type, status, \"to\", error, \"sentAt\"::timestamp(0)
 FROM \"EmailLog\"
 WHERE type = 'PERIOD_ALERT'
@@ -353,7 +353,7 @@ No new emails appear in Mailpit. No new rows added to `EmailLog`.
 **Step 3 — Confirm EmailLog count didn't change:**
 
 ```bash
-docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev -c "
+docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev -c "
 SELECT COUNT(*) FROM \"EmailLog\"
 WHERE \"profileId\" = 'cmpshs8pr0004gslgvbld847t'
   AND \"sentAt\" > NOW() - INTERVAL '1 hour';
@@ -426,7 +426,7 @@ If `errors > 0`, check the web app terminal for stack traces.
 **Check 2 — Dedup already fired today:**
 
 ```bash
-docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev -c "
+docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev -c "
 SELECT type, \"sentAt\"::timestamp(0) FROM \"EmailLog\"
 WHERE \"profileId\" = 'cmpshs8pr0004gslgvbld847t'
   AND DATE(\"sentAt\") = CURRENT_DATE;
@@ -438,7 +438,7 @@ If rows exist, run the DELETE from section 2.3 to clear them.
 **Check 3 — Prediction dates don't match conditions:**
 
 ```bash
-docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev -c "
+docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev -c "
 SELECT \"nextPeriodStart\", \"fertileStart\", CURRENT_DATE AS today
 FROM \"Prediction\"
 WHERE \"profileId\" = 'cmpshs8pr0004gslgvbld847t';
@@ -456,7 +456,7 @@ Conditions that trigger each type:
 **Check 4 — Notification prefs are off:**
 
 ```bash
-docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev -c "
+docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev -c "
 SELECT * FROM \"NotificationPreference\"
 WHERE \"profileId\" = 'cmpshs8pr0004gslgvbld847t';
 "
@@ -515,7 +515,7 @@ Remove `| jq .` from the curl commands and read raw JSON output instead.
 | Email preview (admin) | `http://localhost:3001/emails/preview` |
 | Trigger cron | `curl -s -X POST http://localhost:3000/api/cron/daily-reminders -H "Authorization: Bearer local-cron-secret-min-16" \| jq .` |
 | Prisma Studio | `just studio` |
-| DB direct access | `docker exec -i $(docker ps -q -f ancestor=postgres:16-alpine) psql -U vesta -d vesta_dev` |
+| DB direct access | `docker exec -i $(docker ps -q -f ancestor=postgres:17-alpine) psql -U vesta_user -d vesta_dev` |
 | Clear today's logs | `DELETE FROM "EmailLog" WHERE "profileId" = 'cmpshs8pr0004gslgvbld847t' AND type IN ('PERIOD_ALERT','FERTILE_ALERT','LOGGING_REMINDER') AND "sentAt" > NOW() - INTERVAL '1 day'` |
 
 ### Key Source Files

@@ -1,3 +1,5 @@
+name: vesta
+
 services:
   # app:
   #   build:
@@ -11,7 +13,7 @@ services:
   #     - /workspace/apps/web/node_modules
   #     - /workspace/apps/web/.next
   #   environment:
-  #     DATABASE_URL: postgresql://vesta:vesta_dev@postgres:5432/vesta_dev
+  #     DATABASE_URL: postgresql://vesta_user:vesta_dev@postgres:5432/vesta_dev
   #     REDIS_URL: redis://redis:6379
   #     BDAPPS_APP_ID: APP_SIMULATOR
   #     BDAPPS_PASSWORD: simulator_password
@@ -32,24 +34,24 @@ services:
   #   restart: unless-stopped
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17.10-alpine
     ports:
       - "5431:5432"
     environment:
-      POSTGRES_USER: vesta
+      POSTGRES_USER: vesta_user
       POSTGRES_PASSWORD: vesta_dev
       POSTGRES_DB: vesta_dev
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vesta -d vesta_dev"]
+      test: ["CMD-SHELL", "pg_isready -U vesta_user -d vesta_dev"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4.9-alpine
     ports:
       - "6379:6379"
     volumes:
@@ -65,7 +67,7 @@ services:
       context: ../..
       dockerfile: ops/docker/worker/Dockerfile
     environment:
-      DATABASE_URL: postgresql://vesta:vesta_dev@postgres:5432/vesta_dev
+      DATABASE_URL: postgresql://vesta_user:vesta_dev@postgres:5432/vesta_dev
       REDIS_URL: redis://redis:6379
       NODE_ENV: development
     depends_on:
@@ -74,7 +76,7 @@ services:
     restart: unless-stopped
 
   mailpit:
-    image: axllent/mailpit:latest
+    image: axllent/mailpit:v1.30.1
     ports:
       - "1025:1025"   # SMTP
       - "8025:8025"   # Web UI

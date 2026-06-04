@@ -77,10 +77,10 @@ db-reset:
 
 # Reset database without interactive prompt: drop via Docker, push schema, generate, seed
 db-reset-force:
-    docker exec -i $({{compose}} ps -q postgres) psql -U vesta -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'vesta_dev' AND pid <> pg_backend_pid();" || true
-    docker exec -i $({{compose}} ps -q postgres) psql -U vesta -d postgres -c "DROP DATABASE IF EXISTS vesta_dev;" || true
-    docker exec -i $({{compose}} ps -q postgres) psql -U vesta -d postgres -c "CREATE DATABASE vesta_dev;" || true
-    docker exec -i $({{compose}} ps -q postgres) psql -U vesta -d vesta_dev -f /docker-entrypoint-initdb.d/init.sql
+    docker exec -i $({{compose}} ps -q postgres) psql -U vesta_user -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'vesta_dev' AND pid <> pg_backend_pid();" || true
+    docker exec -i $({{compose}} ps -q postgres) psql -U vesta_user -d postgres -c "DROP DATABASE IF EXISTS vesta_dev;" || true
+    docker exec -i $({{compose}} ps -q postgres) psql -U vesta_user -d postgres -c "CREATE DATABASE vesta_dev;" || true
+    docker exec -i $({{compose}} ps -q postgres) psql -U vesta_user -d vesta_dev -f /docker-entrypoint-initdb.d/init.sql
     {{shared}} exec prisma db push --accept-data-loss
     {{shared}} db:generate
     {{shared}} db:seed

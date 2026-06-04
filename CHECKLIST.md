@@ -304,7 +304,7 @@
 | 2 Billing routes: CAAS subscribe + cron balance check | DONE |
 | 4 Webhook routes: SMS receive/report, USSD, subscription notify with dedup | DONE |
 | 5 Health check routes: DB, Redis, BDApps, Mailpit, Worker | DONE |
-| Docker Compose: 6 services (app, postgres:16, redis:7, worker, mailpit, bdapps-simulator) | DONE |
+| Docker Compose: 6 services (app, postgres:17, redis:7, worker, mailpit, bdapps-simulator) | DONE |
 | Worker process: poll-loop with Tier 1/2 prediction recalculation | DONE |
 | Developer checklist page at `/internal/backend-checklist` with live health checks, API ref, test panel | DONE |
 | Vitest config + 11 npm scripts (docker:*, db:*, backend:test) | DONE |
