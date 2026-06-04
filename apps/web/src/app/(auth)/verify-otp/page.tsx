@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { staggerContainer, staggerItem, popIn, useMotionSafe } from '@/lib/motion';
+import { CycleBloom } from '@/components/illustrations';
 import '@vesta/shared/utils/i18n';
 
 const OTP_LENGTH = 6;
@@ -26,6 +28,7 @@ export default function VerifyOtpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useTranslation();
+  const { reduced, variants } = useMotionSafe();
 
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [error, setError] = useState('');
@@ -200,7 +203,7 @@ export default function VerifyOtpPage() {
         </p>
       </motion.div>
 
-      {/* OTP digit boxes */}
+      {/* OTP digit boxes — staggered entrance + per-digit fill animation */}
       <motion.div
         custom={2}
         variants={FADE_UP}
@@ -208,16 +211,26 @@ export default function VerifyOtpPage() {
         animate="show"
         className="mb-3"
       >
-        <div className="flex gap-2.5 justify-between">
+        <motion.div
+          className="flex gap-2.5 justify-between"
+          variants={variants(staggerContainer)}
+          initial="hidden"
+          animate="visible"
+        >
           {digits.map((digit, index) => (
             <motion.div
               key={index}
+              variants={variants(staggerItem)}
               animate={
-                error
-                  ? { x: [0, -5, 5, -5, 5, 0], scale: 1, transition: { duration: 0.35 } }
-                  : { scale: focusedIndex === index ? 1.05 : 1 }
+                !reduced
+                  ? error
+                    ? { x: [0, -5, 5, -5, 5, 0], scale: 1, transition: { duration: 0.35 } }
+                    : {
+                        scale: focusedIndex === index ? 1.06 : digit ? 1.02 : 1,
+                        transition: { type: 'spring', stiffness: 400, damping: 20 },
+                      }
+                  : undefined
               }
-              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
               className="flex-1"
             >
               <input
@@ -232,16 +245,17 @@ export default function VerifyOtpPage() {
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onFocus={(e) => { e.target.select(); setFocusedIndex(index); }}
                 onBlur={() => setFocusedIndex(null)}
-                className={`w-full aspect-square text-center text-xl font-bold rounded-xl border-2 bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none transition-colors duration-200 ${
+                className={`w-full aspect-square text-center text-xl font-bold rounded-xl border-2 text-[var(--color-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 ${
                   digit
-                    ? 'border-[var(--color-primary)] bg-[var(--color-bg-card)]'
-                    : 'border-[var(--color-border)]'
+                    ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/8'
+                    : 'bg-[var(--color-bg-secondary)] border-[var(--color-border)]'
                 } ${error ? 'border-red-400' : ''} focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/25`}
+                style={{ transition: 'background-color 0.18s, border-color 0.18s' }}
                 aria-label={`Digit ${index + 1}`}
               />
             </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* Progress bar */}
         <div className="mt-3 h-1 rounded-full bg-[var(--color-border)] overflow-hidden">
@@ -359,7 +373,7 @@ export default function VerifyOtpPage() {
         {t('auth.codeExpiry')}
       </motion.p>
 
-      {/* Success overlay — full-screen scale+fade checkmark */}
+      {/* Success overlay — CycleBloom bloom + popIn check */}
       <AnimatePresence>
         {success && (
           <motion.div
@@ -367,15 +381,22 @@ export default function VerifyOtpPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-bg-primary)]/90 backdrop-blur-sm z-20 rounded-inherit"
+            className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-bg-primary)]/90 backdrop-blur-sm z-20"
+            aria-live="polite"
           >
+            {/* CycleBloom with popIn entrance */}
             <motion.div
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.05 }}
-              className="w-24 h-24 rounded-full flex items-center justify-center shadow-[0_8px_40px_rgba(232,71,108,0.4)] bg-[var(--color-primary)]"
+              variants={variants(popIn)}
+              initial="hidden"
+              animate="visible"
+              className="relative flex items-center justify-center drop-shadow-[0_8px_32px_rgba(232,71,108,0.4)]"
+              aria-hidden="true"
             >
-              <CheckCircle2 size={44} className="text-white" strokeWidth={2} />
+              <CycleBloom size={120} animated={!reduced} />
+              {/* CheckCircle2 badge centered on the bloom */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <CheckCircle2 size={32} className="text-white drop-shadow" strokeWidth={2.5} />
+              </div>
             </motion.div>
             <motion.p
               initial={{ opacity: 0, y: 10 }}

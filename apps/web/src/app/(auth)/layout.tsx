@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { Sun, Moon } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
+import { AuthHeroArt } from '@/components/illustrations';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useAppStore();
@@ -28,32 +29,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
       {/* ── Desktop left panel: branding / illustration (md+) ── */}
       <div className="hidden md:flex md:w-1/2 lg:w-[55%] relative items-center justify-center overflow-hidden">
-        {/* Decorative blobs for left panel */}
+        {/* AuthHeroArt fills the entire panel — replaces static CSS blobs */}
+        <AuthHeroArt className="absolute inset-0" animated />
+
+        {/* Subtle dot grid overlaid on top of art */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-30"
-          style={{
-            background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)',
-          }}
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-32 -right-16 w-80 h-80 rounded-full opacity-25"
-          style={{
-            background: 'radial-gradient(circle, var(--color-secondary) 0%, transparent 70%)',
-          }}
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full opacity-10"
-          style={{
-            background: 'radial-gradient(circle, var(--color-accent) 0%, transparent 70%)',
-          }}
-        />
-        {/* Dot grid */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-[0.03]"
+          className="pointer-events-none absolute inset-0 opacity-[0.025]"
           style={{
             backgroundImage:
               'radial-gradient(circle, var(--color-text-primary) 1px, transparent 1px)',
@@ -61,7 +43,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           }}
         />
 
-        {/* Branding content */}
+        {/* Branding content — sits above the illustration */}
         <motion.div
           initial={{ opacity: 0, x: -24 }}
           animate={{ opacity: 1, x: 0 }}
@@ -75,15 +57,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             Smart cycle tracking with predictive insights. Understand your body, plan your life.
           </p>
           <div className="flex gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)]/80 border border-[var(--color-border)]">
               <span className="text-sm">🩸</span>
               <span className="text-xs font-medium text-[var(--color-text-secondary)]">Period Tracking</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)]/80 border border-[var(--color-border)]">
               <span className="text-sm">🌸</span>
               <span className="text-xs font-medium text-[var(--color-text-secondary)]">Predictions</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)]/80 border border-[var(--color-border)]">
               <span className="text-sm">📊</span>
               <span className="text-xs font-medium text-[var(--color-text-secondary)]">Insights</span>
             </div>

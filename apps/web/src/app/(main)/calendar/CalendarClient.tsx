@@ -24,6 +24,7 @@ import { Card } from '@/components/ui/Card'
 import { useAppStore } from '@/lib/store'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
 import { PeriodLogModal } from '@/components/PeriodLogModal'
+import { springSoft, popIn, useMotionSafe } from '@/lib/motion'
 import type { FlowIntensity } from '@vesta/shared/types'
 import '@vesta/shared/utils/i18n'
 
@@ -88,30 +89,49 @@ interface Props {
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
 
-function Legend() {
+interface LegendProps {
+  /** The currently active phase chip to highlight with breathe animation. */
+  activeLegendKey?: string
+}
+
+function Legend({ activeLegendKey }: LegendProps) {
   const { t } = useTranslation()
+  const prefersReducedMotion = useReducedMotion()
+
   const items = [
-    { color: 'var(--color-menstrual)', label: t('calendar.period'), ring: false },
-    { color: 'var(--color-fertile)', label: t('calendar.fertile'), ring: false },
-    { color: 'var(--color-ovulation)', label: t('calendar.ovulationDay'), ring: false },
-    { color: 'var(--color-text-primary)', label: t('calendar.today'), ring: true },
+    { key: 'period', color: 'var(--color-menstrual)', label: t('calendar.period'), ring: false },
+    { key: 'fertile', color: 'var(--color-fertile)', label: t('calendar.fertile'), ring: false },
+    { key: 'ovulation', color: 'var(--color-ovulation)', label: t('calendar.ovulationDay'), ring: false },
+    { key: 'today', color: 'var(--color-text-primary)', label: t('calendar.today'), ring: true },
   ]
 
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center">
-      {items.map(({ color, label, ring }) => (
-        <div key={label} className="flex items-center gap-1.5">
-          {ring ? (
-            <div
-              className="w-4 h-4 rounded-full border-2"
-              style={{ borderColor: 'var(--color-text-primary)' }}
-            />
-          ) : (
-            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }} />
-          )}
-          <span className="text-[11px] font-medium text-[var(--color-text-secondary)]">{label}</span>
-        </div>
-      ))}
+      {items.map(({ key, color, label, ring }) => {
+        const isActive = activeLegendKey === key
+        return (
+          <div
+            key={key}
+            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-colors${isActive ? ' bg-phase-tint' : ''}`}
+            style={isActive ? { ['--phase-color' as string]: color } : undefined}
+          >
+            {ring ? (
+              <div
+                className={`w-4 h-4 rounded-full border-2${isActive && !prefersReducedMotion ? ' animate-breathe' : ''}`}
+                style={{ borderColor: 'var(--color-text-primary)' }}
+                aria-hidden="true"
+              />
+            ) : (
+              <div
+                className={`w-4 h-4 rounded-full${isActive && !prefersReducedMotion ? ' animate-breathe' : ''}`}
+                style={{ backgroundColor: color }}
+                aria-hidden="true"
+              />
+            )}
+            <span className="text-[11px] font-medium text-[var(--color-text-secondary)]">{label}</span>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -129,55 +149,104 @@ function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
   const { date, isPeriod, isFertile, isOvulation, isFuturePredicted } = meta
   const today = new Date()
   const isToday = isSameDay(date, today)
-  const prefersReducedMotion = useReducedMotion()
+  const { reduced } = useMotionSafe()
 
-  let bgColor = 'transparent'
+  // Derive the active phase color variable for the tint utility
+  let phaseColor: string | undefined
   let textColor = isCurrentMonth ? 'var(--color-text-primary)' : 'var(--color-text-muted)'
   const opacity = isFuturePredicted ? 0.5 : 1
+  const hasPhase = isCurrentMonth && (isPeriod || isFertile || isOvulation)
 
   if (isPeriod && isCurrentMonth) {
-    bgColor = isFuturePredicted ? '#F2728E40' : '#E8476C22'
+    phaseColor = 'var(--color-menstrual)'
     textColor = 'var(--color-menstrual)'
   } else if (isOvulation && isCurrentMonth) {
-    bgColor = '#FF8C6B22'
+    phaseColor = 'var(--color-ovulation)'
     textColor = 'var(--color-ovulation)'
   } else if (isFertile && isCurrentMonth) {
-    bgColor = '#7BC5AE22'
+    phaseColor = 'var(--color-fertile)'
     textColor = 'var(--color-fertile)'
   }
 
+  // Selected state tint: slightly more opaque version of the phase color
+  // Use a separate CSS var so color-mix works from the same phase palette
+  const selectedExtraStyle = isSelected && phaseColor
+    ? { ['--phase-color' as string]: phaseColor }
+    : {}
+
   return (
-    <button
+    <motion.button
       onClick={onClick}
-      className={`relative flex flex-col items-center justify-center aspect-square w-full rounded-xl transition-[color,background-color,transform] duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 focus-visible:ring-offset-1${(isPeriod || isFertile || isOvulation) && isCurrentMonth ? ' hover:scale-105' : ''}`}
+      className={[
+        'relative flex flex-col items-center justify-center aspect-square w-full rounded-xl',
+        'transition-[color,background-color] duration-150',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 focus-visible:ring-offset-1',
+        // Phase tint via CSS utility — sets background via color-mix with --phase-color
+        hasPhase ? 'bg-phase-tint' : '',
+        // Selected: boost tint opacity via an extra class handled below in style
+        isSelected ? 'border-phase' : '',
+      ].filter(Boolean).join(' ')}
       style={{
-        backgroundColor: isSelected
-          ? isPeriod
-            ? '#E8476C33'
-            : isFertile
-              ? '#7BC5AE33'
-              : isOvulation
-                ? '#FF8C6B33'
-                : 'var(--color-bg-secondary)'
-          : bgColor,
+        // Provide --phase-color so .bg-phase-tint and .border-phase can consume it
+        ...(phaseColor ? { ['--phase-color' as string]: phaseColor } : {}),
+        // Fallback background for out-of-month or plain days
+        backgroundColor: !hasPhase
+          ? isSelected
+            ? 'var(--color-bg-secondary)'
+            : 'transparent'
+          : undefined,
+        ...selectedExtraStyle,
         opacity,
       }}
+      // Motion: scale on hover/tap via springSoft, gated on reduced-motion
+      whileHover={reduced || !hasPhase ? undefined : { scale: 1.08 }}
+      whileTap={reduced ? undefined : { scale: 0.92 }}
+      transition={springSoft}
     >
       {/* Today ring */}
       {isToday && (
         <motion.div
           className="absolute inset-0.5 rounded-[10px] border-2 pointer-events-none"
           style={{ borderColor: 'var(--color-text-primary)' }}
-          animate={prefersReducedMotion ? {} : { opacity: [0.6, 1, 0.6] }}
+          animate={reduced ? {} : { opacity: [0.6, 1, 0.6] }}
           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          aria-hidden="true"
         />
       )}
 
-      {/* Ovulation accent dot */}
+      {/* Ovulation accent dot — popIn on mount */}
       {isOvulation && isCurrentMonth && (
-        <div
+        <motion.div
           className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
           style={{ backgroundColor: 'var(--color-ovulation)' }}
+          variants={popIn}
+          initial={reduced ? false : 'hidden'}
+          animate="visible"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Period indicator dot — popIn on mount */}
+      {isPeriod && isCurrentMonth && !isOvulation && (
+        <motion.div
+          className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
+          style={{ backgroundColor: 'var(--color-menstrual)' }}
+          variants={popIn}
+          initial={reduced ? false : 'hidden'}
+          animate="visible"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Fertile indicator dot — popIn on mount */}
+      {isFertile && isCurrentMonth && !isOvulation && !isPeriod && (
+        <motion.div
+          className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
+          style={{ backgroundColor: 'var(--color-fertile)' }}
+          variants={popIn}
+          initial={reduced ? false : 'hidden'}
+          animate="visible"
+          aria-hidden="true"
         />
       )}
 
@@ -189,7 +258,7 @@ function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
         {format(date, 'd')}
       </span>
 
-      {/* Future dashed border */}
+      {/* Future dashed border for predicted days */}
       {isFuturePredicted && isCurrentMonth && (isPeriod || isFertile || isOvulation) && (
         <div
           className="absolute inset-0.5 rounded-[10px] border border-dashed pointer-events-none"
@@ -200,6 +269,7 @@ function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
                 ? 'var(--color-ovulation)'
                 : 'var(--color-fertile)',
           }}
+          aria-hidden="true"
         />
       )}
 
@@ -208,9 +278,10 @@ function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
         <div
           className="absolute inset-0 rounded-xl border-2 pointer-events-none"
           style={{ borderColor: 'var(--color-primary)' }}
+          aria-hidden="true"
         />
       )}
-    </button>
+    </motion.button>
   )
 }
 
@@ -323,10 +394,10 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
 
 // ─── Recent Periods ────────────────────────────────────────────────────────────
 
-const FLOW_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  LIGHT: { bg: 'var(--color-fertile)', text: '#fff', label: 'Light' },
-  MEDIUM: { bg: '#F59E0B', text: '#fff', label: 'Medium' },
-  HEAVY: { bg: 'var(--color-menstrual)', text: '#fff', label: 'Heavy' },
+const FLOW_STYLES: Record<string, { bg: string; text: string; labelKey: string }> = {
+  LIGHT: { bg: 'var(--color-fertile)', text: '#fff', labelKey: 'common.flowLight' },
+  MEDIUM: { bg: '#F59E0B', text: '#fff', labelKey: 'common.flowMedium' },
+  HEAVY: { bg: 'var(--color-menstrual)', text: '#fff', labelKey: 'common.flowHeavy' },
 }
 
 const PAGE_SIZE = 6
@@ -338,6 +409,7 @@ interface RecentPeriodsProps {
 }
 
 function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) {
+  const { t } = useTranslation()
   const [page, setPage] = useState(0)
   const prefersReducedMotion = useReducedMotion()
 
@@ -367,12 +439,12 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
     >
       <Card padding="md">
         <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
-          Recent Periods
+          {t('calendar.recentPeriods')}
         </h3>
 
         {periodLogs.length === 0 ? (
           <p className="text-xs text-[var(--color-text-muted)] text-center py-3">
-            No period logs yet
+            {t('calendar.noPeriodLogsYet')}
           </p>
         ) : (
           <>
@@ -401,7 +473,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                         {fmt.format(end)}
                       </span>
                       <span className="text-[11px] text-[var(--color-text-muted)]">
-                        {days} {days === 1 ? 'day' : 'days'}
+                        {days} {t(days === 1 ? 'common.day' : 'common.days')}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -409,7 +481,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                         className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
                         style={{ backgroundColor: flow.bg, color: flow.text }}
                       >
-                        {flow.label}
+                        {t(flow.labelKey)}
                       </span>
                       <Pencil size={12} className="text-[var(--color-text-muted)]" aria-hidden="true" />
                     </div>
@@ -427,7 +499,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
                 >
                   <ChevronLeft size={12} aria-hidden="true" />
-                  Prev
+                  {t('common.previous')}
                 </button>
                 <span className="text-[11px] text-[var(--color-text-muted)] tabular-nums">
                   {page + 1} / {totalPages}
@@ -438,7 +510,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                   aria-label="Next page of period logs"
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
                 >
-                  Next
+                  {t('common.next')}
                   <ChevronRight size={12} aria-hidden="true" />
                 </button>
               </div>
@@ -467,6 +539,8 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [editingLog, setEditingLog] = useState<PeriodLog | null>(null)
+  // Track navigation direction for direction-aware month slide: 1 = forward, -1 = backward
+  const [monthDirection, setMonthDirection] = useState<1 | -1>(1)
 
   // Build the API calendar lookup map
   const apiCalendarMap = useMemo(() => {
@@ -528,6 +602,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
 
   // Month navigation — update the URL so the RSC re-fetches data
   const prevMonth = () => {
+    setMonthDirection(-1)
     setSelectedDate(null)
     const prev = subMonths(currentMonth, 1)
     const newMonth = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`
@@ -535,6 +610,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
   }
 
   const nextMonth = () => {
+    setMonthDirection(1)
     setSelectedDate(null)
     const next = addMonths(currentMonth, 1)
     const newMonth = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`
@@ -555,6 +631,16 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
   const ovulationDay = days?.find((d) => d.ovulation)
   const fertileStart = days?.find((d) => d.fertile && !d.ovulation)
   const fertileEnd = [...(days ?? [])].reverse().find((d) => d.fertile)
+
+  // Determine the active legend key for today's phase (highlights that chip)
+  const todayMeta = dayMetaMap.get(format(today, 'yyyy-MM-dd'))
+  const activeLegendKey: string | undefined = (() => {
+    if (!todayMeta) return undefined
+    if (todayMeta.isOvulation) return 'ovulation'
+    if (todayMeta.isPeriod) return 'period'
+    if (todayMeta.isFertile) return 'fertile'
+    return 'today'
+  })()
 
   const DOW = [
     t('calendar.sun'), t('calendar.mon'), t('calendar.tue'), t('calendar.wed'),
@@ -644,14 +730,20 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
               ))}
             </div>
 
-            {/* Calendar grid */}
-            <AnimatePresence mode="wait">
+            {/* Calendar grid — direction-aware horizontal slide + fade */}
+            <AnimatePresence mode="wait" custom={monthDirection}>
               <motion.div
                 key={format(currentMonth, 'yyyy-MM')}
-                initial={{ opacity: 0, x: 12 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -12 }}
-                transition={{ duration: 0.22 }}
+                custom={monthDirection}
+                variants={prefersReducedMotion ? undefined : {
+                  enter: (dir: number) => ({ opacity: 0, x: dir * 40 }),
+                  center: { opacity: 1, x: 0 },
+                  exit: (dir: number) => ({ opacity: 0, x: dir * -40 }),
+                }}
+                initial={prefersReducedMotion ? false : 'enter'}
+                animate="center"
+                exit={prefersReducedMotion ? undefined : 'exit'}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                 className="grid grid-cols-7 gap-0.5 md:gap-1"
               >
                 {gridDays.map((date) => {
@@ -675,7 +767,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
 
             {/* Legend — inside the calendar card on desktop */}
             <div className="mt-4 pt-3 border-t border-[var(--color-border)]">
-              <Legend />
+              <Legend activeLegendKey={activeLegendKey} />
             </div>
           </Card>
         </motion.div>

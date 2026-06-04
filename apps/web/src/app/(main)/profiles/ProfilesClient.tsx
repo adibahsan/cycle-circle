@@ -10,6 +10,8 @@ import type { Profile, ProfileRelation } from '@vesta/shared/types';
 import { createProfile, deleteProfile, updateProfile, setActiveProfileCookie } from '@/app/actions/profile-actions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { staggerContainer, staggerItem, cardHover, useMotionSafe } from '@/lib/motion';
+import { FloralAccent, EmptyState } from '@/components/illustrations';
 import '@vesta/shared/utils/i18n';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -64,38 +66,41 @@ interface StepperProps {
 }
 
 function Stepper({ label, value, min, max, onChange, unit = 'days' }: StepperProps) {
+  const { props: motionProps } = useMotionSafe();
   return (
     <div className="flex items-center justify-between py-0.5">
       <span className="text-sm font-medium text-[var(--color-text-secondary)]">{label}</span>
       <div className="flex items-center gap-3">
-        <button
+        <motion.button
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
-          className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+          className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
           style={{
             background: 'var(--color-bg-secondary)',
             borderColor: 'var(--color-border)',
           }}
           aria-label={`Decrease ${label}`}
+          {...motionProps({ whileTap: { scale: 0.88 }, transition: { type: 'spring', stiffness: 500, damping: 20 } })}
         >
           <Minus size={13} className="text-[var(--color-text-primary)]" />
-        </button>
+        </motion.button>
         <div className="min-w-[52px] text-center">
           <span className="text-base font-bold text-[var(--color-text-primary)]">{value}</span>
           <span className="text-xs text-[var(--color-text-muted)] ml-1">{unit}</span>
         </div>
-        <button
+        <motion.button
           onClick={() => onChange(Math.min(max, value + 1))}
           disabled={value >= max}
-          className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+          className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
           style={{
             background: 'var(--color-bg-secondary)',
             borderColor: 'var(--color-border)',
           }}
           aria-label={`Increase ${label}`}
+          {...motionProps({ whileTap: { scale: 0.88 }, transition: { type: 'spring', stiffness: 500, damping: 20 } })}
         >
           <Plus size={13} className="text-[var(--color-text-primary)]" />
-        </button>
+        </motion.button>
       </div>
     </div>
   );
@@ -114,16 +119,18 @@ interface ProfileCardProps {
 
 function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdit }: ProfileCardProps) {
   const { t } = useTranslation();
+  const { props: motionProps } = useMotionSafe();
   const relation = normalizeRelation(profile.relation);
   const colors = RELATION_COLORS[relation];
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 12, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      variants={staggerItem}
+      initial="hidden"
+      animate="visible"
       exit={{ opacity: 0, y: -8, scale: 0.95 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+      {...motionProps(cardHover)}
     >
       <button
         onClick={onSwitch}
@@ -133,13 +140,21 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
           background: isActive
             ? 'linear-gradient(135deg, rgba(232,71,108,0.07) 0%, rgba(155,127,212,0.07) 100%)'
             : 'var(--color-bg-card)',
-          borderColor: isActive ? 'var(--color-primary)' : 'var(--color-border)',
+          borderColor: isActive ? colors.border : 'var(--color-border)',
           boxShadow: isActive
-            ? '0 0 0 2px rgba(232,71,108,0.2), 0 4px 16px rgba(232,71,108,0.08)'
-            : '0 2px 8px rgba(0,0,0,0.03)',
+            ? `0 0 0 2px ${colors.border}, 0 4px 16px rgba(232,71,108,0.08)`
+            : `0 2px 8px rgba(0,0,0,0.03)`,
         }}
         aria-label={`${t('profiles.switchTo')} ${profile.name}`}
       >
+        {/* Relation-tinted corner floral motif — decorative */}
+        <span
+          aria-hidden="true"
+          className="absolute -top-2 -right-2 opacity-20 pointer-events-none"
+          style={{ color: colors.text }}
+        >
+          <FloralAccent size={44} animated={false} />
+        </span>
         {/* Active glow line */}
         {isActive && (
           <motion.div
@@ -166,13 +181,13 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
               </span>
               {isActive && (
                 <span
-                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                  className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full"
                   style={{
                     background: 'var(--color-primary)',
                     color: '#fff',
                   }}
                 >
-                  ACTIVE
+                  {t('common.active')}
                 </span>
               )}
             </div>
@@ -186,7 +201,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
               </span>
               {/* Cycle info */}
               <span className="text-[11px] text-[var(--color-text-muted)]">
-                {profile.cycleLength}d cycle · {profile.periodLength}d period
+                {t('profiles.cycleInfo', { cycleLength: profile.cycleLength, periodLength: profile.periodLength })}
               </span>
             </div>
           </div>
@@ -472,7 +487,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
                 <span className="mr-1" aria-hidden="true">
                   {f === 'light' ? '💧' : f === 'medium' ? '🩸' : '🌊'}
                 </span>
-                {f === 'light' ? 'Light' : f === 'medium' ? 'Medium' : 'Heavy'}
+                {t(f === 'light' ? 'common.flowLight' : f === 'medium' ? 'common.flowMedium' : 'common.flowHeavy')}
               </button>
             ))}
           </div>
@@ -901,28 +916,58 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
           </p>
         </motion.div>
 
-        {/* Profile list */}
-        <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
-          <AnimatePresence mode="popLayout">
-            {profiles.map((profile) => (
-              <ProfileCard
-                key={profile.id}
-                profile={profile}
-                isActive={profile.id === activeProfileId}
-                isSwitching={isSwitching}
-                onSwitch={() => handleSwitchProfile(profile.id, profile.name)}
-                onDelete={() => {
-                  setDeleteError('');
-                  setDeleteTarget({ id: profile.id, name: profile.name });
-                }}
-                onEdit={() => {
-                  setEditError('');
-                  setEditTarget(profile);
-                }}
-              />
-            ))}
-          </AnimatePresence>
-        </div>
+        {/* Profile list — empty state or staggered cards */}
+        {profiles.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          >
+            <EmptyState
+              illustration="profiles"
+              title={t('profiles.noProfiles')}
+              description={t('profiles.noProfilesDescription')}
+              action={
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setAddError('');
+                    setShowForm(true);
+                  }}
+                >
+                  {t('profiles.add')}
+                </Button>
+              }
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4"
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+          >
+            <AnimatePresence mode="popLayout">
+              {profiles.map((profile) => (
+                <ProfileCard
+                  key={profile.id}
+                  profile={profile}
+                  isActive={profile.id === activeProfileId}
+                  isSwitching={isSwitching}
+                  onSwitch={() => handleSwitchProfile(profile.id, profile.name)}
+                  onDelete={() => {
+                    setDeleteError('');
+                    setDeleteTarget({ id: profile.id, name: profile.name });
+                  }}
+                  onEdit={() => {
+                    setEditError('');
+                    setEditTarget(profile);
+                  }}
+                />
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
 
         {/* Switch confirmation toast */}
         <div aria-live="polite" aria-atomic="true" className="sr-only">

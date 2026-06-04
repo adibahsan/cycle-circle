@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Check,
   User,
+  Droplets,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -20,6 +21,8 @@ import { Card } from '@/components/ui/Card';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import { useAppStore } from '@/lib/store';
 import { createProfile, setActiveProfileCookie } from '@/app/actions/profile-actions';
+import { staggerContainer, staggerItem, popIn, useMotionSafe } from '@/lib/motion';
+import { CycleBloom } from '@/components/illustrations';
 import type { ProfileRelation } from '@vesta/shared/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -38,10 +41,10 @@ interface OnboardingState {
   profileRelation: ProfileRelation;
 }
 
-const FLOW_LABELS: Record<FlowIntensity, string> = {
-  light: 'Light',
-  medium: 'Medium',
-  heavy: 'Heavy',
+const FLOW_LABEL_KEYS: Record<FlowIntensity, string> = {
+  light: 'common.flowLight',
+  medium: 'common.flowMedium',
+  heavy: 'common.flowHeavy',
 };
 
 const FLOW_COLORS: Record<FlowIntensity, string> = {
@@ -216,6 +219,7 @@ function StepGoal({
   onSelect: (g: Goal) => void;
 }) {
   const { t } = useTranslation();
+  const { variants, props } = useMotionSafe();
 
   const goals: {
     value: Goal;
@@ -269,27 +273,39 @@ function StepGoal({
         </p>
       </div>
 
-      <div className="flex flex-col gap-3">
+      {/* Staggered goal cards */}
+      <motion.div
+        className="flex flex-col gap-3"
+        variants={variants(staggerContainer)}
+        initial="hidden"
+        animate="visible"
+      >
         {goals.map((g) => {
           const isActive = selected === g.value;
           return (
-            <button
+            <motion.button
               key={g.value}
+              variants={variants(staggerItem)}
+              {...props({ whileTap: { scale: 0.97 } })}
               onClick={() => onSelect(g.value)}
-              className={`w-full rounded-2xl p-4 border-2 text-left transition-colors duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
+              className={`w-full rounded-2xl p-4 border-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
                 isActive
                   ? 'border-[var(--color-primary)] shadow-[0_0_0_4px_rgba(232,71,108,0.12)]'
                   : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/40'
               }`}
-              style={{ background: isActive ? g.bg : 'var(--color-bg-card)' }}
+              style={{
+                background: isActive ? g.bg : 'var(--color-bg-card)',
+                transition: 'background 0.2s, border-color 0.2s',
+              }}
             >
               <div className="flex items-center gap-4">
                 <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
                   style={{
                     background: isActive ? g.bg : 'var(--color-bg-secondary)',
                     color: g.accent,
                     border: `1.5px solid ${isActive ? g.accent : 'transparent'}`,
+                    transition: 'background 0.2s, border-color 0.2s',
                   }}
                 >
                   {g.icon}
@@ -298,19 +314,26 @@ function StepGoal({
                   <p className="font-semibold text-[var(--color-text-primary)]">{g.label}</p>
                   <p className="text-xs text-[var(--color-text-muted)] mt-0.5 leading-relaxed">{g.description}</p>
                 </div>
-                {isActive && (
-                  <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: g.accent }}
-                  >
-                    <Check size={14} className="text-white" strokeWidth={3} />
-                  </div>
-                )}
+                <AnimatePresence>
+                  {isActive && (
+                    <motion.div
+                      key="check"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                      className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                      style={{ background: g.accent }}
+                    >
+                      <Check size={14} className="text-white" strokeWidth={3} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-            </button>
+            </motion.button>
           );
         })}
-      </div>
+      </motion.div>
 
     </div>
   );
@@ -417,34 +440,54 @@ function StepCycleHistory({
         />
       </Card>
 
-      {/* Flow intensity */}
+      {/* Flow intensity — color-graded droplet accents */}
       <Card padding="md" className="space-y-3">
         <div>
           <p className="font-semibold text-[var(--color-text-primary)]">{t('dashboard.flowIntensity', 'Flow intensity')}</p>
           <p className="text-xs text-[var(--color-text-muted)]">How heavy is your usual flow?</p>
         </div>
         <div className="flex gap-2" role="group" aria-label="Flow intensity">
-          {(['light', 'medium', 'heavy'] as FlowIntensity[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => onFlowIntensity(f)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
-                flowIntensity === f
-                  ? 'text-white shadow-soft'
-                  : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]'
-              }`}
-              style={
-                flowIntensity === f
-                  ? { backgroundColor: FLOW_COLORS[f], borderColor: FLOW_COLORS[f] }
-                  : {}
-              }
-            >
-              <span className="mr-1" aria-hidden="true">
-                {f === 'light' ? '💧' : f === 'medium' ? '🩸' : '🌊'}
-              </span>
-              {FLOW_LABELS[f]}
-            </button>
-          ))}
+          {(['light', 'medium', 'heavy'] as FlowIntensity[]).map((f) => {
+            const isActive = flowIntensity === f;
+            // droplet count: 1 / 2 / 3 droplets to signal intensity
+            const dropletCount = f === 'light' ? 1 : f === 'medium' ? 2 : 3;
+            return (
+              <motion.button
+                key={f}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => onFlowIntensity(f)}
+                className={`flex-1 py-2.5 px-1 rounded-xl text-sm font-semibold border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 flex flex-col items-center gap-1 ${
+                  isActive
+                    ? 'text-white shadow-soft'
+                    : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]'
+                }`}
+                style={
+                  isActive
+                    ? {
+                        backgroundColor: FLOW_COLORS[f],
+                        borderColor: FLOW_COLORS[f],
+                        transition: 'background-color 0.2s, border-color 0.2s',
+                      }
+                    : { transition: 'background-color 0.2s, border-color 0.2s' }
+                }
+              >
+                {/* Droplet icons — count indicates intensity */}
+                <span className="flex items-center gap-0.5" aria-hidden="true">
+                  {Array.from({ length: dropletCount }).map((_, di) => (
+                    <Droplets
+                      key={di}
+                      size={di === dropletCount - 1 ? 14 : 11}
+                      style={{
+                        opacity: isActive ? 1 : 0.5 + di * 0.15,
+                        color: isActive ? 'white' : FLOW_COLORS[f],
+                      }}
+                    />
+                  ))}
+                </span>
+                {t(FLOW_LABEL_KEYS[f])}
+              </motion.button>
+            );
+          })}
         </div>
       </Card>
 
@@ -562,12 +605,25 @@ function StepProfile({
 
 // ─── Step 5: Done ─────────────────────────────────────────────────────────────
 
+// Sparkle positions for the celebratory moment
+const CELEBRATION_SPARKLES = [
+  { top: '8%',  left: '10%', color: 'var(--color-primary)',   size: 10, delayClass: '' },
+  { top: '5%',  left: '80%', color: 'var(--color-secondary)', size: 8,  delayClass: 'anim-delay-200' },
+  { top: '18%', left: '55%', color: 'var(--color-accent)',    size: 6,  delayClass: 'anim-delay-100' },
+  { top: '3%',  left: '35%', color: 'var(--color-primary)',   size: 7,  delayClass: 'anim-delay-300' },
+  { top: '12%', left: '90%', color: 'var(--color-accent)',    size: 9,  delayClass: '' },
+  { top: '20%', left: '5%',  color: 'var(--color-secondary)', size: 5,  delayClass: 'anim-delay-500' },
+  { top: '15%', left: '70%', color: 'var(--color-primary)',   size: 6,  delayClass: 'anim-delay-300' },
+  { top: '6%',  left: '22%', color: 'var(--color-accent)',    size: 8,  delayClass: 'anim-delay-200' },
+] as const;
+
 function StepDone({
   state,
 }: {
   state: OnboardingState;
 }) {
   const { t } = useTranslation();
+  const { reduced, variants } = useMotionSafe();
 
   const goalLabel =
     state.goal === 'tracking'
@@ -602,58 +658,49 @@ function StepDone({
       : []),
     {
       label: t('dashboard.flowIntensity', 'Flow intensity'),
-      value: `${state.flowIntensity === 'light' ? '💧' : state.flowIntensity === 'medium' ? '🩸' : '🌊'} ${state.flowIntensity.charAt(0).toUpperCase() + state.flowIntensity.slice(1)}`,
+      value: `${state.flowIntensity.charAt(0).toUpperCase() + state.flowIntensity.slice(1)}`,
     },
-  ];
-
-  // CSS-only confetti dots
-  const confettiDots = [
-    { top: '8%', left: '10%', color: 'var(--color-primary)', size: 10, delay: '0s' },
-    { top: '5%', left: '80%', color: 'var(--color-secondary)', size: 8, delay: '0.1s' },
-    { top: '15%', left: '55%', color: 'var(--color-accent)', size: 6, delay: '0.2s' },
-    { top: '3%', left: '35%', color: 'var(--color-primary)', size: 7, delay: '0.15s' },
-    { top: '12%', left: '92%', color: 'var(--color-accent)', size: 9, delay: '0.05s' },
-    { top: '20%', left: '5%', color: 'var(--color-secondary)', size: 5, delay: '0.25s' },
-    { top: '18%', left: '70%', color: 'var(--color-primary)', size: 6, delay: '0.3s' },
-    { top: '6%', left: '20%', color: 'var(--color-accent)', size: 8, delay: '0.08s' },
   ];
 
   return (
     <div className="flex flex-col items-center text-center gap-6">
-      {/* Celebration area */}
-      <div className="relative w-full h-32 flex items-center justify-center">
-        {/* Confetti dots */}
-        {confettiDots.map((dot, i) => (
-          <motion.div
+      {/* ── Celebratory moment: CycleBloom + popIn + sparkles ── */}
+      <div className="relative w-full h-40 flex items-center justify-center" aria-hidden="true">
+        {/* Twinkle sparkle dots — CSS-animated, reduced-motion safe */}
+        {!reduced && CELEBRATION_SPARKLES.map((s, i) => (
+          <span
             key={i}
-            initial={{ opacity: 0, y: -20, scale: 0 }}
-            animate={{ opacity: [0, 1, 0.6, 1], y: [-20, 0, -18, 0], scale: [0, 1, 1, 1] }}
-            transition={{
-              delay: parseFloat(dot.delay),
-              duration: 3 + i * 0.4,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              times: [0, 0.15, 0.57, 1],
-            }}
-            className="absolute rounded-full"
+            className={`absolute rounded-full animate-twinkle ${s.delayClass}`}
             style={{
-              top: dot.top,
-              left: dot.left,
-              width: dot.size,
-              height: dot.size,
-              backgroundColor: dot.color,
+              top: s.top,
+              left: s.left,
+              width: s.size,
+              height: s.size,
+              backgroundColor: s.color,
+              opacity: 0.7,
+              transform: 'translate(-50%, -50%)',
             }}
           />
         ))}
-        {/* Central celebration icon */}
+
+        {/* CycleBloom: popIn entrance + bloom animation */}
         <motion.div
-          initial={{ scale: 0, rotate: -15 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 18 }}
-          className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center shadow-[0_8px_40px_rgba(232,71,108,0.35)] z-10"
+          variants={variants(popIn)}
+          initial="hidden"
+          animate="visible"
+          className="relative z-10 drop-shadow-[0_8px_24px_rgba(232,71,108,0.38)]"
         >
-          <Check size={40} className="text-white" strokeWidth={3} />
+          <CycleBloom size={120} animated={!reduced} />
         </motion.div>
+
+        {/* Reduced-motion fallback: static checkmark badge */}
+        {reduced && (
+          <div className="absolute inset-0 flex items-center justify-center z-20">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center shadow-[0_8px_24px_rgba(232,71,108,0.35)]">
+              <Check size={28} className="text-white" strokeWidth={3} />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">

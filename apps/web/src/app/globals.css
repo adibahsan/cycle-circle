@@ -94,6 +94,44 @@
   .gradient-warm {
     background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
   }
+
+  /* Soft multi-radial mesh background — light mode */
+  .gradient-mesh {
+    background:
+      radial-gradient(ellipse 70% 60% at 20% 20%, color-mix(in srgb, var(--color-primary) 12%, transparent) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 70% at 80% 15%, color-mix(in srgb, var(--color-secondary) 10%, transparent) 0%, transparent 65%),
+      radial-gradient(ellipse 55% 50% at 55% 80%, color-mix(in srgb, var(--color-accent) 8%, transparent) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 45% at 10% 75%, color-mix(in srgb, var(--color-secondary) 9%, transparent) 0%, transparent 55%);
+  }
+  /* Dark mode — slightly higher alpha so mesh reads on dark warm-brown bg */
+  .dark .gradient-mesh {
+    background:
+      radial-gradient(ellipse 70% 60% at 20% 20%, color-mix(in srgb, var(--color-primary) 18%, transparent) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 70% at 80% 15%, color-mix(in srgb, var(--color-secondary) 15%, transparent) 0%, transparent 65%),
+      radial-gradient(ellipse 55% 50% at 55% 80%, color-mix(in srgb, var(--color-accent) 13%, transparent) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 45% at 10% 75%, color-mix(in srgb, var(--color-secondary) 14%, transparent) 0%, transparent 55%);
+  }
+
+  /* Lavender → teal cool gradient, mirrors gradient-primary / gradient-warm */
+  .gradient-cool {
+    background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-fertile) 100%);
+  }
+
+  /* Clipped rose → lavender text gradient */
+  .text-gradient {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Generic phase-tint: caller sets --phase-color inline */
+  .bg-phase-tint {
+    background-color: color-mix(in srgb, var(--phase-color, var(--color-primary)) 12%, transparent);
+  }
+  .border-phase {
+    border-color: color-mix(in srgb, var(--phase-color, var(--color-primary)) 35%, transparent);
+  }
 }
 
 /* Flo-like soothing animations */
@@ -124,6 +162,22 @@
   50% { opacity: 1; transform: scale(1.02); }
 }
 
+/* Animated illustration kit — GPU-friendly (transform/opacity only) */
+@keyframes sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes bloom {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.9); }
+  50%       { opacity: 1;   transform: scale(1.1); }
+}
+
 .animate-float { animation: float 4s ease-in-out infinite; }
 .animate-breathe { animation: breathe 4s ease-in-out infinite; }
 .animate-shimmer {
@@ -132,6 +186,16 @@
 }
 .animate-drift { animation: drift 12s ease-in-out infinite; }
 .animate-pulse-soft { animation: pulse-soft 3s ease-in-out infinite; }
+
+.animate-sway { animation: sway 6s ease-in-out infinite; transform-origin: bottom center; }
+.animate-bloom { animation: bloom 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-twinkle { animation: twinkle 2.5s ease-in-out infinite; }
+
+/* Stagger-delay helpers for looping decorative elements */
+.anim-delay-100 { animation-delay: .1s; }
+.anim-delay-200 { animation-delay: .2s; }
+.anim-delay-300 { animation-delay: .3s; }
+.anim-delay-500 { animation-delay: .5s; }
 
 /* Glass card hover enhancement */
 .glass-hover {

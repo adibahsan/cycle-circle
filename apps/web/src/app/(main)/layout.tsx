@@ -90,14 +90,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors"
           >
             <Users size={14} aria-hidden="true" />
-            <span className="truncate">{activeProfileName || 'Profile'}</span>
+            <span className="truncate">{activeProfileName || t('common.profile')}</span>
           </Link>
         </div>
 
         {/* Main navigation */}
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto" aria-label="Main navigation">
           <p className="px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
-            Menu
+            {t('nav.menu')}
           </p>
           {NAV_ITEMS.map(({ href, icon: Icon, labelKey }) => {
             const isActive = pathname === href;
@@ -122,7 +122,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <div className="my-3 border-t border-[var(--color-border)]" />
 
           <p className="px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
-            More
+            {t('nav.more')}
           </p>
           {SIDEBAR_EXTRA_ITEMS.map(({ href, icon: Icon, labelKey }) => {
             const isActive = pathname === href;
@@ -148,11 +148,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <div className="px-4 py-4 border-t border-[var(--color-border)] flex flex-col gap-2">
           <button
             onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={theme === 'dark' ? t('settings.switchToLight') : t('settings.switchToDark')}
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors w-full"
           >
             {theme === 'dark' ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
-            <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+            <span>{theme === 'dark' ? t('settings.lightMode') : t('settings.darkMode')}</span>
           </button>
           <LanguageToggle />
         </div>
@@ -171,14 +171,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-xs font-medium hover:border-[var(--color-primary)] transition-colors"
             >
               <Users size={12} aria-hidden="true" />
-              <span className="truncate">{activeProfileName || 'Profile'}</span>
+              <span className="truncate">{activeProfileName || t('common.profile')}</span>
             </Link>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={toggleTheme}
               className="p-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors"
-              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label={theme === 'dark' ? t('settings.switchToLight') : t('settings.switchToDark')}
             >
               {theme === 'dark' ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
             </button>

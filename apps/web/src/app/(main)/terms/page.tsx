@@ -2,6 +2,7 @@
 
 import { motion } from 'motion/react';
 import { FileText, Stethoscope, Users, Crown, Lock, AlertCircle, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -25,7 +26,7 @@ function TermsSection({ icon: Icon, title, children, index }: SectionProps) {
       <Card padding="md" className="space-y-3">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl gradient-primary flex items-center justify-center shrink-0">
-            <Icon size={16} className="text-white" />
+            <Icon size={16} className="text-white" aria-hidden="true" />
           </div>
           <h2 className="text-base font-bold text-[var(--color-text-primary)]">{title}</h2>
         </div>
@@ -40,35 +41,32 @@ function TermsSection({ icon: Icon, title, children, index }: SectionProps) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function TermsPage() {
+  const { t } = useTranslation();
+
   const sections = [
     {
       icon: FileText,
-      title: 'Acceptance of Terms',
+      title: t('terms.acceptanceTitle'),
       content: (
-        <p>
-          By downloading, installing, or using Vesta you agree to be bound by these Terms &amp;
-          Conditions. If you do not agree with any part of these terms, please do not use the
-          application.
-        </p>
+        <p>{t('terms.acceptanceBody')}</p>
       ),
     },
     {
       icon: Stethoscope,
-      title: 'Service Description',
+      title: t('terms.serviceTitle'),
       content: (
         <div className="space-y-2">
-          <p>Vesta provides the following features:</p>
+          <p>{t('terms.serviceIntro')}</p>
           <ul className="list-disc list-inside space-y-1 pl-1">
-            <li>Menstrual cycle tracking and period prediction</li>
-            <li>Fertile window estimation</li>
-            <li>Symptom and mood logging</li>
-            <li>Bilingual content (English and Bengali)</li>
+            <li>{t('terms.serviceFeature1')}</li>
+            <li>{t('terms.serviceFeature2')}</li>
+            <li>{t('terms.serviceFeature3')}</li>
+            <li>{t('terms.serviceFeature4')}</li>
           </ul>
           <div className="mt-3 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-3 py-2.5 flex items-start gap-2">
-            <AlertCircle size={13} className="text-amber-500 mt-0.5 shrink-0" />
+            <AlertCircle size={13} className="text-amber-500 mt-0.5 shrink-0" aria-hidden="true" />
             <p className="text-xs text-[var(--color-text-muted)]">
-              <strong>Vesta is not a medical device.</strong> Content provided is for informational
-              purposes only and does not constitute medical advice, diagnosis, or treatment.
+              {t('terms.serviceDisclaimer')}
             </p>
           </div>
         </div>
@@ -76,97 +74,81 @@ export default function TermsPage() {
     },
     {
       icon: Users,
-      title: 'Account & Profiles',
+      title: t('terms.accountsTitle'),
       content: (
         <div className="space-y-2">
           <ul className="list-disc list-inside space-y-1 pl-1">
-            <li>One account is permitted per phone number.</li>
-            <li>Each account supports up to 6 individual profiles.</li>
-            <li>
-              You are solely responsible for maintaining the accuracy of data entered across all
-              profiles on your account.
-            </li>
-            <li>
-              You must not share your account credentials or allow unauthorised access to your
-              account.
-            </li>
+            <li>{t('terms.accountsBullet1')}</li>
+            <li>{t('terms.accountsBullet2')}</li>
+            <li>{t('terms.accountsBullet3')}</li>
+            <li>{t('terms.accountsBullet4')}</li>
           </ul>
         </div>
       ),
     },
     {
       icon: Crown,
-      title: 'Subscription (Pro)',
+      title: t('terms.subscriptionTitle'),
       content: (
         <div className="space-y-2">
-          <p>
-            Vesta Pro is available for <strong>৳99/month</strong>, billed via BDApps Content &amp;
-            Application Aggregation Service (CAAS).
-          </p>
+          <p>{t('terms.subscriptionIntro')}</p>
           <ul className="list-disc list-inside space-y-1 pl-1 mt-1">
-            <li>Charges are applied directly to your Grameenphone mobile balance.</li>
-            <li>Billing is monthly and renews automatically unless cancelled.</li>
-            <li>You may cancel at any time from Settings; access continues until the end of the current billing period.</li>
-            <li>Refunds are subject to BDApps billing policies.</li>
+            <li>{t('terms.subscriptionBullet1')}</li>
+            <li>{t('terms.subscriptionBullet2')}</li>
+            <li>{t('terms.subscriptionBullet3')}</li>
+            <li>{t('terms.subscriptionBullet4')}</li>
           </ul>
         </div>
       ),
     },
     {
       icon: Lock,
-      title: 'Data & Privacy',
+      title: t('terms.privacyTitle'),
       content: (
         <div className="space-y-2">
           <p>
-            Your use of Vesta is also governed by our{' '}
-            <a href="/privacy" className="text-[var(--color-secondary)] hover:underline font-medium">
-              Privacy Policy
-            </a>
-            , which is incorporated into these Terms by reference.
+            {t('terms.privacyIntro').split(t('terms.privacyPolicyLink')).map((part, i, arr) =>
+              i < arr.length - 1 ? (
+                <span key={i}>
+                  {part}
+                  <a href="/privacy" className="text-[var(--color-secondary)] hover:underline font-medium">
+                    {t('terms.privacyPolicyLink')}
+                  </a>
+                </span>
+              ) : (
+                <span key={i}>{part}</span>
+              )
+            )}
           </p>
           <ul className="list-disc list-inside space-y-1 pl-1 mt-1">
-            <li>All health data is encrypted at rest with AES-256-GCM.</li>
-            <li>We do not sell, rent, or share your personal or health data with third parties for commercial purposes.</li>
-            <li>You may request export or deletion of your data at any time.</li>
+            <li>{t('terms.privacyBullet1')}</li>
+            <li>{t('terms.privacyBullet2')}</li>
+            <li>{t('terms.privacyBullet3')}</li>
           </ul>
         </div>
       ),
     },
     {
       icon: AlertCircle,
-      title: 'Limitations & Disclaimer',
+      title: t('terms.limitationsTitle'),
       content: (
         <div className="space-y-2">
-          <p>
-            Cycle predictions and fertile window estimates are algorithmic approximations based on
-            the data you provide. They are <strong>not</strong> a substitute for professional
-            medical advice.
-          </p>
+          <p>{t('terms.limitationsIntro')}</p>
           <ul className="list-disc list-inside space-y-1 pl-1 mt-1">
-            <li>Do not rely on Vesta for contraception or family planning decisions.</li>
-            <li>Always consult a qualified healthcare professional for medical decisions.</li>
-            <li>
-              Vesta is provided "as is" without warranties of any kind, including accuracy of
-              predictions or uninterrupted service.
-            </li>
+            <li>{t('terms.limitationsBullet1')}</li>
+            <li>{t('terms.limitationsBullet2')}</li>
+            <li>{t('terms.limitationsBullet3')}</li>
           </ul>
         </div>
       ),
     },
     {
       icon: RefreshCw,
-      title: 'Changes to Terms',
+      title: t('terms.changesTitle'),
       content: (
         <div className="space-y-2">
-          <p>
-            We may update these Terms & Conditions from time to time. When we do, we will update
-            the effective date at the top of this page.
-          </p>
-          <p>
-            Your continued use of Vesta after changes are posted constitutes your acceptance of
-            the revised terms. If you disagree with updated terms, you may stop using the app and
-            request account deletion.
-          </p>
+          <p>{t('terms.changesBody1')}</p>
+          <p>{t('terms.changesBody2')}</p>
         </div>
       ),
     },
@@ -181,9 +163,9 @@ export default function TermsPage() {
         transition={{ duration: 0.3 }}
       >
         <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
-          Terms &amp; Conditions
+          {t('terms.pageTitle')}
         </h1>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">Effective: May 2026</p>
+        <p className="mt-1 text-sm text-[var(--color-text-muted)]">{t('terms.effectiveDate')}</p>
       </motion.div>
 
       {/* ── Intro blurb ── */}
@@ -193,8 +175,7 @@ export default function TermsPage() {
         transition={{ duration: 0.35, delay: 0.05 }}
         className="text-sm text-[var(--color-text-secondary)] leading-relaxed max-w-2xl"
       >
-        Please read these Terms & Conditions carefully before using Vesta. They set out your
-        rights and responsibilities when using our cycle-tracking application.
+        {t('terms.introParagraph')}
       </motion.p>
 
       {/* ── Sections ── */}

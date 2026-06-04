@@ -17,9 +17,9 @@ function toActionFlow(f: FlowIntensity): 'LIGHT' | 'MEDIUM' | 'HEAVY' {
 }
 
 const FLOW_LABELS: Record<FlowIntensity, string> = {
-  light: 'Light',
-  medium: 'Medium',
-  heavy: 'Heavy',
+  light: 'common.flowLight',
+  medium: 'common.flowMedium',
+  heavy: 'common.flowHeavy',
 }
 
 export const FLOW_COLORS: Record<FlowIntensity, string> = {
@@ -183,7 +183,7 @@ export function PeriodLogModal({
                 <span className="mr-1">
                   {f === 'light' ? '💧' : f === 'medium' ? '🩸' : '🌊'}
                 </span>
-                {FLOW_LABELS[f]}
+                {t(FLOW_LABELS[f])}
               </button>
             ))}
           </div>

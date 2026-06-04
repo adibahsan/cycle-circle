@@ -13,9 +13,19 @@ import {
   MessageSquare,
   BarChart2,
   Star,
+  Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { Blob } from '@/components/illustrations'
+import {
+  fadeInUp,
+  staggerContainer,
+  staggerItem,
+  cardHover,
+  popIn,
+  useMotionSafe,
+} from '@/lib/motion'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { SubscriptionStatus } from '@vesta/shared/types'
 
@@ -111,7 +121,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
               <div className="space-y-5">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-                    <Zap size={16} className="text-white" />
+                    <Zap size={16} className="text-white" aria-hidden="true" />
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
@@ -161,7 +171,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                 >
-                  <Zap size={24} className="text-white" />
+                  <Zap size={24} className="text-white" aria-hidden="true" />
                 </motion.div>
                 <p className="text-sm font-medium text-[var(--color-text-secondary)]">
                   Processing payment…
@@ -182,7 +192,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.1, type: 'spring', damping: 14 }}
                 >
-                  <Crown size={30} className="text-white" />
+                  <Crown size={30} className="text-white" aria-hidden="true" />
                 </motion.div>
                 <div className="text-center space-y-1">
                   <h3 className="text-xl font-bold text-[var(--color-text-primary)]">
@@ -206,7 +216,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
             {step === 'error' && (
               <div className="flex flex-col items-center gap-4 py-4 text-center">
                 <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                  <X size={28} className="text-red-500 dark:text-red-400" />
+                  <X size={28} className="text-red-500 dark:text-red-400" aria-hidden="true" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-[var(--color-text-primary)] mb-1">
@@ -231,6 +241,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
 // ── Page ───────────────────────────────────────────────────────────────────────
 export function SubscriptionClient({ user }: SubscriptionClientProps) {
   const { t } = useTranslation()
+  const { reduced, variants, props: motionProps } = useMotionSafe()
 
   const [upgradeStep, setUpgradeStep] = useState<UpgradeStep>('idle')
   // Local override so the UI reflects success without a full page reload
@@ -272,27 +283,31 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
     <div className="py-4 space-y-6">
       {/* ── Page title ── */}
       <motion.div
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
+        variants={variants(fadeInUp)}
+        initial="hidden"
+        animate="visible"
       >
         <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
           {t('subscription.title')}
         </h1>
         <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-          Unlock the full power of Vesta
+          {t('subscription.subtitle', 'Unlock the full power of Vesta')}
         </p>
       </motion.div>
 
       {/* ── Current Plan + Upgrade Cards ── */}
-      <div className="md:grid md:grid-cols-2 md:gap-6 space-y-6 md:space-y-0">
+      <motion.div
+        className="md:grid md:grid-cols-2 md:gap-6 space-y-6 md:space-y-0"
+        variants={variants(staggerContainer)}
+        initial="hidden"
+        animate="visible"
+      >
         {/* ── Current Plan Card ── */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.38, delay: 0.05 }}
+          variants={variants(staggerItem)}
+          {...motionProps(cardHover)}
         >
-          <Card padding="md">
+          <Card padding="md" className="h-full">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
                 <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
@@ -310,7 +325,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
 
               {isPro ? (
                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full gradient-primary text-white text-xs font-bold shadow-soft">
-                  <Crown size={12} /> PRO
+                  <Crown size={12} aria-hidden="true" /> PRO
                 </span>
               ) : (
                 <span className="px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-muted)] text-xs font-semibold">
@@ -319,91 +334,194 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               )}
             </div>
 
-            <div className="mt-4 space-y-1.5">
+            {/* ── Staggered feature list ── */}
+            <motion.div
+              className="mt-4 space-y-1.5"
+              variants={variants(staggerContainer)}
+              initial="hidden"
+              animate="visible"
+            >
               {isPro ? (
                 PRO_FEATURES.map(({ icon: Icon, label }) => (
-                  <div
+                  <motion.div
                     key={label}
+                    variants={variants(staggerItem)}
                     className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
                   >
-                    <Check size={14} className="text-[var(--color-primary)] shrink-0" />
+                    <motion.span
+                      variants={variants(popIn)}
+                      className="shrink-0"
+                    >
+                      <Check size={14} className="text-[var(--color-primary)]" aria-hidden="true" />
+                    </motion.span>
+                    <Icon size={13} className="text-[var(--color-text-muted)] shrink-0" aria-hidden="true" />
                     {label}
-                  </div>
+                  </motion.div>
                 ))
               ) : (
                 ['Cycle Tracking', 'Calendar', 'Symptom Logging', 'Health Articles'].map(f => (
-                  <div
+                  <motion.div
                     key={f}
+                    variants={variants(staggerItem)}
                     className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
                   >
-                    <Check size={14} className="text-[var(--color-text-muted)] shrink-0" />
+                    <motion.span
+                      variants={variants(popIn)}
+                      className="shrink-0"
+                    >
+                      <Check size={14} className="text-[var(--color-text-muted)]" aria-hidden="true" />
+                    </motion.span>
                     {f}
-                  </div>
+                  </motion.div>
                 ))
               )}
-            </div>
+            </motion.div>
           </Card>
         </motion.div>
 
         {/* ── Pro Plan Upgrade Card ── */}
         {!isPro && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
+            variants={variants(staggerItem)}
+            {...motionProps(cardHover)}
           >
-            <div className="relative rounded-2xl overflow-hidden shadow-glow h-full">
-              <div className="absolute inset-0 gradient-primary opacity-90" />
-              <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
-              <div className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full bg-black/10 blur-2xl" />
+            {/* Decorative blob — positioned behind the card, aria-hidden */}
+            <div className="relative h-full">
+              <div
+                className="pointer-events-none absolute -top-8 -right-10 opacity-40 z-0"
+                aria-hidden="true"
+              >
+                <Blob tone="rose" size={180} animated={!reduced} />
+              </div>
 
-              <div className="relative p-6 space-y-5">
-                <div className="flex items-center gap-2">
-                  <Crown size={24} className="text-white" />
-                  <h2 className="text-xl font-bold text-white">Go Pro</h2>
-                </div>
+              <div className="relative rounded-2xl overflow-hidden z-10 h-full"
+                style={{
+                  boxShadow: '0 0 40px 8px rgba(232, 71, 108, 0.18), 0 8px 24px -8px rgba(232, 71, 108, 0.22)',
+                  border: '1.5px solid rgba(232, 71, 108, 0.35)',
+                  transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+                }}
+              >
+                <div className="absolute inset-0 gradient-primary opacity-90" />
+                <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
+                <div className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full bg-black/10 blur-2xl" aria-hidden="true" />
 
-                <div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl font-extrabold text-white">৳5</span>
-                    <span className="text-white/70 text-sm">/day</span>
-                  </div>
-                  <p className="text-white/60 text-xs mt-0.5">
-                    Charged to your mobile balance via BDApps
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  {PRO_FEATURES.map(({ icon: Icon, label }) => (
-                    <div
-                      key={label}
-                      className="flex items-center gap-2.5 text-white/90 text-sm"
-                    >
-                      <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                        <Check size={12} className="text-white" />
-                      </div>
-                      {label}
+                <div className="relative p-6 space-y-5">
+                  {/* ── Header: Crown + "Recommended" badge ── */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Crown size={24} className="text-white" aria-hidden="true" />
+                      <h2 className="text-xl font-bold text-white">Go Pro</h2>
                     </div>
-                  ))}
-                </div>
 
-                <button
-                  onClick={handleUpgradeClick}
-                  className="w-full bg-white text-[var(--color-primary)] font-bold py-3.5 rounded-xl text-base hover:bg-white/90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
-                >
-                  Upgrade to Pro
-                </button>
+                    {/* Recommended badge with breathe pulse + sparkle accents */}
+                    <div className="relative flex-shrink-0 flex items-center gap-1">
+                      {/* Sparkle left */}
+                      <Sparkles
+                        size={10}
+                        className={`text-yellow-200 ${reduced ? '' : 'animate-twinkle'}`}
+                        aria-hidden="true"
+                      />
+                      <span
+                        className={`
+                          inline-flex items-center px-2.5 py-1 rounded-full
+                          bg-white/20 border border-white/40
+                          text-white text-xs font-bold tracking-wide
+                          shadow-glow
+                          ${reduced ? '' : 'animate-breathe'}
+                        `}
+                      >
+                        Recommended
+                      </span>
+                      {/* Sparkle right */}
+                      <Sparkles
+                        size={10}
+                        className={`text-yellow-200 ${reduced ? '' : 'animate-twinkle anim-delay-300'}`}
+                        aria-hidden="true"
+                      />
+                    </div>
+                  </div>
+
+                  {/* ── Pricing ── */}
+                  <div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-3xl font-extrabold text-white">৳5</span>
+                      <span className="text-white/70 text-sm">/day</span>
+                    </div>
+                    <p className="text-white/60 text-xs mt-0.5">
+                      Charged to your mobile balance via BDApps
+                    </p>
+                  </div>
+
+                  {/* ── Staggered pro feature list ── */}
+                  <motion.div
+                    className="space-y-2"
+                    variants={variants(staggerContainer)}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    {PRO_FEATURES.map(({ icon: Icon, label }) => (
+                      <motion.div
+                        key={label}
+                        variants={variants(staggerItem)}
+                        className="flex items-center gap-2.5 text-white/90 text-sm"
+                      >
+                        <motion.div
+                          variants={variants(popIn)}
+                          className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0"
+                        >
+                          <Check size={12} className="text-white" aria-hidden="true" />
+                        </motion.div>
+                        <Icon size={13} className="text-white/70 shrink-0" aria-hidden="true" />
+                        {label}
+                      </motion.div>
+                    ))}
+                  </motion.div>
+
+                  {/* ── Upgrade CTA ── */}
+                  <motion.button
+                    onClick={handleUpgradeClick}
+                    className="
+                      w-full relative overflow-hidden
+                      bg-white text-[var(--color-primary)] font-bold
+                      py-3.5 rounded-xl text-base
+                      shadow-glow
+                      hover:bg-white/90 active:scale-[0.98]
+                      transition-colors duration-200
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500
+                    "
+                    {...motionProps({
+                      whileHover: { scale: 1.02 },
+                      whileTap: { scale: 0.97 },
+                      transition: { type: 'spring', stiffness: 300, damping: 22 },
+                    })}
+                  >
+                    {/* Shimmer sweep on hover — purely decorative */}
+                    <span
+                      className="pointer-events-none absolute inset-0 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300"
+                      style={{
+                        background: 'linear-gradient(105deg, transparent 40%, rgba(232,71,108,0.10) 50%, transparent 60%)',
+                        backgroundSize: '200% 100%',
+                      }}
+                      aria-hidden="true"
+                    />
+                    <span className="relative flex items-center justify-center gap-2">
+                      <Zap size={16} aria-hidden="true" />
+                      {t('subscription.upgradeCta', 'Upgrade to Pro')}
+                    </span>
+                  </motion.button>
+                </div>
               </div>
             </div>
           </motion.div>
         )}
-      </div>
+      </motion.div>
 
       {/* ── Comparison Table ── */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.42, delay: 0.15 }}
+        variants={variants(fadeInUp)}
+        initial="hidden"
+        animate="visible"
+        transition={{ delay: 0.15 }}
       >
         <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
           Free vs Pro
@@ -421,7 +539,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
             </div>
             <div className="px-2 py-3 text-center">
               <span className="inline-flex items-center gap-1 text-xs font-bold text-white px-2.5 py-0.5 rounded-full gradient-primary">
-                <Crown size={10} /> Pro
+                <Crown size={10} aria-hidden="true" /> Pro
               </span>
             </div>
           </div>

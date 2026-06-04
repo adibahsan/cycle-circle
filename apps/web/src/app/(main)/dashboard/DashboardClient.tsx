@@ -19,11 +19,19 @@ import {
   getPhaseColor,
   getPhaseEmoji,
 } from '@vesta/shared/utils/cycle-utils'
-import type { FlowIntensity, ProfileRelation } from '@vesta/shared/types'
+import type { FlowIntensity, ProfileRelation, CyclePhase } from '@vesta/shared/types'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { PeriodLogModal, FLOW_COLORS } from '@/components/PeriodLogModal'
 import { setActiveProfileCookie } from '@/app/actions/profile-actions'
+import { Blob, CycleBloom, EmptyState } from '@/components/illustrations'
+import {
+  cardHover,
+  popIn,
+  staggerContainer,
+  staggerItem,
+  useMotionSafe,
+} from '@/lib/motion'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -114,6 +122,7 @@ function CycleRing({
 }) {
   const { t } = useTranslation()
   const prefersReducedMotion = useReducedMotion()
+  const { props: motionProps, variants } = useMotionSafe()
   const SIZE = 220
   const STROKE = 16
   const RADIUS = (SIZE - STROKE) / 2
@@ -126,8 +135,24 @@ function CycleRing({
   const centerColor = isLate ? 'var(--color-menstrual)' : phaseColor
   const centerLabel = isLate ? t('dashboard.late') : t('dashboard.day')
 
+  // CycleBloom size slightly smaller than ring interior
+  const bloomSize = SIZE * 0.42
+
   return (
     <div className="relative flex items-center justify-center" style={{ width: SIZE, height: SIZE }}>
+      {/* Decorative CycleBloom behind the ring center */}
+      <div
+        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        aria-hidden="true"
+        style={{ opacity: 0.18 }}
+      >
+        <CycleBloom
+          phase={normalizeCyclePhase(phase) as CyclePhase}
+          animated={!prefersReducedMotion}
+          size={bloomSize}
+        />
+      </div>
+
       {/* Track ring */}
       <svg
         width={SIZE}
@@ -144,13 +169,15 @@ function CycleRing({
             </feMerge>
           </filter>
         </defs>
+        {/* Track — tinted with phase color at low opacity */}
         <circle
           cx={SIZE / 2}
           cy={SIZE / 2}
           r={RADIUS}
           fill="none"
-          stroke="var(--color-border)"
+          stroke={ringColor}
           strokeWidth={STROKE}
+          strokeOpacity={0.12}
         />
         <motion.circle
           cx={SIZE / 2}
@@ -182,15 +209,19 @@ function CycleRing({
       {/* Center content */}
       <motion.div
         className="flex flex-col items-center gap-1"
-        animate={{ scale: [1, 1.03, 1] }}
-        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        {...motionProps(
+          prefersReducedMotion
+            ? {}
+            : { animate: { scale: [1, 1.03, 1] }, transition: { duration: 4, repeat: Infinity, ease: 'easeInOut' } }
+        )}
       >
+        {/* Day number with popIn on mount */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-          className="text-5xl font-bold"
-          style={{ color: centerColor }}
+          variants={variants(popIn)}
+          initial="hidden"
+          animate="visible"
+          className="text-5xl font-bold tabular-nums"
+          style={{ color: centerColor, fontVariantNumeric: 'tabular-nums' }}
         >
           {centerNumber}
         </motion.div>
@@ -214,6 +245,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   const router = useRouter()
   const { setActiveProfile, language } = useAppStore()
   const prefersReducedMotion = useReducedMotion()
+  const { props: motionProps, variants } = useMotionSafe()
 
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
 
@@ -239,15 +271,19 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
     router.refresh()
   }, [router])
 
-  // Guard: no profile found
+  // Guard: no profile found — enhanced with EmptyState illustration
   if (!profile) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-[var(--color-text-muted)]">{t('dashboard.noProfileFound')}</p>
-        <Link href="/profiles">
-          <Button variant="primary">{t('dashboard.setUpProfile')}</Button>
-        </Link>
-      </div>
+      <EmptyState
+        illustration="profiles"
+        title={t('dashboard.noProfileFound')}
+        animated={!prefersReducedMotion}
+        action={
+          <Link href="/profiles">
+            <Button variant="primary">{t('dashboard.setUpProfile')}</Button>
+          </Link>
+        }
+      />
     )
   }
 
@@ -275,7 +311,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
     dashboardData?.currentPhase ??
     getCurrentPhase(cycleDay, profile.periodLength, profile.cycleLength)
 
-  const phase = normalizeCyclePhase(String(rawPhase))
+  const phase = normalizeCyclePhase(String(rawPhase)) as CyclePhase
   const phaseColor = getPhaseColor(phase)
   const phaseEmoji = getPhaseEmoji(phase)
 
@@ -321,19 +357,21 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
 
   return (
     <>
-      {/* Background blobs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10" aria-hidden="true">
-        <motion.div
-          className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-[0.07]"
-          style={{ background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)' }}
-          animate={prefersReducedMotion ? {} : { x: [0, 15, 0], y: [0, -10, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+      {/* ── Ambient background: gradient mesh + Blob illustrations ── */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10 gradient-mesh" aria-hidden="true">
+        {/* Blob top-right — rose */}
+        <Blob
+          tone="rose"
+          animated={!prefersReducedMotion}
+          size={340}
+          className="absolute -top-16 -right-20 opacity-[0.14]"
         />
-        <motion.div
-          className="absolute -bottom-32 -left-20 w-80 h-80 rounded-full opacity-[0.05]"
-          style={{ background: 'radial-gradient(circle, var(--color-secondary) 0%, transparent 70%)' }}
-          animate={prefersReducedMotion ? {} : { x: [0, -10, 0], y: [0, 12, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+        {/* Blob bottom-left — lavender */}
+        <Blob
+          tone="lavender"
+          animated={!prefersReducedMotion}
+          size={280}
+          className="absolute -bottom-24 -left-16 opacity-[0.10] anim-delay-300"
         />
       </div>
 
@@ -386,16 +424,25 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
           </motion.div>
         </motion.div>
 
-        {/* ── Cards Grid ─────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        {/* ── Cards Grid (stagger container) ─────────────────────── */}
+        <motion.div
+          className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4"
+          variants={variants(staggerContainer)}
+          initial="hidden"
+          animate="visible"
+        >
 
           {/* Countdown Card */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}
+            variants={variants(staggerItem)}
+            {...motionProps(cardHover)}
+            className="h-full"
           >
-            <Card padding="md" className="h-full">
+            <Card
+              padding="md"
+              phase={isPeriodLate ? 'menstrual' : phase}
+              className="h-full"
+            >
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-1.5">
                   <CalendarDays size={14} className="text-[var(--color-primary)]" aria-hidden="true" />
@@ -405,7 +452,10 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 </div>
                 <div
                   className="text-4xl font-extrabold leading-none tabular-nums"
-                  style={{ color: (daysUntilNext ?? 0) < 0 ? 'var(--color-menstrual)' : 'var(--color-primary)' }}
+                  style={{
+                    color: (daysUntilNext ?? 0) < 0 ? 'var(--color-menstrual)' : 'var(--color-primary)',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
                 >
                   {Math.abs(daysUntilNext ?? 0)}
                 </div>
@@ -433,11 +483,11 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
 
           {/* Last Period Card */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.18, type: 'spring', stiffness: 100, damping: 20 }}
+            variants={variants(staggerItem)}
+            {...motionProps(cardHover)}
+            className="h-full"
           >
-            <Card padding="md" className="h-full">
+            <Card padding="md" phase="menstrual" className="h-full">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-1.5">
                   <Droplets size={14} className="text-[var(--color-primary)]" aria-hidden="true" />
@@ -469,19 +519,19 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
 
           {/* Confidence Card */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.26, type: 'spring', stiffness: 100, damping: 20 }}
+            variants={variants(staggerItem)}
+            {...motionProps(cardHover)}
+            className="h-full"
           >
-            <Card padding="md" className="h-full">
+            <Card padding="md" phase="follicular" className="h-full">
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                   {t('dashboard.confidence')}
                 </span>
                 <div className="flex items-end gap-1">
                   <span
-                    className="text-4xl font-extrabold"
-                    style={{ color: 'var(--color-secondary)' }}
+                    className="text-4xl font-extrabold tabular-nums"
+                    style={{ color: 'var(--color-secondary)', fontVariantNumeric: 'tabular-nums' }}
                   >
                     {prediction.confidence}
                   </span>
@@ -510,11 +560,11 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
 
           {/* Quick Actions Card */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.34, type: 'spring', stiffness: 100, damping: 20 }}
+            variants={variants(staggerItem)}
+            {...motionProps(cardHover)}
+            className="h-full"
           >
-            <Card padding="md" className="h-full">
+            <Card padding="md" phase="ovulation" className="h-full">
               <div className="flex flex-col gap-2.5 h-full">
                 <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                   {t('dashboard.quickActions')}
@@ -528,7 +578,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 >
                   🩸 {t('dashboard.logPeriod')}
                 </Button>
-                <Link href="/symptoms" className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-secondary)] transition-colors">
+                <Link href="/symptoms" className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)] focus-visible:outline-none">
                   <div className="flex items-center gap-1.5">
                     <Activity size={12} className="text-[var(--color-secondary)]" aria-hidden="true" />
                     <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
@@ -540,7 +590,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               </div>
             </Card>
           </motion.div>
-        </div>
+        </motion.div>
 
         {/* ── Cycle Phase Overview + Predicted Windows ─────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -548,8 +598,9 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45, duration: 0.45 }}
+            {...motionProps({ whileHover: cardHover.whileHover, whileTap: cardHover.whileTap })}
           >
-            <Card padding="md" className="h-full">
+            <Card padding="md" phase={phase} className="h-full">
               <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
                 {t('dashboard.cycleOverview')}
               </h3>
@@ -596,8 +647,9 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.52, duration: 0.45 }}
+            {...motionProps({ whileHover: cardHover.whileHover, whileTap: cardHover.whileTap })}
           >
-            <Card padding="md" className="h-full">
+            <Card padding="md" phase="follicular" className="h-full">
               <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
                 {t('dashboard.predictedWindows')}
               </h3>
