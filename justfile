@@ -25,9 +25,9 @@ typecheck-all:
 up:
     {{compose}} up -d --build --remove-orphans
 
-# Start only infrastructure (postgres, redis, mailpit) — run Next.js locally
+# Start only infrastructure (postgres, redis, mailpit, bdapps-simulator) — run Next.js locally
 infra:
-    {{compose}} up -d postgres redis mailpit --remove-orphans --wait
+    {{compose}} up -d postgres redis mailpit bdapps-simulator --remove-orphans --wait
 
 # Stop all docker services
 down:
@@ -117,12 +117,16 @@ db-backup-url url:
 
 # ─── DEV ────────────────────────────────────────────────
 
-# Full local dev setup: copy env, start infra, reset db, run dev server
+# Full local dev setup: copy env, start infra, reset db, seed
 setup:
     @test -f apps/web/.env.local || cp apps/web/.env.example apps/web/.env.local && echo "Created apps/web/.env.local"
+    @test -f apps/admin/.env.local || cp apps/admin/.env.example apps/admin/.env.local && echo "Created apps/admin/.env.local"
     just infra
     just db-reset-force
-    @echo "Ready! Run 'just w' to start web, 'just a' for admin."
+    @echo ""
+    @echo "Ready! Run 'just w' (web :3000), 'just a' (admin :3001), or 'just wa' (both)."
+    @echo "Mailpit: http://localhost:8025 · BDApps simulator: http://localhost:10001/mchoice-tap-sdk"
+    @echo "Admin login: admin@vesta.health / admin123 · OTP bypass (DEV_MODE): 420420 / 840840"
 
 # Start Next.js web dev server (assumes infra is running)
 dev:
@@ -171,6 +175,58 @@ build-admin:
     {{admin}} build
 
 # ─── HEALTH ─────────────────────────────────────────────
+
+# Pre-flight checks for local development (tools, ports, env files)
+doctor:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    failed=0
+    warn() { echo "WARN: $*"; }
+    ok() { echo "OK:   $*"; }
+    need() { echo "FAIL: $*"; failed=1; }
+    echo "=== Vesta local doctor ==="
+    command -v docker >/dev/null 2>&1 && ok "docker installed" || need "docker not found — install Docker Desktop"
+    docker compose version >/dev/null 2>&1 && ok "docker compose available" || need "docker compose not available"
+    command -v node >/dev/null 2>&1 && ok "node $(node -v)" || need "node not found — use Node 22"
+    command -v pnpm >/dev/null 2>&1 && ok "pnpm $(pnpm -v)" || need "pnpm not found — run: corepack enable"
+    command -v just >/dev/null 2>&1 && ok "just installed" || need "just not found — https://github.com/casey/just"
+    for port in 5431 6379 8025 3000 3001 7002 10001; do
+      if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+        warn "port $port already in use (may be fine if services are running)"
+      else
+        ok "port $port free"
+      fi
+    done
+    test -f apps/web/.env.local && ok "apps/web/.env.local exists" || warn "apps/web/.env.local missing — run: just setup"
+    test -f apps/admin/.env.local && ok "apps/admin/.env.local exists" || warn "apps/admin/.env.local missing — run: just setup"
+    if docker compose -f ops/docker/compose.yml ps --status running 2>/dev/null | grep -q postgres; then
+      ok "postgres container running"
+    else
+      warn "postgres not running — run: just infra"
+    fi
+    echo ""
+    if [[ "$failed" -eq 0 ]]; then
+      echo "Doctor passed. Next: just setup (first time) or just wa (start apps)."
+    else
+      echo "Doctor found blocking issues. Fix FAIL items above."
+      exit 1
+    fi
+
+# Post-setup smoke test for Docker services (run after just setup)
+setup-check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "=== Vesta setup check ==="
+    {{compose}} ps
+    echo ""
+    echo -n "Mailpit UI (:8025): "
+    curl -sf -o /dev/null http://localhost:8025 && echo "OK" || echo "FAIL"
+    echo -n "BDApps simulator UI (:10001): "
+    curl -sf -o /dev/null http://localhost:10001/mchoice-tap-sdk && echo "OK" || echo "FAIL (may need ~90s after first start)"
+    echo ""
+    echo "Seeded admin: admin@vesta.health / admin123"
+    echo "Web OTP bypass (DEV_MODE): 420420 / 840840"
+    echo "Start apps: just wa"
 
 # Check all service health endpoints
 health:

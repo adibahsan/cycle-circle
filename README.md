@@ -4,10 +4,17 @@ Vesta is a bilingual reproductive health and cycle intelligence platform for Ban
 
 The full v1 requirements are documented in [docs/vesta/source/SRS.md](docs/vesta/source/SRS.md). Implementation progress is tracked in [DEV_SRS.md](DEV_SRS.md).
 
+**New contributors:** see [docs/LOCAL-DEVELOPMENT.md](docs/LOCAL-DEVELOPMENT.md) for prerequisites, Docker setup, ports, and troubleshooting.
+
+## Prerequisites
+
+Docker Desktop, Node 22, pnpm 10 (`corepack enable`), and [just](https://github.com/casey/just).
+
 ## Run Locally
 
 ```bash
 pnpm install
+just doctor    # optional pre-flight
 just setup
 just w
 ```
@@ -28,10 +35,12 @@ The web app runs on `http://localhost:3000`, admin on `http://localhost:3001`.
 | `just a` | Start admin dev server |
 | `just wa` | Start both |
 | `just setup` | Full local setup (env, infra, DB reset, seed) |
+| `just doctor` | Pre-flight checks (tools, ports, env) |
+| `just setup-check` | Smoke-test Docker services after setup |
 | `just typecheck` | Type-check web app |
 | `just studio` | Open Prisma Studio |
-| `just up` | Start all Docker services |
-| `just infra` | Start only infrastructure (postgres, redis, mailpit) |
+| `just up` | Start all Docker services (including web in container) |
+| `just infra` | Start infrastructure (postgres, redis, mailpit, bdapps-simulator) |
 
 Run `just` to see all available commands.
 
@@ -72,8 +81,8 @@ HTML_TO_DOCX_DIR=/tmp/vesta-html-to-docx node scripts/build-srs-docx.mjs
 The simulator stack lives under `ops/simulator/bdapps/` and uses the vendor SDK at `ops/vendor/bdapps/sdk-standalone-1.2.68/`.
 
 ```bash
-just up        # Start all services including simulator
-just down      # Stop everything
+just infra       # Start Docker infra (includes BDApps simulator)
+just down        # Stop everything
 ```
 
 See [ops/simulator/bdapps/README.md](ops/simulator/bdapps/README.md) for ports and smoke tests.

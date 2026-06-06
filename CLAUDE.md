@@ -51,13 +51,15 @@ App-specific files stay as `@/lib/*` and `@/components/*`:
 | `just a` | Start admin dev server (port 3001) |
 | `just wa` | Start both in parallel |
 | `just setup` | Copy env, start infra, reset DB, seed |
+| `just doctor` | Pre-flight checks for local development |
+| `just setup-check` | Smoke-test Docker services |
 | `just typecheck` | Type-check web app |
 | `just typecheck-all` | Type-check all packages |
 | `just db-generate` | Generate Prisma client |
 | `just db-migrate` | Create + apply migration |
 | `just studio` | Open Prisma Studio |
-| `just up` | Start all Docker services |
-| `just infra` | Start only postgres, redis, mailpit |
+| `just up` | Start all Docker services (web in container) |
+| `just infra` | Start postgres, redis, mailpit, bdapps-simulator |
 | `just down` | Stop Docker services |
 
 All Prisma operations run from `packages/shared/`.
@@ -70,6 +72,7 @@ Next.js 16, React 19, TypeScript, Tailwind CSS v4, Zustand (client state), i18ne
 
 | What | Where |
 |---|---|
+| Local development setup | `docs/LOCAL-DEVELOPMENT.md` |
 | Implementation status | `DEV_SRS.md` |
 | Sprint checklist | `CHECKLIST.md` |
 | Full SRS (IEEE 830) | `docs/vesta/source/SRS.md` |
