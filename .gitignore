@@ -16,11 +16,12 @@ tsconfig.tsbuildinfo
 # Local environment
 .env*
 !.env.example
+**/env.prod
+!**/env.prod.example
 apps/web/env.local
-apps/web/env.prod
 apps/web/.env.local
 apps/admin/.env.local
-apps/admin/env.prod
+packages/shared/.env.local
 *.log
 
 # OS/editor metadata
