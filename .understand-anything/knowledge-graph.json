@@ -7081,18 +7081,6 @@
       "complexity": "simple"
     },
     {
-      "id": "document:docs/vesta/contract.md",
-      "type": "document",
-      "name": "contract.md",
-      "filePath": "docs/vesta/contract.md",
-      "summary": "Documentation written in markdown.",
-      "tags": [
-        "docs",
-        "markdown"
-      ],
-      "complexity": "complex"
-    },
-    {
       "id": "document:docs/vesta/SRS.md",
       "type": "document",
       "name": "SRS.md",
