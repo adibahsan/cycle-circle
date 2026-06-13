@@ -13,7 +13,7 @@ export async function generateFeedbackCsv(): Promise<string> {
   const header = 'ID,User,Email,Category,Message,Rating,Date'
   const rows = items.map(f => {
     const message = f.message.replace(/"/g, '""')
-    return `${f.id},"${f.user.fullName ?? ''}","${f.user.email ?? ''}",${f.category},"${message}",${f.rating ?? ''},${f.createdAt.toISOString()}`
+    return `${f.id},"${f.user.fullName ?? ''}","${f.user.email ?? ''}",${f.category},"${message}",${f.rating ?? ''},"${f.createdAt.toISOString()}"`
   })
 
   return [header, ...rows].join('\n')
@@ -46,7 +46,7 @@ export async function generateUsersCsv(): Promise<string> {
     'ID,Name,Phone,Email,Auth Method,Subscription,Role,Profiles,Profile Complete,Created,Last Login'
   const rows = users.map(
     u =>
-      `${u.id},"${u.fullName ?? ''}","${u.phone ?? ''}","${u.email ?? ''}",${u.authMethod},${u.subscriptionStatus},${u.role},${u._count.profiles},${u.profileCompleted},${u.createdAt.toISOString()},${u.lastLoginAt?.toISOString() ?? ''}`,
+      `${u.id},"${u.fullName ?? ''}","${u.phone ?? ''}","${u.email ?? ''}",${u.authMethod},${u.subscriptionStatus},${u.role},${u._count.profiles},${u.profileCompleted},"${u.createdAt.toISOString()}","${u.lastLoginAt?.toISOString() ?? ''}"`,
   )
 
   return [header, ...rows].join('\n')
