@@ -143,16 +143,13 @@ export function ProfileCompletionModal({ open, onClose }: ProfileCompletionModal
               id="profile-completion-title"
               className="text-lg font-bold text-[var(--color-text-primary)]"
             >
-              {t('profile.completeTitle', 'Complete Your Profile')}
+              {t('profile.completeTitle')}
             </h2>
             <p
               id="profile-completion-desc"
               className="mt-1 text-sm text-[var(--color-text-muted)] leading-relaxed"
             >
-              {t(
-                'profile.completeDesc',
-                'Add your phone number to keep your account after the trial period'
-              )}
+              {t('profile.completeDesc')}
             </p>
           </div>
           <button
@@ -176,7 +173,7 @@ export function ProfileCompletionModal({ open, onClose }: ProfileCompletionModal
               aria-hidden="true"
             />
             <p className="text-base font-semibold text-[var(--color-text-primary)]">
-              {t('profile.completeSuccess', 'Profile completed!')}
+              {t('profile.completeSuccess')}
             </p>
           </div>
         ) : (
@@ -188,7 +185,7 @@ export function ProfileCompletionModal({ open, onClose }: ProfileCompletionModal
                 htmlFor="completion-fullname"
                 className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5"
               >
-                {t('profile.fullName', 'Full Name')}
+                {t('profile.fullName')}
               </label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">
@@ -201,7 +198,7 @@ export function ProfileCompletionModal({ open, onClose }: ProfileCompletionModal
                   type="text"
                   autoComplete="name"
                   spellCheck={false}
-                  placeholder={t('profile.fullNamePlaceholder', 'Your full name…')}
+                  placeholder={t('profile.fullNamePlaceholder')}
                   value={fullName}
                   onChange={handleNameChange}
                   maxLength={200}
@@ -232,7 +229,7 @@ export function ProfileCompletionModal({ open, onClose }: ProfileCompletionModal
                 htmlFor="completion-phone"
                 className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5"
               >
-                {t('auth.phone', 'Phone Number')}
+                {t('auth.phone')}
               </label>
               <div className="relative">
                 {/* Country prefix */}
@@ -324,7 +321,7 @@ export function ProfileCompletionModal({ open, onClose }: ProfileCompletionModal
                 onClick={onClose}
                 className="flex-1 rounded-xl"
               >
-                {t('common.later', 'Later')}
+                {t('common.later')}
               </Button>
               <Button
                 type="submit"
@@ -355,10 +352,10 @@ export function ProfileCompletionModal({ open, onClose }: ProfileCompletionModal
                         d="M4 12a8 8 0 018-8v8H4z"
                       />
                     </svg>
-                    {t('common.saving', 'Saving…')}
+                    {t('common.saving')}
                   </span>
                 ) : (
-                  t('profile.completeAction', 'Complete Profile')
+                  t('profile.completeAction')
                 )}
               </Button>
             </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, memo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
@@ -103,11 +103,11 @@ function Legend() {
         <div key={label} className="flex items-center gap-1.5">
           {ring ? (
             <div
-              className="w-4 h-4 rounded-full border-2"
+              className="w-4 h-4 rounded-md border-2"
               style={{ borderColor: 'var(--color-text-primary)' }}
             />
           ) : (
-            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }} />
+            <div className="w-4 h-4 rounded-md" style={{ backgroundColor: color }} />
           )}
           <span className="text-[11px] font-medium text-[var(--color-text-secondary)]">{label}</span>
         </div>
@@ -122,10 +122,10 @@ interface DayCellProps {
   meta: DayMeta
   isCurrentMonth: boolean
   isSelected: boolean
-  onClick: () => void
+  onSelect: (date: Date) => void
 }
 
-function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
+const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSelect }: DayCellProps) {
   const { date, isPeriod, isFertile, isOvulation, isFuturePredicted } = meta
   const today = new Date()
   const isToday = isSameDay(date, today)
@@ -148,7 +148,7 @@ function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
 
   return (
     <button
-      onClick={onClick}
+      onClick={() => onSelect(date)}
       className={`relative flex flex-col items-center justify-center aspect-square w-full rounded-xl transition-[color,background-color,transform] duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 focus-visible:ring-offset-1${(isPeriod || isFertile || isOvulation) && isCurrentMonth ? ' hover:scale-105' : ''}`}
       style={{
         backgroundColor: isSelected
@@ -212,7 +212,7 @@ function DayCell({ meta, isCurrentMonth, isSelected, onClick }: DayCellProps) {
       )}
     </button>
   )
-}
+})
 
 // ─── Day Detail Sheet ──────────────────────────────────────────────────────────
 
@@ -338,6 +338,7 @@ interface RecentPeriodsProps {
 }
 
 function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) {
+  const { t } = useTranslation()
   const [page, setPage] = useState(0)
   const prefersReducedMotion = useReducedMotion()
 
@@ -367,12 +368,12 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
     >
       <Card padding="md">
         <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
-          Recent Periods
+          {t('calendar.recentPeriods')}
         </h3>
 
         {periodLogs.length === 0 ? (
           <p className="text-xs text-[var(--color-text-muted)] text-center py-3">
-            No period logs yet
+            {t('calendar.noPeriodLogs')}
           </p>
         ) : (
           <>
@@ -401,7 +402,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                         {fmt.format(end)}
                       </span>
                       <span className="text-[11px] text-[var(--color-text-muted)]">
-                        {days} {days === 1 ? 'day' : 'days'}
+                        {days} {t('calendar.days')}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -409,7 +410,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                         className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
                         style={{ backgroundColor: flow.bg, color: flow.text }}
                       >
-                        {flow.label}
+                        {t(`dashboard.flow${log.flowIntensity.charAt(0) + log.flowIntensity.slice(1).toLowerCase()}`)}
                       </span>
                       <Pencil size={12} className="text-[var(--color-text-muted)]" aria-hidden="true" />
                     </div>
@@ -427,7 +428,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
                 >
                   <ChevronLeft size={12} aria-hidden="true" />
-                  Prev
+                  {t('calendar.prev')}
                 </button>
                 <span className="text-[11px] text-[var(--color-text-muted)] tabular-nums">
                   {page + 1} / {totalPages}
@@ -438,7 +439,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                   aria-label="Next page of period logs"
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
                 >
-                  Next
+                  {t('calendar.next')}
                   <ChevronRight size={12} aria-hidden="true" />
                 </button>
               </div>
@@ -459,7 +460,9 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
   const dateLocale = language === 'bn' ? bn : undefined
   const prefersReducedMotion = useReducedMotion()
 
-  const today = new Date()
+  // Stable across renders so dayMetaMap isn't rebuilt (and all DayCells re-rendered)
+  // on every unrelated state change, e.g. opening/closing the edit modal.
+  const today = useMemo(() => new Date(), [])
   const currentMonth = useMemo(() => {
     const [year, monthNum] = month.split('-').map(Number)
     return new Date(year, monthNum - 1, 1)
@@ -541,13 +544,9 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
     router.push(`/calendar?month=${newMonth}`)
   }
 
-  const handleDayClick = (date: Date) => {
-    if (selectedDate && isSameDay(selectedDate, date)) {
-      setSelectedDate(null)
-    } else {
-      setSelectedDate(date)
-    }
-  }
+  const handleDayClick = useCallback((date: Date) => {
+    setSelectedDate((prev) => (prev && isSameDay(prev, date) ? null : date))
+  }, [])
 
   // Extract prediction summary from calendar data for the monthly summary card
   // Find the first predicted period start and any ovulation/fertile day
@@ -571,7 +570,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
         transition={{ duration: 0.3 }}
       >
         <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-          {t('nav.calendar', 'Calendar')}
+          {t('nav.calendar')}
         </h1>
         <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
           {format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}
@@ -666,7 +665,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
                       meta={meta}
                       isCurrentMonth={inMonth}
                       isSelected={isSelected}
-                      onClick={() => handleDayClick(date)}
+                      onSelect={handleDayClick}
                     />
                   )
                 })}
@@ -757,7 +756,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
             >
               <Card padding="md">
                 <p className="text-sm text-[var(--color-text-muted)] text-center py-4">
-                  {t('calendar.selectDay', 'Tap a day to see details')}
+                  {t('calendar.selectDay')}
                 </p>
               </Card>
             </motion.div>

@@ -97,7 +97,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {/* Main navigation */}
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto" aria-label="Main navigation">
           <p className="px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
-            Menu
+            {t('nav.menu')}
           </p>
           {NAV_ITEMS.map(({ href, icon: Icon, labelKey }) => {
             const isActive = pathname === href;
@@ -122,7 +122,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <div className="my-3 border-t border-[var(--color-border)]" />
 
           <p className="px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
-            More
+            {t('nav.more')}
           </p>
           {SIDEBAR_EXTRA_ITEMS.map(({ href, icon: Icon, labelKey }) => {
             const isActive = pathname === href;
@@ -152,7 +152,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors w-full"
           >
             {theme === 'dark' ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
-            <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+            <span>{theme === 'dark' ? t('settings.lightMode') : t('settings.darkMode')}</span>
           </button>
           <LanguageToggle />
         </div>

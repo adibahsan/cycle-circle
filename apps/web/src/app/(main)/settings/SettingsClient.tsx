@@ -270,11 +270,11 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
     setLocalPrefs(updated)
     try {
       await updateNotificationPrefs({ profileId: activeProfile.id, [key]: value })
-      showToast('Preferences saved')
+      showToast(t('settings.prefsSaved'))
     } catch {
       // Revert on error
       setLocalPrefs(localPrefs)
-      showToast('Failed to save preferences')
+      showToast(t('settings.prefsFailed'))
     }
   }
 
@@ -284,12 +284,12 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
     setContactSaving(true)
     try {
       await updateContactInfo({ email: contactEmail })
-      showToast('Email added successfully')
+      showToast(t('settings.emailAdded'))
       setAddingEmail(false)
       setContactEmail('')
       router.refresh()
     } catch {
-      showToast('Failed to add email. It may already be in use.')
+      showToast(t('settings.emailAddFailed'))
     } finally {
       setContactSaving(false)
     }
@@ -300,12 +300,12 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
     setContactSaving(true)
     try {
       await updateContactInfo({ phone: contactPhone })
-      showToast('Phone number added successfully')
+      showToast(t('settings.phoneAdded'))
       setAddingPhone(false)
       setContactPhone('')
       router.refresh()
     } catch {
-      showToast('Failed to add phone. Please enter a valid Bangladesh number.')
+      showToast(t('settings.phoneAddFailed'))
     } finally {
       setContactSaving(false)
     }
@@ -327,13 +327,13 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
   const handleExportCsv = async () => {
     if (exporting) return
     setExporting(true)
-    showToast('Preparing CSV export…')
+    showToast(t('settings.csvPreparing'))
     try {
       const { csv, filename } = await exportUserDataCsv()
       triggerDownload(csv, filename)
-      showToast('CSV downloaded')
+      showToast(t('settings.csvDownloaded'))
     } catch {
-      showToast('Export failed. Please try again.')
+      showToast(t('settings.exportFailed'))
     } finally {
       setExporting(false)
     }
@@ -342,14 +342,14 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
   const handleExportExcel = async () => {
     if (exporting) return
     setExporting(true)
-    showToast('Preparing export…')
+    showToast(t('settings.exportPreparing'))
     try {
       const { csv, filename } = await exportUserDataCsv()
       const xlsxFilename = filename.replace('.csv', '.xlsx.csv')
       triggerDownload(csv, xlsxFilename)
-      showToast('File downloaded')
+      showToast(t('settings.exportDone'))
     } catch {
-      showToast('Export failed. Please try again.')
+      showToast(t('settings.exportFailed'))
     } finally {
       setExporting(false)
     }
@@ -402,7 +402,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader icon={Globe} title="Language & Appearance" />
+              <SectionHeader icon={Globe} title={t('settings.languageAndAppearance')} />
               <Card padding="md" className="space-y-5">
                 {/* Language */}
                 <div className="flex items-center justify-between gap-4">
@@ -410,7 +410,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                     <p className="text-sm font-semibold text-[var(--color-text-primary)]">
                       {t('settings.language')}
                     </p>
-                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">App display language</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('settings.languageDesc')}</p>
                   </div>
                   <SegmentedControl<Language>
                     options={[
@@ -430,12 +430,12 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                     <p className="text-sm font-semibold text-[var(--color-text-primary)]">
                       {t('settings.theme')}
                     </p>
-                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Visual appearance</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('settings.themeDesc')}</p>
                   </div>
                   <SegmentedControl<Theme>
                     options={[
-                      { label: '☀️ Light', value: 'light' },
-                      { label: '🌙 Dark', value: 'dark' },
+                      { label: `☀️ ${t('settings.lightMode')}`, value: 'light' },
+                      { label: `🌙 ${t('settings.darkMode')}`, value: 'dark' },
                     ]}
                     value={theme}
                     onChange={handleThemeChange}
@@ -457,17 +457,17 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                   {
                     key: 'periodAlert' as const,
                     label: t('settings.periodAlert'),
-                    desc: 'Get notified 2 days before your period',
+                    desc: t('settings.periodAlertDesc'),
                   },
                   {
                     key: 'fertileWindow' as const,
                     label: t('settings.fertileAlert'),
-                    desc: 'Know when your fertile window opens',
+                    desc: t('settings.fertileAlertDesc'),
                   },
                   {
                     key: 'loggingReminder' as const,
                     label: t('settings.reminderAlert'),
-                    desc: 'Daily reminder to log your symptoms',
+                    desc: t('settings.reminderAlertDesc'),
                   },
                 ].map(({ key, label, desc }) => (
                   <div key={key} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
@@ -499,7 +499,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
               <SectionHeader icon={Download} title={t('settings.export')} />
               <Card padding="md" className="space-y-3">
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  Exports data for your active profile only
+                  {t('settings.exportDesc')}
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <button
@@ -533,13 +533,13 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader icon={User} title="Account" />
+              <SectionHeader icon={User} title={t('settings.account')} />
               <Card padding="md" className="space-y-2">
                 {/* Account info */}
                 <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-3 space-y-1.5">
                   {user.phone && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-[var(--color-text-muted)]">Phone</span>
+                      <span className="text-xs text-[var(--color-text-muted)]">{t('settings.phone')}</span>
                       <span className="text-xs font-semibold text-[var(--color-text-primary)] font-mono">
                         {user.phone.startsWith('+') ? user.phone : `+${user.phone}`}
                       </span>
@@ -547,7 +547,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                   )}
                   {user.email && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-[var(--color-text-muted)]">Email</span>
+                      <span className="text-xs text-[var(--color-text-muted)]">{t('settings.email')}</span>
                       <span className="text-xs font-semibold text-[var(--color-text-primary)]">
                         {user.email}
                       </span>
@@ -563,7 +563,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                             type="email"
                             name="email"
                             autoComplete="email"
-                            placeholder="Enter email address…"
+                            placeholder={t('settings.emailInputPlaceholder')}
                             value={contactEmail}
                             onChange={(e) => setContactEmail(e.target.value)}
                             className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
@@ -574,13 +574,13 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                             disabled={!contactEmail || contactSaving}
                             className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white gradient-primary disabled:opacity-50 transition-opacity"
                           >
-                            {contactSaving ? '...' : 'Save'}
+                            {contactSaving ? '...' : t('common.save')}
                           </button>
                           <button
                             onClick={() => { setAddingEmail(false); setContactEmail('') }}
                             className="px-2 py-1.5 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
                           >
-                            Cancel
+                            {t('common.cancel')}
                           </button>
                         </div>
                       ) : (
@@ -589,7 +589,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                           className="flex items-center gap-2 w-full py-1 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors"
                         >
                           <Mail size={12} aria-hidden="true" />
-                          Add Email
+                          {t('settings.addEmail')}
                         </button>
                       )}
                     </div>
@@ -615,13 +615,13 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                             disabled={!contactPhone || contactSaving}
                             className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white gradient-primary disabled:opacity-50 transition-opacity"
                           >
-                            {contactSaving ? '...' : 'Save'}
+                            {contactSaving ? '...' : t('common.save')}
                           </button>
                           <button
                             onClick={() => { setAddingPhone(false); setContactPhone('') }}
                             className="px-2 py-1.5 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
                           >
-                            Cancel
+                            {t('common.cancel')}
                           </button>
                         </div>
                       ) : (
@@ -630,14 +630,14 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                           className="flex items-center gap-2 w-full py-1 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors"
                         >
                           <Phone size={12} aria-hidden="true" />
-                          Add Phone Number
+                          {t('settings.addPhone')}
                         </button>
                       )}
                     </div>
                   )}
 
                   <div className="flex items-center justify-between pt-1 border-t border-[var(--color-border)]">
-                    <span className="text-xs text-[var(--color-text-muted)]">Plan</span>
+                    <span className="text-xs text-[var(--color-text-muted)]">{t('settings.plan')}</span>
                     <span
                       className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                         user.subscriptionStatus === 'pro'
@@ -652,13 +652,13 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
 
                 {/* Nav links */}
                 <div className="divide-y divide-[var(--color-border)]">
-                  <AccountRow icon={Users} label="Manage Profiles" href="/profiles" />
-                  <AccountRow icon={MessageSquare} label="Give Feedback" href="/feedback" />
+                  <AccountRow icon={Users} label={t('settings.manageProfiles')} href="/profiles" />
+                  <AccountRow icon={MessageSquare} label={t('settings.giveFeedback')} href="/feedback" />
                   <AccountRow
                     icon={Crown}
-                    label="Subscription"
+                    label={t('nav.subscription')}
                     href="/subscription"
-                    badge={user.subscriptionStatus !== 'pro' ? 'Upgrade' : undefined}
+                    badge={user.subscriptionStatus !== 'pro' ? t('settings.upgradeLabel') : undefined}
                   />
                 </div>
 
@@ -684,17 +684,17 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader icon={Info} title="About" />
+              <SectionHeader icon={Info} title={t('settings.about')} />
               <Card padding="md" className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[var(--color-text-secondary)]">App Version</span>
+                  <span className="text-sm text-[var(--color-text-secondary)]">{t('settings.appVersion')}</span>
                   <span className="text-sm font-semibold text-[var(--color-text-primary)]">Vesta v1.0</span>
                 </div>
 
                 <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-3 py-2.5 flex items-start gap-2">
                   <Lock size={14} className="text-[var(--color-secondary)] mt-0.5 shrink-0" />
                   <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-                    Your health data is encrypted with AES-256-GCM and stored securely.
+                    {t('settings.encryptionNote')}
                   </p>
                 </div>
 
@@ -703,14 +703,14 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                     href="/privacy"
                     className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
                   >
-                    Privacy Policy
+                    {t('settings.privacyPolicy')}
                   </Link>
                   <span className="text-[var(--color-border)]">·</span>
                   <Link
                     href="/terms"
                     className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
                   >
-                    Terms of Service
+                    {t('settings.termsOfService')}
                   </Link>
                 </div>
               </Card>
@@ -739,7 +739,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
               {t('settings.logout')}
             </h3>
             <p className="text-sm text-[var(--color-text-muted)] mb-5">
-              Are you sure you want to log out?
+              {t('settings.logoutConfirmMsg')}
             </p>
             <div className="flex gap-3">
               <Button
@@ -747,7 +747,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                 fullWidth
                 onClick={() => setShowLogoutConfirm(false)}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 variant="primary"
@@ -756,7 +756,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                 disabled={loggingOut}
                 className="bg-red-500 hover:bg-red-600 border-0"
               >
-                {loggingOut ? 'Logging out…' : 'Log out'}
+                {loggingOut ? t('settings.loggingOut') : t('settings.logout')}
               </Button>
             </div>
           </div>

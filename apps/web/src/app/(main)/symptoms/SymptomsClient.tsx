@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -75,7 +75,7 @@ interface MiniCalendarProps {
   onDateSelect: (date: Date) => void;
 }
 
-function MiniCalendar({ selectedDate, onDateSelect }: MiniCalendarProps) {
+const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: MiniCalendarProps) {
   const { t } = useTranslation();
   const { language } = useAppStore();
   const dateLocale = language === 'bn' ? bn : undefined;
@@ -167,26 +167,27 @@ function MiniCalendar({ selectedDate, onDateSelect }: MiniCalendarProps) {
       </div>
     </Card>
   );
-}
+});
 
 // ─── Symptom Chip ───────────────────────────────────────────────────────────
 
 interface SymptomChipProps {
+  id: string;
   icon: string;
   name: string;
   selected: boolean;
   category: SymptomCategory;
-  onToggle: () => void;
+  onToggle: (id: string) => void;
 }
 
-function SymptomChip({ icon, name, selected, category, onToggle }: SymptomChipProps) {
+const SymptomChip = memo(function SymptomChip({ id, icon, name, selected, category, onToggle }: SymptomChipProps) {
   const colors = CATEGORY_COLORS[category];
   return (
     <motion.button
-      onClick={onToggle}
+      onClick={() => onToggle(id)}
       whileTap={{ scale: 0.92 }}
       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-      className="flex flex-col items-center gap-1.5 p-2.5 rounded-2xl border transition-colors duration-200 w-full relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+      className="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border transition-colors duration-200 w-full h-full min-h-[88px] relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
       style={{
         background: selected ? colors.bg : 'var(--color-bg-card)',
         borderColor: selected ? colors.border : 'var(--color-border)',
@@ -217,7 +218,7 @@ function SymptomChip({ icon, name, selected, category, onToggle }: SymptomChipPr
       )}
     </motion.button>
   );
-}
+});
 
 // ─── Main Client Component ──────────────────────────────────────────────────
 
@@ -241,7 +242,7 @@ export function SymptomsClient({
   const [activeCategory, setActiveCategory] = useState<SymptomCategory>('physical');
   const [saving, setSaving] = useState(false);
 
-  const selectedDate = parseISO(date);
+  const selectedDate = useMemo(() => parseISO(date), [date]);
 
   const [localSelected, setLocalSelected] = useState<Set<string>>(() =>
     new Set(symptomLogs.map((l) => l.symptomId))
@@ -282,12 +283,12 @@ export function SymptomsClient({
     return language === 'bn' ? s.nameBn : s.nameEn;
   }
 
-  function handleDateSelect(newDate: Date) {
+  const handleDateSelect = useCallback((newDate: Date) => {
     const newDateStr = format(newDate, 'yyyy-MM-dd');
     router.push(`/symptoms?profileId=${activeProfileId}&date=${newDateStr}`);
-  }
+  }, [router, activeProfileId]);
 
-  function handleToggle(symptomId: string) {
+  const handleToggle = useCallback((symptomId: string) => {
     setLocalSelected((prev) => {
       const next = new Set(prev);
       if (next.has(symptomId)) {
@@ -297,7 +298,7 @@ export function SymptomsClient({
       }
       return next;
     });
-  }
+  }, []);
 
   async function handleSave() {
     setSaving(true);
@@ -361,7 +362,7 @@ export function SymptomsClient({
             <Card padding="sm">
               <div className="text-center">
                 <p className="text-sm font-medium text-[var(--color-text-secondary)]">
-                  {totalSelected} {totalSelected === 1 ? t('symptoms.symptomLabel', 'symptom') : t('symptoms.symptomsLabel', 'symptoms')}
+                  {totalSelected} {totalSelected === 1 ? t('symptoms.symptomLabel') : t('symptoms.symptomsLabel')}
                 </p>
                 <div className="flex justify-center gap-1.5 mt-2">
                   {CATEGORIES.map(({ key }) => {
@@ -440,23 +441,25 @@ export function SymptomsClient({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -12 }}
               transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-2"
+              className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2"
             >
               {categorySymptoms.map((symptom, i) => {
                 const selected = isSymptomSelected(symptom.id);
                 return (
                   <motion.div
                     key={symptom.id}
+                    className="h-full"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.03, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <SymptomChip
+                      id={symptom.id}
                       icon={symptom.icon}
                       name={getSymptomName(symptom)}
                       selected={selected}
                       category={symptom.category}
-                      onToggle={() => handleToggle(symptom.id)}
+                      onToggle={handleToggle}
                     />
                   </motion.div>
                 );
@@ -492,8 +495,8 @@ export function SymptomsClient({
                 )}
                 <span className="text-white font-bold text-sm">
                   {saving
-                    ? t('symptoms.saving', 'Saving…')
-                    : t('symptoms.saveChanges', { count: changeCount, defaultValue: `Save ${changeCount} changes` })}
+                    ? t('symptoms.saving')
+                    : t('symptoms.saveChanges', { count: changeCount })}
                 </span>
               </motion.button>
             )}
@@ -534,8 +537,8 @@ export function SymptomsClient({
               )}
               <span className="text-white font-bold text-sm">
                 {saving
-                  ? t('symptoms.saving', 'Saving…')
-                  : t('symptoms.saveChanges', { count: changeCount, defaultValue: `Save ${changeCount} changes` })}
+                  ? t('symptoms.saving')
+                  : t('symptoms.saveChanges', { count: changeCount })}
               </span>
             </motion.button>
           ) : totalSelected > 0 ? (
@@ -549,7 +552,7 @@ export function SymptomsClient({
               style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}
             >
               <p className="text-[var(--color-text-muted)] text-sm">
-                {totalSelected} {t('symptoms.symptomsLabel', 'symptoms')} {t('symptoms.forDate', { date: format(selectedDate, 'MMM d', { locale: dateLocale }), defaultValue: `for ${format(selectedDate, 'MMM d', { locale: dateLocale })}` })}
+                {totalSelected} {t('symptoms.symptomsLabel')} {t('symptoms.forDate', { date: format(selectedDate, 'MMM d', { locale: dateLocale }) })}
               </p>
             </motion.div>
           ) : (

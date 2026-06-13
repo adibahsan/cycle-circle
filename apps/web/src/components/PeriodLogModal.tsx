@@ -2,7 +2,7 @@
 
 import { useState, useTransition, type MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { X } from 'lucide-react'
 import type { FlowIntensity } from '@vesta/shared/types'
 import { Button } from '@/components/ui/Button'
@@ -14,12 +14,6 @@ import '@vesta/shared/utils/i18n'
 /** UI FlowIntensity -> Prisma enum */
 function toActionFlow(f: FlowIntensity): 'LIGHT' | 'MEDIUM' | 'HEAVY' {
   return f.toUpperCase() as 'LIGHT' | 'MEDIUM' | 'HEAVY'
-}
-
-const FLOW_LABELS: Record<FlowIntensity, string> = {
-  light: 'Light',
-  medium: 'Medium',
-  heavy: 'Heavy',
 }
 
 export const FLOW_COLORS: Record<FlowIntensity, string> = {
@@ -52,6 +46,7 @@ export function PeriodLogModal({
   onSaved,
 }: LogModalProps) {
   const { t } = useTranslation()
+  const prefersReducedMotion = useReducedMotion()
   const [startDate, setStartDate] = useState(initialStart)
   const [endDate, setEndDate] = useState(initialEnd)
   const [flow, setFlow] = useState<FlowIntensity>(initialFlow)
@@ -92,9 +87,10 @@ export function PeriodLogModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose} onKeyDown={handleKeyDown}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onKeyDown={handleKeyDown}>
+      {/* Backdrop — does not close the modal on click; use the ✕ button or save instead */}
       <motion.div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -103,15 +99,19 @@ export function PeriodLogModal({
         role="dialog"
         aria-modal="true"
         aria-label={isEdit ? t('dashboard.editPeriodLog') : t('dashboard.logPeriod')}
-        className="relative w-full max-w-md max-h-[85dvh] overflow-y-auto overscroll-contain bg-[var(--color-bg-card)] rounded-t-3xl px-5 py-6 shadow-2xl"
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
+        className="relative w-full max-w-md max-h-[85dvh] overflow-y-auto overscroll-contain bg-[var(--color-bg-card)] rounded-t-3xl sm:rounded-3xl px-5 py-6 shadow-2xl"
+        initial={prefersReducedMotion ? { opacity: 0 } : { y: '100%' }}
+        animate={prefersReducedMotion ? { opacity: 1 } : { y: 0 }}
+        exit={
+          prefersReducedMotion
+            ? { opacity: 0, transition: { duration: 0.15 } }
+            : { y: '100%', transition: { type: 'tween', duration: 0.2, ease: 'easeIn' } }
+        }
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
         onClick={(e: MouseEvent) => e.stopPropagation()}
       >
         {/* Handle */}
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--color-border)]" />
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--color-border)] sm:hidden" />
 
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
@@ -183,7 +183,7 @@ export function PeriodLogModal({
                 <span className="mr-1">
                   {f === 'light' ? '💧' : f === 'medium' ? '🩸' : '🌊'}
                 </span>
-                {FLOW_LABELS[f]}
+                {t(`dashboard.flow${f.charAt(0).toUpperCase() + f.slice(1)}`)}
               </button>
             ))}
           </div>

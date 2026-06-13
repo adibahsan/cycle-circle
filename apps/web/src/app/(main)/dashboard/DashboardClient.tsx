@@ -316,7 +316,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
       : null
 
   // Confidence tier label
-  const tierLabel = prediction.tier === 'arima' ? 'Tier 2 · ARIMA' : 'Tier 1 · Average'
+  const tierLabel = prediction.tier === 'arima' ? t('dashboard.tierArima') : t('dashboard.tierAverage')
   const phaseLabel = t(`dashboard.${phase}`)
 
   return (
@@ -363,7 +363,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             className="mt-4 md:mt-0 flex flex-col items-center gap-1"
           >
             {(() => {
-              const displayPhaseLabel = isPeriodLate ? t('dashboard.periodLate') : `${phaseLabel} Phase`
+              const displayPhaseLabel = isPeriodLate ? t('dashboard.periodLate') : t('dashboard.phaseLabel', { phase: phaseLabel })
               const displayPhaseColor = isPeriodLate ? 'var(--color-menstrual)' : phaseColor
               const displayPhaseEmoji = isPeriodLate ? '🩸' : phaseEmoji
               return (
@@ -377,7 +377,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                   </div>
                   <p className="text-xs text-[var(--color-text-muted)] mt-1">
                     {isPeriodLate
-                      ? t('dashboard.daysOverdue', { days: daysLate })
+                      ? t('dashboard.daysOverdue', { count: daysLate })
                       : t('dashboard.dayOf', { day: cycleDay, total: profile.cycleLength })}
                   </p>
                 </>
@@ -410,7 +410,9 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                   {Math.abs(daysUntilNext ?? 0)}
                 </div>
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  {(daysUntilNext ?? 0) < 0 ? t('dashboard.daysLate') : t('dashboard.daysAway')}
+                  {(daysUntilNext ?? 0) < 0
+                    ? t('dashboard.daysLate', { count: Math.abs(daysUntilNext ?? 0) })
+                    : t('dashboard.daysAway', { count: Math.abs(daysUntilNext ?? 0) })}
                 </p>
 
                 {/* Mini bar */}
@@ -451,13 +453,13 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                       {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(lastPeriodDisplay.startDate))}
                     </p>
                     <p className="text-xs text-[var(--color-text-muted)]">
-                      {lastPeriodDisplay.duration}d duration
+                      {t('dashboard.durationDays', { count: lastPeriodDisplay.duration })}
                     </p>
                     <div
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-white self-start"
                       style={{ backgroundColor: FLOW_COLORS[lastPeriodDisplay.flowIntensity] }}
                     >
-                      🩸 {capitalize(lastPeriodDisplay.flowIntensity)}
+                      🩸 {t(`dashboard.flow${capitalize(lastPeriodDisplay.flowIntensity)}`)}
                     </div>
                   </>
                 ) : (
