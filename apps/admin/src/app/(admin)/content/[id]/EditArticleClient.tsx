@@ -58,7 +58,6 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
   const [cyclePhases, setCyclePhases] = useState<string[]>(article.cyclePhases ?? [])
   const [status, setStatus] = useState(article.status)
   const [error, setError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
 
   useEffect(() => {
@@ -83,7 +82,6 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
       return
     }
     setError(null)
-    setSaved(false)
 
     startTransition(async () => {
       try {
@@ -96,8 +94,8 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
           cyclePhases,
           status,
         })
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
+        setIsDirty(false)
+        router.push('/content')
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to save article.')
       }
@@ -338,25 +336,18 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
           )}
 
           {/* Save action */}
-          <div className="space-y-2">
-            {saved && (
-              <p aria-live="polite" className="text-center text-sm font-medium text-emerald-600 dark:text-emerald-400 animate-fade-in">
-                Saved!
-              </p>
-            )}
-            <Button
-              variant="primary"
-              size="md"
-              fullWidth
-              onClick={handleSave}
-              loading={isPending}
-              disabled={isPending}
-              className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
-            >
-              <Save size={16} aria-hidden="true" />
-              Save Changes
-            </Button>
-          </div>
+          <Button
+            variant="primary"
+            size="md"
+            fullWidth
+            onClick={handleSave}
+            loading={isPending}
+            disabled={isPending}
+            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+          >
+            <Save size={16} aria-hidden="true" />
+            Save Changes
+          </Button>
         </div>
       </div>
     </div>

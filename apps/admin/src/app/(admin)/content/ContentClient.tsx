@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useCallback, useTransition, useState, useRef } from 'react'
-import { Plus, Pencil, Trash2, ChevronRight, Tags, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronRight, Tags, X, Check } from 'lucide-react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
@@ -454,17 +454,18 @@ export function ContentClient({ data, categories }: ContentClientProps) {
                     autoComplete="off"
                     spellCheck={false}
                     disabled={saving}
+                    className="h-12"
                   />
                 </div>
                 <Button
                   type="submit"
                   variant="primary"
-                  size="sm"
+                  size="md"
                   loading={saving}
                   disabled={!newCategoryName.trim()}
-                  className="mb-0.5"
+                  className="h-12"
                 >
-                  <Plus size={14} aria-hidden="true" />
+                  <Plus size={16} aria-hidden="true" />
                   Add
                 </Button>
               </form>
@@ -528,30 +529,57 @@ export function ContentClient({ data, categories }: ContentClientProps) {
                           )}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          {!isEditing && (
-                            <button
-                              type="button"
-                              onClick={() => startEditCategory(cat)}
-                              disabled={isBusy}
-                              className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-40 disabled:cursor-not-allowed"
-                              aria-label={`Rename category ${cat.name}`}
-                            >
-                              <Pencil size={13} aria-hidden="true" />
-                            </button>
+                          {isEditing ? (
+                            <>
+                              {/* onMouseDown preventDefault keeps the input from
+                                  blurring (which would auto-commit) before these run */}
+                              <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => commitRenameCategory(cat.id)}
+                                disabled={renamingSaving || !editingCategoryName.trim()}
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                                aria-label={`Save category name`}
+                              >
+                                <Check size={14} aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={cancelEditCategory}
+                                disabled={renamingSaving}
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                                aria-label="Cancel rename"
+                              >
+                                <X size={14} aria-hidden="true" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => startEditCategory(cat)}
+                                disabled={isBusy}
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                                aria-label={`Rename category ${cat.name}`}
+                              >
+                                <Pencil size={13} aria-hidden="true" />
+                              </button>
+                              <div
+                                title={hasArticles ? 'Cannot delete a category that has articles' : undefined}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setCategoryToDelete(cat)}
+                                  disabled={hasArticles || isBusy}
+                                  className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[var(--color-text-muted)] disabled:hover:bg-transparent"
+                                  aria-label={`Delete category ${cat.name}`}
+                                >
+                                  <Trash2 size={13} aria-hidden="true" />
+                                </button>
+                              </div>
+                            </>
                           )}
-                          <div
-                            title={hasArticles ? 'Cannot delete a category that has articles' : undefined}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => setCategoryToDelete(cat)}
-                              disabled={hasArticles || isBusy || isEditing}
-                              className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[var(--color-text-muted)] disabled:hover:bg-transparent"
-                              aria-label={`Delete category ${cat.name}`}
-                            >
-                              <Trash2 size={13} aria-hidden="true" />
-                            </button>
-                          </div>
                         </div>
                       </li>
                     )
