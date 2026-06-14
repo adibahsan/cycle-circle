@@ -260,7 +260,10 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: 5 }),
       })
-      if (!res.ok) throw new Error('Subscribe request failed')
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        throw new Error(body?.error?.message ?? `Subscribe request failed (${res.status})`)
+      }
       setUpgradeStep('success')
     } catch (err) {
       console.error(err)
