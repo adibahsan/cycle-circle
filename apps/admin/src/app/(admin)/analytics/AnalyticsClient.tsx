@@ -143,7 +143,7 @@ function CycleLengthChart({ data }: { data: CycleLength[] }) {
   return (
     <div className="h-60">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+        <BarChart data={data} margin={{ top: 4, right: 4, left: -16, bottom: 16 }}>
           <CartesianGrid
             vertical={false}
             stroke="var(--color-border)"
@@ -162,7 +162,7 @@ function CycleLengthChart({ data }: { data: CycleLength[] }) {
             label={{
               value: 'Days',
               position: 'insideBottomRight',
-              offset: -4,
+              offset: 0,
               fontSize: 11,
               fill: 'var(--color-text-muted)',
             }}
