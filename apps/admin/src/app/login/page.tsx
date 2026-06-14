@@ -15,17 +15,14 @@ export default function AdminLoginPage() {
   const [state, setState] = useState<FormState>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!email.trim() || !password) return
+  async function login(loginEmail: string, loginPassword: string) {
     setState('loading')
     setErrorMsg('')
-
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword }),
       })
 
       if (!res.ok) {
@@ -41,6 +38,16 @@ export default function AdminLoginPage() {
       setErrorMsg('Network error. Please check your connection.')
       setState('error')
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!email.trim() || !password) return
+    await login(email, password)
+  }
+
+  async function handleDevLogin() {
+    await login('admin@vesta.health', 'admin123')
   }
 
   return (
@@ -137,6 +144,17 @@ export default function AdminLoginPage() {
                 'Sign in'
               )}
             </button>
+
+            {process.env.NODE_ENV === 'development' && (
+              <button
+                type="button"
+                onClick={handleDevLogin}
+                disabled={state === 'loading'}
+                className="w-full py-2.5 rounded-xl border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] text-xs font-medium hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Dev — sign in as admin@vesta.health
+              </button>
+            )}
           </form>
         </div>
 
