@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
@@ -148,7 +148,12 @@ function useToast() {
     setToasts(prev => [...prev, { id, text }])
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000)
   }, [])
-  return { toasts, show }
+  const replace = useCallback((text: string) => {
+    const id = Date.now()
+    setToasts([{ id, text }])
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000)
+  }, [])
+  return { toasts, show, replace }
 }
 
 function ToastStack({ toasts }: { toasts: ToastMsg[] }) {
@@ -223,7 +228,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
   const router = useRouter()
   const { language, setLanguage, theme, setTheme, activeProfileId, setActiveProfile } = useAppStore()
 
-  const { toasts, show: showToast } = useToast()
+  const { toasts, show: showToast, replace: replaceToast } = useToast()
 
   // Find the active profile's notification prefs, defaulting to all-on
   const activeProfile = profiles.find(p => p.id === activeProfileId) ?? profiles[0]
@@ -262,21 +267,36 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
   }
 
   // ── Notification pref handler ──
-  const handleNotifChange = async (
+  const savedPrefsRef = useRef(localPrefs)
+  const pendingPrefsRef = useRef(localPrefs)
+  const notifDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleNotifChange = (
     key: 'periodAlert' | 'fertileWindow' | 'loggingReminder',
     value: boolean,
   ) => {
     if (!activeProfile) return
     const updated = { ...localPrefs, [key]: value }
     setLocalPrefs(updated)
-    try {
-      await updateNotificationPrefs({ profileId: activeProfile.id, [key]: value })
-      showToast(t('settings.prefsSaved'))
-    } catch {
-      // Revert on error
-      setLocalPrefs(localPrefs)
-      showToast(t('settings.prefsFailed'))
-    }
+    pendingPrefsRef.current = updated
+
+    if (notifDebounceRef.current) clearTimeout(notifDebounceRef.current)
+    notifDebounceRef.current = setTimeout(async () => {
+      const toSave = pendingPrefsRef.current
+      try {
+        await updateNotificationPrefs({
+          profileId: activeProfile.id,
+          periodAlert: toSave.periodAlert,
+          fertileWindow: toSave.fertileWindow,
+          loggingReminder: toSave.loggingReminder,
+        })
+        savedPrefsRef.current = toSave
+        replaceToast(t('settings.prefsSaved'))
+      } catch {
+        setLocalPrefs(savedPrefsRef.current)
+        replaceToast(t('settings.prefsFailed'))
+      }
+    }, 600)
   }
 
   // ── Contact info handlers ──
