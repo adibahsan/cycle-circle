@@ -59,29 +59,34 @@ export function FilterBar({
         </div>
       )}
 
-      {/* Filter selects */}
-      {filters?.map((filter) => (
-        <div key={filter.key} className="flex items-center gap-2">
-          <label
-            htmlFor={`filter-${filter.key}`}
-            className="text-sm text-[var(--color-text-muted)] whitespace-nowrap"
-          >
-            {filter.label}:
-          </label>
-          <select
-            id={`filter-${filter.key}`}
-            value={filter.value}
-            onChange={(e) => filter.onChange(e.target.value)}
-            className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
-          >
-            {filter.options.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+      {/* Filter selects — always right-aligned so their position stays fixed
+          across tabs, whether or not the search box is shown. */}
+      {filters && filters.length > 0 && (
+        <div className="ml-auto flex flex-wrap items-center gap-3">
+          {filters.map((filter) => (
+            <div key={filter.key} className="flex items-center gap-2">
+              <label
+                htmlFor={`filter-${filter.key}`}
+                className="text-sm text-[var(--color-text-muted)] whitespace-nowrap"
+              >
+                {filter.label}:
+              </label>
+              <select
+                id={`filter-${filter.key}`}
+                value={filter.value}
+                onChange={(e) => filter.onChange(e.target.value)}
+                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
+              >
+                {filter.options.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }

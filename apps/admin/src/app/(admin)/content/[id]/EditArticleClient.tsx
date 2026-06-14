@@ -106,8 +106,8 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
 
   return (
     <div className="space-y-6">
-      {/* Back + actions bar */}
-      <div className="flex items-center justify-between gap-4">
+      {/* Back bar */}
+      <div className="flex items-center gap-4">
         <Link
           href="/content"
           className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
@@ -115,24 +115,6 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
           <ArrowLeft size={15} aria-hidden="true" />
           Back to Content
         </Link>
-        <div className="flex items-center gap-3">
-          {saved && (
-            <span aria-live="polite" className="text-sm text-emerald-600 dark:text-emerald-400 font-medium animate-fade-in">
-              Saved!
-            </span>
-          )}
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleSave}
-            loading={isPending}
-            disabled={isPending}
-            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
-          >
-            <Save size={15} aria-hidden="true" />
-            Save Changes
-          </Button>
-        </div>
       </div>
 
       {error && (
@@ -355,19 +337,26 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
             </div>
           )}
 
-          {/* Save button (repeated for convenience) */}
-          <Button
-            variant="primary"
-            size="md"
-            fullWidth
-            onClick={handleSave}
-            loading={isPending}
-            disabled={isPending}
-            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
-          >
-            <Save size={16} aria-hidden="true" />
-            Save Changes
-          </Button>
+          {/* Save action */}
+          <div className="space-y-2">
+            {saved && (
+              <p aria-live="polite" className="text-center text-sm font-medium text-emerald-600 dark:text-emerald-400 animate-fade-in">
+                Saved!
+              </p>
+            )}
+            <Button
+              variant="primary"
+              size="md"
+              fullWidth
+              onClick={handleSave}
+              loading={isPending}
+              disabled={isPending}
+              className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+            >
+              <Save size={16} aria-hidden="true" />
+              Save Changes
+            </Button>
+          </div>
         </div>
       </div>
     </div>
