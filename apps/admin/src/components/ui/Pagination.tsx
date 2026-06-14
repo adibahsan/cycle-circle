@@ -6,11 +6,21 @@ interface PaginationProps {
   currentPage: number;
   totalPages: number;
   pageSize: number;
+  /** Total number of rows across all pages — used to render the range count. */
+  total: number;
+  /** Optional noun for the count label, e.g. "user" → "143 users". Defaults to "result". */
+  itemLabel?: string;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
 }
 
 const PAGE_SIZES = [10, 20, 50, 100];
+
+// Naive pluralization covering the admin item labels: handles consonant + "y" → "ies".
+function pluralize(word: string): string {
+  if (/[^aeiou]y$/i.test(word)) return `${word.slice(0, -1)}ies`;
+  return `${word}s`;
+}
 
 function getPageNumbers(current: number, total: number): (number | '...')[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -28,28 +38,53 @@ export function Pagination({
   currentPage,
   totalPages,
   pageSize,
+  total,
+  itemLabel = 'result',
   onPageChange,
   onPageSizeChange,
 }: PaginationProps) {
   const pages = getPageNumbers(currentPage, totalPages);
 
+  const start = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, total);
+  const plural = total === 1 ? itemLabel : pluralize(itemLabel);
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 py-3 text-sm">
-      {/* Page size selector */}
-      <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
-        <label htmlFor="page-size-select" className="whitespace-nowrap">Rows per page:</label>
-        <select
-          id="page-size-select"
-          value={pageSize}
-          onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-1 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
-        >
-          {PAGE_SIZES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+    <div className="sticky bottom-0 z-10 mt-auto -mx-6 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--color-border)] bg-[var(--color-bg-primary)]/85 px-6 py-3 text-sm backdrop-blur-sm md:-mx-8 md:px-8">
+      {/* Range count + page size selector */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[var(--color-text-muted)]">
+        <p aria-live="polite" className="whitespace-nowrap tabular-nums">
+          {total === 0 ? (
+            `No ${plural}`
+          ) : (
+            <>
+              Showing{' '}
+              <span className="font-medium text-[var(--color-text-secondary)]">
+                {start.toLocaleString()}–{end.toLocaleString()}
+              </span>{' '}
+              of{' '}
+              <span className="font-medium text-[var(--color-text-secondary)]">
+                {total.toLocaleString()}
+              </span>{' '}
+              {plural}
+            </>
+          )}
+        </p>
+        <div className="flex items-center gap-2">
+          <label htmlFor="page-size-select" className="whitespace-nowrap">Rows per page:</label>
+          <select
+            id="page-size-select"
+            value={pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-1 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
+          >
+            {PAGE_SIZES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Page buttons */}

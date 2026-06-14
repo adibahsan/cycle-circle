@@ -318,7 +318,7 @@ export function ContentClient({ data, categories }: ContentClientProps) {
   ]
 
   return (
-    <div className="space-y-6 page-enter">
+    <div className="flex flex-1 flex-col gap-6 page-enter">
       <AdminPageHeader
         title="Content"
         description={`${data.total.toLocaleString()} article${data.total !== 1 ? 's' : ''}`}
@@ -382,6 +382,8 @@ export function ContentClient({ data, categories }: ContentClientProps) {
         currentPage={currentPage}
         totalPages={data.totalPages}
         pageSize={currentPageSize}
+        total={data.total}
+        itemLabel="article"
         onPageChange={(page) => updateParams({ page })}
         onPageSizeChange={(pageSize) => updateParams({ pageSize, page: 1 })}
       />

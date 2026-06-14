@@ -280,7 +280,7 @@ export function EmailsClient({ data, stats }: EmailsClientProps) {
   ]
 
   return (
-    <div className="space-y-6 page-enter">
+    <div className="flex flex-1 flex-col gap-6 page-enter">
       <AdminPageHeader
         title="Email Logs"
         description={`${data.total.toLocaleString()} email${data.total !== 1 ? 's' : ''} total`}
@@ -359,6 +359,8 @@ export function EmailsClient({ data, stats }: EmailsClientProps) {
         currentPage={data.page}
         totalPages={data.totalPages}
         pageSize={data.pageSize}
+        total={data.total}
+        itemLabel="email"
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
       />

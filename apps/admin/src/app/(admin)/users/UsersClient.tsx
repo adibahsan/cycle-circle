@@ -246,7 +246,7 @@ export function UsersClient({ data }: UsersClientProps) {
   }
 
   return (
-    <div className="space-y-6 page-enter">
+    <div className="flex flex-1 flex-col gap-6 page-enter">
       <AdminPageHeader
         title="Users"
         description={`${data.total.toLocaleString()} total users`}
@@ -298,6 +298,8 @@ export function UsersClient({ data }: UsersClientProps) {
         currentPage={currentPage}
         totalPages={data.totalPages}
         pageSize={currentPageSize}
+        total={data.total}
+        itemLabel="user"
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
       />

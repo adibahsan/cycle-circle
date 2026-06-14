@@ -248,7 +248,7 @@ export function FeedbackClient({ data }: FeedbackClientProps) {
   ]
 
   return (
-    <div className="space-y-6 page-enter">
+    <div className="flex flex-1 flex-col gap-6 page-enter">
       <AdminPageHeader
         title="Feedback"
         description={`${data.total.toLocaleString()} submission${data.total !== 1 ? 's' : ''} total`}
@@ -304,6 +304,8 @@ export function FeedbackClient({ data }: FeedbackClientProps) {
         currentPage={currentPage}
         totalPages={data.totalPages}
         pageSize={currentPageSize}
+        total={data.total}
+        itemLabel="submission"
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
       />

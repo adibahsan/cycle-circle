@@ -466,7 +466,7 @@ export function SmsClient({ data }: SmsClientProps) {
   ]
 
   return (
-    <div className="space-y-6 page-enter">
+    <div className="flex flex-1 flex-col gap-6 page-enter">
       <AdminPageHeader
         title="SMS Broadcasts"
         description={`${data.total.toLocaleString()} broadcast${data.total !== 1 ? 's' : ''} total`}
@@ -512,6 +512,8 @@ export function SmsClient({ data }: SmsClientProps) {
         currentPage={currentPage}
         totalPages={data.totalPages}
         pageSize={currentPageSize}
+        total={data.total}
+        itemLabel="broadcast"
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
       />
