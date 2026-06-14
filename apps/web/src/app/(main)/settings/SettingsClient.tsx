@@ -28,7 +28,8 @@ import {
 import { useAppStore } from '@/lib/store'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { updateNotificationPrefs, exportUserDataCsv } from '@/app/actions/settings-actions'
+import * as XLSX from 'xlsx'
+import { updateNotificationPrefs, exportUserDataCsv, exportUserDataRows } from '@/app/actions/settings-actions'
 import { updateContactInfo } from '@/app/actions/user-actions'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { Language, Theme } from '@vesta/shared/types'
@@ -344,9 +345,11 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
     setExporting(true)
     showToast(t('settings.exportPreparing'))
     try {
-      const { csv, filename } = await exportUserDataCsv()
-      const xlsxFilename = filename.replace('.csv', '.xlsx.csv')
-      triggerDownload(csv, xlsxFilename)
+      const { periodLogs, symptomLogs, filename } = await exportUserDataRows()
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(periodLogs), 'Period Logs')
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(symptomLogs), 'Symptom Logs')
+      XLSX.writeFile(wb, filename)
       showToast(t('settings.exportDone'))
     } catch {
       showToast(t('settings.exportFailed'))

@@ -92,3 +92,49 @@ export async function exportUserDataCsv(): Promise<{ csv: string; filename: stri
 
   return { csv, filename }
 }
+
+export async function exportUserDataRows(): Promise<{
+  periodLogs: string[][]
+  symptomLogs: string[][]
+  filename: string
+}> {
+  const jwt = await requireAuth()
+  const user = await getAuthUser(jwt.sub)
+  const profiles = await listProfiles(user.id)
+
+  const periodLogs: string[][] = [['Profile', 'Relation', 'Start Date', 'End Date', 'Flow Intensity']]
+  const symptomLogs: string[][] = [['Profile', 'Relation', 'Date', 'Category', 'Symptom ID']]
+
+  for (const profile of profiles) {
+    const [periodLogData, symptomLogData] = await Promise.all([
+      listPeriodLogs(profile.id, user.id),
+      getSymptomLogs(profile.id, user.id),
+    ])
+
+    for (const log of periodLogData) {
+      periodLogs.push([
+        profile.name,
+        profile.relation,
+        log.startDate.toISOString().slice(0, 10),
+        log.endDate.toISOString().slice(0, 10),
+        log.flowIntensity,
+      ])
+    }
+
+    for (const log of symptomLogData) {
+      symptomLogs.push([
+        profile.name,
+        profile.relation,
+        new Date(log.date).toISOString().slice(0, 10),
+        log.category,
+        log.symptomId,
+      ])
+    }
+  }
+
+  return {
+    periodLogs,
+    symptomLogs,
+    filename: `vesta-export-${new Date().toISOString().slice(0, 10)}.xlsx`,
+  }
+}
