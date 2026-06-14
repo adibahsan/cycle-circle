@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
+import { Check, ChevronDown } from 'lucide-react';
 import { clsx } from 'clsx';
 
 interface PaginationProps {
@@ -20,6 +22,153 @@ const PAGE_SIZES = [10, 20, 50, 100];
 function pluralize(word: string): string {
   if (/[^aeiou]y$/i.test(word)) return `${word.slice(0, -1)}ies`;
   return `${word}s`;
+}
+
+/**
+ * Page-size dropdown that always opens *upward*. The native <select> popup
+ * picks its own direction, which is jarring inside the bottom-pinned pagination
+ * bar — this custom listbox keeps the behavior consistent.
+ */
+function PageSizeSelect({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (size: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(() =>
+    Math.max(0, PAGE_SIZES.indexOf(value))
+  );
+  const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef<(HTMLLIElement | null)[]>([]);
+
+  // Close on outside click.
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: MouseEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [open]);
+
+  // Move DOM focus to the active option while open.
+  useEffect(() => {
+    if (open) optionRefs.current[activeIndex]?.focus();
+  }, [open, activeIndex]);
+
+  function openMenu() {
+    setActiveIndex(Math.max(0, PAGE_SIZES.indexOf(value)));
+    setOpen(true);
+  }
+
+  function select(size: number) {
+    onChange(size);
+    setOpen(false);
+    buttonRef.current?.focus();
+  }
+
+  function onButtonKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openMenu();
+    }
+  }
+
+  function onListKeyDown(e: React.KeyboardEvent) {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setActiveIndex((i) => Math.min(PAGE_SIZES.length - 1, i + 1));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setActiveIndex((i) => Math.max(0, i - 1));
+        break;
+      case 'Home':
+        e.preventDefault();
+        setActiveIndex(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        setActiveIndex(PAGE_SIZES.length - 1);
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        select(PAGE_SIZES[activeIndex]);
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setOpen(false);
+        buttonRef.current?.focus();
+        break;
+      case 'Tab':
+        setOpen(false);
+        break;
+    }
+  }
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        id="page-size-select"
+        onClick={() => (open ? setOpen(false) : openMenu())}
+        onKeyDown={onButtonKeyDown}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={`Rows per page: ${value}`}
+        className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-1 text-[var(--color-text-primary)] tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 hover:border-[var(--color-primary)]"
+      >
+        {value}
+        <ChevronDown
+          size={14}
+          aria-hidden="true"
+          className={clsx('text-[var(--color-text-muted)] transition-transform', open && 'rotate-180')}
+        />
+      </button>
+
+      {open && (
+        <ul
+          role="listbox"
+          aria-label="Rows per page"
+          tabIndex={-1}
+          onKeyDown={onListKeyDown}
+          className="absolute bottom-full left-0 z-20 mb-1 min-w-full overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] py-1 shadow-soft"
+        >
+          {PAGE_SIZES.map((size, i) => {
+            const selected = size === value;
+            return (
+              <li
+                key={size}
+                ref={(el) => {
+                  optionRefs.current[i] = el;
+                }}
+                role="option"
+                aria-selected={selected}
+                tabIndex={-1}
+                onClick={() => select(size)}
+                onMouseEnter={() => setActiveIndex(i)}
+                className={clsx(
+                  'flex cursor-pointer items-center justify-between gap-3 px-3 py-1.5 text-sm tabular-nums outline-none',
+                  i === activeIndex
+                    ? 'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]'
+                    : 'text-[var(--color-text-secondary)]'
+                )}
+              >
+                {size}
+                {selected && <Check size={14} aria-hidden="true" className="text-[var(--color-primary)]" />}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 function getPageNumbers(current: number, total: number): (number | '...')[] {
@@ -72,18 +221,7 @@ export function Pagination({
         </p>
         <div className="flex items-center gap-2">
           <label htmlFor="page-size-select" className="whitespace-nowrap">Rows per page:</label>
-          <select
-            id="page-size-select"
-            value={pageSize}
-            onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-1 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
-          >
-            {PAGE_SIZES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+          <PageSizeSelect value={pageSize} onChange={onPageSizeChange} />
         </div>
       </div>
 
