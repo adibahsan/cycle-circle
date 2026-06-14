@@ -136,41 +136,61 @@ function Toggle({
   )
 }
 
-interface ToastMsg {
-  id: number
+interface ToastState {
   text: string
+  seq: number // bumped on every message so the inner text crossfades
 }
 
+// Single-slot toast: only ever one on screen. New messages swap the text in
+// place (and reset the auto-dismiss timer) rather than stacking a new toast.
 function useToast() {
-  const [toasts, setToasts] = useState<ToastMsg[]>([])
+  const [toast, setToast] = useState<ToastState | null>(null)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const show = useCallback((text: string) => {
-    const id = Date.now()
-    setToasts(prev => [...prev, { id, text }])
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000)
+    setToast(prev => ({ text, seq: (prev?.seq ?? 0) + 1 }))
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => setToast(null), 2500)
   }, [])
-  const replace = useCallback((text: string) => {
-    const id = Date.now()
-    setToasts([{ id, text }])
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000)
-  }, [])
-  return { toasts, show, replace }
+
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
+
+  return { toast, show }
 }
 
-function ToastStack({ toasts }: { toasts: ToastMsg[] }) {
+function Toast({ toast }: { toast: ToastState | null }) {
   return (
-    <div aria-live="polite" aria-atomic="true" className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 w-full max-w-xs px-4 pointer-events-none">
+    <div
+      aria-live="polite"
+      aria-atomic="true"
+      className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] w-full max-w-xs px-4 pointer-events-none"
+    >
       <AnimatePresence>
-        {toasts.map(t => (
+        {toast && (
           <motion.div
-            key={t.id}
+            key="toast-bar"
             initial={{ opacity: 0, y: -16, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.94 }}
-            className="rounded-xl bg-[var(--color-text-primary)] text-white text-sm font-medium px-4 py-3 shadow-glow text-center"
+            transition={{ type: 'spring', damping: 24, stiffness: 320 }}
+            className="grid rounded-xl bg-[var(--color-text-primary)] text-white text-sm font-medium px-4 py-3 shadow-glow text-center"
           >
-            {t.text}
+            {/* Spans share one grid cell, so swapping text crossfades without
+                shifting the bar's position or height. */}
+            <AnimatePresence>
+              <motion.span
+                key={toast.seq}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                className="col-start-1 row-start-1"
+              >
+                {toast.text}
+              </motion.span>
+            </AnimatePresence>
           </motion.div>
-        ))}
+        )}
       </AnimatePresence>
     </div>
   )
@@ -228,7 +248,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
   const router = useRouter()
   const { language, setLanguage, theme, setTheme, activeProfileId, setActiveProfile } = useAppStore()
 
-  const { toasts, show: showToast, replace: replaceToast } = useToast()
+  const { toast, show: showToast } = useToast()
 
   // Find the active profile's notification prefs, defaulting to all-on
   const activeProfile = profiles.find(p => p.id === activeProfileId) ?? profiles[0]
@@ -252,6 +272,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
   const [contactPhone, setContactPhone] = useState('')
   const [contactSaving, setContactSaving] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const exportingRef = useRef(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
@@ -291,10 +312,10 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
           loggingReminder: toSave.loggingReminder,
         })
         savedPrefsRef.current = toSave
-        replaceToast(t('settings.prefsSaved'))
+        showToast(t('settings.prefsSaved'))
       } catch {
         setLocalPrefs(savedPrefsRef.current)
-        replaceToast(t('settings.prefsFailed'))
+        showToast(t('settings.prefsFailed'))
       }
     }, 600)
   }
@@ -346,7 +367,8 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
   }
 
   const handleExportCsv = async () => {
-    if (exporting) return
+    if (exportingRef.current) return
+    exportingRef.current = true
     setExporting(true)
     showToast(t('settings.csvPreparing'))
     try {
@@ -356,12 +378,14 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
     } catch {
       showToast(t('settings.exportFailed'))
     } finally {
+      exportingRef.current = false
       setExporting(false)
     }
   }
 
   const handleExportExcel = async () => {
-    if (exporting) return
+    if (exportingRef.current) return
+    exportingRef.current = true
     setExporting(true)
     showToast(t('settings.exportPreparing'))
     try {
@@ -374,6 +398,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
     } catch {
       showToast(t('settings.exportFailed'))
     } finally {
+      exportingRef.current = false
       setExporting(false)
     }
   }
@@ -401,7 +426,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
 
   return (
     <>
-      <ToastStack toasts={toasts} />
+      <Toast toast={toast} />
 
       <div className="py-4 space-y-6">
         {/* ── Page title ── */}
