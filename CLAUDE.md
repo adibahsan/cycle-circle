@@ -18,7 +18,6 @@ apps/admin/          Admin panel Next.js app (port 3001)
 packages/shared/     @vesta/shared: Prisma, server logic, auth, adapters, types, utils
 ops/                 Docker Compose, BDApps simulator, vendor SDK
 docs/                SRS, knowledge base, client site
-.planning/           GSD planning (PROJECT.md, ROADMAP.md, REQUIREMENTS.md, STATE.md)
 scripts/             Build and sync scripts
 review/              UI audits, fix plans, architecture reviews
 ```
@@ -76,9 +75,6 @@ Next.js 16, React 19, TypeScript, Tailwind CSS v4, Zustand (client state), i18ne
 | Implementation status | `DEV_SRS.md` |
 | Sprint checklist | `CHECKLIST.md` |
 | Full SRS (IEEE 830) | `docs/vesta/source/SRS.md` |
-| Project vision | `.planning/PROJECT.md` |
-| Roadmap | `.planning/ROADMAP.md` |
-| Session continuity | `.planning/STATE.md` |
 | Web UI review | `review/WEB-UI-REVIEW.md` (2026-05-30) |
 | Admin UI review | `review/ADMIN-UI-REVIEW.md` (2026-05-30) |
 | Architecture fix plan | `review/FIX-PLAN.md` (2026-05-29) |
