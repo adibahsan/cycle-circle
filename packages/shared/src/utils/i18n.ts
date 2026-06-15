@@ -284,6 +284,140 @@ const resources = {
         finalCta: 'Get Started',
         haveAccount: 'Already have an account? Log in',
       },
+      terms: {
+        title: 'Terms & Conditions',
+        effective: 'Effective: May 2026',
+        intro: 'Please read these Terms & Conditions carefully before using Vesta. They set out your rights and responsibilities when using our cycle-tracking application.',
+        sections: {
+          acceptance: {
+            title: 'Acceptance of Terms',
+            body: 'By downloading, installing, or using Vesta you agree to be bound by these Terms & Conditions. If you do not agree with any part of these terms, please do not use the application.',
+          },
+          service: {
+            title: 'Service Description',
+            intro: 'Vesta provides the following features:',
+            features: [
+              'Menstrual cycle tracking and period prediction',
+              'Fertile window estimation',
+              'Symptom and mood logging',
+              'Bilingual content (English and Bengali)',
+            ],
+            disclaimer: 'Vesta is not a medical device. Content provided is for informational purposes only and does not constitute medical advice, diagnosis, or treatment.',
+          },
+          accounts: {
+            title: 'Account & Profiles',
+            items: [
+              { desc: 'One account is permitted per phone number.' },
+              { desc: 'Each account supports up to 6 individual profiles.' },
+              { desc: 'You are solely responsible for maintaining the accuracy of data entered across all profiles on your account.' },
+              { desc: 'You must not share your account credentials or allow unauthorised access to your account.' },
+            ],
+          },
+          subscription: {
+            title: 'Subscription (Pro)',
+            intro: 'Vesta Pro is available for ৳99/month, billed via BDApps Content & Application Aggregation Service (CAAS).',
+            items: [
+              { desc: 'Charges are applied directly to your Grameenphone mobile balance.' },
+              { desc: 'Billing is monthly and renews automatically unless cancelled.' },
+              { desc: 'You may cancel at any time from Settings; access continues until the end of the current billing period.' },
+              { desc: 'Refunds are subject to BDApps billing policies.' },
+            ],
+          },
+          data: {
+            title: 'Data & Privacy',
+            body: 'Your use of Vesta is also governed by our Privacy Policy, which is incorporated into these Terms by reference.',
+            items: [
+              { desc: 'All health data is encrypted at rest with AES-256-GCM.' },
+              { desc: 'We do not sell, rent, or share your personal or health data with third parties for commercial purposes.' },
+              { desc: 'You may request export or deletion of your data at any time.' },
+            ],
+          },
+          limitations: {
+            title: 'Limitations & Disclaimer',
+            body: 'Cycle predictions and fertile window estimates are algorithmic approximations based on the data you provide. They are not a substitute for professional medical advice.',
+            items: [
+              { desc: 'Do not rely on Vesta for contraception or family planning decisions.' },
+              { desc: 'Always consult a qualified healthcare professional for medical decisions.' },
+              { desc: 'Vesta is provided "as is" without warranties of any kind, including accuracy of predictions or uninterrupted service.' },
+            ],
+          },
+          changes: {
+            title: 'Changes to Terms',
+            body1: 'We may update these Terms & Conditions from time to time. When we do, we will update the effective date at the top of this page.',
+            body2: 'Your continued use of Vesta after changes are posted constitutes your acceptance of the revised terms. If you disagree with updated terms, you may stop using the app and request account deletion.',
+          },
+        },
+      },
+      privacy: {
+        title: 'Privacy Policy',
+        updated: 'Last updated: May 2026',
+        intro: 'Vesta is a personal health companion. We take privacy seriously — especially for sensitive health data. This policy explains exactly what we collect, why, and how we protect it.',
+        sections: {
+          collection: {
+            title: 'Data Collection',
+            intro: 'We collect only what is necessary to provide Vesta\'s services:',
+            items: [
+              { term: 'Phone number', desc: 'used for authentication via BDApps OTP' },
+              { term: 'Cycle data', desc: 'period start/end dates, cycle length, and predictions' },
+              { term: 'Symptom logs', desc: 'mood, flow intensity, pain levels, and notes you enter' },
+              { term: 'Profile information', desc: 'name and any details you choose to provide per profile' },
+            ],
+            callout: 'All health data is encrypted at rest using AES-256-GCM before storage.',
+          },
+          usage: {
+            title: 'How We Use Your Data',
+            intro: 'Your data is used exclusively to power Vesta\'s features:',
+            items: [
+              { desc: 'Generate accurate cycle predictions and fertile window estimates' },
+              { desc: 'Deliver personalised content and health insights in your chosen language' },
+              { desc: 'Send push or SMS notifications when you have them enabled' },
+            ],
+            emphasis: 'Your data is never sold to third parties — ever.',
+          },
+          storage: {
+            title: 'Data Storage',
+            intro: 'Your data is stored on Supabase (PostgreSQL), a SOC 2-compliant infrastructure provider hosted on AWS.',
+            items: [
+              { term: 'Row Level Security (RLS)', desc: 'is enforced on every table — each user can only ever read and write their own rows.' },
+              { desc: 'All database connections are encrypted in transit via TLS 1.3.' },
+              { desc: 'Backups are encrypted and retained for 7 days.' },
+            ],
+          },
+          isolation: {
+            title: 'Data Isolation (Multi-Profile)',
+            intro: 'Vesta supports up to 6 profiles under a single account. Profile data is completely isolated at the database level.',
+            items: [
+              { desc: 'Each profile has its own encrypted data partition.' },
+              { desc: 'One profile\'s cycle logs, symptoms, and notes never appear in another profile\'s view.' },
+              { desc: 'Switching profiles requires an in-app PIN, preventing accidental cross-access.' },
+            ],
+          },
+          thirdParty: {
+            title: 'Third-Party Services',
+            intro: 'We use a minimal set of third-party services to run Vesta:',
+            items: [
+              { term: 'BDApps', desc: 'handles phone authentication (OTP) and in-app billing via CAAS. Only your phone number is shared for authentication purposes.' },
+              { term: 'Resend', desc: 'transactional email notifications (if you provide an email address). No health data is included in emails.' },
+            ],
+            note: 'No advertising networks, analytics trackers, or data brokers have access to your health data.',
+          },
+          rights: {
+            title: 'Your Rights',
+            intro: 'You are in full control of your data:',
+            items: [
+              { term: 'Export', desc: 'download all your cycle and symptom data as CSV or Excel from Settings at any time.' },
+              { term: 'Delete', desc: 'request full account deletion; all your data is permanently removed within 30 days.' },
+              { term: 'Opt out', desc: 'disable all notifications individually from Settings at any time, no questions asked.' },
+            ],
+          },
+          contact: {
+            title: 'Contact Us',
+            intro: 'If you have questions about this Privacy Policy or want to exercise your rights, please reach out to us:',
+            email: 'support@vesta.health',
+            response: 'We aim to respond within 2 business days.',
+          },
+        },
+      },
     },
   },
   bn: {
@@ -567,6 +701,141 @@ const resources = {
         finalSubtitle: 'এক মিনিটেরও কম সময়ে আপনার ব্যক্তিগত প্রোফাইল তৈরি করুন।',
         finalCta: 'শুরু করুন',
         haveAccount: 'ইতিমধ্যে অ্যাকাউন্ট আছে? লগ ইন করুন',
+      },
+      // বাংলা আইনি অনুবাদ — এটি বিশ্বস্ত মেশিন অনুবাদ; চূড়ান্ত প্রকাশের আগে মানবিক ও আইনি পর্যালোচনা আবশ্যক।
+      terms: {
+        title: 'শর্তাবলী ও নিয়মাবলী',
+        effective: 'কার্যকর: মে ২০২৬',
+        intro: 'ভেস্তা ব্যবহার করার আগে অনুগ্রহ করে এই শর্তাবলী ও নিয়মাবলী মনোযোগ দিয়ে পড়ুন। এগুলি আমাদের চক্র-ট্র্যাকিং অ্যাপ্লিকেশন ব্যবহারে আপনার অধিকার ও দায়িত্ব নির্ধারণ করে।',
+        sections: {
+          acceptance: {
+            title: 'শর্তাবলী গ্রহণ',
+            body: 'ভেস্তা ডাউনলোড, ইনস্টল বা ব্যবহার করে আপনি এই শর্তাবলী ও নিয়মাবলীর সাথে আবদ্ধ হতে সম্মত হচ্ছেন। যদি এই শর্তাবলীর কোনো অংশের সাথে আপনি একমত না হন, তাহলে অনুগ্রহ করে অ্যাপ্লিকেশনটি ব্যবহার করবেন না।',
+          },
+          service: {
+            title: 'সেবার বিবরণ',
+            intro: 'ভেস্তা নিম্নলিখিত ফিচারগুলি প্রদান করে:',
+            features: [
+              'মাসিক চক্র ট্র্যাকিং এবং পিরিয়ড পূর্বাভাস',
+              'উর্বর সময়কাল অনুমান',
+              'লক্ষণ ও মেজাজ লগিং',
+              'দ্বিভাষিক বিষয়বস্তু (ইংরেজি ও বাংলা)',
+            ],
+            disclaimer: 'ভেস্তা কোনো চিকিৎসা যন্ত্র নয়। এখানে প্রদত্ত বিষয়বস্তু শুধুমাত্র তথ্যমূলক উদ্দেশ্যে এবং এটি কোনো চিকিৎসা পরামর্শ, রোগনির্ণয় বা চিকিৎসা গঠন করে না।',
+          },
+          accounts: {
+            title: 'অ্যাকাউন্ট ও প্রোফাইল',
+            items: [
+              { desc: 'প্রতিটি ফোন নম্বরে একটিমাত্র অ্যাকাউন্ট অনুমোদিত।' },
+              { desc: 'প্রতিটি অ্যাকাউন্টে সর্বোচ্চ ৬টি পৃথক প্রোফাইল সমর্থিত।' },
+              { desc: 'আপনার অ্যাকাউন্টের সকল প্রোফাইলে প্রবেশ করা তথ্যের যথার্থতা বজায় রাখার একমাত্র দায়িত্ব আপনার।' },
+              { desc: 'আপনি আপনার অ্যাকাউন্টের পরিচয়পত্র শেয়ার করতে বা অননুমোদিত অ্যাক্সেসের অনুমতি দিতে পারবেন না।' },
+            ],
+          },
+          subscription: {
+            title: 'সাবস্ক্রিপশন (প্রো)',
+            intro: 'ভেস্তা প্রো ৳99/month মূল্যে পাওয়া যায়, BDApps কন্টেন্ট ও অ্যাপ্লিকেশন অ্যাগ্রিগেশন সার্ভিস (CAAS)-এর মাধ্যমে বিল করা হয়।',
+            items: [
+              { desc: 'চার্জ সরাসরি আপনার Grameenphone মোবাইল ব্যালেন্স থেকে কাটা হয়।' },
+              { desc: 'বিলিং মাসিক এবং বাতিল না করলে স্বয়ংক্রিয়ভাবে নবায়িত হয়।' },
+              { desc: 'আপনি যেকোনো সময় সেটিংস থেকে বাতিল করতে পারবেন; বর্তমান বিলিং পিরিয়ড শেষ না হওয়া পর্যন্ত অ্যাক্সেস অব্যাহত থাকবে।' },
+              { desc: 'রিফান্ড BDApps বিলিং নীতির অধীন।' },
+            ],
+          },
+          data: {
+            title: 'তথ্য ও গোপনীয়তা',
+            body: 'ভেস্তার ব্যবহার আমাদের গোপনীয়তা নীতি দ্বারাও নিয়ন্ত্রিত, যা রেফারেন্সের মাধ্যমে এই শর্তাবলীতে অন্তর্ভুক্ত।',
+            items: [
+              { desc: 'সকল স্বাস্থ্য তথ্য AES-256-GCM দিয়ে বিশ্রামে এনক্রিপ্ট করা হয়।' },
+              { desc: 'আমরা বাণিজ্যিক উদ্দেশ্যে আপনার ব্যক্তিগত বা স্বাস্থ্য তথ্য তৃতীয় পক্ষের কাছে বিক্রি, ভাড়া বা শেয়ার করি না।' },
+              { desc: 'আপনি যেকোনো সময় আপনার তথ্য এক্সপোর্ট বা মুছে ফেলার অনুরোধ করতে পারবেন।' },
+            ],
+          },
+          limitations: {
+            title: 'সীমাবদ্ধতা ও দাবিত্যাগ',
+            body: 'চক্র পূর্বাভাস এবং উর্বর সময়কাল অনুমান আপনার প্রদত্ত তথ্যের উপর ভিত্তি করে অ্যালগরিদমিক আনুমানিক হিসাব। এগুলি পেশাদার চিকিৎসা পরামর্শের বিকল্প নয়।',
+            items: [
+              { desc: 'গর্ভনিরোধ বা পরিবার পরিকল্পনার সিদ্ধান্তে ভেস্তার উপর নির্ভর করবেন না।' },
+              { desc: 'চিকিৎসা সংক্রান্ত সিদ্ধান্তে সর্বদা একজন যোগ্য স্বাস্থ্যসেবা পেশাদারের পরামর্শ নিন।' },
+              { desc: 'ভেস্তা "যেমন আছে" ভিত্তিতে প্রদান করা হয়, পূর্বাভাসের নির্ভুলতা বা অবিচ্ছিন্ন সেবাসহ কোনো ধরনের ওয়ারেন্টি ছাড়া।' },
+            ],
+          },
+          changes: {
+            title: 'শর্তাবলীর পরিবর্তন',
+            body1: 'আমরা সময়ে সময়ে এই শর্তাবলী ও নিয়মাবলী আপডেট করতে পারি। যখন করব, এই পৃষ্ঠার শীর্ষে কার্যকর তারিখ আপডেট করব।',
+            body2: 'পরিবর্তন পোস্ট করার পরে ভেস্তার ব্যবহার অব্যাহত রাখলে সংশোধিত শর্তাবলী গ্রহণ করা বোঝায়। আপডেট করা শর্তাবলীর সাথে একমত না হলে আপনি অ্যাপ ব্যবহার বন্ধ করতে এবং অ্যাকাউন্ট মুছে ফেলার অনুরোধ করতে পারবেন।',
+          },
+        },
+      },
+      privacy: {
+        title: 'গোপনীয়তা নীতি',
+        updated: 'সর্বশেষ আপডেট: মে ২০২৬',
+        intro: 'ভেস্তা একটি ব্যক্তিগত স্বাস্থ্য সহচর। আমরা গোপনীয়তাকে গুরুত্বের সাথে নিই — বিশেষত সংবেদনশীল স্বাস্থ্য তথ্যের ক্ষেত্রে। এই নীতিটি ব্যাখ্যা করে আমরা ঠিক কী সংগ্রহ করি, কেন এবং কীভাবে সুরক্ষা করি।',
+        sections: {
+          collection: {
+            title: 'তথ্য সংগ্রহ',
+            intro: 'ভেস্তার সেবা প্রদানের জন্য যা প্রয়োজনীয় শুধু তাই সংগ্রহ করি:',
+            items: [
+              { term: 'ফোন নম্বর', desc: 'BDApps OTP-এর মাধ্যমে প্রমাণীকরণে ব্যবহৃত' },
+              { term: 'চক্রের তথ্য', desc: 'পিরিয়ড শুরু/শেষের তারিখ, চক্রের দৈর্ঘ্য এবং পূর্বাভাস' },
+              { term: 'লক্ষণ লগ', desc: 'মেজাজ, প্রবাহের তীব্রতা, ব্যথার মাত্রা এবং আপনার প্রবেশ করা নোট' },
+              { term: 'প্রোফাইল তথ্য', desc: 'নাম এবং প্রতিটি প্রোফাইলে আপনি দিতে চান এমন যেকোনো বিবরণ' },
+            ],
+            callout: 'সকল স্বাস্থ্য তথ্য সংরক্ষণের আগে AES-256-GCM ব্যবহার করে বিশ্রামে এনক্রিপ্ট করা হয়।',
+          },
+          usage: {
+            title: 'আমরা আপনার তথ্য কীভাবে ব্যবহার করি',
+            intro: 'আপনার তথ্য শুধুমাত্র ভেস্তার ফিচারগুলি পরিচালনার জন্য ব্যবহার করা হয়:',
+            items: [
+              { desc: 'সঠিক চক্র পূর্বাভাস এবং উর্বর সময়কাল অনুমান তৈরি করা' },
+              { desc: 'আপনার নির্বাচিত ভাষায় ব্যক্তিগতকৃত বিষয়বস্তু ও স্বাস্থ্য অন্তর্দৃষ্টি প্রদান করা' },
+              { desc: 'আপনার সক্রিয় থাকলে পুশ বা এসএমএস বিজ্ঞপ্তি পাঠানো' },
+            ],
+            emphasis: 'আপনার তথ্য কখনো তৃতীয় পক্ষের কাছে বিক্রি করা হয় না — কখনো নয়।',
+          },
+          storage: {
+            title: 'তথ্য সংরক্ষণ',
+            intro: 'আপনার তথ্য Supabase (PostgreSQL)-এ সংরক্ষিত, যা AWS-এ হোস্ট করা SOC 2-সম্মত অবকাঠামো প্রদানকারী।',
+            items: [
+              { term: 'Row Level Security (RLS)', desc: 'প্রতিটি টেবিলে প্রয়োগ করা হয় — প্রতিটি ব্যবহারকারী শুধুমাত্র তাদের নিজের রো পড়তে ও লিখতে পারেন।' },
+              { desc: 'সকল ডেটাবেস সংযোগ TLS 1.3-এর মাধ্যমে ট্রানজিটে এনক্রিপ্ট করা হয়।' },
+              { desc: 'ব্যাকআপ এনক্রিপ্ট করা এবং ৭ দিনের জন্য সংরক্ষিত।' },
+            ],
+          },
+          isolation: {
+            title: 'তথ্য বিচ্ছিন্নতা (মাল্টি-প্রোফাইল)',
+            intro: 'ভেস্তা একটি অ্যাকাউন্টের অধীনে সর্বোচ্চ ৬টি প্রোফাইল সমর্থন করে। প্রোফাইল তথ্য ডেটাবেস স্তরে সম্পূর্ণরূপে বিচ্ছিন্ন।',
+            items: [
+              { desc: 'প্রতিটি প্রোফাইলের নিজস্ব এনক্রিপ্টেড ডেটা পার্টিশন রয়েছে।' },
+              { desc: 'একটি প্রোফাইলের চক্র লগ, লক্ষণ ও নোট কখনো অন্য প্রোফাইলের ভিউতে প্রদর্শিত হয় না।' },
+              { desc: 'প্রোফাইল পরিবর্তনে অ্যাপ-মধ্যস্থ PIN প্রয়োজন, যা অনিচ্ছাকৃত ক্রস-অ্যাক্সেস রোধ করে।' },
+            ],
+          },
+          thirdParty: {
+            title: 'তৃতীয় পক্ষের সেবা',
+            intro: 'ভেস্তা পরিচালনার জন্য আমরা ন্যূনতম তৃতীয় পক্ষের সেবা ব্যবহার করি:',
+            items: [
+              { term: 'BDApps', desc: 'ফোন প্রমাণীকরণ (OTP) এবং CAAS-এর মাধ্যমে অ্যাপ-মধ্যস্থ বিলিং পরিচালনা করে। শুধুমাত্র প্রমাণীকরণের উদ্দেশ্যে আপনার ফোন নম্বর শেয়ার করা হয়।' },
+              { term: 'Resend', desc: 'লেনদেনমূলক ইমেইল বিজ্ঞপ্তি (যদি আপনি একটি ইমেইল ঠিকানা প্রদান করেন)। ইমেইলে কোনো স্বাস্থ্য তথ্য অন্তর্ভুক্ত নেই।' },
+            ],
+            note: 'কোনো বিজ্ঞাপন নেটওয়ার্ক, অ্যানালিটিক্স ট্র্যাকার বা ডেটা ব্রোকারের আপনার স্বাস্থ্য তথ্যে অ্যাক্সেস নেই।',
+          },
+          rights: {
+            title: 'আপনার অধিকার',
+            intro: 'আপনি আপনার তথ্যের সম্পূর্ণ নিয়ন্ত্রণে আছেন:',
+            items: [
+              { term: 'এক্সপোর্ট', desc: 'যেকোনো সময় সেটিংস থেকে আপনার সকল চক্র ও লক্ষণ তথ্য CSV বা Excel হিসেবে ডাউনলোড করুন।' },
+              { term: 'মুছে ফেলা', desc: 'সম্পূর্ণ অ্যাকাউন্ট মুছে ফেলার অনুরোধ করুন; ৩০ দিনের মধ্যে আপনার সকল তথ্য স্থায়ীভাবে মুছে ফেলা হবে।' },
+              { term: 'অপ্ট আউট', desc: 'যেকোনো সময় সেটিংস থেকে পৃথকভাবে সকল বিজ্ঞপ্তি নিষ্ক্রিয় করুন, কোনো প্রশ্ন ছাড়াই।' },
+            ],
+          },
+          contact: {
+            title: 'যোগাযোগ করুন',
+            intro: 'এই গোপনীয়তা নীতি সম্পর্কে প্রশ্ন থাকলে বা আপনার অধিকার প্রয়োগ করতে চাইলে আমাদের সাথে যোগাযোগ করুন:',
+            email: 'support@vesta.health',
+            response: 'আমরা ২ কার্যদিবসের মধ্যে সাড়া দেওয়ার লক্ষ্য রাখি।',
+          },
+        },
       },
     },
   },
