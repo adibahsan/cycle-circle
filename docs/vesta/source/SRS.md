@@ -1,8 +1,8 @@
 # Software Requirements Specification
 
 **Project:** Vesta v1 — Bilingual Reproductive Health & Cycle Intelligence Platform for Bangladesh
-**Document Version:** 1.2
-**Date:** 9 May 2026  
+**Document Version:** 1.3
+**Date:** 15 June 2026  
 **Status:** Draft for Client Sign-Off
 **Standard:** IEEE 830-1998
 
@@ -15,8 +15,8 @@
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Document title    | Software Requirements Specification — Vesta v1                                                                                                                                 |
 | Document ID       | SRS-VESTA-001                                                                                                                                                                  |
-| Version           | 1.2                                                                                                                                                                            |
-| Issue date        | May 2026                                                                                                                                                                       |
+| Version           | 1.3                                                                                                                                                                            |
+| Issue date        | June 2026                                                                                                                                                                      |
 | Source            | `docs/vesta/source/SRS.md`                                                                                                                                                            |
 | Published copy    | `docs/site/vesta/vesta-srs.html`                                                                                                                                             |
 | Related artifacts | `docs/vesta/source/vesta-kb.md`, `docs/vesta/source/vesta-mvp-plan.html`, `docs/vesta/source/vesta-user-stories.html`, `docs/vesta/source/vesta-user-journey-flows.html`, `docs/vesta/source/bdapps-tap-api.html` |
@@ -32,6 +32,7 @@
 | 1.0     | 2026-04 | Adib   | Initial release derived from the Vesta SRS HTML draft |
 | 1.1     | 2026-05-03 | Adib | Deferred Pro auto-disable to v2; added SMS content circulation (FR-SMS); added BDApps webhook endpoints (FR-WEBHOOK) |
 | 1.2     | 2026-05-09 | Adib | Client feedback: email fallback auth with 24h trial window; SMS period/fertile alerts for subscribers; profile completion flow post-OTP; in-app feedback module (FR-FEEDBACK); grace period warning policy (no expiry date shown) |
+| 1.3     | 2026-06-15 | Adib | V1 client review feedback (Appendix D): logging-encouragement nudges (FR-NUDGE); editable profile mode (FR-PROFILE); goal-based TTC notification filtering (FR-NOTIF, FR-SMS); email+SMS profile-completion reminders (FR-AUTH); configurable analytics dashboards incl. feedback + new user-facing insights (FR-ANALYTICS, FR-FEEDBACK, FR-INSIGHTS); BDApps charging analysis logged as open/blocked |
 
 
 ### Revision Markers
@@ -40,6 +41,7 @@ Items added or changed in revisions are marked inline throughout this document:
 
 - ***(v1.1)*** — Added in version 1.1 (2026-05-03): FR-SMS, FR-WEBHOOK, BDApps SMS Send API, inbound webhooks, Pro auto-disable deferred to v2.
 - ***(v1.2)*** — Added in version 1.2 (2026-05-09): Email fallback auth with 24h trial window, profile completion flow, in-app feedback module (FR-FEEDBACK), SMS period/fertile alerts for subscribers, content override logic, grace period warning policy.
+- ***(v1.3)*** — Added in version 1.3 (2026-06-15): client V1-review feedback round (Appendix D); FR-NUDGE, FR-INSIGHTS; editable profile mode; goal-based notification filtering; proactive profile-completion reminders; configurable analytics dashboards; BDApps charging analysis (open).
 - ***(v1.1; updated v1.2)*** — Introduced in v1.1 and subsequently modified in v1.2.
 
 
@@ -72,6 +74,7 @@ Items added or changed in revisions are marked inline throughout this document:
   A. [Glossary](#appendix-a--glossary)
    B. [Analysis Models](#appendix-b--analysis-models)
    C. [Requirements Traceability Matrix](#appendix-c--requirements-traceability-matrix)
+   D. [Client Review Feedback (V1)](#appendix-d--client-review-feedback-v1)
 
 ---
 
@@ -532,6 +535,7 @@ Each functional requirement below states the expected behaviour and the testable
 - This step is necessary because OTP verification alone does not reliably provide or store the user's phone number in the database.
 - Profile completion status shall be tracked; incomplete profiles shall be re-prompted on subsequent logins until complete.
 - The verified phone number shall be stored securely during this flow.
+- Profile-completion reminders shall be delivered proactively via email (Resend) and SMS (BDApps) — not only via the in-app modal — on a capped schedule (e.g. through the daily-reminders cron) until the profile is complete or the user opts out. *(v1.3)*
 
 **Acceptance criteria:**
 
@@ -556,6 +560,7 @@ Each functional requirement below states the expected behaviour and the testable
 - The profile switcher shall be accessible from the main navigation.
 - Profiles shall be creatable, renameable, and deletable.
 - Data isolation shall be enforced both at API middleware and at PostgreSQL RLS levels.
+- A user shall be able to change a profile's tracking mode / goal (`tracking`, `conceive`, `perimenopause`) from profile settings at any time after onboarding; the change shall take effect immediately and shall re-tailor predictions, nudges, and notifications accordingly. *(v1.3)*
 
 **Acceptance criteria:**
 
@@ -673,6 +678,7 @@ Each functional requirement below states the expected behaviour and the testable
 - Grace-period warning notifications shall display renewal reminders (e.g. "Please renew your subscription") without exposing the exact Pro expiration date or cutoff timing. Only reminder/warning messaging shall be shown to encourage renewal. **(deferred — v2)** *(v1.2)*
 - At grace-period expiry, the system shall disable Pro and shall send a final email warning to the user. **(deferred — v2)** *(v1.1)*
 - Transient BDApps errors shall be tolerated; only N consecutive failures shall trigger lapse. **(deferred — v2)** *(v1.1)*
+- The BDApps CAAS charging-flow analysis (failure / retry / recovery handling and transaction reconciliation) is tracked as an OPEN item — see Appendix D §D.7 — pending resolution before its requirements are finalised. *(v1.3)*
 
 **Acceptance criteria:**
 
@@ -784,6 +790,7 @@ Each functional requirement below states the expected behaviour and the testable
 - A QStash worker shall call Resend with React Email templates in the user's preferred language (EN or BN).
 - Per-profile toggles in `notification_preferences` shall let users enable/disable each type independently.
 - Failed Resend deliveries shall be retried by QStash; permanent failures shall be logged for admin review.
+- The notification set shall adapt to each profile's goal. When the goal is `conceive` (trying to conceive), the system shall surface fertile-window alerts and shall suppress period and logging-reminder notifications by default; the user may override this in notification preferences. *(v1.3)*
 
 **Acceptance criteria:**
 
@@ -829,6 +836,7 @@ Each functional requirement below states the expected behaviour and the testable
 - The system shall set `deliveryStatusRequest: 1` on every broadcast so delivery reports are received via the `/api/webhooks/sms/report` webhook.
 - SMS dispatch shall be folded into the existing `/api/cron/daily-reminders` cron job (08:00 UTC) to stay within the 2-job Vercel Hobby limit.
 - The admin panel shall display send history: message content, scheduled date, actual send time, and delivery-status summary (delivered / failed / pending counts sourced from webhook reports).
+- SMS alert selection shall honour the same goal-based filtering as FR-NOTIF: a subscriber whose profile goal is `conceive` shall receive fertile-window SMS only, unless overridden in preferences. *(v1.3)*
 
 **Acceptance criteria:**
 
@@ -886,6 +894,8 @@ Each functional requirement below states the expected behaviour and the testable
 - The system shall produce a prediction-accuracy report computed nightly: per-tier MAE between predicted next-period start and actual logged start.
 - Analytics queries shall respect encryption boundaries; no plaintext export of `symptom_logs.value` shall occur.
 - Analytics shall be admin-only and shall not be exposed to end users.
+- The admin analytics dashboard shall provide configurable chart views: selectable chart type, adjustable date range, and metric selection per panel. *(v1.3)*
+- Admin analytics shall include a feedback-module panel (submission volume, trend, category mix, and rating distribution) sourced from FR-FEEDBACK data. *(v1.3)*
 
 **Acceptance criteria:**
 
@@ -923,6 +933,7 @@ Each functional requirement below states the expected behaviour and the testable
 - The admin panel shall display all feedback submissions with filters by category, date range, and rating.
 - The admin shall be able to export feedback data as CSV.
 - Feedback submissions shall not expose PII of other users; each user shall only see their own submission history.
+- The admin feedback view shall include an analytics dashboard with configurable charts (volume over time, category breakdown, and rating distribution), in addition to the list and filter view. *(v1.3)*
 
 **Acceptance criteria:**
 
@@ -930,6 +941,41 @@ Each functional requirement below states the expected behaviour and the testable
 - The admin panel shall display all feedback with correct category tags and ratings.
 - A user shall not be able to view or access another user's feedback via API manipulation.
 - Feedback export shall contain all fields and shall open cleanly in Excel.
+
+#### FR-NUDGE — Symptom & Period Logging Encouragement *(v1.3)*
+
+**Priority:** P1
+
+**Requirements:**
+
+- The dashboard and calendar shall present contextual "nudge" prompts that encourage the user to log symptoms and periods when recent entries are missing — for example an inviting empty-state call-to-action, a periodic reminder card, or a streak indicator.
+- Nudges shall be visually engaging and animated, in keeping with the product's lively-UI direction, while honouring `@media (prefers-reduced-motion: reduce)`.
+- Prompt copy shall be bilingual (EN + BN) and shall never use shaming or pressuring language.
+- Nudges shall be dismissible, shall not reappear within the same session after dismissal, and shall be frequency-capped to avoid notification fatigue.
+- Logging prompts shall meet the project accessibility rules: `aria-live="polite"` on dynamically inserted prompts, `focus-visible` affordances, and `aria-label` on icon-only controls.
+
+**Acceptance criteria:**
+
+- A profile with no symptom log in the last N days shall see an encouragement prompt on the dashboard.
+- The prompt shall animate on appearance but shall not animate when `prefers-reduced-motion: reduce` is set.
+- The prompt shall render correctly in both English and Bengali.
+
+#### FR-INSIGHTS — User-Facing Analytics & Insights Dashboard *(v1.3)*
+
+**Priority:** P2
+
+**Requirements:**
+
+- The system shall provide an end-user analytics dashboard presenting the user's own cycle and symptom trends (cycle length over time, symptom frequency by category, period regularity, and fertile-window history).
+- Charts shall be configurable: the user shall be able to switch chart type where applicable, select a date range, and choose which metric to view.
+- All charts shall be bilingual (EN + BN), responsive at 375 / 768 / 1280 px, and shall use `font-variant-numeric: tabular-nums` on numeric axes and counters.
+- Personal analytics shall be scoped to profiles the user owns; no cross-user data shall be exposed.
+
+**Acceptance criteria:**
+
+- A user shall view their cycle-length trend and symptom-frequency charts for a selected date range.
+- Changing a chart's configuration shall update the view without a full page reload.
+- A user shall not be able to access another user's analytics via API manipulation.
 
 ### 3.3 Performance Requirements
 
@@ -1142,6 +1188,15 @@ The system shall not be considered production-ready until all of the following g
 - The application shall be responsive at 375 px / 768 px / 1280 px with no broken layouts in either language.
 - Production deploy shall be live and stable on Vercel + Supabase, with all environment variables set.
 
+### Client Review Feedback (v1.3)
+
+- [ ] Logging-encouragement nudges appear for stale profiles, are bilingual, and respect reduced-motion. *(v1.3)*
+- [ ] Profile mode/goal is editable post-onboarding and re-tailors predictions/alerts. *(v1.3)*
+- [ ] TTC profiles receive fertile-window alerts only (email + SMS), by default. *(v1.3)*
+- [ ] Profile-completion reminders are sent via email and SMS until complete. *(v1.3)*
+- [ ] Admin analytics, feedback analytics, and the user-facing insights dashboard all support configurable chart views. *(v1.3)*
+- [ ] BDApps charging analysis is documented as an open item pending resolution. *(v1.3)*
+
 ---
 
 ## 5. Appendices
@@ -1236,7 +1291,28 @@ The matrix below maps each Functional Requirement to its priority bucket, the up
 | FR-SMS       | SMS Notifications & Content Circulation *(v1.1; v1.2)* | P1 | R1 §5, R5                | SMS Notifications & Content Circulation #1–3 | NFR-SEC-07                          |
 | FR-WEBHOOK   | BDApps Inbound Webhooks *(v1.1)*                | P0       | R5                         | BDApps Webhooks #1, #2                     | NFR-SEC-07, CIR-05                    |
 | FR-FEEDBACK  | In-App Feedback Module *(v1.2)*                 | P1       | Client feedback (v1.2)     | Feedback Module #1, #2                     | NFR-SEC-04                            |
+| FR-NUDGE     | Symptom & Period Logging Encouragement *(v1.3)* | P1 | Client review (v1.3), App. D | Client Review Feedback | NFR-I18N-01, NFR-RESP-01 |
+| FR-INSIGHTS  | User-Facing Analytics & Insights Dashboard *(v1.3)* | P2 | Client review (v1.3), App. D | Client Review Feedback | NFR-SEC-01, NFR-RESP-01 |
 
+
+### Appendix D — Client Review Feedback (V1)
+
+This appendix records the client's V1 review round (referenced as "Vesta V1 — Review"). It is distinct from **FR-FEEDBACK**, which specifies the *in-app, end-user* feedback module. Each note below is captured **verbatim** as received from the client, analysed against the current V1 build, and mapped to the requirement that addresses it. Notes #1 and #4 were the same request and are consolidated. *(v1.3)*
+
+| # | Verbatim feedback | Analysis / current state | Decision & resulting requirement | Status |
+| - | ----------------- | ------------------------ | -------------------------------- | ------ |
+| 1, 4 | "Need flashy input prompt to inspire user to log their symptoms" / "more pop-up info to inspire users to input the symptoms" | Symptom logging works, but there are no empty-state prompts, banners, or nudges encouraging the user to log. The two notes are the same request. | New **FR-NUDGE** — Symptom & Period Logging Encouragement. | Planned (v1.3) |
+| 2 | "Setting Profile Needs to have the mode change" | A profile `goal`/mode (`tracking`, `conceive`, `perimenopause`) exists but is only set during onboarding; there is no way to change it afterwards in profile settings. | Amend **FR-PROFILE** — make mode/goal editable post-onboarding. | Planned (v1.3) |
+| 3 | "Trying to conceive should only show the fertile alert notifications" | Fertile-window alerts exist (email for all; SMS for Pro), but notifications are not filtered by the profile goal. | Amend **FR-NOTIF** and **FR-SMS** — goal-based filtering; TTC profiles receive fertile-window alerts only by default. | Planned (v1.3) |
+| 5 | "complete profile alerts - (for mail/numbers)" | Profile completion is prompted only by an in-app modal at login; there are no email or SMS reminders. Infrastructure (Resend, BDApps SMS, daily cron) already exists. | Amend **FR-AUTH** — proactive email + SMS profile-completion reminders. | Planned (v1.3) |
+| 6 | "feed back we need proper analytics dashboard" | Admin analytics is robust but not configurable; there is no analytics view for the feedback module and no user-facing analytics. Client clarified: all dashboards should offer configurable chart views. | Amend **FR-ANALYTICS** (configurable charts + feedback panel) and **FR-FEEDBACK** (feedback analytics); new **FR-INSIGHTS** (user-facing insights dashboard). | Planned (v1.3) |
+| 7 | "BDApps Charging Analysis (Upon Resolving with Arika Apu)" | CAAS charging works (`caas/direct/debit`, transaction tracking) but there is no documented analysis of charge failure / retry / recovery and reconciliation. | See §D.7 below — recorded as an open item; no committed requirement yet. | OPEN — blocked |
+
+#### D.7 — BDApps Charging Analysis *(OPEN — blocked)*
+
+**Status:** OPEN — pending resolution with Arika.
+
+A full analysis of the BDApps CAAS charging flow is required before this can become a formal requirement: success/failure handling on `caas/direct/debit`, retry and recovery behaviour, grace-period interaction, and reconciliation of `CaasTransaction` records against BDApps. Relates to **FR-BILL** and **FR-GATE**. This item will be promoted to a formal requirement (with acceptance criteria) once the charging behaviour is resolved with Arika. *(v1.3)*
 
 ---
 
