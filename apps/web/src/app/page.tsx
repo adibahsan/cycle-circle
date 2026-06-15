@@ -5,7 +5,7 @@ import { getProfiles } from '@/app/queries/profile-queries'
 export default async function RootPage() {
   const user = await getCurrentUser()
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/welcome')
 
   const profiles = await getProfiles()
   redirect(profiles.length > 0 ? '/dashboard' : '/onboarding')

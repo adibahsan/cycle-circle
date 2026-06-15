@@ -1,0 +1,46 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
+import { Languages, Lock, MapPin } from 'lucide-react';
+import { RevealOnScroll } from '@/components/motion/RevealOnScroll';
+
+const PROOF_ITEMS = [
+  { key: 'bilingual' as const, icon: Languages },
+  { key: 'encrypted' as const, icon: Lock },
+  { key: 'forBd' as const, icon: MapPin },
+] as const;
+
+export function SocialProofSection() {
+  const { t } = useTranslation();
+
+  return (
+    <section
+      className="relative py-16 px-4"
+      aria-labelledby="proof-heading"
+    >
+      <div className="max-w-3xl mx-auto">
+        <RevealOnScroll>
+          <h2 id="proof-heading" className="sr-only">
+            {t('app.tagline')}
+          </h2>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {PROOF_ITEMS.map(({ key, icon: Icon }, i) => (
+              <RevealOnScroll key={key} delay={i * 0.08}>
+                <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft">
+                  <Icon
+                    size={15}
+                    className="text-[var(--color-primary)] shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span className="text-sm font-semibold text-[var(--color-text-primary)] whitespace-nowrap">
+                    {t(`landing.proof.${key}`)}
+                  </span>
+                </div>
+              </RevealOnScroll>
+            ))}
+          </div>
+        </RevealOnScroll>
+      </div>
+    </section>
+  );
+}

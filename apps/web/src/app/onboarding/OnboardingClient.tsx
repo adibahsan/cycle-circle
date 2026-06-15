@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import { useHasMounted } from '@/components/motion/useHasMounted';
 import {
   Shield,
   CalendarDays,
@@ -73,9 +74,22 @@ const RELATION_TO_DB: Record<ProfileRelation, 'SELF' | 'WIFE' | 'SISTER' | 'MOTH
   girlfriend: 'GIRLFRIEND',
 };
 
+// ─── Animation constants ───────────────────────────────────────────────────────
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const FADE_UP = {
+  hidden: { opacity: 0, y: 20 },
+  show: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.08, duration: 0.42, ease: EASE },
+  }),
+};
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function ProgressBar({ step }: { step: number }) {
+function ProgressBar({ step, prefersReducedMotion }: { step: number; prefersReducedMotion: boolean }) {
   return (
     <div className="flex items-center gap-1.5 justify-center" aria-label={`Step ${step} of ${TOTAL_STEPS}`}>
       {Array.from({ length: TOTAL_STEPS }, (_, i) => {
@@ -84,13 +98,23 @@ function ProgressBar({ step }: { step: number }) {
           <motion.div
             key={i}
             initial={false}
-            animate={{
-              width: isActive ? 24 : 8,
-              backgroundColor: i + 1 <= step ? 'var(--color-primary)' : 'var(--color-border)',
-              scale: isActive ? [1, 1.2, 1] : 1,
-            }}
+            animate={
+              prefersReducedMotion
+                ? {
+                    width: isActive ? 24 : 8,
+                    backgroundColor: i + 1 <= step ? 'var(--color-primary)' : 'var(--color-border)',
+                    scale: 1,
+                  }
+                : {
+                    width: isActive ? 24 : 8,
+                    backgroundColor: i + 1 <= step ? 'var(--color-primary)' : 'var(--color-border)',
+                    scale: isActive ? [1, 1.2, 1] : 1,
+                  }
+            }
             transition={
-              isActive
+              prefersReducedMotion
+                ? { duration: 0.3 }
+                : isActive
                 ? {
                     width: { duration: 0.3 },
                     backgroundColor: { duration: 0.3 },
@@ -149,43 +173,61 @@ function NumberStepper({
 
 // ─── Step 1: Welcome ──────────────────────────────────────────────────────────
 
-function StepWelcome({ onNext }: { onNext: () => void }) {
+function StepWelcome({ onNext, prefersReducedMotion }: { onNext: () => void; prefersReducedMotion: boolean }) {
   const { t } = useTranslation();
 
   return (
     <div className="flex flex-col items-center text-center gap-8 px-2">
-      {/* Decorative illustration */}
-      <div className="relative w-56 h-56 flex items-center justify-center mt-4">
+      {/* Decorative illustration — staggered fade-up entrance */}
+      <motion.div
+        custom={0}
+        variants={FADE_UP}
+        initial={prefersReducedMotion ? false : 'hidden'}
+        animate="show"
+        className="relative w-56 h-56 flex items-center justify-center mt-4"
+      >
         {/* Outermost ring */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10" />
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10 animate-breathe" />
         {/* Middle ring */}
-        <div className="absolute inset-6 rounded-full bg-gradient-to-br from-[var(--color-primary)]/15 to-[var(--color-accent)]/15" />
+        <div className="absolute inset-6 rounded-full bg-gradient-to-br from-[var(--color-primary)]/15 to-[var(--color-accent)]/15 animate-breathe" style={{ animationDelay: '0.4s' }} />
         {/* Inner circle */}
         <div className="absolute inset-12 rounded-full bg-gradient-to-br from-[var(--color-primary)]/25 to-[var(--color-secondary)]/25" />
-        {/* Floating accent dots */}
-        <div className="absolute top-3 right-8 w-5 h-5 rounded-full bg-[var(--color-accent)]/60" />
-        <div className="absolute bottom-6 left-5 w-4 h-4 rounded-full bg-[var(--color-secondary)]/60" />
-        <div className="absolute top-10 left-4 w-3 h-3 rounded-full bg-[var(--color-primary)]/50" />
-        <div className="absolute bottom-10 right-3 w-3 h-3 rounded-full bg-[var(--color-primary)]/40" />
+        {/* Floating accent dots — CSS-only animation, prefers-reduced-motion safe */}
+        <div className="absolute top-3 right-8 w-5 h-5 rounded-full bg-[var(--color-accent)]/60 animate-float" aria-hidden="true" />
+        <div className="absolute bottom-6 left-5 w-4 h-4 rounded-full bg-[var(--color-secondary)]/60 animate-float" style={{ animationDelay: '0.6s' }} aria-hidden="true" />
+        <div className="absolute top-10 left-4 w-3 h-3 rounded-full bg-[var(--color-primary)]/50 animate-float" style={{ animationDelay: '1.1s' }} aria-hidden="true" />
+        <div className="absolute bottom-10 right-3 w-3 h-3 rounded-full bg-[var(--color-primary)]/40 animate-float" style={{ animationDelay: '1.7s' }} aria-hidden="true" />
         {/* Center logo mark */}
         <div className="relative z-10 w-20 h-20 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center shadow-[0_8px_32px_rgba(232,71,108,0.35)]">
           <span className="text-white text-3xl font-bold">V</span>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="space-y-3">
-        <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">
+      <motion.div
+        custom={1}
+        variants={FADE_UP}
+        initial={prefersReducedMotion ? false : 'hidden'}
+        animate="show"
+        className="space-y-3"
+      >
+        <h1 className="text-fluid-xl font-bold text-[var(--color-text-primary)]">
           {t('onboarding.welcome')}
         </h1>
         <p className="text-[var(--color-text-secondary)] text-base leading-relaxed max-w-xs mx-auto">
           {t('onboarding.personalIntelligence')}
         </p>
-      </div>
+      </motion.div>
 
       {/* Privacy badge */}
-      <div className="flex items-start gap-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border)] rounded-2xl px-4 py-3.5 max-w-xs w-full">
+      <motion.div
+        custom={2}
+        variants={FADE_UP}
+        initial={prefersReducedMotion ? false : 'hidden'}
+        animate="show"
+        className="flex items-start gap-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border)] rounded-2xl px-4 py-3.5 max-w-xs w-full"
+      >
         <div className="mt-0.5 shrink-0 w-8 h-8 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center">
-          <Shield size={16} className="text-[var(--color-primary)]" />
+          <Shield size={16} className="text-[var(--color-primary)]" aria-hidden="true" />
         </div>
         <div className="text-left">
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">
@@ -195,11 +237,19 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
             {t('onboarding.privacyNote')}
           </p>
         </div>
-      </div>
+      </motion.div>
 
-      <Button size="lg" fullWidth onClick={onNext} className="mt-2">
-        {t('onboarding.done')}
-      </Button>
+      <motion.div
+        custom={3}
+        variants={FADE_UP}
+        initial={prefersReducedMotion ? false : 'hidden'}
+        animate="show"
+        className="w-full mt-2"
+      >
+        <Button size="lg" fullWidth onClick={onNext}>
+          {t('onboarding.done')}
+        </Button>
+      </motion.div>
     </div>
   );
 }
@@ -254,7 +304,7 @@ function StepGoal({
   return (
     <div className="flex flex-col gap-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
+        <h2 className="text-fluid-lg font-bold text-[var(--color-text-primary)]">
           {t('onboarding.goal')}
         </h2>
         <p className="text-sm text-[var(--color-text-muted)] mt-1">{t('onboarding.choosePersonalise')}</p>
@@ -265,7 +315,7 @@ function StepGoal({
             goalError ? 'opacity-100' : 'opacity-0'
           }`}
         >
-          {goalError || '\u00A0'}
+          {goalError || ' '}
         </p>
       </div>
 
@@ -348,7 +398,7 @@ function StepCycleHistory({
   return (
     <div className="flex flex-col gap-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
+        <h2 className="text-fluid-lg font-bold text-[var(--color-text-primary)]">
           {t('onboarding.tellAboutCycle')}
         </h2>
         <p className="text-sm text-[var(--color-text-muted)] mt-1">
@@ -357,7 +407,7 @@ function StepCycleHistory({
       </div>
 
       {/* Cycle length stepper */}
-      <Card padding="md" className="space-y-3">
+      <Card padding="md" className="glass space-y-3">
         <div>
           <p className="font-semibold text-[var(--color-text-primary)]">{t('onboarding.cycleLength')}</p>
           <p className="text-xs text-[var(--color-text-muted)]">Usually 21–35 days</p>
@@ -381,7 +431,7 @@ function StepCycleHistory({
       </Card>
 
       {/* Period length stepper */}
-      <Card padding="md" className="space-y-3">
+      <Card padding="md" className="glass space-y-3">
         <div>
           <p className="font-semibold text-[var(--color-text-primary)]">{t('onboarding.periodLength')}</p>
           <p className="text-xs text-[var(--color-text-muted)]">Usually 3–7 days</p>
@@ -404,7 +454,7 @@ function StepCycleHistory({
       </Card>
 
       {/* Last period date */}
-      <Card padding="md">
+      <Card padding="md" className="glass">
         <Input
           id="onboarding-last-period-date"
           label={`${t('onboarding.lastPeriod')} *`}
@@ -418,7 +468,7 @@ function StepCycleHistory({
       </Card>
 
       {/* Flow intensity */}
-      <Card padding="md" className="space-y-3">
+      <Card padding="md" className="glass space-y-3">
         <div>
           <p className="font-semibold text-[var(--color-text-primary)]">{t('dashboard.flowIntensity', 'Flow intensity')}</p>
           <p className="text-xs text-[var(--color-text-muted)]">How heavy is your usual flow?</p>
@@ -478,7 +528,7 @@ function StepProfile({
   return (
     <div className="flex flex-col gap-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
+        <h2 className="text-fluid-lg font-bold text-[var(--color-text-primary)]">
           {t('onboarding.whoIsProfile')}
         </h2>
         <p className="text-sm text-[var(--color-text-muted)] mt-1">
@@ -564,8 +614,10 @@ function StepProfile({
 
 function StepDone({
   state,
+  prefersReducedMotion,
 }: {
   state: OnboardingState;
+  prefersReducedMotion: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -606,7 +658,7 @@ function StepDone({
     },
   ];
 
-  // CSS-only confetti dots
+  // Confetti dots — looping JS animation guarded by prefersReducedMotion
   const confettiDots = [
     { top: '8%', left: '10%', color: 'var(--color-primary)', size: 10, delay: '0s' },
     { top: '5%', left: '80%', color: 'var(--color-secondary)', size: 8, delay: '0.1s' },
@@ -621,35 +673,50 @@ function StepDone({
   return (
     <div className="flex flex-col items-center text-center gap-6">
       {/* Celebration area */}
-      <div className="relative w-full h-32 flex items-center justify-center">
+      <div className="relative w-full h-32 flex items-center justify-center" aria-hidden="true">
         {/* Confetti dots */}
-        {confettiDots.map((dot, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: -20, scale: 0 }}
-            animate={{ opacity: [0, 1, 0.6, 1], y: [-20, 0, -18, 0], scale: [0, 1, 1, 1] }}
-            transition={{
-              delay: parseFloat(dot.delay),
-              duration: 3 + i * 0.4,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              times: [0, 0.15, 0.57, 1],
-            }}
-            className="absolute rounded-full"
-            style={{
-              top: dot.top,
-              left: dot.left,
-              width: dot.size,
-              height: dot.size,
-              backgroundColor: dot.color,
-            }}
-          />
-        ))}
+        {confettiDots.map((dot, i) =>
+          prefersReducedMotion ? (
+            <div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                top: dot.top,
+                left: dot.left,
+                width: dot.size,
+                height: dot.size,
+                backgroundColor: dot.color,
+                opacity: 0.6,
+              }}
+            />
+          ) : (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: -20, scale: 0 }}
+              animate={{ opacity: [0, 1, 0.6, 1], y: [-20, 0, -18, 0], scale: [0, 1, 1, 1] }}
+              transition={{
+                delay: parseFloat(dot.delay),
+                duration: 3 + i * 0.4,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                times: [0, 0.15, 0.57, 1],
+              }}
+              className="absolute rounded-full"
+              style={{
+                top: dot.top,
+                left: dot.left,
+                width: dot.size,
+                height: dot.size,
+                backgroundColor: dot.color,
+              }}
+            />
+          )
+        )}
         {/* Central celebration icon */}
         <motion.div
-          initial={{ scale: 0, rotate: -15 }}
+          initial={prefersReducedMotion ? false : { scale: 0, rotate: -15 }}
           animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+          transition={prefersReducedMotion ? undefined : { type: 'spring', stiffness: 260, damping: 18 }}
           className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center shadow-[0_8px_40px_rgba(232,71,108,0.35)] z-10"
         >
           <Check size={40} className="text-white" strokeWidth={3} />
@@ -657,14 +724,14 @@ function StepDone({
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-3xl font-bold text-[var(--color-text-primary)]">{t('onboarding.allSet')}</h2>
+        <h2 className="text-fluid-xl font-bold text-[var(--color-text-primary)]">{t('onboarding.allSet')}</h2>
         <p className="text-[var(--color-text-secondary)] text-sm">
           {t('onboarding.personalised')}
         </p>
       </div>
 
       {/* Summary card */}
-      <Card padding="md" className="w-full text-left">
+      <Card padding="md" className="glass w-full text-left">
         <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
           {t('onboarding.yourSetup')}
         </p>
@@ -691,6 +758,12 @@ export default function OnboardingClient() {
   const router = useRouter();
   const { t } = useTranslation();
   const { setOnboardingComplete, setActiveProfile } = useAppStore();
+  // Gate on mount so SSR and the first client render agree (both animated), then
+  // apply the reduced-motion fallbacks after mount — avoids a hydration mismatch
+  // for reduced-motion users. Flows to every step via the prop below.
+  const reduceRaw = useReducedMotion() ?? false;
+  const mounted = useHasMounted();
+  const prefersReducedMotion = mounted && reduceRaw;
 
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState<1 | -1>(1);
@@ -822,11 +895,11 @@ export default function OnboardingClient() {
     }
   }
 
-  // ── Animation variants ──
+  // ── Animation variants — x offsets collapse to 0 when reduced motion is preferred ──
 
   const variants = {
     enter: (dir: number) => ({
-      x: dir > 0 ? '60%' : '-60%',
+      x: prefersReducedMotion ? 0 : dir > 0 ? '60%' : '-60%',
       opacity: 0,
     }),
     center: {
@@ -834,7 +907,7 @@ export default function OnboardingClient() {
       opacity: 1,
     },
     exit: (dir: number) => ({
-      x: dir > 0 ? '-60%' : '60%',
+      x: prefersReducedMotion ? 0 : dir > 0 ? '-60%' : '60%',
       opacity: 0,
     }),
   };
@@ -844,7 +917,7 @@ export default function OnboardingClient() {
   function renderStep() {
     switch (step) {
       case 1:
-        return <StepWelcome onNext={goNext} />;
+        return <StepWelcome onNext={goNext} prefersReducedMotion={prefersReducedMotion} />;
       case 2:
         return (
           <StepGoal
@@ -908,10 +981,10 @@ export default function OnboardingClient() {
                   stepErrors.submit ? 'opacity-100' : 'opacity-0'
                 }`}
               >
-                {stepErrors.submit || '\u00A0'}
+                {stepErrors.submit || ' '}
               </p>
             </div>
-            <StepDone state={state} />
+            <StepDone state={state} prefersReducedMotion={prefersReducedMotion} />
           </>
         );
       default:
@@ -921,19 +994,19 @@ export default function OnboardingClient() {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-primary)] flex flex-col max-w-md mx-auto relative overflow-hidden">
-        {/* Floating background orbs */}
+        {/* Floating background orbs — stopped when reduced motion is preferred */}
         <motion.div
           aria-hidden="true"
           className="pointer-events-none absolute top-[-80px] right-[-60px] w-72 h-72 rounded-full opacity-[0.08]"
           style={{ background: 'radial-gradient(circle, #e8476c 0%, transparent 70%)' }}
-          animate={{ x: [0, 20, 0], y: [0, -15, 0] }}
+          animate={prefersReducedMotion ? undefined : { x: [0, 20, 0], y: [0, -15, 0] }}
           transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
           aria-hidden="true"
           className="pointer-events-none absolute bottom-[-60px] left-[-80px] w-80 h-80 rounded-full opacity-[0.08]"
           style={{ background: 'radial-gradient(circle, #9b7fd4 0%, transparent 70%)' }}
-          animate={{ x: [0, -12, 0], y: [0, 18, 0] }}
+          animate={prefersReducedMotion ? undefined : { x: [0, -12, 0], y: [0, 18, 0] }}
           transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
         />
 
@@ -952,7 +1025,7 @@ export default function OnboardingClient() {
             </div>
           </div>
           {/* Progress bar */}
-          <ProgressBar step={step} />
+          <ProgressBar step={step} prefersReducedMotion={prefersReducedMotion} />
           <div className="pb-2" />
         </div>
 
@@ -966,10 +1039,14 @@ export default function OnboardingClient() {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{
-                x: { type: 'spring', stiffness: 280, damping: 30 },
-                opacity: { duration: 0.18 },
-              }}
+              transition={
+                prefersReducedMotion
+                  ? { opacity: { duration: 0.15 } }
+                  : {
+                      x: { type: 'spring', stiffness: 280, damping: 30 },
+                      opacity: { duration: 0.18 },
+                    }
+              }
               className="absolute inset-0 overflow-y-auto px-5 py-4"
             >
               {renderStep()}
@@ -1001,7 +1078,7 @@ export default function OnboardingClient() {
                   fullWidth
                   onClick={goNext}
                 >
-                  {t('onboarding.next')} <ChevronRight size={18} className="ml-1" />
+                  {t('onboarding.next')} <ChevronRight size={18} className="ml-1" aria-hidden="true" />
                 </Button>
               )}
             </div>
