@@ -395,7 +395,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
           style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}
         >
           <Stepper
-            label="Cycle length"
+            label={t('profiles.cycleLength')}
             value={cycleLength}
             min={21}
             max={45}
@@ -403,7 +403,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
           />
           <div style={{ height: '1px', background: 'var(--color-border)' }} />
           <Stepper
-            label="Period length"
+            label={t('profiles.periodLength')}
             value={periodLength}
             min={1}
             max={10}
@@ -472,7 +472,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
                 <span className="mr-1" aria-hidden="true">
                   {f === 'light' ? '💧' : f === 'medium' ? '🩸' : '🌊'}
                 </span>
-                {f === 'light' ? 'Light' : f === 'medium' ? 'Medium' : 'Heavy'}
+                {f === 'light' ? t('profiles.flowLight') : f === 'medium' ? t('profiles.flowMedium') : t('profiles.flowHeavy')}
               </button>
             ))}
           </div>
@@ -646,7 +646,7 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
             style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}
           >
             <Stepper
-              label="Cycle length"
+              label={t('profiles.cycleLength')}
               value={cycleLength}
               min={21}
               max={45}
@@ -654,7 +654,7 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
             />
             <div style={{ height: '1px', background: 'var(--color-border)' }} />
             <Stepper
-              label="Period length"
+              label={t('profiles.periodLength')}
               value={periodLength}
               min={1}
               max={10}
@@ -897,7 +897,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             {t('profiles.title')}
           </h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-            {profiles.length} / {MAX_PROFILES} profiles
+            {profiles.length} / {MAX_PROFILES} {t('nav.profiles').toLowerCase()}
           </p>
         </motion.div>
 
@@ -942,7 +942,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             >
               <Check size={14} color="#fff" />
               <span className="text-white text-sm font-semibold">
-                Switched to {profiles.find((p) => p.id === justSwitched)?.name}
+                {t('profiles.switchedTo', { name: profiles.find((p) => p.id === justSwitched)?.name })}
               </span>
             </motion.div>
           )}
@@ -977,7 +977,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                       {t('profiles.maxReached')}
                     </p>
                     <p className="text-xs text-[var(--color-text-muted)]">
-                      Delete a profile to add a new one
+                      {t('profiles.deleteToAdd')}
                     </p>
                   </div>
                 ) : (

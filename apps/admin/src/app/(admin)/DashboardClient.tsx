@@ -50,16 +50,14 @@ function formatNumber(n: number) {
 function ChartTooltip({
   active,
   payload,
-  label,
 }: {
   active?: boolean
-  payload?: { value: number }[]
-  label?: string
+  payload?: { value: number; payload: { date: string } }[]
 }) {
   if (!active || !payload?.length) return null
   return (
     <div className="glass rounded-xl px-3 py-2 shadow-soft border border-[var(--color-border)]">
-      <p className="text-xs font-semibold text-[var(--color-text-primary)]">{formatDate(label ?? '')}</p>
+      <p className="text-xs font-semibold text-[var(--color-text-primary)]">{formatDate(payload[0].payload.date)}</p>
       <p className="text-sm font-bold text-[var(--color-primary)]">
         {payload[0].value} new users
       </p>
@@ -71,11 +69,7 @@ export function DashboardClient({ stats, userTrend }: DashboardClientProps) {
   const growthLabel = 'vs last week'
   const growthPositive = stats.userGrowth >= 0
 
-  // Thin out x-axis labels to avoid overlap (show every 5th)
-  const chartData = userTrend.map((d, i) => ({
-    ...d,
-    displayDate: i % 5 === 0 ? formatDate(d.date) : '',
-  }))
+  const chartData = userTrend
 
   return (
     <div className="space-y-8 page-enter">
@@ -179,16 +173,18 @@ export function DashboardClient({ stats, userTrend }: DashboardClientProps) {
                 strokeOpacity={0.6}
               />
               <XAxis
-                dataKey="displayDate"
+                dataKey="date"
                 tick={{ fontSize: 11, fill: 'var(--color-text-muted)', fontFamily: 'var(--font-display)' }}
                 axisLine={false}
                 tickLine={false}
+                tickFormatter={(val: string, i: number) => i % 5 === 0 ? formatDate(val) : ''}
               />
               <YAxis
                 tick={{ fontSize: 11, fill: 'var(--color-text-muted)', fontFamily: 'var(--font-display)' }}
                 axisLine={false}
                 tickLine={false}
                 allowDecimals={false}
+                domain={[0, (dataMax: number) => Math.max(dataMax, 1)]}
               />
               <Tooltip
                 content={<ChartTooltip />}

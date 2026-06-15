@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import i18n from '@vesta/shared/utils/i18n'
 
 interface AppStore {
   // Language
@@ -24,7 +25,10 @@ export const useAppStore = create<AppStore>()(
   persist(
     (set) => ({
       language: 'en',
-      setLanguage: (language) => set({ language }),
+      setLanguage: (language) => {
+        i18n.changeLanguage(language)
+        set({ language })
+      },
 
       theme: 'light',
       setTheme: (theme) => set({ theme }),
@@ -38,6 +42,9 @@ export const useAppStore = create<AppStore>()(
     }),
     {
       name: 'vesta-store',
+      onRehydrateStorage: () => (state) => {
+        if (state?.language) i18n.changeLanguage(state.language)
+      },
     },
   ),
 )

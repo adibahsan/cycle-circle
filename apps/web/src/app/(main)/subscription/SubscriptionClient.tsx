@@ -28,23 +28,30 @@ interface SubscriptionClientProps {
 type UpgradeStep = 'idle' | 'confirm' | 'loading' | 'success' | 'error'
 
 // ── Feature rows ───────────────────────────────────────────────────────────────
-const COMPARISON_FEATURES = [
-  { key: 'cycleTracking', label: 'Cycle Tracking', free: true, pro: true },
-  { key: 'calendar', label: 'Calendar View', free: true, pro: true },
-  { key: 'symptoms', label: 'Symptom Logging', free: true, pro: true },
-  { key: 'content', label: 'Health Articles', free: true, pro: true },
-  { key: 'smsAlerts', label: 'SMS Alerts', free: false, pro: true },
-  { key: 'export', label: 'Data Export', free: false, pro: true },
-  { key: 'predictions', label: 'Advanced Predictions', free: false, pro: true },
-  { key: 'adFree', label: 'Ad-free Experience', free: false, pro: true },
+const COMPARISON_FEATURE_KEYS = [
+  { key: 'cycleTracking', labelKey: 'subscription.cycleTracking', free: true, pro: true },
+  { key: 'calendar', labelKey: 'subscription.calendarView', free: true, pro: true },
+  { key: 'symptoms', labelKey: 'subscription.symptomLogging', free: true, pro: true },
+  { key: 'content', labelKey: 'subscription.healthArticles', free: true, pro: true },
+  { key: 'smsAlerts', labelKey: 'subscription.smsAlertsShort', free: false, pro: true },
+  { key: 'export', labelKey: 'subscription.dataExport', free: false, pro: true },
+  { key: 'predictions', labelKey: 'subscription.advancedPredictions', free: false, pro: true },
+  { key: 'adFree', labelKey: 'subscription.adFree', free: false, pro: true },
 ]
 
-const PRO_FEATURES = [
-  { icon: MessageSquare, label: 'SMS Period & Fertile Alerts' },
-  { icon: BarChart2, label: 'Advanced Cycle Insights' },
-  { icon: Shield, label: 'Priority Support' },
-  { icon: Download, label: 'Data Export' },
-  { icon: Star, label: 'Ad-free Experience' },
+const PRO_FEATURE_KEYS = [
+  { icon: MessageSquare, labelKey: 'subscription.smsAlertsFull' },
+  { icon: BarChart2, labelKey: 'subscription.advancedInsightsFull' },
+  { icon: Shield, labelKey: 'subscription.prioritySupportFull' },
+  { icon: Download, labelKey: 'subscription.dataExport' },
+  { icon: Star, labelKey: 'subscription.adFree' },
+]
+
+const FREE_FEATURE_KEYS = [
+  'subscription.cycleTracking',
+  'subscription.calendarView',
+  'subscription.symptomLogging',
+  'subscription.healthArticles',
 ]
 
 // ── Trial countdown helper ─────────────────────────────────────────────────────
@@ -74,6 +81,7 @@ interface BDAppsModalProps {
 }
 
 function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
+  const { t } = useTranslation()
   return (
     <AnimatePresence>
       <motion.div
@@ -117,16 +125,16 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                     <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
                       BDApps CAAS
                     </p>
-                    <p id="bdapps-modal-title" className="text-sm font-bold text-[var(--color-text-primary)]">Mobile Billing</p>
+                    <p id="bdapps-modal-title" className="text-sm font-bold text-[var(--color-text-primary)]">{t('subscription.mobileBilling')}</p>
                   </div>
                 </div>
 
                 <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-4 space-y-2">
-                  <p className="text-sm text-[var(--color-text-muted)]">Charge to mobile balance</p>
+                  <p className="text-sm text-[var(--color-text-muted)]">{t('subscription.chargeMobile')}</p>
                   <p className="text-2xl font-bold text-[var(--color-text-primary)]">৳5</p>
-                  <p className="text-xs text-[var(--color-text-muted)]">per day · Vesta Pro</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">{t('subscription.perDay')}</p>
                   <div className="pt-2 border-t border-[var(--color-border)]">
-                    <p className="text-xs text-[var(--color-text-secondary)]">Billing number</p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('subscription.billingNumber')}</p>
                     <p className="text-sm font-semibold text-[var(--color-text-primary)] font-mono">
                       +{phone}
                     </p>
@@ -134,13 +142,12 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                 </div>
 
                 <p className="text-xs text-[var(--color-text-muted)] text-center leading-relaxed">
-                  By confirming, ৳5 will be deducted from your mobile balance each day. Cancel
-                  anytime.
+                  {t('subscription.confirmDeduction')}
                 </p>
 
                 <div className="grid grid-cols-2 gap-3">
                   <Button variant="outline" onClick={onCancel} fullWidth>
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     variant="primary"
@@ -148,7 +155,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                     fullWidth
                     className="gradient-primary border-0"
                   >
-                    Confirm
+                    {t('subscription.confirm')}
                   </Button>
                 </div>
               </div>
@@ -164,7 +171,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                   <Zap size={24} className="text-white" />
                 </motion.div>
                 <p className="text-sm font-medium text-[var(--color-text-secondary)]">
-                  Processing payment…
+                  {t('subscription.processing')}
                 </p>
               </div>
             )}
@@ -186,10 +193,10 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                 </motion.div>
                 <div className="text-center space-y-1">
                   <h3 className="text-xl font-bold text-[var(--color-text-primary)]">
-                    Welcome to Pro!
+                    {t('subscription.welcomePro')}
                   </h3>
                   <p className="text-sm text-[var(--color-text-muted)]">
-                    Your account has been upgraded. Enjoy all Pro features.
+                    {t('subscription.upgradedMsg')}
                   </p>
                 </div>
                 <Button
@@ -198,7 +205,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                   fullWidth
                   className="gradient-primary border-0"
                 >
-                  Get Started
+                  {t('subscription.getStarted')}
                 </Button>
               </motion.div>
             )}
@@ -210,14 +217,14 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-[var(--color-text-primary)] mb-1">
-                    Payment Failed
+                    {t('subscription.paymentFailed')}
                   </h3>
                   <p className="text-sm text-[var(--color-text-muted)]">
-                    Something went wrong. Please try again later.
+                    {t('subscription.paymentFailedMsg')}
                   </p>
                 </div>
                 <Button variant="outline" onClick={onCancel} fullWidth>
-                  Close
+                  {t('subscription.close')}
                 </Button>
               </div>
             )}
@@ -253,7 +260,10 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: 5 }),
       })
-      if (!res.ok) throw new Error('Subscribe request failed')
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        throw new Error(body?.error?.message ?? `Subscribe request failed (${res.status})`)
+      }
       setUpgradeStep('success')
     } catch (err) {
       console.error(err)
@@ -280,7 +290,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
           {t('subscription.title')}
         </h1>
         <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-          Unlock the full power of Vesta
+          {t('subscription.unlockTagline')}
         </p>
       </motion.div>
 
@@ -299,11 +309,11 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                   {t('subscription.currentPlan')}
                 </p>
                 <p className="text-lg font-bold text-[var(--color-text-primary)]">
-                  {isPro ? 'Vesta Pro' : 'Vesta Free'}
+                  {isPro ? t('subscription.vestaPro') : t('subscription.vestaFree')}
                 </p>
                 {hoursLeft !== null && !isPro && (
                   <p className="text-xs text-[var(--color-accent)] font-medium">
-                    Trial · {hoursLeft}h remaining
+                    {t('subscription.trialHoursLeft', { hours: hoursLeft })}
                   </p>
                 )}
               </div>
@@ -321,23 +331,23 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
 
             <div className="mt-4 space-y-1.5">
               {isPro ? (
-                PRO_FEATURES.map(({ icon: Icon, label }) => (
+                PRO_FEATURE_KEYS.map(({ icon: Icon, labelKey }) => (
                   <div
-                    key={label}
+                    key={labelKey}
                     className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
                   >
                     <Check size={14} className="text-[var(--color-primary)] shrink-0" />
-                    {label}
+                    {t(labelKey)}
                   </div>
                 ))
               ) : (
-                ['Cycle Tracking', 'Calendar', 'Symptom Logging', 'Health Articles'].map(f => (
+                FREE_FEATURE_KEYS.map(key => (
                   <div
-                    key={f}
+                    key={key}
                     className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
                   >
                     <Check size={14} className="text-[var(--color-text-muted)] shrink-0" />
-                    {f}
+                    {t(key)}
                   </div>
                 ))
               )}
@@ -374,15 +384,15 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                 </div>
 
                 <div className="space-y-2">
-                  {PRO_FEATURES.map(({ icon: Icon, label }) => (
+                  {PRO_FEATURE_KEYS.map(({ icon: Icon, labelKey }) => (
                     <div
-                      key={label}
+                      key={labelKey}
                       className="flex items-center gap-2.5 text-white/90 text-sm"
                     >
                       <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                         <Check size={12} className="text-white" />
                       </div>
-                      {label}
+                      {t(labelKey)}
                     </div>
                   ))}
                 </div>
@@ -391,7 +401,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                   onClick={handleUpgradeClick}
                   className="w-full bg-white text-[var(--color-primary)] font-bold py-3.5 rounded-xl text-base hover:bg-white/90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
                 >
-                  Upgrade to Pro
+                  {t('subscription.upgradeButton')}
                 </button>
               </div>
             </div>
@@ -406,13 +416,13 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
         transition={{ duration: 0.42, delay: 0.15 }}
       >
         <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
-          Free vs Pro
+          {t('subscription.freeVsPro')}
         </h2>
 
         <div className="rounded-2xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-card)]">
           <div className="grid grid-cols-3 bg-[var(--color-bg-secondary)]">
             <div className="px-4 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide col-span-1">
-              Feature
+              {t('subscription.featureHeader')}
             </div>
             <div className="px-2 py-3 text-center">
               <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
@@ -426,7 +436,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
             </div>
           </div>
 
-          {COMPARISON_FEATURES.map(({ key, label, free, pro }, i) => (
+          {COMPARISON_FEATURE_KEYS.map(({ key, labelKey, free, pro }, i) => (
             <div
               key={key}
               className={`grid grid-cols-3 border-t border-[var(--color-border)] ${
@@ -434,7 +444,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               }`}
             >
               <div className="px-4 py-3 text-sm md:text-base text-[var(--color-text-secondary)] col-span-1">
-                {label}
+                {t(labelKey)}
               </div>
               <div className="px-2 py-3 flex justify-center items-center">
                 {free ? (
@@ -458,7 +468,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
       {/* ── Footer note ── */}
       {!isPro && (
         <p className="text-center text-xs text-[var(--color-text-muted)] pb-2">
-          Cancel anytime. No hidden fees.
+          {t('subscription.cancelAnytime')}
         </p>
       )}
 

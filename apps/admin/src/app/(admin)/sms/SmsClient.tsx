@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useCallback, useState, useTransition, useRef, useEffect } from 'react'
-import { Plus, Send, Trash2, X, CalendarClock } from 'lucide-react'
+import { Plus, Send, Trash2, X } from 'lucide-react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input } from '@/components/ui/Input'
+import { DateTimePicker } from '@/components/ui/DateTimePicker'
 import { createSmsBroadcast, deleteSmsBroadcast, sendSmsBroadcast } from '@/app/actions/sms-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
@@ -212,22 +213,13 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
               Schedule For{' '}
               <span className="text-[var(--color-text-muted)] font-normal">(optional — leave blank to save as draft)</span>
             </label>
-            <div className="relative">
-              <CalendarClock
-                size={15}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
-              />
-              <input
-                id="sms-scheduled"
-                type="datetime-local"
-                value={scheduledFor}
-                onChange={(e) => setScheduledFor(e.target.value)}
-                min={new Date().toISOString().slice(0, 16)}
-                name="scheduledAt"
-              autoComplete="off"
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] pl-9 pr-4 py-3 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
-              />
-            </div>
+            <DateTimePicker
+              id="sms-scheduled"
+              aria-label="Schedule date and time"
+              value={scheduledFor}
+              onChange={setScheduledFor}
+              minDate={new Date()}
+            />
           </div>
 
           {/* Status preview */}
@@ -466,7 +458,7 @@ export function SmsClient({ data }: SmsClientProps) {
   ]
 
   return (
-    <div className="space-y-6 page-enter">
+    <div className="flex flex-1 flex-col gap-6 page-enter">
       <AdminPageHeader
         title="SMS Broadcasts"
         description={`${data.total.toLocaleString()} broadcast${data.total !== 1 ? 's' : ''} total`}
@@ -512,6 +504,8 @@ export function SmsClient({ data }: SmsClientProps) {
         currentPage={currentPage}
         totalPages={data.totalPages}
         pageSize={currentPageSize}
+        total={data.total}
+        itemLabel="broadcast"
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
       />

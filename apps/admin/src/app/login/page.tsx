@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Eye, EyeOff } from 'lucide-react'
 import VestaLogo from '@/components/ui/VestaLogo'
 
 type FormState = 'idle' | 'loading' | 'error'
@@ -10,20 +11,18 @@ export default function AdminLoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [state, setState] = useState<FormState>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!email.trim() || !password) return
+  async function login(loginEmail: string, loginPassword: string) {
     setState('loading')
     setErrorMsg('')
-
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword }),
       })
 
       if (!res.ok) {
@@ -39,6 +38,16 @@ export default function AdminLoginPage() {
       setErrorMsg('Network error. Please check your connection.')
       setState('error')
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!email.trim() || !password) return
+    await login(email, password)
+  }
+
+  async function handleDevLogin() {
+    await login('admin@vesta.health', 'admin123')
   }
 
   return (
@@ -87,18 +96,32 @@ export default function AdminLoginPage() {
               <label htmlFor="password" className="block text-sm font-semibold text-[var(--color-text-secondary)]">
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password…"
-                disabled={state === 'loading'}
-                className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 transition-colors disabled:opacity-60"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password…"
+                  disabled={state === 'loading'}
+                  className="w-full px-4 py-3 pr-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 transition-colors disabled:opacity-60"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  disabled={state === 'loading'}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded transition-colors disabled:opacity-60"
+                >
+                  {showPassword
+                    ? <Eye size={16} aria-hidden="true" />
+                    : <EyeOff size={16} aria-hidden="true" />
+                  }
+                </button>
+              </div>
             </div>
 
             {state === 'error' && (
@@ -121,6 +144,17 @@ export default function AdminLoginPage() {
                 'Sign in'
               )}
             </button>
+
+            {process.env.NODE_ENV === 'development' && (
+              <button
+                type="button"
+                onClick={handleDevLogin}
+                disabled={state === 'loading'}
+                className="w-full py-2.5 rounded-xl border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] text-xs font-medium hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Dev — sign in as admin@vesta.health
+              </button>
+            )}
           </form>
         </div>
 

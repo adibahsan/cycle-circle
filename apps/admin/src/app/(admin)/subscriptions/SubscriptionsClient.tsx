@@ -329,7 +329,7 @@ export function SubscriptionsClient({ data }: SubscriptionsClientProps) {
 
   return (
     <>
-      <div className="space-y-6 page-enter">
+      <div className="flex flex-1 flex-col gap-6 page-enter">
         <AdminPageHeader
           title="Subscriptions"
           description={`${data.total.toLocaleString()} total subscriptions`}
@@ -375,6 +375,8 @@ export function SubscriptionsClient({ data }: SubscriptionsClientProps) {
           currentPage={currentPage}
           totalPages={data.totalPages}
           pageSize={currentPageSize}
+          total={data.total}
+          itemLabel="subscription"
           onPageChange={handlePageChange}
           onPageSizeChange={handlePageSizeChange}
         />

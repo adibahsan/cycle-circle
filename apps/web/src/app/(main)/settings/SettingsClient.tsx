@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
@@ -28,7 +28,8 @@ import {
 import { useAppStore } from '@/lib/store'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { updateNotificationPrefs, exportUserDataCsv } from '@/app/actions/settings-actions'
+import * as XLSX from 'xlsx'
+import { updateNotificationPrefs, exportUserDataCsv, exportUserDataRows } from '@/app/actions/settings-actions'
 import { updateContactInfo } from '@/app/actions/user-actions'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { Language, Theme } from '@vesta/shared/types'
@@ -135,36 +136,61 @@ function Toggle({
   )
 }
 
-interface ToastMsg {
-  id: number
+interface ToastState {
   text: string
+  seq: number // bumped on every message so the inner text crossfades
 }
 
+// Single-slot toast: only ever one on screen. New messages swap the text in
+// place (and reset the auto-dismiss timer) rather than stacking a new toast.
 function useToast() {
-  const [toasts, setToasts] = useState<ToastMsg[]>([])
+  const [toast, setToast] = useState<ToastState | null>(null)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const show = useCallback((text: string) => {
-    const id = Date.now()
-    setToasts(prev => [...prev, { id, text }])
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000)
+    setToast(prev => ({ text, seq: (prev?.seq ?? 0) + 1 }))
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => setToast(null), 2500)
   }, [])
-  return { toasts, show }
+
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
+
+  return { toast, show }
 }
 
-function ToastStack({ toasts }: { toasts: ToastMsg[] }) {
+function Toast({ toast }: { toast: ToastState | null }) {
   return (
-    <div aria-live="polite" aria-atomic="true" className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 w-full max-w-xs px-4 pointer-events-none">
+    <div
+      aria-live="polite"
+      aria-atomic="true"
+      className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] w-full max-w-xs px-4 pointer-events-none"
+    >
       <AnimatePresence>
-        {toasts.map(t => (
+        {toast && (
           <motion.div
-            key={t.id}
+            key="toast-bar"
             initial={{ opacity: 0, y: -16, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.94 }}
-            className="rounded-xl bg-[var(--color-text-primary)] text-white text-sm font-medium px-4 py-3 shadow-glow text-center"
+            transition={{ type: 'spring', damping: 24, stiffness: 320 }}
+            className="grid rounded-xl bg-[var(--color-text-primary)] text-white text-sm font-medium px-4 py-3 shadow-glow text-center"
           >
-            {t.text}
+            {/* Spans share one grid cell, so swapping text crossfades without
+                shifting the bar's position or height. */}
+            <AnimatePresence>
+              <motion.span
+                key={toast.seq}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                className="col-start-1 row-start-1"
+              >
+                {toast.text}
+              </motion.span>
+            </AnimatePresence>
           </motion.div>
-        ))}
+        )}
       </AnimatePresence>
     </div>
   )
@@ -222,7 +248,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
   const router = useRouter()
   const { language, setLanguage, theme, setTheme, activeProfileId, setActiveProfile } = useAppStore()
 
-  const { toasts, show: showToast } = useToast()
+  const { toast, show: showToast } = useToast()
 
   // Find the active profile's notification prefs, defaulting to all-on
   const activeProfile = profiles.find(p => p.id === activeProfileId) ?? profiles[0]
@@ -246,6 +272,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
   const [contactPhone, setContactPhone] = useState('')
   const [contactSaving, setContactSaving] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const exportingRef = useRef(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
@@ -261,21 +288,36 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
   }
 
   // ── Notification pref handler ──
-  const handleNotifChange = async (
+  const savedPrefsRef = useRef(localPrefs)
+  const pendingPrefsRef = useRef(localPrefs)
+  const notifDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleNotifChange = (
     key: 'periodAlert' | 'fertileWindow' | 'loggingReminder',
     value: boolean,
   ) => {
     if (!activeProfile) return
     const updated = { ...localPrefs, [key]: value }
     setLocalPrefs(updated)
-    try {
-      await updateNotificationPrefs({ profileId: activeProfile.id, [key]: value })
-      showToast('Preferences saved')
-    } catch {
-      // Revert on error
-      setLocalPrefs(localPrefs)
-      showToast('Failed to save preferences')
-    }
+    pendingPrefsRef.current = updated
+
+    if (notifDebounceRef.current) clearTimeout(notifDebounceRef.current)
+    notifDebounceRef.current = setTimeout(async () => {
+      const toSave = pendingPrefsRef.current
+      try {
+        await updateNotificationPrefs({
+          profileId: activeProfile.id,
+          periodAlert: toSave.periodAlert,
+          fertileWindow: toSave.fertileWindow,
+          loggingReminder: toSave.loggingReminder,
+        })
+        savedPrefsRef.current = toSave
+        showToast(t('settings.prefsSaved'))
+      } catch {
+        setLocalPrefs(savedPrefsRef.current)
+        showToast(t('settings.prefsFailed'))
+      }
+    }, 600)
   }
 
   // ── Contact info handlers ──
@@ -284,12 +326,12 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
     setContactSaving(true)
     try {
       await updateContactInfo({ email: contactEmail })
-      showToast('Email added successfully')
+      showToast(t('settings.emailAdded'))
       setAddingEmail(false)
       setContactEmail('')
       router.refresh()
     } catch {
-      showToast('Failed to add email. It may already be in use.')
+      showToast(t('settings.emailAddFailed'))
     } finally {
       setContactSaving(false)
     }
@@ -300,12 +342,12 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
     setContactSaving(true)
     try {
       await updateContactInfo({ phone: contactPhone })
-      showToast('Phone number added successfully')
+      showToast(t('settings.phoneAdded'))
       setAddingPhone(false)
       setContactPhone('')
       router.refresh()
     } catch {
-      showToast('Failed to add phone. Please enter a valid Bangladesh number.')
+      showToast(t('settings.phoneAddFailed'))
     } finally {
       setContactSaving(false)
     }
@@ -325,32 +367,38 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
   }
 
   const handleExportCsv = async () => {
-    if (exporting) return
+    if (exportingRef.current) return
+    exportingRef.current = true
     setExporting(true)
-    showToast('Preparing CSV export…')
+    showToast(t('settings.csvPreparing'))
     try {
       const { csv, filename } = await exportUserDataCsv()
       triggerDownload(csv, filename)
-      showToast('CSV downloaded')
+      showToast(t('settings.csvDownloaded'))
     } catch {
-      showToast('Export failed. Please try again.')
+      showToast(t('settings.exportFailed'))
     } finally {
+      exportingRef.current = false
       setExporting(false)
     }
   }
 
   const handleExportExcel = async () => {
-    if (exporting) return
+    if (exportingRef.current) return
+    exportingRef.current = true
     setExporting(true)
-    showToast('Preparing export…')
+    showToast(t('settings.exportPreparing'))
     try {
-      const { csv, filename } = await exportUserDataCsv()
-      const xlsxFilename = filename.replace('.csv', '.xlsx.csv')
-      triggerDownload(csv, xlsxFilename)
-      showToast('File downloaded')
+      const { periodLogs, symptomLogs, filename } = await exportUserDataRows()
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(periodLogs), 'Period Logs')
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(symptomLogs), 'Symptom Logs')
+      XLSX.writeFile(wb, filename)
+      showToast(t('settings.exportDone'))
     } catch {
-      showToast('Export failed. Please try again.')
+      showToast(t('settings.exportFailed'))
     } finally {
+      exportingRef.current = false
       setExporting(false)
     }
   }
@@ -378,7 +426,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
 
   return (
     <>
-      <ToastStack toasts={toasts} />
+      <Toast toast={toast} />
 
       <div className="py-4 space-y-6">
         {/* ── Page title ── */}
@@ -402,7 +450,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader icon={Globe} title="Language & Appearance" />
+              <SectionHeader icon={Globe} title={t('settings.languageAndAppearance')} />
               <Card padding="md" className="space-y-5">
                 {/* Language */}
                 <div className="flex items-center justify-between gap-4">
@@ -410,7 +458,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                     <p className="text-sm font-semibold text-[var(--color-text-primary)]">
                       {t('settings.language')}
                     </p>
-                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">App display language</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('settings.languageDesc')}</p>
                   </div>
                   <SegmentedControl<Language>
                     options={[
@@ -430,12 +478,12 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                     <p className="text-sm font-semibold text-[var(--color-text-primary)]">
                       {t('settings.theme')}
                     </p>
-                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Visual appearance</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('settings.themeDesc')}</p>
                   </div>
                   <SegmentedControl<Theme>
                     options={[
-                      { label: '☀️ Light', value: 'light' },
-                      { label: '🌙 Dark', value: 'dark' },
+                      { label: `☀️ ${t('settings.lightMode')}`, value: 'light' },
+                      { label: `🌙 ${t('settings.darkMode')}`, value: 'dark' },
                     ]}
                     value={theme}
                     onChange={handleThemeChange}
@@ -457,17 +505,17 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                   {
                     key: 'periodAlert' as const,
                     label: t('settings.periodAlert'),
-                    desc: 'Get notified 2 days before your period',
+                    desc: t('settings.periodAlertDesc'),
                   },
                   {
                     key: 'fertileWindow' as const,
                     label: t('settings.fertileAlert'),
-                    desc: 'Know when your fertile window opens',
+                    desc: t('settings.fertileAlertDesc'),
                   },
                   {
                     key: 'loggingReminder' as const,
                     label: t('settings.reminderAlert'),
-                    desc: 'Daily reminder to log your symptoms',
+                    desc: t('settings.reminderAlertDesc'),
                   },
                 ].map(({ key, label, desc }) => (
                   <div key={key} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
@@ -499,7 +547,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
               <SectionHeader icon={Download} title={t('settings.export')} />
               <Card padding="md" className="space-y-3">
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  Exports data for your active profile only
+                  {t('settings.exportDesc')}
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <button
@@ -533,13 +581,13 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader icon={User} title="Account" />
+              <SectionHeader icon={User} title={t('settings.account')} />
               <Card padding="md" className="space-y-2">
                 {/* Account info */}
                 <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-3 space-y-1.5">
                   {user.phone && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-[var(--color-text-muted)]">Phone</span>
+                      <span className="text-xs text-[var(--color-text-muted)]">{t('settings.phone')}</span>
                       <span className="text-xs font-semibold text-[var(--color-text-primary)] font-mono">
                         {user.phone.startsWith('+') ? user.phone : `+${user.phone}`}
                       </span>
@@ -547,7 +595,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                   )}
                   {user.email && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-[var(--color-text-muted)]">Email</span>
+                      <span className="text-xs text-[var(--color-text-muted)]">{t('settings.email')}</span>
                       <span className="text-xs font-semibold text-[var(--color-text-primary)]">
                         {user.email}
                       </span>
@@ -563,7 +611,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                             type="email"
                             name="email"
                             autoComplete="email"
-                            placeholder="Enter email address…"
+                            placeholder={t('settings.emailInputPlaceholder')}
                             value={contactEmail}
                             onChange={(e) => setContactEmail(e.target.value)}
                             className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
@@ -574,13 +622,13 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                             disabled={!contactEmail || contactSaving}
                             className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white gradient-primary disabled:opacity-50 transition-opacity"
                           >
-                            {contactSaving ? '...' : 'Save'}
+                            {contactSaving ? '...' : t('common.save')}
                           </button>
                           <button
                             onClick={() => { setAddingEmail(false); setContactEmail('') }}
                             className="px-2 py-1.5 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
                           >
-                            Cancel
+                            {t('common.cancel')}
                           </button>
                         </div>
                       ) : (
@@ -589,7 +637,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                           className="flex items-center gap-2 w-full py-1 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors"
                         >
                           <Mail size={12} aria-hidden="true" />
-                          Add Email
+                          {t('settings.addEmail')}
                         </button>
                       )}
                     </div>
@@ -615,13 +663,13 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                             disabled={!contactPhone || contactSaving}
                             className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white gradient-primary disabled:opacity-50 transition-opacity"
                           >
-                            {contactSaving ? '...' : 'Save'}
+                            {contactSaving ? '...' : t('common.save')}
                           </button>
                           <button
                             onClick={() => { setAddingPhone(false); setContactPhone('') }}
                             className="px-2 py-1.5 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
                           >
-                            Cancel
+                            {t('common.cancel')}
                           </button>
                         </div>
                       ) : (
@@ -630,14 +678,14 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                           className="flex items-center gap-2 w-full py-1 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors"
                         >
                           <Phone size={12} aria-hidden="true" />
-                          Add Phone Number
+                          {t('settings.addPhone')}
                         </button>
                       )}
                     </div>
                   )}
 
                   <div className="flex items-center justify-between pt-1 border-t border-[var(--color-border)]">
-                    <span className="text-xs text-[var(--color-text-muted)]">Plan</span>
+                    <span className="text-xs text-[var(--color-text-muted)]">{t('settings.plan')}</span>
                     <span
                       className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                         user.subscriptionStatus === 'pro'
@@ -652,13 +700,13 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
 
                 {/* Nav links */}
                 <div className="divide-y divide-[var(--color-border)]">
-                  <AccountRow icon={Users} label="Manage Profiles" href="/profiles" />
-                  <AccountRow icon={MessageSquare} label="Give Feedback" href="/feedback" />
+                  <AccountRow icon={Users} label={t('settings.manageProfiles')} href="/profiles" />
+                  <AccountRow icon={MessageSquare} label={t('settings.giveFeedback')} href="/feedback" />
                   <AccountRow
                     icon={Crown}
-                    label="Subscription"
+                    label={t('nav.subscription')}
                     href="/subscription"
-                    badge={user.subscriptionStatus !== 'pro' ? 'Upgrade' : undefined}
+                    badge={user.subscriptionStatus !== 'pro' ? t('settings.upgradeLabel') : undefined}
                   />
                 </div>
 
@@ -684,17 +732,17 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader icon={Info} title="About" />
+              <SectionHeader icon={Info} title={t('settings.about')} />
               <Card padding="md" className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[var(--color-text-secondary)]">App Version</span>
+                  <span className="text-sm text-[var(--color-text-secondary)]">{t('settings.appVersion')}</span>
                   <span className="text-sm font-semibold text-[var(--color-text-primary)]">Vesta v1.0</span>
                 </div>
 
                 <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-3 py-2.5 flex items-start gap-2">
                   <Lock size={14} className="text-[var(--color-secondary)] mt-0.5 shrink-0" />
                   <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-                    Your health data is encrypted with AES-256-GCM and stored securely.
+                    {t('settings.encryptionNote')}
                   </p>
                 </div>
 
@@ -703,14 +751,14 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                     href="/privacy"
                     className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
                   >
-                    Privacy Policy
+                    {t('settings.privacyPolicy')}
                   </Link>
                   <span className="text-[var(--color-border)]">·</span>
                   <Link
                     href="/terms"
                     className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
                   >
-                    Terms of Service
+                    {t('settings.termsOfService')}
                   </Link>
                 </div>
               </Card>
@@ -739,7 +787,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
               {t('settings.logout')}
             </h3>
             <p className="text-sm text-[var(--color-text-muted)] mb-5">
-              Are you sure you want to log out?
+              {t('settings.logoutConfirmMsg')}
             </p>
             <div className="flex gap-3">
               <Button
@@ -747,7 +795,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                 fullWidth
                 onClick={() => setShowLogoutConfirm(false)}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 variant="primary"
@@ -756,7 +804,7 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                 disabled={loggingOut}
                 className="bg-red-500 hover:bg-red-600 border-0"
               >
-                {loggingOut ? 'Logging out…' : 'Log out'}
+                {loggingOut ? t('settings.loggingOut') : t('settings.logout')}
               </Button>
             </div>
           </div>

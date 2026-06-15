@@ -266,7 +266,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </header>
 
-        <main className="flex-1 p-6 md:p-8 page-enter">
+        <main className="flex-1 flex flex-col p-6 md:p-8 page-enter">
           {children}
         </main>
       </div>

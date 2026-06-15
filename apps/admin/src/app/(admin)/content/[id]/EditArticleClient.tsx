@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Save, Eye, Archive, FileText } from 'lucide-react'
 import { TiptapEditor } from '@/components/TiptapEditor'
 import { Button } from '@/components/ui/Button'
+import { Select } from '@/components/ui/Select'
 import { updateArticle } from '@/app/actions/content-actions'
 
 type CategoryOption = {
@@ -58,7 +59,6 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
   const [cyclePhases, setCyclePhases] = useState<string[]>(article.cyclePhases ?? [])
   const [status, setStatus] = useState(article.status)
   const [error, setError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
 
   useEffect(() => {
@@ -83,7 +83,6 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
       return
     }
     setError(null)
-    setSaved(false)
 
     startTransition(async () => {
       try {
@@ -96,8 +95,8 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
           cyclePhases,
           status,
         })
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
+        setIsDirty(false)
+        router.push('/content')
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to save article.')
       }
@@ -106,8 +105,8 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
 
   return (
     <div className="space-y-6">
-      {/* Back + actions bar */}
-      <div className="flex items-center justify-between gap-4">
+      {/* Back bar */}
+      <div className="flex items-center gap-4">
         <Link
           href="/content"
           className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
@@ -115,24 +114,6 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
           <ArrowLeft size={15} aria-hidden="true" />
           Back to Content
         </Link>
-        <div className="flex items-center gap-3">
-          {saved && (
-            <span aria-live="polite" className="text-sm text-emerald-600 dark:text-emerald-400 font-medium animate-fade-in">
-              Saved!
-            </span>
-          )}
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleSave}
-            loading={isPending}
-            disabled={isPending}
-            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
-          >
-            <Save size={15} aria-hidden="true" />
-            Save Changes
-          </Button>
-        </div>
       </div>
 
       {error && (
@@ -273,20 +254,18 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
             <h3 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
               Category
             </h3>
-            <select
+            <Select
               id="article-category"
               aria-label="Category"
               value={categoryId}
-              onChange={(e) => { setCategoryId(e.target.value); setIsDirty(true) }}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
-            >
-              <option value="">No category</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => { setCategoryId(v); setIsDirty(true) }}
+              selectSize="sm"
+              className="bg-[var(--color-bg-primary)]"
+              options={[
+                { value: '', label: 'No category' },
+                ...categories.map((cat) => ({ value: cat.id, label: cat.name })),
+              ]}
+            />
           </div>
 
           {/* Cycle Phases */}
@@ -355,7 +334,7 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
             </div>
           )}
 
-          {/* Save button (repeated for convenience) */}
+          {/* Save action */}
           <Button
             variant="primary"
             size="md"

@@ -7,6 +7,7 @@ import { ArrowLeft, Save, Eye, Archive, FileText } from 'lucide-react'
 import { TiptapEditor } from '@/components/TiptapEditor'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { Select } from '@/components/ui/Select'
 import { createArticle } from '@/app/actions/content-actions'
 
 type CategoryOption = {
@@ -249,20 +250,18 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
             <h3 className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
               Category
             </h3>
-            <select
+            <Select
               id="article-category"
               aria-label="Category"
               value={categoryId}
-              onChange={(e) => { setCategoryId(e.target.value); setIsDirty(true) }}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
-            >
-              <option value="">No category</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => { setCategoryId(v); setIsDirty(true) }}
+              selectSize="sm"
+              className="bg-[var(--color-bg-primary)]"
+              options={[
+                { value: '', label: 'No category' },
+                ...categories.map((cat) => ({ value: cat.id, label: cat.name })),
+              ]}
+            />
           </div>
 
           {/* Cycle Phases */}
