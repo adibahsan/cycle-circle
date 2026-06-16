@@ -207,6 +207,103 @@ export async function recordSubscriptionCheckResult(
   return { lapsed: false }
 }
 
+// ---------------------------------------------------------------------------
+// Chart-data aggregations for admin Subscriptions section
+// ---------------------------------------------------------------------------
+
+export interface SubscriptionChartDateRangeOpts {
+  days?: number
+  dateFrom?: Date
+  dateTo?: Date
+}
+
+/**
+ * Daily new subscriptions created over the given date range (default: last 30 days).
+ * Uses Subscription.createdAt. Gap-fills days with zero for a continuous x-axis.
+ */
+export async function getSubscriptionTrend(
+  opts: SubscriptionChartDateRangeOpts = {},
+): Promise<{ date: string; count: number }[]> {
+  const { dateTo = new Date(), dateFrom, days = 30 } = opts
+  const resolvedFrom =
+    dateFrom ?? new Date(new Date(dateTo).setDate(dateTo.getDate() - days + 1))
+
+  const from = new Date(
+    Date.UTC(resolvedFrom.getFullYear(), resolvedFrom.getMonth(), resolvedFrom.getDate()),
+  )
+  const to = new Date(
+    Date.UTC(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999),
+  )
+
+  const rows = await prisma.$queryRaw<{ date: string; count: bigint }[]>`
+    SELECT
+      TO_CHAR(DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS date,
+      COUNT(*)::bigint AS count
+    FROM "Subscription"
+    WHERE "createdAt" >= ${from} AND "createdAt" <= ${to}
+    GROUP BY DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC')
+    ORDER BY DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC') ASC
+  `
+
+  const lookup = new Map<string, number>()
+  for (const row of rows) {
+    lookup.set(row.date, Number(row.count))
+  }
+
+  const result: { date: string; count: number }[] = []
+  const cursor = new Date(from)
+  while (cursor <= to) {
+    const key = cursor.toISOString().slice(0, 10)
+    result.push({ date: key, count: lookup.get(key) ?? 0 })
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  }
+
+  return result
+}
+
+/**
+ * Count of subscriptions grouped by status (FREE, PRO, LAPSED).
+ */
+export async function getSubscriptionStatusBreakdown(): Promise<
+  { status: string; count: number }[]
+> {
+  const rows = await prisma.subscription.groupBy({
+    by: ['status'],
+    _count: { _all: true },
+  })
+
+  return rows.map((r) => ({ status: r.status as string, count: r._count._all }))
+}
+
+/**
+ * Count of CaasTransactions grouped by status (PENDING, SUCCESS, FAILED, etc.)
+ * over the given date range (default: last 30 days).
+ */
+export async function getCaasResultDistribution(
+  opts: SubscriptionChartDateRangeOpts = {},
+): Promise<{ result: string; count: number }[]> {
+  const { dateTo = new Date(), dateFrom, days = 30 } = opts
+  const resolvedFrom =
+    dateFrom ?? new Date(new Date(dateTo).setDate(dateTo.getDate() - days + 1))
+
+  const from = new Date(
+    Date.UTC(resolvedFrom.getFullYear(), resolvedFrom.getMonth(), resolvedFrom.getDate()),
+  )
+  const to = new Date(
+    Date.UTC(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999),
+  )
+
+  const rows = await prisma.caasTransaction.groupBy({
+    by: ['status'],
+    _count: { _all: true },
+    where: {
+      createdAt: { gte: from, lte: to },
+    },
+  })
+
+  return rows.map((r) => ({ result: r.status, count: r._count._all }))
+}
+
 export interface SubscriptionListParams {
   page?: number
   pageSize?: number

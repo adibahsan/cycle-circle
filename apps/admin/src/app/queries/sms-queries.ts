@@ -1,7 +1,11 @@
 import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { requireAdminUser } from './auth-queries'
-import { listBroadcasts } from '@vesta/shared/server/services'
+import {
+  listBroadcasts,
+  getSmsSendHistory as svcGetSmsSendHistory,
+  getSmsDeliveryBreakdown as svcGetSmsDeliveryBreakdown,
+} from '@vesta/shared/server/services'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
 interface SmsBroadcastListParams {
@@ -24,6 +28,24 @@ export const getSmsBroadcasts = cache(async (params: SmsBroadcastListParams = {}
   return unstable_cache(
     () => listBroadcasts(params),
     smsCacheKey(params),
+    { tags: [adminCacheTags.sms], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getSmsSendHistory = cache(async (days: number) => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => svcGetSmsSendHistory({ days }),
+    ['admin-sms-send-history', String(days)],
+    { tags: [adminCacheTags.sms], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getSmsDeliveryBreakdown = cache(async () => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => svcGetSmsDeliveryBreakdown(),
+    ['admin-sms-delivery-breakdown'],
     { tags: [adminCacheTags.sms], revalidate: ADMIN_CACHE_TTL }
   )()
 })

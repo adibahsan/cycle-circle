@@ -21,6 +21,8 @@ import { StatCard } from '@/components/ui/StatCard'
 import { Card } from '@/components/ui/Card'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
+import { ChartPanel } from '@/components/charts/ChartPanel'
+import { DateRangeControl } from '@/components/charts/DateRangeControl'
 
 interface DashboardClientProps {
   stats: {
@@ -33,6 +35,9 @@ interface DashboardClientProps {
     userGrowth: number
   }
   userTrend: { date: string; count: number }[]
+  signupTrend: { date: string; count: number }[]
+  subscriptionTrend: { date: string; count: number }[]
+  range: string
 }
 
 function formatDate(dateStr: string) {
@@ -65,7 +70,7 @@ function ChartTooltip({
   )
 }
 
-export function DashboardClient({ stats, userTrend }: DashboardClientProps) {
+export function DashboardClient({ stats, userTrend, signupTrend, subscriptionTrend, range }: DashboardClientProps) {
   const growthLabel = 'vs last week'
   const growthPositive = stats.userGrowth >= 0
 
@@ -203,6 +208,44 @@ export function DashboardClient({ stats, userTrend }: DashboardClientProps) {
           </ResponsiveContainer>
         </div>
       </Card>
+
+      {/* Trend charts section */}
+      <section aria-label="Trend charts">
+        {/* Section header: title + date range control */}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Trends</h2>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              New users and new subscriptions over time
+            </p>
+          </div>
+          <DateRangeControl />
+        </div>
+
+        {/* Two chart panels in a responsive grid */}
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <ChartPanel
+            title="New Users Over Time"
+            data={signupTrend.map((d) => ({ date: formatDate(d.date), count: d.count }))}
+            xKey="date"
+            series={[{ key: 'count', label: 'New users', color: '#E8476C' }]}
+            kinds={['area', 'line', 'bar']}
+            defaultKind="area"
+            height={260}
+            emptyLabel={`No signup data for the last ${range}`}
+          />
+          <ChartPanel
+            title="New Subscriptions Over Time"
+            data={subscriptionTrend.map((d) => ({ date: formatDate(d.date), count: d.count }))}
+            xKey="date"
+            series={[{ key: 'count', label: 'New subscriptions', color: '#6366F1' }]}
+            kinds={['area', 'line', 'bar']}
+            defaultKind="area"
+            height={260}
+            emptyLabel={`No subscription data for the last ${range}`}
+          />
+        </div>
+      </section>
     </div>
   )
 }

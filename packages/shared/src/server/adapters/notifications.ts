@@ -4,6 +4,7 @@ import {
   periodAlertEmail,
   fertileWindowEmail,
   loggingReminderEmail,
+  profileCompletionReminderEmail,
 } from '../email-templates'
 import type { Language } from '@prisma/client'
 
@@ -114,6 +115,42 @@ export async function sendLoggingReminder(params: {
         : `Vesta: Don't forget to log ${params.profileName}'s cycle. Last logged ${params.daysSinceLastLog} days ago.`
     await smsSend(smsText, [params.phone]).catch((err) =>
       console.error('[SMS] Logging reminder failed:', err),
+    )
+  }
+}
+
+// ─── Profile Completion Reminder ──────────────────────────────────────────────
+
+export async function sendProfileCompletionReminder(params: {
+  id: string
+  email?: string | null
+  phone?: string | null
+  fullName?: string | null
+  language: Language
+  userId: string
+}): Promise<void> {
+  const userName = params.fullName ?? 'User'
+  const { subject, html } = profileCompletionReminderEmail({
+    userName,
+    language: params.language,
+  })
+
+  // Email: all users with an email address (not Pro-gated)
+  if (params.email) {
+    await sendEmail(params.email, subject, html, {
+      type: 'PROFILE_COMPLETION_REMINDER',
+      userId: params.userId,
+    })
+  }
+
+  // SMS: any user with a phone number (not Pro-gated)
+  if (params.phone) {
+    const smsText =
+      params.language === 'BN'
+        ? `ভেস্তা: ${userName}, আপনার প্রোফাইল সেটআপ এখনো শেষ হয়নি। অ্যাপে প্রবেশ করুন এবং সম্পূর্ণ করুন।`
+        : `Vesta: ${userName}, your profile setup isn't complete yet. Open the app to finish setting up.`
+    await smsSend(smsText, [params.phone]).catch((err) =>
+      console.error('[SMS] Profile completion reminder failed:', err),
     )
   }
 }

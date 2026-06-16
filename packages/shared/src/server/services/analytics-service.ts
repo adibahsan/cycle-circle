@@ -50,22 +50,57 @@ export async function getDashboardStats() {
 }
 
 /**
- * Return daily signup counts bucketed over the given number of days.
- * Every date in the range is pre-filled with zero so the chart has no gaps.
+ * Return daily signup counts bucketed over a date range, gap-filled with zeros.
+ *
+ * Accepts either a plain number of days (backward-compatible):
+ *   getUserTrend(30)
+ * or an options object (new, configurable):
+ *   getUserTrend({ days: 90 })
+ *   getUserTrend({ dateFrom: new Date('2026-01-01'), dateTo: new Date('2026-03-31') })
+ *
+ * When `dateFrom`/`dateTo` are both supplied they take precedence over `days`.
+ * Default: last 30 days.
  */
-export async function getUserTrend(days: number = 30) {
-  const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+export async function getUserTrend(
+  opts: number | { days?: number; dateFrom?: Date; dateTo?: Date } = 30,
+): Promise<{ date: string; count: number }[]> {
+  const MS_PER_DAY = 24 * 60 * 60 * 1000
+  const now = Date.now()
+
+  let startDate: Date
+  let endDate: Date
+
+  if (typeof opts === 'number') {
+    startDate = new Date(now - opts * MS_PER_DAY)
+    endDate = new Date(now)
+  } else {
+    const { days = 30, dateFrom, dateTo } = opts
+    if (dateFrom && dateTo) {
+      startDate = dateFrom
+      endDate = dateTo
+    } else if (dateFrom) {
+      startDate = dateFrom
+      endDate = new Date(now)
+    } else if (dateTo) {
+      startDate = new Date(dateTo.getTime() - days * MS_PER_DAY)
+      endDate = dateTo
+    } else {
+      startDate = new Date(now - days * MS_PER_DAY)
+      endDate = new Date(now)
+    }
+  }
 
   const users = await prisma.user.findMany({
-    where: { createdAt: { gte: startDate }, deletedAt: null },
+    where: { createdAt: { gte: startDate, lte: endDate }, deletedAt: null },
     select: { createdAt: true },
     orderBy: { createdAt: 'asc' },
   })
 
-  // Pre-fill every date bucket with zero
+  // Pre-fill every date bucket with zero across the full range
   const dailyCounts: Record<string, number> = {}
-  for (let i = 0; i < days; i++) {
-    const date = new Date(Date.now() - (days - 1 - i) * 24 * 60 * 60 * 1000)
+  const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / MS_PER_DAY) + 1
+  for (let i = 0; i < totalDays; i++) {
+    const date = new Date(startDate.getTime() + i * MS_PER_DAY)
     dailyCounts[date.toISOString().split('T')[0]] = 0
   }
 
@@ -123,12 +158,11 @@ export async function getPredictionAccuracy() {
 }
 
 /**
- * Return weekly cohort retention over the past 8 weeks.
+ * Return weekly cohort retention over the past N weeks (default 8).
  * Each entry contains the cohort week start date, users created that week,
  * users retained (logged in within the last 7 days), and a retention rate.
  */
-export async function getUserRetention() {
-  const weeks = 8
+export async function getUserRetention(weeks: number = 8) {
   const cohorts = []
 
   for (let i = 0; i < weeks; i++) {

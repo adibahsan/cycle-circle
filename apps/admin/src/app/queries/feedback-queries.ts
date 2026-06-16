@@ -1,7 +1,13 @@
 import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { requireAdminUser } from './auth-queries'
-import { listFeedback, getFeedbackById } from '@vesta/shared/server/services'
+import {
+  listFeedback,
+  getFeedbackById,
+  getFeedbackVolumeByDate,
+  getFeedbackByCategory,
+  getFeedbackRatingDistribution,
+} from '@vesta/shared/server/services'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
 interface FeedbackListParams {
@@ -39,6 +45,33 @@ export const getFeedbackDetail = cache(async (id: string) => {
   return unstable_cache(
     () => getFeedbackById(id),
     ['admin-feedback-detail', id],
+    { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getFeedbackVolume = cache(async (days: number) => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => getFeedbackVolumeByDate({ days }),
+    ['admin-feedback-volume', String(days)],
+    { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getFeedbackCategories = cache(async (days: number) => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => getFeedbackByCategory({ days }),
+    ['admin-feedback-categories', String(days)],
+    { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getFeedbackRatings = cache(async (days: number) => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => getFeedbackRatingDistribution({ days }),
+    ['admin-feedback-ratings', String(days)],
     { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
   )()
 })

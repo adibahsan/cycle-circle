@@ -1,7 +1,12 @@
 import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { requireAdminUser } from './auth-queries'
-import { getDashboardStats as svcGetDashboardStats, getUserTrend as svcGetUserTrend } from '@vesta/shared/server/services'
+import {
+  getDashboardStats as svcGetDashboardStats,
+  getUserTrend as svcGetUserTrend,
+  getUserSignupTrend as svcGetUserSignupTrend,
+  getSubscriptionTrend as svcGetSubscriptionTrend,
+} from '@vesta/shared/server/services'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
 export const getDashboardStats = cache(async () => {
@@ -18,6 +23,24 @@ export const getUserTrend = cache(async (days: number = 30) => {
   return unstable_cache(
     () => svcGetUserTrend(days),
     ['admin-user-trend', String(days)],
+    { tags: [adminCacheTags.dashboard], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getUserSignupTrend = cache(async (days: number = 30) => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => svcGetUserSignupTrend({ days }),
+    ['admin-user-signup-trend', String(days)],
+    { tags: [adminCacheTags.dashboard], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getSubscriptionTrend = cache(async (days: number = 30) => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => svcGetSubscriptionTrend({ days }),
+    ['admin-subscription-trend', String(days)],
     { tags: [adminCacheTags.dashboard], revalidate: ADMIN_CACHE_TTL }
   )()
 })

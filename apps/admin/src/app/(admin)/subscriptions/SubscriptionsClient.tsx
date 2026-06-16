@@ -12,6 +12,8 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { grantProAccess, revokeProAccess } from '@/app/actions/user-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
+import { ChartPanel } from '@/components/charts/ChartPanel'
+import { DateRangeControl } from '@/components/charts/DateRangeControl'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types — mirror the Prisma include shape from getSubscriptions
@@ -53,6 +55,10 @@ interface SubscriptionsClientProps {
     pageSize: number
     totalPages: number
   }
+  trend: { date: string; count: number }[]
+  statusBreakdown: { status: string; count: number }[]
+  caasDistribution: { result: string; count: number }[]
+  range: string
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -130,7 +136,7 @@ function ActionsCell({ row, onGrant, onRevoke }: ActionsCellProps) {
 // Main client component
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function SubscriptionsClient({ data }: SubscriptionsClientProps) {
+export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribution, range }: SubscriptionsClientProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -343,6 +349,60 @@ export function SubscriptionsClient({ data }: SubscriptionsClientProps) {
             </div>
           }
         />
+
+        {/* Charts — date-range controlled trend + CAAS, plus status breakdown */}
+        <section aria-label="Subscription charts">
+          {/* Date range control — shared by trend and CAAS panels */}
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
+              Overview
+            </h2>
+            <DateRangeControl paramKey="range" />
+          </div>
+
+          {/* Three-panel responsive grid */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            {/* Subscriptions over time — area chart */}
+            <div className="lg:col-span-2">
+              <ChartPanel
+                title="New Subscriptions"
+                data={trend.map((d) => ({ date: d.date.slice(5), count: d.count }))}
+                xKey="date"
+                series={[{ key: 'count', label: 'Subscriptions', color: '#E8476C' }]}
+                kinds={['area', 'bar', 'line']}
+                defaultKind="area"
+                height={240}
+                emptyLabel="No subscription activity in this period."
+              />
+            </div>
+
+            {/* Subscription status breakdown — pie */}
+            <ChartPanel
+              title="Status Breakdown"
+              data={statusBreakdown.map((d) => ({ status: d.status, count: d.count }))}
+              xKey="status"
+              series={[{ key: 'count', label: 'Count' }]}
+              kinds={['pie', 'bar']}
+              defaultKind="pie"
+              height={240}
+              emptyLabel="No subscription data."
+            />
+
+            {/* CAAS result distribution — bar */}
+            <div className="lg:col-span-3">
+              <ChartPanel
+                title={`CAAS Result Distribution — last ${range}`}
+                data={caasDistribution.map((d) => ({ result: d.result, count: d.count }))}
+                xKey="result"
+                series={[{ key: 'count', label: 'Transactions', color: '#6366F1' }]}
+                kinds={['bar', 'pie']}
+                defaultKind="bar"
+                height={220}
+                emptyLabel="No CAAS transactions in this period."
+              />
+            </div>
+          </div>
+        </section>
 
         {/* Filters — no search field, just status filter */}
         <FilterBar

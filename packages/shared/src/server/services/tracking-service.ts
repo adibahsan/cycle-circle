@@ -264,7 +264,21 @@ export async function getDashboardData(profileId: string, userId: string) {
       }
     : null
 
-  return { currentCycleDay, currentPhase, countdownToNextPeriod, lastPeriod: lastPeriodSummary, prediction }
+  const lastSymptomLog = await prisma.symptomLog.findFirst({
+    where: { profileId },
+    orderBy: { date: 'desc' },
+    select: { date: true },
+  })
+  const lastSymptomLogDate: Date | null = lastSymptomLog?.date ?? null
+
+  return {
+    currentCycleDay,
+    currentPhase,
+    countdownToNextPeriod,
+    lastPeriod: lastPeriodSummary,
+    prediction,
+    lastSymptomLogDate,
+  }
 }
 
 // ── Calendar ───────────────────────────────────────────────────────────────────

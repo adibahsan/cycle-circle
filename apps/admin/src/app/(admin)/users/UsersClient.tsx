@@ -17,6 +17,8 @@ import { Pagination } from '@/components/ui/Pagination'
 import { exportUsersCsv } from '@/app/actions/export-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
+import { ChartPanel } from '@/components/charts/ChartPanel'
+import { DateRangeControl } from '@/components/charts/DateRangeControl'
 
 type UserRow = {
   id: string
@@ -43,6 +45,12 @@ interface UsersClientProps {
     sort: string
     order: 'asc' | 'desc'
   }
+  range: string
+  signupTrend: { date: string; count: number }[]
+  authMethodDist: { method: string; count: number }[]
+  subscriptionDist: { status: string; count: number }[]
+  languageDist: { language: string; count: number }[]
+  statusBreakdown: { status: 'active' | 'suspended' | 'deleted'; count: number }[]
 }
 
 const STATUS_OPTIONS = [
@@ -172,7 +180,15 @@ const COLUMNS: Column<UserRow>[] = [
   },
 ]
 
-export function UsersClient({ data }: UsersClientProps) {
+export function UsersClient({
+  data,
+  range,
+  signupTrend,
+  authMethodDist,
+  subscriptionDist,
+  languageDist,
+  statusBreakdown,
+}: UsersClientProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -245,6 +261,40 @@ export function UsersClient({ data }: UsersClientProps) {
     }
   }
 
+  // ── Normalise chart data ─────────────────────────────────────────────────
+
+  // Signup trend: format date label to "MMM D" for readability
+  const signupData = signupTrend.map((row) => ({
+    date: new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(
+      new Date(row.date + 'T00:00:00Z')
+    ),
+    count: row.count,
+  }))
+
+  // Auth method: pretty-print method names
+  const authData = authMethodDist.map((row) => ({
+    method: row.method === 'PHONE_OTP' ? 'Phone OTP' : row.method === 'EMAIL' ? 'Email' : row.method,
+    count: row.count,
+  }))
+
+  // Subscription: pretty-print status names
+  const subData = subscriptionDist.map((row) => ({
+    status: row.status === 'PRO' ? 'Pro' : row.status === 'LAPSED' ? 'Lapsed' : 'Free',
+    count: row.count,
+  }))
+
+  // Language: pretty-print language codes
+  const langData = languageDist.map((row) => ({
+    language: row.language === 'BN' ? 'Bengali' : row.language === 'EN' ? 'English' : row.language,
+    count: row.count,
+  }))
+
+  // Status breakdown: capitalise labels
+  const statusData = statusBreakdown.map((row) => ({
+    status: row.status.charAt(0).toUpperCase() + row.status.slice(1),
+    count: row.count,
+  }))
+
   return (
     <div className="flex flex-1 flex-col gap-6 page-enter">
       <AdminPageHeader
@@ -264,6 +314,76 @@ export function UsersClient({ data }: UsersClientProps) {
           </Button>
         }
       />
+
+      {/* ── Charts ─────────────────────────────────────────────────────── */}
+      <section aria-label="User analytics charts">
+        {/* Signup trend — date-range controlled */}
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold text-[var(--color-text-secondary)]">
+            Signups over time
+          </h2>
+          <DateRangeControl paramKey="range" />
+        </div>
+
+        <ChartPanel
+          title={`New signups — last ${range}`}
+          data={signupData}
+          xKey="date"
+          series={[{ key: 'count', label: 'Signups' }]}
+          kinds={['area', 'line', 'bar']}
+          defaultKind="area"
+          height={240}
+          emptyLabel="No signup data for this period"
+          className="mb-6"
+        />
+
+        {/* 2×2 distribution grid */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <ChartPanel
+            title="Auth method"
+            data={authData}
+            xKey="method"
+            series={[{ key: 'count', label: 'Users' }]}
+            kinds={['pie', 'bar']}
+            defaultKind="pie"
+            height={240}
+            emptyLabel="No auth data"
+          />
+
+          <ChartPanel
+            title="Subscription status"
+            data={subData}
+            xKey="status"
+            series={[{ key: 'count', label: 'Users' }]}
+            kinds={['pie', 'bar']}
+            defaultKind="pie"
+            height={240}
+            emptyLabel="No subscription data"
+          />
+
+          <ChartPanel
+            title="Language preference"
+            data={langData}
+            xKey="language"
+            series={[{ key: 'count', label: 'Users' }]}
+            kinds={['pie', 'bar']}
+            defaultKind="pie"
+            height={240}
+            emptyLabel="No language data"
+          />
+
+          <ChartPanel
+            title="Account status"
+            data={statusData}
+            xKey="status"
+            series={[{ key: 'count', label: 'Users' }]}
+            kinds={['bar']}
+            defaultKind="bar"
+            height={240}
+            emptyLabel="No status data"
+          />
+        </div>
+      </section>
 
       {/* Filters */}
       <FilterBar

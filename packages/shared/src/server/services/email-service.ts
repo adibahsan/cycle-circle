@@ -115,6 +115,25 @@ export async function wasEmailSentToday(
   return !!existing
 }
 
+// ── Dedup helper (user-level, used by cron for user-scoped reminders) ──────────
+
+/**
+ * Returns true if an email of the given type was already sent today for the
+ * given userId (regardless of profileId). Used for user-level reminder dedup
+ * where there is no associated profile (e.g. profile-completion reminders).
+ */
+export async function wasEmailSentTodayForUser(
+  type: EmailType,
+  userId: string,
+): Promise<boolean> {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const existing = await prisma.emailLog.findFirst({
+    where: { type, userId, sentAt: { gte: today }, status: 'SENT' },
+  })
+  return !!existing
+}
+
 // ── Webhook delivery update ────────────────────────────────────────────────────
 
 export async function updateEmailDeliveryStatus(

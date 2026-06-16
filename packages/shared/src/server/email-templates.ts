@@ -23,6 +23,11 @@ export interface LoggingReminderData extends TemplateData {
   daysSinceLastLog: number
 }
 
+export interface ProfileCompletionReminderData {
+  userName: string
+  language: Language
+}
+
 export interface EmailResult {
   subject: string
   html: string
@@ -282,6 +287,76 @@ export function loggingReminderEmail(data: LoggingReminderData): EmailResult {
           </p>
           <p style="margin:0 0 6px;color:#2D1A24;font-size:18px;font-weight:600;">${daysText}</p>
           <p style="margin:0;color:#8C5E74;font-size:14px;">${ctaText}</p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Tip card -->
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+      style="background:#F8F4FF;border-radius:8px;margin-bottom:8px;">
+      <tr>
+        <td style="padding:16px 20px;">
+          <p style="margin:0 0 6px;color:#9B7FD4;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
+            ${tipLabel}
+          </p>
+          <p style="margin:0;color:#4A3568;font-size:14px;line-height:1.6;">${tipText}</p>
+        </td>
+      </tr>
+    </table>
+  `
+
+  return { subject, html: wrapLayout(language, body) }
+}
+
+// ─── Profile Completion Reminder ──────────────────────────────────────────────
+
+export function profileCompletionReminderEmail(data: ProfileCompletionReminderData): EmailResult {
+  const { userName, language } = data
+  const isBn = language === 'BN'
+
+  const subject = isBn
+    ? 'ভেস্তা: আপনার প্রোফাইল সেটআপ শেষ করুন'
+    : 'Vesta: Finish setting up your profile'
+
+  const greeting = isBn
+    ? `হ্যালো ${userName},`
+    : `Hi ${userName},`
+
+  const headingText = isBn
+    ? 'প্রোফাইল সেটআপ বাকি আছে'
+    : 'Your profile is almost ready'
+
+  const mainText = isBn
+    ? 'আপনি Vesta-তে যোগ দিয়েছেন — অসাধারণ! আপনার প্রোফাইল সম্পূর্ণ করলে আমরা আপনাকে আরও সঠিক সাইকেল পূর্বাভাস এবং ব্যক্তিগতকৃত স্বাস্থ্য তথ্য দিতে পারব।'
+    : 'You\'ve joined Vesta — that\'s a great first step! Completing your profile helps us give you more accurate cycle predictions and personalised health insights.'
+
+  const ctaText = isBn
+    ? 'প্রোফাইল সম্পূর্ণ করুন'
+    : 'Complete your profile'
+
+  const tipText = isBn
+    ? 'মাত্র কয়েকটি তথ্য যোগ করলেই আপনি পূর্ণ সুবিধা পাবেন — এটি ২ মিনিটেরও কম সময়ে করা যায়।'
+    : 'Adding just a few details unlocks the full experience — it takes less than 2 minutes.'
+
+  const tipLabel = isBn ? 'একটু সময় নিন' : 'Quick to finish'
+
+  const body = `
+    <p style="margin:0 0 4px;color:#6B4458;font-size:16px;font-weight:500;">${greeting}</p>
+    <p style="margin:0 0 28px;color:#6B4458;font-size:15px;">&nbsp;</p>
+
+    <!-- Main card -->
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+      style="background:#FFF5F7;border-left:4px solid #E8476C;border-radius:8px;margin-bottom:24px;">
+      <tr>
+        <td style="padding:20px 24px;">
+          <p style="margin:0 0 6px;color:#E8476C;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
+            ${headingText}
+          </p>
+          <p style="margin:0 0 20px;color:#2D1A24;font-size:15px;line-height:1.6;">${mainText}</p>
+          <a href="https://vesta.health/setup"
+            style="display:inline-block;background:linear-gradient(135deg,#E8476C 0%,#9B7FD4 100%);color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:12px 28px;border-radius:8px;">
+            ${ctaText}
+          </a>
         </td>
       </tr>
     </table>

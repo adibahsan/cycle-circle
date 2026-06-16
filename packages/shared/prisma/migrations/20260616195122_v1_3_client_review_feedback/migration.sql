@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "EmailType" ADD VALUE 'PROFILE_COMPLETION_REMINDER';
+
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "profileReminderOptOut" BOOLEAN NOT NULL DEFAULT false;

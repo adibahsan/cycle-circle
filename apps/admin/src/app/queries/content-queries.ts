@@ -1,7 +1,14 @@
 import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { requireAdminUser } from './auth-queries'
-import { listArticles, getArticleById, listCategories } from '@vesta/shared/server/services'
+import {
+  listArticles,
+  getArticleById,
+  listCategories,
+  getContentStatusBreakdown,
+  getContentByCategory,
+  getContentByPhase,
+} from '@vesta/shared/server/services'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
 function articlesCacheKey(params: {
@@ -47,6 +54,33 @@ export const getCategories = cache(async () => {
   return unstable_cache(
     () => listCategories(),
     ['admin-categories'],
+    { tags: [adminCacheTags.content], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getContentStatusBreakdownQuery = cache(async () => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => getContentStatusBreakdown(),
+    ['admin-content-status-breakdown'],
+    { tags: [adminCacheTags.content], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getContentByCategoryQuery = cache(async () => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => getContentByCategory(),
+    ['admin-content-by-category'],
+    { tags: [adminCacheTags.content], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getContentByPhaseQuery = cache(async () => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => getContentByPhase(),
+    ['admin-content-by-phase'],
     { tags: [adminCacheTags.content], revalidate: ADMIN_CACHE_TTL }
   )()
 })

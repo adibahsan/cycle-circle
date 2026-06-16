@@ -3,6 +3,81 @@ import { smsSend } from '../adapters/bdapps'
 import { createAuditLog } from './audit-service'
 import { env } from '../../utils/env'
 
+// ── Chart-data helpers ─────────────────────────────────────────────────────────
+
+export interface ChartDateOpts {
+  days?: number
+  dateFrom?: Date
+  dateTo?: Date
+}
+
+/**
+ * Returns daily broadcast counts (sent or scheduled) over the requested range.
+ * Defaults to the last 30 days. Every calendar date in the range is included;
+ * days with no broadcasts get count: 0 (gap-fill).
+ *
+ * A broadcast is counted on the day it was sent (`sentAt`) when available,
+ * otherwise on `createdAt`.
+ */
+export async function getSmsSendHistory(
+  opts: ChartDateOpts = {},
+): Promise<{ date: string; count: number }[]> {
+  const { days = 30, dateFrom, dateTo } = opts
+
+  const to = dateTo ?? new Date()
+  const from = dateFrom ?? new Date(new Date(to).setDate(to.getDate() - days + 1))
+
+  // Normalise to start-of-day UTC for consistent bucketing
+  from.setUTCHours(0, 0, 0, 0)
+  to.setUTCHours(23, 59, 59, 999)
+
+  const broadcasts = await prisma.smsBroadcast.findMany({
+    where: {
+      OR: [
+        { sentAt: { gte: from, lte: to } },
+        { sentAt: null, createdAt: { gte: from, lte: to } },
+      ],
+    },
+    select: { sentAt: true, createdAt: true },
+  })
+
+  // Build a map keyed by ISO date string (YYYY-MM-DD)
+  const counts = new Map<string, number>()
+  for (const b of broadcasts) {
+    const ts = b.sentAt ?? b.createdAt
+    const key = ts.toISOString().slice(0, 10)
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+
+  // Gap-fill every day in the range
+  const result: { date: string; count: number }[] = []
+  const cursor = new Date(from)
+  while (cursor <= to) {
+    const key = cursor.toISOString().slice(0, 10)
+    result.push({ date: key, count: counts.get(key) ?? 0 })
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  }
+
+  return result
+}
+
+/**
+ * Returns a count breakdown of broadcasts by their current status.
+ * Status values correspond to the `SmsBroadcastStatus` enum:
+ * DRAFT | SCHEDULED | SENDING | SENT | FAILED.
+ */
+export async function getSmsDeliveryBreakdown(): Promise<
+  { status: string; count: number }[]
+> {
+  const groups = await prisma.smsBroadcast.groupBy({
+    by: ['status'],
+    _count: { status: true },
+    orderBy: { status: 'asc' },
+  })
+
+  return groups.map((g) => ({ status: g.status, count: g._count.status }))
+}
+
 /**
  * Create an SMS broadcast. Status is SCHEDULED when a future date is provided,
  * otherwise DRAFT.

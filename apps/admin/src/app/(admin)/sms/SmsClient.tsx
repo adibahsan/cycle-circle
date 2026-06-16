@@ -14,6 +14,8 @@ import { DateTimePicker } from '@/components/ui/DateTimePicker'
 import { createSmsBroadcast, deleteSmsBroadcast, sendSmsBroadcast } from '@/app/actions/sms-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
+import { ChartPanel } from '@/components/charts/ChartPanel'
+import { DateRangeControl } from '@/components/charts/DateRangeControl'
 
 type SmsBroadcast = {
   id: string
@@ -28,6 +30,9 @@ type SmsBroadcast = {
   creator: { fullName: string | null; email: string | null }
 }
 
+type SmsSendHistoryPoint = { date: string; count: number }
+type SmsDeliveryBreakdownItem = { status: string; count: number }
+
 interface SmsClientProps {
   data: {
     broadcasts: SmsBroadcast[]
@@ -36,6 +41,9 @@ interface SmsClientProps {
     pageSize: number
     totalPages: number
   }
+  sendHistory: SmsSendHistoryPoint[]
+  deliveryBreakdown: SmsDeliveryBreakdownItem[]
+  range: string
 }
 
 const STATUS_OPTIONS = [
@@ -261,7 +269,7 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
 
 // ─── Main Client ─────────────────────────────────────────────────────────────
 
-export function SmsClient({ data }: SmsClientProps) {
+export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -474,6 +482,40 @@ export function SmsClient({ data }: SmsClientProps) {
           </Button>
         }
       />
+
+      {/* ── Charts ─────────────────────────────────────────────────────── */}
+      <div className="space-y-4">
+        {/* Date range toggle — drives the send-history panel via ?range= */}
+        <div className="flex justify-end">
+          <DateRangeControl />
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* SMS send history over time */}
+          <ChartPanel
+            title="SMS Send History"
+            data={sendHistory.map((d) => ({ date: d.date, count: d.count }))}
+            xKey="date"
+            series={[{ key: 'count', label: 'Messages sent' }]}
+            kinds={['area', 'bar', 'line']}
+            defaultKind="area"
+            height={260}
+            emptyLabel="No send history for this period"
+          />
+
+          {/* Broadcast delivery-status breakdown */}
+          <ChartPanel
+            title="Delivery Status Breakdown"
+            data={deliveryBreakdown.map((d) => ({ status: d.status, count: d.count }))}
+            xKey="status"
+            series={[{ key: 'count', label: 'Broadcasts' }]}
+            kinds={['bar', 'pie']}
+            defaultKind="bar"
+            height={260}
+            emptyLabel="No broadcast data yet"
+          />
+        </div>
+      </div>
 
       {/* Filters */}
       <FilterBar

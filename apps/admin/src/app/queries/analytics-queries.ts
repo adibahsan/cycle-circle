@@ -6,6 +6,7 @@ import {
   getSymptomsByCategory as svcGetSymptomsByCategory,
   getPredictionAccuracy as svcGetPredictionAccuracy,
   getUserRetention as svcGetUserRetention,
+  getUserTrend as svcGetUserTrend,
 } from '@vesta/shared/server/services'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
@@ -41,6 +42,15 @@ export const getUserRetention = cache(async () => {
   return unstable_cache(
     () => svcGetUserRetention(),
     ['admin-user-retention'],
+    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getUserTrend = cache(async (days: number) => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => svcGetUserTrend({ days }),
+    ['admin-user-trend', String(days)],
     { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
   )()
 })

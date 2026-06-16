@@ -2,6 +2,18 @@ import type { FlowIntensity } from '@prisma/client'
 import { prisma } from '../db'
 import { ensurePeriodLogFromProfile } from '../period-log-sync'
 
+export function defaultNotificationPrefsForGoal(goal?: string | null): {
+  periodAlert: boolean
+  fertileWindow: boolean
+  loggingReminder: boolean
+} {
+  if (goal === 'conceive') {
+    return { periodAlert: false, fertileWindow: true, loggingReminder: false }
+  }
+  // 'tracking', 'perimenopause', null, or any unrecognised value
+  return { periodAlert: true, fertileWindow: true, loggingReminder: true }
+}
+
 export async function assertProfileOwnership(profileId: string, userId: string) {
   const profile = await prisma.profile.findUnique({ where: { id: profileId } })
   if (!profile || profile.userId !== userId) throw new Error('Profile not found')
@@ -52,9 +64,7 @@ export async function createProfile(
     await tx.notificationPreference.create({
       data: {
         profileId: created.id,
-        periodAlert: true,
-        fertileWindow: true,
-        loggingReminder: true,
+        ...defaultNotificationPrefsForGoal(data.goal),
       },
     })
 
@@ -87,8 +97,9 @@ export async function updateProfile(
     goal?: string | null
   },
 ) {
-  await assertProfileOwnership(profileId, userId)
-  return prisma.profile.update({
+  const currentProfile = await assertProfileOwnership(profileId, userId)
+
+  const updated = await prisma.profile.update({
     where: { id: profileId },
     data: {
       ...(data.name !== undefined && { name: data.name }),
@@ -98,6 +109,19 @@ export async function updateProfile(
       ...(data.goal !== undefined && { goal: data.goal }),
     },
   })
+
+  // When goal is explicitly provided and differs from the current goal,
+  // auto-apply the notification defaults for the new goal.
+  if (data.goal !== undefined && data.goal !== currentProfile.goal) {
+    const defaults = defaultNotificationPrefsForGoal(data.goal)
+    await prisma.notificationPreference.upsert({
+      where: { profileId },
+      create: { profileId, ...defaults },
+      update: { ...defaults },
+    })
+  }
+
+  return updated
 }
 
 export async function removeProfile(profileId: string, userId: string) {

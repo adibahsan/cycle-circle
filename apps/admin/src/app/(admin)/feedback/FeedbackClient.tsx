@@ -11,6 +11,8 @@ import { Pagination } from '@/components/ui/Pagination'
 import { exportFeedbackCsv } from '@/app/actions/export-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
+import { ChartPanel } from '@/components/charts/ChartPanel'
+import { DateRangeControl } from '@/components/charts/DateRangeControl'
 
 type FeedbackItem = {
   id: string
@@ -29,6 +31,10 @@ interface FeedbackClientProps {
     pageSize: number
     totalPages: number
   }
+  range: string
+  volumeData: { date: string; count: number }[]
+  categoryData: { category: string; count: number }[]
+  ratingData: { rating: number | null; count: number }[]
 }
 
 const CATEGORY_OPTIONS = [
@@ -121,13 +127,33 @@ function MessageCell({ message }: { message: string }) {
 
 // ─── Main Client ─────────────────────────────────────────────────────────────
 
-export function FeedbackClient({ data }: FeedbackClientProps) {
+export function FeedbackClient({ data, volumeData, categoryData, ratingData }: FeedbackClientProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
   const [exporting, setExporting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+
+  // ── Analytics data transformations ─────────────────────────────────────────
+
+  // Volume-over-time: use date as xKey, count as the series value
+  const volumeChartData = volumeData.map((d) => ({ date: d.date, count: d.count }))
+
+  // Category breakdown: use category as xKey, count as series value
+  const categoryChartData = categoryData.map((d) => ({
+    category: d.category,
+    count: d.count,
+  }))
+
+  // Rating distribution: map null → "No rating", numbers → "N★"
+  const ratingChartData = ratingData.map((d) => ({
+    label:
+      d.rating === null
+        ? 'No rating'
+        : `${d.rating}★`, // e.g. "3★"
+    count: d.count,
+  }))
 
   const currentCategory = searchParams.get('category') ?? 'all'
   const currentMinRating = searchParams.get('minRating') ?? 'all'
@@ -249,6 +275,57 @@ export function FeedbackClient({ data }: FeedbackClientProps) {
 
   return (
     <div className="flex flex-1 flex-col gap-6 page-enter">
+
+      {/* ── Analytics section ──────────────────────────────────────────── */}
+      <section aria-label="Feedback analytics" className="flex flex-col gap-4">
+        {/* Date range control */}
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
+            Analytics
+          </h2>
+          <DateRangeControl paramKey="range" />
+        </div>
+
+        {/* Chart grid */}
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {/* Volume over time */}
+          <ChartPanel
+            title="Feedback Volume"
+            data={volumeChartData}
+            xKey="date"
+            series={[{ key: 'count', label: 'Submissions' }]}
+            kinds={['area', 'line', 'bar']}
+            defaultKind="area"
+            emptyLabel="No submissions in this period"
+            className="md:col-span-2 xl:col-span-1"
+          />
+
+          {/* Category breakdown */}
+          <ChartPanel
+            title="By Category"
+            data={categoryChartData}
+            xKey="category"
+            series={[{ key: 'count', label: 'Count' }]}
+            kinds={['bar', 'pie']}
+            defaultKind="bar"
+            emptyLabel="No category data"
+          />
+
+          {/* Rating distribution */}
+          <ChartPanel
+            title="Rating Distribution"
+            data={ratingChartData}
+            xKey="label"
+            series={[{ key: 'count', label: 'Count' }]}
+            kinds={['bar']}
+            defaultKind="bar"
+            emptyLabel="No rating data"
+          />
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+
       <AdminPageHeader
         title="Feedback"
         description={`${data.total.toLocaleString()} submission${data.total !== 1 ? 's' : ''} total`}

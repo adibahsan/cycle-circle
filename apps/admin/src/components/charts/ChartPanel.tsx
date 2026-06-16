@@ -1,0 +1,478 @@
+'use client'
+
+import { useState } from 'react'
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+  ResponsiveContainer,
+} from 'recharts'
+import { Card } from '@/components/ui/Card'
+
+// ── Color palette — mirrors AnalyticsClient exactly ────────────────────────
+const PRIMARY  = '#E8476C'
+const BLUE     = '#3B82F6'
+const INDIGO   = '#6366F1'
+const GREEN    = '#10B981'
+const AMBER    = '#F59E0B'
+const PURPLE   = '#9B7FD4'
+const CORAL    = '#FF8C6B'
+
+/** Ordered fallback palette — same as FALLBACK_COLORS in AnalyticsClient */
+export const CHART_PALETTE = [PRIMARY, INDIGO, GREEN, AMBER, PURPLE, CORAL, BLUE] as const
+
+// ── Public types ──────────────────────────────────────────────────────────
+
+export type ChartKind = 'bar' | 'line' | 'area' | 'pie'
+
+export interface ChartSeries {
+  key: string
+  label: string
+  color?: string
+}
+
+export interface ChartPanelProps {
+  title: string
+  data: Array<Record<string, string | number | null>>
+  xKey: string
+  series: ChartSeries[]
+  kinds?: ChartKind[]
+  defaultKind?: ChartKind
+  height?: number
+  emptyLabel?: string
+  className?: string
+}
+
+// ── Shared axis tick style (matches AnalyticsClient) ──────────────────────
+
+const TICK_STYLE = {
+  fontSize: 11,
+  fill: 'var(--color-text-muted)',
+  fontFamily: 'var(--font-display)',
+} as const
+
+// ── Shared tooltip box ────────────────────────────────────────────────────
+
+function TooltipBox({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="glass rounded-xl px-3 py-2 shadow-soft border border-[var(--color-border)] text-sm">
+      {children}
+    </div>
+  )
+}
+
+// ── Generic tooltip content ───────────────────────────────────────────────
+
+interface GenericTooltipProps {
+  active?: boolean
+  payload?: Array<{ name: string; value: number | null; color: string }>
+  label?: string | number
+  series: ChartSeries[]
+}
+
+function GenericTooltip({ active, payload, label, series }: GenericTooltipProps) {
+  if (!active || !payload?.length) return null
+  return (
+    <TooltipBox>
+      <p className="font-semibold text-[var(--color-text-primary)] mb-1">{label}</p>
+      {payload.map((p, i) => {
+        const seriesItem = series.find((s) => s.key === p.name)
+        return (
+          <p key={p.name ?? i} style={{ color: p.color }} className="font-bold tabular-nums">
+            {p.value ?? '–'}{' '}
+            <span className="font-normal text-[var(--color-text-muted)]">
+              {seriesItem?.label ?? p.name}
+            </span>
+          </p>
+        )
+      })}
+    </TooltipBox>
+  )
+}
+
+// ── Pie tooltip ───────────────────────────────────────────────────────────
+
+interface PieTooltipProps {
+  active?: boolean
+  payload?: Array<{ name: string; value: number | null; payload: { fill: string } }>
+}
+
+function PieTooltip({ active, payload }: PieTooltipProps) {
+  if (!active || !payload?.length) return null
+  const { name, value, payload: inner } = payload[0]
+  return (
+    <TooltipBox>
+      <p className="font-semibold text-[var(--color-text-primary)]">{name}</p>
+      <p className="font-bold tabular-nums" style={{ color: inner?.fill ?? PRIMARY }}>
+        {value ?? '–'}
+      </p>
+    </TooltipBox>
+  )
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────
+
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div className="flex items-center justify-center" style={{ height: '100%' }}>
+      <p className="text-sm text-[var(--color-text-muted)]">{label}</p>
+    </div>
+  )
+}
+
+// ── Chart-kind toggle icons ───────────────────────────────────────────────
+
+const KIND_LABELS: Record<ChartKind, string> = {
+  bar: 'Bar',
+  line: 'Line',
+  area: 'Area',
+  pie: 'Pie',
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+function isDataEmpty(data: ChartPanelProps['data'], series: ChartSeries[]) {
+  if (!data.length) return true
+  return data.every((row) => series.every((s) => !row[s.key]))
+}
+
+function resolveColor(series: ChartSeries, index: number): string {
+  return series.color ?? CHART_PALETTE[index % CHART_PALETTE.length]
+}
+
+// ── Cartesian chart shared margins ───────────────────────────────────────
+
+const CARTESIAN_MARGIN = { top: 4, right: 4, left: -16, bottom: 0 }
+
+// ── BarChart renderer ─────────────────────────────────────────────────────
+
+function BarRenderer({
+  data,
+  xKey,
+  series,
+}: {
+  data: ChartPanelProps['data']
+  xKey: string
+  series: ChartSeries[]
+}) {
+  return (
+    <BarChart data={data} margin={CARTESIAN_MARGIN}>
+      <CartesianGrid
+        vertical={false}
+        stroke="var(--color-border)"
+        strokeDasharray="3 3"
+        strokeOpacity={0.6}
+      />
+      <XAxis dataKey={xKey} tick={TICK_STYLE} axisLine={false} tickLine={false} />
+      <YAxis tick={TICK_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
+      <Tooltip
+        content={<GenericTooltip series={series} />}
+        cursor={{ fill: 'var(--color-border)', fillOpacity: 0.4 }}
+      />
+      {series.length > 1 && (
+        <Legend
+          iconType="circle"
+          iconSize={8}
+          formatter={(value) => (
+            <span
+              style={{
+                fontSize: 12,
+                color: 'var(--color-text-secondary)',
+                fontFamily: 'var(--font-display)',
+              }}
+            >
+              {series.find((s) => s.key === value)?.label ?? value}
+            </span>
+          )}
+        />
+      )}
+      {series.map((s, i) => (
+        <Bar
+          key={s.key}
+          dataKey={s.key}
+          name={s.key}
+          fill={resolveColor(s, i)}
+          radius={[4, 4, 0, 0]}
+          maxBarSize={40}
+        />
+      ))}
+    </BarChart>
+  )
+}
+
+// ── LineChart renderer ────────────────────────────────────────────────────
+
+function LineRenderer({
+  data,
+  xKey,
+  series,
+}: {
+  data: ChartPanelProps['data']
+  xKey: string
+  series: ChartSeries[]
+}) {
+  return (
+    <LineChart data={data} margin={CARTESIAN_MARGIN}>
+      <CartesianGrid
+        vertical={false}
+        stroke="var(--color-border)"
+        strokeDasharray="3 3"
+        strokeOpacity={0.6}
+      />
+      <XAxis dataKey={xKey} tick={TICK_STYLE} axisLine={false} tickLine={false} />
+      <YAxis tick={TICK_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
+      <Tooltip
+        content={<GenericTooltip series={series} />}
+        cursor={{ stroke: 'var(--color-border)', strokeWidth: 1, strokeDasharray: '4 4' }}
+      />
+      {series.length > 1 && (
+        <Legend
+          iconType="circle"
+          iconSize={8}
+          formatter={(value) => (
+            <span
+              style={{
+                fontSize: 12,
+                color: 'var(--color-text-secondary)',
+                fontFamily: 'var(--font-display)',
+              }}
+            >
+              {series.find((s) => s.key === value)?.label ?? value}
+            </span>
+          )}
+        />
+      )}
+      {series.map((s, i) => {
+        const color = resolveColor(s, i)
+        return (
+          <Line
+            key={s.key}
+            type="monotone"
+            dataKey={s.key}
+            name={s.key}
+            stroke={color}
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: '#fff' }}
+          />
+        )
+      })}
+    </LineChart>
+  )
+}
+
+// ── AreaChart renderer ────────────────────────────────────────────────────
+
+function AreaRenderer({
+  data,
+  xKey,
+  series,
+}: {
+  data: ChartPanelProps['data']
+  xKey: string
+  series: ChartSeries[]
+}) {
+  return (
+    <AreaChart data={data} margin={CARTESIAN_MARGIN}>
+      <defs>
+        {series.map((s, i) => {
+          const color = resolveColor(s, i)
+          return (
+            <linearGradient key={s.key} id={`areaGrad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={color} stopOpacity={0.25} />
+              <stop offset="95%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          )
+        })}
+      </defs>
+      <CartesianGrid
+        vertical={false}
+        stroke="var(--color-border)"
+        strokeDasharray="3 3"
+        strokeOpacity={0.6}
+      />
+      <XAxis dataKey={xKey} tick={TICK_STYLE} axisLine={false} tickLine={false} />
+      <YAxis tick={TICK_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
+      <Tooltip
+        content={<GenericTooltip series={series} />}
+        cursor={{ stroke: 'var(--color-border)', strokeWidth: 1, strokeDasharray: '4 4' }}
+      />
+      {series.length > 1 && (
+        <Legend
+          iconType="circle"
+          iconSize={8}
+          formatter={(value) => (
+            <span
+              style={{
+                fontSize: 12,
+                color: 'var(--color-text-secondary)',
+                fontFamily: 'var(--font-display)',
+              }}
+            >
+              {series.find((s) => s.key === value)?.label ?? value}
+            </span>
+          )}
+        />
+      )}
+      {series.map((s, i) => {
+        const color = resolveColor(s, i)
+        return (
+          <Area
+            key={s.key}
+            type="monotone"
+            dataKey={s.key}
+            name={s.key}
+            stroke={color}
+            strokeWidth={2}
+            fill={`url(#areaGrad-${s.key})`}
+            dot={false}
+            activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: '#fff' }}
+          />
+        )
+      })}
+    </AreaChart>
+  )
+}
+
+// ── PieChart renderer ─────────────────────────────────────────────────────
+
+function PieRenderer({
+  data,
+  xKey,
+  series,
+}: {
+  data: ChartPanelProps['data']
+  xKey: string
+  series: ChartSeries[]
+}) {
+  // First series key is the value, xKey is the name
+  const valueKey = series[0].key
+  return (
+    <PieChart>
+      <Pie
+        data={data as Array<Record<string, string | number>>}
+        dataKey={valueKey}
+        nameKey={xKey}
+        cx="50%"
+        cy="45%"
+        outerRadius={90}
+        innerRadius={44}
+        paddingAngle={3}
+        strokeWidth={0}
+      >
+        {data.map((_, index) => (
+          <Cell
+            key={index}
+            fill={CHART_PALETTE[index % CHART_PALETTE.length]}
+          />
+        ))}
+      </Pie>
+      <Tooltip content={<PieTooltip />} />
+      <Legend
+        iconType="circle"
+        iconSize={8}
+        formatter={(value) => (
+          <span
+            style={{
+              fontSize: 12,
+              color: 'var(--color-text-secondary)',
+              fontFamily: 'var(--font-display)',
+            }}
+          >
+            {value}
+          </span>
+        )}
+      />
+    </PieChart>
+  )
+}
+
+// ── ChartPanel ────────────────────────────────────────────────────────────
+
+export function ChartPanel({
+  title,
+  data,
+  xKey,
+  series,
+  kinds = ['bar', 'line'],
+  defaultKind,
+  height = 280,
+  emptyLabel = 'No data',
+  className,
+}: ChartPanelProps): React.JSX.Element {
+  const [activeKind, setActiveKind] = useState<ChartKind>(defaultKind ?? kinds[0])
+
+  const showToggle = kinds.length > 1
+  const empty = isDataEmpty(data, series)
+
+  function renderChart() {
+    switch (activeKind) {
+      case 'bar':
+        return <BarRenderer data={data} xKey={xKey} series={series} />
+      case 'line':
+        return <LineRenderer data={data} xKey={xKey} series={series} />
+      case 'area':
+        return <AreaRenderer data={data} xKey={xKey} series={series} />
+      case 'pie':
+        return <PieRenderer data={data} xKey={xKey} series={series} />
+    }
+  }
+
+  return (
+    <Card padding="lg" className={className}>
+      {/* Header row */}
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <h2 className="text-base font-bold text-[var(--color-text-primary)]">{title}</h2>
+
+        {/* Chart-kind toggle — hidden when only one kind is allowed */}
+        {showToggle && (
+          <div
+            role="group"
+            aria-label="Chart type"
+            className="flex shrink-0 items-center gap-0.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-0.5"
+          >
+            {kinds.map((kind) => (
+              <button
+                key={kind}
+                type="button"
+                aria-pressed={activeKind === kind}
+                onClick={() => setActiveKind(kind)}
+                className={[
+                  'rounded-md px-2.5 py-1 text-xs font-semibold transition-colors duration-150',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1',
+                  activeKind === kind
+                    ? 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] shadow-soft'
+                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
+                ].join(' ')}
+              >
+                {KIND_LABELS[kind]}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Chart body */}
+      <div style={{ height }} className="tabular-nums">
+        {empty ? (
+          <EmptyState label={emptyLabel} />
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            {renderChart() as React.ReactElement}
+          </ResponsiveContainer>
+        )}
+      </div>
+    </Card>
+  )
+}

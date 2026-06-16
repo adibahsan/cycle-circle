@@ -176,6 +176,85 @@ export async function removeCategory(id: string) {
   return { success: true }
 }
 
+// ── Chart-data helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Returns article counts grouped by status (DRAFT / PUBLISHED / ARCHIVED).
+ * Status values correspond to the `ArticleStatus` enum.
+ */
+export async function getContentStatusBreakdown(): Promise<
+  { status: string; count: number }[]
+> {
+  const groups = await prisma.article.groupBy({
+    by: ['status'],
+    _count: { status: true },
+    orderBy: { status: 'asc' },
+  })
+
+  return groups.map((g) => ({ status: g.status, count: g._count.status }))
+}
+
+/**
+ * Returns article counts grouped by category name.
+ * Articles with no category are bucketed as "Uncategorised".
+ */
+export async function getContentByCategory(): Promise<
+  { category: string; count: number }[]
+> {
+  const groups = await prisma.article.groupBy({
+    by: ['categoryId'],
+    _count: { categoryId: true },
+    orderBy: { _count: { categoryId: 'desc' } },
+  })
+
+  if (groups.length === 0) return []
+
+  // Resolve category names for the non-null IDs in one query
+  const ids = groups
+    .map((g) => g.categoryId)
+    .filter((id): id is string => id !== null)
+
+  const categories = await prisma.articleCategory.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true },
+  })
+
+  const nameById = new Map(categories.map((c) => [c.id, c.name]))
+
+  return groups.map((g) => ({
+    category: g.categoryId ? (nameById.get(g.categoryId) ?? 'Uncategorised') : 'Uncategorised',
+    count: g._count.categoryId,
+  }))
+}
+
+/**
+ * Returns article counts per cycle phase tag.
+ * `cyclePhases` is a native PostgreSQL `CyclePhase[]` array column, so
+ * Prisma does not expose a direct groupBy on array elements. We fetch only
+ * the `cyclePhases` column and reduce in JS.
+ *
+ * All four phases are always present in the result even if count is 0:
+ * MENSTRUAL | FOLLICULAR | OVULATION | LUTEAL.
+ */
+export async function getContentByPhase(): Promise<
+  { phase: string; count: number }[]
+> {
+  const rows = await prisma.article.findMany({
+    select: { cyclePhases: true },
+  })
+
+  const PHASES = ['MENSTRUAL', 'FOLLICULAR', 'OVULATION', 'LUTEAL'] as const
+  const counts = new Map<string, number>(PHASES.map((p) => [p, 0]))
+
+  for (const row of rows) {
+    for (const phase of row.cyclePhases) {
+      counts.set(phase, (counts.get(phase) ?? 0) + 1)
+    }
+  }
+
+  return PHASES.map((phase) => ({ phase, count: counts.get(phase) ?? 0 }))
+}
+
 // ── Web app: published articles ────────────────────────────────────────────────
 
 export async function listPublishedArticles(

@@ -129,6 +129,7 @@ export interface AuthUser {
   role: string
   suspendedAt: Date | null
   deletedAt: Date | null
+  profileReminderOptOut: boolean
 }
 
 export async function getAuthUser(userId: string): Promise<AuthUser> {

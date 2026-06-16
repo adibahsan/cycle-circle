@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/Input'
 import { deleteArticle, createCategory, updateCategory, deleteCategory } from '@/app/actions/content-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
+import { ChartPanel } from '@/components/charts/ChartPanel'
 
 type ArticleRow = {
   id: string
@@ -42,6 +43,9 @@ interface ContentClientProps {
     totalPages: number
   }
   categories: CategoryOption[]
+  statusBreakdown: { status: string; count: number }[]
+  byCategory: { category: string; count: number }[]
+  byPhase: { phase: string; count: number }[]
 }
 
 const STATUS_OPTIONS = [
@@ -97,7 +101,7 @@ function formatDate(d: Date | null | string) {
   })
 }
 
-export function ContentClient({ data, categories }: ContentClientProps) {
+export function ContentClient({ data, categories, statusBreakdown, byCategory, byPhase }: ContentClientProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -344,6 +348,43 @@ export function ContentClient({ data, categories }: ContentClientProps) {
           </>
         }
       />
+
+      {/* Charts — status / category / cycle-phase breakdowns */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ChartPanel
+          title="Articles by Status"
+          data={statusBreakdown.map((r) => ({ name: r.status, count: r.count }))}
+          xKey="name"
+          series={[{ key: 'count', label: 'Articles' }]}
+          kinds={['pie', 'bar']}
+          defaultKind="pie"
+          height={240}
+          emptyLabel="No articles yet"
+        />
+        <ChartPanel
+          title="Articles by Category"
+          data={byCategory.map((r) => ({ name: r.category, count: r.count }))}
+          xKey="name"
+          series={[{ key: 'count', label: 'Articles' }]}
+          kinds={['bar']}
+          defaultKind="bar"
+          height={240}
+          emptyLabel="No categories yet"
+        />
+        <ChartPanel
+          title="Articles by Cycle Phase"
+          data={byPhase.map((r) => ({
+            name: r.phase.charAt(0) + r.phase.slice(1).toLowerCase(),
+            count: r.count,
+          }))}
+          xKey="name"
+          series={[{ key: 'count', label: 'Articles' }]}
+          kinds={['bar']}
+          defaultKind="bar"
+          height={240}
+          emptyLabel="No phase data yet"
+        />
+      </div>
 
       {/* Filters */}
       <FilterBar
