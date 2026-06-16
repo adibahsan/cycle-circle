@@ -19,6 +19,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
+import { CenteredShell } from '@/components/onboarding/CenteredShell';
+import { AccountControl } from '@/components/onboarding/AccountControl';
 import { useAppStore } from '@/lib/store';
 import { createProfile, setActiveProfileCookie } from '@/app/actions/profile-actions';
 import type { ProfileRelation } from '@vesta/shared/types';
@@ -177,14 +179,14 @@ function StepWelcome({ onNext, prefersReducedMotion }: { onNext: () => void; pre
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col items-center text-center gap-8 px-2">
+    <div className="flex flex-col items-center text-center gap-6 px-2 mx-auto w-full max-w-md lg:max-w-lg">
       {/* Decorative illustration — staggered fade-up entrance */}
       <motion.div
         custom={0}
         variants={FADE_UP}
         initial={prefersReducedMotion ? false : 'hidden'}
         animate="show"
-        className="relative w-56 h-56 flex items-center justify-center mt-4"
+        className="relative w-56 h-56 flex items-center justify-center mt-2"
       >
         {/* Outermost ring */}
         <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10 animate-breathe" />
@@ -213,7 +215,7 @@ function StepWelcome({ onNext, prefersReducedMotion }: { onNext: () => void; pre
         <h1 className="text-fluid-xl font-bold text-[var(--color-text-primary)]">
           {t('onboarding.welcome')}
         </h1>
-        <p className="text-[var(--color-text-secondary)] text-base leading-relaxed max-w-xs mx-auto">
+        <p className="text-[var(--color-text-secondary)] text-base leading-relaxed max-w-xs lg:max-w-md mx-auto">
           {t('onboarding.personalIntelligence')}
         </p>
       </motion.div>
@@ -224,7 +226,7 @@ function StepWelcome({ onNext, prefersReducedMotion }: { onNext: () => void; pre
         variants={FADE_UP}
         initial={prefersReducedMotion ? false : 'hidden'}
         animate="show"
-        className="flex items-start gap-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border)] rounded-2xl px-4 py-3.5 max-w-xs w-full"
+        className="flex items-start gap-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border)] rounded-2xl px-4 py-3.5 max-w-xs lg:max-w-md w-full"
       >
         <div className="mt-0.5 shrink-0 w-8 h-8 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center">
           <Shield size={16} className="text-[var(--color-primary)]" aria-hidden="true" />
@@ -302,7 +304,7 @@ function StepGoal({
   ];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 mx-auto w-full max-w-md lg:max-w-lg">
       <div className="text-center">
         <h2 className="text-fluid-lg font-bold text-[var(--color-text-primary)]">
           {t('onboarding.goal')}
@@ -396,7 +398,7 @@ function StepCycleHistory({
   const minDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 mx-auto w-full max-w-2xl">
       <div className="text-center">
         <h2 className="text-fluid-lg font-bold text-[var(--color-text-primary)]">
           {t('onboarding.tellAboutCycle')}
@@ -406,97 +408,99 @@ function StepCycleHistory({
         </p>
       </div>
 
-      {/* Cycle length stepper */}
-      <Card padding="md" className="glass space-y-3">
-        <div>
-          <p className="font-semibold text-[var(--color-text-primary)]">{t('onboarding.cycleLength')}</p>
-          <p className="text-xs text-[var(--color-text-muted)]">Usually 21–35 days</p>
-        </div>
-        <div className="flex justify-center">
-          <NumberStepper
-            value={cycleLength}
-            min={21}
-            max={45}
-            onChange={onCycleLength}
-            unit="days"
-          />
-        </div>
-        {/* Visual track */}
-        <div className="h-1.5 rounded-full bg-[var(--color-bg-secondary)] overflow-hidden">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] transition-[width] duration-200"
-            style={{ width: `${((cycleLength - 21) / (45 - 21)) * 100}%` }}
-          />
-        </div>
-      </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Cycle length stepper */}
+        <Card padding="md" className="glass space-y-3">
+          <div>
+            <p className="font-semibold text-[var(--color-text-primary)]">{t('onboarding.cycleLength')}</p>
+            <p className="text-xs text-[var(--color-text-muted)]">Usually 21–35 days</p>
+          </div>
+          <div className="flex justify-center">
+            <NumberStepper
+              value={cycleLength}
+              min={21}
+              max={45}
+              onChange={onCycleLength}
+              unit="days"
+            />
+          </div>
+          {/* Visual track */}
+          <div className="h-1.5 rounded-full bg-[var(--color-bg-secondary)] overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] transition-[width] duration-200"
+              style={{ width: `${((cycleLength - 21) / (45 - 21)) * 100}%` }}
+            />
+          </div>
+        </Card>
 
-      {/* Period length stepper */}
-      <Card padding="md" className="glass space-y-3">
-        <div>
-          <p className="font-semibold text-[var(--color-text-primary)]">{t('onboarding.periodLength')}</p>
-          <p className="text-xs text-[var(--color-text-muted)]">Usually 3–7 days</p>
-        </div>
-        <div className="flex justify-center">
-          <NumberStepper
-            value={periodLength}
-            min={1}
-            max={10}
-            onChange={onPeriodLength}
-            unit="days"
-          />
-        </div>
-        <div className="h-1.5 rounded-full bg-[var(--color-bg-secondary)] overflow-hidden">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] transition-[width] duration-200"
-            style={{ width: `${((periodLength - 1) / (10 - 1)) * 100}%` }}
-          />
-        </div>
-      </Card>
+        {/* Period length stepper */}
+        <Card padding="md" className="glass space-y-3">
+          <div>
+            <p className="font-semibold text-[var(--color-text-primary)]">{t('onboarding.periodLength')}</p>
+            <p className="text-xs text-[var(--color-text-muted)]">Usually 3–7 days</p>
+          </div>
+          <div className="flex justify-center">
+            <NumberStepper
+              value={periodLength}
+              min={1}
+              max={10}
+              onChange={onPeriodLength}
+              unit="days"
+            />
+          </div>
+          <div className="h-1.5 rounded-full bg-[var(--color-bg-secondary)] overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] transition-[width] duration-200"
+              style={{ width: `${((periodLength - 1) / (10 - 1)) * 100}%` }}
+            />
+          </div>
+        </Card>
 
-      {/* Last period date */}
-      <Card padding="md" className="glass">
-        <Input
-          id="onboarding-last-period-date"
-          label={`${t('onboarding.lastPeriod')} *`}
-          type="date"
-          value={lastPeriodDate}
-          min={minDate}
-          max={today}
-          error={lastPeriodError}
-          onChange={(e) => onLastPeriodDate(e.target.value)}
-        />
-      </Card>
+        {/* Last period date */}
+        <Card padding="md" className="glass">
+          <Input
+            id="onboarding-last-period-date"
+            label={`${t('onboarding.lastPeriod')} *`}
+            type="date"
+            value={lastPeriodDate}
+            min={minDate}
+            max={today}
+            error={lastPeriodError}
+            onChange={(e) => onLastPeriodDate(e.target.value)}
+          />
+        </Card>
 
-      {/* Flow intensity */}
-      <Card padding="md" className="glass space-y-3">
-        <div>
-          <p className="font-semibold text-[var(--color-text-primary)]">{t('dashboard.flowIntensity', 'Flow intensity')}</p>
-          <p className="text-xs text-[var(--color-text-muted)]">How heavy is your usual flow?</p>
-        </div>
-        <div className="flex gap-2" role="group" aria-label="Flow intensity">
-          {(['light', 'medium', 'heavy'] as FlowIntensity[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => onFlowIntensity(f)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
-                flowIntensity === f
-                  ? 'text-white shadow-soft'
-                  : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]'
-              }`}
-              style={
-                flowIntensity === f
-                  ? { backgroundColor: FLOW_COLORS[f], borderColor: FLOW_COLORS[f] }
-                  : {}
-              }
-            >
-              <span className="mr-1" aria-hidden="true">
-                {f === 'light' ? '💧' : f === 'medium' ? '🩸' : '🌊'}
-              </span>
-              {FLOW_LABELS[f]}
-            </button>
-          ))}
-        </div>
-      </Card>
+        {/* Flow intensity */}
+        <Card padding="md" className="glass space-y-3">
+          <div>
+            <p className="font-semibold text-[var(--color-text-primary)]">{t('dashboard.flowIntensity', 'Flow intensity')}</p>
+            <p className="text-xs text-[var(--color-text-muted)]">How heavy is your usual flow?</p>
+          </div>
+          <div className="flex gap-2" role="group" aria-label="Flow intensity">
+            {(['light', 'medium', 'heavy'] as FlowIntensity[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => onFlowIntensity(f)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
+                  flowIntensity === f
+                    ? 'text-white shadow-soft'
+                    : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]'
+                }`}
+                style={
+                  flowIntensity === f
+                    ? { backgroundColor: FLOW_COLORS[f], borderColor: FLOW_COLORS[f] }
+                    : {}
+                }
+              >
+                <span className="mr-1" aria-hidden="true">
+                  {f === 'light' ? '💧' : f === 'medium' ? '🩸' : '🌊'}
+                </span>
+                {FLOW_LABELS[f]}
+              </button>
+            ))}
+          </div>
+        </Card>
+      </div>
 
     </div>
   );
@@ -526,7 +530,7 @@ function StepProfile({
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 mx-auto w-full max-w-md lg:max-w-lg">
       <div className="text-center">
         <h2 className="text-fluid-lg font-bold text-[var(--color-text-primary)]">
           {t('onboarding.whoIsProfile')}
@@ -671,9 +675,9 @@ function StepDone({
   ];
 
   return (
-    <div className="flex flex-col items-center text-center gap-6">
+    <div className="flex flex-col items-center text-center gap-5 mx-auto w-full max-w-md lg:max-w-lg">
       {/* Celebration area */}
-      <div className="relative w-full h-32 flex items-center justify-center" aria-hidden="true">
+      <div className="relative w-full h-20 lg:h-24 flex items-center justify-center" aria-hidden="true">
         {/* Confetti dots */}
         {confettiDots.map((dot, i) =>
           prefersReducedMotion ? (
@@ -745,7 +749,7 @@ function StepDone({
         </div>
       </Card>
 
-      <p className="text-xs text-[var(--color-text-muted)] max-w-xs">
+      <p className="text-xs text-[var(--color-text-muted)] max-w-xs lg:max-w-md">
         {t('onboarding.settingsHint')}
       </p>
     </div>
@@ -754,7 +758,11 @@ function StepDone({
 
 // ─── Main Onboarding Client ───────────────────────────────────────────────────
 
-export default function OnboardingClient() {
+interface OnboardingClientProps {
+  user: { phone: string | null; email: string | null; fullName: string | null };
+}
+
+export default function OnboardingClient({ user }: OnboardingClientProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const { setOnboardingComplete, setActiveProfile } = useAppStore();
@@ -993,97 +1001,82 @@ export default function OnboardingClient() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-primary)] flex flex-col max-w-md mx-auto relative overflow-hidden">
-        {/* Floating background orbs — stopped when reduced motion is preferred */}
-        <motion.div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-[-80px] right-[-60px] w-72 h-72 rounded-full opacity-[0.08]"
-          style={{ background: 'radial-gradient(circle, #e8476c 0%, transparent 70%)' }}
-          animate={prefersReducedMotion ? undefined : { x: [0, 20, 0], y: [0, -15, 0] }}
-          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-[-60px] left-[-80px] w-80 h-80 rounded-full opacity-[0.08]"
-          style={{ background: 'radial-gradient(circle, #9b7fd4 0%, transparent 70%)' }}
-          animate={prefersReducedMotion ? undefined : { x: [0, -12, 0], y: [0, 18, 0] }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-        />
-
-        {/* Top bar */}
-        <div className="sticky top-0 z-10 bg-[var(--color-bg-primary)]/90 backdrop-blur-sm px-5 pt-safe-top">
-          <div className="flex items-center justify-between py-4">
-            {/* Vesta wordmark */}
-            <span className="text-lg font-bold text-[var(--color-primary)]">Vesta</span>
-            <div className="flex items-center gap-2">
-              {/* Language toggle */}
-              <LanguageToggle />
-              {/* Step counter */}
-              <span className="text-xs font-medium text-[var(--color-text-muted)]">
-                {step} / {TOTAL_STEPS}
-              </span>
-            </div>
+    <CenteredShell prefersReducedMotion={prefersReducedMotion}>
+      {/* ── Header (shrink-0) ── */}
+      <div className="shrink-0 px-5 pt-5 pb-3 md:px-7">
+        <div className="flex items-center justify-between">
+          {/* Vesta wordmark — always visible now that the brand panel is gone */}
+          <span className="text-lg font-bold text-[var(--color-primary)]">Vesta</span>
+          {/* Right cluster: identity chip + language toggle + step counter */}
+          <div className="flex items-center gap-2 min-w-0">
+            <AccountControl user={user} />
+            <LanguageToggle />
+            <span className="text-xs font-medium tabular-nums text-[var(--color-text-muted)] shrink-0">
+              {step}&nbsp;/&nbsp;{TOTAL_STEPS}
+            </span>
           </div>
-          {/* Progress bar */}
+        </div>
+        {/* Progress indicators */}
+        <div className="mt-3">
           <ProgressBar step={step} prefersReducedMotion={prefersReducedMotion} />
-          <div className="pb-2" />
         </div>
+      </div>
 
-        {/* Step content with animated transitions */}
-        <div className="flex-1 overflow-hidden relative">
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
-              key={step}
-              custom={direction}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={
-                prefersReducedMotion
-                  ? { opacity: { duration: 0.15 } }
-                  : {
-                      x: { type: 'spring', stiffness: 280, damping: 30 },
-                      opacity: { duration: 0.18 },
-                    }
-              }
-              className="absolute inset-0 overflow-y-auto px-5 py-4"
-            >
-              {renderStep()}
-              {/* Bottom padding so content isn't hidden behind fixed nav */}
-              <div className="h-6" />
-            </motion.div>
-          </AnimatePresence>
-        </div>
+      {/* ── Scrollable content (flex-1) ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={step}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={
+              prefersReducedMotion
+                ? { opacity: { duration: 0.15 } }
+                : {
+                    x: { type: 'spring', stiffness: 280, damping: 30 },
+                    opacity: { duration: 0.18 },
+                  }
+            }
+            className="px-5 py-6 md:px-8 md:py-8"
+          >
+            {renderStep()}
+            {/* Bottom padding so content isn't hidden behind the nav */}
+            <div className="h-2" />
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
-        {/* Fixed bottom navigation bar — shown for steps 2–5 */}
-        {step >= 2 && step <= 5 && (
-          <div className="sticky bottom-0 z-20 bg-[var(--color-bg-primary)]/95 backdrop-blur-sm border-t border-[var(--color-border)] px-5 py-4">
-            <div className="flex gap-3 max-w-md mx-auto">
-              <Button variant="outline" size="lg" onClick={goBack} aria-label={t('common.back')} className="w-14 shrink-0 px-0">
-                <ChevronLeft size={20} aria-hidden="true" />
+      {/* ── Bottom nav (shrink-0) — shown for steps 2–5 ── */}
+      {step >= 2 && step <= 5 && (
+        <div className="shrink-0 border-t border-[var(--color-border)] px-5 py-4 md:px-7">
+          <div className="flex gap-3">
+            <Button variant="outline" size="lg" onClick={goBack} aria-label={t('common.back')} className="w-14 shrink-0 px-0">
+              <ChevronLeft size={20} aria-hidden="true" />
+            </Button>
+            {step === 5 ? (
+              <Button
+                size="lg"
+                fullWidth
+                onClick={handleFinish}
+                disabled={submitting}
+              >
+                {submitting ? t('common.loading') : t('onboarding.goToDashboard')}
               </Button>
-              {step === 5 ? (
-                <Button
-                  size="lg"
-                  fullWidth
-                  onClick={handleFinish}
-                  disabled={submitting}
-                >
-                  {submitting ? t('common.loading') : t('onboarding.goToDashboard')}
-                </Button>
-              ) : (
-                <Button
-                  size="lg"
-                  fullWidth
-                  onClick={goNext}
-                >
-                  {t('onboarding.next')} <ChevronRight size={18} className="ml-1" aria-hidden="true" />
-                </Button>
-              )}
-            </div>
+            ) : (
+              <Button
+                size="lg"
+                fullWidth
+                onClick={goNext}
+              >
+                {t('onboarding.next')} <ChevronRight size={18} className="ml-1" aria-hidden="true" />
+              </Button>
+            )}
           </div>
-        )}
-    </div>
+        </div>
+      )}
+    </CenteredShell>
   );
 }

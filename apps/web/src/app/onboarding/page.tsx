@@ -10,5 +10,5 @@ export default async function OnboardingPage() {
   const profiles = await getProfiles()
   if (profiles.length > 0) redirect('/dashboard')
 
-  return <OnboardingClient />
+  return <OnboardingClient user={{ phone: user.phone ?? null, email: user.email ?? null, fullName: user.fullName ?? null }} />
 }

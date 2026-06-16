@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import { useHasMounted } from '@/components/motion/useHasMounted';
+import { CenteredShell } from '@/components/onboarding/CenteredShell';
 
 // ─── Animation constants ───────────────────────────────────────────────────────
 
@@ -125,7 +126,7 @@ function FeatureIllustration({
       variants={FADE_UP}
       initial={prefersReducedMotion ? false : 'hidden'}
       animate="show"
-      className="relative w-56 h-56 flex items-center justify-center mt-4"
+      className="relative w-56 h-56 lg:w-[clamp(14rem,26vh,18rem)] lg:h-[clamp(14rem,26vh,18rem)] flex items-center justify-center mt-2 lg:mt-4"
     >
       {/* Outermost ring */}
       <div
@@ -210,7 +211,7 @@ function FeatureScreen({
   const { key, Icon, accent } = feature;
 
   return (
-    <div className="flex flex-col items-center text-center gap-8 px-2 min-h-[60dvh] justify-center">
+    <div className="flex flex-col items-center text-center gap-6 lg:gap-8 px-2 lg:px-8 min-h-[55dvh] md:min-h-0 justify-center">
       <FeatureIllustration
         accent={accent}
         Icon={Icon}
@@ -222,12 +223,12 @@ function FeatureScreen({
         variants={FADE_UP}
         initial={prefersReducedMotion ? false : 'hidden'}
         animate="show"
-        className="space-y-3 max-w-sm"
+        className="space-y-3 lg:space-y-4 max-w-sm lg:max-w-lg"
       >
         <h1 className="text-fluid-lg font-bold text-[var(--color-text-primary)]">
           {t(`landing.features.${key}.title`)}
         </h1>
-        <p className="text-fluid-md text-[var(--color-text-secondary)] max-w-md leading-relaxed">
+        <p className="text-fluid-md text-[var(--color-text-secondary)] max-w-md lg:max-w-lg leading-relaxed">
           {t(`landing.features.${key}.body`)}
         </p>
       </motion.div>
@@ -241,14 +242,14 @@ function FinalScreen({ prefersReducedMotion }: { prefersReducedMotion: boolean }
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col items-center text-center gap-8 px-2 min-h-[60dvh] justify-center">
+    <div className="flex flex-col items-center text-center gap-6 lg:gap-8 px-2 lg:px-8 min-h-[55dvh] md:min-h-0 justify-center">
       {/* Decorative gradient panel */}
       <motion.div
         custom={0}
         variants={FADE_UP}
         initial={prefersReducedMotion ? false : 'hidden'}
         animate="show"
-        className="gradient-primary rounded-[var(--radius-xl)] shadow-glow px-8 py-10 flex flex-col items-center gap-6 w-full max-w-sm"
+        className="gradient-primary rounded-[var(--radius-xl)] shadow-glow px-8 py-8 lg:py-10 flex flex-col items-center gap-6 w-full max-w-sm lg:max-w-lg"
       >
         <h1 className="text-fluid-xl font-bold text-white">
           {t('getStarted.finalTitle')}
@@ -347,33 +348,17 @@ export function GetStartedClient() {
   }
 
   return (
-    <div className="min-h-dvh bg-[var(--color-bg-primary)] flex flex-col max-w-md mx-auto relative overflow-hidden">
-      {/* Floating background orbs — stopped when reduced motion is preferred */}
-      <motion.div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-[-80px] right-[-60px] w-72 h-72 rounded-full opacity-[0.08]"
-        style={{ background: 'radial-gradient(circle, #e8476c 0%, transparent 70%)' }}
-        animate={prefersReducedMotion ? undefined : { x: [0, 20, 0], y: [0, -15, 0] }}
-        transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      <motion.div
-        aria-hidden="true"
-        className="pointer-events-none absolute bottom-[-60px] left-[-80px] w-80 h-80 rounded-full opacity-[0.08]"
-        style={{ background: 'radial-gradient(circle, #9b7fd4 0%, transparent 70%)' }}
-        animate={prefersReducedMotion ? undefined : { x: [0, -12, 0], y: [0, 18, 0] }}
-        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-      />
-
-      {/* Top bar */}
-      <div className="sticky top-0 z-10 bg-[var(--color-bg-primary)]/90 backdrop-blur-sm px-5 pt-safe-top">
-        <div className="flex items-center justify-between py-4">
-          {/* Vesta wordmark */}
+    <CenteredShell prefersReducedMotion={prefersReducedMotion}>
+      {/* ── Header (shrink-0) ── */}
+      <div className="shrink-0 px-5 pt-5 pb-3 md:px-7">
+        <div className="flex items-center justify-between">
+          {/* Vesta wordmark — always visible */}
           <span className="text-lg font-bold text-[var(--color-primary)]">
             {t('app.name')}
           </span>
           <div className="flex items-center gap-3">
             <LanguageToggle />
-            {/* Skip link — takes logged-out user straight to login */}
+            {/* Skip link */}
             <Link
               href="/login"
               aria-label={t('getStarted.skip')}
@@ -382,18 +367,18 @@ export function GetStartedClient() {
               {t('getStarted.skip')}
             </Link>
             {/* Step counter */}
-            <span className="text-xs font-medium text-[var(--color-text-muted)] tabular-nums">
+            <span className="text-xs font-medium tabular-nums text-[var(--color-text-muted)] shrink-0">
               {step}&nbsp;/&nbsp;{TOTAL_STEPS}
             </span>
           </div>
         </div>
-        {/* Progress dots */}
-        <ProgressDots step={step} prefersReducedMotion={prefersReducedMotion} />
-        <div className="pb-2" />
+        <div className="mt-3">
+          <ProgressDots step={step} prefersReducedMotion={prefersReducedMotion} />
+        </div>
       </div>
 
-      {/* Step content with animated slide transitions */}
-      <div className="flex-1 overflow-hidden relative">
+      {/* ── Scrollable content (flex-1) ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={step}
@@ -410,19 +395,19 @@ export function GetStartedClient() {
                     opacity: { duration: 0.18 },
                   }
             }
-            className="absolute inset-0 overflow-y-auto px-5 py-4"
+            className="px-5 py-6 md:px-8 md:py-8"
           >
             {renderStep()}
-            {/* Bottom padding so content isn't hidden behind fixed nav */}
+            {/* Bottom padding so content isn't hidden behind the nav */}
             <div className="h-6" />
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Sticky bottom navigation */}
-      <div className="sticky bottom-0 z-20 bg-[var(--color-bg-primary)]/95 backdrop-blur-sm border-t border-[var(--color-border)] px-5 py-4">
-        <div className="flex gap-3 max-w-md mx-auto">
-          {/* Back button — hidden on step 1 */}
+      {/* ── Bottom nav (shrink-0) ── */}
+      <div className="shrink-0 border-t border-[var(--color-border)] px-5 py-4 md:px-7">
+        <div className="flex gap-3">
+          {/* Back button — disabled on step 1 */}
           <Button
             variant="outline"
             size="lg"
@@ -443,6 +428,6 @@ export function GetStartedClient() {
           )}
         </div>
       </div>
-    </div>
+    </CenteredShell>
   );
 }

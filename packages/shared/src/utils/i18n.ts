@@ -59,6 +59,9 @@ const resources = {
         enterNameError: 'Enter a name (at least 2 characters)',
         lastPeriodRequired: 'Last period start date is required',
         yourNameLabel: 'Your name',
+        brandHeadline: "Let's set up your space",
+        brandSubcopy: 'A private, personalised cycle companion — just for you.',
+        signedInAs: 'Signed in as',
       },
       dashboard: {
         day: 'Day', phase: 'Phase', nextPeriod: 'Next period in', days: 'days',
@@ -477,6 +480,9 @@ const resources = {
         enterNameError: 'একটি নাম দিন (কমপক্ষে ২ অক্ষর)',
         lastPeriodRequired: 'শেষ পিরিয়ড শুরুর তারিখ প্রয়োজন',
         yourNameLabel: 'আপনার নাম',
+        brandHeadline: 'চলুন আপনার জায়গাটি তৈরি করি',
+        brandSubcopy: 'শুধু আপনার জন্য — একটি ব্যক্তিগত, গোপনীয় চক্র সহচর।',
+        signedInAs: 'সাইন ইন করেছেন',
       },
       dashboard: {
         day: 'দিন', phase: 'পর্যায়', nextPeriod: 'পরবর্তী পিরিয়ড', days: 'দিন',
