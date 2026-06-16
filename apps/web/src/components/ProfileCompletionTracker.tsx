@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useId, useState, useEffect } from 'react';
+import React, { useId, useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
@@ -35,6 +35,71 @@ export interface ProfileCompletionTrackerProps {
   variant?: 'card' | 'header' | 'pill';  // default 'card'
   onComplete?: () => void;               // opens the profile-completion modal
   className?: string;
+}
+
+// ── useCountUp ────────────────────────────────────────────────────────────────
+// Animates an integer from 0 → target over ~0.8s using easeOutCubic via rAF.
+// When `enabled` is false (prefers-reduced-motion or not yet mounted) it returns
+// `target` immediately, which is also what renders on the server — so SSR and
+// the first client paint both emit the same static value; the animation only
+// starts after mount + gate confirmation.
+
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function useCountUp(target: number, enabled: boolean): number {
+  // Start at target (deterministic SSR value). The rAF animation overwrites
+  // this after mount only when `enabled` is true.
+  const [value, setValue] = useState(target);
+  const rafRef = useRef<number | null>(null);
+  const prevTargetRef = useRef(target);
+
+  useEffect(() => {
+    // Cancel any in-flight animation
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+
+    if (!enabled) {
+      setValue(target);
+      prevTargetRef.current = target;
+      return;
+    }
+
+    // Only re-run when target actually changes (or on first enabled mount)
+    if (prevTargetRef.current === target && value === target) return;
+
+    const DURATION = 800; // ms
+    const start = performance.now();
+    const from = 0; // always count up from 0 for a satisfying entrance
+
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / DURATION, 1);
+      const easedValue = Math.round(from + (target - from) * easeOutCubic(progress));
+      setValue(easedValue);
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        rafRef.current = null;
+        prevTargetRef.current = target;
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target, enabled]);
+
+  return value;
 }
 
 // ── Item label / CTA map ──────────────────────────────────────────────────────
@@ -72,72 +137,122 @@ function getItemCta(
   return { type: 'link', href: '/calendar' };
 }
 
-// ── Progress Ring (card variant) ─────────────────────────────────────────────
+// ── Progress Ring ─────────────────────────────────────────────────────────────
 
 interface ProgressRingProps {
   percent: number;
+  displayPercent: number; // driven by useCountUp for center label
   size: number;
   stroke: number;
   prefersReducedMotion: boolean;
   mounted: boolean;
+  incomplete: boolean;   // drives glow-pulse when true
+  centerLabel?: boolean; // render center percent label inside ring
 }
 
 function ProgressRing({
   percent,
+  displayPercent,
   size,
   stroke,
   prefersReducedMotion,
   mounted,
+  incomplete,
+  centerLabel = false,
 }: ProgressRingProps) {
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - percent / 100);
 
+  // Glow: visible only when mounted, motion allowed, and profile is incomplete
+  const showGlow = mounted && !prefersReducedMotion && incomplete;
+
   return (
-    <svg
-      width={size}
-      height={size}
-      className="rotate-[-90deg]"
-      aria-hidden="true"
-    >
-      {/* Track */}
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke="var(--color-border)"
-        strokeWidth={stroke}
-      />
-      {/* Progress */}
-      {mounted && !prefersReducedMotion ? (
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="var(--color-primary)"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.0, ease: 'easeOut' }}
+    <div className="relative" style={{ width: size, height: size }}>
+      {/* Soft breathe-glow halo behind the ring (opacity+scale pulse) */}
+      {showGlow && (
+        <motion.div
+          aria-hidden="true"
+          className="absolute inset-0 rounded-full"
+          style={{
+            background:
+              'radial-gradient(circle, var(--goal-accent, var(--color-primary)) 0%, transparent 70%)',
+            opacity: 0,
+          }}
+          animate={{ opacity: [0, 0.18, 0], scale: [0.85, 1.08, 0.85] }}
+          transition={{
+            duration: 3.2,
+            ease: 'easeInOut',
+            repeat: Infinity,
+            repeatType: 'loop',
+          }}
         />
-      ) : (
+      )}
+
+      <svg
+        width={size}
+        height={size}
+        className="rotate-[-90deg]"
+        aria-hidden="true"
+      >
+        {/* Track */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="var(--color-primary)"
+          stroke="var(--color-border)"
           strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
         />
+        {/* Progress arc */}
+        {mounted && !prefersReducedMotion ? (
+          <motion.circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="var(--goal-accent, var(--color-primary))"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset: offset }}
+            transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}
+          />
+        ) : (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="var(--goal-accent, var(--color-primary))"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+          />
+        )}
+      </svg>
+
+      {/* Optional center label */}
+      {centerLabel && (
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          aria-hidden="true"
+        >
+          <span
+            className="font-extrabold tabular-nums leading-none"
+            style={{
+              fontSize: size >= 56 ? '0.875rem' : '0.5rem',
+              color: 'var(--goal-accent, var(--color-primary))',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {displayPercent}%
+          </span>
+        </div>
       )}
-    </svg>
+    </div>
   );
 }
 
@@ -268,6 +383,39 @@ function RecommendedBlock({
   );
 }
 
+// ── StaggeredChecklistItem ────────────────────────────────────────────────────
+// Wraps ChecklistItem with a per-index staggered entrance animation (pill panel).
+
+function StaggeredChecklistItem({
+  itemKey,
+  onComplete,
+  index,
+  prefersReducedMotion,
+}: {
+  itemKey: string;
+  onComplete?: () => void;
+  index: number;
+  prefersReducedMotion: boolean;
+}) {
+  if (prefersReducedMotion) {
+    return <ChecklistItem itemKey={itemKey} onComplete={onComplete} />;
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        delay: index * 0.04,
+        ease: [0.22, 1, 0.36, 1],
+        duration: 0.28,
+      }}
+    >
+      <ChecklistItem itemKey={itemKey} onComplete={onComplete} />
+    </motion.div>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ProfileCompletionTracker({
@@ -281,8 +429,13 @@ export function ProfileCompletionTracker({
   const mounted = useHasMounted();
   const prefersReducedMotion = mounted && reduceRaw;
 
+  // Count-up is only enabled after mount AND when reduced-motion is not requested.
+  // On the server and on the first client render, useCountUp returns target directly
+  // (because enabled=false), so SSR HTML matches the first paint — no hydration mismatch.
+  const countUpEnabled = mounted && !prefersReducedMotion;
+  const displayPercent = useCountUp(status.percent, countUpEnabled);
+
   // Pill variant expand/collapse state — always initialised to false for SSR safety.
-  // The stored preference is applied client-side in a useEffect after mount.
   const [expanded, setExpanded] = useState(false);
   const pillPanelId = useId();
 
@@ -332,22 +485,18 @@ export function ProfileCompletionTracker({
           .join(' ')
           .trim()}
       >
-        {/* Mini ring */}
-        <div className="relative shrink-0" style={{ width: RING_SIZE, height: RING_SIZE }} aria-hidden="true">
+        {/* Mini ring with center label */}
+        <div aria-hidden="true">
           <ProgressRing
             percent={status.percent}
+            displayPercent={displayPercent}
             size={RING_SIZE}
             stroke={RING_STROKE}
             prefersReducedMotion={prefersReducedMotion}
             mounted={mounted}
+            incomplete={!status.complete}
+            centerLabel
           />
-          {/* Percent in center */}
-          <div
-            className="absolute inset-0 flex items-center justify-center text-[8px] font-bold tabular-nums"
-            style={{ color: 'var(--color-primary)' }}
-          >
-            {status.percent}
-          </div>
         </div>
         <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
           {t('profileCompletion.headerLabel')}
@@ -358,7 +507,7 @@ export function ProfileCompletionTracker({
 
   // ── Pill variant ─────────────────────────────────────────────────────────────
   if (variant === 'pill') {
-    const PILL_RING_SIZE = 28;
+    const PILL_RING_SIZE = 32;
     const PILL_RING_STROKE = 3;
     const showRecommendedPill = status.recommended && !status.recommended.done;
 
@@ -394,44 +543,38 @@ export function ProfileCompletionTracker({
             'bg-[var(--color-bg-card)] border border-[var(--color-border)]',
             'hover:border-[var(--color-primary)] transition-colors',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]',
-            'min-h-[48px]',
+            'min-h-[56px]',
           ].join(' ')}
         >
-          {/* Mini progress ring */}
-          <div
-            className="relative shrink-0"
-            style={{ width: PILL_RING_SIZE, height: PILL_RING_SIZE }}
-            aria-hidden="true"
-          >
+          {/* Mini progress ring — no center label here, percent is shown prominently below */}
+          <div aria-hidden="true">
             <ProgressRing
               percent={status.percent}
+              displayPercent={displayPercent}
               size={PILL_RING_SIZE}
               stroke={PILL_RING_STROKE}
               prefersReducedMotion={prefersReducedMotion}
               mounted={mounted}
+              incomplete={!status.complete}
             />
-            <div
-              className="absolute inset-0 flex items-center justify-center text-[8px] font-bold"
-              style={{ color: 'var(--color-primary)' }}
-              aria-hidden="true"
-            >
-              {status.percent}
-            </div>
           </div>
 
-          {/* Labels */}
-          <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
-            <span className="text-sm font-semibold text-[var(--color-text-primary)] truncate">
-              {t('profileCompletion.title')}
-            </span>
+          {/* Prominent percent + secondary label */}
+          <div className="flex-1 min-w-0 flex flex-col justify-center overflow-hidden">
+            {/* PRIMARY: large bold percent */}
             <span
-              className="text-xs font-semibold shrink-0 tabular-nums"
+              className="text-xl font-extrabold leading-tight tabular-nums"
               style={{
-                color: 'var(--color-secondary)',
+                color: 'var(--goal-accent, var(--color-primary))',
                 fontVariantNumeric: 'tabular-nums',
               }}
+              aria-hidden="true"
             >
-              {t('profileCompletion.percentComplete', { percent: status.percent })}
+              {displayPercent}%
+            </span>
+            {/* SECONDARY: demoted title */}
+            <span className="text-xs text-[var(--color-text-muted)] truncate leading-snug mt-0.5">
+              {t('profileCompletion.title')}
             </span>
           </div>
 
@@ -458,14 +601,16 @@ export function ProfileCompletionTracker({
               aria-live="polite"
               className="pt-2"
             >
-              {/* Pending items */}
+              {/* Pending items — static (no stagger) when reduced-motion */}
               {pendingItems.length > 0 && (
                 <div className="flex flex-col gap-1.5 mb-3">
-                  {pendingItems.map((item) => (
-                    <ChecklistItem
+                  {pendingItems.map((item, i) => (
+                    <StaggeredChecklistItem
                       key={item.key}
                       itemKey={item.key}
                       onComplete={onComplete}
+                      index={i}
+                      prefersReducedMotion={prefersReducedMotion}
                     />
                   ))}
                 </div>
@@ -500,18 +645,20 @@ export function ProfileCompletionTracker({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.22, ease: 'easeOut' }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                 style={{ overflow: 'hidden' }}
               >
                 <div className="pt-2">
-                  {/* Pending items */}
+                  {/* Pending items — staggered entrance */}
                   {pendingItems.length > 0 && (
                     <div className="flex flex-col gap-1.5 mb-3">
-                      {pendingItems.map((item) => (
-                        <ChecklistItem
+                      {pendingItems.map((item, i) => (
+                        <StaggeredChecklistItem
                           key={item.key}
                           itemKey={item.key}
                           onComplete={onComplete}
+                          index={i}
+                          prefersReducedMotion={prefersReducedMotion}
                         />
                       ))}
                     </div>
@@ -555,28 +702,18 @@ export function ProfileCompletionTracker({
       <div aria-live="polite">
         {/* Header row */}
         <div className="flex items-start gap-4 mb-4">
-          {/* Ring */}
-          <div
-            className="relative shrink-0"
-            style={{ width: RING_SIZE, height: RING_SIZE }}
-            aria-hidden="true"
-          >
+          {/* Ring with center percent label driven by count-up */}
+          <div aria-hidden="true">
             <ProgressRing
               percent={status.percent}
+              displayPercent={displayPercent}
               size={RING_SIZE}
               stroke={RING_STROKE}
               prefersReducedMotion={prefersReducedMotion}
               mounted={mounted}
+              incomplete={!status.complete}
+              centerLabel
             />
-            {/* Percent in center */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span
-                className="text-sm font-extrabold tabular-nums leading-none"
-                style={{ color: 'var(--color-primary)' }}
-              >
-                {status.percent}%
-              </span>
-            </div>
           </div>
 
           {/* Text */}
@@ -589,9 +726,12 @@ export function ProfileCompletionTracker({
             </p>
             <p
               className="text-xs font-semibold tabular-nums mt-1"
-              style={{ color: 'var(--color-secondary)' }}
+              style={{
+                color: 'var(--goal-accent, var(--color-primary))',
+                fontVariantNumeric: 'tabular-nums',
+              }}
             >
-              {t('profileCompletion.percentComplete', { percent: status.percent })}
+              {t('profileCompletion.percentComplete', { percent: displayPercent })}
             </p>
           </div>
         </div>
@@ -678,7 +818,7 @@ export function ProfileCompletionTracker({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
     >
       {cardContent}
     </motion.div>

@@ -1,16 +1,17 @@
 import type { FlowIntensity } from '@prisma/client'
 import { prisma } from '../db'
 import { ensurePeriodLogFromProfile } from '../period-log-sync'
+import { normalizeGoal } from '../../utils/goal'
 
 export function defaultNotificationPrefsForGoal(goal?: string | null): {
   periodAlert: boolean
   fertileWindow: boolean
   loggingReminder: boolean
 } {
-  if (goal === 'conceive') {
-    return { periodAlert: false, fertileWindow: true, loggingReminder: false }
-  }
-  // 'tracking', 'perimenopause', null, or any unrecognised value
+  const g = normalizeGoal(goal)
+  if (g === 'conceive')      return { periodAlert: false, fertileWindow: true,  loggingReminder: false }
+  if (g === 'pregnancy')     return { periodAlert: false, fertileWindow: false, loggingReminder: false }
+  if (g === 'perimenopause') return { periodAlert: true,  fertileWindow: false, loggingReminder: true  }
   return { periodAlert: true, fertileWindow: true, loggingReminder: true }
 }
 

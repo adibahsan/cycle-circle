@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { revalidateTag } from 'next/cache'
 import { cookies } from 'next/headers'
 import { requireAuth, getAuthUser } from '@vesta/shared/server/auth'
+import { normalizeGoal } from '@vesta/shared/utils/goal'
 import {
   assertProfileOwnership,
   createProfile as svcCreateProfile,
@@ -30,7 +31,10 @@ export async function createProfile(input: z.infer<typeof createProfileSchema>) 
   const user = await getAuthUser(jwt.sub)
   const data = createProfileSchema.parse(input)
 
-  const profile = await svcCreateProfile(user.id, data)
+  const profile = await svcCreateProfile(user.id, {
+    ...data,
+    goal: data.goal ? (normalizeGoal(data.goal) ?? data.goal) : undefined,
+  })
 
   if (data.userName) {
     await svcUpdateUserName(user.id, data.userName)
@@ -58,7 +62,7 @@ const updateProfileSchema = z.object({
   relation: z.enum(['SELF', 'WIFE', 'SISTER', 'MOTHER', 'DAUGHTER', 'GIRLFRIEND']).optional(),
   cycleLength: z.number().int().min(21).max(45).optional(),
   periodLength: z.number().int().min(1).max(14).optional(),
-  goal: z.enum(['tracking', 'conceive', 'perimenopause']).optional(),
+  goal: z.enum(['tracking', 'conceive', 'pregnancy', 'perimenopause']).optional(),
 })
 
 export async function updateProfile(input: z.infer<typeof updateProfileSchema>) {
@@ -75,6 +79,9 @@ export async function updateProfile(input: z.infer<typeof updateProfileSchema>) 
   })
 
   revalidateTag(`profiles:${user.id}`, { expire: 0 })
+  // Goal/cycle changes affect dashboard + calendar (mode, predictions),
+  // which are cached under the tracking tag.
+  revalidateTag(`tracking:${data.profileId}`, { expire: 0 })
   return updated
 }
 

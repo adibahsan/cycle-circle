@@ -18,7 +18,7 @@ import {
   parseISO,
 } from 'date-fns'
 import { bn } from 'date-fns/locale/bn'
-import { ChevronLeft, ChevronRight, X, Pencil } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Pencil, Baby } from 'lucide-react'
 
 import { Card } from '@/components/ui/Card'
 import { useAppStore } from '@/lib/store'
@@ -26,6 +26,7 @@ import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
 import { PeriodLogModal } from '@/components/PeriodLogModal'
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import type { FlowIntensity } from '@vesta/shared/types'
+import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
 import '@vesta/shared/utils/i18n'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -90,14 +91,16 @@ interface Props {
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
 
-function Legend() {
+function Legend({ pregnancy }: { pregnancy: boolean }) {
   const { t } = useTranslation()
-  const items = [
-    { color: 'var(--color-menstrual)', label: t('calendar.period'), ring: false },
-    { color: 'var(--color-fertile)', label: t('calendar.fertile'), ring: false },
-    { color: 'var(--color-ovulation)', label: t('calendar.ovulationDay'), ring: false },
-    { color: 'var(--color-text-primary)', label: t('calendar.today'), ring: true },
+  const allItems = [
+    { color: 'var(--color-menstrual)', label: t('calendar.period'), ring: false, predictive: false },
+    { color: 'var(--color-fertile)', label: t('calendar.fertile'), ring: false, predictive: true },
+    { color: 'var(--color-ovulation)', label: t('calendar.ovulationDay'), ring: false, predictive: true },
+    { color: 'var(--color-text-primary)', label: t('calendar.today'), ring: true, predictive: false },
   ]
+
+  const items = pregnancy ? allItems.filter((i) => !i.predictive) : allItems
 
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center">
@@ -462,6 +465,8 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
   const dateLocale = language === 'bn' ? bn : undefined
   const prefersReducedMotion = useReducedMotion()
 
+  const pregnancy = isPregnancy(goal)
+
   // Stable across renders so dayMetaMap isn't rebuilt (and all DayCells re-rendered)
   // on every unrelated state change, e.g. opening/closing the edit modal.
   const today = useMemo(() => new Date(), [])
@@ -578,12 +583,13 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
     setSelectedDate((prev) => (prev && isSameDay(prev, date) ? null : date))
   }, [])
 
-  // Extract prediction summary from calendar data for the monthly summary card
-  // Find the first predicted period start and any ovulation/fertile day
-  const firstPredictedPeriod = days?.find((d) => d.predicted && d.period)
-  const ovulationDay = days?.find((d) => d.ovulation)
-  const fertileStart = days?.find((d) => d.fertile && !d.ovulation)
-  const fertileEnd = [...(days ?? [])].reverse().find((d) => d.fertile)
+  // Extract prediction summary from calendar data for the monthly summary card.
+  // For pregnancy profiles the service returns empty sets, but we also guard
+  // client-side so no forward-looking data is ever derived or shown.
+  const firstPredictedPeriod = !pregnancy ? days?.find((d) => d.predicted && d.period) : undefined
+  const ovulationDay = !pregnancy ? days?.find((d) => d.ovulation) : undefined
+  const fertileStart = !pregnancy ? days?.find((d) => d.fertile && !d.ovulation) : undefined
+  const fertileEnd = !pregnancy ? [...(days ?? [])].reverse().find((d) => d.fertile) : undefined
 
   const DOW = [
     t('calendar.sun'), t('calendar.mon'), t('calendar.tue'), t('calendar.wed'),
@@ -670,6 +676,31 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
               </button>
             </div>
 
+            {/* Pregnancy coming-soon banner */}
+            {pregnancy && (
+              <motion.div
+                initial={prefersReducedMotion ? {} : { opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="mb-4 flex items-center gap-2 rounded-xl px-3 py-2.5 border"
+                style={{
+                  ['--goal-accent' as string]: goalAccentVar(goal),
+                  backgroundColor: 'color-mix(in srgb, var(--goal-accent) 8%, var(--color-bg-primary))',
+                  borderColor: 'color-mix(in srgb, var(--goal-accent) 30%, transparent)',
+                }}
+                aria-live="polite"
+              >
+                <Baby
+                  size={15}
+                  aria-hidden="true"
+                  style={{ color: 'var(--goal-accent)', flexShrink: 0 }}
+                />
+                <p className="text-xs font-medium" style={{ color: 'var(--goal-accent)' }}>
+                  {t('calendar.pregnancyComingSoon')}
+                </p>
+              </motion.div>
+            )}
+
             {/* Day-of-week headers */}
             <div className="grid grid-cols-7 mb-1 md:mb-2">
               {DOW.map((d) => (
@@ -712,7 +743,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
 
             {/* Legend — inside the calendar card on desktop */}
             <div className="mt-4 pt-3 border-t border-[var(--color-border)]">
-              <Legend />
+              <Legend pregnancy={pregnancy} />
             </div>
           </Card>
         </motion.div>
@@ -733,8 +764,8 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
             )}
           </AnimatePresence>
 
-          {/* Monthly Summary */}
-          {(firstPredictedPeriod || ovulationDay || fertileStart) && (
+          {/* Monthly Summary — hidden for pregnancy profiles */}
+          {!pregnancy && (firstPredictedPeriod || ovulationDay || fertileStart) && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}

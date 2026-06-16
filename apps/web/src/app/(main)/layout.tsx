@@ -120,6 +120,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [completionStatus, setCompletionStatus] = useState<ProfileCompletionStatus | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
 
+  // Tracks the previous completion percent to detect increases (for progress toast).
+  // Initialised to -1 so the very first load does NOT fire the progress toast.
+  const prevPercentRef = useRef<number>(-1);
+
   // ── Auth status fetch — populates user for tour gating ──────────────────
   useEffect(() => {
     let cancelled = false;
@@ -146,18 +150,53 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }, [pathname]);
 
   // ── Profile completion status fetch ──────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/profile/completion')
+  // Stable callback so it can be called from multiple triggers without
+  // re-creating event listeners. Each call creates its own AbortController so
+  // that overlapping refreshes cancel the previous in-flight request instead of
+  // racing to call setCompletionStatus out-of-order.
+  const refreshCompletion = useCallback(() => {
+    const controller = new AbortController();
+
+    fetch('/api/profile/completion', { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: ProfileCompletionStatus | null) => {
-        if (cancelled || !data) return;
-        setCompletionStatus(data);
-      })
-      .catch(() => {/* silently ignore */});
+        if (!data) return;
+        setCompletionStatus((prev) => {
+          const prevPercent = prevPercentRef.current;
+          const nextPercent = data.percent;
 
-    return () => { cancelled = true; };
-  }, []);
+          // Fire a progress toast when percent has genuinely increased and the
+          // profile is not yet fully complete. Skip on the initial load
+          // (prevPercent === -1) to avoid a spurious toast at mount.
+          if (prevPercent !== -1 && nextPercent > prevPercent && !data.complete) {
+            showToast(t('toast.completionProgress', { percent: nextPercent }));
+          }
+
+          prevPercentRef.current = nextPercent;
+          return data;
+        });
+      })
+      .catch((err: unknown) => {
+        // Ignore AbortError from overlapping refreshes; silently ignore others.
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+      });
+
+    return () => controller.abort();
+  }, [showToast, t]);
+
+  // Run on mount and whenever the pathname changes (e.g. Settings → Dashboard).
+  useEffect(() => {
+    const cleanup = refreshCompletion();
+    return cleanup;
+  }, [refreshCompletion, pathname]);
+
+  // Re-fetch when Settings/Modal/Profiles dispatch 'vesta:profile-updated'
+  // (covers same-page updates where pathname does not change).
+  useEffect(() => {
+    const handler = () => refreshCompletion();
+    window.addEventListener('vesta:profile-updated', handler);
+    return () => window.removeEventListener('vesta:profile-updated', handler);
+  }, [refreshCompletion]);
 
   function handleModalClose() {
     setShowCompletionModal(false);
@@ -351,6 +390,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <ProfileCompletionModal
         open={showCompletionModal}
         onClose={handleModalClose}
+        percent={completionStatus?.percent}
         onCompleted={() => showToast(t('toast.completionDone'))}
       />
 

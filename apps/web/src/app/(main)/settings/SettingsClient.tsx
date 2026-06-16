@@ -348,6 +348,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
       showToast(t('settings.emailAdded'))
       setAddingEmail(false)
       setContactEmail('')
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
       router.refresh()
     } catch {
       showToast(t('settings.emailAddFailed'))
@@ -364,6 +365,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
       showToast(t('settings.phoneAdded'))
       setAddingPhone(false)
       setContactPhone('')
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
       router.refresh()
     } catch {
       showToast(t('settings.phoneAddFailed'))

@@ -5,6 +5,7 @@ import {
   addPeriodDatesInRange,
   toLocalDateStr,
 } from '../period-log-sync'
+import { isPregnancy, isMenopause } from '../../utils/goal'
 
 // ── Ownership helpers ──────────────────────────────────────────────────────────
 
@@ -271,12 +272,21 @@ export async function getDashboardData(profileId: string, userId: string) {
   })
   const lastSymptomLogDate: Date | null = lastSymptomLog?.date ?? null
 
+  const mode: 'standard' | 'pregnancy' | 'menopause' = isPregnancy(profile.goal)
+    ? 'pregnancy'
+    : isMenopause(profile.goal)
+      ? 'menopause'
+      : 'standard'
+
+  const pregnant = mode === 'pregnancy'
+
   return {
+    mode,
     currentCycleDay,
-    currentPhase,
-    countdownToNextPeriod,
+    currentPhase: pregnant ? null : currentPhase,
+    countdownToNextPeriod: pregnant ? null : countdownToNextPeriod,
     lastPeriod: lastPeriodSummary,
-    prediction,
+    prediction: pregnant ? null : prediction,
     lastSymptomLogDate,
   }
 }
@@ -330,64 +340,66 @@ export async function getCalendarData(
     )
   }
 
-  // Determine the anchor for forward projections.
-  // If a Prediction record exists, use it as cycle 1 and project cycles 2-3.
-  // Otherwise, estimate from the most recent period log.
-  let anchorPeriodStart: Date | null = null
+  if (!isPregnancy(profile.goal)) {
+    // Determine the anchor for forward projections.
+    // If a Prediction record exists, use it as cycle 1 and project cycles 2-3.
+    // Otherwise, estimate from the most recent period log.
+    let anchorPeriodStart: Date | null = null
 
-  if (prediction?.nextPeriodStart) {
-    anchorPeriodStart = new Date(prediction.nextPeriodStart)
-  } else {
-    const lastLog = await prisma.periodLog.findFirst({
-      where: { profileId: profile.id },
-      orderBy: { startDate: 'desc' },
-    })
-    if (lastLog) {
-      anchorPeriodStart = new Date(lastLog.startDate)
-      anchorPeriodStart.setDate(anchorPeriodStart.getDate() + profile.cycleLength)
+    if (prediction?.nextPeriodStart) {
+      anchorPeriodStart = new Date(prediction.nextPeriodStart)
+    } else {
+      const lastLog = await prisma.periodLog.findFirst({
+        where: { profileId: profile.id },
+        orderBy: { startDate: 'desc' },
+      })
+      if (lastLog) {
+        anchorPeriodStart = new Date(lastLog.startDate)
+        anchorPeriodStart.setDate(anchorPeriodStart.getDate() + profile.cycleLength)
+      }
     }
-  }
 
-  // Project up to 3 future cycles (period, fertile window, ovulation)
-  if (anchorPeriodStart) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const { cycleLength, periodLength } = profile
+    // Project up to 3 future cycles (period, fertile window, ovulation)
+    if (anchorPeriodStart) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const { cycleLength, periodLength } = profile
 
-    for (let cycle = 0; cycle < 3; cycle++) {
-      const cycleStart = new Date(anchorPeriodStart)
-      cycleStart.setDate(cycleStart.getDate() + cycle * cycleLength)
-      cycleStart.setHours(0, 0, 0, 0)
+      for (let cycle = 0; cycle < 3; cycle++) {
+        const cycleStart = new Date(anchorPeriodStart)
+        cycleStart.setDate(cycleStart.getDate() + cycle * cycleLength)
+        cycleStart.setHours(0, 0, 0, 0)
 
-      // Predicted period days — mark as both period and predicted
-      const periodEnd = new Date(cycleStart)
-      periodEnd.setDate(periodEnd.getDate() + periodLength - 1)
-      const d = new Date(cycleStart)
-      while (d <= periodEnd) {
-        if (d >= monthStart && d <= monthEnd) {
-          const ds = toLocalDateStr(d)
-          if (!periodDates.has(ds)) {
-            predictedDates.add(ds)
-            periodDates.add(ds)
+        // Predicted period days — mark as both period and predicted
+        const periodEnd = new Date(cycleStart)
+        periodEnd.setDate(periodEnd.getDate() + periodLength - 1)
+        const d = new Date(cycleStart)
+        while (d <= periodEnd) {
+          if (d >= monthStart && d <= monthEnd) {
+            const ds = toLocalDateStr(d)
+            if (!periodDates.has(ds)) {
+              predictedDates.add(ds)
+              periodDates.add(ds)
+            }
           }
+          d.setDate(d.getDate() + 1)
         }
-        d.setDate(d.getDate() + 1)
-      }
 
-      // Ovulation = next period start - 14 days
-      const ovDay = new Date(cycleStart)
-      ovDay.setDate(ovDay.getDate() - 14)
-      ovDay.setHours(0, 0, 0, 0)
-      if (ovDay >= monthStart && ovDay <= monthEnd) {
-        ovulationDates.add(toLocalDateStr(ovDay))
-      }
+        // Ovulation = next period start - 14 days
+        const ovDay = new Date(cycleStart)
+        ovDay.setDate(ovDay.getDate() - 14)
+        ovDay.setHours(0, 0, 0, 0)
+        if (ovDay >= monthStart && ovDay <= monthEnd) {
+          ovulationDates.add(toLocalDateStr(ovDay))
+        }
 
-      // Fertile window = ovulation - 5 days to ovulation + 1 day
-      for (let offset = -5; offset <= 1; offset++) {
-        const fDay = new Date(ovDay)
-        fDay.setDate(fDay.getDate() + offset)
-        if (fDay >= monthStart && fDay <= monthEnd) {
-          fertileDates.add(toLocalDateStr(fDay))
+        // Fertile window = ovulation - 5 days to ovulation + 1 day
+        for (let offset = -5; offset <= 1; offset++) {
+          const fDay = new Date(ovDay)
+          fDay.setDate(fDay.getDate() + offset)
+          if (fDay >= monthStart && fDay <= monthEnd) {
+            fertileDates.add(toLocalDateStr(fDay))
+          }
         }
       }
     }

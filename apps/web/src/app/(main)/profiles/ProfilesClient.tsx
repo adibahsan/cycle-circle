@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, type MouseEvent } from 'react';
+import React, { useState, type MouseEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight, Pencil } from 'lucide-react';
+import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight, Pencil, Baby } from 'lucide-react';
+import { GOAL_VALUES, normalizeGoal, goalAccentVar, type GoalValue } from '@vesta/shared/utils/goal';
 import { useAppStore } from '@/lib/store';
 import type { Profile, ProfileRelation } from '@vesta/shared/types';
 import { createProfile, deleteProfile, updateProfile, setActiveProfileCookie } from '@/app/actions/profile-actions';
@@ -257,6 +258,7 @@ interface AddProfileFormProps {
     periodLength: number;
     lastPeriodStart: string;
     flowIntensity: 'LIGHT' | 'MEDIUM' | 'HEAVY';
+    goal: GoalValue;
   }) => void;
 }
 
@@ -270,6 +272,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
   const [lastPeriodDate, setLastPeriodDate] = useState('');
   const [lastPeriodError, setLastPeriodError] = useState('');
   const [flowIntensity, setFlowIntensity] = useState<'light' | 'medium' | 'heavy'>('medium');
+  const [goal, setGoal] = useState<GoalValue>('tracking');
 
   function handleSubmit() {
     const trimmed = name.trim();
@@ -297,6 +300,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
       periodLength,
       lastPeriodStart: lastPeriodDate,
       flowIntensity: flowIntensity.toUpperCase() as 'LIGHT' | 'MEDIUM' | 'HEAVY',
+      goal,
     });
   }
 
@@ -382,6 +386,49 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
                     style={{ color: isSelected ? colors.text : 'var(--color-text-muted)' }}
                   >
                     {t(`profiles.${rel}`)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Goal selector */}
+        <div role="group" aria-label={t('profiles.goalLabel')}>
+          <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+            {t('profiles.goalLabel')}
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            {GOAL_VALUES.map((g) => {
+              const isSelected = goal === g;
+              const accentVar = goalAccentVar(g);
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setGoal(g)}
+                  aria-pressed={isSelected}
+                  className="flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-xl border text-center transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                  style={
+                    {
+                      '--goal-accent': accentVar,
+                      background: isSelected ? 'color-mix(in srgb, var(--goal-accent) 12%, transparent)' : 'var(--color-bg-secondary)',
+                      borderColor: isSelected ? 'color-mix(in srgb, var(--goal-accent) 45%, transparent)' : 'var(--color-border)',
+                      boxShadow: isSelected ? '0 0 0 1.5px color-mix(in srgb, var(--goal-accent) 45%, transparent)' : 'none',
+                    } as React.CSSProperties
+                  }
+                >
+                  <span
+                    style={{ color: isSelected ? accentVar : 'var(--color-text-muted)' }}
+                    className="flex items-center justify-center"
+                  >
+                    {GOAL_ICON_COMPONENTS[g]}
+                  </span>
+                  <span
+                    className="text-[10px] font-semibold leading-tight"
+                    style={{ color: isSelected ? accentVar : 'var(--color-text-muted)' }}
+                  >
+                    {t(GOAL_I18N_KEYS[g])}
                   </span>
                 </button>
               );
@@ -504,26 +551,22 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
 
 // ─── Edit Profile Form ────────────────────────────────────────────────────────
 
-type GoalOption = 'tracking' | 'conceive' | 'perimenopause';
+// Goal options derived from shared canonical module (includes 'pregnancy')
+const GOAL_OPTIONS: GoalValue[] = [...GOAL_VALUES];
 
-const GOAL_OPTIONS: GoalOption[] = ['tracking', 'conceive', 'perimenopause'];
-
-const GOAL_ICONS: Record<GoalOption, string> = {
-  tracking: '📅',
-  conceive: '🌱',
-  perimenopause: '🌸',
+const GOAL_ICON_COMPONENTS: Record<GoalValue, React.ReactNode> = {
+  tracking: <span aria-hidden="true" className="text-lg leading-none">📅</span>,
+  conceive: <span aria-hidden="true" className="text-lg leading-none">🌱</span>,
+  pregnancy: <Baby size={20} aria-hidden="true" />,
+  perimenopause: <span aria-hidden="true" className="text-lg leading-none">🌸</span>,
 };
 
-const GOAL_I18N_KEYS: Record<GoalOption, string> = {
+const GOAL_I18N_KEYS: Record<GoalValue, string> = {
   tracking: 'onboarding.goalTracking',
   conceive: 'onboarding.goalConceive',
+  pregnancy: 'onboarding.goalPregnancy',
   perimenopause: 'onboarding.goalPerimenopause',
 };
-
-function normalizeGoal(goal: string | null): GoalOption {
-  if (goal === 'conceive' || goal === 'perimenopause') return goal;
-  return 'tracking';
-}
 
 interface EditProfileFormProps {
   profile: Profile;
@@ -535,7 +578,7 @@ interface EditProfileFormProps {
     relation: ProfileRelation;
     cycleLength: number;
     periodLength: number;
-    goal: GoalOption;
+    goal: GoalValue;
   }) => void;
 }
 
@@ -545,7 +588,8 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
   const [relation, setRelation] = useState<ProfileRelation>(normalizeRelation(profile.relation));
   const [cycleLength, setCycleLength] = useState(profile.cycleLength);
   const [periodLength, setPeriodLength] = useState(profile.periodLength);
-  const [goal, setGoal] = useState<GoalOption>(normalizeGoal(profile.goal));
+  // normalizeGoal can return null for unknown values; fall back to 'tracking'
+  const [goal, setGoal] = useState<GoalValue>(normalizeGoal(profile.goal) ?? 'tracking');
   const [nameError, setNameError] = useState('');
 
   function handleSubmit() {
@@ -690,26 +734,35 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
             <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
               {t('profiles.goalLabel')}
             </p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {GOAL_OPTIONS.map((g) => {
                 const isSelected = goal === g;
+                const accentVar = goalAccentVar(g);
                 return (
                   <button
                     key={g}
                     type="button"
                     onClick={() => setGoal(g)}
                     aria-pressed={isSelected}
-                    className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
-                    style={{
-                      background: isSelected ? 'rgba(232,71,108,0.1)' : 'var(--color-bg-secondary)',
-                      borderColor: isSelected ? 'rgba(232,71,108,0.3)' : 'var(--color-border)',
-                      boxShadow: isSelected ? '0 0 0 1.5px rgba(232,71,108,0.3)' : 'none',
-                    }}
+                    className="flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-xl border text-center transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                    style={
+                      {
+                        '--goal-accent': accentVar,
+                        background: isSelected ? 'color-mix(in srgb, var(--goal-accent) 12%, transparent)' : 'var(--color-bg-secondary)',
+                        borderColor: isSelected ? 'color-mix(in srgb, var(--goal-accent) 45%, transparent)' : 'var(--color-border)',
+                        boxShadow: isSelected ? '0 0 0 1.5px color-mix(in srgb, var(--goal-accent) 45%, transparent)' : 'none',
+                      } as React.CSSProperties
+                    }
                   >
-                    <span className="text-lg leading-none" aria-hidden="true">{GOAL_ICONS[g]}</span>
                     <span
-                      className="text-[11px] font-semibold"
-                      style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+                      style={{ color: isSelected ? accentVar : 'var(--color-text-muted)' }}
+                      className="flex items-center justify-center"
+                    >
+                      {GOAL_ICON_COMPONENTS[g]}
+                    </span>
+                    <span
+                      className="text-[10px] font-semibold leading-tight"
+                      style={{ color: isSelected ? accentVar : 'var(--color-text-muted)' }}
                     >
                       {t(GOAL_I18N_KEYS[g])}
                     </span>
@@ -875,6 +928,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
     periodLength: number;
     lastPeriodStart: string;
     flowIntensity: 'LIGHT' | 'MEDIUM' | 'HEAVY';
+    goal: GoalValue;
   }) {
     setIsPending(true);
     setAddError('');
@@ -886,7 +940,11 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
         periodLength: data.periodLength,
         lastPeriodStart: data.lastPeriodStart,
         flowIntensity: data.flowIntensity,
+        goal: data.goal,
       });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
+      }
       closeAddForm();
     } catch (err) {
       const message = err instanceof Error ? err.message : t('profiles.serverError');
@@ -918,7 +976,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
     relation: ProfileRelation;
     cycleLength: number;
     periodLength: number;
-    goal: GoalOption;
+    goal: GoalValue;
   }) {
     if (!editTarget) return;
     setIsPending(true);
@@ -932,6 +990,9 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
         periodLength: data.periodLength,
         goal: data.goal,
       });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
+      }
       closeEditForm();
     } catch (err) {
       const message = err instanceof Error ? err.message : t('profiles.serverError');

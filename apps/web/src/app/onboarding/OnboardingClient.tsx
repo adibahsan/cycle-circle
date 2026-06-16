@@ -10,11 +10,13 @@ import {
   CalendarDays,
   Heart,
   Moon,
+  Baby,
   ChevronLeft,
   ChevronRight,
   Check,
   User,
 } from 'lucide-react';
+import { goalAccentVar } from '@vesta/shared/utils/goal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -27,7 +29,7 @@ import type { ProfileRelation } from '@vesta/shared/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Goal = 'tracking' | 'conceive' | 'perimenopause' | null;
+type Goal = 'tracking' | 'conceive' | 'pregnancy' | 'perimenopause' | null;
 type FlowIntensity = 'light' | 'medium' | 'heavy';
 
 interface OnboardingState {
@@ -294,6 +296,14 @@ function StepGoal({
       bg: 'rgba(155,127,212,0.08)',
     },
     {
+      value: 'pregnancy',
+      icon: <Baby size={28} />,
+      label: t('onboarding.goalPregnancy'),
+      description: 'Track your pregnancy week by week and monitor your wellbeing.',
+      accent: 'var(--color-secondary)',
+      bg: 'rgba(155,127,212,0.08)',
+    },
+    {
       value: 'perimenopause',
       icon: <Moon size={28} />,
       label: t('onboarding.goalPerimenopause'),
@@ -330,18 +340,21 @@ function StepGoal({
               onClick={() => onSelect(g.value)}
               className={`w-full rounded-2xl p-4 border-2 text-left transition-colors duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
                 isActive
-                  ? 'border-[var(--color-primary)] shadow-[0_0_0_4px_rgba(232,71,108,0.12)]'
-                  : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/40'
+                  ? 'border-[var(--goal-accent)] shadow-[0_0_0_4px_color-mix(in_srgb,var(--goal-accent)_12%,transparent)]'
+                  : 'border-[var(--color-border)] hover:border-[var(--goal-accent)]/40'
               }`}
-              style={{ background: isActive ? g.bg : 'var(--color-bg-card)' }}
+              style={{
+                ['--goal-accent' as string]: goalAccentVar(g.value),
+                background: isActive ? g.bg : 'var(--color-bg-card)',
+              } as React.CSSProperties}
             >
               <div className="flex items-center gap-4">
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors"
                   style={{
                     background: isActive ? g.bg : 'var(--color-bg-secondary)',
-                    color: g.accent,
-                    border: `1.5px solid ${isActive ? g.accent : 'transparent'}`,
+                    color: 'var(--goal-accent)',
+                    border: `1.5px solid ${isActive ? 'var(--goal-accent)' : 'transparent'}`,
                   }}
                 >
                   {g.icon}
@@ -353,7 +366,7 @@ function StepGoal({
                 {isActive && (
                   <div
                     className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: g.accent }}
+                    style={{ background: 'var(--goal-accent)' }}
                   >
                     <Check size={14} className="text-white" strokeWidth={3} />
                   </div>
@@ -630,6 +643,8 @@ function StepDone({
       ? t('onboarding.goalTracking')
       : state.goal === 'conceive'
       ? t('onboarding.goalConceive')
+      : state.goal === 'pregnancy'
+      ? t('onboarding.goalPregnancy')
       : state.goal === 'perimenopause'
       ? t('onboarding.goalPerimenopause')
       : 'Not set';
@@ -887,7 +902,7 @@ export default function OnboardingClient({ user }: OnboardingClientProps) {
         periodLength: state.periodLength,
         lastPeriodStart: state.lastPeriodDate,
         flowIntensity: state.flowIntensity.toUpperCase() as 'LIGHT' | 'MEDIUM' | 'HEAVY',
-        goal: state.goal ? goalLabel(state.goal) : undefined,
+        goal: state.goal ?? undefined,
         userName: state.profileRelation === 'self' ? state.profileName.trim() : state.userName.trim() || undefined,
       });
       await setActiveProfileCookie(profile.id);

@@ -31,7 +31,7 @@ const resources = {
       onboarding: {
         welcome: 'Welcome to Vesta', privacy: 'Your data is encrypted & private',
         goal: 'What is your goal?', goalTracking: 'Period Tracking',
-        goalConceive: 'Trying to Conceive', goalPerimenopause: 'Perimenopause',
+        goalConceive: 'Trying to Conceive', goalPerimenopause: 'Menopause', goalPregnancy: 'Pregnancy',
         cycleLength: 'Typical cycle length', periodLength: 'Typical period length',
         lastPeriod: 'Last period start date', skip: 'Skip for now', next: 'Next', done: 'Get Started',
         personalIntelligence: 'Your personal cycle intelligence — private, bilingual, and built for you.',
@@ -101,6 +101,8 @@ const resources = {
         flowLight: 'Light',
         flowMedium: 'Medium',
         flowHeavy: 'Heavy',
+        pregnancyComingSoonTitle: 'Pregnancy tracking',
+        pregnancyComingSoonBody: 'Full features are coming soon. Keep logging your symptoms in the meantime.',
       },
       calendar: {
         title: 'Calendar', period: 'Period', fertile: 'Fertile', ovulationDay: 'Ovulation',
@@ -127,6 +129,7 @@ const resources = {
         chooseDate: 'Choose a date',
         previousMonth: 'Previous month',
         nextMonth: 'Next month',
+        pregnancyComingSoon: 'Pregnancy mode — predictions are paused. Full tracking coming soon.',
       },
       insights: {
         title: 'Cycle Insights',
@@ -283,6 +286,8 @@ const resources = {
         staleCta: 'Log now',
         conceiveTitle: 'Track every sign that matters',
         conceiveDescription: 'Log symptoms, cervical mucus, and basal temperature to support your TTC journey.',
+        pregnancyTitle: 'Tracking for pregnancy',
+        pregnancyDescription: 'Log how you\'re feeling each day — symptoms, mood, and notes.',
         dismiss: 'Dismiss',
         logSymptomsCta: 'Log symptoms',
       },
@@ -547,7 +552,7 @@ const resources = {
       onboarding: {
         welcome: 'ভেস্তায় স্বাগতম', privacy: 'আপনার তথ্য এনক্রিপ্টেড ও ব্যক্তিগত',
         goal: 'আপনার লক্ষ্য কী?', goalTracking: 'পিরিয়ড ট্র্যাকিং',
-        goalConceive: 'গর্ভধারণের চেষ্টা', goalPerimenopause: 'পেরিমেনোপজ',
+        goalConceive: 'গর্ভধারণের চেষ্টা', goalPerimenopause: 'মেনোপজ', goalPregnancy: 'গর্ভাবস্থা',
         cycleLength: 'সাধারণ চক্রের দৈর্ঘ্য', periodLength: 'সাধারণ পিরিয়ডের দৈর্ঘ্য',
         lastPeriod: 'শেষ পিরিয়ড শুরুর তারিখ', skip: 'আপাতত বাদ দিন', next: 'পরবর্তী', done: 'শুরু করুন',
         personalIntelligence: 'আপনার ব্যক্তিগত চক্র বুদ্ধিমত্তা — ব্যক্তিগত, দ্বিভাষিক এবং আপনার জন্য তৈরি।',
@@ -617,6 +622,8 @@ const resources = {
         flowLight: 'হালকা',
         flowMedium: 'মাঝারি',
         flowHeavy: 'ভারী',
+        pregnancyComingSoonTitle: 'গর্ভাবস্থা ট্র্যাকিং',
+        pregnancyComingSoonBody: 'সম্পূর্ণ ফিচার শীঘ্রই আসছে। ততক্ষণ পর্যন্ত আপনার উপসর্গগুলো লগ করতে থাকুন।',
       },
       calendar: {
         title: 'ক্যালেন্ডার', period: 'পিরিয়ড', fertile: 'উর্বর', ovulationDay: 'ডিম্বস্ফোটন',
@@ -643,6 +650,7 @@ const resources = {
         chooseDate: 'একটি তারিখ নির্বাচন করুন',
         previousMonth: 'পূর্ববর্তী মাস',
         nextMonth: 'পরবর্তী মাস',
+        pregnancyComingSoon: 'গর্ভাবস্থা মোড — পূর্বাভাস সাময়িকভাবে বন্ধ। সম্পূর্ণ ট্র্যাকিং শীঘ্রই আসছে।',
       },
       insights: {
         title: 'চক্র ইনসাইটস',
@@ -799,6 +807,8 @@ const resources = {
         staleCta: 'এখনই লগ করুন',
         conceiveTitle: 'প্রতিটি গুরুত্বপূর্ণ লক্ষণ ট্র্যাক করুন',
         conceiveDescription: 'আপনার TTC যাত্রায় সহায়তা করতে লক্ষণ, সার্ভিকাল মিউকাস ও বেসাল তাপমাত্রা লগ করুন।',
+        pregnancyTitle: 'গর্ভাবস্থার জন্য ট্র্যাকিং',
+        pregnancyDescription: 'প্রতিদিন আপনি কেমন অনুভব করছেন তা লগ করুন — উপসর্গ, মেজাজ এবং নোট।',
         dismiss: 'বাদ দিন',
         logSymptomsCta: 'লক্ষণ লগ করুন',
       },

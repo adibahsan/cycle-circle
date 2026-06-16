@@ -9,6 +9,7 @@ import { Sparkles, CalendarPlus, X } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useHasMounted } from '@/components/motion/useHasMounted';
+import { isTTC, isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal';
 import '@vesta/shared/utils/i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -60,21 +61,39 @@ export function LoggingNudge({
   // Dismissed → render null
   if (dismissed) return null;
 
-  // Resolve copy keys
-  const isTTC = goal === 'conceive';
+  // Resolve copy keys — pregnancy takes priority, then TTC, then default
+  const goalIsPregnancy = isPregnancy(goal);
+  const goalIsTTC = isTTC(goal);
+  const accentVar = goalAccentVar(goal);
 
   let title: string;
   let description: string;
   let ctaLabel: string;
 
   if (isEmptyState) {
-    title = isTTC ? t('nudge.conceiveTitle') : t('nudge.emptyTitle');
-    description = isTTC ? t('nudge.conceiveDescription') : t('nudge.emptyDescription');
+    if (goalIsPregnancy) {
+      title = t('nudge.pregnancyTitle');
+      description = t('nudge.pregnancyDescription');
+    } else if (goalIsTTC) {
+      title = t('nudge.conceiveTitle');
+      description = t('nudge.conceiveDescription');
+    } else {
+      title = t('nudge.emptyTitle');
+      description = t('nudge.emptyDescription');
+    }
     ctaLabel = t('nudge.emptyCta');
   } else {
     // stale variant
-    title = isTTC ? t('nudge.conceiveTitle') : t('nudge.staleTitle');
-    description = isTTC ? t('nudge.conceiveDescription') : t('nudge.staleDescription');
+    if (goalIsPregnancy) {
+      title = t('nudge.pregnancyTitle');
+      description = t('nudge.pregnancyDescription');
+    } else if (goalIsTTC) {
+      title = t('nudge.conceiveTitle');
+      description = t('nudge.conceiveDescription');
+    } else {
+      title = t('nudge.staleTitle');
+      description = t('nudge.staleDescription');
+    }
     ctaLabel = t('nudge.staleCta');
   }
 
@@ -92,13 +111,33 @@ export function LoggingNudge({
         className ?? '',
       ].join(' ').trim()}
       padding="md"
+      style={{
+        ['--goal-accent']: accentVar,
+        boxShadow: '0 0 0 1.5px color-mix(in srgb, var(--goal-accent) 30%, transparent), 0 4px 20px color-mix(in srgb, var(--goal-accent) 12%, transparent)',
+      } as React.CSSProperties}
     >
+      {/* One-shot accent sheen sweep — absolutely-positioned overlay, gated */}
+      {!prefersReducedMotion && (
+        <motion.div
+          aria-hidden="true"
+          initial={{ transform: 'translateX(-120%)' }}
+          animate={{ transform: 'translateX(120%)' }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
+          className="pointer-events-none absolute inset-0 z-10"
+          style={{
+            willChange: 'transform',
+            background:
+              'linear-gradient(105deg, transparent 20%, color-mix(in srgb, var(--goal-accent) 18%, transparent) 50%, transparent 80%)',
+          }}
+        />
+      )}
+
       {/* Dismiss button */}
       <button
         type="button"
         aria-label={t('nudge.dismiss')}
         onClick={handleDismiss}
-        className="absolute top-3 right-3 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
+        className="absolute top-3 right-3 z-20 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
       >
         <X size={14} aria-hidden="true" />
       </button>
@@ -106,9 +145,9 @@ export function LoggingNudge({
       <div className="flex items-start gap-3 pr-6">
         {/* Accent icon */}
         <div
-          className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
+          className="relative shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
           style={{
-            background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+            background: 'linear-gradient(135deg, var(--goal-accent) 0%, color-mix(in srgb, var(--goal-accent) 65%, var(--color-bg-primary)) 100%)',
           }}
           aria-hidden="true"
         >
@@ -116,7 +155,7 @@ export function LoggingNudge({
             <Icon size={18} className="text-white" aria-hidden="true" />
           ) : (
             <motion.span
-              animate={{ scale: [1, 1.12, 1] }}
+              animate={{ scale: [1, 1.06, 1] }}
               transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
               className="flex items-center justify-center"
             >
@@ -136,19 +175,31 @@ export function LoggingNudge({
 
           {/* CTAs */}
           <div className="flex flex-wrap items-center gap-2 mt-3">
-            {/* Primary CTA */}
+            {/* Primary CTA — styled with goal accent via inline override */}
             {onLogPeriod ? (
               <Button
                 variant="primary"
                 size="sm"
                 onClick={onLogPeriod}
-                className="text-xs"
+                className="text-xs focus-visible:ring-[var(--goal-accent)]"
+                style={{
+                  background: 'var(--goal-accent)',
+                  borderColor: 'var(--goal-accent)',
+                } as React.CSSProperties}
               >
                 {ctaLabel}
               </Button>
             ) : (
               <Link href="/calendar">
-                <Button variant="primary" size="sm" className="text-xs">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="text-xs focus-visible:ring-[var(--goal-accent)]"
+                  style={{
+                    background: 'var(--goal-accent)',
+                    borderColor: 'var(--goal-accent)',
+                  } as React.CSSProperties}
+                >
                   {ctaLabel}
                 </Button>
               </Link>
@@ -157,7 +208,8 @@ export function LoggingNudge({
             {/* Secondary CTA */}
             <Link
               href="/symptoms"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)] focus-visible:rounded-sm"
+              className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:rounded-sm"
+              style={{ color: 'var(--goal-accent)' } as React.CSSProperties}
             >
               {t('nudge.logSymptomsCta')}
             </Link>
@@ -179,10 +231,10 @@ export function LoggingNudge({
   return (
     <motion.div
       aria-live="polite"
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 8 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
+      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
     >
       {content}
     </motion.div>

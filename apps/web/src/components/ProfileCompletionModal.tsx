@@ -11,6 +11,8 @@ interface ProfileCompletionModalProps {
   onClose: () => void;
   /** Called after a successful profile save, before the modal auto-closes. */
   onCompleted?: () => void;
+  /** Current completion percentage (0–100). When provided, renders a progress chip under the modal title. */
+  percent?: number;
 }
 
 function validatePhone(value: string) {
@@ -26,7 +28,7 @@ function validateFullName(value: string) {
   return '';
 }
 
-export function ProfileCompletionModal({ open, onClose, onCompleted }: ProfileCompletionModalProps) {
+export function ProfileCompletionModal({ open, onClose, onCompleted, percent }: ProfileCompletionModalProps) {
   const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
   const firstFocusableRef = useRef<HTMLInputElement>(null);
@@ -101,6 +103,7 @@ export function ProfileCompletionModal({ open, onClose, onCompleted }: ProfileCo
       await completeProfile({ fullName: fullName.trim(), phone });
       setSuccess(true);
       onCompleted?.();
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
       setTimeout(() => {
         onClose();
       }, 1500);
@@ -148,6 +151,18 @@ export function ProfileCompletionModal({ open, onClose, onCompleted }: ProfileCo
             >
               {t('profile.completeTitle')}
             </h2>
+            {typeof percent === 'number' && (
+              <span
+                aria-label={t('profileCompletion.percentComplete', { percent })}
+                className="inline-block mt-1.5 mb-0.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tabular-nums"
+                style={{
+                  background: 'color-mix(in srgb, var(--color-primary) 12%, transparent)',
+                  color: 'var(--color-primary)',
+                }}
+              >
+                {t('profileCompletion.percentComplete', { percent })}
+              </span>
+            )}
             <p
               id="profile-completion-desc"
               className="mt-1 text-sm text-[var(--color-text-muted)] leading-relaxed"

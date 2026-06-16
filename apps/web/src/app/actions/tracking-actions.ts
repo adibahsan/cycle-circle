@@ -89,4 +89,5 @@ export async function toggleSymptom(input: z.infer<typeof createSymptomSchema>) 
   })
 
   revalidateTag(`symptoms:${data.profileId}`, { expire: 0 })
+  revalidateTag(`tracking:${data.profileId}`, { expire: 0 })
 }

@@ -327,6 +327,12 @@ export function SymptomsClient({
           });
         }
       }
+      // Re-fetch server components so dashboard/symptom data reflects new logs.
+      router.refresh();
+      // Notify layout so completion-pill updates (firstLog nudge, etc.).
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
+      }
     } finally {
       setSaving(false);
     }
