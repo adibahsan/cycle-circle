@@ -117,8 +117,8 @@ export default function AdminLoginPage() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded transition-colors disabled:opacity-60"
                 >
                   {showPassword
-                    ? <EyeOff size={16} aria-hidden="true" />
-                    : <Eye size={16} aria-hidden="true" />
+                    ? <Eye size={16} aria-hidden="true" />
+                    : <EyeOff size={16} aria-hidden="true" />
                   }
                 </button>
               </div>

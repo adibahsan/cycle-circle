@@ -119,6 +119,11 @@ const resources = {
         prev: 'Prev',
         next: 'Next',
         selectDay: 'Tap a day to see details',
+        openCalendar: 'Open calendar',
+        closeCalendar: 'Close calendar',
+        chooseDate: 'Choose a date',
+        previousMonth: 'Previous month',
+        nextMonth: 'Next month',
       },
       symptoms: {
         title: 'Log Symptoms', physical: 'Physical', mood: 'Mood',
@@ -368,6 +373,11 @@ const resources = {
         prev: 'পূর্ববর্তী',
         next: 'পরবর্তী',
         selectDay: 'বিস্তারিত দেখতে একটি দিন ট্যাপ করুন',
+        openCalendar: 'ক্যালেন্ডার খুলুন',
+        closeCalendar: 'ক্যালেন্ডার বন্ধ করুন',
+        chooseDate: 'একটি তারিখ নির্বাচন করুন',
+        previousMonth: 'পূর্ববর্তী মাস',
+        nextMonth: 'পরবর্তী মাস',
       },
       symptoms: {
         title: 'লক্ষণ লগ করুন', physical: 'শারীরিক', mood: 'মেজাজ',

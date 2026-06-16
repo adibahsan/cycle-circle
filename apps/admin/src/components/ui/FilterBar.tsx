@@ -1,5 +1,7 @@
 'use client';
 
+import { Select } from './Select';
+
 interface FilterOption {
   value: string;
   label: string;
@@ -71,18 +73,14 @@ export function FilterBar({
               >
                 {filter.label}:
               </label>
-              <select
+              <Select
                 id={`filter-${filter.key}`}
                 value={filter.value}
-                onChange={(e) => filter.onChange(e.target.value)}
-                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
-              >
-                {filter.options.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+                onChange={filter.onChange}
+                options={filter.options}
+                selectSize="sm"
+                containerClassName="w-auto"
+              />
             </div>
           ))}
         </div>

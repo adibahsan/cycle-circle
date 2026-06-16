@@ -5,7 +5,9 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { X } from 'lucide-react'
 import type { FlowIntensity } from '@vesta/shared/types'
+import { parseISO } from 'date-fns'
 import { Button } from '@/components/ui/Button'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { createPeriodLog, updatePeriodLog } from '@/app/actions/tracking-actions'
 import '@vesta/shared/utils/i18n'
 
@@ -131,14 +133,12 @@ export function PeriodLogModal({
           <label htmlFor="period-start-date" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
             {t('dashboard.startDate')}
           </label>
-          <input
+          <DatePicker
             id="period-start-date"
-            name="startDate"
-            type="date"
+            aria-label={t('dashboard.startDate')}
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
+            onChange={setStartDate}
+            maxDate={new Date()}
           />
         </div>
 
@@ -147,15 +147,13 @@ export function PeriodLogModal({
           <label htmlFor="period-end-date" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
             {t('dashboard.endDate')}
           </label>
-          <input
+          <DatePicker
             id="period-end-date"
-            name="endDate"
-            type="date"
+            aria-label={t('dashboard.endDate')}
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            min={startDate}
-            max={new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
+            onChange={setEndDate}
+            minDate={startDate ? parseISO(startDate) : undefined}
+            maxDate={new Date()}
           />
         </div>
 
