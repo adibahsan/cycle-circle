@@ -28,6 +28,8 @@ export default async function CalendarPage({
     getPeriodLogs(profileId),
   ])
 
+  const activeProfile = profiles.find((p) => p.id === profileId) ?? profiles[0]
+
   return (
     <CalendarClient
       profiles={profiles}
@@ -36,6 +38,7 @@ export default async function CalendarPage({
       days={calendarDays}
       symptomLogs={symptomLogs}
       periodLogs={periodLogs}
+      goal={activeProfile?.goal ?? null}
     />
   )
 }

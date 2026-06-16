@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/app/queries/auth-queries'
 import { getProfiles, getActiveProfileId } from '@/app/queries/profile-queries'
 import { getDashboardData } from '@/app/queries/tracking-queries'
+import { getProfileCompletionStatus } from '@vesta/shared/server/services'
 import { DashboardClient } from './DashboardClient'
 
 export default async function DashboardPage({
@@ -17,7 +18,13 @@ export default async function DashboardPage({
 
   const params = await searchParams
   const profileId = await getActiveProfileId(profiles, params.profileId)
-  const dashboardData = await getDashboardData(profileId)
+
+  const [dashboardData, completion] = await Promise.all([
+    getDashboardData(profileId),
+    getProfileCompletionStatus(user.id, profileId),
+  ])
+
+  const activeProfile = profiles.find((p) => p.id === profileId) ?? profiles[0]
 
   return (
     <DashboardClient
@@ -25,6 +32,9 @@ export default async function DashboardPage({
       user={user}
       activeProfileId={profileId}
       dashboardData={dashboardData}
+      completion={completion}
+      lastSymptomLogDate={dashboardData?.lastSymptomLogDate ?? null}
+      goal={activeProfile?.goal ?? null}
     />
   )
 }

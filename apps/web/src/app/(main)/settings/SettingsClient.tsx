@@ -24,12 +24,13 @@ import {
   Info,
   Mail,
   Phone,
+  Compass,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import * as XLSX from 'xlsx'
-import { updateNotificationPrefs, exportUserDataCsv, exportUserDataRows } from '@/app/actions/settings-actions'
+import { updateNotificationPrefs, exportUserDataCsv, exportUserDataRows, updateProfileReminderOptOut } from '@/app/actions/settings-actions'
 import { updateContactInfo } from '@/app/actions/user-actions'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { Language, Theme } from '@vesta/shared/types'
@@ -61,6 +62,7 @@ interface SettingsClientProps {
   user: AuthUser
   profiles: DbProfile[]
   notifPrefs: DbNotifPref[]
+  completionRemindersOptOut: boolean
 }
 
 // ── Primitive components ───────────────────────────────────────────────────────
@@ -118,6 +120,7 @@ function Toggle({
 }) {
   return (
     <button
+      id={id}
       role="switch"
       aria-checked={checked}
       aria-label={label ?? id}
@@ -243,7 +246,7 @@ function AccountRow({
 }
 
 // ── Page ───────────────────────────────────────────────────────────────────────
-export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientProps) {
+export function SettingsClient({ user, profiles, notifPrefs, completionRemindersOptOut }: SettingsClientProps) {
   const { t, i18n } = useTranslation()
   const router = useRouter()
   const { language, setLanguage, theme, setTheme, activeProfileId, setActiveProfile } = useAppStore()
@@ -318,6 +321,22 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
         showToast(t('settings.prefsFailed'))
       }
     }, 600)
+  }
+
+  // ── Completion reminder opt-out toggle ──
+  const [remindersEnabled, setRemindersEnabled] = useState(!completionRemindersOptOut)
+  const savedRemindersRef = useRef(!completionRemindersOptOut)
+
+  const handleRemindersChange = async (enabled: boolean) => {
+    setRemindersEnabled(enabled)
+    try {
+      await updateProfileReminderOptOut(!enabled)
+      savedRemindersRef.current = enabled
+      showToast(t('settings.prefsSaved'))
+    } catch {
+      setRemindersEnabled(savedRemindersRef.current)
+      showToast(t('settings.prefsFailed'))
+    }
   }
 
   // ── Contact info handlers ──
@@ -531,6 +550,25 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                     />
                   </div>
                 ))}
+                <div className="flex items-center gap-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <label
+                      htmlFor="completionReminders"
+                      className="text-sm font-semibold text-[var(--color-text-primary)] cursor-pointer"
+                    >
+                      {t('settings.completionReminders')}
+                    </label>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                      {t('settings.completionRemindersDesc')}
+                    </p>
+                  </div>
+                  <Toggle
+                    id="completionReminders"
+                    label={t('settings.completionReminders')}
+                    checked={remindersEnabled}
+                    onChange={handleRemindersChange}
+                  />
+                </div>
               </Card>
             </motion.div>
           </div>
@@ -708,6 +746,32 @@ export function SettingsClient({ user, profiles, notifPrefs }: SettingsClientPro
                     href="/subscription"
                     badge={user.subscriptionStatus !== 'pro' ? t('settings.upgradeLabel') : undefined}
                   />
+                  <button
+                    onClick={() => {
+                      sessionStorage.setItem('vesta_replay_tour', '1')
+                      router.push('/dashboard')
+                    }}
+                    className="flex items-center gap-3 py-3 px-1 w-full group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] rounded-sm"
+                  >
+                    <Compass
+                      size={17}
+                      className="text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span className="flex-1 text-left min-w-0">
+                      <span className="block text-sm text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] transition-colors">
+                        {t('settings.replayTour')}
+                      </span>
+                      <span className="block text-xs text-[var(--color-text-muted)] mt-0.5">
+                        {t('settings.replayTourDesc')}
+                      </span>
+                    </span>
+                    <ChevronRight
+                      size={15}
+                      className="text-[var(--color-border)] group-hover:text-[var(--color-text-muted)] transition-colors shrink-0"
+                      aria-hidden="true"
+                    />
+                  </button>
                 </div>
 
                 {/* Logout */}

@@ -24,6 +24,8 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { PeriodLogModal, FLOW_COLORS } from '@/components/PeriodLogModal'
 import { setActiveProfileCookie } from '@/app/actions/profile-actions'
+import type { ProfileCompletionStatus } from '@/components/ProfileCompletionTracker'
+import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -63,6 +65,7 @@ interface DashboardData {
     flowIntensity: string
   } | null
   prediction: PrismaPrediction | null
+  lastSymptomLogDate?: Date | null
 }
 
 interface AuthUser {
@@ -77,6 +80,9 @@ interface Props {
   user: AuthUser
   activeProfileId: string
   dashboardData: DashboardData | null
+  completion: ProfileCompletionStatus
+  lastSymptomLogDate: Date | string | null
+  goal: string | null
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -209,7 +215,7 @@ function CycleRing({
 
 // ─── Dashboard Client ─────────────────────────────────────────────────────────
 
-export function DashboardClient({ profiles, user: _user, activeProfileId, dashboardData }: Props) {
+export function DashboardClient({ profiles, user: _user, activeProfileId, dashboardData, completion, lastSymptomLogDate, goal }: Props) {
   const { t } = useTranslation()
   const router = useRouter()
   const { setActiveProfile, language } = useAppStore()
@@ -315,6 +321,30 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         }
       : null
 
+  // ── Nudge data ──────────────────────────────────────────────────────────────
+
+  const lastPeriodDate: Date | null = dashboardData?.lastPeriod?.startDate
+    ? new Date(dashboardData.lastPeriod.startDate)
+    : null
+  const lastSymptomDate: Date | null = lastSymptomLogDate
+    ? new Date(lastSymptomLogDate)
+    : null
+
+  const hasAnyLogs = !!lastPeriodDate || !!lastSymptomDate
+
+  let daysSinceLastLog: number | null = null
+  if (lastPeriodDate || lastSymptomDate) {
+    const candidates: Date[] = []
+    if (lastPeriodDate) candidates.push(lastPeriodDate)
+    if (lastSymptomDate) candidates.push(lastSymptomDate)
+    const mostRecent = candidates.reduce((a, b) => (a > b ? a : b))
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const then = new Date(mostRecent)
+    then.setHours(0, 0, 0, 0)
+    daysSinceLastLog = Math.floor((today.getTime() - then.getTime()) / 86_400_000)
+  }
+
   // Confidence tier label
   const tierLabel = prediction.tier === 'arima' ? t('dashboard.tierArima') : t('dashboard.tierAverage')
   const phaseLabel = t(`dashboard.${phase}`)
@@ -385,6 +415,15 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             })()}
           </motion.div>
         </motion.div>
+
+        {/* ── Logging Nudge ──────────────────────────────────────── */}
+        <LoggingNudge
+          profileId={activeProfileId}
+          hasAnyLogs={hasAnyLogs}
+          daysSinceLastLog={daysSinceLastLog}
+          goal={goal}
+          onLogPeriod={openNewLog}
+        />
 
         {/* ── Cards Grid ─────────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
@@ -527,6 +566,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                   fullWidth
                   onClick={openNewLog}
                   className="text-xs"
+                  data-tour="log-button"
                 >
                   🩸 {t('dashboard.logPeriod')}
                 </Button>

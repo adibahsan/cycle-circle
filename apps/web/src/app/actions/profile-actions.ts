@@ -58,6 +58,7 @@ const updateProfileSchema = z.object({
   relation: z.enum(['SELF', 'WIFE', 'SISTER', 'MOTHER', 'DAUGHTER', 'GIRLFRIEND']).optional(),
   cycleLength: z.number().int().min(21).max(45).optional(),
   periodLength: z.number().int().min(1).max(14).optional(),
+  goal: z.enum(['tracking', 'conceive', 'perimenopause']).optional(),
 })
 
 export async function updateProfile(input: z.infer<typeof updateProfileSchema>) {
@@ -70,6 +71,7 @@ export async function updateProfile(input: z.infer<typeof updateProfileSchema>) 
     relation: data.relation,
     cycleLength: data.cycleLength,
     periodLength: data.periodLength,
+    goal: data.goal,
   })
 
   revalidateTag(`profiles:${user.id}`, { expire: 0 })

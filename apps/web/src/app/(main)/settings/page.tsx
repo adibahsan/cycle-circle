@@ -12,5 +12,12 @@ export default async function SettingsPage() {
 
   const notifPrefs = await listNotificationPrefs(profiles.map(p => p.id))
 
-  return <SettingsClient user={user} profiles={profiles} notifPrefs={notifPrefs} />
+  return (
+    <SettingsClient
+      user={user}
+      profiles={profiles}
+      notifPrefs={notifPrefs}
+      completionRemindersOptOut={user.profileReminderOptOut}
+    />
+  )
 }

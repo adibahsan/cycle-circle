@@ -9,6 +9,8 @@ import { completeProfile } from '@/app/actions/user-actions';
 interface ProfileCompletionModalProps {
   open: boolean;
   onClose: () => void;
+  /** Called after a successful profile save, before the modal auto-closes. */
+  onCompleted?: () => void;
 }
 
 function validatePhone(value: string) {
@@ -24,7 +26,7 @@ function validateFullName(value: string) {
   return '';
 }
 
-export function ProfileCompletionModal({ open, onClose }: ProfileCompletionModalProps) {
+export function ProfileCompletionModal({ open, onClose, onCompleted }: ProfileCompletionModalProps) {
   const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
   const firstFocusableRef = useRef<HTMLInputElement>(null);
@@ -98,6 +100,7 @@ export function ProfileCompletionModal({ open, onClose }: ProfileCompletionModal
     try {
       await completeProfile({ fullName: fullName.trim(), phone });
       setSuccess(true);
+      onCompleted?.();
       setTimeout(() => {
         onClose();
       }, 1500);

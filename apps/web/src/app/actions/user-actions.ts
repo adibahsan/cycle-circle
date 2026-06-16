@@ -3,7 +3,7 @@
 import { z } from 'zod'
 import { revalidateTag } from 'next/cache'
 import { requireAuth, getAuthUser, validateMsisdn } from '@vesta/shared/server/auth'
-import { completeUserProfile, updateUserContact } from '@vesta/shared/server/services'
+import { completeUserProfile, updateUserContact, completeOnboardingTour as svcCompleteOnboardingTour } from '@vesta/shared/server/services'
 
 const completeProfileSchema = z.object({
   fullName: z.string().min(1).max(200),
@@ -51,6 +51,14 @@ export async function updateContactInfo(input: z.infer<typeof updateContactSchem
 
   await updateUserContact(user.id, updateData)
 
+  revalidateTag(`user:${user.id}`, { expire: 0 })
+  return { success: true }
+}
+
+export async function completeOnboardingTour() {
+  const jwt = await requireAuth()
+  const user = await getAuthUser(jwt.sub)
+  await svcCompleteOnboardingTour(user.id)
   revalidateTag(`user:${user.id}`, { expire: 0 })
   return { success: true }
 }

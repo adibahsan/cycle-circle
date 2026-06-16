@@ -504,6 +504,27 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
 
 // ─── Edit Profile Form ────────────────────────────────────────────────────────
 
+type GoalOption = 'tracking' | 'conceive' | 'perimenopause';
+
+const GOAL_OPTIONS: GoalOption[] = ['tracking', 'conceive', 'perimenopause'];
+
+const GOAL_ICONS: Record<GoalOption, string> = {
+  tracking: '📅',
+  conceive: '🌱',
+  perimenopause: '🌸',
+};
+
+const GOAL_I18N_KEYS: Record<GoalOption, string> = {
+  tracking: 'onboarding.goalTracking',
+  conceive: 'onboarding.goalConceive',
+  perimenopause: 'onboarding.goalPerimenopause',
+};
+
+function normalizeGoal(goal: string | null): GoalOption {
+  if (goal === 'conceive' || goal === 'perimenopause') return goal;
+  return 'tracking';
+}
+
 interface EditProfileFormProps {
   profile: Profile;
   onClose: () => void;
@@ -514,6 +535,7 @@ interface EditProfileFormProps {
     relation: ProfileRelation;
     cycleLength: number;
     periodLength: number;
+    goal: GoalOption;
   }) => void;
 }
 
@@ -523,6 +545,7 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
   const [relation, setRelation] = useState<ProfileRelation>(normalizeRelation(profile.relation));
   const [cycleLength, setCycleLength] = useState(profile.cycleLength);
   const [periodLength, setPeriodLength] = useState(profile.periodLength);
+  const [goal, setGoal] = useState<GoalOption>(normalizeGoal(profile.goal));
   const [nameError, setNameError] = useState('');
 
   function handleSubmit() {
@@ -535,7 +558,7 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
       setNameError(t('profiles.nameMinLength'));
       return;
     }
-    onSubmit({ name: trimmed, relation, cycleLength, periodLength });
+    onSubmit({ name: trimmed, relation, cycleLength, periodLength, goal });
   }
 
   return (
@@ -660,6 +683,40 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
               max={10}
               onChange={setPeriodLength}
             />
+          </div>
+
+          {/* Goal selector */}
+          <div role="group" aria-label={t('profiles.goalLabel')}>
+            <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+              {t('profiles.goalLabel')}
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {GOAL_OPTIONS.map((g) => {
+                const isSelected = goal === g;
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setGoal(g)}
+                    aria-pressed={isSelected}
+                    className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                    style={{
+                      background: isSelected ? 'rgba(232,71,108,0.1)' : 'var(--color-bg-secondary)',
+                      borderColor: isSelected ? 'rgba(232,71,108,0.3)' : 'var(--color-border)',
+                      boxShadow: isSelected ? '0 0 0 1.5px rgba(232,71,108,0.3)' : 'none',
+                    }}
+                  >
+                    <span className="text-lg leading-none" aria-hidden="true">{GOAL_ICONS[g]}</span>
+                    <span
+                      className="text-[11px] font-semibold"
+                      style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+                    >
+                      {t(GOAL_I18N_KEYS[g])}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Actions */}
@@ -861,6 +918,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
     relation: ProfileRelation;
     cycleLength: number;
     periodLength: number;
+    goal: GoalOption;
   }) {
     if (!editTarget) return;
     setIsPending(true);
@@ -872,6 +930,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
         relation: toDbRelation(data.relation),
         cycleLength: data.cycleLength,
         periodLength: data.periodLength,
+        goal: data.goal,
       });
       closeEditForm();
     } catch (err) {

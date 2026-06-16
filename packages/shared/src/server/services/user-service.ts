@@ -1,3 +1,4 @@
+import { AuthMethod } from '@prisma/client'
 import { prisma } from '../db'
 
 // ---------------------------------------------------------------------------
@@ -251,21 +252,35 @@ export async function getUserByPhone(phone: string) {
 // Profile completion status
 // ---------------------------------------------------------------------------
 
-export interface ProfileCompletionItem {
+export interface CompletionItem {
   key: string
+  done: boolean
+}
+
+export interface RecommendedContact {
+  key: 'email' | 'phone'
   done: boolean
 }
 
 export interface ProfileCompletionStatus {
   percent: number
   complete: boolean
-  items: ProfileCompletionItem[]
+  items: CompletionItem[]
+  recommended: RecommendedContact
 }
+
+/** @deprecated Use CompletionItem instead */
+export type ProfileCompletionItem = CompletionItem
 
 /**
  * Compute profile-completion status for a user.
  * When profileId is omitted, uses the user's first (oldest) profile.
  * Keys map to `profileCompletion.item*` i18n strings on the client.
+ *
+ * Core items (drive percent + complete):
+ *   fullName, phone|email (primary auth contact), goal, cycleHistory, firstLog
+ * Recommended (secondary contact, non-blocking, not counted in percent):
+ *   email (if PHONE user) | phone (if EMAIL user)
  */
 export async function getProfileCompletionStatus(
   userId: string,
@@ -276,6 +291,8 @@ export async function getProfileCompletionStatus(
     select: {
       fullName: true,
       phone: true,
+      email: true,
+      authMethod: true,
       profiles: {
         where: profileId ? { id: profileId } : undefined,
         orderBy: { createdAt: 'asc' },
@@ -292,10 +309,16 @@ export async function getProfileCompletionStatus(
   })
 
   const profile = user?.profiles[0] ?? null
+  const periodLogCount = profile?._count.periodLogs ?? 0
 
-  const items: ProfileCompletionItem[] = [
+  // Phone signups authenticate via OTP; their primary contact is the phone number.
+  const isPhoneUser = user?.authMethod === AuthMethod.OTP
+
+  const coreItems: CompletionItem[] = [
     { key: 'fullName', done: Boolean(user?.fullName) },
-    { key: 'phone', done: Boolean(user?.phone) },
+    isPhoneUser
+      ? { key: 'phone', done: Boolean(user?.phone) }
+      : { key: 'email', done: Boolean(user?.email) },
     { key: 'goal', done: Boolean(profile?.goal) },
     {
       key: 'cycleHistory',
@@ -303,17 +326,32 @@ export async function getProfileCompletionStatus(
         profile?.cycleLength && profile?.periodLength && profile?.lastPeriodStart,
       ),
     },
-    { key: 'firstLog', done: (profile?._count.periodLogs ?? 0) >= 1 },
+    { key: 'firstLog', done: periodLogCount >= 1 },
   ]
 
-  const doneCount = items.filter((i) => i.done).length
-  const percent = Math.round((doneCount / items.length) * 100)
+  const doneCoreCount = coreItems.filter((i) => i.done).length
+  const percent = Math.round((doneCoreCount / coreItems.length) * 100)
+
+  const recommended: RecommendedContact = isPhoneUser
+    ? { key: 'email', done: Boolean(user?.email) }
+    : { key: 'phone', done: Boolean(user?.phone) }
 
   return {
     percent,
-    complete: doneCount === items.length,
-    items,
+    complete: coreItems.every((i) => i.done),
+    items: coreItems,
+    recommended,
   }
+}
+
+/**
+ * Mark the onboarding tour as completed for a user by recording the timestamp.
+ */
+export async function completeOnboardingTour(userId: string): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { onboardingTourCompletedAt: new Date() },
+  })
 }
 
 /**

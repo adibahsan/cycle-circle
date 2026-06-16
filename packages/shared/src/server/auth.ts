@@ -130,6 +130,7 @@ export interface AuthUser {
   suspendedAt: Date | null
   deletedAt: Date | null
   profileReminderOptOut: boolean
+  onboardingTourCompletedAt: Date | null
 }
 
 export async function getAuthUser(userId: string): Promise<AuthUser> {

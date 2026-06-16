@@ -1,11 +1,16 @@
 import { differenceInDays } from 'date-fns'
 import { withCronAuth } from '@vesta/shared/server/middleware'
-import { getProfilesForReminders, wasEmailSentToday } from '@vesta/shared/server/services'
+import { getProfilesForReminders, wasEmailSentToday, wasEmailSentTodayForUser } from '@vesta/shared/server/services'
+import { prisma } from '@vesta/shared'
 import {
   sendPeriodAlert,
   sendFertileAlert,
   sendLoggingReminder,
+  sendProfileCompletionReminder,
 } from '@vesta/shared/server/adapters/notifications'
+
+/** How many days after signup to keep sending profile-completion reminders. */
+const COMPLETION_REMINDER_MAX_AGE_DAYS = 14
 
 /**
  * POST /api/cron/daily-reminders
@@ -22,6 +27,7 @@ export const POST = withCronAuth(async () => {
   let periodAlerts = 0
   let fertileAlerts = 0
   let reminders = 0
+  let completionReminders = 0
   let errors = 0
   let skipped = 0
 
@@ -124,11 +130,63 @@ export const POST = withCronAuth(async () => {
     }
   }
 
+  // ── Profile-completion reminders ──────────────────────────────────────────────
+  const campaignCutoff = new Date(today)
+  campaignCutoff.setDate(campaignCutoff.getDate() - COMPLETION_REMINDER_MAX_AGE_DAYS)
+  const oneDayAgo = new Date(today)
+  oneDayAgo.setDate(oneDayAgo.getDate() - 1)
+
+  const incompleteUsers = await prisma.user.findMany({
+    where: {
+      profileCompleted: false,
+      profileReminderOptOut: false,
+      deletedAt: null,
+      createdAt: {
+        // created more than 24 h ago (give them a grace period on signup day)
+        lte: oneDayAgo,
+        // but still within the campaign window
+        gte: campaignCutoff,
+      },
+    },
+    select: {
+      id: true,
+      email: true,
+      phone: true,
+      fullName: true,
+      language: true,
+    },
+  })
+
+  for (const user of incompleteUsers) {
+    try {
+      if (await wasEmailSentTodayForUser('PROFILE_COMPLETION_REMINDER', user.id)) {
+        skipped++
+        continue
+      }
+      await sendProfileCompletionReminder({
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        fullName: user.fullName,
+        language: user.language,
+        userId: user.id,
+      })
+      completionReminders++
+    } catch (err) {
+      console.error(
+        `[cron/daily-reminders] Completion reminder error for user ${user.id}:`,
+        err,
+      )
+      errors++
+    }
+  }
+
   return Response.json({
     processed: profilesWithData.length,
     periodAlerts,
     fertileAlerts,
     reminders,
+    completionReminders,
     errors,
     skipped,
   })

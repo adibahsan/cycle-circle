@@ -3,7 +3,7 @@
 import { z } from 'zod'
 import { revalidateTag } from 'next/cache'
 import { requireAuth, getAuthUser } from '@vesta/shared/server/auth'
-import { upsertNotificationPrefs, listProfiles, listPeriodLogs, getSymptomLogs } from '@vesta/shared/server/services'
+import { upsertNotificationPrefs, listProfiles, listPeriodLogs, getSymptomLogs, setProfileReminderOptOut } from '@vesta/shared/server/services'
 
 const updatePrefsSchema = z.object({
   profileId: z.string().min(1),
@@ -25,6 +25,14 @@ export async function updateNotificationPrefs(input: z.infer<typeof updatePrefsS
 
   revalidateTag(`notifications:${data.profileId}`, { expire: 0 })
   return updated
+}
+
+export async function updateProfileReminderOptOut(optOut: boolean): Promise<boolean> {
+  const jwt = await requireAuth()
+  const user = await getAuthUser(jwt.sub)
+  const result = await setProfileReminderOptOut(user.id, optOut)
+  revalidateTag(`user:${user.id}`, { expire: 0 })
+  return result
 }
 
 function escapeCsvField(value: string | number | null | undefined): string {

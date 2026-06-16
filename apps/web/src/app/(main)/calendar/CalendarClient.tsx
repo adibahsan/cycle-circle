@@ -24,6 +24,7 @@ import { Card } from '@/components/ui/Card'
 import { useAppStore } from '@/lib/store'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
 import { PeriodLogModal } from '@/components/PeriodLogModal'
+import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import type { FlowIntensity } from '@vesta/shared/types'
 import '@vesta/shared/utils/i18n'
 
@@ -84,6 +85,7 @@ interface Props {
   days: CalendarDay[] | null
   symptomLogs: SymptomLog[]
   periodLogs: PeriodLog[]
+  goal: string | null
 }
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
@@ -453,7 +455,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
 
 // ─── Calendar Client ───────────────────────────────────────────────────────────
 
-export function CalendarClient({ profiles: _profiles, activeProfileId: _activeProfileId, month, days, symptomLogs, periodLogs }: Props) {
+export function CalendarClient({ profiles: _profiles, activeProfileId, month, days, symptomLogs, periodLogs, goal }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const { language } = useAppStore()
@@ -470,6 +472,34 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [editingLog, setEditingLog] = useState<PeriodLog | null>(null)
+
+  // ── Nudge data ──────────────────────────────────────────────────────────────
+
+  const nudgeData = useMemo(() => {
+    const latestPeriod = periodLogs.length > 0
+      ? new Date(periodLogs[0].startDate)
+      : null
+    const latestSymptom = symptomLogs.length > 0
+      ? new Date(symptomLogs[0].date)
+      : null
+
+    const hasAnyLogs = !!latestPeriod || !!latestSymptom
+
+    let daysSinceLastLog: number | null = null
+    if (latestPeriod || latestSymptom) {
+      const candidates: Date[] = []
+      if (latestPeriod) candidates.push(latestPeriod)
+      if (latestSymptom) candidates.push(latestSymptom)
+      const mostRecent = candidates.reduce((a, b) => (a > b ? a : b))
+      const now = new Date()
+      now.setHours(0, 0, 0, 0)
+      const then = new Date(mostRecent)
+      then.setHours(0, 0, 0, 0)
+      daysSinceLastLog = Math.floor((now.getTime() - then.getTime()) / 86_400_000)
+    }
+
+    return { hasAnyLogs, daysSinceLastLog }
+  }, [periodLogs, symptomLogs])
 
   // Build the API calendar lookup map
   const apiCalendarMap = useMemo(() => {
@@ -576,6 +606,14 @@ export function CalendarClient({ profiles: _profiles, activeProfileId: _activePr
           {format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}
         </p>
       </motion.div>
+
+      {/* ── Logging Nudge ── */}
+      <LoggingNudge
+        profileId={activeProfileId}
+        hasAnyLogs={nudgeData.hasAnyLogs}
+        daysSinceLastLog={nudgeData.daysSinceLastLog}
+        goal={goal}
+      />
 
       {/* ── Decorative blobs ── */}
       <motion.div

@@ -142,8 +142,9 @@ model User {
   subscriptionStatus  SubscriptionStatus @default(FREE)
   language            Language           @default(EN)
   emailTrialExpiresAt DateTime?
-  profileCompleted         Boolean            @default(false)
-  profileReminderOptOut    Boolean            @default(false)
+  profileCompleted              Boolean            @default(false)
+  profileReminderOptOut         Boolean            @default(false)
+  onboardingTourCompletedAt     DateTime?
   role                     Role               @default(USER)
   suspendedAt         DateTime?
   suspendedBy         String?
