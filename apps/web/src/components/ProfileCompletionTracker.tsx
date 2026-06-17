@@ -122,7 +122,7 @@ function getItemCta(
     return { type: 'callback', fn: onComplete ?? (() => {}) };
   }
   if (key === 'email') {
-    return { type: 'link', href: '/settings#account' };
+    return { type: 'callback', fn: onComplete ?? (() => {}) };
   }
   if (key === 'goal' || key === 'cycleHistory') {
     return { type: 'link', href: '/profiles' };

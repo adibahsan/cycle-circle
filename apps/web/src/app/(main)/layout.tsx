@@ -473,6 +473,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         open={showCompletionModal}
         onClose={handleModalClose}
         percent={completionStatus?.percent}
+        items={completionStatus?.items}
         onCompleted={() => showToast(t('toast.completionDone'))}
       />
 

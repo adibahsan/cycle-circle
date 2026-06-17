@@ -371,6 +371,7 @@ const resources = {
       profile: {
         completeTitle: 'Complete Your Profile',
         completeDesc: 'Add your phone number to keep your account after the trial period',
+        completeDescEmail: 'Add your email so you can recover your account and get cycle insights by email.',
         completeSuccess: 'Profile completed!',
         fullName: 'Full Name',
         fullNamePlaceholder: 'Your full name…',
@@ -916,6 +917,7 @@ const resources = {
       profile: {
         completeTitle: 'আপনার প্রোফাইল সম্পূর্ণ করুন',
         completeDesc: 'ট্রায়াল শেষে অ্যাকাউন্ট রাখতে ফোন নম্বর যোগ করুন',
+        completeDescEmail: 'আপনার ইমেইল যোগ করুন যাতে অ্যাকাউন্ট পুনরুদ্ধার করতে এবং ইমেইলে চক্রের বিশ্লেষণ পেতে পারেন।',
         completeSuccess: 'প্রোফাইল সম্পূর্ণ হয়েছে!',
         fullName: 'পুরো নাম',
         fullNamePlaceholder: 'আপনার পুরো নাম…',
