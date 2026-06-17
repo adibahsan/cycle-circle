@@ -107,6 +107,9 @@ importers:
       i18next-browser-languagedetector:
         specifier: ^8.0.0
         version: 8.2.1
+      jose:
+        specifier: ^6.2.3
+        version: 6.2.3
       lucide-react:
         specifier: ^0.546.0
         version: 0.546.0(react@19.2.6)

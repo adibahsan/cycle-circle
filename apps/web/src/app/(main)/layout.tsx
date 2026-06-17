@@ -137,7 +137,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     let cancelled = false;
     fetch('/api/auth/status')
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        if (r.status === 401) { window.location.assign('/login'); return null }
+        return r.ok ? r.json() : null
+      })
       .then((data: { user?: { onboardingTourCompletedAt?: string | null } } | null) => {
         if (cancelled) return;
         const user = data?.user;
@@ -184,7 +187,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const controller = new AbortController();
 
     fetch('/api/profile/completion', { signal: controller.signal })
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        if (r.status === 401) { window.location.assign('/login'); return null }
+        return r.ok ? r.json() : null
+      })
       .then((data: ProfileCompletionStatus | null) => {
         if (!data) return;
         setCompletionStatus((prev) => {

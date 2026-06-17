@@ -5,7 +5,7 @@ import { env } from '../utils/env'
 import { ApiError } from './api-error'
 import { blacklistJti, isJtiBlacklisted } from './adapters/redis'
 
-const COOKIE_NAME = 'vesta_token'
+const COOKIE_NAME = env.AUTH_COOKIE_NAME
 const JWT_EXPIRY_SECONDS = 60 * 60 * 24 * 30 // 30 days
 
 function secret() {
