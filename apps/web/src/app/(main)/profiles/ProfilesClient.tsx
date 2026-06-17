@@ -73,7 +73,7 @@ function Stepper({ label, value, min, max, onChange, unit = 'days' }: StepperPro
         <button
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
-          className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+          className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
           style={{
             background: 'var(--color-bg-secondary)',
             borderColor: 'var(--color-border)',
@@ -89,7 +89,7 @@ function Stepper({ label, value, min, max, onChange, unit = 'days' }: StepperPro
         <button
           onClick={() => onChange(Math.min(max, value + 1))}
           disabled={value >= max}
-          className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+          className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
           style={{
             background: 'var(--color-bg-secondary)',
             borderColor: 'var(--color-border)',
@@ -130,14 +130,14 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
       <button
         onClick={onSwitch}
         disabled={isSwitching}
-        className="w-full text-left rounded-2xl border transition-[color,background-color,border-color,box-shadow] duration-200 p-4 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+        className="w-full text-left rounded-2xl border transition-[color,background-color,border-color,box-shadow] duration-200 p-4 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
         style={{
           background: isActive
             ? 'linear-gradient(135deg, rgba(232,71,108,0.07) 0%, rgba(155,127,212,0.07) 100%)'
             : 'var(--color-bg-card)',
-          borderColor: isActive ? 'var(--color-primary)' : 'var(--color-border)',
+          borderColor: isActive ? 'var(--goal-accent)' : 'var(--color-border)',
           boxShadow: isActive
-            ? '0 0 0 2px rgba(232,71,108,0.2), 0 4px 16px rgba(232,71,108,0.08)'
+            ? '0 0 0 2px color-mix(in srgb, var(--goal-accent) 20%, transparent), 0 4px 16px color-mix(in srgb, var(--goal-accent) 8%, transparent)'
             : '0 2px 8px rgba(0,0,0,0.03)',
         }}
         aria-label={`${t('profiles.switchTo')} ${profile.name}`}
@@ -147,7 +147,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
           <motion.div
             layoutId="active-line"
             className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl"
-            style={{ background: 'linear-gradient(180deg, var(--color-primary) 0%, var(--color-secondary) 100%)' }}
+            style={{ background: 'linear-gradient(180deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
           />
         )}
 
@@ -170,7 +170,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
                 <span
                   className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                   style={{
-                    background: 'var(--color-primary)',
+                    background: 'var(--goal-accent)',
                     color: '#fff',
                   }}
                 >
@@ -198,7 +198,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
             {isActive ? (
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center"
-                style={{ background: 'var(--color-primary)' }}
+                style={{ background: 'var(--goal-accent)' }}
               >
                 <Check size={14} color="#fff" strokeWidth={2.5} />
               </div>
@@ -212,7 +212,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
                 e.stopPropagation();
                 onEdit();
               }}
-              className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+              className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
               style={{
                 background: 'rgba(155,127,212,0.1)',
                 border: '1px solid rgba(155,127,212,0.25)',
@@ -229,7 +229,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
                   e.stopPropagation();
                   onDelete();
                 }}
-                className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                 style={{
                   background: 'rgba(232,71,108,0.08)',
                   border: '1px solid rgba(232,71,108,0.2)',
@@ -314,8 +314,8 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
       className="rounded-2xl border overflow-hidden"
       style={{
         background: 'var(--color-bg-card)',
-        borderColor: 'var(--color-primary)',
-        boxShadow: '0 0 0 2px rgba(232,71,108,0.15), 0 8px 32px rgba(232,71,108,0.1)',
+        borderColor: 'var(--goal-accent)',
+        boxShadow: '0 0 0 2px color-mix(in srgb, var(--goal-accent) 15%, transparent), 0 8px 32px color-mix(in srgb, var(--goal-accent) 10%, transparent)',
       }}
     >
       {/* Form header */}
@@ -326,7 +326,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
         <div className="flex items-center gap-2">
           <div
             className="w-8 h-8 rounded-xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)' }}
+            style={{ background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
           >
             <UserPlus size={15} color="#fff" />
           </div>
@@ -373,7 +373,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
                 <button
                   key={rel}
                   onClick={() => setRelation(rel)}
-                  className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                  className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                   style={{
                     background: isSelected ? colors.bg : 'var(--color-bg-secondary)',
                     borderColor: isSelected ? colors.border : 'var(--color-border)',
@@ -409,7 +409,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
                   type="button"
                   onClick={() => setGoal(g)}
                   aria-pressed={isSelected}
-                  className="flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-xl border text-center transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                  className="flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-xl border text-center transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                   style={
                     {
                       '--goal-accent': accentVar,
@@ -480,7 +480,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
             required
             aria-invalid={!!lastPeriodError}
             aria-describedby={lastPeriodError ? 'last-period-date-error' : undefined}
-            className={`w-full rounded-xl border px-3 py-2.5 text-sm font-medium text-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 transition-colors duration-150 ${
+            className={`w-full rounded-xl border px-3 py-2.5 text-sm font-medium text-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] transition-colors duration-150 ${
               lastPeriodError ? 'border-red-400 focus-visible:ring-red-300' : ''
             }`}
             style={{ borderColor: lastPeriodError ? undefined : 'var(--color-border)' }}
@@ -505,7 +505,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
               <button
                 key={f}
                 onClick={() => setFlowIntensity(f)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] ${
                   flowIntensity === f
                     ? 'text-white shadow-soft'
                     : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]'
@@ -613,8 +613,8 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
         className="w-full max-w-md rounded-2xl border overflow-hidden overscroll-contain"
         style={{
           background: 'var(--color-bg-card)',
-          borderColor: 'var(--color-primary)',
-          boxShadow: '0 0 0 2px rgba(232,71,108,0.15), 0 8px 32px rgba(232,71,108,0.1)',
+          borderColor: 'var(--goal-accent)',
+          boxShadow: '0 0 0 2px color-mix(in srgb, var(--goal-accent) 15%, transparent), 0 8px 32px color-mix(in srgb, var(--goal-accent) 10%, transparent)',
         }}
         onClick={(e: MouseEvent) => e.stopPropagation()}
       >
@@ -626,7 +626,7 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
           <div className="flex items-center gap-2">
             <div
               className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)' }}
+              style={{ background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
             >
               <Pencil size={15} color="#fff" />
             </div>
@@ -673,7 +673,7 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
                   <button
                     key={rel}
                     onClick={() => setRelation(rel)}
-                    className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                    className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                     style={{
                       background: isSelected ? colors.bg : 'var(--color-bg-secondary)',
                       borderColor: isSelected ? colors.border : 'var(--color-border)',
@@ -731,7 +731,7 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
                     type="button"
                     onClick={() => setGoal(g)}
                     aria-pressed={isSelected}
-                    className="flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-xl border text-center transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                    className="flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-xl border text-center transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                     style={
                       {
                         '--goal-accent': accentVar,
@@ -849,7 +849,7 @@ function DeleteDialog({ profileName, error, onConfirm, onCancel, disabled }: Del
           <button
             onClick={onConfirm}
             disabled={disabled}
-            className="flex-1 py-2 rounded-xl text-sm font-bold text-white transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+            className="flex-1 py-2 rounded-xl text-sm font-bold text-white transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
             style={{ background: 'var(--color-primary)' }}
           >
             {t('common.delete')}
@@ -1044,7 +1044,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
               transition={{ type: 'spring', stiffness: 400, damping: 35 }}
               className="fixed top-20 left-1/2 -translate-x-1/2 z-50 rounded-full px-4 py-2 flex items-center gap-2 shadow-glow"
               style={{
-                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
               }}
             >
               <Check size={14} color="#fff" />
@@ -1093,7 +1093,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                       setAddError('');
                       setShowForm(true);
                     }}
-                    className="w-full rounded-2xl border border-dashed p-4 flex items-center justify-center gap-2.5 transition-colors duration-200 group hover:border-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                    className="w-full rounded-2xl border border-dashed p-4 flex items-center justify-center gap-2.5 transition-colors duration-200 group hover:border-[var(--goal-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                     style={{
                       borderColor: 'var(--color-border)',
                       background: 'var(--color-bg-secondary)',
@@ -1102,14 +1102,14 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                     <div
                       className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
                       style={{
-                        background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                        background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
                       }}
                     >
                       <Plus size={18} color="#fff" strokeWidth={2.5} />
                     </div>
                     <div className="text-left">
                       <p
-                        className="font-semibold text-sm group-hover:text-[var(--color-primary)] transition-colors"
+                        className="font-semibold text-sm group-hover:text-[var(--goal-accent)] transition-colors"
                         style={{ color: 'var(--color-text-secondary)' }}
                       >
                         {t('profiles.add')}

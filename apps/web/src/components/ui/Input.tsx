@@ -25,7 +25,7 @@ export function Input({ label, error, className, id, ...props }: InputProps & { 
         className={twMerge(clsx(
           'w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]',
           'text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)]',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/30 focus-visible:border-[var(--goal-accent)]',
           'transition-colors transition-shadow duration-200',
           error && 'border-red-400 focus-visible:ring-red-300',
           className

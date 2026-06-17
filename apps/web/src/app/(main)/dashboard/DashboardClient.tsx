@@ -27,9 +27,7 @@ import { PeriodLogModal, FLOW_COLORS } from '@/components/PeriodLogModal'
 import { setActiveProfileCookie } from '@/app/actions/profile-actions'
 import type { ProfileCompletionStatus } from '@/components/ProfileCompletionTracker'
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
-import { GoalBadge } from '@/components/GoalBadge'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
-import { LatePeriodPrompt } from '@/components/modals/LatePeriodPrompt'
 import { CelebrationModal } from '@/components/modals/CelebrationModal'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -253,15 +251,24 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   // ── Part D: Celebration modal ────────────────────────────────────────────
   const [celebration, setCelebration] = useState<{ kind: 'period' | 'symptom'; count?: number } | null>(null)
 
-  // ── Part E: Late period prompt ───────────────────────────────────────────
-  const [showLatePrompt, setShowLatePrompt] = useState(false)
-
   const handleSaved = useCallback(() => {
     // Trigger a server re-render to pick up updated data
     router.refresh()
     // Part D: fire celebration after a period log
     setCelebration({ kind: 'period' })
   }, [router])
+
+  // ── App-wide alert integration: open period-log modal on request ──────────
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (sessionStorage.getItem('vesta_open_period_log') === '1') {
+      sessionStorage.removeItem('vesta_open_period_log')
+      openNewLog()
+    }
+    const handler = () => openNewLog()
+    window.addEventListener('vesta:open-period-log', handler)
+    return () => window.removeEventListener('vesta:open-period-log', handler)
+  }, [openNewLog])
 
   // Guard: no profile found
   if (!profile) {
@@ -366,18 +373,6 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
     daysSinceLastLog = Math.floor((today.getTime() - then.getTime()) / 86_400_000)
   }
 
-  // ── Part E: Auto-open late prompt once per day ──────────────────────────
-  useEffect(() => {
-    if (!isPeriodLate) return
-    const today = new Date().toISOString().slice(0, 10)
-    const key = `vesta_late_prompt_seen_${today}`
-    if (typeof window === 'undefined') return
-    if (!localStorage.getItem(key)) {
-      localStorage.setItem(key, '1')
-      setShowLatePrompt(true)
-    }
-  }, [isPeriodLate])
-
   // Confidence tier label (only relevant when a prediction exists)
   const tierLabel = prediction?.tier === 'arima' ? t('dashboard.tierArima') : t('dashboard.tierAverage')
   const phaseLabel = t(`dashboard.${phase}`)
@@ -404,11 +399,6 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         className="flex flex-col gap-5 py-3"
         style={{ ['--goal-accent' as string]: goalAccentVar(goal) } as React.CSSProperties}
       >
-        {/* Part B — GoalBadge visible in both standard and pregnancy modes */}
-        <div className="self-start mb-1">
-          <GoalBadge goal={goal} />
-        </div>
-
         {pregnancy ? (
           <>
             {/* ── Pregnancy: Coming Soon Panel ───────────────────── */}
@@ -580,7 +570,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                       {isPeriodLate ? (
                         <button
                           type="button"
-                          onClick={() => setShowLatePrompt(true)}
+                          onClick={openNewLog}
                           className="flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-sm font-semibold shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-menstrual)] cursor-pointer"
                           style={{ backgroundColor: displayPhaseColor }}
                           aria-label={t('dashboard.periodLateOpenPrompt', { defaultValue: 'Period late — tap for support' })}
@@ -914,14 +904,6 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         count={celebration?.count}
       />
 
-      {/* ── Part E: Late Period Supportive Prompt ─────────────── */}
-      <LatePeriodPrompt
-        open={showLatePrompt}
-        onClose={() => setShowLatePrompt(false)}
-        daysLate={daysLate}
-        goal={goal}
-        onLogPeriod={openNewLog}
-      />
     </>
   )
 }

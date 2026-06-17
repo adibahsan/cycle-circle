@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
@@ -25,7 +26,9 @@ import {
   Moon,
   TrendingUp,
 } from 'lucide-react';
-import { goalAccentVar } from '@vesta/shared/utils/goal';
+import { LatePeriodFullScreenAlert } from '@/components/modals/LatePeriodFullScreenAlert';
+import { GOAL_ICON_COMPONENTS, GOAL_I18N_KEYS } from '@/lib/goal-display';
+import { goalAccentVar, normalizeGoal } from '@vesta/shared/utils/goal';
 
 // ── Toast (single-slot, same pattern as SettingsClient) ───────────────────────
 
@@ -113,6 +116,7 @@ const SIDEBAR_EXTRA_ITEMS = [
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { t } = useTranslation();
   const { theme, setTheme, activeProfileName } = useAppStore();
   const { toast, show: showToast } = useToast();
@@ -120,7 +124,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionStatus, setCompletionStatus] = useState<ProfileCompletionStatus | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
-  const [logging, setLogging] = useState<{ goal: string | null; loggedToday: boolean; isPeriodLate: boolean } | null>(null);
+  const [logging, setLogging] = useState<{ goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null>(null);
+  const [showLateAlert, setShowLateAlert] = useState(false);
+
+  const activeGoal = normalizeGoal(logging?.goal);
 
   // Tracks the previous completion percent to detect increases (for progress toast).
   // Initialised to -1 so the very first load does NOT fire the progress toast.
@@ -157,7 +164,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     fetch('/api/tracking/logging-status', { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { goal: string | null; loggedToday: boolean; isPeriodLate: boolean } | null) => {
+      .then((data: { goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null) => {
         if (!data) return;
         setLogging(data);
       })
@@ -224,6 +231,29 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     return () => window.removeEventListener('vesta:profile-updated', handler);
   }, [refreshCompletion, refreshLogging]);
 
+  // ── Late period full-screen alert (once per day) ─────────────────────────
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!logging?.isPeriodLate) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const key = `vesta_late_alert_seen_${today}`;
+    if (!localStorage.getItem(key)) {
+      localStorage.setItem(key, '1');
+      setShowLateAlert(true);
+    }
+  }, [logging?.isPeriodLate]);
+
+  const handleLateClose = useCallback(() => setShowLateAlert(false), []);
+  const handleLateLogPeriod = useCallback(() => {
+    setShowLateAlert(false);
+    if (pathname === '/dashboard') {
+      window.dispatchEvent(new CustomEvent('vesta:open-period-log'));
+    } else {
+      sessionStorage.setItem('vesta_open_period_log', '1');
+      router.push('/dashboard');
+    }
+  }, [pathname, router]);
+
   function handleModalClose() {
     setShowCompletionModal(false);
     sessionStorage.setItem(PROFILE_MODAL_DISMISSED_KEY, '1');
@@ -240,7 +270,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div
-      className="min-h-screen bg-[var(--color-bg-primary)] flex flex-col md:flex-row relative"
+      className="app-shell min-h-screen bg-[var(--color-bg-primary)] flex flex-col md:flex-row relative"
       style={{ ['--goal-accent' as string]: goalAccentVar(logging?.goal) } as React.CSSProperties}
     >
       {/* ── Desktop Sidebar (md+) ── */}
@@ -248,7 +278,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {/* Sidebar header / branding */}
         <div className="px-5 py-5 flex items-center gap-3">
           <VestaLogo size={28} animate={false} />
-          <h1 className="text-xl font-bold text-[var(--color-primary)]">Vesta</h1>
+          <h1 className="text-xl font-bold text-[var(--goal-accent)]">Vesta</h1>
         </div>
 
         {/* Profile switcher */}
@@ -256,11 +286,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <Link
             href="/profiles"
             prefetch={true}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:border-[var(--goal-accent)] transition-colors"
           >
             <Users size={14} aria-hidden="true" />
             <span className="truncate">{activeProfileName || 'Profile'}</span>
           </Link>
+          {activeGoal && (
+            <div className="mt-1.5 px-1 flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--goal-accent)' }}>
+              <span className="inline-flex items-center [&_svg]:w-3.5 [&_svg]:h-3.5" aria-hidden="true">{GOAL_ICON_COMPONENTS[activeGoal]}</span>
+              <span className="truncate">{t(GOAL_I18N_KEYS[activeGoal])}</span>
+            </div>
+          )}
         </div>
 
         {/* Main navigation */}
@@ -337,7 +373,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <button
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors w-full"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-bg-primary)] hover:border-[var(--goal-accent)] transition-colors w-full"
           >
             {theme === 'dark' ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
             <span>{theme === 'dark' ? t('settings.lightMode') : t('settings.darkMode')}</span>
@@ -352,11 +388,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <header className="sticky top-0 z-40 glass px-4 py-3 flex items-center justify-between md:hidden">
           <div className="flex items-center gap-3">
             <VestaLogo size={24} animate={false} />
-            <h1 className="text-xl font-bold text-[var(--color-primary)]">Vesta</h1>
+            <h1 className="text-xl font-bold text-[var(--goal-accent)]">Vesta</h1>
             <Link
               href="/profiles"
               prefetch={true}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-xs font-medium hover:border-[var(--color-primary)] transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-xs font-medium hover:border-[var(--goal-accent)] transition-colors"
             >
               <Users size={12} aria-hidden="true" />
               <span className="truncate">{activeProfileName || 'Profile'}</span>
@@ -374,7 +410,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             )}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors"
+              className="p-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-primary)] hover:border-[var(--goal-accent)] transition-colors"
               aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {theme === 'dark' ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
@@ -445,6 +481,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         open={tourOpen}
         steps={tourSteps}
         onClose={handleTourClose}
+      />
+
+      {/* ── Late period full-screen alert ── */}
+      <LatePeriodFullScreenAlert
+        open={showLateAlert}
+        onClose={handleLateClose}
+        daysLate={logging?.daysLate ?? 0}
+        goal={logging?.goal ?? null}
+        onLogPeriod={handleLateLogPeriod}
       />
 
       {/* ── Layout-level toast ── */}

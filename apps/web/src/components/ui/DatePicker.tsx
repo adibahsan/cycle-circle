@@ -168,8 +168,8 @@ export function DatePicker({
     <div ref={rootRef} className={className}>
       {/* Manual-entry input + calendar toggle */}
       <div
-        className={`flex w-full items-center gap-2 rounded-xl border bg-[var(--color-bg-secondary)] pl-4 pr-1.5 py-1 transition-colors transition-shadow duration-200 focus-within:ring-2 focus-within:ring-[var(--color-primary)]/30 focus-within:border-[var(--color-primary)] ${
-          open ? 'border-[var(--color-primary)]' : 'border-[var(--color-border)]'
+        className={`flex w-full items-center gap-2 rounded-xl border bg-[var(--color-bg-secondary)] pl-4 pr-1.5 py-1 transition-colors transition-shadow duration-200 focus-within:ring-2 focus-within:ring-[var(--goal-accent)]/30 focus-within:border-[var(--goal-accent)] ${
+          open ? 'border-[var(--goal-accent)]' : 'border-[var(--color-border)]'
         } ${disabled ? 'opacity-60' : ''}`}
       >
         <input
@@ -198,8 +198,8 @@ export function DatePicker({
           aria-controls={`${pickerId}-dialog`}
           disabled={disabled}
           onClick={() => setOpen((o) => !o)}
-          className={`shrink-0 rounded-lg p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card)] hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 transition-colors disabled:cursor-not-allowed ${
-            open ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)]' : ''
+          className={`shrink-0 rounded-lg p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card)] hover:text-[var(--goal-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/30 transition-colors disabled:cursor-not-allowed ${
+            open ? 'bg-[var(--color-bg-card)] text-[var(--goal-accent)]' : ''
           }`}
         >
           <CalendarDays size={18} aria-hidden="true" />
@@ -221,7 +221,7 @@ export function DatePicker({
               type="button"
               aria-label={t('calendar.previousMonth') || 'Previous month'}
               onClick={() => setViewMonth((m) => subMonths(m, 1))}
-              className="rounded-xl p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 transition-colors"
+              className="rounded-xl p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--goal-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40 transition-colors"
             >
               <ChevronLeft size={18} aria-hidden="true" />
             </button>
@@ -232,7 +232,7 @@ export function DatePicker({
               type="button"
               aria-label={t('calendar.nextMonth') || 'Next month'}
               onClick={() => setViewMonth((m) => addMonths(m, 1))}
-              className="rounded-xl p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 transition-colors"
+              className="rounded-xl p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--goal-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40 transition-colors"
             >
               <ChevronRight size={18} aria-hidden="true" />
             </button>
@@ -263,17 +263,17 @@ export function DatePicker({
                   disabled={isDisabled}
                   aria-pressed={isSelected}
                   onClick={() => pickDay(day)}
-                  className="aspect-square flex items-center justify-center rounded-xl text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 disabled:cursor-not-allowed disabled:opacity-30"
+                  className="aspect-square flex items-center justify-center rounded-xl text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40 disabled:cursor-not-allowed disabled:opacity-30"
                   style={{
                     backgroundColor: isSelected
-                      ? 'var(--color-primary)'
+                      ? 'var(--goal-accent)'
                       : isToday
-                        ? 'rgba(232,71,108,0.1)'
+                        ? 'color-mix(in srgb, var(--goal-accent) 10%, transparent)'
                         : 'transparent',
                     color: isSelected
                       ? '#fff'
                       : isToday
-                        ? 'var(--color-primary)'
+                        ? 'var(--goal-accent)'
                         : inMonth
                           ? 'var(--color-text-primary)'
                           : 'var(--color-text-muted)',

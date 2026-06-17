@@ -85,7 +85,7 @@ function filterSymptomByDate(
 // ─── Colour palette ───────────────────────────────────────────────────────────
 
 const SYMPTOM_COLORS: Record<string, string> = {
-  PHYSICAL: 'var(--color-primary)',
+  PHYSICAL: 'var(--goal-accent)',
   MOOD: 'var(--color-secondary)',
   DISCHARGE: 'var(--color-fertile)',
   LIFESTYLE: 'var(--color-ovulation)',
@@ -137,9 +137,9 @@ function DateRangeControl({
           key={key}
           onClick={() => onChange(key)}
           aria-pressed={value === key}
-          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] ${
+          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--goal-accent)] ${
             value === key
-              ? 'bg-[var(--color-primary)] text-white'
+              ? 'bg-[var(--goal-accent)] text-white'
               : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-[var(--color-border)]'
           }`}
         >
@@ -170,9 +170,9 @@ function ChartTypeControl({
           key={key}
           onClick={() => onChange(key)}
           aria-pressed={value === key}
-          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] ${
+          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--goal-accent)] ${
             value === key
-              ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)] border border-[var(--color-primary)]/30'
+              ? 'bg-[var(--goal-accent)]/15 text-[var(--goal-accent)] border border-[var(--goal-accent)]/30'
               : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-[var(--color-border)]'
           }`}
         >
@@ -202,7 +202,7 @@ function CycleLengthTrendChart({
 }) {
   if (data.length === 0) return <NoDataMessage label={noDataLabel} />
 
-  const color = 'var(--color-primary)'
+  const color = 'var(--goal-accent)'
 
   const sharedProps = {
     data,
@@ -358,11 +358,11 @@ function SymptomFrequencyChart({
               : label
           }
         />
-        <Bar dataKey="count" radius={[4, 4, 0, 0]} isAnimationActive={animate}>
+        <Bar dataKey="count" radius={[4, 4, 0, 0]} isAnimationActive={animate} fill="var(--goal-accent)">
           {data.map((entry) => (
             <Cell
               key={entry.category}
-              fill={SYMPTOM_COLORS[entry.category] ?? SYMPTOM_FALLBACK}
+              fill="var(--goal-accent)"
             />
           ))}
         </Bar>
@@ -401,7 +401,7 @@ function PeriodRegularityCard({
         <div className="flex items-baseline gap-1">
           <span
             className="text-4xl font-extrabold tabular-nums leading-none"
-            style={{ color: 'var(--color-primary)' }}
+            style={{ color: 'var(--goal-accent)' }}
           >
             {data.mean}
           </span>
@@ -564,7 +564,7 @@ export function InsightsClient({
         className="flex flex-col gap-1 pt-2"
       >
         <div className="flex items-center gap-2">
-          <TrendingUp size={20} className="text-[var(--color-primary)]" aria-hidden="true" />
+          <TrendingUp size={20} className="text-[var(--goal-accent)]" aria-hidden="true" />
           <h1 className="text-2xl font-extrabold text-[var(--color-text-primary)]">
             {t('insights.title')}
           </h1>

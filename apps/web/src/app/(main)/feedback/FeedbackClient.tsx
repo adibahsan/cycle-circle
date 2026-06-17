@@ -80,7 +80,7 @@ const CATEGORIES: CategoryConfig[] = [
     id: 'satisfaction',
     labelKey: 'feedback.satisfaction',
     Icon: Heart,
-    color: 'var(--color-primary)',
+    color: 'var(--goal-accent)',
     bg: 'var(--color-bg-secondary)',
   },
 ]
@@ -106,13 +106,13 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
             onMouseLeave={() => setHovered(0)}
             onClick={() => onChange(value === star ? 0 : star)}
             aria-label={`${star} star${star !== 1 ? 's' : ''}`}
-            className="p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+            className="p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
           >
             <Star
               size={28}
               className="transition-colors duration-150"
-              fill={filled ? 'var(--color-primary)' : 'transparent'}
-              stroke={filled ? 'var(--color-primary)' : 'var(--color-border)'}
+              fill={filled ? 'var(--goal-accent)' : 'transparent'}
+              stroke={filled ? 'var(--goal-accent)' : 'var(--color-border)'}
               strokeWidth={1.8}
             />
           </motion.button>
@@ -144,8 +144,8 @@ function StarDisplay({ rating }: { rating?: number | null }) {
         <Star
           key={s}
           size={12}
-          fill={s <= rating ? 'var(--color-primary)' : 'transparent'}
-          stroke={s <= rating ? 'var(--color-primary)' : 'var(--color-border)'}
+          fill={s <= rating ? 'var(--goal-accent)' : 'transparent'}
+          stroke={s <= rating ? 'var(--goal-accent)' : 'var(--color-border)'}
           strokeWidth={1.8}
           aria-hidden="true"
         />
@@ -272,7 +272,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                     className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
                     style={{
                       background:
-                        'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                        'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
                     }}
                   >
                     <CheckCircle2 size={32} className="text-white" aria-hidden="true" />
@@ -301,7 +301,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                           type="button"
                           whileTap={{ scale: 0.96 }}
                           onClick={() => setSelectedCategory(cat.id)}
-                          className="relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-colors duration-200 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                          className="relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-colors duration-200 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                           style={
                             isSelected
                               ? { borderColor: cat.color, backgroundColor: cat.bg }
@@ -376,14 +376,14 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                         value={message}
                         onChange={e => setMessage(e.target.value)}
                         placeholder={t('feedback.message')}
-                        className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors transition-shadow duration-200"
+                        className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/30 focus-visible:border-[var(--goal-accent)] transition-colors transition-shadow duration-200"
                       />
                       <span
                         className="absolute bottom-2.5 right-3 text-[10px] font-medium"
                         style={{
                           color:
                             message.length > MAX_CHARS * 0.9
-                              ? 'var(--color-primary)'
+                              ? 'var(--goal-accent)'
                               : 'var(--color-text-muted)',
                         }}
                       >

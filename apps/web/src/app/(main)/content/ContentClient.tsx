@@ -77,14 +77,14 @@ export function ContentClient({ articles, activePhase }: ContentClientProps) {
       <div className="py-4">
         <button
           onClick={() => setSelectedArticle(null)}
-          className="flex items-center gap-1 text-sm text-[var(--color-primary)] font-medium mb-4 hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
+          className="flex items-center gap-1 text-sm text-[var(--goal-accent)] font-medium mb-4 hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
         >
           ← {t('content.backToArticles')}
         </button>
 
         <article className="glass rounded-2xl p-6">
           {selectedArticle.category && (
-            <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[var(--color-primary)]/10 text-[var(--color-primary)] mb-3">
+            <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[var(--goal-accent)]/10 text-[var(--goal-accent)] mb-3">
               {selectedArticle.category.name}
             </span>
           )}
@@ -108,7 +108,7 @@ export function ContentClient({ articles, activePhase }: ContentClientProps) {
           )}
 
           <div
-            className="prose prose-sm max-w-none text-[var(--color-text-secondary)] [&_h2]:text-[var(--color-text-primary)] [&_h3]:text-[var(--color-text-primary)] [&_strong]:text-[var(--color-text-primary)] [&_a]:text-[var(--color-primary)]"
+            className="prose prose-sm max-w-none text-[var(--color-text-secondary)] [&_h2]:text-[var(--color-text-primary)] [&_h3]:text-[var(--color-text-primary)] [&_strong]:text-[var(--color-text-primary)] [&_a]:text-[var(--goal-accent)]"
             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(getBody(selectedArticle)) }}
           />
         </article>
@@ -132,12 +132,12 @@ export function ContentClient({ articles, activePhase }: ContentClientProps) {
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {PHASE_TABS.map(tab => {
             const isActive = currentFilter === tab.id
-            const accent = tab.id === 'all' ? 'var(--color-primary)' : getPhaseColor(tab.id.toLowerCase() as any)
+            const accent = tab.id === 'all' ? 'var(--goal-accent)' : getPhaseColor(tab.id.toLowerCase() as any)
             return (
               <button
                 key={tab.id}
                 onClick={() => handleFilterChange(tab.id)}
-                className="flex-none flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors duration-200 active:scale-95 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                className="flex-none flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors duration-200 active:scale-95 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                 style={
                   isActive
                     ? { backgroundColor: accent, borderColor: accent, color: '#fff' }
@@ -175,12 +175,12 @@ export function ContentClient({ articles, activePhase }: ContentClientProps) {
             <button
               key={article.id}
               onClick={() => setSelectedArticle(article)}
-              className="w-full text-left glass rounded-2xl p-4 hover:border-[var(--color-primary)]/30 hover:shadow-soft transition-[color,background-color,border-color,box-shadow] duration-200 group focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+              className="w-full text-left glass rounded-2xl p-4 hover:border-[var(--goal-accent)]/30 hover:shadow-soft transition-[color,background-color,border-color,box-shadow] duration-200 group focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   {article.category && (
-                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[var(--color-primary)]/10 text-[var(--color-primary)] mb-1.5">
+                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[var(--goal-accent)]/10 text-[var(--goal-accent)] mb-1.5">
                       {article.category.name}
                     </span>
                   )}
@@ -209,7 +209,7 @@ export function ContentClient({ articles, activePhase }: ContentClientProps) {
                 </div>
                 <ChevronRight
                   size={16}
-                  className="text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors mt-1 shrink-0"
+                  className="text-[var(--color-text-muted)] group-hover:text-[var(--goal-accent)] transition-colors mt-1 shrink-0"
                   aria-hidden="true"
                 />
               </div>

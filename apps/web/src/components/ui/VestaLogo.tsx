@@ -20,7 +20,7 @@ export function VestaLogoSVG({ size = 32, className }: Omit<VestaLogoProps, 'ani
       role="img"
       className={className}
     >
-      <rect width="48" height="48" rx="12" fill="#E8476C" />
+      <rect width="48" height="48" rx="12" style={{ fill: 'var(--goal-accent)' }} />
       <text
         x="24"
         y="33"

@@ -156,8 +156,8 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent }: 
                 aria-label={t('profileCompletion.percentComplete', { percent })}
                 className="inline-block mt-1.5 mb-0.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tabular-nums"
                 style={{
-                  background: 'color-mix(in srgb, var(--color-primary) 12%, transparent)',
-                  color: 'var(--color-primary)',
+                  background: 'color-mix(in srgb, var(--goal-accent) 12%, transparent)',
+                  color: 'var(--goal-accent)',
                 }}
               >
                 {t('profileCompletion.percentComplete', { percent })}
@@ -173,7 +173,7 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent }: 
           <button
             onClick={onClose}
             aria-label="Dismiss"
-            className="ml-3 mt-0.5 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/50 shrink-0"
+            className="ml-3 mt-0.5 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/50 shrink-0"
           >
             <X size={18} aria-hidden="true" />
           </button>
@@ -220,7 +220,7 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent }: 
                   value={fullName}
                   onChange={handleNameChange}
                   maxLength={200}
-                  className={`w-full pl-10 pr-4 py-3 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200 text-base ${
+                  className={`w-full pl-10 pr-4 py-3 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/30 focus-visible:border-[var(--goal-accent)] transition-colors duration-200 text-base ${
                     nameError
                       ? 'border-red-400 focus-visible:ring-red-300'
                       : 'border-[var(--color-border)]'
@@ -265,7 +265,7 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent }: 
                   value={phone}
                   onChange={handlePhoneChange}
                   maxLength={11}
-                  className={`w-full pl-20 pr-10 py-3 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200 text-base tracking-widest font-medium ${
+                  className={`w-full pl-20 pr-10 py-3 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/30 focus-visible:border-[var(--goal-accent)] transition-colors duration-200 text-base tracking-widest font-medium ${
                     phoneError
                       ? 'border-red-400 focus-visible:ring-red-300'
                       : 'border-[var(--color-border)]'
@@ -316,10 +316,10 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent }: 
             )}
 
             {/* Trial info banner */}
-            <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-[var(--color-primary)]/8 border border-[var(--color-primary)]/20">
+            <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-[var(--goal-accent)]/8 border border-[var(--goal-accent)]/20">
               <Phone
                 size={15}
-                className="text-[var(--color-primary)] mt-0.5 shrink-0"
+                className="text-[var(--goal-accent)] mt-0.5 shrink-0"
                 aria-hidden="true"
               />
               <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">

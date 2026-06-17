@@ -86,7 +86,7 @@ function SegmentedControl<T extends string>({
             role="radio"
             aria-checked={active}
             onClick={() => onChange(opt.value)}
-            className={`relative flex-1 py-1.5 px-4 rounded-[10px] text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
+            className={`relative flex-1 py-1.5 px-4 rounded-[10px] text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] ${
               active
                 ? 'text-white shadow-soft'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
@@ -125,7 +125,7 @@ function Toggle({
       aria-checked={checked}
       aria-label={label ?? id}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
         checked ? 'gradient-primary' : 'bg-[var(--color-border)]'
       }`}
     >
@@ -227,7 +227,7 @@ function AccountRow({
     <Link href={href} className="flex items-center gap-3 py-3 px-1 group">
       <Icon
         size={17}
-        className="text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors shrink-0"
+        className="text-[var(--color-text-muted)] group-hover:text-[var(--goal-accent)] transition-colors shrink-0"
       />
       <span className="flex-1 text-sm text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] transition-colors">
         {label}
@@ -593,7 +593,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   <button
                     onClick={handleExportCsv}
                     disabled={exporting}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--goal-accent)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                   >
                     <FileText size={22} className="text-[var(--color-secondary)]" aria-hidden="true" />
                     <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
@@ -603,9 +603,9 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   <button
                     onClick={handleExportExcel}
                     disabled={exporting}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--goal-accent)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                   >
-                    <FileSpreadsheet size={22} className="text-[var(--color-primary)]" aria-hidden="true" />
+                    <FileSpreadsheet size={22} className="text-[var(--goal-accent)]" aria-hidden="true" />
                     <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
                       {t('settings.exportExcel')}
                     </span>
@@ -753,11 +753,11 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                       sessionStorage.setItem('vesta_replay_tour', '1')
                       router.push('/dashboard')
                     }}
-                    className="flex items-center gap-3 py-3 px-1 w-full group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] rounded-sm"
+                    className="flex items-center gap-3 py-3 px-1 w-full group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] rounded-sm"
                   >
                     <Compass
                       size={17}
-                      className="text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors shrink-0"
+                      className="text-[var(--color-text-muted)] group-hover:text-[var(--goal-accent)] transition-colors shrink-0"
                       aria-hidden="true"
                     />
                     <span className="flex-1 text-left min-w-0">

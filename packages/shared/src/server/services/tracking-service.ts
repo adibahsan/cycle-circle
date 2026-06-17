@@ -296,7 +296,7 @@ export async function getDashboardData(profileId: string, userId: string) {
 export async function getLoggingStatus(
   profileId: string,
   userId: string,
-): Promise<{ goal: string | null; loggedToday: boolean; isPeriodLate: boolean } | null> {
+): Promise<{ goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null> {
   const profile = await prisma.profile.findUnique({ where: { id: profileId } })
   if (!profile || profile.userId !== userId) return null
 
@@ -321,8 +321,9 @@ export async function getLoggingStatus(
   const dash = await getDashboardData(profileId, userId)
   const countdown = dash?.countdownToNextPeriod ?? null
   const isPeriodLate = countdown != null && countdown < 0
+  const daysLate = isPeriodLate ? Math.abs(countdown as number) : 0
 
-  return { goal: profile.goal ?? null, loggedToday, isPeriodLate }
+  return { goal: profile.goal ?? null, loggedToday, isPeriodLate, daysLate }
 }
 
 // ── Calendar ───────────────────────────────────────────────────────────────────

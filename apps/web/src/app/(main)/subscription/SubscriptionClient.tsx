@@ -336,7 +336,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                     key={labelKey}
                     className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
                   >
-                    <Check size={14} className="text-[var(--color-primary)] shrink-0" />
+                    <Check size={14} className="text-[var(--goal-accent)] shrink-0" />
                     {t(labelKey)}
                   </div>
                 ))
@@ -399,7 +399,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
 
                 <button
                   onClick={handleUpgradeClick}
-                  className="w-full bg-white text-[var(--color-primary)] font-bold py-3.5 rounded-xl text-base hover:bg-white/90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                  className="w-full bg-white text-[var(--goal-accent)] font-bold py-3.5 rounded-xl text-base hover:bg-white/90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                 >
                   {t('subscription.upgradeButton')}
                 </button>
@@ -455,7 +455,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               </div>
               <div className="px-2 py-3 flex justify-center items-center">
                 {pro ? (
-                  <Check size={16} className="text-[var(--color-primary)]" aria-hidden="true" />
+                  <Check size={16} className="text-[var(--goal-accent)]" aria-hidden="true" />
                 ) : (
                   <X size={16} className="text-[var(--color-border)]" aria-hidden="true" />
                 )}

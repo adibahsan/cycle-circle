@@ -182,17 +182,16 @@ interface SymptomChipProps {
 }
 
 export const SymptomChip = memo(function SymptomChip({ id, icon, name, selected, category, onToggle }: SymptomChipProps) {
-  const colors = CATEGORY_COLORS[category];
   return (
     <motion.button
       onClick={() => onToggle(id)}
       whileTap={{ scale: 0.92 }}
       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-      className="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border transition-colors duration-200 w-full h-full min-h-[88px] relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+      className="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border transition-colors duration-200 w-full h-full min-h-[88px] relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
       style={{
-        background: selected ? colors.bg : 'var(--color-bg-card)',
-        borderColor: selected ? colors.border : 'var(--color-border)',
-        boxShadow: selected ? `0 0 0 2px ${colors.ring}` : 'none',
+        background: selected ? 'color-mix(in srgb, var(--goal-accent) 14%, transparent)' : 'var(--color-bg-card)',
+        borderColor: selected ? 'var(--goal-accent)' : 'var(--color-border)',
+        boxShadow: selected ? '0 0 0 2px color-mix(in srgb, var(--goal-accent) 40%, transparent)' : 'none',
       }}
       aria-pressed={selected}
       aria-label={name}
@@ -200,7 +199,7 @@ export const SymptomChip = memo(function SymptomChip({ id, icon, name, selected,
       <span className="text-2xl leading-none">{icon}</span>
       <span
         className="text-[11px] font-semibold text-center leading-tight"
-        style={{ color: selected ? colors.text : 'var(--color-text-secondary)' }}
+        style={{ color: selected ? 'var(--goal-accent)' : 'var(--color-text-secondary)' }}
       >
         {name}
       </span>
@@ -210,7 +209,7 @@ export const SymptomChip = memo(function SymptomChip({ id, icon, name, selected,
           animate={{ scale: 1 }}
           exit={{ scale: 0 }}
           className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center"
-          style={{ background: colors.text }}
+          style={{ background: 'var(--goal-accent)' }}
         >
           <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
             <path d="M1.5 4l2 2 3-3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -428,7 +427,7 @@ export function SymptomsClient({
                     role="tab"
                     aria-selected={isActive}
                     onClick={() => setActiveCategory(key)}
-                    className="relative flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl text-xs font-semibold transition-colors duration-200 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                    className="relative flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl text-xs font-semibold transition-colors duration-200 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
                     style={{
                       color: isActive ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
                     }}
@@ -494,7 +493,7 @@ export function SymptomsClient({
                 onClick={handleSave}
                 disabled={saving}
                 aria-label={`Save ${changeCount} changes`}
-                className="hidden lg:flex w-full rounded-2xl px-5 py-3.5 items-center justify-center gap-3 shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-70 transition-colors duration-200"
+                className="hidden lg:flex w-full rounded-2xl px-5 py-3.5 items-center justify-center gap-3 shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-70 transition-colors duration-200"
                 style={{
                   background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
                 }}
@@ -536,7 +535,7 @@ export function SymptomsClient({
               onClick={handleSave}
               disabled={saving}
               aria-label={`Save ${changeCount} changes`}
-              className="w-full rounded-2xl px-5 py-3.5 flex items-center justify-center gap-3 shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-70 transition-colors duration-200"
+              className="w-full rounded-2xl px-5 py-3.5 flex items-center justify-center gap-3 shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-70 transition-colors duration-200"
               style={{
                 background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
               }}

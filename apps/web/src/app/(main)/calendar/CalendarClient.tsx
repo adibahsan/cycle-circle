@@ -154,7 +154,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
   return (
     <button
       onClick={() => onSelect(date)}
-      className={`relative flex flex-col items-center justify-center aspect-square w-full rounded-xl transition-[color,background-color,transform] duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 focus-visible:ring-offset-1${(isPeriod || isFertile || isOvulation) && isCurrentMonth ? ' hover:scale-105' : ''}`}
+      className={`relative flex flex-col items-center justify-center aspect-square w-full rounded-xl transition-[color,background-color,transform] duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40 focus-visible:ring-offset-1${(isPeriod || isFertile || isOvulation) && isCurrentMonth ? ' hover:scale-105' : ''}`}
       style={{
         backgroundColor: isSelected
           ? isPeriod
@@ -212,7 +212,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
       {isSelected && (
         <div
           className="absolute inset-0 rounded-xl border-2 pointer-events-none"
-          style={{ borderColor: 'var(--color-primary)' }}
+          style={{ borderColor: 'var(--goal-accent)' }}
         />
       )}
     </button>
@@ -256,7 +256,7 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
           <button
             onClick={onClose}
             aria-label="Close"
-            className="p-1.5 rounded-full hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
+            className="p-1.5 rounded-full hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
           >
             <X size={14} className="text-[var(--color-text-muted)]" aria-hidden="true" />
           </button>
@@ -398,7 +398,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                     transition={{ duration: 0.2 }}
                     onClick={() => onEditLog(log)}
                     aria-label={`Edit period log starting ${fmt.format(start)}`}
-                    className="w-full flex items-center justify-between gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0 cursor-pointer hover:bg-[var(--color-bg-secondary)] rounded-lg px-1 -mx-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
+                    className="w-full flex items-center justify-between gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0 cursor-pointer hover:bg-[var(--color-bg-secondary)] rounded-lg px-1 -mx-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
                   >
                     <div className="flex flex-col gap-0.5 min-w-0 text-left">
                       <span className="text-xs font-semibold text-[var(--color-text-primary)] tabular-nums">
@@ -430,7 +430,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
                   aria-label="Previous page of period logs"
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
                 >
                   <ChevronLeft size={12} aria-hidden="true" />
                   {t('calendar.prev')}
@@ -442,7 +442,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page === totalPages - 1}
                   aria-label="Next page of period logs"
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
                 >
                   {t('calendar.next')}
                   <ChevronRight size={12} aria-hidden="true" />

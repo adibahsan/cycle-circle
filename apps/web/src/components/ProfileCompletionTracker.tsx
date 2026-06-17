@@ -267,13 +267,13 @@ function ChecklistItem({
     <div className="flex items-center gap-2.5 py-2 px-3 rounded-xl bg-[var(--color-bg-secondary)] hover:bg-[var(--color-border)] transition-colors group">
       <Circle
         size={15}
-        className="text-[var(--color-border)] shrink-0 group-hover:text-[var(--color-primary)] transition-colors"
+        className="text-[var(--color-border)] shrink-0 group-hover:text-[var(--goal-accent)] transition-colors"
         aria-hidden="true"
       />
       <span className="flex-1 text-sm text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] transition-colors">
         {label}
       </span>
-      <span className="text-xs font-semibold text-[var(--color-primary)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+      <span className="text-xs font-semibold text-[var(--goal-accent)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
         {t('profileCompletion.itemAction')}
       </span>
     </div>
@@ -284,7 +284,7 @@ function ChecklistItem({
       <button
         type="button"
         onClick={cta.fn}
-        className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] rounded-xl"
+        className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--goal-accent)] rounded-xl"
         aria-label={label}
       >
         {inner}
@@ -295,7 +295,7 @@ function ChecklistItem({
   return (
     <Link
       href={cta.href}
-      className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] rounded-xl"
+      className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--goal-accent)] rounded-xl"
     >
       {inner}
     </Link>
@@ -403,8 +403,8 @@ export function ProfileCompletionTracker({
         className={[
           'inline-flex items-center gap-1.5 px-2 py-1 rounded-lg',
           'bg-[var(--color-bg-secondary)] border border-[var(--color-border)]',
-          'hover:border-[var(--color-primary)] transition-colors',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]',
+          'hover:border-[var(--goal-accent)] transition-colors',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]',
           className ?? '',
         ]
           .join(' ')
@@ -465,8 +465,8 @@ export function ProfileCompletionTracker({
           className={[
             'w-full flex items-center gap-3 px-4 rounded-xl',
             'bg-[var(--color-bg-card)] border border-[var(--color-border)]',
-            'hover:border-[var(--color-primary)] transition-colors',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]',
+            'hover:border-[var(--goal-accent)] transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]',
             'min-h-[56px]',
           ].join(' ')}
         >
