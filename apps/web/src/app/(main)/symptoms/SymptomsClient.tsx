@@ -23,19 +23,20 @@ import { Card } from '@/components/ui/Card';
 import { useAppStore } from '@/lib/store';
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data';
 import { toggleSymptom } from '@/app/actions/tracking-actions';
+import { CelebrationModal } from '@/components/modals/CelebrationModal';
 import type { Profile, PrismaSymptomLog, SymptomCategory } from '@vesta/shared/types';
 import '@vesta/shared/utils/i18n';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const CATEGORIES: { key: SymptomCategory; labelKey: string }[] = [
+export const CATEGORIES: { key: SymptomCategory; labelKey: string }[] = [
   { key: 'physical', labelKey: 'symptoms.physical' },
   { key: 'mood', labelKey: 'symptoms.mood' },
   { key: 'discharge', labelKey: 'symptoms.discharge' },
   { key: 'lifestyle', labelKey: 'symptoms.lifestyle' },
 ];
 
-const CATEGORY_COLORS: Record<SymptomCategory, { bg: string; border: string; text: string; ring: string }> = {
+export const CATEGORY_COLORS: Record<SymptomCategory, { bg: string; border: string; text: string; ring: string }> = {
   physical: {
     bg: 'rgba(232,71,108,0.12)',
     border: 'rgba(232,71,108,0.35)',
@@ -62,7 +63,7 @@ const CATEGORY_COLORS: Record<SymptomCategory, { bg: string; border: string; tex
   },
 };
 
-function toDbCategory(
+export function toDbCategory(
   category: SymptomCategory
 ): 'PHYSICAL' | 'MOOD' | 'DISCHARGE' | 'LIFESTYLE' {
   return category.toUpperCase() as 'PHYSICAL' | 'MOOD' | 'DISCHARGE' | 'LIFESTYLE';
@@ -180,7 +181,7 @@ interface SymptomChipProps {
   onToggle: (id: string) => void;
 }
 
-const SymptomChip = memo(function SymptomChip({ id, icon, name, selected, category, onToggle }: SymptomChipProps) {
+export const SymptomChip = memo(function SymptomChip({ id, icon, name, selected, category, onToggle }: SymptomChipProps) {
   const colors = CATEGORY_COLORS[category];
   return (
     <motion.button
@@ -227,6 +228,7 @@ interface SymptomsClientProps {
   activeProfileId: string;
   date: string;
   symptomLogs: PrismaSymptomLog[];
+  goal: string | null;
 }
 
 export function SymptomsClient({
@@ -234,6 +236,7 @@ export function SymptomsClient({
   activeProfileId,
   date,
   symptomLogs,
+  goal,
 }: SymptomsClientProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -241,6 +244,7 @@ export function SymptomsClient({
   const dateLocale = language === 'bn' ? bn : undefined;
   const [activeCategory, setActiveCategory] = useState<SymptomCategory>('physical');
   const [saving, setSaving] = useState(false);
+  const [celebrationCount, setCelebrationCount] = useState<number | null>(null);
 
   const selectedDate = useMemo(() => parseISO(date), [date]);
 
@@ -301,6 +305,7 @@ export function SymptomsClient({
   }, []);
 
   async function handleSave() {
+    const savedCount = added.length;
     setSaving(true);
     try {
       for (const id of added) {
@@ -332,6 +337,10 @@ export function SymptomsClient({
       // Notify layout so completion-pill updates (firstLog nudge, etc.).
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
+      }
+      // Celebrate only when new symptoms were added.
+      if (savedCount > 0) {
+        setCelebrationCount(savedCount);
       }
     } finally {
       setSaving(false);
@@ -578,6 +587,14 @@ export function SymptomsClient({
           )}
         </AnimatePresence>
       </div>
+
+      <CelebrationModal
+        open={celebrationCount != null}
+        onClose={() => setCelebrationCount(null)}
+        goal={goal}
+        kind="symptom"
+        count={celebrationCount ?? 0}
+      />
     </div>
   );
 }

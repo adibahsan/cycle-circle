@@ -80,6 +80,9 @@ export function PeriodLogModal({
           })
         }
         setSaved(true)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
+        }
         onSaved()
         setTimeout(onClose, 700)
       } catch (err) {
@@ -116,9 +119,14 @@ export function PeriodLogModal({
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--color-border)] sm:hidden" />
 
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
-            {isEdit ? t('dashboard.editPeriodLog') : t('dashboard.logPeriod')}
-          </h2>
+          <div>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
+              {isEdit ? t('dashboard.editPeriodLog') : t('dashboard.logPeriod')}
+            </h2>
+            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+              {t('dashboard.logPeriodMotivation')}
+            </p>
+          </div>
           <button
             onClick={onClose}
             aria-label="Close"

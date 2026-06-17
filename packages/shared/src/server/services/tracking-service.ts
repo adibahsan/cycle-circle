@@ -291,6 +291,40 @@ export async function getDashboardData(profileId: string, userId: string) {
   }
 }
 
+// ── Logging status ────────────────────────────────────────────────────────────
+
+export async function getLoggingStatus(
+  profileId: string,
+  userId: string,
+): Promise<{ goal: string | null; loggedToday: boolean; isPeriodLate: boolean } | null> {
+  const profile = await prisma.profile.findUnique({ where: { id: profileId } })
+  if (!profile || profile.userId !== userId) return null
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+
+  const [symptomToday, periodToday] = await Promise.all([
+    prisma.symptomLog.findFirst({
+      where: { profileId, date: { gte: today, lt: tomorrow } },
+      select: { id: true },
+    }),
+    prisma.periodLog.findFirst({
+      where: { profileId, startDate: { lte: today }, endDate: { gte: today } },
+      select: { id: true },
+    }),
+  ])
+  const loggedToday = Boolean(symptomToday || periodToday)
+
+  // Reuse the dashboard countdown so "late" never drifts from the dashboard.
+  const dash = await getDashboardData(profileId, userId)
+  const countdown = dash?.countdownToNextPeriod ?? null
+  const isPeriodLate = countdown != null && countdown < 0
+
+  return { goal: profile.goal ?? null, loggedToday, isPeriodLate }
+}
+
 // ── Calendar ───────────────────────────────────────────────────────────────────
 
 interface CalendarDay {

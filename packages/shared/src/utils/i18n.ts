@@ -5,7 +5,7 @@ const resources = {
   en: {
     translation: {
       app: { name: 'Vesta', tagline: 'Your cycle, your way' },
-      nav: { dashboard: 'Dashboard', calendar: 'Calendar', insights: 'Insights', symptoms: 'Symptoms', content: 'Learn', settings: 'Settings', feedback: 'Feedback', profiles: 'Profiles', subscription: 'Subscription', menu: 'Menu', more: 'More' },
+      nav: { dashboard: 'Dashboard', calendar: 'Calendar', insights: 'Insights', symptoms: 'Symptoms', content: 'Learn', settings: 'Settings', feedback: 'Feedback', profiles: 'Profiles', subscription: 'Subscription', menu: 'Menu', more: 'More', notLoggedToday: 'Nothing logged today' },
       auth: {
         login: 'Log In', signup: 'Sign Up', phone: 'Phone Number', otp: 'Enter OTP',
         sendOtp: 'Send OTP', verifyOtp: 'Verify', resendIn: 'Resend in {{seconds}}s',
@@ -103,6 +103,7 @@ const resources = {
         flowHeavy: 'Heavy',
         pregnancyComingSoonTitle: 'Pregnancy tracking',
         pregnancyComingSoonBody: 'Full features are coming soon. Keep logging your symptoms in the meantime.',
+        logPeriodMotivation: 'One quick log keeps your predictions sharp 💖',
       },
       calendar: {
         title: 'Calendar', period: 'Period', fertile: 'Fertile', ovulationDay: 'Ovulation',
@@ -290,6 +291,29 @@ const resources = {
         pregnancyDescription: 'Log how you\'re feeling each day — symptoms, mood, and notes.',
         dismiss: 'Dismiss',
         logSymptomsCta: 'Log symptoms',
+      },
+      quickSymptom: {
+        header: 'Every signal you log makes Vesta smarter for you 💪',
+        subheader: 'Tap how you\'re feeling today',
+        save: 'Save symptoms',
+        saving: 'Saving…',
+        empty: 'Pick at least one to save',
+      },
+      latePeriod: {
+        title: 'Your period is running late',
+        body_one: "It's {{count}} day past your prediction. Lots of things can shift a cycle — log it when it arrives and we'll keep your predictions on track.",
+        body_other: "It's {{count}} days past your prediction. Lots of things can shift a cycle — log it when it arrives and we'll keep your predictions on track.",
+        logCta: 'Log my period',
+        later: 'Maybe later',
+        openCta: 'Period late — log now',
+      },
+      celebration: {
+        periodTitle: 'Logged! 🎉',
+        periodBody: 'Your cycle just got smarter. Predictions updated.',
+        symptomTitle: 'Nicely done! 🎉',
+        symptomBody_one: '{{count}} symptom saved — every log helps Vesta understand you.',
+        symptomBody_other: '{{count}} symptoms saved — every log helps Vesta understand you.',
+        close: 'Done',
       },
       profileCompletion: {
         title: 'Complete your profile',
@@ -526,7 +550,7 @@ const resources = {
   bn: {
     translation: {
       app: { name: 'ভেস্তা', tagline: 'আপনার চক্র, আপনার পথে' },
-      nav: { dashboard: 'ড্যাশবোর্ড', calendar: 'ক্যালেন্ডার', insights: 'ইনসাইটস', symptoms: 'লক্ষণ', content: 'শিখুন', settings: 'সেটিংস', feedback: 'মতামত', profiles: 'প্রোফাইল', subscription: 'সাবস্ক্রিপশন', menu: 'মেনু', more: 'আরও' },
+      nav: { dashboard: 'ড্যাশবোর্ড', calendar: 'ক্যালেন্ডার', insights: 'ইনসাইটস', symptoms: 'লক্ষণ', content: 'শিখুন', settings: 'সেটিংস', feedback: 'মতামত', profiles: 'প্রোফাইল', subscription: 'সাবস্ক্রিপশন', menu: 'মেনু', more: 'আরও', notLoggedToday: 'আজ কিছু লগ করা হয়নি' },
       auth: {
         login: 'লগ ইন', signup: 'সাইন আপ', phone: 'ফোন নম্বর', otp: 'ওটিপি দিন',
         sendOtp: 'ওটিপি পাঠান', verifyOtp: 'যাচাই করুন', resendIn: '{{seconds}} সেকেন্ডে পুনরায় পাঠান',
@@ -624,6 +648,7 @@ const resources = {
         flowHeavy: 'ভারী',
         pregnancyComingSoonTitle: 'গর্ভাবস্থা ট্র্যাকিং',
         pregnancyComingSoonBody: 'সম্পূর্ণ ফিচার শীঘ্রই আসছে। ততক্ষণ পর্যন্ত আপনার উপসর্গগুলো লগ করতে থাকুন।',
+        logPeriodMotivation: 'একটি দ্রুত লগ আপনার পূর্বাভাস নিখুঁত রাখে 💖',
       },
       calendar: {
         title: 'ক্যালেন্ডার', period: 'পিরিয়ড', fertile: 'উর্বর', ovulationDay: 'ডিম্বস্ফোটন',
@@ -811,6 +836,29 @@ const resources = {
         pregnancyDescription: 'প্রতিদিন আপনি কেমন অনুভব করছেন তা লগ করুন — উপসর্গ, মেজাজ এবং নোট।',
         dismiss: 'বাদ দিন',
         logSymptomsCta: 'লক্ষণ লগ করুন',
+      },
+      quickSymptom: {
+        header: 'আপনার লগ করা প্রতিটি লক্ষণ ভেস্তাকে আপনার জন্য আরও স্মার্ট করে তোলে 💪',
+        subheader: 'আজ কেমন অনুভব করছেন ট্যাপ করুন',
+        save: 'লক্ষণ সংরক্ষণ করুন',
+        saving: 'সংরক্ষণ হচ্ছে…',
+        empty: 'সংরক্ষণ করতে অন্তত একটি বেছে নিন',
+      },
+      latePeriod: {
+        title: 'আপনার পিরিয়ড একটু দেরি করছে',
+        body_one: 'এটি আপনার পূর্বাভাসের {{count}} দিন পার হয়েছে। অনেক কিছুই চক্র বদলে দিতে পারে — পিরিয়ড এলে লগ করুন, আমরা আপনার পূর্বাভাস ঠিক রাখব।',
+        body_other: 'এটি আপনার পূর্বাভাসের {{count}} দিন পার হয়েছে। অনেক কিছুই চক্র বদলে দিতে পারে — পিরিয়ড এলে লগ করুন, আমরা আপনার পূর্বাভাস ঠিক রাখব।',
+        logCta: 'আমার পিরিয়ড লগ করুন',
+        later: 'পরে দেখব',
+        openCta: 'পিরিয়ড দেরি — এখনই লগ করুন',
+      },
+      celebration: {
+        periodTitle: 'লগ হয়েছে! 🎉',
+        periodBody: 'আপনার চক্র আরও স্মার্ট হলো। পূর্বাভাস হালনাগাদ হয়েছে।',
+        symptomTitle: 'দারুণ! 🎉',
+        symptomBody_one: '{{count}}টি লক্ষণ সংরক্ষিত — প্রতিটি লগ ভেস্তাকে আপনাকে বুঝতে সাহায্য করে।',
+        symptomBody_other: '{{count}}টি লক্ষণ সংরক্ষিত — প্রতিটি লগ ভেস্তাকে আপনাকে বুঝতে সাহায্য করে।',
+        close: 'শেষ',
       },
       profileCompletion: {
         title: 'প্রোফাইল সম্পূর্ণ করুন',

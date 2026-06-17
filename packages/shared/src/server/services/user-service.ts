@@ -257,16 +257,10 @@ export interface CompletionItem {
   done: boolean
 }
 
-export interface RecommendedContact {
-  key: 'email' | 'phone'
-  done: boolean
-}
-
 export interface ProfileCompletionStatus {
   percent: number
   complete: boolean
   items: CompletionItem[]
-  recommended: RecommendedContact
 }
 
 /** @deprecated Use CompletionItem instead */
@@ -277,10 +271,10 @@ export type ProfileCompletionItem = CompletionItem
  * When profileId is omitted, uses the user's first (oldest) profile.
  * Keys map to `profileCompletion.item*` i18n strings on the client.
  *
- * Core items (drive percent + complete):
- *   fullName, phone|email (primary auth contact), goal, cycleHistory, firstLog
- * Recommended (secondary contact, non-blocking, not counted in percent):
- *   email (if PHONE user) | phone (if EMAIL user)
+ * Core items (drive percent + complete) — BOTH contact methods count:
+ *   fullName, primary contact, secondary contact, goal, cycleHistory, firstLog
+ * Primary/secondary contact depend on auth method: OTP signups have phone as
+ * primary + email as secondary; email signups are the reverse.
  */
 export async function getProfileCompletionStatus(
   userId: string,
@@ -314,11 +308,13 @@ export async function getProfileCompletionStatus(
   // Phone signups authenticate via OTP; their primary contact is the phone number.
   const isPhoneUser = user?.authMethod === AuthMethod.OTP
 
+  const phoneItem: CompletionItem = { key: 'phone', done: Boolean(user?.phone) }
+  const emailItem: CompletionItem = { key: 'email', done: Boolean(user?.email) }
+
   const coreItems: CompletionItem[] = [
     { key: 'fullName', done: Boolean(user?.fullName) },
-    isPhoneUser
-      ? { key: 'phone', done: Boolean(user?.phone) }
-      : { key: 'email', done: Boolean(user?.email) },
+    // Both contact methods count toward completion (primary first, then secondary).
+    ...(isPhoneUser ? [phoneItem, emailItem] : [emailItem, phoneItem]),
     { key: 'goal', done: Boolean(profile?.goal) },
     {
       key: 'cycleHistory',
@@ -332,15 +328,10 @@ export async function getProfileCompletionStatus(
   const doneCoreCount = coreItems.filter((i) => i.done).length
   const percent = Math.round((doneCoreCount / coreItems.length) * 100)
 
-  const recommended: RecommendedContact = isPhoneUser
-    ? { key: 'email', done: Boolean(user?.email) }
-    : { key: 'phone', done: Boolean(user?.phone) }
-
   return {
     percent,
     complete: coreItems.every((i) => i.done),
     items: coreItems,
-    recommended,
   }
 }
 

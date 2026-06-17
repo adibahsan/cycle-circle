@@ -21,12 +21,15 @@ export default async function SymptomsPage({
   const date = params.date || today
   const symptomLogs = await getSymptomLogs(profileId, date)
 
+  const activeProfile = profiles.find((p) => p.id === profileId) ?? profiles[0]
+
   return (
     <SymptomsClient
       profiles={profiles}
       activeProfileId={profileId}
       date={date}
       symptomLogs={symptomLogs}
+      goal={activeProfile?.goal ?? null}
     />
   )
 }

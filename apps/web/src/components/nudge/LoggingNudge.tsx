@@ -20,6 +20,7 @@ export interface LoggingNudgeProps {
   daysSinceLastLog: number | null; // null when no logs; >= 3 → stale variant
   goal?: string | null;            // 'conceive' → TTC-tailored copy
   onLogPeriod?: () => void;        // primary CTA callback; if absent, CTA is a <Link href="/calendar">
+  onLogSymptoms?: () => void;      // secondary CTA callback; if absent, CTA is a <Link href="/symptoms">
   className?: string;
 }
 
@@ -31,6 +32,7 @@ export function LoggingNudge({
   daysSinceLastLog,
   goal,
   onLogPeriod,
+  onLogSymptoms,
   className,
 }: LoggingNudgeProps): React.JSX.Element | null {
   const { t } = useTranslation();
@@ -206,13 +208,24 @@ export function LoggingNudge({
             )}
 
             {/* Secondary CTA */}
-            <Link
-              href="/symptoms"
-              className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:rounded-sm"
-              style={{ color: 'var(--goal-accent)' } as React.CSSProperties}
-            >
-              {t('nudge.logSymptomsCta')}
-            </Link>
+            {onLogSymptoms ? (
+              <button
+                type="button"
+                onClick={onLogSymptoms}
+                className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:rounded-sm"
+                style={{ color: 'var(--goal-accent)' } as React.CSSProperties}
+              >
+                {t('nudge.logSymptomsCta')}
+              </button>
+            ) : (
+              <Link
+                href="/symptoms"
+                className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:rounded-sm"
+                style={{ color: 'var(--goal-accent)' } as React.CSSProperties}
+              >
+                {t('nudge.logSymptomsCta')}
+              </Link>
+            )}
           </div>
         </div>
       </div>

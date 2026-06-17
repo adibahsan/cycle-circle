@@ -25,6 +25,7 @@ import {
   Moon,
   TrendingUp,
 } from 'lucide-react';
+import { goalAccentVar } from '@vesta/shared/utils/goal';
 
 // ── Toast (single-slot, same pattern as SettingsClient) ───────────────────────
 
@@ -119,6 +120,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionStatus, setCompletionStatus] = useState<ProfileCompletionStatus | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
+  const [logging, setLogging] = useState<{ goal: string | null; loggedToday: boolean; isPeriodLate: boolean } | null>(null);
 
   // Tracks the previous completion percent to detect increases (for progress toast).
   // Initialised to -1 so the very first load does NOT fire the progress toast.
@@ -148,6 +150,23 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     return () => { cancelled = true; };
   }, [pathname]);
+
+  // ── Logging status fetch ─────────────────────────────────────────────────
+  const refreshLogging = useCallback(() => {
+    const controller = new AbortController();
+
+    fetch('/api/tracking/logging-status', { signal: controller.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { goal: string | null; loggedToday: boolean; isPeriodLate: boolean } | null) => {
+        if (!data) return;
+        setLogging(data);
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+      });
+
+    return () => controller.abort();
+  }, []);
 
   // ── Profile completion status fetch ──────────────────────────────────────
   // Stable callback so it can be called from multiple triggers without
@@ -186,17 +205,24 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   // Run on mount and whenever the pathname changes (e.g. Settings → Dashboard).
   useEffect(() => {
-    const cleanup = refreshCompletion();
-    return cleanup;
-  }, [refreshCompletion, pathname]);
+    const cleanupCompletion = refreshCompletion();
+    const cleanupLogging = refreshLogging();
+    return () => {
+      cleanupCompletion?.();
+      cleanupLogging?.();
+    };
+  }, [refreshCompletion, refreshLogging, pathname]);
 
   // Re-fetch when Settings/Modal/Profiles dispatch 'vesta:profile-updated'
   // (covers same-page updates where pathname does not change).
   useEffect(() => {
-    const handler = () => refreshCompletion();
+    const handler = () => {
+      refreshCompletion();
+      refreshLogging();
+    };
     window.addEventListener('vesta:profile-updated', handler);
     return () => window.removeEventListener('vesta:profile-updated', handler);
-  }, [refreshCompletion]);
+  }, [refreshCompletion, refreshLogging]);
 
   function handleModalClose() {
     setShowCompletionModal(false);
@@ -213,7 +239,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-primary)] flex flex-col md:flex-row relative">
+    <div
+      className="min-h-screen bg-[var(--color-bg-primary)] flex flex-col md:flex-row relative"
+      style={{ ['--goal-accent' as string]: goalAccentVar(logging?.goal) } as React.CSSProperties}
+    >
       {/* ── Desktop Sidebar (md+) ── */}
       <aside className="hidden md:flex md:flex-col md:w-64 md:sticky md:top-0 md:h-screen md:shrink-0 glass border-r border-[var(--color-border)] z-40" aria-label="Sidebar navigation">
         {/* Sidebar header / branding */}
@@ -241,20 +270,27 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           </p>
           {NAV_ITEMS.map(({ href, icon: Icon, labelKey, tourKey }) => {
             const isActive = pathname === href;
+            const isSymptoms = href === '/symptoms';
+            const showDot = isSymptoms && logging?.loggedToday === false;
             return (
               <Link
                 key={href}
                 href={href}
                 prefetch={true}
                 {...(tourKey ? { 'data-tour': tourKey } : {})}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                {...(showDot ? { 'aria-label': `${t(labelKey)} — ${t('nav.notLoggedToday')}` } : {})}
+                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
                   isActive
-                    ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                    ? ''
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
                 }`}
+                style={isActive ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 10%, transparent)' } : undefined}
               >
                 <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
                 <span className="text-sm font-semibold">{t(labelKey)}</span>
+                {showDot && (
+                  <span aria-hidden="true" className="absolute top-1.5 right-2 w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--goal-accent)' }} />
+                )}
               </Link>
             );
           })}
@@ -274,9 +310,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 prefetch={true}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
                   isActive
-                    ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                    ? ''
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
                 }`}
+                style={isActive ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 10%, transparent)' } : undefined}
               >
                 <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
                 <span className="text-sm font-semibold">{t(labelKey)}</span>
@@ -366,19 +403,28 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <div className="flex items-center justify-around py-2 max-w-md mx-auto">
           {NAV_ITEMS.map(({ href, icon: Icon, labelKey, tourKey }) => {
             const isActive = pathname === href;
+            const isSymptoms = href === '/symptoms';
+            const showDot = isSymptoms && logging?.loggedToday === false;
             return (
               <Link
                 key={href}
                 href={href}
                 prefetch={true}
                 {...(tourKey ? { 'data-tour': tourKey } : {})}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${
+                {...(showDot ? { 'aria-label': `${t(labelKey)} — ${t('nav.notLoggedToday')}` } : {})}
+                className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${
                   isActive
-                    ? 'text-[var(--color-primary)]'
+                    ? ''
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
                 }`}
+                style={isActive ? { color: 'var(--goal-accent)' } : undefined}
               >
-                <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
+                <span className="relative">
+                  <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
+                  {showDot && (
+                    <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--goal-accent)' }} />
+                  )}
+                </span>
                 <span className="text-[11px] font-medium">{t(labelKey)}</span>
               </Link>
             );

@@ -27,6 +27,10 @@ import { PeriodLogModal, FLOW_COLORS } from '@/components/PeriodLogModal'
 import { setActiveProfileCookie } from '@/app/actions/profile-actions'
 import type { ProfileCompletionStatus } from '@/components/ProfileCompletionTracker'
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
+import { GoalBadge } from '@/components/GoalBadge'
+import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
+import { LatePeriodPrompt } from '@/components/modals/LatePeriodPrompt'
+import { CelebrationModal } from '@/components/modals/CelebrationModal'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -242,9 +246,21 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
 
   const closeModal = useCallback(() => setShowModal(false), [])
 
+  // ── Part C: Quick symptom modal ──────────────────────────────────────────
+  const [showQuickSymptom, setShowQuickSymptom] = useState(false)
+  const openQuickSymptom = useCallback(() => setShowQuickSymptom(true), [])
+
+  // ── Part D: Celebration modal ────────────────────────────────────────────
+  const [celebration, setCelebration] = useState<{ kind: 'period' | 'symptom'; count?: number } | null>(null)
+
+  // ── Part E: Late period prompt ───────────────────────────────────────────
+  const [showLatePrompt, setShowLatePrompt] = useState(false)
+
   const handleSaved = useCallback(() => {
     // Trigger a server re-render to pick up updated data
     router.refresh()
+    // Part D: fire celebration after a period log
+    setCelebration({ kind: 'period' })
   }, [router])
 
   // Guard: no profile found
@@ -350,6 +366,18 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
     daysSinceLastLog = Math.floor((today.getTime() - then.getTime()) / 86_400_000)
   }
 
+  // ── Part E: Auto-open late prompt once per day ──────────────────────────
+  useEffect(() => {
+    if (!isPeriodLate) return
+    const today = new Date().toISOString().slice(0, 10)
+    const key = `vesta_late_prompt_seen_${today}`
+    if (typeof window === 'undefined') return
+    if (!localStorage.getItem(key)) {
+      localStorage.setItem(key, '1')
+      setShowLatePrompt(true)
+    }
+  }, [isPeriodLate])
+
   // Confidence tier label (only relevant when a prediction exists)
   const tierLabel = prediction?.tier === 'arima' ? t('dashboard.tierArima') : t('dashboard.tierAverage')
   const phaseLabel = t(`dashboard.${phase}`)
@@ -360,7 +388,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10" aria-hidden="true">
         <motion.div
           className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-[0.07]"
-          style={{ background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)' }}
+          style={{ background: 'radial-gradient(circle, var(--goal-accent) 0%, transparent 70%)' }}
           animate={prefersReducedMotion ? {} : { x: [0, 15, 0], y: [0, -10, 0] }}
           transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
         />
@@ -376,6 +404,10 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         className="flex flex-col gap-5 py-3"
         style={{ ['--goal-accent' as string]: goalAccentVar(goal) } as React.CSSProperties}
       >
+        {/* Part B — GoalBadge visible in both standard and pregnancy modes */}
+        <div className="self-start mb-1">
+          <GoalBadge goal={goal} />
+        </div>
 
         {pregnancy ? (
           <>
@@ -450,6 +482,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               daysSinceLastLog={daysSinceLastLog}
               goal={goal}
               onLogPeriod={openNewLog}
+              onLogSymptoms={openQuickSymptom}
             />
 
             {/* ── Last Period Card (history — kept in pregnancy) ── */}
@@ -461,7 +494,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               <Card padding="md">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-1.5">
-                    <Droplets size={14} className="text-[var(--color-primary)]" aria-hidden="true" />
+                    <Droplets size={14} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
                     <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                       {t('dashboard.lastPeriod')}
                     </span>
@@ -544,13 +577,26 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                   const displayPhaseEmoji = isPeriodLate ? '🩸' : phaseEmoji
                   return (
                     <>
-                      <div
-                        className="flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-sm font-semibold shadow-soft"
-                        style={{ backgroundColor: displayPhaseColor }}
-                      >
-                        <span>{displayPhaseEmoji}</span>
-                        <span>{displayPhaseLabel}</span>
-                      </div>
+                      {isPeriodLate ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowLatePrompt(true)}
+                          className="flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-sm font-semibold shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-menstrual)] cursor-pointer"
+                          style={{ backgroundColor: displayPhaseColor }}
+                          aria-label={t('dashboard.periodLateOpenPrompt', { defaultValue: 'Period late — tap for support' })}
+                        >
+                          <span>{displayPhaseEmoji}</span>
+                          <span>{displayPhaseLabel}</span>
+                        </button>
+                      ) : (
+                        <div
+                          className="flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-sm font-semibold shadow-soft"
+                          style={{ backgroundColor: displayPhaseColor }}
+                        >
+                          <span>{displayPhaseEmoji}</span>
+                          <span>{displayPhaseLabel}</span>
+                        </div>
+                      )}
                       <p className="text-xs text-[var(--color-text-muted)] mt-1">
                         {isPeriodLate
                           ? t('dashboard.daysOverdue', { count: daysLate })
@@ -569,6 +615,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               daysSinceLastLog={daysSinceLastLog}
               goal={goal}
               onLogPeriod={openNewLog}
+              onLogSymptoms={openQuickSymptom}
             />
 
             {/* ── Cards Grid ─────────────────────────────────────────── */}
@@ -583,14 +630,18 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 <Card padding="md" className="h-full">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-1.5">
-                      <CalendarDays size={14} className="text-[var(--color-primary)]" aria-hidden="true" />
+                      <CalendarDays
+                        size={14}
+                        style={{ color: isPeriodLate ? 'var(--color-menstrual)' : 'var(--goal-accent)' }}
+                        aria-hidden="true"
+                      />
                       <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                         {(daysUntilNext ?? 0) < 0 ? t('dashboard.periodLate') : t('dashboard.nextPeriodCard')}
                       </span>
                     </div>
                     <div
                       className="text-4xl font-extrabold leading-none tabular-nums"
-                      style={{ color: (daysUntilNext ?? 0) < 0 ? 'var(--color-menstrual)' : 'var(--color-primary)' }}
+                      style={{ color: (daysUntilNext ?? 0) < 0 ? 'var(--color-menstrual)' : 'var(--goal-accent)' }}
                     >
                       {Math.abs(daysUntilNext ?? 0)}
                     </div>
@@ -604,7 +655,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     <div className="h-1.5 rounded-full bg-[var(--color-border)] mt-1 overflow-hidden">
                       <motion.div
                         className="h-full rounded-full"
-                        style={{ backgroundColor: (daysUntilNext ?? 0) < 0 ? 'var(--color-menstrual)' : 'var(--color-primary)' }}
+                        style={{ backgroundColor: (daysUntilNext ?? 0) < 0 ? 'var(--color-menstrual)' : 'var(--goal-accent)' }}
                         initial={{ width: 0 }}
                         animate={{ width: `${Math.min(100, ((profile.cycleLength - Math.max(0, daysUntilNext ?? 0)) / profile.cycleLength) * 100)}%` }}
                         transition={{ delay: 0.6, duration: 0.8, ease: 'easeOut' }}
@@ -629,7 +680,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 <Card padding="md" className="h-full">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-1.5">
-                      <Droplets size={14} className="text-[var(--color-primary)]" aria-hidden="true" />
+                      <Droplets size={14} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
                       <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                         {t('dashboard.lastPeriod')}
                       </span>
@@ -670,7 +721,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     <div className="flex items-end gap-1">
                       <span
                         className="text-4xl font-extrabold"
-                        style={{ color: 'var(--color-secondary)' }}
+                        style={{ color: 'var(--goal-accent)' }}
                       >
                         {prediction?.confidence ?? '—'}
                       </span>
@@ -683,7 +734,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     <div className="h-1.5 rounded-full bg-[var(--color-border)] overflow-hidden">
                       <motion.div
                         className="h-full rounded-full"
-                        style={{ backgroundColor: 'var(--color-secondary)' }}
+                        style={{ backgroundColor: 'var(--goal-accent)' }}
                         initial={{ width: 0 }}
                         animate={{ width: `${prediction?.confidence ?? 0}%` }}
                         transition={{ delay: 0.8, duration: 0.8, ease: 'easeOut' }}
@@ -691,7 +742,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     </div>
 
                     <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] self-start">
-                      <span className="text-[10px] font-semibold text-[var(--color-secondary)]">
+                      <span className="text-[10px] font-semibold" style={{ color: 'var(--goal-accent)' }}>
                         {tierLabel}
                       </span>
                     </div>
@@ -720,15 +771,19 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     >
                       🩸 {t('dashboard.logPeriod')}
                     </Button>
-                    <Link href="/symptoms" className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)] focus-visible:outline-none">
+                    <button
+                      type="button"
+                      onClick={openQuickSymptom}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--goal-accent)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:outline-none"
+                    >
                       <div className="flex items-center gap-1.5">
-                        <Activity size={12} className="text-[var(--color-secondary)]" aria-hidden="true" />
+                        <Activity size={12} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
                         <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
                           {t('dashboard.logSymptoms')}
                         </span>
                       </div>
                       <ChevronRight size={12} className="text-[var(--color-text-muted)]" aria-hidden="true" />
-                    </Link>
+                    </button>
                   </div>
                 </Card>
               </motion.div>
@@ -837,6 +892,36 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
           />
         )}
       </AnimatePresence>
+
+      {/* ── Part C: Quick Symptom Modal ───────────────────────── */}
+      <QuickSymptomModal
+        open={showQuickSymptom}
+        onClose={() => setShowQuickSymptom(false)}
+        profileId={profile.id}
+        goal={goal}
+        onSaved={(count) => {
+          setShowQuickSymptom(false)
+          setCelebration({ kind: 'symptom', count })
+        }}
+      />
+
+      {/* ── Part D: Celebration Modal ─────────────────────────── */}
+      <CelebrationModal
+        open={celebration != null}
+        onClose={() => setCelebration(null)}
+        goal={goal}
+        kind={celebration?.kind ?? 'period'}
+        count={celebration?.count}
+      />
+
+      {/* ── Part E: Late Period Supportive Prompt ─────────────── */}
+      <LatePeriodPrompt
+        open={showLatePrompt}
+        onClose={() => setShowLatePrompt(false)}
+        daysLate={daysLate}
+        goal={goal}
+        onLogPeriod={openNewLog}
+      />
     </>
   )
 }

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { useReducedMotion } from 'motion/react';
-import { CheckCircle2, ChevronDown, ChevronUp, Circle, Mail, Phone } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronUp, Circle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useHasMounted } from '@/components/motion/useHasMounted';
@@ -18,16 +18,10 @@ export interface CompletionItem {
   done: boolean;
 }
 
-export interface RecommendedContact {
-  key: 'email' | 'phone';
-  done: boolean;
-}
-
 export interface ProfileCompletionStatus {
   percent: number;
   complete: boolean;
   items: CompletionItem[];
-  recommended: RecommendedContact;
 }
 
 export interface ProfileCompletionTrackerProps {
@@ -320,69 +314,6 @@ function DoneItem({ itemKey }: { itemKey: string }) {
   );
 }
 
-// ── RecommendedBlock ──────────────────────────────────────────────────────────
-
-function RecommendedBlock({
-  recommended,
-  onComplete,
-}: {
-  recommended: RecommendedContact;
-  onComplete?: () => void;
-}) {
-  const { t } = useTranslation();
-
-  const label =
-    recommended.key === 'email'
-      ? t('profileCompletion.recommendedEmail')
-      : t('profileCompletion.recommendedPhone');
-
-  const Icon = recommended.key === 'email' ? Mail : Phone;
-
-  const rowInner = (
-    <div className="flex items-center gap-2.5 py-2 px-3 rounded-xl bg-[var(--color-bg-secondary)] hover:bg-[var(--color-border)] transition-colors group">
-      <Icon
-        size={15}
-        className="text-[var(--color-text-muted)] shrink-0 group-hover:text-[var(--color-primary)] transition-colors"
-        aria-hidden="true"
-      />
-      <span className="flex-1 text-sm text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)] transition-colors">
-        {label}
-      </span>
-      <span className="text-xs font-semibold text-[var(--color-primary)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-        {t('profileCompletion.recommendedCta')}
-      </span>
-    </div>
-  );
-
-  const row =
-    recommended.key === 'email' ? (
-      <Link
-        href="/settings#account"
-        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] rounded-xl"
-      >
-        {rowInner}
-      </Link>
-    ) : (
-      <button
-        type="button"
-        onClick={onComplete}
-        className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] rounded-xl"
-        aria-label={label}
-      >
-        {rowInner}
-      </button>
-    );
-
-  return (
-    <div className="border-t border-[var(--color-border)] pt-3 mt-1">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2 px-1">
-        {t('profileCompletion.recommendedTitle')}
-      </p>
-      {row}
-    </div>
-  );
-}
-
 // ── StaggeredChecklistItem ────────────────────────────────────────────────────
 // Wraps ChecklistItem with a per-index staggered entrance animation (pill panel).
 
@@ -451,15 +382,9 @@ export function ProfileCompletionTracker({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally empty: runs once after mount
 
-  const recommendedDone = status.recommended?.done ?? true;
-
-  // Header variant: hide at 100% (unchanged behaviour)
-  // Card / pill variants: hide only when core is complete AND recommended is done
-  if (variant === 'header') {
-    if (status.complete) return null;
-  } else {
-    if (status.complete && recommendedDone) return null;
-  }
+  // All variants hide at 100%. `complete` now requires every item — including
+  // both contact methods — so reaching 100% genuinely means nothing is pending.
+  if (status.complete) return null;
 
   const pendingItems = status.items.filter((item) => !item.done);
 
@@ -509,7 +434,6 @@ export function ProfileCompletionTracker({
   if (variant === 'pill') {
     const PILL_RING_SIZE = 32;
     const PILL_RING_STROKE = 3;
-    const showRecommendedPill = status.recommended && !status.recommended.done;
 
     const expandLabel = t('profileCompletion.expandLabel');
     const collapseLabel = t('profileCompletion.collapseLabel');
@@ -628,9 +552,6 @@ export function ProfileCompletionTracker({
                   {t('profileCompletion.completeCta')}
                 </Button>
               )}
-              {showRecommendedPill && (
-                <RecommendedBlock recommended={status.recommended} onComplete={onComplete} />
-              )}
             </div>
           ) : null
         ) : (
@@ -676,9 +597,6 @@ export function ProfileCompletionTracker({
                       {t('profileCompletion.completeCta')}
                     </Button>
                   )}
-                  {showRecommendedPill && (
-                    <RecommendedBlock recommended={status.recommended} onComplete={onComplete} />
-                  )}
                 </div>
               </motion.div>
             )}
@@ -691,8 +609,6 @@ export function ProfileCompletionTracker({
   // ── Card variant ─────────────────────────────────────────────────────────────
   const RING_SIZE = 64;
   const RING_STROKE = 6;
-
-  const showRecommended = status.recommended && !status.recommended.done;
 
   const cardContent = (
     <Card
@@ -796,14 +712,6 @@ export function ProfileCompletionTracker({
           >
             {t('profileCompletion.completeCta')}
           </Button>
-        )}
-
-        {/* Recommended subsection */}
-        {showRecommended && (
-          <RecommendedBlock
-            recommended={status.recommended}
-            onComplete={onComplete}
-          />
         )}
       </div>
     </Card>

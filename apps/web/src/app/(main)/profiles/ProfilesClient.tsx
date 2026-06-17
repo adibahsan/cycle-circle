@@ -4,7 +4,8 @@ import React, { useState, type MouseEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight, Pencil, Baby } from 'lucide-react';
+import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight, Pencil } from 'lucide-react';
+import { GOAL_ICON_COMPONENTS, GOAL_I18N_KEYS } from '@/lib/goal-display';
 import { GOAL_VALUES, normalizeGoal, goalAccentVar, type GoalValue } from '@vesta/shared/utils/goal';
 import { useAppStore } from '@/lib/store';
 import type { Profile, ProfileRelation } from '@vesta/shared/types';
@@ -553,20 +554,6 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
 
 // Goal options derived from shared canonical module (includes 'pregnancy')
 const GOAL_OPTIONS: GoalValue[] = [...GOAL_VALUES];
-
-const GOAL_ICON_COMPONENTS: Record<GoalValue, React.ReactNode> = {
-  tracking: <span aria-hidden="true" className="text-lg leading-none">📅</span>,
-  conceive: <span aria-hidden="true" className="text-lg leading-none">🌱</span>,
-  pregnancy: <Baby size={20} aria-hidden="true" />,
-  perimenopause: <span aria-hidden="true" className="text-lg leading-none">🌸</span>,
-};
-
-const GOAL_I18N_KEYS: Record<GoalValue, string> = {
-  tracking: 'onboarding.goalTracking',
-  conceive: 'onboarding.goalConceive',
-  pregnancy: 'onboarding.goalPregnancy',
-  perimenopause: 'onboarding.goalPerimenopause',
-};
 
 interface EditProfileFormProps {
   profile: Profile;
