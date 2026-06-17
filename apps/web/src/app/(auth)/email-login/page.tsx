@@ -54,9 +54,9 @@ export default function EmailLoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() }),
       });
-      const body = await res.json().catch(() => ({})) as { error?: string };
+      const body = await res.json().catch(() => ({})) as { error?: { message?: string } };
       if (!res.ok) {
-        setError(body.error ?? t('auth.sendMagicLinkFailed'));
+        setError(body.error?.message ?? t('auth.sendMagicLinkFailed'));
         return;
       }
       setSent(true);
