@@ -95,14 +95,10 @@ export function StreakBadge({ streak, streakAtRisk, className }: StreakBadgeProp
           className="shrink-0"
           animate={
             streakAtRisk
-              ? { scale: [1, 1.15, 1], opacity: [1, 0.7, 1] }
-              : { scale: 1, opacity: 1 }
+              ? { scale: [1, 1.22, 0.98, 1.15, 1], rotate: [-5, 4, -3, 4, 0], opacity: [1, 0.7, 1] }
+              : { scale: [1, 1.12, 0.97, 1.08, 1], rotate: [-3, 2, -2, 3, 0], opacity: [1, 0.85, 1] }
           }
-          transition={
-            streakAtRisk
-              ? { duration: 1.6, repeat: Infinity, ease: 'easeInOut' }
-              : undefined
-          }
+          transition={{ duration: streakAtRisk ? 1.4 : 2.2, repeat: Infinity, ease: 'easeInOut' }}
         >
           <Flame
             size={18}

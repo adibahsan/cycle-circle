@@ -31,6 +31,7 @@ interface EngagementSummary {
   unlockTarget: number;
   tier: string | null;
   confidence: number;
+  periodLogCount: number;
 }
 
 interface TodayCheckInModalProps {

@@ -227,9 +227,9 @@ export function LoggingNudge({
                   </Button>
                 </Link>
               )
-            ) : (
+            ) : isEmptyState ? (
               <>
-                {/* Primary CTA — styled with goal accent via inline override */}
+                {/* Empty-state: Primary CTA — Log first period */}
                 {onLogPeriod ? (
                   <Button
                     variant="primary"
@@ -279,6 +279,36 @@ export function LoggingNudge({
                   </Link>
                 )}
               </>
+            ) : (
+              /* Stale variant: single primary CTA — Log symptoms */
+              onLogSymptoms ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={onLogSymptoms}
+                  className="text-xs focus-visible:ring-[var(--goal-accent)]"
+                  style={{
+                    background: 'var(--goal-accent)',
+                    borderColor: 'var(--goal-accent)',
+                  } as React.CSSProperties}
+                >
+                  {t('nudge.logSymptomsCta')}
+                </Button>
+              ) : (
+                <Link href="/symptoms">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="text-xs focus-visible:ring-[var(--goal-accent)]"
+                    style={{
+                      background: 'var(--goal-accent)',
+                      borderColor: 'var(--goal-accent)',
+                    } as React.CSSProperties}
+                  >
+                    {t('nudge.logSymptomsCta')}
+                  </Button>
+                </Link>
+              )
             )}
           </div>
         </div>

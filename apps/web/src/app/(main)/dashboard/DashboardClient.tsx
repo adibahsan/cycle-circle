@@ -45,6 +45,7 @@ interface EngagementSummary {
   unlockTarget: number;
   tier: string | null;
   confidence: number;
+  periodLogCount: number;
 }
 
 interface PrismaProfile {
@@ -511,7 +512,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               daysSinceLastLog={daysSinceLastLog}
               goal={goal}
               onLogPeriod={openNewLog}
-              onLogSymptoms={openQuickSymptom}
+              onLogSymptoms={() => setCheckInOpen(true)}
               streak={engagement?.streak}
               streakAtRisk={engagement?.streakAtRisk}
               phase={dashboardData?.currentPhase ?? null}
@@ -585,7 +586,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="flex flex-col items-center md:flex-row md:items-center md:gap-8 pt-4 pb-2"
+              className="flex flex-col items-center md:flex-row md:items-start md:gap-8 pt-4 pb-2"
             >
               <CycleRing
                 cycleDay={cycleDay}
@@ -596,59 +597,37 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 daysLate={daysLate}
               />
 
-              {/* Phase label */}
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7, duration: 0.4 }}
-                className="mt-4 md:mt-0 flex flex-col items-center gap-1"
-              >
-                {(() => {
-                  const displayPhaseLabel = isPeriodLate ? t('dashboard.periodLate') : t('dashboard.phaseLabel', { phase: phaseLabel })
-                  const displayPhaseColor = isPeriodLate ? 'var(--color-menstrual)' : phaseColor
-                  const displayPhaseEmoji = isPeriodLate ? '🩸' : phaseEmoji
-                  return (
-                    <>
-                      {isPeriodLate ? (
-                        <button
-                          type="button"
-                          onClick={openNewLog}
-                          className="flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-sm font-semibold shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-menstrual)] cursor-pointer"
-                          style={{ backgroundColor: displayPhaseColor }}
-                          aria-label={t('dashboard.periodLateOpenPrompt', { defaultValue: 'Period late — tap for support' })}
-                        >
-                          <span>{displayPhaseEmoji}</span>
-                          <span>{displayPhaseLabel}</span>
-                        </button>
-                      ) : (
-                        <div
-                          className="flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-sm font-semibold shadow-soft"
-                          style={{ backgroundColor: displayPhaseColor }}
-                        >
-                          <span>{displayPhaseEmoji}</span>
-                          <span>{displayPhaseLabel}</span>
-                        </div>
-                      )}
-                      <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                        {isPeriodLate
-                          ? t('dashboard.daysOverdue', { count: daysLate })
-                          : t('dashboard.dayOf', { day: cycleDay, total: profile.cycleLength })}
-                      </p>
-                    </>
-                  )
-                })()}
-              </motion.div>
+              {/* Right column: check-in strip + compact phase/day */}
+              <div className="mt-4 md:mt-0 w-full md:flex-1 flex flex-col gap-3">
+                {engagement && (
+                  <TodayCheckInStrip
+                    variant="hero"
+                    profileId={activeProfileId}
+                    engagement={engagement}
+                    goal={goal}
+                    onOpenCheckIn={() => setCheckInOpen(true)}
+                  />
+                )}
+                {/* Compact phase/day line, or prominent late button */}
+                {isPeriodLate ? (
+                  <button
+                    type="button"
+                    onClick={openNewLog}
+                    className="self-start flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-sm font-semibold shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-menstrual)] cursor-pointer"
+                    style={{ backgroundColor: 'var(--color-menstrual)' }}
+                    aria-label={t('dashboard.periodLateOpenPrompt', { defaultValue: 'Period late — tap for support' })}
+                  >
+                    <span aria-hidden="true">🩸</span>
+                    <span>{t('dashboard.periodLate')} · {t('dashboard.daysOverdue', { count: daysLate })}</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                    <span aria-hidden="true" className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: phaseColor }} />
+                    <span><span aria-hidden="true">{phaseEmoji}</span> {phaseLabel} · {t('dashboard.dayOf', { day: cycleDay, total: profile.cycleLength })}</span>
+                  </div>
+                )}
+              </div>
             </motion.div>
-
-            {/* ── Today Check-In Strip (standard) ───────────────── */}
-            {engagement && (
-              <TodayCheckInStrip
-                profileId={activeProfileId}
-                engagement={engagement}
-                goal={goal}
-                onOpenCheckIn={() => setCheckInOpen(true)}
-              />
-            )}
 
             {/* ── Logging Nudge ──────────────────────────────────────── */}
             <LoggingNudge
@@ -657,7 +636,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               daysSinceLastLog={daysSinceLastLog}
               goal={goal}
               onLogPeriod={openNewLog}
-              onLogSymptoms={openQuickSymptom}
+              onLogSymptoms={() => setCheckInOpen(true)}
               streak={engagement?.streak}
               streakAtRisk={engagement?.streakAtRisk}
               phase={dashboardData?.currentPhase ?? null}
@@ -811,7 +790,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                       size="sm"
                       fullWidth
                       onClick={openNewLog}
-                      className="text-xs"
+                      className={`text-xs ${isPeriodLate ? 'animate-attn-blink-danger' : ''}`}
                       data-tour="log-button"
                     >
                       🩸 {t('dashboard.logPeriod')}
@@ -841,6 +820,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 unlockTarget={engagement.unlockTarget}
                 confidence={engagement.confidence}
                 tier={engagement.tier}
+                periodLogCount={engagement.periodLogCount}
               />
             )}
 

@@ -187,6 +187,7 @@ export async function getEngagementSummary(
   streakAtRisk: boolean
   last30: { date: string; logged: boolean }[]
   cyclesLogged: number
+  periodLogCount: number
   unlockTarget: number
   tier: 'AVERAGE' | 'ARIMA' | 'LSTM' | null
   confidence: number
@@ -341,6 +342,7 @@ export async function getEngagementSummary(
     streakAtRisk,
     last30,
     cyclesLogged,
+    periodLogCount: allPeriodLogs.length,
     unlockTarget: TIER2_MIN_CYCLES,
     tier,
     confidence,
@@ -522,10 +524,14 @@ export async function getLoggingStatus(
   const profile = await prisma.profile.findUnique({ where: { id: profileId } })
   if (!profile || profile.userId !== userId) return null
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
+  // Use UTC day boundaries to match getEngagementSummary and how symptom/period
+  // logs are stored (UTC-midnight day keys). Local-time boundaries here caused
+  // the sidebar to disagree with the dashboard on machines where local ≠ UTC.
+  const now = new Date()
+  const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`
+  const today = new Date(todayStr)
+  const tomorrow = new Date(todayStr)
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
 
   const [symptomToday, periodToday] = await Promise.all([
     prisma.symptomLog.findFirst({

@@ -387,6 +387,8 @@ export function ProfileCompletionTracker({
   if (status.complete) return null;
 
   const pendingItems = status.items.filter((item) => !item.done);
+  // Email not yet provided → draw attention to the completion banner.
+  const emailMissing = status.items.some((item) => item.key === 'email' && !item.done);
 
   // ── Header variant ───────────────────────────────────────────────────────────
   if (variant === 'header') {
@@ -468,6 +470,7 @@ export function ProfileCompletionTracker({
             'hover:border-[var(--goal-accent)] transition-colors',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]',
             'min-h-[56px]',
+            emailMissing ? 'animate-attn-blink' : '',
           ].join(' ')}
         >
           {/* Mini progress ring — no center label here, percent is shown prominently below */}

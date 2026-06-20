@@ -95,14 +95,15 @@ export async function toggleSymptom(input: z.infer<typeof createSymptomSchema>) 
 
 const allGoodSchema = z.object({
   profileId: z.string().min(1),
+  date: z.string().optional(),
 })
 
-export async function markAllGoodToday(profileId: string) {
+export async function markAllGoodToday(profileId: string, date?: string) {
   const jwt = await requireAuth()
   const user = await getAuthUser(jwt.sub)
-  const data = allGoodSchema.parse({ profileId })
+  const data = allGoodSchema.parse({ profileId, date })
 
-  await setAllGoodToday(data.profileId, user.id)
+  await setAllGoodToday(data.profileId, user.id, data.date)
 
   revalidateTag(`symptoms:${data.profileId}`, { expire: 0 })
   revalidateTag(`tracking:${data.profileId}`, { expire: 0 })

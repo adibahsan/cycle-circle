@@ -176,6 +176,7 @@ interface ProgressToUnlockMeterProps {
   unlockTarget: number;
   confidence: number; // 0..1 float
   tier: string | null;
+  periodLogCount: number;
   className?: string;
 }
 
@@ -186,6 +187,7 @@ export function ProgressToUnlockMeter({
   unlockTarget,
   confidence,
   tier: _tier,
+  periodLogCount,
   className,
 }: ProgressToUnlockMeterProps) {
   const { t } = useTranslation();
@@ -194,8 +196,11 @@ export function ProgressToUnlockMeter({
   const prm = mounted && reduceRaw;
 
   const confidencePercent = Math.round(confidence * 100);
-  const ringPercent = Math.min(cyclesLogged / Math.max(unlockTarget, 1), 1) * 100;
   const isUnlocked = cyclesLogged >= unlockTarget;
+  const inProgress = !isUnlocked && periodLogCount > cyclesLogged;
+  const inProgressCycleNum = cyclesLogged + 1;
+  const effectiveProgress = cyclesLogged + (inProgress ? 0.5 : 0);
+  const ringPercent = Math.min(effectiveProgress / Math.max(unlockTarget, 1), 1) * 100;
 
   const countUpEnabled = mounted && !prm;
   const displayConfidence = useCountUp(confidencePercent, countUpEnabled);
@@ -227,6 +232,11 @@ export function ProgressToUnlockMeter({
               ? t('progress.unlockReached')
               : t('progress.unlockBody', { count: cyclesLogged, target: unlockTarget })}
           </p>
+          {inProgress && (
+            <p className="text-xs text-[var(--color-text-muted)] mt-0.5 leading-relaxed">
+              {t('progress.inProgress', { n: inProgressCycleNum })}
+            </p>
+          )}
           <p
             className="text-xs font-semibold tabular-nums mt-1"
             style={{

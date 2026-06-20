@@ -18,11 +18,12 @@ import {
   parseISO,
 } from 'date-fns';
 import { bn } from 'date-fns/locale/bn';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { useAppStore } from '@/lib/store';
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data';
-import { toggleSymptom } from '@/app/actions/tracking-actions';
+import { ALL_GOOD_SYMPTOM_ID } from '@vesta/shared/utils/symptoms';
+import { toggleSymptom, markAllGoodToday } from '@/app/actions/tracking-actions';
 import { CelebrationModal } from '@/components/modals/CelebrationModal';
 import type { Profile, PrismaSymptomLog, SymptomCategory } from '@vesta/shared/types';
 import '@vesta/shared/utils/i18n';
@@ -260,13 +261,28 @@ export function SymptomsClient({
     setLocalSelected(new Set(symptomLogs.map((l) => l.symptomId)));
   }, [symptomLogs]);
 
+  // "All good" sentinel is tracked separately from real symptoms so the Save
+  // diff (and counts) only ever reflect real symptoms — the sentinel is handled
+  // by its own immediate toggle (markAllGoodToday / clear).
+  const isAllGood = localSelected.has(ALL_GOOD_SYMPTOM_ID);
+  const realSelected = useMemo(() => {
+    const s = new Set(localSelected);
+    s.delete(ALL_GOOD_SYMPTOM_ID);
+    return s;
+  }, [localSelected]);
+  const realInitial = useMemo(() => {
+    const s = new Set(initialSelected);
+    s.delete(ALL_GOOD_SYMPTOM_ID);
+    return s;
+  }, [initialSelected]);
+
   const added = useMemo(
-    () => [...localSelected].filter((id) => !initialSelected.has(id)),
-    [localSelected, initialSelected]
+    () => [...realSelected].filter((id) => !realInitial.has(id)),
+    [realSelected, realInitial]
   );
   const removed = useMemo(
-    () => [...initialSelected].filter((id) => !localSelected.has(id)),
-    [localSelected, initialSelected]
+    () => [...realInitial].filter((id) => !realSelected.has(id)),
+    [realSelected, realInitial]
   );
   const hasChanges = added.length > 0 || removed.length > 0;
   const changeCount = added.length + removed.length;
@@ -279,7 +295,7 @@ export function SymptomsClient({
     return SYMPTOMS_DATA.filter((s) => s.category === cat && localSelected.has(s.id)).length;
   }
 
-  const totalSelected = localSelected.size;
+  const totalSelected = realSelected.size;
   const categorySymptoms = SYMPTOMS_DATA.filter((s) => s.category === activeCategory);
 
   function getSymptomName(s: (typeof SYMPTOMS_DATA)[0]) {
@@ -294,6 +310,8 @@ export function SymptomsClient({
   const handleToggle = useCallback((symptomId: string) => {
     setLocalSelected((prev) => {
       const next = new Set(prev);
+      // Selecting a real symptom clears the "all good" state (mutually exclusive).
+      next.delete(ALL_GOOD_SYMPTOM_ID);
       if (next.has(symptomId)) {
         next.delete(symptomId);
       } else {
@@ -302,6 +320,35 @@ export function SymptomsClient({
       return next;
     });
   }, []);
+
+  // "All good / no issues" — immediate toggle (owns the sentinel for the day).
+  async function handleToggleAllGood() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      if (isAllGood) {
+        // Clear the existing sentinel → nothing logged for the day.
+        await toggleSymptom({
+          profileId: activeProfileId,
+          date,
+          category: 'MOOD',
+          symptomId: ALL_GOOD_SYMPTOM_ID,
+          value: ALL_GOOD_SYMPTOM_ID,
+        });
+        setLocalSelected(new Set());
+      } else {
+        // Mark the day all-good → clears any real logs + sets the sentinel.
+        await markAllGoodToday(activeProfileId, date);
+        setLocalSelected(new Set([ALL_GOOD_SYMPTOM_ID]));
+      }
+      router.refresh();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function handleSave() {
     const savedCount = added.length;
@@ -400,6 +447,33 @@ export function SymptomsClient({
 
         {/* ── Right: category tabs + symptom grid + save ── */}
         <div className="flex-1 min-w-0 flex flex-col gap-4">
+
+          {/* All good / no issues — quick toggle for "nothing to report" days */}
+          <button
+            type="button"
+            onClick={handleToggleAllGood}
+            disabled={saving}
+            aria-pressed={isAllGood}
+            className={[
+              'w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold',
+              'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2',
+              'focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-60',
+              isAllGood
+                ? 'text-white'
+                : 'border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:border-[var(--goal-accent)] hover:text-[var(--color-text-primary)]',
+            ].join(' ')}
+            style={
+              isAllGood
+                ? {
+                    background:
+                      'linear-gradient(135deg, var(--goal-accent, var(--color-primary)) 0%, color-mix(in srgb, var(--goal-accent, var(--color-primary)) 70%, var(--color-secondary)) 100%)',
+                  }
+                : undefined
+            }
+          >
+            <CheckCircle2 size={16} aria-hidden="true" />
+            {isAllGood ? t('symptoms.allGoodActive') : t('symptoms.allGood')}
+          </button>
 
           {/* Category tabs */}
           <div className="relative">
@@ -555,6 +629,21 @@ export function SymptomsClient({
                   : t('symptoms.saveChanges', { count: changeCount })}
               </span>
             </motion.button>
+          ) : isAllGood ? (
+            <motion.div
+              key="all-good-bar"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="rounded-2xl px-5 py-3 flex items-center justify-center gap-2"
+              style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}
+            >
+              <CheckCircle2 size={15} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
+              <p className="text-[var(--color-text-muted)] text-sm">
+                {t('symptoms.allGoodActive')}
+              </p>
+            </motion.div>
           ) : totalSelected > 0 ? (
             <motion.div
               key="saved-summary"

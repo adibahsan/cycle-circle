@@ -25,6 +25,7 @@ interface EngagementSummary {
   unlockTarget: number;
   tier: string | null;
   confidence: number;
+  periodLogCount: number;
 }
 
 interface TodayCheckInStripProps {
@@ -32,6 +33,7 @@ interface TodayCheckInStripProps {
   goal: string | null;
   onOpenCheckIn: () => void;
   profileId: string;
+  variant?: 'card' | 'hero';
   className?: string;
 }
 
@@ -42,6 +44,7 @@ export function TodayCheckInStrip({
   goal,
   onOpenCheckIn,
   profileId,
+  variant = 'card',
   className,
 }: TodayCheckInStripProps) {
   const { t } = useTranslation();
@@ -56,8 +59,8 @@ export function TodayCheckInStrip({
     setBackfillDate(date);
   }
 
-  const inner = (
-    <Card padding="md" className="flex flex-col gap-3">
+  const innerContent = (
+    <>
       {/* ── Top row: streak + CTA ── */}
       <div className="flex items-center justify-between gap-3">
         <StreakBadge
@@ -97,7 +100,17 @@ export function TodayCheckInStrip({
         variant="inline"
         className="w-full"
       />
+    </>
+  );
+
+  const inner = variant === 'card' ? (
+    <Card padding="md" className="flex flex-col gap-3">
+      {innerContent}
     </Card>
+  ) : (
+    <div className="flex flex-col gap-3">
+      {innerContent}
+    </div>
   );
 
   return (

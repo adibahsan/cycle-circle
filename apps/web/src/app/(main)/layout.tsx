@@ -361,14 +361,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 }`}
                 style={isActive ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 10%, transparent)' } : undefined}
               >
-                <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
-                <span className="text-sm font-semibold">{t(labelKey)}</span>
                 {showDot && (
-                  <span aria-hidden="true" className="absolute top-1.5 right-2 inline-flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping motion-reduce:animate-none" style={{ backgroundColor: 'var(--goal-accent)' }} />
-                    <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--goal-accent)' }} />
-                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="animate-attn-glow pointer-events-none absolute inset-0 rounded-xl"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--goal-accent) 28%, transparent)' }}
+                  />
                 )}
+                <span className="relative z-10 flex items-center gap-3">
+                  <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
+                  <span className="text-sm font-semibold" style={showDot && !isActive ? { color: 'var(--goal-accent)' } : undefined}>{t(labelKey)}</span>
+                </span>
               </Link>
             );
           })}
@@ -497,16 +500,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 }`}
                 style={isActive ? { color: 'var(--goal-accent)' } : undefined}
               >
-                <span className="relative">
-                  <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
-                  {showDot && (
-                    <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 inline-flex h-2 w-2">
-                      <span className="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping motion-reduce:animate-none" style={{ backgroundColor: 'var(--goal-accent)' }} />
-                      <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--goal-accent)' }} />
-                    </span>
-                  )}
+                {showDot && (
+                  <span
+                    aria-hidden="true"
+                    className="animate-attn-glow pointer-events-none absolute inset-0 rounded-xl"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--goal-accent) 28%, transparent)' }}
+                  />
+                )}
+                <span className="relative z-10 flex flex-col items-center gap-0.5">
+                  <span className="relative">
+                    <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
+                  </span>
+                  <span className="text-[11px] font-medium" style={showDot && !isActive ? { color: 'var(--goal-accent)' } : undefined}>{t(labelKey)}</span>
                 </span>
-                <span className="text-[11px] font-medium">{t(labelKey)}</span>
               </Link>
             );
           })}
