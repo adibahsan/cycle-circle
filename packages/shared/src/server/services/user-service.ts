@@ -31,6 +31,7 @@ export interface ListUsersResult {
     deletedAt: Date | null
     lastLoginAt: Date | null
     createdAt: Date
+    emailTrialExpiresAt: Date | null
     _count: { profiles: number }
   }>
   total: number
@@ -104,6 +105,7 @@ export async function listUsers(params: ListUsersParams = {}): Promise<ListUsers
         deletedAt: true,
         lastLoginAt: true,
         createdAt: true,
+        emailTrialExpiresAt: true,
         _count: { select: { profiles: true } },
       },
       orderBy: { [safeSort]: safeOrder },

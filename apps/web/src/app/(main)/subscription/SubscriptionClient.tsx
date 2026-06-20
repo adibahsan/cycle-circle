@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'motion/react'
 import {
@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { SubscriptionStatus } from '@vesta/shared/types'
+import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 interface SubscriptionClientProps {
@@ -53,24 +54,6 @@ const FREE_FEATURE_KEYS = [
   'subscription.symptomLogging',
   'subscription.healthArticles',
 ]
-
-// ── Trial countdown helper ─────────────────────────────────────────────────────
-function useTrialCountdown(expiresAt?: Date | null) {
-  const [hoursLeft, setHoursLeft] = useState<number | null>(null)
-
-  useEffect(() => {
-    if (!expiresAt) return
-    const update = () => {
-      const diff = new Date(expiresAt).getTime() - Date.now()
-      setHoursLeft(Math.max(0, Math.floor(diff / 3_600_000)))
-    }
-    update()
-    const id = setInterval(update, 60_000)
-    return () => clearInterval(id)
-  }, [expiresAt])
-
-  return hoursLeft
-}
 
 // ── BDApps Modal ───────────────────────────────────────────────────────────────
 interface BDAppsModalProps {
@@ -246,9 +229,15 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
   const status: SubscriptionStatus =
     (localStatus ?? (user.subscriptionStatus as SubscriptionStatus)) ?? 'free'
 
-  const hoursLeft = useTrialCountdown(
-    status === 'free' && user.authMethod === 'email' ? user.emailTrialExpiresAt : null,
-  )
+  // Use shared helper for accurate trial status (uses raw DB uppercase enum values)
+  // Always use the DB-sourced subscriptionStatus for trial logic (trial helper expects 'FREE'/'PRO')
+  const trialStatusUser = {
+    authMethod: user.authMethod,
+    subscriptionStatus: localStatus ? localStatus.toUpperCase() : user.subscriptionStatus,
+    emailTrialExpiresAt: user.emailTrialExpiresAt,
+  }
+  const trial = getTrialStatus(trialStatusUser)
+  const hoursLeft = trial === 'active' ? getTrialHoursLeft(user.emailTrialExpiresAt) : null
 
   const handleUpgradeClick = () => setUpgradeStep('confirm')
 
@@ -276,7 +265,8 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
     setUpgradeStep('idle')
   }
 
-  const isPro = status === 'pro'
+  // Case-insensitive: runtime DB value is uppercase ('PRO'), local optimistic value is 'pro'.
+  const isPro = String(status).toUpperCase() === 'PRO'
 
   return (
     <div className="py-4 space-y-6">
@@ -311,9 +301,14 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                 <p className="text-lg font-bold text-[var(--color-text-primary)]">
                   {isPro ? t('subscription.vestaPro') : t('subscription.vestaFree')}
                 </p>
-                {hoursLeft !== null && !isPro && (
+                {trial === 'active' && hoursLeft !== null && (
                   <p className="text-xs text-[var(--color-accent)] font-medium">
                     {t('subscription.trialHoursLeft', { hours: hoursLeft })}
+                  </p>
+                )}
+                {trial === 'expired' && (
+                  <p className="text-xs text-red-500 dark:text-red-400 font-semibold">
+                    {t('subscription.trialExpiredNote')}
                   </p>
                 )}
               </div>
@@ -399,7 +394,9 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
 
                 <button
                   onClick={handleUpgradeClick}
-                  className="w-full bg-white text-[var(--goal-accent)] font-bold py-3.5 rounded-xl text-base hover:bg-white/90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                  className={`w-full bg-white text-[var(--goal-accent)] font-bold rounded-xl text-base hover:bg-white/90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] ${
+                    trial === 'expired' ? 'py-4 text-lg animate-pulse' : 'py-3.5'
+                  }`}
                 >
                   {t('subscription.upgradeButton')}
                 </button>

@@ -17,6 +17,8 @@ interface ModalProps {
   closeOnBackdrop?: boolean;
   hideClose?: boolean;
   panelClassName?: string;
+  backdropClassName?: string;
+  backdropStyle?: React.CSSProperties;
   initialFocusRef?: RefObject<HTMLElement | null>;
   children: React.ReactNode;
 }
@@ -33,6 +35,8 @@ export function Modal({
   closeOnBackdrop = true,
   hideClose = false,
   panelClassName,
+  backdropClassName,
+  backdropStyle,
   initialFocusRef,
   children,
 }: ModalProps) {
@@ -105,7 +109,8 @@ export function Modal({
         >
           {/* Backdrop */}
           <motion.div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className={['absolute inset-0 bg-black/50 backdrop-blur-sm', backdropClassName].filter(Boolean).join(' ')}
+            style={backdropStyle}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

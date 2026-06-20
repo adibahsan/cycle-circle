@@ -1,4 +1,5 @@
 import { prisma } from '../db'
+import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
 
 /**
  * Return KPI counts for the admin dashboard.
@@ -135,6 +136,7 @@ export async function getSymptomsByCategory() {
   const logs = await prisma.symptomLog.groupBy({
     by: ['category'],
     _count: { id: true },
+    where: { symptomId: { not: ALL_GOOD_SYMPTOM_ID } },
   })
 
   return logs.map(l => ({ category: l.category, count: l._count.id }))
@@ -181,6 +183,229 @@ export async function getUserRetention(weeks: number = 8) {
         },
       }),
     ])
+
+    cohorts.push({
+      week: weekStart.toISOString().split('T')[0],
+      created,
+      retained,
+      rate: created > 0 ? Math.round((retained / created) * 100) : 0,
+    })
+  }
+
+  return cohorts
+}
+
+// ── Engagement / Logging Analytics ────────────────────────────────────────
+
+/**
+ * Return daily distinct-profile logger counts over a date range, gap-filled with zeros.
+ *
+ * A profile is considered "active" on a day if it has at least one SymptomLog
+ * for that date. Accepts the same opts shape as getUserTrend.
+ * Default: last 30 days.
+ */
+export async function getDailyActiveLoggers(
+  opts: number | { days?: number; dateFrom?: Date; dateTo?: Date } = 30,
+): Promise<{ date: string; count: number }[]> {
+  const MS_PER_DAY = 24 * 60 * 60 * 1000
+  const now = Date.now()
+
+  let startDate: Date
+  let endDate: Date
+
+  if (typeof opts === 'number') {
+    startDate = new Date(now - opts * MS_PER_DAY)
+    endDate = new Date(now)
+  } else {
+    const { days = 30, dateFrom, dateTo } = opts
+    if (dateFrom && dateTo) {
+      startDate = dateFrom
+      endDate = dateTo
+    } else if (dateFrom) {
+      startDate = dateFrom
+      endDate = new Date(now)
+    } else if (dateTo) {
+      startDate = new Date(dateTo.getTime() - days * MS_PER_DAY)
+      endDate = dateTo
+    } else {
+      startDate = new Date(now - days * MS_PER_DAY)
+      endDate = new Date(now)
+    }
+  }
+
+  // Fetch distinct (profileId, date) pairs in range
+  const logs = await prisma.symptomLog.findMany({
+    where: { date: { gte: startDate, lte: endDate } },
+    select: { profileId: true, date: true },
+    orderBy: { date: 'asc' },
+  })
+
+  // Pre-fill every date bucket with zero
+  const dailyCounts: Record<string, Set<string>> = {}
+  const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / MS_PER_DAY) + 1
+  for (let i = 0; i < totalDays; i++) {
+    const d = new Date(startDate.getTime() + i * MS_PER_DAY)
+    dailyCounts[d.toISOString().split('T')[0]] = new Set()
+  }
+
+  for (const log of logs) {
+    const dateKey = log.date.toISOString().split('T')[0]
+    if (dailyCounts[dateKey]) dailyCounts[dateKey].add(log.profileId)
+  }
+
+  return Object.entries(dailyCounts).map(([date, profiles]) => ({
+    date,
+    count: profiles.size,
+  }))
+}
+
+/**
+ * Return the daily symptom-logging rate (distinct active profiles ÷ total profiles)
+ * over a date range, gap-filled with zeros.
+ *
+ * Rate is 0..1 rounded to 2 decimal places.
+ * Accepts the same opts shape as getUserTrend.
+ * Default: last 30 days.
+ */
+export async function getSymptomLoggingRate(
+  opts: number | { days?: number; dateFrom?: Date; dateTo?: Date } = 30,
+): Promise<{ date: string; rate: number }[]> {
+  const [dailyLoggers, totalProfiles] = await Promise.all([
+    getDailyActiveLoggers(opts),
+    prisma.profile.count(),
+  ])
+
+  return dailyLoggers.map(({ date, count }) => ({
+    date,
+    rate: totalProfiles > 0 ? Math.round((count / totalProfiles) * 100) / 100 : 0,
+  }))
+}
+
+/**
+ * Return a distribution of current consecutive-day logging streaks across all profiles.
+ * Buckets (fixed order): '0', '1-2', '3-6', '7-13', '14-29', '30+'
+ *
+ * A streak day is any day with at least one SymptomLog (including the all_good sentinel).
+ * Computes streaks over the last ~40 days in JS (efficient at v1 scale).
+ */
+export async function getLoggingStreakDistribution(): Promise<
+  { bucket: string; count: number }[]
+> {
+  const LOOK_BACK = 40
+  const MS_PER_DAY = 24 * 60 * 60 * 1000
+  const now = Date.now()
+  const since = new Date(now - LOOK_BACK * MS_PER_DAY)
+
+  const today = new Date(new Date().toDateString())
+
+  const logs = await prisma.symptomLog.findMany({
+    where: { date: { gte: since } },
+    select: { profileId: true, date: true },
+  })
+
+  // Build set of active dates per profile
+  const profileDates = new Map<string, Set<string>>()
+  for (const log of logs) {
+    const dateKey = log.date.toISOString().split('T')[0]
+    if (!profileDates.has(log.profileId)) profileDates.set(log.profileId, new Set())
+    profileDates.get(log.profileId)!.add(dateKey)
+  }
+
+  // Compute streak for each profile that has any logs
+  const streaks: number[] = []
+  for (const [, dates] of profileDates) {
+    let streak = 0
+    // Start from today or yesterday (whichever has a log) and count back
+    let cursor = today.getTime()
+    const todayKey = today.toISOString().split('T')[0]
+    const yesterdayKey = new Date(today.getTime() - MS_PER_DAY).toISOString().split('T')[0]
+
+    // Only count streak if today or yesterday has a log (active streak)
+    if (!dates.has(todayKey) && !dates.has(yesterdayKey)) {
+      streaks.push(0)
+      continue
+    }
+    // Start from today
+    if (!dates.has(todayKey)) cursor -= MS_PER_DAY
+
+    while (true) {
+      const key = new Date(cursor).toISOString().split('T')[0]
+      if (dates.has(key)) {
+        streak++
+        cursor -= MS_PER_DAY
+      } else {
+        break
+      }
+    }
+    streaks.push(streak)
+  }
+
+  // Also include profiles with zero streaks: count all profiles not in profileDates
+  const totalProfiles = await prisma.profile.count()
+  const profilesWithNoLogs = totalProfiles - profileDates.size
+  for (let i = 0; i < profilesWithNoLogs; i++) streaks.push(0)
+
+  // Bucket
+  const BUCKETS = ['0', '1-2', '3-6', '7-13', '14-29', '30+']
+  const bucketCounts: Record<string, number> = Object.fromEntries(BUCKETS.map(b => [b, 0]))
+
+  function getBucket(s: number): string {
+    if (s === 0) return '0'
+    if (s <= 2) return '1-2'
+    if (s <= 6) return '3-6'
+    if (s <= 13) return '7-13'
+    if (s <= 29) return '14-29'
+    return '30+'
+  }
+
+  for (const s of streaks) bucketCounts[getBucket(s)]++
+
+  return BUCKETS.map(bucket => ({ bucket, count: bucketCounts[bucket] }))
+}
+
+/**
+ * Return weekly cohort logging retention over the past N weeks (default 8).
+ *
+ * Cohort = profiles whose first SymptomLog falls in the cohort week.
+ * "Retained" = that profile also has a SymptomLog in a subsequent week
+ * (specifically the most recent completed week before now).
+ * Mirrors getUserRetention but cohorting by first log rather than account creation.
+ */
+export async function getLoggingRetention(
+  weeks: number = 8,
+): Promise<{ week: string; created: number; retained: number; rate: number }[]> {
+  const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000
+  const retentionWindowStart = new Date(Date.now() - MS_PER_WEEK)
+  const cohorts = []
+
+  for (let i = 0; i < weeks; i++) {
+    const weekStart = new Date(Date.now() - (weeks - i) * MS_PER_WEEK)
+    const weekEnd = new Date(weekStart.getTime() + MS_PER_WEEK)
+
+    // Profiles whose first SymptomLog is in this cohort week
+    const cohortProfiles = await prisma.symptomLog.groupBy({
+      by: ['profileId'],
+      _min: { date: true },
+      having: {
+        date: { _min: { gte: weekStart, lt: weekEnd } },
+      },
+    })
+
+    const created = cohortProfiles.length
+    const cohortIds = cohortProfiles.map(p => p.profileId)
+
+    let retained = 0
+    if (cohortIds.length > 0) {
+      const retainedProfiles = await prisma.symptomLog.findMany({
+        where: {
+          profileId: { in: cohortIds },
+          date: { gte: retentionWindowStart },
+        },
+        select: { profileId: true },
+        distinct: ['profileId'],
+      })
+      retained = retainedProfiles.length
+    }
 
     cohorts.push({
       week: weekStart.toISOString().split('T')[0],

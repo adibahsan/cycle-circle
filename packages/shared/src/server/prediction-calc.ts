@@ -1,5 +1,7 @@
 import { prisma } from './db'
 
+export const TIER2_MIN_CYCLES = 6
+
 export async function recalculatePrediction(profileId: string) {
   const logs = await prisma.periodLog.findMany({
     where: { profileId },
@@ -17,10 +19,10 @@ export async function recalculatePrediction(profileId: string) {
   const profile = await prisma.profile.findUnique({ where: { id: profileId } })
   if (!profile) return
 
-  const tier = cycleLengths.length >= 6 ? 'ARIMA' : 'AVERAGE'
+  const tier = cycleLengths.length >= TIER2_MIN_CYCLES ? 'ARIMA' : 'AVERAGE'
 
   let avgCycle: number
-  if (tier === 'ARIMA' && cycleLengths.length >= 6) {
+  if (tier === 'ARIMA' && cycleLengths.length >= TIER2_MIN_CYCLES) {
     const recent = cycleLengths.slice(-6)
     const weights = [1, 1.5, 2, 2.5, 3, 3.5]
     const totalWeight = weights.reduce((a, b) => a + b, 0)

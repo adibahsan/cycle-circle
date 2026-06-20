@@ -10,4 +10,4 @@ export const GET = withAuth(async (_request, { user }: { user: AuthUser }) => {
   } catch (error) {
     return handleApiError(error)
   }
-})
+}, { allowExpiredTrial: true })

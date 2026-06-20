@@ -14,7 +14,7 @@ interface CelebrationModalProps {
   open: boolean;
   onClose: () => void;
   goal: string | null;
-  kind: 'period' | 'symptom';
+  kind: 'period' | 'symptom' | 'streak' | 'milestone';
   count?: number;
   autoCloseMs?: number; // default 2600; 0 disables auto-close
 }
@@ -142,7 +142,11 @@ export function CelebrationModal({
           >
             {kind === 'period'
               ? t('celebration.periodTitle')
-              : t('celebration.symptomTitle')}
+              : kind === 'symptom'
+                ? t('celebration.symptomTitle')
+                : kind === 'milestone'
+                  ? t('celebration.milestoneTitle', { count: count ?? 0 })
+                  : t('celebration.streakTitle', { count: count ?? 0 })}
           </h2>
 
           <p
@@ -151,7 +155,11 @@ export function CelebrationModal({
           >
             {kind === 'period'
               ? t('celebration.periodBody')
-              : t('celebration.symptomBody', { count: count ?? 0 })}
+              : kind === 'symptom'
+                ? t('celebration.symptomBody', { count: count ?? 0 })
+                : kind === 'milestone'
+                  ? t('celebration.milestoneBody', { count: count ?? 0 })
+                  : t('celebration.streakBody', { count: count ?? 0 })}
           </p>
         </div>
 

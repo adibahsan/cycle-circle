@@ -61,4 +61,4 @@ export const POST = withAuth(async (request, { user }: { user: AuthUser }) => {
   } catch (error) {
     return handleApiError(error)
   }
-})
+}, { allowExpiredTrial: true })

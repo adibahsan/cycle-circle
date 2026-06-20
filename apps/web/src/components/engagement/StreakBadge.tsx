@@ -1,0 +1,150 @@
+'use client';
+
+import { useRef, useEffect, useState } from 'react';
+import { motion } from 'motion/react';
+import { useReducedMotion } from 'motion/react';
+import { Flame } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useHasMounted } from '@/components/motion/useHasMounted';
+import '@vesta/shared/utils/i18n';
+
+// ── useCountUp (local copy — small, avoids touching ProfileCompletionTracker) ──
+
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function useCountUp(target: number, enabled: boolean): number {
+  const [value, setValue] = useState(target);
+  const rafRef = useRef<number | null>(null);
+  const prevTargetRef = useRef(target);
+
+  useEffect(() => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (!enabled) {
+      setValue(target);
+      prevTargetRef.current = target;
+      return;
+    }
+    if (prevTargetRef.current === target && value === target) return;
+
+    const DURATION = 700;
+    const start = performance.now();
+
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / DURATION, 1);
+      setValue(Math.round(target * easeOutCubic(progress)));
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        rafRef.current = null;
+        prevTargetRef.current = target;
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target, enabled]);
+
+  return value;
+}
+
+// ── Props ─────────────────────────────────────────────────────────────────────
+
+interface StreakBadgeProps {
+  streak: number;
+  streakAtRisk: boolean;
+  className?: string;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function StreakBadge({ streak, streakAtRisk, className }: StreakBadgeProps) {
+  const { t } = useTranslation();
+  const mounted = useHasMounted();
+  const reduceRaw = useReducedMotion() ?? false;
+  const prm = mounted && reduceRaw;
+
+  const displayCount = useCountUp(streak, mounted && !prm);
+
+  const hasStreak = streak > 0;
+
+  return (
+    <div
+      className={`inline-flex items-center gap-2 ${className ?? ''}`}
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {/* Flame icon — decorative */}
+      {prm ? (
+        <Flame
+          size={18}
+          aria-hidden="true"
+          className="shrink-0"
+          style={{ color: streakAtRisk ? 'var(--color-accent)' : 'var(--goal-accent, var(--color-primary))' }}
+        />
+      ) : (
+        <motion.div
+          className="shrink-0"
+          animate={
+            streakAtRisk
+              ? { scale: [1, 1.15, 1], opacity: [1, 0.7, 1] }
+              : { scale: 1, opacity: 1 }
+          }
+          transition={
+            streakAtRisk
+              ? { duration: 1.6, repeat: Infinity, ease: 'easeInOut' }
+              : undefined
+          }
+        >
+          <Flame
+            size={18}
+            aria-hidden="true"
+            style={{ color: streakAtRisk ? 'var(--color-accent)' : 'var(--goal-accent, var(--color-primary))' }}
+          />
+        </motion.div>
+      )}
+
+      {/* Count + label */}
+      <div className="flex flex-col leading-tight">
+        {hasStreak ? (
+          <>
+            <span
+              className="text-base font-extrabold tabular-nums leading-none"
+              style={{ color: streakAtRisk ? 'var(--color-accent)' : 'var(--goal-accent, var(--color-primary))' }}
+            >
+              {displayCount}
+            </span>
+            <span className="text-[10px] text-[var(--color-text-muted)] font-medium leading-none mt-0.5">
+              {t('streak.count', { count: streak })}
+            </span>
+          </>
+        ) : (
+          <span className="text-xs text-[var(--color-text-muted)] font-medium">
+            {t('streak.start')}
+          </span>
+        )}
+      </div>
+
+      {/* At-risk helper text */}
+      {streakAtRisk && hasStreak && (
+        <span
+          className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+          style={{
+            color: 'var(--color-accent)',
+            backgroundColor: 'color-mix(in srgb, var(--color-accent) 12%, transparent)',
+          }}
+        >
+          {t('streak.atRisk')}
+        </span>
+      )}
+    </div>
+  );
+}

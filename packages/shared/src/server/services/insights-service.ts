@@ -1,6 +1,7 @@
 import { differenceInDays, addDays, format } from 'date-fns'
 import { prisma } from '../db'
 import { assertProfileOwnership } from './profile-service'
+import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
 
 // ─── Return-shape interfaces ───────────────────────────────────────────────────
 
@@ -123,7 +124,7 @@ export async function getSymptomFrequency(
 
   const groups = await prisma.symptomLog.groupBy({
     by: ['category'],
-    where,
+    where: { ...where, symptomId: { not: ALL_GOOD_SYMPTOM_ID } },
     _count: { category: true },
   })
 

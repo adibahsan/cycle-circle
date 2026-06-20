@@ -8,6 +8,7 @@ import {
   updatePeriodLog as svcUpdatePeriodLog,
   deletePeriodLog as svcDeletePeriodLog,
   toggleSymptomLog,
+  setAllGoodToday,
   recalculatePrediction,
 } from '@vesta/shared/server/services'
 
@@ -87,6 +88,21 @@ export async function toggleSymptom(input: z.infer<typeof createSymptomSchema>) 
     symptomId: data.symptomId,
     value: data.value,
   })
+
+  revalidateTag(`symptoms:${data.profileId}`, { expire: 0 })
+  revalidateTag(`tracking:${data.profileId}`, { expire: 0 })
+}
+
+const allGoodSchema = z.object({
+  profileId: z.string().min(1),
+})
+
+export async function markAllGoodToday(profileId: string) {
+  const jwt = await requireAuth()
+  const user = await getAuthUser(jwt.sub)
+  const data = allGoodSchema.parse({ profileId })
+
+  await setAllGoodToday(data.profileId, user.id)
 
   revalidateTag(`symptoms:${data.profileId}`, { expire: 0 })
   revalidateTag(`tracking:${data.profileId}`, { expire: 0 })

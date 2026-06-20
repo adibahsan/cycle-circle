@@ -29,6 +29,8 @@ import {
 import { LatePeriodFullScreenAlert } from '@/components/modals/LatePeriodFullScreenAlert';
 import { GOAL_ICON_COMPONENTS, GOAL_I18N_KEYS } from '@/lib/goal-display';
 import { goalAccentVar, normalizeGoal } from '@vesta/shared/utils/goal';
+import { isTrialExpired } from '@vesta/shared/utils/trial';
+import { TrialExpiredLock } from '@/components/TrialExpiredLock';
 
 // ── Toast (single-slot, same pattern as SettingsClient) ───────────────────────
 
@@ -126,6 +128,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [tourOpen, setTourOpen] = useState(false);
   const [logging, setLogging] = useState<{ goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null>(null);
   const [showLateAlert, setShowLateAlert] = useState(false);
+  const [trialUser, setTrialUser] = useState<{
+    authMethod?: string | null;
+    subscriptionStatus?: string | null;
+    emailTrialExpiresAt?: string | null;
+  } | null>(null);
+  const [authStatusLoaded, setAuthStatusLoaded] = useState(false);
 
   const activeGoal = normalizeGoal(logging?.goal);
 
@@ -133,7 +141,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Initialised to -1 so the very first load does NOT fire the progress toast.
   const prevPercentRef = useRef<number>(-1);
 
-  // ── Auth status fetch — populates user for tour gating ──────────────────
+  // ── Auth status fetch — populates user for tour gating + trial lock ─────
   useEffect(() => {
     let cancelled = false;
     fetch('/api/auth/status')
@@ -141,9 +149,27 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         if (r.status === 401) { window.location.assign('/login'); return null }
         return r.ok ? r.json() : null
       })
-      .then((data: { user?: { onboardingTourCompletedAt?: string | null } } | null) => {
+      .then((data: {
+        user?: {
+          onboardingTourCompletedAt?: string | null;
+          authMethod?: string | null;
+          subscriptionStatus?: string | null;
+          emailTrialExpiresAt?: string | null;
+        }
+      } | null) => {
         if (cancelled) return;
         const user = data?.user;
+
+        // Capture trial-relevant fields for the lock overlay
+        if (user) {
+          setTrialUser({
+            authMethod: user.authMethod,
+            subscriptionStatus: user.subscriptionStatus,
+            emailTrialExpiresAt: user.emailTrialExpiresAt,
+          });
+        }
+        setAuthStatusLoaded(true);
+
         if (pathname !== '/dashboard') return;
 
         // Check for a replay request set by the settings page
@@ -156,7 +182,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           setTourOpen(true);
         }
       })
-      .catch(() => {/* silently ignore — tour is non-critical */});
+      .catch(() => {
+        setAuthStatusLoaded(true); // unblock on error — don't permanently show lock
+      });
 
     return () => { cancelled = true; };
   }, [pathname]);
@@ -279,6 +307,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       className="app-shell min-h-screen bg-[var(--color-bg-primary)] flex flex-col md:flex-row relative"
       style={{ ['--goal-accent' as string]: goalAccentVar(logging?.goal) } as React.CSSProperties}
     >
+      {/* ── Trial expired lock overlay — renders only after auth status resolves ── */}
+      {authStatusLoaded && trialUser && isTrialExpired(trialUser) && (
+        <TrialExpiredLock />
+      )}
+
       {/* ── Desktop Sidebar (md+) ── */}
       <aside className="hidden md:flex md:flex-col md:w-64 md:sticky md:top-0 md:h-screen md:shrink-0 glass border-r border-[var(--color-border)] z-40" aria-label="Sidebar navigation">
         {/* Sidebar header / branding */}
@@ -331,7 +364,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
                 <span className="text-sm font-semibold">{t(labelKey)}</span>
                 {showDot && (
-                  <span aria-hidden="true" className="absolute top-1.5 right-2 w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--goal-accent)' }} />
+                  <span aria-hidden="true" className="absolute top-1.5 right-2 inline-flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping motion-reduce:animate-none" style={{ backgroundColor: 'var(--goal-accent)' }} />
+                    <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--goal-accent)' }} />
+                  </span>
                 )}
               </Link>
             );
@@ -464,7 +500,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <span className="relative">
                   <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
                   {showDot && (
-                    <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--goal-accent)' }} />
+                    <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 inline-flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping motion-reduce:animate-none" style={{ backgroundColor: 'var(--goal-accent)' }} />
+                      <span className="relative inline-flex h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--goal-accent)' }} />
+                    </span>
                   )}
                 </span>
                 <span className="text-[11px] font-medium">{t(labelKey)}</span>

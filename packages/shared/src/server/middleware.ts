@@ -1,6 +1,7 @@
 import { requireAuth, requireAdminAuth, getAuthUser, AuthUser } from './auth'
 import { handleApiError, ApiError } from './api-error'
 import { env } from '../utils/env'
+import { isTrialExpired } from '../utils/trial'
 
 export type AuthedRequest = Request & { user: AuthUser }
 
@@ -16,24 +17,14 @@ type AuthedHandler = (
  * Injects `user` into the context object.
  * Also enforces email trial expiry for EMAIL auth users.
  */
-export function withAuth(handler: AuthedHandler) {
+export function withAuth(handler: AuthedHandler, opts?: { allowExpiredTrial?: boolean }) {
   return async (request: Request, context: RouteContext): Promise<Response> => {
     try {
       const jwt = await requireAuth()
       const user = await getAuthUser(jwt.sub)
 
-      // Email trial enforcement: if trial has expired and user is still FREE, block
-      if (
-        user.authMethod === 'EMAIL' &&
-        user.emailTrialExpiresAt &&
-        new Date() > user.emailTrialExpiresAt &&
-        user.subscriptionStatus === 'FREE'
-      ) {
-        throw new ApiError(
-          402,
-          'Email trial has expired. Please upgrade to PRO.',
-          'TRIAL_EXPIRED',
-        )
+      if (!opts?.allowExpiredTrial && isTrialExpired(user)) {
+        throw new ApiError(402, 'Email trial has expired. Please upgrade to PRO.', 'TRIAL_EXPIRED')
       }
 
       return handler(request, { ...context, user })

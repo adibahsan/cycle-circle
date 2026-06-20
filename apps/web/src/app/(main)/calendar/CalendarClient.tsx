@@ -24,6 +24,7 @@ import { Card } from '@/components/ui/Card'
 import { useAppStore } from '@/lib/store'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
 import { PeriodLogModal } from '@/components/PeriodLogModal'
+import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import type { FlowIntensity } from '@vesta/shared/types'
 import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
@@ -87,6 +88,7 @@ interface Props {
   symptomLogs: SymptomLog[]
   periodLogs: PeriodLog[]
   goal: string | null
+  last30?: { date: string; logged: boolean }[]
 }
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
@@ -128,9 +130,11 @@ interface DayCellProps {
   isCurrentMonth: boolean
   isSelected: boolean
   onSelect: (date: Date) => void
+  isGhostDay?: boolean
+  onGhostTap?: () => void
 }
 
-const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSelect }: DayCellProps) {
+const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSelect, isGhostDay = false, onGhostTap }: DayCellProps) {
   const { date, isPeriod, isFertile, isOvulation, isFuturePredicted } = meta
   const today = new Date()
   const isToday = isSameDay(date, today)
@@ -205,6 +209,18 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
                 ? 'var(--color-ovulation)'
                 : 'var(--color-fertile)',
           }}
+        />
+      )}
+
+      {/* Ghost ring — unlogged past day within the 30-day window */}
+      {isGhostDay && isCurrentMonth && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onGhostTap?.(); }}
+          aria-label={`Add log for ${format(date, 'MMMM d')}`}
+          className="absolute inset-0.5 rounded-[10px] border border-dashed pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/50 focus-visible:ring-offset-1"
+          style={{ borderColor: 'var(--color-text-muted)', opacity: 0.35 }}
+          tabIndex={0}
         />
       )}
 
@@ -458,7 +474,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
 
 // ─── Calendar Client ───────────────────────────────────────────────────────────
 
-export function CalendarClient({ profiles: _profiles, activeProfileId, month, days, symptomLogs, periodLogs, goal }: Props) {
+export function CalendarClient({ profiles: _profiles, activeProfileId, month, days, symptomLogs, periodLogs, goal, last30 = [] }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const { language } = useAppStore()
@@ -477,6 +493,27 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [editingLog, setEditingLog] = useState<PeriodLog | null>(null)
+
+  // ── Ghost-day backfill state ────────────────────────────────────────────────
+  const [backfillDate, setBackfillDate] = useState<string | null>(null)
+
+  // Build a Set of logged dates from the last-30 engagement data
+  const loggedDatesSet = useMemo(() => {
+    const s = new Set<string>()
+    for (const entry of last30) {
+      if (entry.logged) s.add(entry.date)
+    }
+    return s
+  }, [last30])
+
+  // Build a Set of all dates in the last-30 window for quick lookup
+  const last30WindowSet = useMemo(() => {
+    const s = new Set<string>()
+    for (const entry of last30) {
+      s.add(entry.date)
+    }
+    return s
+  }, [last30])
 
   // ── Nudge data ──────────────────────────────────────────────────────────────
 
@@ -735,6 +772,14 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                       isCurrentMonth={inMonth}
                       isSelected={isSelected}
                       onSelect={handleDayClick}
+                      isGhostDay={
+                        inMonth &&
+                        last30WindowSet.has(dateStr) &&
+                        !loggedDatesSet.has(dateStr) &&
+                        dateStr < format(today, 'yyyy-MM-dd') &&
+                        dateStr !== format(today, 'yyyy-MM-dd')
+                      }
+                      onGhostTap={() => setBackfillDate(dateStr)}
                     />
                   )
                 })}
@@ -851,6 +896,19 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
           />
         )}
       </AnimatePresence>
+
+      {/* ── Ghost-day backfill modal ── */}
+      <QuickSymptomModal
+        open={backfillDate !== null}
+        onClose={() => setBackfillDate(null)}
+        profileId={activeProfileId}
+        goal={goal}
+        initialDate={backfillDate ?? undefined}
+        onSaved={() => {
+          setBackfillDate(null)
+          router.refresh()
+        }}
+      />
     </div>
   )
 }

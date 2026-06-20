@@ -29,8 +29,23 @@ import type { ProfileCompletionStatus } from '@/components/ProfileCompletionTrac
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
 import { CelebrationModal } from '@/components/modals/CelebrationModal'
+import { TodayCheckInStrip } from '@/components/engagement/TodayCheckInStrip'
+import { TodayCheckInModal } from '@/components/engagement/TodayCheckInModal'
+import { ProgressToUnlockMeter } from '@/components/engagement/ProgressToUnlockMeter'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+interface EngagementSummary {
+  loggedToday: boolean;
+  lastLoggedDate: string | null;
+  streak: number;
+  streakAtRisk: boolean;
+  last30: { date: string; logged: boolean }[];
+  cyclesLogged: number;
+  unlockTarget: number;
+  tier: string | null;
+  confidence: number;
+}
 
 interface PrismaProfile {
   id: string
@@ -87,6 +102,7 @@ interface Props {
   completion: ProfileCompletionStatus
   lastSymptomLogDate: Date | string | null
   goal: string | null
+  engagement: EngagementSummary | null
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -219,7 +235,7 @@ function CycleRing({
 
 // ─── Dashboard Client ─────────────────────────────────────────────────────────
 
-export function DashboardClient({ profiles, user: _user, activeProfileId, dashboardData, completion, lastSymptomLogDate, goal }: Props) {
+export function DashboardClient({ profiles, user: _user, activeProfileId, dashboardData, completion, lastSymptomLogDate, goal, engagement }: Props) {
   const { t } = useTranslation()
   const router = useRouter()
   const { setActiveProfile, language } = useAppStore()
@@ -243,6 +259,19 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   }, [])
 
   const closeModal = useCallback(() => setShowModal(false), [])
+
+  // ── Check-in modal ───────────────────────────────────────────────────────
+  const [checkInOpen, setCheckInOpen] = useState(false)
+
+  // Auto-open once per session per day when not yet logged
+  useEffect(() => {
+    if (!engagement || engagement.loggedToday) return
+    const todayKey = `vesta_checkin_shown_${activeProfileId}_${new Date().toISOString().slice(0, 10)}`
+    if (typeof window !== 'undefined' && !sessionStorage.getItem(todayKey)) {
+      setCheckInOpen(true)
+      sessionStorage.setItem(todayKey, '1')
+    }
+  }, [activeProfileId, engagement])
 
   // ── Part C: Quick symptom modal ──────────────────────────────────────────
   const [showQuickSymptom, setShowQuickSymptom] = useState(false)
@@ -465,6 +494,16 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               </Card>
             </motion.div>
 
+            {/* ── Today Check-In Strip (pregnancy) ──────────────── */}
+            {engagement && (
+              <TodayCheckInStrip
+                profileId={activeProfileId}
+                engagement={engagement}
+                goal={goal}
+                onOpenCheckIn={() => setCheckInOpen(true)}
+              />
+            )}
+
             {/* ── Logging Nudge (kept in pregnancy) ──────────────── */}
             <LoggingNudge
               profileId={activeProfileId}
@@ -473,6 +512,9 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               goal={goal}
               onLogPeriod={openNewLog}
               onLogSymptoms={openQuickSymptom}
+              streak={engagement?.streak}
+              streakAtRisk={engagement?.streakAtRisk}
+              phase={dashboardData?.currentPhase ?? null}
             />
 
             {/* ── Last Period Card (history — kept in pregnancy) ── */}
@@ -598,6 +640,16 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               </motion.div>
             </motion.div>
 
+            {/* ── Today Check-In Strip (standard) ───────────────── */}
+            {engagement && (
+              <TodayCheckInStrip
+                profileId={activeProfileId}
+                engagement={engagement}
+                goal={goal}
+                onOpenCheckIn={() => setCheckInOpen(true)}
+              />
+            )}
+
             {/* ── Logging Nudge ──────────────────────────────────────── */}
             <LoggingNudge
               profileId={activeProfileId}
@@ -606,6 +658,9 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               goal={goal}
               onLogPeriod={openNewLog}
               onLogSymptoms={openQuickSymptom}
+              streak={engagement?.streak}
+              streakAtRisk={engagement?.streakAtRisk}
+              phase={dashboardData?.currentPhase ?? null}
             />
 
             {/* ── Cards Grid ─────────────────────────────────────────── */}
@@ -779,6 +834,16 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               </motion.div>
             </div>
 
+            {/* ── Progress to Unlock Meter ──────────────────────────── */}
+            {engagement && (
+              <ProgressToUnlockMeter
+                cyclesLogged={engagement.cyclesLogged}
+                unlockTarget={engagement.unlockTarget}
+                confidence={engagement.confidence}
+                tier={engagement.tier}
+              />
+            )}
+
             {/* ── Cycle Phase Overview + Predicted Windows ─────────── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <motion.div
@@ -903,6 +968,19 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         kind={celebration?.kind ?? 'period'}
         count={celebration?.count}
       />
+
+      {/* ── Check-In Modal ───────────────────────────────────── */}
+      {engagement && (
+        <TodayCheckInModal
+          open={checkInOpen}
+          onClose={() => setCheckInOpen(false)}
+          profileId={activeProfileId}
+          goal={goal}
+          engagement={engagement}
+          cycleDay={pregnancy ? null : cycleDay}
+          phase={pregnancy ? null : phase}
+        />
+      )}
 
     </>
   )

@@ -28,6 +28,8 @@ interface QuickSymptomModalProps {
   profileId: string;
   goal: string | null;
   initialSelected?: string[];
+  /** Date to log against in YYYY-MM-DD format. Defaults to today. */
+  initialDate?: string;
   onSaved?: (savedCount: number) => void;
 }
 
@@ -39,6 +41,7 @@ export function QuickSymptomModal({
   profileId,
   goal,
   initialSelected = [],
+  initialDate,
   onSaved,
 }: QuickSymptomModalProps) {
   const { t } = useTranslation();
@@ -73,8 +76,10 @@ export function QuickSymptomModal({
 
   const accentVar = goalAccentVar(goal);
 
-  // Today in YYYY-MM-DD (same format SymptomsClient uses via format(date, 'yyyy-MM-dd'))
+  // Date to log against — defaults to today in YYYY-MM-DD format.
+  // When `initialDate` is provided (backfill from ConsistencyGrid), we log against that date.
   const today = new Date().toISOString().slice(0, 10);
+  const logDate = initialDate ?? today;
 
   const handleToggle = useCallback((id: string) => {
     setSelected((prev) => {
@@ -97,7 +102,7 @@ export function QuickSymptomModal({
         if (symptom) {
           await toggleSymptom({
             profileId,
-            date: today,
+            date: logDate,
             category: toDbCategory(symptom.category),
             symptomId: id,
             value: id,
@@ -109,7 +114,7 @@ export function QuickSymptomModal({
         if (symptom) {
           await toggleSymptom({
             profileId,
-            date: today,
+            date: logDate,
             category: toDbCategory(symptom.category),
             symptomId: id,
             value: id,

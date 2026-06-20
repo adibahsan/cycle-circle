@@ -7,6 +7,10 @@ import {
   getPredictionAccuracy as svcGetPredictionAccuracy,
   getUserRetention as svcGetUserRetention,
   getUserTrend as svcGetUserTrend,
+  getDailyActiveLoggers as svcGetDailyActiveLoggers,
+  getSymptomLoggingRate as svcGetSymptomLoggingRate,
+  getLoggingStreakDistribution as svcGetLoggingStreakDistribution,
+  getLoggingRetention as svcGetLoggingRetention,
 } from '@vesta/shared/server/services'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
@@ -51,6 +55,42 @@ export const getUserTrend = cache(async (days: number) => {
   return unstable_cache(
     () => svcGetUserTrend({ days }),
     ['admin-user-trend', String(days)],
+    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getDailyActiveLoggers = cache(async (days: number) => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => svcGetDailyActiveLoggers({ days }),
+    ['admin-daily-active-loggers', String(days)],
+    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getSymptomLoggingRate = cache(async (days: number) => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => svcGetSymptomLoggingRate({ days }),
+    ['admin-symptom-logging-rate', String(days)],
+    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getLoggingStreakDistribution = cache(async () => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => svcGetLoggingStreakDistribution(),
+    ['admin-logging-streak-distribution'],
+    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getLoggingRetention = cache(async (weeks?: number) => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => svcGetLoggingRetention(weeks),
+    ['admin-logging-retention', String(weeks ?? 8)],
     { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
   )()
 })

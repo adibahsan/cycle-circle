@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { useReducedMotion } from 'motion/react';
-import { Sparkles, CalendarPlus, X } from 'lucide-react';
+import { Sparkles, CalendarPlus, Flame, X, type LucideIcon } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useHasMounted } from '@/components/motion/useHasMounted';
@@ -21,6 +21,9 @@ export interface LoggingNudgeProps {
   goal?: string | null;            // 'conceive' → TTC-tailored copy
   onLogPeriod?: () => void;        // primary CTA callback; if absent, CTA is a <Link href="/calendar">
   onLogSymptoms?: () => void;      // secondary CTA callback; if absent, CTA is a <Link href="/symptoms">
+  streak?: number;                 // current streak count
+  streakAtRisk?: boolean;          // true → streak-at-risk variant (highest priority)
+  phase?: string | null;           // current cycle phase for phase-aware enrichment
   className?: string;
 }
 
@@ -33,6 +36,9 @@ export function LoggingNudge({
   goal,
   onLogPeriod,
   onLogSymptoms,
+  streak,
+  streakAtRisk,
+  phase,
   className,
 }: LoggingNudgeProps): React.JSX.Element | null {
   const { t } = useTranslation();
@@ -51,19 +57,20 @@ export function LoggingNudge({
     }
   }, [mounted, DISMISSED_KEY]);
 
-  // Determine which variant to show
+  // Determine which variant to show (priority: streakAtRisk > empty > stale)
+  const isStreakAtRisk = !!streakAtRisk && (streak ?? 0) > 0;
   const isEmptyState = !hasAnyLogs;
   const isStale =
     hasAnyLogs &&
     daysSinceLastLog != null &&
     daysSinceLastLog >= 3;
 
-  // Neither condition met → render null
-  if (!isEmptyState && !isStale) return null;
+  // None of the conditions met → render null
+  if (!isStreakAtRisk && !isEmptyState && !isStale) return null;
   // Dismissed → render null
   if (dismissed) return null;
 
-  // Resolve copy keys — pregnancy takes priority, then TTC, then default
+  // Resolve copy keys — streak-at-risk takes highest priority
   const goalIsPregnancy = isPregnancy(goal);
   const goalIsTTC = isTTC(goal);
   const accentVar = goalAccentVar(goal);
@@ -71,8 +78,14 @@ export function LoggingNudge({
   let title: string;
   let description: string;
   let ctaLabel: string;
+  let Icon: LucideIcon;
 
-  if (isEmptyState) {
+  if (isStreakAtRisk) {
+    title = t('nudge.streakAtRiskTitle');
+    description = t('nudge.streakAtRiskBody', { count: streak ?? 0 });
+    ctaLabel = t('nudge.logSymptomsCta');
+    Icon = Flame;
+  } else if (isEmptyState) {
     if (goalIsPregnancy) {
       title = t('nudge.pregnancyTitle');
       description = t('nudge.pregnancyDescription');
@@ -84,6 +97,7 @@ export function LoggingNudge({
       description = t('nudge.emptyDescription');
     }
     ctaLabel = t('nudge.emptyCta');
+    Icon = CalendarPlus;
   } else {
     // stale variant
     if (goalIsPregnancy) {
@@ -97,14 +111,13 @@ export function LoggingNudge({
       description = t('nudge.staleDescription');
     }
     ctaLabel = t('nudge.staleCta');
+    Icon = Sparkles;
   }
 
   function handleDismiss() {
     sessionStorage.setItem(DISMISSED_KEY, '1');
     setDismissed(true);
   }
-
-  const Icon = isEmptyState ? CalendarPlus : Sparkles;
 
   const content = (
     <Card
@@ -175,27 +188,22 @@ export function LoggingNudge({
             {description}
           </p>
 
+          {/* Phase-aware enrichment (only when phase provided and NOT streak-at-risk) */}
+          {!isStreakAtRisk && phase && (
+            <p className="text-xs text-[var(--color-text-muted)] mt-0.5 opacity-80 leading-relaxed">
+              {t('nudge.phaseAwareBody', { phase })}
+            </p>
+          )}
+
           {/* CTAs */}
           <div className="flex flex-wrap items-center gap-2 mt-3">
-            {/* Primary CTA — styled with goal accent via inline override */}
-            {onLogPeriod ? (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={onLogPeriod}
-                className="text-xs focus-visible:ring-[var(--goal-accent)]"
-                style={{
-                  background: 'var(--goal-accent)',
-                  borderColor: 'var(--goal-accent)',
-                } as React.CSSProperties}
-              >
-                {ctaLabel}
-              </Button>
-            ) : (
-              <Link href="/calendar">
+            {isStreakAtRisk ? (
+              /* Streak-at-risk: single CTA → log symptoms */
+              onLogSymptoms ? (
                 <Button
                   variant="primary"
                   size="sm"
+                  onClick={onLogSymptoms}
                   className="text-xs focus-visible:ring-[var(--goal-accent)]"
                   style={{
                     background: 'var(--goal-accent)',
@@ -204,27 +212,73 @@ export function LoggingNudge({
                 >
                   {ctaLabel}
                 </Button>
-              </Link>
-            )}
-
-            {/* Secondary CTA */}
-            {onLogSymptoms ? (
-              <button
-                type="button"
-                onClick={onLogSymptoms}
-                className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:rounded-sm"
-                style={{ color: 'var(--goal-accent)' } as React.CSSProperties}
-              >
-                {t('nudge.logSymptomsCta')}
-              </button>
+              ) : (
+                <Link href="/symptoms">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="text-xs focus-visible:ring-[var(--goal-accent)]"
+                    style={{
+                      background: 'var(--goal-accent)',
+                      borderColor: 'var(--goal-accent)',
+                    } as React.CSSProperties}
+                  >
+                    {ctaLabel}
+                  </Button>
+                </Link>
+              )
             ) : (
-              <Link
-                href="/symptoms"
-                className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:rounded-sm"
-                style={{ color: 'var(--goal-accent)' } as React.CSSProperties}
-              >
-                {t('nudge.logSymptomsCta')}
-              </Link>
+              <>
+                {/* Primary CTA — styled with goal accent via inline override */}
+                {onLogPeriod ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={onLogPeriod}
+                    className="text-xs focus-visible:ring-[var(--goal-accent)]"
+                    style={{
+                      background: 'var(--goal-accent)',
+                      borderColor: 'var(--goal-accent)',
+                    } as React.CSSProperties}
+                  >
+                    {ctaLabel}
+                  </Button>
+                ) : (
+                  <Link href="/calendar">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="text-xs focus-visible:ring-[var(--goal-accent)]"
+                      style={{
+                        background: 'var(--goal-accent)',
+                        borderColor: 'var(--goal-accent)',
+                      } as React.CSSProperties}
+                    >
+                      {ctaLabel}
+                    </Button>
+                  </Link>
+                )}
+
+                {/* Secondary CTA */}
+                {onLogSymptoms ? (
+                  <button
+                    type="button"
+                    onClick={onLogSymptoms}
+                    className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:rounded-sm"
+                    style={{ color: 'var(--goal-accent)' } as React.CSSProperties}
+                  >
+                    {t('nudge.logSymptomsCta')}
+                  </button>
+                ) : (
+                  <Link
+                    href="/symptoms"
+                    className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:rounded-sm"
+                    style={{ color: 'var(--goal-accent)' } as React.CSSProperties}
+                  >
+                    {t('nudge.logSymptomsCta')}
+                  </Link>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -5,6 +5,7 @@ import {
   getDashboardData as svcGetDashboardData,
   getCalendarData as svcGetCalendarData,
   listPeriodLogs,
+  getEngagementSummary as svcGetEngagementSummary,
 } from '@vesta/shared/server/services'
 
 export const getDashboardData = cache(async (profileId: string) => {
@@ -30,6 +31,15 @@ export const getPeriodLogs = cache(async (profileId: string) => {
   return unstable_cache(
     () => listPeriodLogs(profileId, user.id),
     ['period-logs', profileId],
+    { tags: [`tracking:${profileId}`], revalidate: 300 }
+  )()
+})
+
+export const getEngagementSummary = cache(async (profileId: string) => {
+  const user = await requireCurrentUser()
+  return unstable_cache(
+    () => svcGetEngagementSummary(profileId, user.id),
+    ['engagement-summary', profileId],
     { tags: [`tracking:${profileId}`], revalidate: 300 }
   )()
 })

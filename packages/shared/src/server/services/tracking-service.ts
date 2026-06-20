@@ -6,6 +6,8 @@ import {
   toLocalDateStr,
 } from '../period-log-sync'
 import { isPregnancy, isMenopause } from '../../utils/goal'
+import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
+import { TIER2_MIN_CYCLES } from '../prediction-calc'
 
 // ── Ownership helpers ──────────────────────────────────────────────────────────
 
@@ -112,6 +114,12 @@ export async function toggleSymptomLog(
     await prisma.symptomLog.delete({ where: { id: existing.id } })
     return { action: 'deleted' as const }
   } else {
+    // If adding a real symptom, remove any "all good" sentinel for that day first
+    if (data.symptomId !== ALL_GOOD_SYMPTOM_ID) {
+      await prisma.symptomLog.deleteMany({
+        where: { profileId, date: new Date(data.date), symptomId: ALL_GOOD_SYMPTOM_ID },
+      })
+    }
     const log = await prisma.symptomLog.create({
       data: {
         profileId,
@@ -122,6 +130,220 @@ export async function toggleSymptomLog(
       },
     })
     return { action: 'created' as const, log }
+  }
+}
+
+export async function setAllGoodToday(
+  profileId: string,
+  userId: string,
+  date?: string,
+): Promise<void> {
+  await verifyProfileOwnership(profileId, userId)
+
+  const dateStr =
+    date ??
+    (() => {
+      const now = new Date()
+      return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`
+    })()
+
+  const dayDate = new Date(dateStr)
+
+  // Remove all real symptom logs for this day (keep only the sentinel)
+  await prisma.symptomLog.deleteMany({
+    where: {
+      profileId,
+      date: dayDate,
+      NOT: { symptomId: ALL_GOOD_SYMPTOM_ID },
+    },
+  })
+
+  // Create sentinel if not already present
+  const existing = await prisma.symptomLog.findFirst({
+    where: { profileId, date: dayDate, symptomId: ALL_GOOD_SYMPTOM_ID },
+  })
+  if (!existing) {
+    await prisma.symptomLog.create({
+      data: {
+        profileId,
+        date: dayDate,
+        category: 'MOOD',
+        symptomId: ALL_GOOD_SYMPTOM_ID,
+        value: ALL_GOOD_SYMPTOM_ID,
+      },
+    })
+  }
+}
+
+// ── Engagement summary ─────────────────────────────────────────────────────────
+
+export async function getEngagementSummary(
+  profileId: string,
+  userId: string,
+): Promise<{
+  loggedToday: boolean
+  lastLoggedDate: string | null
+  streak: number
+  streakAtRisk: boolean
+  last30: { date: string; logged: boolean }[]
+  cyclesLogged: number
+  unlockTarget: number
+  tier: 'AVERAGE' | 'ARIMA' | 'LSTM' | null
+  confidence: number
+} | null> {
+  const profile = await prisma.profile.findUnique({ where: { id: profileId } })
+  if (!profile || profile.userId !== userId) return null
+
+  // Build UTC-normalized today string
+  const now = new Date()
+  const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`
+
+  // Window: last 30 calendar days (today = day 29, oldest = day 0)
+  const windowStart = new Date(todayStr)
+  windowStart.setUTCDate(windowStart.getUTCDate() - 29)
+
+  // Fetch symptom logs within the 30-day window
+  const symptomLogsInWindow = await prisma.symptomLog.findMany({
+    where: {
+      profileId,
+      date: { gte: windowStart },
+    },
+    select: { date: true },
+  })
+
+  // Fetch period logs overlapping the 30-day window
+  const periodLogsInWindow = await prisma.periodLog.findMany({
+    where: {
+      profileId,
+      startDate: { lte: new Date(todayStr) },
+      endDate: { gte: windowStart },
+    },
+    select: { startDate: true, endDate: true },
+  })
+
+  // Build set of active day strings (YYYY-MM-DD UTC)
+  const activeDays = new Set<string>()
+
+  for (const sl of symptomLogsInWindow) {
+    const d = sl.date
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+    activeDays.add(key)
+  }
+
+  // Expand period log ranges into individual days within the window
+  const windowStartStr = windowStart.toISOString().slice(0, 10)
+  for (const pl of periodLogsInWindow) {
+    const cur = new Date(pl.startDate)
+    cur.setUTCHours(0, 0, 0, 0)
+    const end = new Date(pl.endDate)
+    end.setUTCHours(0, 0, 0, 0)
+    while (cur <= end) {
+      const key = `${cur.getUTCFullYear()}-${String(cur.getUTCMonth() + 1).padStart(2, '0')}-${String(cur.getUTCDate()).padStart(2, '0')}`
+      if (key >= windowStartStr && key <= todayStr) {
+        activeDays.add(key)
+      }
+      cur.setUTCDate(cur.getUTCDate() + 1)
+    }
+  }
+
+  // Build last30 array (oldest first, newest = today)
+  const last30: { date: string; logged: boolean }[] = []
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(todayStr)
+    d.setUTCDate(d.getUTCDate() - i)
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+    last30.push({ date: key, logged: activeDays.has(key) })
+  }
+
+  // Compute streak (walk backward from today)
+  let streak = 0
+  let streakAtRisk = false
+  const todayLogged = activeDays.has(todayStr)
+
+  const yesterdayDate = new Date(todayStr)
+  yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1)
+  const yesterdayStr = `${yesterdayDate.getUTCFullYear()}-${String(yesterdayDate.getUTCMonth() + 1).padStart(2, '0')}-${String(yesterdayDate.getUTCDate()).padStart(2, '0')}`
+
+  if (todayLogged) {
+    // Count backward from today
+    for (let i = 0; i < last30.length; i++) {
+      const entry = last30[last30.length - 1 - i]
+      if (entry.logged) {
+        streak++
+      } else {
+        break
+      }
+    }
+  } else if (activeDays.has(yesterdayStr)) {
+    // Grace: streak alive from yesterday, today not logged yet
+    streakAtRisk = true
+    for (let i = 1; i < last30.length; i++) {
+      const entry = last30[last30.length - 1 - i]
+      if (entry.logged) {
+        streak++
+      } else {
+        break
+      }
+    }
+  }
+  // else streak = 0, streakAtRisk = false
+
+  // loggedToday: same logic as getLoggingStatus (symptom log today OR today within a period range)
+  const today = new Date(todayStr)
+  const tomorrow = new Date(todayStr)
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
+
+  const [symptomToday, periodToday] = await Promise.all([
+    prisma.symptomLog.findFirst({
+      where: { profileId, date: { gte: today, lt: tomorrow } },
+      select: { id: true },
+    }),
+    prisma.periodLog.findFirst({
+      where: { profileId, startDate: { lte: today }, endDate: { gte: today } },
+      select: { id: true },
+    }),
+  ])
+  const loggedToday = Boolean(symptomToday || periodToday)
+
+  // lastLoggedDate: most recent active day key
+  let lastLoggedDate: string | null = null
+  for (let i = last30.length - 1; i >= 0; i--) {
+    if (last30[i].logged) {
+      lastLoggedDate = last30[i].date
+      break
+    }
+  }
+
+  // cyclesLogged: count valid cycle gaps from PeriodLog.startDate
+  const allPeriodLogs = await prisma.periodLog.findMany({
+    where: { profileId },
+    orderBy: { startDate: 'asc' },
+    select: { startDate: true },
+  })
+  let cyclesLogged = 0
+  for (let i = 1; i < allPeriodLogs.length; i++) {
+    const gap = Math.round(
+      (allPeriodLogs[i].startDate.getTime() - allPeriodLogs[i - 1].startDate.getTime()) /
+        (1000 * 60 * 60 * 24),
+    )
+    if (gap > 0 && gap < 90) cyclesLogged++
+  }
+
+  // tier and confidence from Prediction record
+  const predRecord = await prisma.prediction.findUnique({ where: { profileId } })
+  const tier = (predRecord?.tier as 'AVERAGE' | 'ARIMA' | 'LSTM' | null) ?? null
+  const confidence = predRecord?.confidence ?? 0
+
+  return {
+    loggedToday,
+    lastLoggedDate,
+    streak,
+    streakAtRisk,
+    last30,
+    cyclesLogged,
+    unlockTarget: TIER2_MIN_CYCLES,
+    tier,
+    confidence,
   }
 }
 

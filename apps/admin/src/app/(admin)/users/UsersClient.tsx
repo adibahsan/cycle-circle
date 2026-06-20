@@ -19,6 +19,7 @@ import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanel'
 import { DateRangeControl } from '@/components/charts/DateRangeControl'
+import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 
 type UserRow = {
   id: string
@@ -32,6 +33,7 @@ type UserRow = {
   deletedAt: Date | null
   lastLoginAt: Date | null
   createdAt: Date
+  emailTrialExpiresAt: Date | null
   _count: { profiles: number }
 }
 
@@ -76,7 +78,7 @@ function formatDate(d: Date | null) {
 }
 
 function AuthMethodBadge({ method }: { method: string }) {
-  const isPhone = method === 'PHONE_OTP'
+  const isPhone = method === 'OTP'
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
       {isPhone ? <Phone size={12} aria-hidden="true" /> : <Mail size={12} aria-hidden="true" />}
@@ -130,6 +132,25 @@ const COLUMNS: Column<UserRow>[] = [
     key: 'subscriptionStatus',
     header: 'Subscription',
     render: (row) => <SubBadge status={row.subscriptionStatus} />,
+  },
+  {
+    key: 'emailTrialExpiresAt',
+    header: 'Trial',
+    render: (row) => {
+      const trial = getTrialStatus(row)
+      if (trial === 'active') {
+        const hours = getTrialHoursLeft(row.emailTrialExpiresAt)
+        return (
+          <Badge variant="warning" size="sm">
+            <span className="tabular-nums">Trial · {hours}h</span>
+          </Badge>
+        )
+      }
+      if (trial === 'expired') {
+        return <Badge variant="danger" size="sm">Trial expired</Badge>
+      }
+      return <span className="text-sm text-[var(--color-text-muted)]">—</span>
+    },
   },
   {
     key: 'profiles',
@@ -273,7 +294,7 @@ export function UsersClient({
 
   // Auth method: pretty-print method names
   const authData = authMethodDist.map((row) => ({
-    method: row.method === 'PHONE_OTP' ? 'Phone OTP' : row.method === 'EMAIL' ? 'Email' : row.method,
+    method: row.method === 'OTP' ? 'Phone OTP' : row.method === 'EMAIL' ? 'Email' : row.method,
     count: row.count,
   }))
 

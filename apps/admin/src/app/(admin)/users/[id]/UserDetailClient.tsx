@@ -35,6 +35,7 @@ import {
   grantProAccess,
   revokeProAccess,
 } from '@/app/actions/user-actions'
+import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types (mirror the Prisma include shape from getUserDetail)
@@ -101,6 +102,7 @@ interface UserDetail {
   deletedAt: Date | null
   lastLoginAt: Date | null
   createdAt: Date
+  emailTrialExpiresAt: Date | null
   profiles: Profile[]
   subscriptions: Subscription[]
   feedback: Feedback[]
@@ -541,6 +543,21 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
                 <StatusBadge status={status} />
                 {isPro && <Badge variant="success">Pro</Badge>}
                 {user.role === 'ADMIN' && <Badge variant="info">Admin</Badge>}
+                {(() => {
+                  const trial = getTrialStatus(user)
+                  if (trial === 'active') {
+                    const hours = getTrialHoursLeft(user.emailTrialExpiresAt)
+                    return (
+                      <Badge variant="warning">
+                        <span className="tabular-nums">Trial · {hours}h</span>
+                      </Badge>
+                    )
+                  }
+                  if (trial === 'expired') {
+                    return <Badge variant="danger">Trial expired</Badge>
+                  }
+                  return null
+                })()}
               </div>
               <div className="flex flex-wrap gap-3 text-sm text-[var(--color-text-muted)]">
                 {user.email && (
@@ -557,7 +574,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
                 )}
                 <span className="flex items-center gap-1.5">
                   <Smartphone size={13} aria-hidden="true" />
-                  {user.authMethod === 'PHONE_OTP' ? 'Phone OTP' : 'Magic Link'}
+                  {user.authMethod === 'OTP' ? 'Phone OTP' : 'Magic Link'}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Calendar size={13} aria-hidden="true" />
