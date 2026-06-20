@@ -1,7 +1,15 @@
+import { timingSafeEqual } from 'crypto'
 import { requireAuth, requireAdminAuth, getAuthUser, AuthUser } from './auth'
 import { handleApiError, ApiError } from './api-error'
 import { env } from '../utils/env'
 import { isTrialExpired } from '../utils/trial'
+
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a)
+  const bb = Buffer.from(b)
+  if (ab.length !== bb.length) return false
+  return timingSafeEqual(ab, bb)
+}
 
 export type AuthedRequest = Request & { user: AuthUser }
 
@@ -43,7 +51,7 @@ export function withCronAuth(handler: (request: Request) => Promise<Response>) {
     try {
       const authHeader = request.headers.get('authorization') ?? ''
       const [, token] = authHeader.split(' ')
-      if (!env.CRON_SECRET || !token || token !== env.CRON_SECRET) {
+      if (!env.CRON_SECRET || !token || !safeEqual(token, env.CRON_SECRET)) {
         throw new ApiError(401, 'Invalid cron secret', 'UNAUTHORIZED')
       }
       return handler(request)

@@ -1,4 +1,5 @@
 import { prisma } from '../db'
+import { Prisma } from '@prisma/client'
 
 /**
  * Grant PRO access to a user. Finds an existing subscription and updates it,
@@ -66,6 +67,48 @@ export async function revokePro(userId: string, adminId: string) {
       action: 'PRO_REVOKED',
       targetType: 'Subscription',
       targetId: userId,
+    },
+  })
+
+  return { success: true }
+}
+
+/**
+ * Set a user's subscription to an explicit status (PRO | FREE | LAPSED).
+ * Updates or creates a Subscription row and syncs user.subscriptionStatus.
+ * Writes an audit log entry capturing the previous status.
+ */
+export async function setSubscriptionStatus(
+  userId: string,
+  status: 'PRO' | 'FREE' | 'LAPSED',
+  adminId: string,
+) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { subscriptionStatus: true } })
+  const previous = user?.subscriptionStatus ?? null
+  const now = new Date()
+
+  const existing = await prisma.subscription.findFirst({ where: { userId }, select: { id: true } })
+  const resetOnActive = status === 'LAPSED' ? {} : { consecutiveFailures: 0, gracePeriodEndsAt: null }
+  if (existing) {
+    await prisma.subscription.updateMany({
+      where: { userId },
+      data: { status, adminOverride: true, adminOverrideBy: adminId, adminOverrideAt: now, ...resetOnActive },
+    })
+  } else {
+    await prisma.subscription.create({
+      data: { userId, status, adminOverride: true, adminOverrideBy: adminId, adminOverrideAt: now },
+    })
+  }
+
+  await prisma.user.update({ where: { id: userId }, data: { subscriptionStatus: status } })
+
+  await prisma.adminAuditLog.create({
+    data: {
+      adminId,
+      action: `SUBSCRIPTION_SET_${status}`,
+      targetType: 'User',
+      targetId: userId,
+      metadata: { previous } as Prisma.InputJsonValue,
     },
   })
 

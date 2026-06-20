@@ -14,6 +14,7 @@ import {
   MessageCircle,
   ScrollText,
   Mail,
+  ServerCog,
   Sun,
   Moon,
   LogOut,
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   { href: '/feedback', icon: MessageCircle, label: 'Feedback' },
   { href: '/emails', icon: Mail, label: 'Emails' },
   { href: '/audit-logs', icon: ScrollText, label: 'Audit Logs' },
+  { href: '/system', icon: ServerCog, label: 'System' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

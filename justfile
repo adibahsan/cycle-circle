@@ -25,9 +25,9 @@ typecheck-all:
 up:
     {{compose}} up -d --build --remove-orphans
 
-# Start only infrastructure (postgres, redis, mailpit, bdapps-simulator) — run Next.js locally
+# Start only infrastructure (postgres, redis, redisinsight, mailpit, bdapps-simulator) — run Next.js locally
 infra:
-    {{compose}} up -d postgres redis mailpit bdapps-simulator --remove-orphans --wait
+    {{compose}} up -d postgres redis redisinsight mailpit bdapps-simulator --remove-orphans --wait
 
 # Stop all docker services
 down:
@@ -148,6 +148,10 @@ a:
 wa:
     {{web}} dev & {{admin}} dev & wait
 
+# Start the local cron worker (BullMQ → triggers /api/cron/* on schedule). For hybrid `just infra` + `just w`.
+worker:
+    {{web}} worker
+
 # Start everything inside Docker (no local Node needed)
 dev-docker:
     just up
@@ -247,6 +251,11 @@ cron-caas:
     curl -s -X POST http://localhost:3000/api/cron/caas-check -H "Authorization: Bearer ${CRON_SECRET}" | python3 -m json.tool
 
 # ─── REDIS ──────────────────────────────────────────────
+
+# Open the RedisInsight UI (browse Redis / BullMQ cron keys). First connect: host=redis, port=6379.
+redis-ui:
+    @echo "RedisInsight: http://localhost:5540  (add database -> host: redis, port: 6379)"
+    @open http://localhost:5540 2>/dev/null || true
 
 # Open Redis CLI
 redis-cli:

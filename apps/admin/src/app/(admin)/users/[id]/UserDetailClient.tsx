@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -21,6 +21,7 @@ import {
   AlertCircle,
   Clock,
   Activity,
+  Bell,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -28,13 +29,15 @@ import { Card } from '@/components/ui/Card'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { RefetchButton } from '@/components/ui/RefetchButton'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
+import { Select } from '@/components/ui/Select'
 import {
   suspendUser,
   reactivateUser,
   softDeleteUser,
-  grantProAccess,
-  revokeProAccess,
+  setUserSubscriptionStatus,
+  setUserNotificationPrefs,
 } from '@/app/actions/user-actions'
+import { sendUserReminders, type CronJobResult } from '@/app/actions/system-actions'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -66,7 +69,9 @@ interface PeriodLog {
 
 interface NotificationPref {
   id: string
-  enabled?: boolean
+  periodAlert: boolean
+  fertileWindow: boolean
+  loggingReminder: boolean
 }
 
 interface Profile {
@@ -162,10 +167,10 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
 // Confirm modal state
 // ─────────────────────────────────────────────────────────────────────────────
 
-type ModalAction = 'suspend' | 'delete' | 'revoke' | null
+type ModalAction = 'suspend' | 'delete' | 'setStatus' | null
 
 const MODAL_CONFIG: Record<
-  NonNullable<ModalAction>,
+  'suspend' | 'delete',
   { title: string; message: string; confirmLabel: string; variant: 'danger' | 'warning' }
 > = {
   suspend: {
@@ -182,20 +187,205 @@ const MODAL_CONFIG: Record<
     confirmLabel: 'Delete',
     variant: 'danger',
   },
-  revoke: {
-    title: 'Revoke Pro Access',
-    message:
-      'This will downgrade the user from Pro. Any admin-granted override will be removed.',
-    confirmLabel: 'Revoke Pro',
-    variant: 'warning',
-  },
+}
+
+const SUB_STATUS_OPTIONS = [
+  { value: 'PRO', label: 'Pro' },
+  { value: 'FREE', label: 'Free' },
+  { value: 'LAPSED', label: 'Lapsed' },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Accessible toggle (role="switch") — no external dep needed
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface ToggleProps {
+  checked: boolean
+  onChange: (next: boolean) => void
+  label: string
+  disabled?: boolean
+}
+
+function Toggle({ checked, onChange, label, disabled }: ToggleProps) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+        checked ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-border)]'
+      }`}
+    >
+      <span
+        className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+          checked ? 'translate-x-4' : 'translate-x-0'
+        }`}
+      />
+    </button>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Send reminder emails card
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SendRemindersCard({ userId }: { userId: string }) {
+  const [reminderResult, setReminderResult] = useState<CronJobResult | null>(null)
+  const [isReminderPending, startReminderTransition] = useTransition()
+
+  function handleSendReminders() {
+    setReminderResult(null)
+    startReminderTransition(async () => {
+      const result = await sendUserReminders(userId)
+      setReminderResult(result)
+    })
+  }
+
+  const sent = reminderResult?.ok
+    ? ((reminderResult.counts?.periodAlerts ?? 0) +
+        (reminderResult.counts?.fertileAlerts ?? 0) +
+        (reminderResult.counts?.reminders ?? 0) +
+        (reminderResult.counts?.completionReminders ?? 0))
+    : 0
+
+  const breakdown: { label: string; key: string }[] = [
+    { label: 'Period alerts', key: 'periodAlerts' },
+    { label: 'Fertile window', key: 'fertileAlerts' },
+    { label: 'Logging reminders', key: 'reminders' },
+    { label: 'Profile completion', key: 'completionReminders' },
+  ]
+
+  return (
+    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 shadow-soft space-y-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Bell size={14} aria-hidden="true" className="text-[var(--color-text-muted)]" />
+            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+              Reminder emails
+            </p>
+          </div>
+          <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+            Sends any reminder emails currently due for this user&apos;s profiles (period / fertile
+            / logging / profile-completion), bypassing the once-per-day limit.
+          </p>
+        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleSendReminders}
+          loading={isReminderPending}
+          className="shrink-0"
+        >
+          <Bell size={14} aria-hidden="true" />
+          Send reminder emails now
+        </Button>
+      </div>
+
+      <div aria-live="polite">
+        {reminderResult && reminderResult.ok && (
+          <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400 space-y-1">
+            {sent > 0 ? (
+              <>
+                <p className="font-medium">
+                  Sent {sent} reminder email{sent !== 1 ? 's' : ''}.
+                </p>
+                <ul className="text-xs space-y-0.5 mt-1">
+                  {breakdown
+                    .filter((b) => (reminderResult.counts?.[b.key] ?? 0) > 0)
+                    .map((b) => (
+                      <li key={b.key} className="flex items-center gap-1.5">
+                        <CheckCircle size={11} aria-hidden="true" className="shrink-0" />
+                        {b.label}: {reminderResult.counts![b.key]}
+                      </li>
+                    ))}
+                </ul>
+              </>
+            ) : (
+              <p>No reminders are currently due for this user.</p>
+            )}
+          </div>
+        )}
+        {reminderResult && !reminderResult.ok && (
+          <div
+            role="alert"
+            className="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400"
+          >
+            <AlertCircle size={15} aria-hidden="true" className="shrink-0" />
+            {reminderResult.error ?? 'Failed to send reminders.'}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Per-profile notification toggles card
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface NotifPrefsCardProps {
+  userId: string
+  profile: Profile
+}
+
+function NotifPrefsCard({ userId, profile }: NotifPrefsCardProps) {
+  const saved = profile.notificationPref
+  const [prefs, setPrefs] = useState({
+    periodAlert: saved?.periodAlert ?? true,
+    fertileWindow: saved?.fertileWindow ?? true,
+    loggingReminder: saved?.loggingReminder ?? true,
+  })
+  const savedRef = useRef(prefs)
+  const [isPending, startTransition] = useTransition()
+
+  function handleToggle(key: 'periodAlert' | 'fertileWindow' | 'loggingReminder') {
+    const next = { ...prefs, [key]: !prefs[key] }
+    setPrefs(next)
+    startTransition(async () => {
+      try {
+        await setUserNotificationPrefs(userId, profile.id, { [key]: next[key] })
+        savedRef.current = next
+      } catch {
+        setPrefs(savedRef.current)
+      }
+    })
+  }
+
+  const TOGGLE_ITEMS: { key: 'periodAlert' | 'fertileWindow' | 'loggingReminder'; label: string }[] = [
+    { key: 'periodAlert', label: 'Period alerts' },
+    { key: 'fertileWindow', label: 'Fertile window' },
+    { key: 'loggingReminder', label: 'Logging reminders' },
+  ]
+
+  return (
+    <div aria-live="polite" className="space-y-2.5">
+      <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+        Notifications
+      </p>
+      {TOGGLE_ITEMS.map(({ key, label }) => (
+        <div key={key} className="flex items-center justify-between gap-3">
+          <span className="text-sm text-[var(--color-text-secondary)]">{label}</span>
+          <Toggle
+            checked={prefs[key]}
+            onChange={() => handleToggle(key)}
+            label={label}
+            disabled={isPending}
+          />
+        </div>
+      ))}
+    </div>
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Profiles Tab
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ProfilesTab({ profiles }: { profiles: Profile[] }) {
+function ProfilesTab({ profiles, userId }: { profiles: Profile[]; userId: string }) {
   if (profiles.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 py-12 text-[var(--color-text-muted)]">
@@ -255,6 +445,11 @@ function ProfilesTab({ profiles }: { profiles: Profile[] }) {
                 {profile._count.symptomLogs}
               </p>
             </div>
+          </div>
+
+          {/* Notification preference toggles */}
+          <div className="border-t border-[var(--color-border)] pt-4">
+            <NotifPrefsCard userId={userId} profile={profile} />
           </div>
 
           {/* Recent logs */}
@@ -466,6 +661,9 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
   const [modalAction, setModalAction] = useState<ModalAction>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
+  // Subscription status selector state
+  const [pendingStatus, setPendingStatus] = useState<'PRO' | 'FREE' | 'LAPSED' | null>(null)
+
   const status = getUserStatus(user)
   const isSuspended = status === 'suspended'
   const isDeleted = status === 'deleted'
@@ -478,7 +676,10 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
     try {
       if (modalAction === 'suspend') await suspendUser(user.id)
       else if (modalAction === 'delete') await softDeleteUser(user.id)
-      else if (modalAction === 'revoke') await revokeProAccess(user.id)
+      else if (modalAction === 'setStatus' && pendingStatus) {
+        await setUserSubscriptionStatus(user.id, pendingStatus)
+        setPendingStatus(null)
+      }
 
       setModalAction(null)
       startTransition(() => router.refresh())
@@ -499,16 +700,11 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
     })
   }
 
-  function handleGrantPro() {
-    setActionError(null)
-    startTransition(async () => {
-      try {
-        await grantProAccess(user.id)
-        router.refresh()
-      } catch (err) {
-        setActionError(err instanceof Error ? err.message : 'Failed to grant Pro access.')
-      }
-    })
+  function handleStatusSelectChange(value: string) {
+    const next = value as 'PRO' | 'FREE' | 'LAPSED'
+    if (next === user.subscriptionStatus) return
+    setPendingStatus(next)
+    setModalAction('setStatus')
   }
 
   const displayName = user.fullName ?? user.email ?? user.phone ?? 'Unknown User'
@@ -593,27 +789,19 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
           {/* Action buttons */}
           {!isDeleted && (
             <div className="flex flex-wrap items-center gap-2 shrink-0">
-              {isPro ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setModalAction('revoke')}
+              {/* Subscription status 3-way selector */}
+              <div className="flex items-center gap-1.5">
+                <Crown size={14} aria-hidden="true" className="text-[var(--color-text-muted)] shrink-0" />
+                <Select
+                  options={SUB_STATUS_OPTIONS}
+                  value={user.subscriptionStatus}
+                  onChange={handleStatusSelectChange}
+                  aria-label="Set subscription status"
+                  selectSize="sm"
                   disabled={isPending}
-                >
-                  <Crown size={14} aria-hidden="true" />
-                  Revoke Pro
-                </Button>
-              ) : (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleGrantPro}
-                  loading={isPending}
-                >
-                  <Crown size={14} aria-hidden="true" />
-                  Grant Pro
-                </Button>
-              )}
+                  containerClassName="w-[120px]"
+                />
+              </div>
 
               {isSuspended ? (
                 <Button
@@ -691,6 +879,9 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
         </div>
       </div>
 
+      {/* Send reminder emails */}
+      {!isDeleted && <SendRemindersCard userId={user.id} />}
+
       {/* Tabs */}
       <div className="flex gap-1 rounded-xl bg-[var(--color-bg-secondary)] p-1 w-fit">
         {TABS.map((tab) => (
@@ -711,7 +902,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
 
       {/* Tab content */}
       <div>
-        {activeTab === 'profiles' && <ProfilesTab profiles={user.profiles} />}
+        {activeTab === 'profiles' && <ProfilesTab profiles={user.profiles} userId={user.id} />}
         {activeTab === 'subscription' && (
           <SubscriptionTab
             subscriptions={user.subscriptions}
@@ -724,13 +915,37 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
       {/* Confirm modals */}
       <ConfirmModal
         open={modalAction !== null}
-        onClose={() => setModalAction(null)}
+        onClose={() => { setModalAction(null); setPendingStatus(null) }}
         onConfirm={handleConfirm}
         loading={isPending}
-        title={modalAction ? MODAL_CONFIG[modalAction].title : ''}
-        message={modalAction ? MODAL_CONFIG[modalAction].message : ''}
-        confirmLabel={modalAction ? MODAL_CONFIG[modalAction].confirmLabel : 'Confirm'}
-        variant={modalAction ? MODAL_CONFIG[modalAction].variant : 'danger'}
+        title={
+          modalAction === 'setStatus'
+            ? 'Change Subscription Status'
+            : modalAction
+            ? MODAL_CONFIG[modalAction].title
+            : ''
+        }
+        message={
+          modalAction === 'setStatus'
+            ? `Set ${displayName}'s subscription to ${pendingStatus}? This will override their current subscription status.`
+            : modalAction
+            ? MODAL_CONFIG[modalAction].message
+            : ''
+        }
+        confirmLabel={
+          modalAction === 'setStatus'
+            ? `Set ${pendingStatus}`
+            : modalAction
+            ? MODAL_CONFIG[modalAction].confirmLabel
+            : 'Confirm'
+        }
+        variant={
+          modalAction === 'setStatus'
+            ? 'warning'
+            : modalAction
+            ? MODAL_CONFIG[modalAction].variant
+            : 'danger'
+        }
       />
     </div>
   )

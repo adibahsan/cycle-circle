@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
-import { grantProAccess, revokeProAccess } from '@/app/actions/user-actions'
+import { setUserSubscriptionStatus } from '@/app/actions/user-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanel'
@@ -105,27 +105,39 @@ interface ActionsCellProps {
   row: SubscriptionRow
   onGrant: (row: SubscriptionRow) => void
   onRevoke: (row: SubscriptionRow) => void
+  onSetFree: (row: SubscriptionRow) => void
 }
 
-function ActionsCell({ row, onGrant, onRevoke }: ActionsCellProps) {
+function ActionsCell({ row, onGrant, onRevoke, onSetFree }: ActionsCellProps) {
   const isPro = row.status === 'PRO'
+  const isFree = row.status === 'FREE'
   return (
     <div className="flex items-center gap-1.5">
-      {isPro ? (
-        <Button
-          variant="danger"
-          size="sm"
-          onClick={(e) => { e.stopPropagation(); onRevoke(row) }}
-        >
-          Revoke
-        </Button>
-      ) : (
+      {!isPro && (
         <Button
           variant="secondary"
           size="sm"
           onClick={(e) => { e.stopPropagation(); onGrant(row) }}
         >
           Grant Pro
+        </Button>
+      )}
+      {!isFree && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={(e) => { e.stopPropagation(); onSetFree(row) }}
+        >
+          Set Free
+        </Button>
+      )}
+      {isPro && (
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={(e) => { e.stopPropagation(); onRevoke(row) }}
+        >
+          Revoke
         </Button>
       )}
     </div>
@@ -146,6 +158,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
   // Modal state
   const [grantTarget, setGrantTarget] = useState<SubscriptionRow | null>(null)
   const [revokeTarget, setRevokeTarget] = useState<SubscriptionRow | null>(null)
+  const [freeTarget, setFreeTarget] = useState<SubscriptionRow | null>(null)
 
   const currentStatus = searchParams.get('status') ?? 'all'
   const currentPage = data.page
@@ -190,7 +203,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
     const userId = grantTarget.user.id
     setGrantTarget(null)
     startActionTransition(async () => {
-      await grantProAccess(userId)
+      await setUserSubscriptionStatus(userId, 'PRO')
       router.refresh()
     })
   }
@@ -200,7 +213,17 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
     const userId = revokeTarget.user.id
     setRevokeTarget(null)
     startActionTransition(async () => {
-      await revokeProAccess(userId)
+      await setUserSubscriptionStatus(userId, 'LAPSED')
+      router.refresh()
+    })
+  }
+
+  function handleConfirmFree() {
+    if (!freeTarget) return
+    const userId = freeTarget.user.id
+    setFreeTarget(null)
+    startActionTransition(async () => {
+      await setUserSubscriptionStatus(userId, 'FREE')
       router.refresh()
     })
   }
@@ -326,6 +349,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
           row={row}
           onGrant={setGrantTarget}
           onRevoke={setRevokeTarget}
+          onSetFree={setFreeTarget}
         />
       ),
     },
@@ -463,6 +487,18 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
         message={`Revoke Pro access from ${revokeTarget?.user.fullName ?? 'this user'}? Their subscription will be set to Lapsed.`}
         confirmLabel="Revoke Pro"
         variant="danger"
+        loading={actionPending}
+      />
+
+      {/* Set Free confirm modal */}
+      <ConfirmModal
+        open={freeTarget !== null}
+        onClose={() => setFreeTarget(null)}
+        onConfirm={handleConfirmFree}
+        title="Set Subscription to Free"
+        message={`Set ${freeTarget?.user.fullName ?? 'this user'}'s subscription to Free? This will remove any active Pro or Lapsed status.`}
+        confirmLabel="Set Free"
+        variant="warning"
         loading={actionPending}
       />
     </>

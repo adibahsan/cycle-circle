@@ -387,8 +387,9 @@ export async function getPrediction(profileId: string, userId: string) {
   return prisma.prediction.findUnique({ where: { profileId } })
 }
 
-export async function getProfilesForReminders() {
+export async function getProfilesForReminders(userId?: string) {
   return prisma.profile.findMany({
+    where: userId ? { userId } : undefined,
     include: {
       user: true,
       predictions: {

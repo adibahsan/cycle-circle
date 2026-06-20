@@ -4,6 +4,10 @@ import { listProSubscriptions, recordSubscriptionCheckResult } from '@vesta/shar
 import { caasGetBalance } from '@vesta/shared/server/adapters/bdapps'
 import { prisma } from '@vesta/shared'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+export const maxDuration = 60
+
 export const POST = withCronAuth(async (_request) => {
   try {
     // Keep Supabase Free tier alive (auto-pauses after 7 days of inactivity)

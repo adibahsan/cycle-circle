@@ -5,6 +5,8 @@ import {
   suspendUser as svcSuspendUser,
   reactivateUser as svcReactivateUser,
   softDeleteUser as svcSoftDeleteUser,
+  setSubscriptionStatus,
+  adminSetNotificationPrefs,
 } from '@vesta/shared/server/services'
 import { grantPro, revokePro } from '@vesta/shared/server/services'
 import { revalidateTag } from 'next/cache'
@@ -65,5 +67,30 @@ export async function revokeProAccess(userId: string) {
 
   revalidateUserTags(userId)
   revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
+  return { success: true }
+}
+
+export async function setUserSubscriptionStatus(userId: string, status: 'PRO' | 'FREE' | 'LAPSED') {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  await setSubscriptionStatus(userId, status, admin.id)
+
+  revalidateUserTags(userId)
+  revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
+  return { success: true }
+}
+
+export async function setUserNotificationPrefs(
+  userId: string,
+  profileId: string,
+  data: { periodAlert?: boolean; fertileWindow?: boolean; loggingReminder?: boolean },
+) {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  await adminSetNotificationPrefs(profileId, data, admin.id)
+
+  revalidateUserTags(userId)
   return { success: true }
 }
