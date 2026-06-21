@@ -63,6 +63,18 @@ export async function completeOtpAuth(challengeId: string, phone: string) {
     update: { lastLoginAt: new Date() },
   })
 
+  // OTP/phone users are Pro by default — unless an admin explicitly set their status.
+  if (user.subscriptionStatus !== 'PRO') {
+    const override = await prisma.subscription.findFirst({
+      where: { userId: user.id, adminOverride: true },
+      select: { id: true },
+    })
+    if (!override) {
+      await prisma.user.update({ where: { id: user.id }, data: { subscriptionStatus: 'PRO' } })
+      user.subscriptionStatus = 'PRO'
+    }
+  }
+
   await prisma.otpChallenge.update({
     where: { id: challengeId },
     data: { userId: user.id },
@@ -72,7 +84,7 @@ export async function completeOtpAuth(challengeId: string, phone: string) {
 }
 
 export async function upsertUserByPhone(phone: string) {
-  return prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: { phone },
     create: {
       phone,
@@ -81,4 +93,18 @@ export async function upsertUserByPhone(phone: string) {
     },
     update: { lastLoginAt: new Date() },
   })
+
+  // OTP/phone users are Pro by default — unless an admin explicitly set their status.
+  if (user.subscriptionStatus !== 'PRO') {
+    const override = await prisma.subscription.findFirst({
+      where: { userId: user.id, adminOverride: true },
+      select: { id: true },
+    })
+    if (!override) {
+      await prisma.user.update({ where: { id: user.id }, data: { subscriptionStatus: 'PRO' } })
+      user.subscriptionStatus = 'PRO'
+    }
+  }
+
+  return user
 }

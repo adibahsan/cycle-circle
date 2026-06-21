@@ -13,12 +13,14 @@ import {
   MessageSquare,
   BarChart2,
   Star,
+  Phone,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { SubscriptionStatus } from '@vesta/shared/types'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
+import { updateContactInfo } from '@/app/actions/user-actions'
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 interface SubscriptionClientProps {
@@ -26,7 +28,7 @@ interface SubscriptionClientProps {
 }
 
 // ── Types ──────────────────────────────────────────────────────────────────────
-type UpgradeStep = 'idle' | 'confirm' | 'loading' | 'success' | 'error'
+type UpgradeStep = 'idle' | 'phone' | 'confirm' | 'loading' | 'success' | 'error'
 
 // ── Feature rows ───────────────────────────────────────────────────────────────
 const COMPARISON_FEATURE_KEYS = [
@@ -225,6 +227,10 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
   const [upgradeStep, setUpgradeStep] = useState<UpgradeStep>('idle')
   // Local override so the UI reflects success without a full page reload
   const [localStatus, setLocalStatus] = useState<SubscriptionStatus | null>(null)
+  // Phone captured in the 'phone' step (falls back to the user's existing phone)
+  const [enteredPhone, setEnteredPhone] = useState(user.phone ?? '')
+  const [phoneError, setPhoneError] = useState('')
+  const [phonePending, setPhonePending] = useState(false)
 
   const status: SubscriptionStatus =
     (localStatus ?? (user.subscriptionStatus as SubscriptionStatus)) ?? 'free'
@@ -239,7 +245,33 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
   const trial = getTrialStatus(trialStatusUser)
   const hoursLeft = trial === 'active' ? getTrialHoursLeft(user.emailTrialExpiresAt) : null
 
-  const handleUpgradeClick = () => setUpgradeStep('confirm')
+  const handleUpgradeClick = () => {
+    if (!user.phone && !enteredPhone) {
+      setUpgradeStep('phone')
+    } else {
+      setUpgradeStep('confirm')
+    }
+  }
+
+  const handlePhoneSubmit = async () => {
+    setPhoneError('')
+    setPhonePending(true)
+    try {
+      await updateContactInfo({ phone: enteredPhone })
+      // Phone saved — proceed to billing confirmation
+      setUpgradeStep('confirm')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : ''
+      // Prisma unique constraint violation surfaces as P2002 in the message
+      if (msg.includes('P2002') || msg.toLowerCase().includes('unique')) {
+        setPhoneError(t('subscription.phoneInUse'))
+      } else {
+        setPhoneError(t('subscription.phoneAddFailed'))
+      }
+    } finally {
+      setPhonePending(false)
+    }
+  }
 
   const handleConfirm = async () => {
     setUpgradeStep('loading')
@@ -263,6 +295,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
   const handleClose = () => {
     if (upgradeStep === 'success') setLocalStatus('pro')
     setUpgradeStep('idle')
+    setPhoneError('')
   }
 
   // Case-insensitive: runtime DB value is uppercase ('PRO'), local optimistic value is 'pro'.
@@ -469,10 +502,111 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
         </p>
       )}
 
+      {/* ── Phone-entry step (email-auth users with no phone) ── */}
+      {upgradeStep === 'phone' && (
+        <AnimatePresence>
+          <motion.div
+            className="fixed inset-0 z-50 flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onKeyDown={(e) => { if (e.key === 'Escape') handleClose() }}
+          >
+            {/* Backdrop */}
+            <motion.div
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={handleClose}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClose() }}
+              role="button"
+              aria-label="Close dialog"
+              tabIndex={-1}
+            />
+
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="phone-step-title"
+              className="relative w-full max-w-md rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border)] overflow-hidden shadow-glow overscroll-contain"
+              initial={{ y: 80, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 80, opacity: 0 }}
+              transition={{ type: 'spring', damping: 24, stiffness: 280 }}
+            >
+              {/* Header stripe */}
+              <div className="h-1.5 w-full gradient-primary" />
+
+              <div className="p-6 space-y-5">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
+                    <Phone size={16} className="text-white" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
+                      BDApps CAAS
+                    </p>
+                    <p id="phone-step-title" className="text-sm font-bold text-[var(--color-text-primary)]">
+                      {t('subscription.addPhoneTitle')}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">
+                  {t('subscription.addPhoneBody')}
+                </p>
+
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="subscription-phone-input"
+                    className="block text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide"
+                  >
+                    {t('auth.phone')}
+                  </label>
+                  <input
+                    id="subscription-phone-input"
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    spellCheck={false}
+                    placeholder={t('subscription.addPhonePlaceholder')}
+                    value={enteredPhone}
+                    onChange={(e) => {
+                      setEnteredPhone(e.target.value)
+                      if (phoneError) setPhoneError('')
+                    }}
+                    disabled={phonePending}
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:ring-offset-1 disabled:opacity-50 transition-colors duration-200 font-mono"
+                  />
+                  {phoneError && (
+                    <p role="alert" aria-live="polite" className="text-xs text-red-500 dark:text-red-400 pt-0.5">
+                      {phoneError}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Button variant="outline" onClick={handleClose} fullWidth disabled={phonePending}>
+                    {t('common.cancel')}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handlePhoneSubmit}
+                    fullWidth
+                    disabled={phonePending || !enteredPhone.trim()}
+                    className="gradient-primary border-0"
+                  >
+                    {phonePending ? t('common.saving') : t('subscription.addPhoneCta')}
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
+      )}
+
       {/* ── BDApps Modal ── */}
-      {upgradeStep !== 'idle' && (
+      {upgradeStep !== 'idle' && upgradeStep !== 'phone' && (
         <BDAppsModal
-          phone={user.phone ?? ''}
+          phone={enteredPhone || (user.phone ?? '')}
           step={upgradeStep}
           onConfirm={handleConfirm}
           onCancel={handleClose}

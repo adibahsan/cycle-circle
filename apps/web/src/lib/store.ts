@@ -19,6 +19,10 @@ interface AppStore {
   // Onboarding
   onboardingComplete: boolean
   setOnboardingComplete: (v: boolean) => void
+
+  // Tour sequencing (NOT persisted — resets to 'pending' on every reload)
+  tourState: 'pending' | 'active' | 'done'
+  setTourState: (s: 'pending' | 'active' | 'done') => void
 }
 
 export const useAppStore = create<AppStore>()(
@@ -39,12 +43,23 @@ export const useAppStore = create<AppStore>()(
 
       onboardingComplete: false,
       setOnboardingComplete: (onboardingComplete) => set({ onboardingComplete }),
+
+      tourState: 'pending',
+      setTourState: (tourState) => set({ tourState }),
     }),
     {
       name: 'vesta-store',
       onRehydrateStorage: () => (state) => {
         if (state?.language) i18n.changeLanguage(state.language)
       },
+      partialize: (state) => ({
+        language: state.language,
+        theme: state.theme,
+        activeProfileId: state.activeProfileId,
+        activeProfileName: state.activeProfileName,
+        onboardingComplete: state.onboardingComplete,
+        // tourState is intentionally excluded — it must reset to 'pending' each session
+      }),
     },
   ),
 )

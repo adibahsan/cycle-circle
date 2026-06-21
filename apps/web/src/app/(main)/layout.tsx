@@ -120,7 +120,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslation();
-  const { theme, setTheme, activeProfileName } = useAppStore();
+  const { theme, setTheme, activeProfileName, setTourState } = useAppStore();
   const { toast, show: showToast } = useToast();
 
   const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -170,7 +170,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         }
         setAuthStatusLoaded(true);
 
-        if (pathname !== '/dashboard') return;
+        if (pathname !== '/dashboard') {
+          setTourState('done');
+          return;
+        }
 
         // Check for a replay request set by the settings page
         const replayRequested = sessionStorage.getItem(TOUR_REPLAY_KEY) === '1';
@@ -179,11 +182,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         }
 
         if (replayRequested || (user && !user.onboardingTourCompletedAt)) {
+          setTourState('active');
           setTourOpen(true);
+        } else {
+          setTourState('done');
         }
       })
       .catch(() => {
         setAuthStatusLoaded(true); // unblock on error — don't permanently show lock
+        setTourState('done'); // unblock check-in on fetch error
       });
 
     return () => { cancelled = true; };
@@ -295,6 +302,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   function handleTourClose() {
     setTourOpen(false);
+    setTourState('done');
     void completeOnboardingTour();
   }
 
@@ -308,7 +316,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       style={{ ['--goal-accent' as string]: goalAccentVar(logging?.goal) } as React.CSSProperties}
     >
       {/* ── Trial expired lock overlay — renders only after auth status resolves ── */}
-      {authStatusLoaded && trialUser && isTrialExpired(trialUser) && (
+      {authStatusLoaded && trialUser && isTrialExpired(trialUser) && pathname !== '/subscription' && (
         <TrialExpiredLock />
       )}
 

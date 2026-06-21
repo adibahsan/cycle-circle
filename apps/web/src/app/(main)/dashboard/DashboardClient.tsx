@@ -239,7 +239,7 @@ function CycleRing({
 export function DashboardClient({ profiles, user: _user, activeProfileId, dashboardData, completion, lastSymptomLogDate, goal, engagement }: Props) {
   const { t } = useTranslation()
   const router = useRouter()
-  const { setActiveProfile, language } = useAppStore()
+  const { setActiveProfile, language, tourState } = useAppStore()
   const prefersReducedMotion = useReducedMotion()
 
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
@@ -264,15 +264,17 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   // ── Check-in modal ───────────────────────────────────────────────────────
   const [checkInOpen, setCheckInOpen] = useState(false)
 
-  // Auto-open once per session per day when not yet logged
+  // Auto-open once per session per day when not yet logged.
+  // Guard: wait until the onboarding tour has resolved so the two don't overlap.
   useEffect(() => {
+    if (tourState !== 'done') return
     if (!engagement || engagement.loggedToday) return
     const todayKey = `vesta_checkin_shown_${activeProfileId}_${new Date().toISOString().slice(0, 10)}`
     if (typeof window !== 'undefined' && !sessionStorage.getItem(todayKey)) {
       setCheckInOpen(true)
       sessionStorage.setItem(todayKey, '1')
     }
-  }, [activeProfileId, engagement])
+  }, [activeProfileId, engagement, tourState])
 
   // ── Part C: Quick symptom modal ──────────────────────────────────────────
   const [showQuickSymptom, setShowQuickSymptom] = useState(false)
