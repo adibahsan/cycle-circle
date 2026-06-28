@@ -3,6 +3,18 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@vesta/shared'],
+  experimental: {
+    // Tree-shake heavy barrel imports. @tiptap/* and motion are not on Next's
+    // default optimized list, so list them explicitly alongside the rest.
+    optimizePackageImports: [
+      'lucide-react',
+      'recharts',
+      'date-fns',
+      'motion',
+      '@tiptap/react',
+      '@tiptap/starter-kit',
+    ],
+  },
   async headers() {
     return [
       {

@@ -3,6 +3,12 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@vesta/shared'],
+  experimental: {
+    // Tree-shake heavy barrel imports into per-symbol imports. Next already
+    // optimizes lucide-react/date-fns/recharts by default; motion is not on
+    // that list, so list it (and the rest, harmlessly explicit) here.
+    optimizePackageImports: ['lucide-react', 'date-fns', 'recharts', 'motion'],
+  },
   async headers() {
     return [
       {
