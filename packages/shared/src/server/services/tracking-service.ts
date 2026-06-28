@@ -254,24 +254,24 @@ export async function getEngagementSummary(
   const windowStart = new Date(todayStr)
   windowStart.setUTCDate(windowStart.getUTCDate() - 29)
 
-  // Fetch symptom logs within the 30-day window
-  const symptomLogsInWindow = await prisma.symptomLog.findMany({
-    where: {
-      profileId,
-      date: { gte: windowStart },
-    },
-    select: { date: true },
-  })
-
-  // Fetch period logs overlapping the 30-day window
-  const periodLogsInWindow = await prisma.periodLog.findMany({
-    where: {
-      profileId,
-      startDate: { lte: new Date(todayStr) },
-      endDate: { gte: windowStart },
-    },
-    select: { startDate: true, endDate: true },
-  })
+  // Fetch symptom logs within the 30-day window and period logs overlapping it — independent reads
+  const [symptomLogsInWindow, periodLogsInWindow] = await Promise.all([
+    prisma.symptomLog.findMany({
+      where: {
+        profileId,
+        date: { gte: windowStart },
+      },
+      select: { date: true },
+    }),
+    prisma.periodLog.findMany({
+      where: {
+        profileId,
+        startDate: { lte: new Date(todayStr) },
+        endDate: { gte: windowStart },
+      },
+      select: { startDate: true, endDate: true },
+    }),
+  ])
 
   // Build set of active day strings (YYYY-MM-DD UTC)
   const activeDays = new Set<string>()
@@ -366,12 +366,15 @@ export async function getEngagementSummary(
     }
   }
 
-  // cyclesLogged: count valid cycle gaps from PeriodLog.startDate
-  const allPeriodLogs = await prisma.periodLog.findMany({
-    where: { profileId },
-    orderBy: { startDate: 'asc' },
-    select: { startDate: true },
-  })
+  // cyclesLogged and tier/confidence — independent reads, fetch in parallel
+  const [allPeriodLogs, predRecord] = await Promise.all([
+    prisma.periodLog.findMany({
+      where: { profileId },
+      orderBy: { startDate: 'asc' },
+      select: { startDate: true },
+    }),
+    prisma.prediction.findUnique({ where: { profileId } }),
+  ])
   let cyclesLogged = 0
   for (let i = 1; i < allPeriodLogs.length; i++) {
     const gap = Math.round(
@@ -380,9 +383,6 @@ export async function getEngagementSummary(
     )
     if (gap > 0 && gap < 90) cyclesLogged++
   }
-
-  // tier and confidence from Prediction record
-  const predRecord = await prisma.prediction.findUnique({ where: { profileId } })
   const tier = (predRecord?.tier as 'AVERAGE' | 'ARIMA' | 'LSTM' | null) ?? null
   const confidence = predRecord?.confidence ?? 0
 
@@ -478,8 +478,15 @@ export async function getDashboardData(profileId: string, userId: string) {
   const profile = await prisma.profile.findUnique({ where: { id: profileId } })
   if (!profile || profile.userId !== userId) return null
 
-  const lastPeriod = await getLatestPeriodLog(profile)
-  const prediction = await prisma.prediction.findUnique({ where: { profileId: profile.id } })
+  const [lastPeriod, prediction, lastSymptomLog] = await Promise.all([
+    getLatestPeriodLog(profile),
+    prisma.prediction.findUnique({ where: { profileId: profile.id } }),
+    prisma.symptomLog.findFirst({
+      where: { profileId },
+      orderBy: { date: 'desc' },
+      select: { date: true },
+    }),
+  ])
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -541,11 +548,6 @@ export async function getDashboardData(profileId: string, userId: string) {
       }
     : null
 
-  const lastSymptomLog = await prisma.symptomLog.findFirst({
-    where: { profileId },
-    orderBy: { date: 'desc' },
-    select: { date: true },
-  })
   const lastSymptomLogDate: Date | null = lastSymptomLog?.date ?? null
 
   const mode: 'standard' | 'pregnancy' | 'menopause' = isPregnancy(profile.goal)
