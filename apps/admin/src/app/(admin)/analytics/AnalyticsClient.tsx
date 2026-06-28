@@ -2,7 +2,7 @@
 
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
-import { ChartPanel } from '@/components/charts/ChartPanel'
+import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { DateRangeControl } from '@/components/charts/DateRangeControl'
 
 // ── Types ──────────────────────────────────────────────────────────────────

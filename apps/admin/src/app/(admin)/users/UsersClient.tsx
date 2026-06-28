@@ -17,7 +17,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import { exportUsersCsv } from '@/app/actions/export-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
-import { ChartPanel } from '@/components/charts/ChartPanel'
+import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { DateRangeControl } from '@/components/charts/DateRangeControl'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 

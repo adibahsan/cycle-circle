@@ -4,7 +4,17 @@ import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Save, Eye, Archive, FileText } from 'lucide-react'
-import { TiptapEditor } from '@/components/TiptapEditor'
+import dynamic from 'next/dynamic'
+
+const TiptapEditor = dynamic(
+  () => import('@/components/TiptapEditor').then((m) => m.TiptapEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="min-h-[300px] animate-pulse rounded-xl bg-[var(--color-bg-secondary)]" />
+    ),
+  },
+)
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Select } from '@/components/ui/Select'
