@@ -148,6 +148,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     emailTrialExpiresAt?: string | null;
   } | null>(null);
   const [authStatusLoaded, setAuthStatusLoaded] = useState(false);
+  // First-run tour eligibility, captured once from /api/auth/status (logged-in
+  // user who hasn't completed the tour). Flipped off when the tour is closed so
+  // returning to /dashboard in the same session doesn't re-open it.
+  const [tourEligible, setTourEligible] = useState(false);
 
   const activeGoal = normalizeGoal(logging?.goal);
 
@@ -160,7 +164,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Ensures the ~1-minute auto-open prompt is scheduled at most once per session.
   const completionPromptScheduledRef = useRef(false);
 
-  // ── Auth status fetch — populates user for tour gating + trial lock ─────
+  // ── Auth status fetch (ONCE per session) — trial lock + tour eligibility ──
+  // Fetched on mount only; navigating between in-app routes must NOT re-hit this
+  // endpoint. Pathname-dependent tour gating is handled in the next effect using
+  // the captured `tourEligible` flag — with no additional network request.
   useEffect(() => {
     let cancelled = false;
     fetch('/api/auth/status')
@@ -187,25 +194,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             emailTrialExpiresAt: user.emailTrialExpiresAt,
           });
         }
+        // Eligible for the first-run tour = logged-in user who hasn't finished it.
+        setTourEligible(!!user && !user.onboardingTourCompletedAt);
         setAuthStatusLoaded(true);
-
-        if (pathname !== '/dashboard') {
-          setTourState('done');
-          return;
-        }
-
-        // Check for a replay request set by the settings page
-        const replayRequested = sessionStorage.getItem(TOUR_REPLAY_KEY) === '1';
-        if (replayRequested) {
-          sessionStorage.removeItem(TOUR_REPLAY_KEY);
-        }
-
-        if (replayRequested || (user && !user.onboardingTourCompletedAt)) {
-          setTourState('active');
-          setTourOpen(true);
-        } else {
-          setTourState('done');
-        }
       })
       .catch(() => {
         setAuthStatusLoaded(true); // unblock on error — don't permanently show lock
@@ -213,7 +204,32 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       });
 
     return () => { cancelled = true; };
-  }, [pathname]);
+  }, []);
+
+  // ── Tour gating — reacts to pathname using the captured eligibility flag ──
+  // No network. The tour only runs on /dashboard; a replay can be requested from
+  // Settings via sessionStorage (which navigates here). Eligibility is flipped
+  // off in handleTourClose, so a completed tour never re-opens this session.
+  useEffect(() => {
+    if (!authStatusLoaded) return;
+
+    if (pathname !== '/dashboard') {
+      setTourState('done');
+      return;
+    }
+
+    const replayRequested = sessionStorage.getItem(TOUR_REPLAY_KEY) === '1';
+    if (replayRequested) {
+      sessionStorage.removeItem(TOUR_REPLAY_KEY);
+    }
+
+    if (replayRequested || tourEligible) {
+      setTourState('active');
+      setTourOpen(true);
+    } else {
+      setTourState('done');
+    }
+  }, [pathname, authStatusLoaded, tourEligible, setTourState]);
 
   // ── Logging status fetch ─────────────────────────────────────────────────
   const refreshLogging = useCallback(() => {
@@ -270,7 +286,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     return () => controller.abort();
   }, [showToast, t]);
 
-  // Run on mount and whenever the pathname changes (e.g. Settings → Dashboard).
+  // Run once on mount. Completion + logging status only change after a mutation,
+  // which dispatches 'vesta:profile-updated' (handled below) — so they must NOT
+  // re-fetch on every in-app navigation (that was 2 round-trips per screen).
   useEffect(() => {
     const cleanupCompletion = refreshCompletion();
     const cleanupLogging = refreshLogging();
@@ -278,7 +296,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       cleanupCompletion?.();
       cleanupLogging?.();
     };
-  }, [refreshCompletion, refreshLogging, pathname]);
+  }, [refreshCompletion, refreshLogging]);
 
   // Re-fetch when Settings/Modal/Profiles dispatch 'vesta:profile-updated'
   // (covers same-page updates where pathname does not change).
@@ -346,6 +364,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   function handleTourClose() {
     setTourOpen(false);
     setTourState('done');
+    setTourEligible(false); // don't re-open on return to /dashboard this session
     void completeOnboardingTour();
   }
 
