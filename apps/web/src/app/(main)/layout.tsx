@@ -9,9 +9,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAppStore } from '@/lib/store';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import VestaLogo from '@/components/ui/VestaLogo';
-import { ProfileCompletionModal } from '@/components/ProfileCompletionModal';
 import { ProfileCompletionTracker, type ProfileCompletionStatus } from '@/components/ProfileCompletionTracker';
-import { OnboardingTour, type TourStep } from '@/components/onboarding/OnboardingTour';
+import type { TourStep } from '@/components/onboarding/OnboardingTour';
 import { completeOnboardingTour } from '@/app/actions/user-actions';
 import {
   Home,
@@ -30,7 +29,20 @@ import { LatePeriodFullScreenAlert } from '@/components/modals/LatePeriodFullScr
 import { GOAL_ICON_COMPONENTS, GOAL_I18N_KEYS } from '@/lib/goal-display';
 import { goalAccentVar, normalizeGoal } from '@vesta/shared/utils/goal';
 import { isTrialExpired } from '@vesta/shared/utils/trial';
-import { TrialExpiredLock } from '@/components/TrialExpiredLock';
+import dynamic from 'next/dynamic';
+
+const ProfileCompletionModal = dynamic(
+  () => import('@/components/ProfileCompletionModal').then((m) => m.ProfileCompletionModal),
+  { ssr: false },
+)
+const OnboardingTour = dynamic(
+  () => import('@/components/onboarding/OnboardingTour').then((m) => m.OnboardingTour),
+  { ssr: false },
+)
+const TrialExpiredLock = dynamic(
+  () => import('@/components/TrialExpiredLock').then((m) => m.TrialExpiredLock),
+  { ssr: false },
+)
 
 // ── Toast (single-slot, same pattern as SettingsClient) ───────────────────────
 
@@ -559,20 +571,24 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       </nav>
 
       {/* ── Profile Completion Modal ── */}
-      <ProfileCompletionModal
-        open={showCompletionModal}
-        onClose={handleModalClose}
-        percent={completionStatus?.percent}
-        items={completionStatus?.items}
-        onCompleted={() => showToast(t('toast.completionDone'))}
-      />
+      {showCompletionModal && (
+        <ProfileCompletionModal
+          open={showCompletionModal}
+          onClose={handleModalClose}
+          percent={completionStatus?.percent}
+          items={completionStatus?.items}
+          onCompleted={() => showToast(t('toast.completionDone'))}
+        />
+      )}
 
       {/* ── Onboarding spotlight tour ── */}
-      <OnboardingTour
-        open={tourOpen}
-        steps={tourSteps}
-        onClose={handleTourClose}
-      />
+      {tourOpen && (
+        <OnboardingTour
+          open={tourOpen}
+          steps={tourSteps}
+          onClose={handleTourClose}
+        />
+      )}
 
       {/* ── Late period full-screen alert ── */}
       <LatePeriodFullScreenAlert

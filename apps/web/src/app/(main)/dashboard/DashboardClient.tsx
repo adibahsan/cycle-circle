@@ -30,8 +30,13 @@ import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
 import { CelebrationModal } from '@/components/modals/CelebrationModal'
 import { TodayCheckInStrip } from '@/components/engagement/TodayCheckInStrip'
-import { TodayCheckInModal } from '@/components/engagement/TodayCheckInModal'
 import { ProgressToUnlockMeter } from '@/components/engagement/ProgressToUnlockMeter'
+import dynamic from 'next/dynamic'
+
+const TodayCheckInModal = dynamic(
+  () => import('@/components/engagement/TodayCheckInModal').then((m) => m.TodayCheckInModal),
+  { ssr: false },
+)
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
