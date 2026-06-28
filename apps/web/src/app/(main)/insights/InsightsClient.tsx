@@ -555,7 +555,9 @@ export function InsightsClient({
   const noData = t('insights.noData')
 
   return (
-    <div className="flex flex-col gap-5 py-3">
+    // tabular-nums on Recharts numeric axis ticks (FR-INSIGHTS NFR) — applied
+    // to the tick value text so chart axes line up digit-for-digit.
+    <div className="flex flex-col gap-5 py-3 [&_.recharts-cartesian-axis-tick-value]:[font-variant-numeric:tabular-nums]">
       {/* ── Page header ──────────────────────────────────────────────────── */}
       <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 12 } : false}

@@ -46,16 +46,24 @@ export function LoggingNudge({
   const mounted = useHasMounted();
   const prefersReducedMotion = mounted && reduceRaw;
 
+  const NUDGE_SNOOZE_DAYS = 3;
   const DISMISSED_KEY = `vesta_nudge_dismissed_${profileId}`;
+  // Cross-session frequency cap: after a dismissal stay quiet for a few days
+  // (not just the current session) to avoid logging-nudge fatigue.
+  const SNOOZE_KEY = `vesta_nudge_snooze_until_${profileId}`;
 
-  // Only read sessionStorage after mounted to avoid SSR mismatch
+  // Only read storage after mounted to avoid SSR mismatch
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    if (mounted) {
-      setDismissed(!!sessionStorage.getItem(DISMISSED_KEY));
+    if (!mounted) return;
+    if (sessionStorage.getItem(DISMISSED_KEY)) {
+      setDismissed(true);
+      return;
     }
-  }, [mounted, DISMISSED_KEY]);
+    const snoozeUntil = Number(localStorage.getItem(SNOOZE_KEY) ?? 0);
+    if (snoozeUntil && Date.now() < snoozeUntil) setDismissed(true);
+  }, [mounted, DISMISSED_KEY, SNOOZE_KEY]);
 
   // Determine which variant to show (priority: streakAtRisk > empty > stale)
   const isStreakAtRisk = !!streakAtRisk && (streak ?? 0) > 0;
@@ -116,6 +124,8 @@ export function LoggingNudge({
 
   function handleDismiss() {
     sessionStorage.setItem(DISMISSED_KEY, '1');
+    // Snooze across sessions so the nudge does not reappear on every visit.
+    localStorage.setItem(SNOOZE_KEY, String(Date.now() + NUDGE_SNOOZE_DAYS * 86_400_000));
     setDismissed(true);
   }
 
