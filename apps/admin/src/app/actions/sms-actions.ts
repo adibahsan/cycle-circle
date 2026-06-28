@@ -1,18 +1,39 @@
 'use server'
 
 import { requireAdminAuth, getAuthUser } from '@vesta/shared/server/auth'
-import { createBroadcast, deleteBroadcast, sendBroadcast } from '@vesta/shared/server/services'
+import {
+  createBroadcast,
+  createBroadcastsBulk,
+  deleteBroadcast,
+  sendBroadcast,
+  parseBulkSmsInput,
+} from '@vesta/shared/server/services'
 import { revalidateTag } from 'next/cache'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 
-export async function createSmsBroadcast(message: string, scheduledFor?: string) {
+export async function createSmsBroadcast(
+  message: string,
+  messageBn?: string,
+  scheduledFor?: string,
+) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  const broadcast = await createBroadcast(admin.id, message, scheduledFor)
+  const broadcast = await createBroadcast(admin.id, message, messageBn, scheduledFor)
 
   revalidateTag(adminCacheTags.sms, { expire: 0 })
   return broadcast
+}
+
+export async function createSmsBroadcastsBulk(rawText: string, startDate?: string) {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  const rows = parseBulkSmsInput(rawText)
+  const created = await createBroadcastsBulk(admin.id, rows, startDate)
+
+  revalidateTag(adminCacheTags.sms, { expire: 0 })
+  return { count: created.length, broadcasts: created }
 }
 
 export async function deleteSmsBroadcast(id: string) {

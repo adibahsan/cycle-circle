@@ -3,6 +3,32 @@ import { smsSend } from '../adapters/bdapps'
 import { createAuditLog } from './audit-service'
 import { env } from '../../utils/env'
 
+// ── Pure helpers ───────────────────────────────────────────────────────────────
+
+/**
+ * Combine bilingual SMS content for a single tel:all broadcast.
+ * If messageBn is absent or blank it is omitted.
+ */
+export function combineBilingualSms(messageEn: string, messageBn?: string | null): string {
+  return messageBn && messageBn.trim() ? `${messageEn}\n${messageBn}` : messageEn
+}
+
+/**
+ * Parse bulk SMS entry. One message per non-empty line; an optional Bengali
+ * translation follows a '|' separator: "English text | Bengali text".
+ */
+export function parseBulkSmsInput(text: string): { messageEn: string; messageBn?: string }[] {
+  return text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0)
+    .map((line) => {
+      const [en, bn] = line.split('|').map((s) => s.trim())
+      return bn ? { messageEn: en, messageBn: bn } : { messageEn: en }
+    })
+    .filter((r) => r.messageEn.length > 0)
+}
+
 // ── Chart-data helpers ─────────────────────────────────────────────────────────
 
 export interface ChartDateOpts {
@@ -80,21 +106,54 @@ export async function getSmsDeliveryBreakdown(): Promise<
 
 /**
  * Create an SMS broadcast. Status is SCHEDULED when a future date is provided,
- * otherwise DRAFT.
+ * otherwise DRAFT. Accepts an optional Bengali translation.
  */
 export async function createBroadcast(
   createdBy: string,
   message: string,
+  messageBn?: string,
   scheduledFor?: string,
 ) {
   return prisma.smsBroadcast.create({
     data: {
       message,
+      messageBn: messageBn || null,
       scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
       status: scheduledFor ? 'SCHEDULED' : 'DRAFT',
       createdBy,
     },
   })
+}
+
+/**
+ * Create multiple SCHEDULED broadcasts, one per day starting from startDate
+ * (or tomorrow), at 08:00 UTC.
+ */
+export async function createBroadcastsBulk(
+  createdBy: string,
+  rows: { messageEn: string; messageBn?: string }[],
+  startDate?: string,
+) {
+  const base = startDate ? new Date(startDate) : new Date()
+  if (!startDate) base.setUTCDate(base.getUTCDate() + 1)
+  base.setUTCHours(8, 0, 0, 0)
+  const created = []
+  for (let i = 0; i < rows.length; i++) {
+    const when = new Date(base)
+    when.setUTCDate(base.getUTCDate() + i)
+    created.push(
+      await prisma.smsBroadcast.create({
+        data: {
+          message: rows[i].messageEn,
+          messageBn: rows[i].messageBn ?? null,
+          scheduledFor: when,
+          status: 'SCHEDULED',
+          createdBy,
+        },
+      }),
+    )
+  }
+  return created
 }
 
 /**
@@ -147,8 +206,56 @@ export async function listBroadcasts(params: SmsBroadcastListParams = {}) {
   }
 }
 
+// ── Private send logic ─────────────────────────────────────────────────────────
+
 /**
- * Send an SMS broadcast immediately.
+ * Execute the actual SMS send (or simulate in dev mode), then mark the broadcast
+ * SENT and deactivate all previously active broadcasts (content-override).
+ *
+ * Called by both manual sendBroadcast and the cron dispatchScheduledBroadcast.
+ */
+async function performSend(broadcast: { id: string; message: string; messageBn: string | null }) {
+  const isDevMode = env.DEV_MODE || env.NODE_ENV === 'development'
+  const combined = combineBilingualSms(broadcast.message, broadcast.messageBn)
+  let providerMessageId: string | null = null
+  let deliveredCount = 0
+  let targetCount = 0
+
+  if (isDevMode) {
+    console.log(`[SMS Broadcast DEV] id=${broadcast.id} message="${combined}"`)
+    providerMessageId = `dev-${broadcast.id}`
+    deliveredCount = 1
+    targetCount = 1
+  } else {
+    const res = await smsSend(combined, ['tel:all'])
+    providerMessageId = res.messageId ?? null
+    // Real per-recipient counts arrive asynchronously via /api/webhooks/sms/report.
+  }
+
+  // Content-override: only the newest sent daily content stays active.
+  await prisma.smsBroadcast.updateMany({
+    where: { active: true, id: { not: broadcast.id } },
+    data: { active: false },
+  })
+
+  return prisma.smsBroadcast.update({
+    where: { id: broadcast.id },
+    data: {
+      status: 'SENT',
+      sentAt: new Date(),
+      active: true,
+      providerMessageId,
+      targetCount,
+      deliveredCount,
+      failedCount: 0,
+    },
+  })
+}
+
+// ── Public send functions ──────────────────────────────────────────────────────
+
+/**
+ * Send an SMS broadcast immediately (manual trigger by an admin).
  *
  * In dev mode (DEV_MODE=true or NODE_ENV=development) the message is logged
  * to the console and the broadcast is marked SENT with synthetic counts.
@@ -171,43 +278,12 @@ export async function sendBroadcast(broadcastId: string, adminUserId: string) {
     data: { status: 'SENDING' },
   })
 
-  const isDevMode = env.DEV_MODE || env.NODE_ENV === 'development'
-
   try {
-    let targetCount = 0
-    let deliveredCount = 0
-    let failedCount = 0
-
-    if (isDevMode) {
-      // In development, simulate a successful send
-      console.log(`[SMS Broadcast DEV] id=${broadcastId} message="${broadcast.message}"`)
-      targetCount = 1
-      deliveredCount = 1
-      failedCount = 0
-    } else {
-      // In production, send via BDApps to all subscribers
-      await smsSend(broadcast.message, ['tel:all'])
-      // BDApps does not return per-recipient counts synchronously; we record
-      // what we know and can reconcile via delivery reports later.
-      targetCount = 0
-      deliveredCount = 0
-      failedCount = 0
-    }
-
-    const updated = await prisma.smsBroadcast.update({
-      where: { id: broadcastId },
-      data: {
-        status: 'SENT',
-        sentAt: new Date(),
-        targetCount,
-        deliveredCount,
-        failedCount,
-      },
-    })
+    const updated = await performSend(broadcast)
 
     await createAuditLog(adminUserId, 'SEND_SMS_BROADCAST', 'SmsBroadcast', broadcastId, {
       message: broadcast.message.slice(0, 100),
-      devMode: isDevMode,
+      devMode: env.DEV_MODE || env.NODE_ENV === 'development',
     })
 
     return updated
@@ -219,4 +295,76 @@ export async function sendBroadcast(broadcastId: string, adminUserId: string) {
     })
     throw error
   }
+}
+
+/**
+ * Dispatch the next due scheduled broadcast (one per run = one per day).
+ * Returns what happened.
+ */
+export async function dispatchScheduledBroadcast(now: Date = new Date()) {
+  const due = await prisma.smsBroadcast.findFirst({
+    where: { status: 'SCHEDULED', scheduledFor: { lte: now } },
+    orderBy: { scheduledFor: 'asc' },
+  })
+  if (!due) return { dispatched: false as const }
+  await prisma.smsBroadcast.update({ where: { id: due.id }, data: { status: 'SENDING' } })
+  try {
+    const sent = await performSend(due)
+    await createAuditLog(due.createdBy, 'DISPATCH_SMS_BROADCAST', 'SmsBroadcast', due.id, {
+      auto: true,
+    })
+    return { dispatched: true as const, broadcastId: sent.id }
+  } catch (err) {
+    await prisma.smsBroadcast.update({ where: { id: due.id }, data: { status: 'SCHEDULED' } })
+    console.error('[daily-reminders] SMS broadcast dispatch failed:', err)
+    return { dispatched: false as const, error: String(err) }
+  }
+}
+
+// ── Delivery-report recording ──────────────────────────────────────────────────
+
+/**
+ * Correlate an inbound sms/report to its broadcast and update delivery counts.
+ *
+ * targetCount and deliveredCount/failedCount are Int? in the schema; we read
+ * current values and write explicit numbers to avoid Prisma increment-on-null
+ * errors.
+ */
+export async function recordSmsDeliveryReport(requestId: string, deliveryStatus: string) {
+  if (!requestId) return { matched: false as const }
+
+  let broadcast = await prisma.smsBroadcast.findFirst({
+    where: { providerMessageId: requestId },
+    orderBy: { sentAt: 'desc' },
+  })
+  if (!broadcast) {
+    broadcast = await prisma.smsBroadcast.findFirst({
+      where: { status: 'SENT', active: true },
+      orderBy: { sentAt: 'desc' },
+    })
+  }
+  if (!broadcast) return { matched: false as const }
+
+  const status = (deliveryStatus || '').toUpperCase()
+  if (status === 'DELIVERED') {
+    await prisma.smsBroadcast.update({
+      where: { id: broadcast.id },
+      data: {
+        deliveredCount: (broadcast.deliveredCount ?? 0) + 1,
+        targetCount: (broadcast.targetCount ?? 0) + 1,
+      },
+    })
+    return { matched: true as const, counted: true as const }
+  }
+  if (status === 'FAILED') {
+    await prisma.smsBroadcast.update({
+      where: { id: broadcast.id },
+      data: {
+        failedCount: (broadcast.failedCount ?? 0) + 1,
+        targetCount: (broadcast.targetCount ?? 0) + 1,
+      },
+    })
+    return { matched: true as const, counted: true as const }
+  }
+  return { matched: true as const, counted: false as const } // PENDING / unknown
 }
