@@ -14,7 +14,7 @@ import {
   SymptomChip,
   toDbCategory,
 } from '@/app/(main)/symptoms/SymptomsClient';
-import { toggleSymptom, markAllGoodToday } from '@/app/actions/tracking-actions';
+import { saveSymptoms, markAllGoodToday } from '@/app/actions/tracking-actions';
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal';
 import { CelebrationModal } from '@/components/modals/CelebrationModal';
 import '@vesta/shared/utils/i18n';
@@ -121,17 +121,19 @@ export function TodayCheckInModal({
     if (localSelected.size === 0 || saving) return;
     setSaving(true);
     try {
-      for (const id of localSelected) {
+      const addedPayload = [...localSelected].flatMap((id) => {
         const symptom = SYMPTOMS_DATA.find((s) => s.id === id);
-        if (symptom) {
-          await toggleSymptom({
-            profileId,
-            date: new Date().toISOString().slice(0, 10),
-            category: toDbCategory(symptom.category),
-            symptomId: id,
-            value: id,
-          });
-        }
+        return symptom
+          ? [{ symptomId: id, category: toDbCategory(symptom.category), value: id }]
+          : [];
+      });
+      if (addedPayload.length) {
+        await saveSymptoms({
+          profileId,
+          date: new Date().toISOString().slice(0, 10),
+          added: addedPayload,
+          removed: [],
+        });
       }
       router.refresh();
       if (typeof window !== 'undefined') {

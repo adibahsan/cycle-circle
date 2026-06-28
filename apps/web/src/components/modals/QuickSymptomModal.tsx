@@ -9,7 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useHasMounted } from '@/components/motion/useHasMounted';
 import { useAppStore } from '@/lib/store';
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data';
-import { toggleSymptom } from '@/app/actions/tracking-actions';
+import { saveSymptoms } from '@/app/actions/tracking-actions';
 import {
   SymptomChip,
   CATEGORIES,
@@ -97,29 +97,15 @@ export function QuickSymptomModal({
     if (!hasChanges || saving) return;
     setSaving(true);
     try {
-      for (const id of added) {
+      const addedPayload = added.flatMap((id) => {
         const symptom = SYMPTOMS_DATA.find((s) => s.id === id);
-        if (symptom) {
-          await toggleSymptom({
-            profileId,
-            date: logDate,
-            category: toDbCategory(symptom.category),
-            symptomId: id,
-            value: id,
-          });
-        }
-      }
-      for (const id of removed) {
-        const symptom = SYMPTOMS_DATA.find((s) => s.id === id);
-        if (symptom) {
-          await toggleSymptom({
-            profileId,
-            date: logDate,
-            category: toDbCategory(symptom.category),
-            symptomId: id,
-            value: id,
-          });
-        }
+        return symptom
+          ? [{ symptomId: id, category: toDbCategory(symptom.category), value: id }]
+          : [];
+      });
+      const removedPayload = removed.filter((id) => SYMPTOMS_DATA.some((s) => s.id === id));
+      if (addedPayload.length || removedPayload.length) {
+        await saveSymptoms({ profileId, date: logDate, added: addedPayload, removed: removedPayload });
       }
       router.refresh();
       if (typeof window !== 'undefined') {
