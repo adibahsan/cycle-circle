@@ -3,21 +3,22 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { BookOpen, ChevronRight, Info } from 'lucide-react'
-import DOMPurify from 'dompurify'
+import { BookOpen, ChevronRight, Info, Loader2 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { getPhaseColor, getPhaseEmoji } from '@vesta/shared/utils/cycle-utils'
 import '@vesta/shared/utils/i18n'
+import { getArticleBody } from '@/app/actions/content-actions'
 
 type FilterTab = 'all' | 'MENSTRUAL' | 'FOLLICULAR' | 'OVULATION' | 'LUTEAL'
 
+/** Shape of each item returned by listPublishedArticles (excerpts, no full body). */
 interface Article {
   id: string
   slug: string
   titleEn: string
   titleBn: string | null
-  bodyEn: string
-  bodyBn: string | null
+  excerptEn: string
+  excerptBn: string
   cyclePhases: string[]
   publishedAt: Date | string | null
   category: { name: string } | null
@@ -38,21 +39,36 @@ const PHASE_TABS: { id: FilterTab; labelKey: string; emoji: string }[] = [
   { id: 'LUTEAL', labelKey: 'dashboard.luteal', emoji: '🌙' },
 ]
 
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '').trim()
-}
-
 export function ContentClient({ articles, activePhase, currentPhase }: ContentClientProps) {
   const { t } = useTranslation()
   const { language } = useAppStore()
   const router = useRouter()
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null)
 
+  // Body is fetched on demand when the reader opens.
+  const [isBodyLoading, setIsBodyLoading] = useState(false)
+  const [bodyError, setBodyError] = useState(false)
+  // Sanitized HTML for each locale, stored separately so language switches work
+  // without re-fetching.
+  const [sanitizedBodyEn, setSanitizedBodyEn] = useState<string | null>(null)
+  const [sanitizedBodyBn, setSanitizedBodyBn] = useState<string | null>(null)
+
   const currentFilter = (activePhase as FilterTab) || 'all'
 
   // Locale fallback helpers — BN→EN only
   const titleIsFallback = (a: Article) => language === 'bn' && !a.titleBn
-  const bodyIsFallback = (a: Article) => language === 'bn' && !a.bodyBn
+  // Excerpt fallback: BN user, no BN excerpt available for the card.
+  const excerptIsFallback = (a: Article) => language === 'bn' && !a.excerptBn
+  // Body fallback: BN user, body loaded, no BN version available.
+  const isBodyFallback = language === 'bn' && sanitizedBodyEn !== null && sanitizedBodyBn === null
+
+  // Resolved body HTML for the current locale.
+  const resolvedBodyHtml =
+    sanitizedBodyEn !== null
+      ? language === 'bn' && sanitizedBodyBn
+        ? sanitizedBodyBn
+        : sanitizedBodyEn
+      : ''
 
   // Current-phase surfacing: only when filter is 'all' and currentPhase is known
   const isSurfacing = currentFilter === 'all' && !!currentPhase
@@ -81,14 +97,33 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
     return a.titleEn
   }
 
-  function getBody(a: Article) {
-    if (language === 'bn' && a.bodyBn) return a.bodyBn
-    return a.bodyEn
+  function getExcerpt(a: Article) {
+    if (language === 'bn' && a.excerptBn) return a.excerptBn
+    return a.excerptEn
   }
 
-  function getExcerpt(a: Article) {
-    const text = stripHtml(getBody(a))
-    return text.length > 120 ? text.slice(0, 120) + '…' : text
+  async function handleOpenArticle(article: Article) {
+    setSelectedArticle(article)
+    setIsBodyLoading(true)
+    setBodyError(false)
+    setSanitizedBodyEn(null)
+    setSanitizedBodyBn(null)
+
+    try {
+      const result = await getArticleBody(article.id)
+      if (!result) {
+        setBodyError(true)
+        return
+      }
+      // Lazy-load DOMPurify: keeps it out of the route's first-load JS bundle.
+      const DOMPurify = (await import('dompurify')).default
+      setSanitizedBodyEn(DOMPurify.sanitize(result.bodyEn))
+      setSanitizedBodyBn(result.bodyBn ? DOMPurify.sanitize(result.bodyBn) : null)
+    } catch {
+      setBodyError(true)
+    } finally {
+      setIsBodyLoading(false)
+    }
   }
 
   if (selectedArticle) {
@@ -127,7 +162,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
           )}
 
           {/* Locale fallback banner — BN user viewing EN-only article */}
-          {bodyIsFallback(selectedArticle) && (
+          {isBodyFallback && (
             <div
               role="note"
               className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] text-xs"
@@ -137,10 +172,36 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
             </div>
           )}
 
-          <div
-            className="prose prose-sm max-w-none text-[var(--color-text-secondary)] [&_h2]:text-[var(--color-text-primary)] [&_h3]:text-[var(--color-text-primary)] [&_strong]:text-[var(--color-text-primary)] [&_a]:text-[var(--goal-accent)]"
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(getBody(selectedArticle)) }}
-          />
+          {/* Body loading / error / content */}
+          {isBodyLoading && (
+            <div
+              className="flex items-center justify-center py-12"
+              aria-live="polite"
+              aria-label={t('common.loading')}
+            >
+              <Loader2
+                size={24}
+                className="text-[var(--goal-accent)] animate-spin"
+                aria-hidden="true"
+              />
+            </div>
+          )}
+
+          {!isBodyLoading && bodyError && (
+            <p
+              className="text-sm text-[var(--color-text-muted)] py-8 text-center"
+              aria-live="polite"
+            >
+              {t('common.errorLoadingContent')}
+            </p>
+          )}
+
+          {!isBodyLoading && !bodyError && resolvedBodyHtml && (
+            <div
+              className="prose prose-sm max-w-none text-[var(--color-text-secondary)] [&_h2]:text-[var(--color-text-primary)] [&_h3]:text-[var(--color-text-primary)] [&_strong]:text-[var(--color-text-primary)] [&_a]:text-[var(--goal-accent)]"
+              dangerouslySetInnerHTML={{ __html: resolvedBodyHtml }}
+            />
+          )}
         </article>
       </div>
     )
@@ -224,12 +285,14 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
         <div className="space-y-3">
           {displayedArticles.map(article => {
             const isForCurrentPhase = isSurfacing && article.cyclePhases.includes(currentPhase!)
-            const showEnChip = bodyIsFallback(article) || titleIsFallback(article)
+            // EN chip: shown when a BN user's article falls back to English for its
+            // title or excerpt. The reader confirms body fallback via its own banner.
+            const showEnChip = excerptIsFallback(article) || titleIsFallback(article)
 
             return (
               <button
                 key={article.id}
-                onClick={() => setSelectedArticle(article)}
+                onClick={() => handleOpenArticle(article)}
                 className="w-full text-left glass rounded-2xl p-4 hover:border-[var(--goal-accent)]/30 hover:shadow-soft transition-[color,background-color,border-color,box-shadow] duration-200 group focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -258,9 +321,11 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                     <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-1 leading-snug">
                       {getTitle(article)}
                     </h3>
-                    <p className="text-xs text-[var(--color-text-muted)] line-clamp-2">
-                      {getExcerpt(article)}
-                    </p>
+                    {getExcerpt(article) && (
+                      <p className="text-xs text-[var(--color-text-muted)] line-clamp-2">
+                        {getExcerpt(article)}
+                      </p>
+                    )}
                     {article.cyclePhases.length > 0 && (
                       <div className="flex gap-1 mt-2">
                         {article.cyclePhases.map(phase => (

@@ -285,6 +285,17 @@ export async function getContentByPhase(): Promise<
 
 // ── Web app: published articles ────────────────────────────────────────────────
 
+/**
+ * Derive a short plain-text excerpt from rich-text HTML. Strips tags, collapses
+ * whitespace and truncates so only a small snippet (not the full @db.Text body)
+ * is ever sent to the client.
+ */
+function toExcerpt(html: string | null | undefined, max = 160): string {
+  if (!html) return ''
+  const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  return text.length > max ? text.slice(0, max).trimEnd() + '…' : text
+}
+
 export async function listPublishedArticles(
   params: {
     page?: number
@@ -298,10 +309,21 @@ export async function listPublishedArticles(
     where.cyclePhases = { has: phase }
   }
 
-  const [articles, total] = await Promise.all([
+  const [rows, total] = await Promise.all([
     prisma.article.findMany({
       where,
-      include: {
+      // bodyEn/bodyBn are read in-datacenter (cheap) only to derive excerpts;
+      // they are stripped out below so the full Text never reaches the client.
+      select: {
+        id: true,
+        slug: true,
+        titleEn: true,
+        titleBn: true,
+        bodyEn: true,
+        bodyBn: true,
+        status: true,
+        cyclePhases: true,
+        publishedAt: true,
         category: { select: { name: true } },
         author: { select: { fullName: true } },
       },
@@ -312,6 +334,14 @@ export async function listPublishedArticles(
     prisma.article.count({ where }),
   ])
 
+  // Map to lightweight list rows: replace full bodies with short excerpts so the
+  // client payload carries only ~160-char snippets, never the full Text.
+  const articles = rows.map(({ bodyEn, bodyBn, ...rest }) => ({
+    ...rest,
+    excerptEn: toExcerpt(bodyEn),
+    excerptBn: toExcerpt(bodyBn),
+  }))
+
   return {
     articles,
     total,
@@ -319,4 +349,21 @@ export async function listPublishedArticles(
     pageSize,
     totalPages: Math.ceil(total / pageSize),
   }
+}
+
+/** Fetch a single published article's body for on-demand rendering. */
+export async function getPublishedArticleById(id: string) {
+  return prisma.article.findFirst({
+    where: { id, status: 'PUBLISHED' },
+    select: {
+      id: true,
+      titleEn: true,
+      titleBn: true,
+      bodyEn: true,
+      bodyBn: true,
+      cyclePhases: true,
+      publishedAt: true,
+      category: { select: { name: true } },
+    },
+  })
 }
