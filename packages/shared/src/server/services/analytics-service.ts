@@ -1,6 +1,6 @@
 import { prisma } from '../db'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
-import { predictCycleLength, getPredictionTier } from '../../utils/cycle-utils'
+import { predictCycleLength, getPredictionTier, getCurrentPhase } from '../../utils/cycle-utils'
 
 /**
  * Return KPI counts for the admin dashboard.
@@ -476,4 +476,67 @@ export async function getLoggingRetention(
   }
 
   return cohorts
+}
+
+// ── Symptoms by Cycle Phase ────────────────────────────────────────────────
+
+/**
+ * Resolve the cycle phase a symptom log falls in: find the most recent period
+ * start at/before the log, derive the cycle day, and map to a phase. Returns
+ * null when there is no preceding period start to anchor the cycle.
+ */
+export function phaseForLog(
+  logMs: number,
+  periodStartsMsAsc: number[],
+  cycleLength: number,
+  periodLength: number,
+): 'menstrual' | 'follicular' | 'ovulation' | 'luteal' | null {
+  let start: number | null = null
+  for (const s of periodStartsMsAsc) {
+    if (s <= logMs) start = s
+    else break
+  }
+  if (start === null) return null
+  const cycleDay = Math.min(Math.floor((logMs - start) / MS_PER_DAY) + 1, cycleLength)
+  return getCurrentPhase(cycleDay, periodLength, cycleLength)
+}
+
+/** Count symptom logs by the cycle phase they fall in (population-wide). */
+export async function getSymptomsByPhase(): Promise<{ phase: string; count: number }[]> {
+  const [profiles, periodLogs, symptomLogs] = await Promise.all([
+    prisma.profile.findMany({ select: { id: true, cycleLength: true, periodLength: true } }),
+    prisma.periodLog.findMany({
+      select: { profileId: true, startDate: true },
+      orderBy: [{ profileId: 'asc' }, { startDate: 'asc' }],
+    }),
+    prisma.symptomLog.findMany({ select: { profileId: true, date: true } }),
+  ])
+
+  const profileMap = new Map(profiles.map((p) => [p.id, p]))
+  const startsByProfile = new Map<string, number[]>()
+  for (const l of periodLogs) {
+    const arr = startsByProfile.get(l.profileId) ?? []
+    arr.push(l.startDate.getTime())
+    startsByProfile.set(l.profileId, arr)
+  }
+
+  const counts: Record<string, number> = { MENSTRUAL: 0, FOLLICULAR: 0, OVULATION: 0, LUTEAL: 0 }
+  for (const log of symptomLogs) {
+    const prof = profileMap.get(log.profileId)
+    const starts = startsByProfile.get(log.profileId)
+    if (!prof || !starts) continue
+    const phase = phaseForLog(
+      new Date(log.date).getTime(),
+      starts,
+      prof.cycleLength ?? 28,
+      prof.periodLength ?? 5,
+    )
+    if (!phase) continue
+    counts[phase.toUpperCase()] += 1
+  }
+
+  return (['MENSTRUAL', 'FOLLICULAR', 'OVULATION', 'LUTEAL'] as const).map((phase) => ({
+    phase,
+    count: counts[phase],
+  }))
 }

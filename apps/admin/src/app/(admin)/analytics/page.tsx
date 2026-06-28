@@ -6,6 +6,7 @@ import {
   getUserRetention,
   getUserTrend,
   getPredictionMae,
+  getSymptomsByPhase,
 } from '@/app/queries/analytics-queries'
 import {
   getFeedbackVolume,
@@ -46,6 +47,7 @@ export default async function AnalyticsPage({
     feedbackVolume,
     feedbackCategories,
     feedbackRatings,
+    symptomsByPhase,
   ] = await Promise.all([
     getCycleLengthDistribution(),
     getSymptomsByCategory(),
@@ -56,6 +58,7 @@ export default async function AnalyticsPage({
     getFeedbackVolume(days),
     getFeedbackCategories(days),
     getFeedbackRatings(days),
+    getSymptomsByPhase(),
   ])
 
   return (
@@ -70,6 +73,7 @@ export default async function AnalyticsPage({
       feedbackVolume={feedbackVolume}
       feedbackCategories={feedbackCategories}
       feedbackRatings={feedbackRatings}
+      symptomsByPhase={symptomsByPhase}
     />
   )
 }

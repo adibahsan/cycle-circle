@@ -56,6 +56,11 @@ interface FeedbackRatingPoint {
   count: number
 }
 
+interface SymptomPhasePoint {
+  phase: string
+  count: number
+}
+
 interface AnalyticsClientProps {
   cycleLengths: CycleLength[]
   symptoms: SymptomCategory[]
@@ -67,6 +72,7 @@ interface AnalyticsClientProps {
   feedbackVolume: FeedbackVolumePoint[]
   feedbackCategories: FeedbackCategoryPoint[]
   feedbackRatings: FeedbackRatingPoint[]
+  symptomsByPhase: SymptomPhasePoint[]
 }
 
 // ── Color constants ────────────────────────────────────────────────────────
@@ -154,6 +160,7 @@ export function AnalyticsClient({
   feedbackVolume,
   feedbackCategories,
   feedbackRatings,
+  symptomsByPhase,
 }: AnalyticsClientProps) {
   // Normalise cycle-length data for ChartPanel (xKey must be a string)
   const cycleLengthData = cycleLengths.map((d) => ({
@@ -221,6 +228,23 @@ export function AnalyticsClient({
           height={240}
           emptyLabel="No symptom data yet."
         />
+
+        {/* 2b — Symptoms by Cycle Phase */}
+        <div>
+          <ChartPanel
+            title="Symptom Logs by Cycle Phase"
+            data={symptomsByPhase.map((d) => ({ ...d } as Record<string, string | number | null>))}
+            xKey="phase"
+            series={[{ key: 'count', label: 'Logs', color: PRIMARY }]}
+            kinds={['bar', 'pie']}
+            defaultKind="bar"
+            height={240}
+            emptyLabel="No symptom data yet."
+          />
+          <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+            Symptom-log volume grouped by the cycle phase each log fell in (anchored to each profile&apos;s period history).
+          </p>
+        </div>
 
         {/* 3 — Prediction Accuracy by Tier */}
         <div>
