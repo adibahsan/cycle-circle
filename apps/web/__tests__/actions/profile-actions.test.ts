@@ -6,14 +6,21 @@ vi.mock('@vesta/shared/server/auth', () => ({
   requireAuth: vi.fn().mockResolvedValue(MOCK_JWT),
   getAuthUser: vi.fn().mockResolvedValue(MOCK_AUTH_USER),
 }))
-vi.mock('@vesta/shared/server/period-log-sync', () => ({
-  ensurePeriodLogFromProfile: vi.fn().mockResolvedValue(null),
+vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }))
+vi.mock('next/headers', () => ({
+  cookies: vi.fn().mockResolvedValue({
+    get: vi.fn().mockReturnValue(undefined),
+    delete: vi.fn(),
+    set: vi.fn(),
+  }),
 }))
-vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('@vesta/shared/server/services', () => ({
   createProfile: vi.fn(),
   renameProfile: vi.fn(),
   removeProfile: vi.fn(),
+  updateUserName: vi.fn(),
+  completeUserProfile: vi.fn(),
+  assertProfileOwnership: vi.fn(),
 }))
 
 // Import after mocks are set up
@@ -23,7 +30,7 @@ import {
   deleteProfile,
 } from '../../src/app/actions/profile-actions'
 import * as svc from '@vesta/shared/server/services'
-import { revalidatePath } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 
 const MOCK_PROFILE = {
   id: 'profile-1',
@@ -45,6 +52,7 @@ beforeEach(() => {
 describe('createProfile', () => {
   it('creates a profile with correct data and auto-creates notification preference', async () => {
     vi.mocked(svc.createProfile).mockResolvedValue(MOCK_PROFILE as never)
+    vi.mocked(svc.completeUserProfile).mockResolvedValue(undefined as never)
 
     const result = await createProfile({
       name: 'Alice',
@@ -63,7 +71,7 @@ describe('createProfile', () => {
       }),
     )
     expect(result).toEqual(MOCK_PROFILE)
-    expect(revalidatePath).toHaveBeenCalledWith('/')
+    expect(revalidateTag).toHaveBeenCalledWith('profiles:user-1', { expire: 0 })
   })
 
   it('throws when user already has 6 profiles', async () => {
@@ -77,6 +85,7 @@ describe('createProfile', () => {
   it('seeds period log when lastPeriodStart is provided', async () => {
     const profileWithDate = { ...MOCK_PROFILE, lastPeriodStart: new Date('2026-01-15') }
     vi.mocked(svc.createProfile).mockResolvedValue(profileWithDate as never)
+    vi.mocked(svc.completeUserProfile).mockResolvedValue(undefined as never)
 
     const result = await createProfile({
       name: 'Alice',
@@ -101,7 +110,7 @@ describe('renameProfile', () => {
 
     expect(svc.renameProfile).toHaveBeenCalledWith('profile-1', 'user-1', 'Alicia')
     expect(result).toEqual(updatedProfile)
-    expect(revalidatePath).toHaveBeenCalledWith('/')
+    expect(revalidateTag).toHaveBeenCalledWith('profiles:user-1', { expire: 0 })
   })
 
   it('throws when profile belongs to a different user', async () => {
@@ -118,7 +127,8 @@ describe('deleteProfile', () => {
     await deleteProfile('profile-1')
 
     expect(svc.removeProfile).toHaveBeenCalledWith('profile-1', 'user-1')
-    expect(revalidatePath).toHaveBeenCalledWith('/')
+    expect(revalidateTag).toHaveBeenCalledWith('profiles:user-1', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('tracking:profile-1', { expire: 0 })
   })
 
   it('throws when trying to delete the last profile', async () => {

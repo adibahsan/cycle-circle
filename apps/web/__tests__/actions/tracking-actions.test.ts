@@ -6,15 +6,13 @@ vi.mock('@vesta/shared/server/auth', () => ({
   requireAuth: vi.fn().mockResolvedValue(MOCK_JWT),
   getAuthUser: vi.fn().mockResolvedValue(MOCK_AUTH_USER),
 }))
-vi.mock('@vesta/shared/server/adapters/jobs', () => ({
-  enqueueJob: vi.fn().mockResolvedValue(undefined),
-}))
-vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }))
 vi.mock('@vesta/shared/server/services', () => ({
   createPeriodLog: vi.fn(),
   updatePeriodLog: vi.fn(),
   deletePeriodLog: vi.fn(),
   toggleSymptomLog: vi.fn(),
+  recalculatePrediction: vi.fn(),
 }))
 
 import {
@@ -24,8 +22,7 @@ import {
   toggleSymptom,
 } from '../../src/app/actions/tracking-actions'
 import * as svc from '@vesta/shared/server/services'
-import { enqueueJob } from '@vesta/shared/server/adapters/jobs'
-import { revalidatePath } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 
 const MOCK_PERIOD_LOG = {
   id: 'log-1',
@@ -67,8 +64,8 @@ describe('createPeriodLog', () => {
       endDate: '2026-01-20',
       flowIntensity: 'MEDIUM',
     })
-    expect(enqueueJob).toHaveBeenCalledWith('PREDICTION_RECALC', { profileId: 'profile-1' })
-    expect(revalidatePath).toHaveBeenCalledWith('/')
+    expect(svc.recalculatePrediction).toHaveBeenCalledWith('profile-1')
+    expect(revalidateTag).toHaveBeenCalledWith('tracking:profile-1', { expire: 0 })
     expect(result).toEqual(MOCK_PERIOD_LOG)
   })
 
@@ -86,7 +83,7 @@ describe('createPeriodLog', () => {
       }),
     ).rejects.toThrow('End date must be on or after start date')
 
-    expect(enqueueJob).not.toHaveBeenCalled()
+    expect(svc.recalculatePrediction).not.toHaveBeenCalled()
   })
 
   it('throws when profile is not owned by the current user', async () => {
@@ -101,7 +98,7 @@ describe('createPeriodLog', () => {
       }),
     ).rejects.toThrow('Profile not found')
 
-    expect(enqueueJob).not.toHaveBeenCalled()
+    expect(svc.recalculatePrediction).not.toHaveBeenCalled()
   })
 })
 
@@ -119,8 +116,8 @@ describe('updatePeriodLog', () => {
     expect(svc.updatePeriodLog).toHaveBeenCalledWith('log-1', 'user-1', {
       flowIntensity: 'HEAVY',
     })
-    expect(enqueueJob).toHaveBeenCalledWith('PREDICTION_RECALC', { profileId: 'profile-1' })
-    expect(revalidatePath).toHaveBeenCalledWith('/')
+    expect(svc.recalculatePrediction).toHaveBeenCalledWith('profile-1')
+    expect(revalidateTag).toHaveBeenCalledWith('tracking:profile-1', { expire: 0 })
     expect(result).toEqual(updatedLog)
   })
 
@@ -131,7 +128,7 @@ describe('updatePeriodLog', () => {
       'Period log not found',
     )
 
-    expect(enqueueJob).not.toHaveBeenCalled()
+    expect(svc.recalculatePrediction).not.toHaveBeenCalled()
   })
 })
 
@@ -145,8 +142,8 @@ describe('deletePeriodLog', () => {
     await deletePeriodLog('log-1')
 
     expect(svc.deletePeriodLog).toHaveBeenCalledWith('log-1', 'user-1')
-    expect(enqueueJob).toHaveBeenCalledWith('PREDICTION_RECALC', { profileId: 'profile-1' })
-    expect(revalidatePath).toHaveBeenCalledWith('/')
+    expect(svc.recalculatePrediction).toHaveBeenCalledWith('profile-1')
+    expect(revalidateTag).toHaveBeenCalledWith('tracking:profile-1', { expire: 0 })
   })
 })
 
@@ -173,7 +170,8 @@ describe('toggleSymptom', () => {
       symptomId: 'cramps',
       value: 'mild',
     })
-    expect(revalidatePath).toHaveBeenCalledWith('/')
+    expect(revalidateTag).toHaveBeenCalledWith('symptoms:profile-1', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('tracking:profile-1', { expire: 0 })
   })
 
   it('deletes symptom when it already exists', async () => {
@@ -187,6 +185,7 @@ describe('toggleSymptom', () => {
       symptomId: 'cramps',
       value: 'mild',
     })
-    expect(revalidatePath).toHaveBeenCalledWith('/')
+    expect(revalidateTag).toHaveBeenCalledWith('symptoms:profile-1', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('tracking:profile-1', { expire: 0 })
   })
 })

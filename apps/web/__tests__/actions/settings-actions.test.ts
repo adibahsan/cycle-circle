@@ -6,14 +6,14 @@ vi.mock('@vesta/shared/server/auth', () => ({
   requireAuth: vi.fn().mockResolvedValue(MOCK_JWT),
   getAuthUser: vi.fn().mockResolvedValue(MOCK_AUTH_USER),
 }))
-vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }))
 vi.mock('@vesta/shared/server/services', () => ({
   upsertNotificationPrefs: vi.fn(),
 }))
 
 import { updateNotificationPrefs } from '../../src/app/actions/settings-actions'
 import * as svc from '@vesta/shared/server/services'
-import { revalidatePath } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 
 const MOCK_NOTIF_PREF = {
   id: 'notif-1',
@@ -43,7 +43,7 @@ describe('updateNotificationPrefs', () => {
       loggingReminder: false,
     })
     expect(result).toEqual(MOCK_NOTIF_PREF)
-    expect(revalidatePath).toHaveBeenCalledWith('/')
+    expect(revalidateTag).toHaveBeenCalledWith('notifications:profile-1', { expire: 0 })
   })
 
   it('throws when profile is not owned by the current user', async () => {

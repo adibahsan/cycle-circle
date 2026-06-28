@@ -6,14 +6,14 @@ vi.mock('@vesta/shared/server/auth', () => ({
   requireAuth: vi.fn().mockResolvedValue(MOCK_JWT),
   getAuthUser: vi.fn().mockResolvedValue(MOCK_AUTH_USER),
 }))
-vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }))
 vi.mock('@vesta/shared/server/services', () => ({
   createFeedback: vi.fn(),
 }))
 
 import { submitFeedback } from '../../src/app/actions/feedback-actions'
 import * as svc from '@vesta/shared/server/services'
-import { revalidatePath } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 
 const MOCK_FEEDBACK = {
   id: 'feedback-1',
@@ -46,7 +46,7 @@ describe('submitFeedback', () => {
       rating: 5,
     })
     expect(result).toEqual(MOCK_FEEDBACK)
-    expect(revalidatePath).toHaveBeenCalledWith('/')
+    expect(revalidateTag).toHaveBeenCalledWith('feedback:user-1', { expire: 0 })
   })
 
   it('throws on invalid category', async () => {
