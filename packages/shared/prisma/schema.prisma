@@ -199,7 +199,10 @@ model PeriodLog {
 
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
-  @@index([profileId])
+  // Composite index: nearly every read filters by profile AND orders/ranges
+  // by startDate (calendar, listPeriodLogs, insights, engagement, prediction).
+  // The leftmost prefix still serves profileId-only lookups / cascade deletes.
+  @@index([profileId, startDate])
 }
 
 model SymptomLog {
