@@ -223,31 +223,19 @@ describe('ensurePeriodLogFromProfile', () => {
       expect(ymd(prediction!.fertileEnd)).toBe('2026-01-16')
     })
 
-    it('enqueues a PREDICTION_RECALC job event', async () => {
+    it('recalculates the prediction synchronously (no job queue)', async () => {
       const profile = await testPrisma.profile.findUniqueOrThrow({ where: { id: profileId } })
 
-      // Record job count before
-      const beforeCount = await testPrisma.jobEvent.count({
-        where: { type: 'PREDICTION_RECALC' },
-      })
+      // Remove any existing prediction so we can prove it is recomputed inline.
+      await testPrisma.prediction.deleteMany({ where: { profileId } })
 
       await ensurePeriodLogFromProfile(profile)
 
-      const afterCount = await testPrisma.jobEvent.count({
-        where: { type: 'PREDICTION_RECALC' },
-      })
-      expect(afterCount).toBeGreaterThan(beforeCount)
-
-      // Find the job for this profile
-      const job = await testPrisma.jobEvent.findFirst({
-        where: {
-          type: 'PREDICTION_RECALC',
-          payload: { path: ['profileId'], equals: profileId },
-        },
-        orderBy: { createdAt: 'desc' },
-      })
-      expect(job).not.toBeNull()
-      expect(job!.status).toBe('PENDING')
+      // recalculatePrediction is now called directly (the JobEvent queue path
+      // was removed), so the Prediction must exist immediately afterwards.
+      const prediction = await getPrediction(profileId)
+      expect(prediction).not.toBeNull()
+      expect(prediction!.profileId).toBe(profileId)
     })
   })
 

@@ -128,14 +128,16 @@ describe('getCurrentCycleDay', () => {
     expect(getCurrentCycleDay('2026-02-24', 28)).toBe(6);
   });
 
-  it('wraps to day 1 at exact cycle length boundary', () => {
-    // 28 days ago → 28 % 28 = 0, +1 = 1
-    expect(getCurrentCycleDay('2026-02-01', 28)).toBe(1);
+  it('clamps to cycle length at the exact boundary', () => {
+    // 28 days ago → would be day 29; clamped to cycleLength (28).
+    // The impl deliberately clamps rather than wrapping, so a late user is
+    // never shown a fabricated "day 1" of a cycle they have not logged.
+    expect(getCurrentCycleDay('2026-02-01', 28)).toBe(28);
   });
 
-  it('wraps correctly past cycle boundary', () => {
-    // 30 days ago → 30 % 28 = 2, +1 = 3
-    expect(getCurrentCycleDay('2026-01-30', 28)).toBe(3);
+  it('clamps to cycle length past the boundary (late, no new log)', () => {
+    // 30 days ago → would be day 31; clamped to cycleLength (28).
+    expect(getCurrentCycleDay('2026-01-30', 28)).toBe(28);
   });
 });
 
