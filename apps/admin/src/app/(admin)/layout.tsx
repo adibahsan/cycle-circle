@@ -40,26 +40,31 @@ const NAV_ITEMS = [
   { href: '/system', icon: ServerCog, label: 'System' },
 ]
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-  const router = useRouter()
-  const { theme, setTheme, sidebarCollapsed, toggleSidebar } = useAdminStore()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+interface SidebarContentProps {
+  pathname: string
+  sidebarCollapsed: boolean
+  toggleSidebar: () => void
+  theme: string
+  toggleTheme: () => void
+  handleLogout: () => Promise<void>
+  setMobileMenuOpen: (open: boolean) => void
+}
 
-  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
-
-  async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/login')
-    router.refresh()
-  }
-
+function SidebarContent({
+  pathname,
+  sidebarCollapsed,
+  toggleSidebar,
+  theme,
+  toggleTheme,
+  handleLogout,
+  setMobileMenuOpen,
+}: SidebarContentProps) {
   function isActive(href: string) {
     if (href === '/') return pathname === '/'
     return pathname.startsWith(href)
   }
 
-  const SidebarContent = () => (
+  return (
     <>
       {/* Sidebar header */}
       <div
@@ -155,6 +160,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
     </>
   )
+}
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const router = useRouter()
+  const { theme, setTheme, sidebarCollapsed, toggleSidebar } = useAdminStore()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
+
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/login')
+    router.refresh()
+  }
+
+  function isActive(href: string) {
+    if (href === '/') return pathname === '/'
+    return pathname.startsWith(href)
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-primary)] flex">
@@ -164,7 +189,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           sidebarCollapsed ? 'md:w-16' : 'md:w-64'
         }`}
       >
-        <SidebarContent />
+        <SidebarContent
+          pathname={pathname}
+          sidebarCollapsed={sidebarCollapsed}
+          toggleSidebar={toggleSidebar}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          handleLogout={handleLogout}
+          setMobileMenuOpen={setMobileMenuOpen}
+        />
       </aside>
 
       {/* ── Mobile Sidebar Overlay ── */}

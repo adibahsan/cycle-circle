@@ -131,7 +131,7 @@ interface DayCellProps {
   isSelected: boolean
   onSelect: (date: Date) => void
   isGhostDay?: boolean
-  onGhostTap?: () => void
+  onGhostTap?: (dateStr: string) => void
 }
 
 const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSelect, isGhostDay = false, onGhostTap }: DayCellProps) {
@@ -216,7 +216,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
       {isGhostDay && isCurrentMonth && (
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onGhostTap?.(); }}
+          onClick={(e) => { e.stopPropagation(); onGhostTap?.(format(date, 'yyyy-MM-dd')); }}
           aria-label={`Add log for ${format(date, 'MMMM d')}`}
           className="absolute inset-0.5 rounded-[10px] border border-dashed pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/50 focus-visible:ring-offset-1"
           style={{ borderColor: 'var(--color-text-muted)', opacity: 0.35 }}
@@ -620,6 +620,8 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
     setSelectedDate((prev) => (prev && isSameDay(prev, date) ? null : date))
   }, [])
 
+  const handleGhostTap = useCallback((d: string) => setBackfillDate(d), [])
+
   // Extract prediction summary from calendar data for the monthly summary card.
   // For pregnancy profiles the service returns empty sets, but we also guard
   // client-side so no forward-looking data is ever derived or shown.
@@ -779,7 +781,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                         dateStr < format(today, 'yyyy-MM-dd') &&
                         dateStr !== format(today, 'yyyy-MM-dd')
                       }
-                      onGhostTap={() => setBackfillDate(dateStr)}
+                      onGhostTap={handleGhostTap}
                     />
                   )
                 })}
