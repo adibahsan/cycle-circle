@@ -8,6 +8,7 @@ import {
   SymptomCategory,
 } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { defaultNotificationPrefsForGoal } from '../src/utils/goal'
 
 const prisma = new PrismaClient()
 
@@ -38,17 +39,13 @@ function daysAgo(n: number): Date {
 
 // ─── Dummy-user seed helpers ─────────────────────────────────────────────────
 
-/** Upsert a NotificationPreference for a profile (mirrors existing pattern). */
-async function seedNotifPref(profileId: string) {
+/** Upsert a goal-aware NotificationPreference for a profile. */
+async function seedNotifPref(profileId: string, goal?: string | null) {
+  const prefs = defaultNotificationPrefsForGoal(goal)
   await prisma.notificationPreference.upsert({
     where: { profileId },
-    update: {},
-    create: {
-      profileId,
-      periodAlert: true,
-      fertileWindow: true,
-      loggingReminder: true,
-    },
+    update: prefs,
+    create: { profileId, ...prefs },
   })
 }
 
@@ -165,7 +162,7 @@ async function seedDummyUsers() {
     { daysBack: 6, symptomId: 'backache',    category: SymptomCategory.PHYSICAL, value: 'mild' },
   ])
   await seedPred(streakerProfile.id, daysAgo(10), 28)
-  await seedNotifPref(streakerProfile.id)
+  await seedNotifPref(streakerProfile.id, 'tracking')
   console.log('  [dummy] 1. Active Streaker: +8801700000001')
 
   // ── 2. "All Good" Streaker ── 5-day streak mixing all_good sentinel ─────────
@@ -182,7 +179,7 @@ async function seedDummyUsers() {
   })
   const allGoodProfile = await prisma.profile.upsert({
     where: { id: `seed-dummy-allgood-${allGoodUser.id}` },
-    update: {},
+    update: { goal: 'perimenopause' },
     create: {
       id: `seed-dummy-allgood-${allGoodUser.id}`,
       userId: allGoodUser.id,
@@ -191,7 +188,7 @@ async function seedDummyUsers() {
       cycleLength: 29,
       periodLength: 4,
       lastPeriodStart: daysAgo(15),
-      goal: 'tracking',
+      goal: 'perimenopause',
     },
   })
   await seedPeriodLogs(allGoodProfile.id, [
@@ -206,7 +203,7 @@ async function seedDummyUsers() {
     { daysBack: 4, symptomId: 'all_good',  category: SymptomCategory.MOOD,     value: 'all_good' },
   ])
   await seedPred(allGoodProfile.id, daysAgo(15), 29)
-  await seedNotifPref(allGoodProfile.id)
+  await seedNotifPref(allGoodProfile.id, 'perimenopause')
   console.log('  [dummy] 2. All-Good Streaker: +8801700000002')
 
   // ── 3. Stale User ── last log was 8 days ago, streak = 0 ───────────────────
@@ -246,7 +243,7 @@ async function seedDummyUsers() {
     { daysBack: 12, symptomId: 'headache', category: SymptomCategory.PHYSICAL, value: 'moderate' },
   ])
   await seedPred(staleProfile.id, daysAgo(20), 27)
-  await seedNotifPref(staleProfile.id)
+  await seedNotifPref(staleProfile.id, 'tracking')
   console.log('  [dummy] 3. Stale User (no logs in 8+ days): +8801700000003')
 
   // ── 4. Power User / Tier-2 (ARIMA) ── 8+ period logs, high confidence ──────
@@ -263,7 +260,7 @@ async function seedDummyUsers() {
   })
   const powerProfile = await prisma.profile.upsert({
     where: { id: `seed-dummy-power-${powerUser.id}` },
-    update: {},
+    update: { goal: 'conceive' },
     create: {
       id: `seed-dummy-power-${powerUser.id}`,
       userId: powerUser.id,
@@ -272,7 +269,7 @@ async function seedDummyUsers() {
       cycleLength: 28,
       periodLength: 5,
       lastPeriodStart: daysAgo(5),
-      goal: 'tracking',
+      goal: 'conceive',
     },
   })
   // 8 period logs spanning ~8 months back with ~28-30 day gaps
@@ -296,7 +293,7 @@ async function seedDummyUsers() {
   ])
   // ARIMA tier, high confidence (6+ cycles logged)
   await seedPred(powerProfile.id, daysAgo(5), 28, PredictionTier.ARIMA, 0.92)
-  await seedNotifPref(powerProfile.id)
+  await seedNotifPref(powerProfile.id, 'conceive')
   console.log('  [dummy] 4. Power User (ARIMA, 9 period logs): +8801700000004')
 
   // ── 5. Brand-New User ── 1 profile, 1 period log, no symptoms (Tier-1) ──────
@@ -330,7 +327,7 @@ async function seedDummyUsers() {
   ])
   // No symptom logs — empty-state nudge scenario
   await seedPred(newProfile.id, daysAgo(3), 28, PredictionTier.AVERAGE, 0.60)
-  await seedNotifPref(newProfile.id)
+  await seedNotifPref(newProfile.id, 'tracking')
   console.log('  [dummy] 5. Brand-New User (no symptoms, Tier-1): +8801700000005')
 
   // ── 6. Email-Trial User ── EMAIL auth, trial expires in ~12 hours ───────────
@@ -369,7 +366,7 @@ async function seedDummyUsers() {
     { daysBack: 1, symptomId: 'calm',  category: SymptomCategory.MOOD, value: 'present' },
   ])
   await seedPred(trialProfile.id, daysAgo(7), 30)
-  await seedNotifPref(trialProfile.id)
+  await seedNotifPref(trialProfile.id, 'tracking')
   console.log('  [dummy] 6. Email-Trial User (expires ~12h): trial@vesta.test')
 
   // ── 8. Expired Email-Trial User ── EMAIL auth, trial expired 24h ago ─────────
@@ -409,7 +406,7 @@ async function seedDummyUsers() {
     { daysBack: 1, symptomId: 'tired',  category: SymptomCategory.PHYSICAL, value: 'present' },
   ])
   await seedPred(expiredTrialProfile.id, daysAgo(10), 28)
-  await seedNotifPref(expiredTrialProfile.id)
+  await seedNotifPref(expiredTrialProfile.id, 'tracking')
   console.log('  [dummy] 8. Expired Email-Trial User: trial-expired@vesta.test')
 
   // ── 7. Pro Multi-Profile User ── subscriptionStatus PRO, 3 profiles ─────────
@@ -464,12 +461,12 @@ async function seedDummyUsers() {
     { daysBack: 2, symptomId: 'mood-swings', category: SymptomCategory.MOOD,     value: 'present' },
   ])
   await seedPred(proSelf.id, daysAgo(8), 28)
-  await seedNotifPref(proSelf.id)
+  await seedNotifPref(proSelf.id, 'tracking')
 
   // Profile B: WIFE
   const proWife = await prisma.profile.upsert({
     where: { id: `seed-dummy-pro-wife-${proUser.id}` },
-    update: {},
+    update: { goal: 'pregnancy' },
     create: {
       id: `seed-dummy-pro-wife-${proUser.id}`,
       userId: proUser.id,
@@ -478,7 +475,7 @@ async function seedDummyUsers() {
       cycleLength: 30,
       periodLength: 4,
       lastPeriodStart: daysAgo(12),
-      goal: 'tracking',
+      goal: 'pregnancy',
     },
   })
   await seedPeriodLogs(proWife.id, [
@@ -491,7 +488,7 @@ async function seedDummyUsers() {
     { daysBack: 1, symptomId: 'energetic', category: SymptomCategory.MOOD, value: 'present' },
   ])
   await seedPred(proWife.id, daysAgo(12), 30)
-  await seedNotifPref(proWife.id)
+  await seedNotifPref(proWife.id, 'pregnancy')
 
   // Profile C: DAUGHTER
   const proDaughter = await prisma.profile.upsert({
@@ -517,7 +514,7 @@ async function seedDummyUsers() {
     { daysBack: 4, symptomId: 'backache', category: SymptomCategory.PHYSICAL, value: 'mild' },
   ])
   await seedPred(proDaughter.id, daysAgo(20), 31)
-  await seedNotifPref(proDaughter.id)
+  await seedNotifPref(proDaughter.id, 'tracking')
 
   console.log('  [dummy] 7. Pro Multi-Profile User (3 profiles, PRO): +8801700000007')
   console.log('  [dummy] Done — 8 dummy engagement users seeded.')
@@ -550,7 +547,7 @@ async function main() {
       // For idempotency we use the id derived from deterministic seed values.
       id: `seed-profile-self-${demoUser.id}`,
     },
-    update: {},
+    update: { goal: 'tracking' },
     create: {
       id: `seed-profile-self-${demoUser.id}`,
       userId: demoUser.id,
@@ -559,12 +556,13 @@ async function main() {
       cycleLength: 28,
       periodLength: 5,
       lastPeriodStart: subMonths(new Date(), 1),
+      goal: 'tracking',
     },
   })
 
   const wifeProfile = await prisma.profile.upsert({
     where: { id: `seed-profile-wife-${demoUser.id}` },
-    update: {},
+    update: { goal: 'conceive' },
     create: {
       id: `seed-profile-wife-${demoUser.id}`,
       userId: demoUser.id,
@@ -573,6 +571,7 @@ async function main() {
       cycleLength: 28,
       periodLength: 5,
       lastPeriodStart: subMonths(new Date(), 1),
+      goal: 'conceive',
     },
   })
 
@@ -684,27 +683,19 @@ async function main() {
 
   console.log('Predictions upserted for both profiles')
 
-  // ── Notification Preferences ───────────────────────────────────────────────
+  // ── Notification Preferences (goal-aware) ──────────────────────────────────
+  const selfPrefs = defaultNotificationPrefsForGoal('tracking')
+  const wifePrefs = defaultNotificationPrefsForGoal('conceive')
   await prisma.$transaction([
     prisma.notificationPreference.upsert({
       where: { profileId: selfProfile.id },
-      update: {},
-      create: {
-        profileId: selfProfile.id,
-        periodAlert: true,
-        fertileWindow: true,
-        loggingReminder: true,
-      },
+      update: selfPrefs,
+      create: { profileId: selfProfile.id, ...selfPrefs },
     }),
     prisma.notificationPreference.upsert({
       where: { profileId: wifeProfile.id },
-      update: {},
-      create: {
-        profileId: wifeProfile.id,
-        periodAlert: true,
-        fertileWindow: true,
-        loggingReminder: true,
-      },
+      update: wifePrefs,
+      create: { profileId: wifeProfile.id, ...wifePrefs },
     }),
   ])
 

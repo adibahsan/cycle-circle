@@ -25,6 +25,28 @@ export const isPregnancy = (goal?: string | null): boolean => normalizeGoal(goal
 export const isMenopause = (goal?: string | null): boolean => normalizeGoal(goal) === 'perimenopause';
 
 /**
+ * Default notification preferences for a profile's tracking goal. The goal
+ * drives which alerts fire by default; the user can still override per-type in
+ * settings. Shared by the app (profile create / goal change) and the DB seed so
+ * there is a single source of truth.
+ *   conceive (TTC) → fertile-window only
+ *   pregnancy      → all off
+ *   perimenopause  → period + logging (no fertile)
+ *   tracking/other → all on
+ */
+export function defaultNotificationPrefsForGoal(goal?: string | null): {
+  periodAlert: boolean;
+  fertileWindow: boolean;
+  loggingReminder: boolean;
+} {
+  const g = normalizeGoal(goal);
+  if (g === 'conceive') return { periodAlert: false, fertileWindow: true, loggingReminder: false };
+  if (g === 'pregnancy') return { periodAlert: false, fertileWindow: false, loggingReminder: false };
+  if (g === 'perimenopause') return { periodAlert: true, fertileWindow: false, loggingReminder: true };
+  return { periodAlert: true, fertileWindow: true, loggingReminder: true };
+}
+
+/**
  * Per-goal accent — returns an EXISTING CSS variable (no new colors).
  * Used to set a scoped `--goal-accent` custom property.
  *   tracking      → --color-primary   (rose)

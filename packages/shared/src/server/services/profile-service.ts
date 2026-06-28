@@ -1,19 +1,11 @@
 import type { FlowIntensity } from '@prisma/client'
 import { prisma } from '../db'
 import { ensurePeriodLogFromProfile } from '../period-log-sync'
-import { normalizeGoal } from '../../utils/goal'
+import { defaultNotificationPrefsForGoal } from '../../utils/goal'
 
-export function defaultNotificationPrefsForGoal(goal?: string | null): {
-  periodAlert: boolean
-  fertileWindow: boolean
-  loggingReminder: boolean
-} {
-  const g = normalizeGoal(goal)
-  if (g === 'conceive')      return { periodAlert: false, fertileWindow: true,  loggingReminder: false }
-  if (g === 'pregnancy')     return { periodAlert: false, fertileWindow: false, loggingReminder: false }
-  if (g === 'perimenopause') return { periodAlert: true,  fertileWindow: false, loggingReminder: true  }
-  return { periodAlert: true, fertileWindow: true, loggingReminder: true }
-}
+// Re-exported so the goal→prefs mapping stays reachable via the services barrel
+// (the single source of truth now lives in utils/goal, shared with the seed).
+export { defaultNotificationPrefsForGoal } from '../../utils/goal'
 
 export async function assertProfileOwnership(profileId: string, userId: string) {
   const profile = await prisma.profile.findUnique({ where: { id: profileId } })
