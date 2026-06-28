@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/app/queries/auth-queries'
 import { getPublishedArticles } from '@/app/queries/content-queries'
+import { getProfiles, getActiveProfileId } from '@/app/queries/profile-queries'
+import { getDashboardData } from '@/app/queries/tracking-queries'
 import { ContentClient } from './ContentClient'
 
 export default async function ContentPage({
@@ -13,7 +15,18 @@ export default async function ContentPage({
 
   const params = await searchParams
   const phase = params.phase || undefined
-  const { articles } = await getPublishedArticles(phase)
 
-  return <ContentClient articles={articles} activePhase={phase} />
+  const [{ articles }, profiles] = await Promise.all([
+    getPublishedArticles(phase),
+    getProfiles(),
+  ])
+
+  let currentPhase: string | null = null
+  if (profiles.length > 0) {
+    const profileId = await getActiveProfileId(profiles, params.profileId)
+    const dashboard = await getDashboardData(profileId)
+    currentPhase = dashboard?.currentPhase ? dashboard.currentPhase.toUpperCase() : null
+  }
+
+  return <ContentClient articles={articles} activePhase={phase} currentPhase={currentPhase} />
 }

@@ -180,6 +180,9 @@ const resources = {
         noArticles: 'No articles yet', backToArticles: 'Back to articles',
         contentComingSoon: 'Health content will appear here once published',
         contentComingSoonNote: 'Health content coming soon',
+        phaseFirstNote: 'Articles for your {{phase}} phase first',
+        forYou: 'For you',
+        showingInEnglish: 'Showing in English — Bengali translation coming soon',
       },
       feedback: {
         title: 'Feedback', bug: 'Bug Report', feature: 'Feature Request',
@@ -787,6 +790,9 @@ const resources = {
         noArticles: 'এখনো কোনো নিবন্ধ নেই', backToArticles: 'নিবন্ধে ফিরে যান',
         contentComingSoon: 'প্রকাশিত হলে এখানে স্বাস্থ্য বিষয়বস্তু দেখাবে',
         contentComingSoonNote: 'স্বাস্থ্য বিষয়বস্তু শীঘ্রই আসছে',
+        phaseFirstNote: 'আপনার {{phase}} পর্যায়ের নিবন্ধ প্রথমে',
+        forYou: 'আপনার জন্য',
+        showingInEnglish: 'ইংরেজিতে দেখানো হচ্ছে — বাংলা অনুবাদ শীঘ্রই আসছে',
       },
       feedback: {
         title: 'মতামত', bug: 'বাগ রিপোর্ট', feature: 'ফিচার অনুরোধ',
