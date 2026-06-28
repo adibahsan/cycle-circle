@@ -1,3 +1,4 @@
+import sanitizeHtml from 'sanitize-html'
 import { prisma } from '../db'
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
@@ -7,6 +8,30 @@ export function slugify(text: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
+}
+
+// Tiptap StarterKit produces a small, known set of tags. Allow those, drop
+// everything else (script/style/iframe/event-handlers are stripped).
+const ARTICLE_SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
+  allowedTags: [
+    'p', 'br', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'code', 'pre',
+    'blockquote', 'ul', 'ol', 'li', 'a', 'img', 'span',
+  ],
+  allowedAttributes: {
+    a: ['href', 'target', 'rel'],
+    img: ['src', 'alt', 'title'],
+    span: [],
+  },
+  allowedSchemes: ['http', 'https', 'mailto'],
+  transformTags: {
+    a: sanitizeHtml.simpleTransform('a', { rel: 'noopener noreferrer' }, true),
+  },
+}
+
+/** Sanitise rich-text article HTML before persistence (strips script/unsafe tags + event handlers). */
+export function sanitizeArticleHtml(html: string): string {
+  return sanitizeHtml(html, ARTICLE_SANITIZE_OPTIONS)
 }
 
 // ── Article queries ────────────────────────────────────────────────────────────
@@ -85,8 +110,8 @@ export async function createArticle(
       slug,
       titleEn: data.titleEn,
       titleBn: data.titleBn || null,
-      bodyEn: data.bodyEn,
-      bodyBn: data.bodyBn || null,
+      bodyEn: sanitizeArticleHtml(data.bodyEn),
+      bodyBn: data.bodyBn ? sanitizeArticleHtml(data.bodyBn) : null,
       categoryId: data.categoryId || null,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       cyclePhases: (data.cyclePhases as never) || [],
@@ -122,6 +147,9 @@ export async function updateArticle(
   },
 ) {
   const updateData: Record<string, unknown> = { ...data }
+
+  if (typeof data.bodyEn === 'string') updateData.bodyEn = sanitizeArticleHtml(data.bodyEn)
+  if (typeof data.bodyBn === 'string') updateData.bodyBn = sanitizeArticleHtml(data.bodyBn)
 
   if (data.status === 'PUBLISHED') {
     const existing = await prisma.article.findUnique({ where: { id } })
