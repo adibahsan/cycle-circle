@@ -1,9 +1,10 @@
 # DEV_SRS — Implementation Tracker
 
 > Developer-facing tracker mapping SRS requirements to codebase implementation.
-> Last updated: 2026-05-31 (rev 3)
-> SRS version: 1.2 (SRS-VESTA-001)
-> Related: [`TESTING.md`](TESTING.md) — manual QA guide for testers
+> Last updated: 2026-06-28 (rev 4)
+> SRS version: 1.3 (SRS-VESTA-001)
+> Related: [`TESTING.md`](TESTING.md) — manual QA guide for testers;
+> [`docs/FEATURE-IMPLEMENTATION-2026-06-28.md`](docs/FEATURE-IMPLEMENTATION-2026-06-28.md) — readable log of the 2026-06-28 feature round
 
 ---
 
@@ -17,6 +18,8 @@
 | Not Started | 1 | FR-ENC |
 
 **Rev 3 changes (2026-05-31):** Live codebase audit of `apps/web` (18 user routes, 38 API handlers) and `apps/admin` (16 page routes, 10 query modules, 8 action modules). Corrected FR-AUTH (modal wired), FR-SMS (`tel:all` via `sms-service`), FR-EXPORT (CSV Server Action live). Documented admin Emails + Audit Logs sections and operational endpoints (health checks, simulator, Resend webhook).
+
+**Rev 4 changes (2026-06-28):** v1.3 feature round (full per-feature log in [`docs/FEATURE-IMPLEMENTATION-2026-06-28.md`](docs/FEATURE-IMPLEMENTATION-2026-06-28.md)). Resolved: Redis-outage resilience (adapter fails open); FR-CMS server-side HTML sanitization; FR-CONTENT current-phase surfacing + locale-fallback indicator; FR-EXPORT per-profile scoping + copy fix; FR-AUTH server-side 60s OTP resend cooldown + ~1-min profile-completion auto-prompt with session re-prompt; FR-NOTIF/FR-SMS goal-based filtering (verified + test-locked); FR-ANALYTICS per-tier prediction MAE + feedback panel + symptoms-by-phase; FR-SMS daily content circulation (bilingual, bulk entry, content-override, scheduled cron broadcast, delivery-report → broadcast counts); FR-NUDGE cross-session frequency cap; FR-INSIGHTS tabular-nums axes. Web test suite repaired (15 failing → 251 passing). Migration `20260628131041_add_sms_circulation_fields` applied. Still deferred: FR-ENC (encryption), Pro grace period (v2), Tiptap→Supabase image upload, BDApps charging analysis (open).
 
 ---
 
@@ -102,7 +105,7 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 | ID | Item | File / note |
 |----|------|-------------|
 | FR-ENC | `prisma-field-encryption` not installed; `symptom_logs.value` stored as plaintext | `packages/shared/package.json`, `schema.prisma` |
-| FR-AUTH | Profile completion: modal wired to `completeProfile`, but only shown for `authMethod === EMAIL` + `profileCompleted === false`; SRS expects ~1 min post-OTP for all incomplete users; dismiss uses `sessionStorage` (not re-prompt on next login) | `(main)/layout.tsx`, `ProfileCompletionModal.tsx` |
+| FR-AUTH | ✅ (rev 4) Profile-completion modal now auto-opens ~1 min after login for any incomplete profile and re-prompts on the next login (session-scoped dismiss). Server-side 60s OTP resend cooldown added. Remaining: DOB not collected (unspecified "required details" — would need a schema change) | `(main)/layout.tsx`, `auth-service.ts`, `otp/request/route.ts` |
 
 ### P1 — Should-have gaps
 
@@ -110,7 +113,7 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 |----|------|-------------|
 | FR-NOTIF | QStash not confirmed; cron runs email/SMS synchronously (Vercel 10s risk at scale); Resend webhook at `/api/webhooks/resend` not tied to admin delivery UI | `api/cron/daily-reminders/route.ts` |
 | FR-SYMP | Symptom `value` not encrypted (blocked by FR-ENC) | `tracking-service` |
-| FR-SMS | Admin broadcast send uses `tel:all` in `sms-service`; no CSV bulk-upload; no content-override (deactivate previous day) | `sms-service.ts` L114 |
+| FR-SMS | ✅ (rev 4) Daily content circulation complete: bilingual (EN/BN) content, bulk entry (`createBroadcastsBulk` + parser), one-per-day scheduled cron dispatch (`dispatchScheduledBroadcast` folded into daily-reminders), content-override (only newest `active`), and `sms/report` → per-broadcast delivered/failed counts via `providerMessageId` | `sms-service.ts`, `cron/daily-reminders`, `webhooks/sms/report` |
 | FR-FEEDBACK | Admin read-only + CSV; no reply/resolve workflow | `FeedbackDetailClient.tsx` |
 | FR-I18N | `User.language` DB sync unverified; BN email template bodies need content QA | `i18n.ts`, `email-templates.ts` |
 
@@ -118,9 +121,9 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 
 | ID | Item | File / note |
 |----|------|-------------|
-| FR-EXPORT | CSV export via `exportUserDataCsv` Server Action works; no `/api/export` route; Excel button downloads CSV; UI copy says "active profile only" but export includes all profiles; symptom values plaintext until FR-ENC | `settings-actions.ts`, `SettingsClient.tsx` |
-| FR-CMS | Tiptap image upload to Supabase not wired | `TiptapEditor.tsx` |
-| FR-ANALYTICS | Nightly MAE cron not scheduled; on-demand admin page load only | `analytics-service.ts` |
+| FR-EXPORT | ✅ (rev 4) Excel button now emits real `.xlsx`; export scoped to the active profile by default with a labelled all-profiles opt-in; UI copy corrected (EN+BN). Remaining: no `/api/export` REST route (Server Action only); symptom values plaintext until FR-ENC | `settings-actions.ts`, `SettingsClient.tsx` |
+| FR-CMS | ✅ (rev 4) HTML sanitized server-side on save (`sanitizeArticleHtml`). Remaining: Tiptap image upload to Supabase not wired (needs storage creds) | `content-service.ts`, `TiptapEditor.tsx` |
+| FR-ANALYTICS | ✅ (rev 4) Per-tier prediction MAE (backtested, on-demand — a 3rd nightly cron isn't allowed under the 2-job Hobby budget), feedback panel on the analytics dashboard, and symptom-logs-by-cycle-phase chart all added | `analytics-service.ts`, `analytics/AnalyticsClient.tsx` |
 | FR-ADMIN | No automated admin test suite; subscription list has no detail route | `apps/admin/` |
 | UI/A11y | ~190 findings in `review/WEB-UI-REVIEW.md`, `review/ADMIN-UI-REVIEW.md` | Both apps |
 
