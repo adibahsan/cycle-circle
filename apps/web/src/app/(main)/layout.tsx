@@ -394,7 +394,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <div className="px-4 mb-4">
           <Link
             href="/profiles"
-            prefetch={true}
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:border-[var(--goal-accent)] transition-colors"
           >
             <Users size={14} aria-hidden="true" />
@@ -421,7 +420,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <Link
                 key={href}
                 href={href}
-                prefetch={true}
                 {...(tourKey ? { 'data-tour': tourKey } : {})}
                 {...(showDot ? { 'aria-label': `${t(labelKey)} — ${t('nav.notLoggedToday')}` } : {})}
                 className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
@@ -458,7 +456,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <Link
                 key={href}
                 href={href}
-                prefetch={true}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
                   isActive
                     ? ''
@@ -506,7 +503,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <h1 className="text-xl font-bold text-[var(--goal-accent)]">Vesta</h1>
             <Link
               href="/profiles"
-              prefetch={true}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-xs font-medium hover:border-[var(--goal-accent)] transition-colors"
             >
               <Users size={12} aria-hidden="true" />
@@ -560,7 +556,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <Link
                 key={href}
                 href={href}
-                prefetch={true}
                 {...(tourKey ? { 'data-tour': tourKey } : {})}
                 {...(showDot ? { 'aria-label': `${t(labelKey)} — ${t('nav.notLoggedToday')}` } : {})}
                 className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${
