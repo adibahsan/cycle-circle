@@ -29,7 +29,6 @@ import {
 import { useAppStore } from '@/lib/store'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import * as XLSX from 'xlsx'
 import { updateNotificationPrefs, exportUserDataCsv, exportUserDataRows, updateProfileReminderOptOut } from '@/app/actions/settings-actions'
 import { updateContactInfo } from '@/app/actions/user-actions'
 import type { AuthUser } from '@vesta/shared/server/auth'
@@ -411,6 +410,9 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
     setExporting(true)
     showToast(t('settings.exportPreparing'))
     try {
+      // Lazy-load SheetJS (~400KB+) only when the user actually exports, so it
+      // stays out of the Settings route's first-load bundle.
+      const XLSX = await import('xlsx')
       const { periodLogs, symptomLogs, filename } = await exportUserDataRows({ profileId: activeProfile?.id, allProfiles: exportAll })
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(periodLogs), 'Period Logs')
