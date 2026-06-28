@@ -11,7 +11,12 @@ import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input } from '@/components/ui/Input'
 import { DateTimePicker } from '@/components/ui/DateTimePicker'
-import { createSmsBroadcast, deleteSmsBroadcast, sendSmsBroadcast } from '@/app/actions/sms-actions'
+import {
+  createSmsBroadcast,
+  createSmsBroadcastsBulk,
+  deleteSmsBroadcast,
+  sendSmsBroadcast,
+} from '@/app/actions/sms-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanel'
@@ -20,6 +25,7 @@ import { DateRangeControl } from '@/components/charts/DateRangeControl'
 type SmsBroadcast = {
   id: string
   message: string
+  messageBn: string | null
   status: string
   scheduledFor: Date | null
   sentAt: Date | null
@@ -85,7 +91,7 @@ function canDelete(status: string) {
 }
 
 function canSend(status: string) {
-  return status === 'DRAFT'
+  return status === 'DRAFT' || status === 'SCHEDULED'
 }
 
 // ─── Create Broadcast Modal ─────────────────────────────────────────────────
@@ -97,19 +103,30 @@ interface CreateModalProps {
 }
 
 function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
+  const [mode, setMode] = useState<'single' | 'bulk'>('single')
+  // Single mode state
   const [message, setMessage] = useState('')
+  const [messageBn, setMessageBn] = useState('')
   const [scheduledFor, setScheduledFor] = useState('')
+  // Bulk mode state
+  const [bulkText, setBulkText] = useState('')
+  const [bulkStartDate, setBulkStartDate] = useState('')
+
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Focus textarea when modal opens
+  // Focus textarea when modal opens; reset all state when it closes
   useEffect(() => {
     if (open) {
       setTimeout(() => textareaRef.current?.focus(), 50)
     } else {
+      setMode('single')
       setMessage('')
+      setMessageBn('')
       setScheduledFor('')
+      setBulkText('')
+      setBulkStartDate('')
       setError(null)
     }
   }, [open])
@@ -126,22 +143,48 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
 
   if (!open) return null
 
+  const bulkLineCount = bulkText
+    .split('\n')
+    .filter((l) => l.trim().length > 0).length
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!message.trim()) {
-      setError('Message cannot be empty.')
-      return
-    }
-    setSubmitting(true)
     setError(null)
-    try {
-      await createSmsBroadcast(message.trim(), scheduledFor || undefined)
-      onCreated()
-      onClose()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
-    } finally {
-      setSubmitting(false)
+
+    if (mode === 'single') {
+      if (!message.trim()) {
+        setError('Message cannot be empty.')
+        return
+      }
+      setSubmitting(true)
+      try {
+        await createSmsBroadcast(
+          message.trim(),
+          messageBn.trim() || undefined,
+          scheduledFor || undefined,
+        )
+        onCreated()
+        onClose()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Something went wrong.')
+      } finally {
+        setSubmitting(false)
+      }
+    } else {
+      if (bulkLineCount === 0) {
+        setError('Enter at least one message line.')
+        return
+      }
+      setSubmitting(true)
+      try {
+        await createSmsBroadcastsBulk(bulkText, bulkStartDate || undefined)
+        onCreated()
+        onClose()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Something went wrong.')
+      } finally {
+        setSubmitting(false)
+      }
     }
   }
 
@@ -164,12 +207,12 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
       />
 
       {/* Card */}
-      <div className="relative z-10 w-full max-w-lg rounded-2xl glass border border-[var(--color-border)] shadow-soft focus:outline-none">
+      <div className="relative z-10 w-full max-w-lg rounded-2xl glass border border-[var(--color-border)] shadow-soft focus:outline-none max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
-              <Send size={15} className="text-[var(--color-primary)]" />
+              <Send size={15} className="text-[var(--color-primary)]" aria-hidden="true" />
             </div>
             <h2 id="create-broadcast-title" className="text-base font-bold text-[var(--color-text-primary)]">
               New SMS Broadcast
@@ -179,66 +222,182 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
             onClick={() => !submitting && onClose()}
             disabled={submitting}
             className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-40"
-            aria-label="Close"
+            aria-label="Close dialog"
           >
-            <X size={16} />
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
 
         {/* Body */}
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          {/* Message textarea */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="sms-message"
-              className="block text-sm font-medium text-[var(--color-text-secondary)]"
+          {/* Mode toggle */}
+          <div
+            className="flex gap-1 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-1"
+            role="group"
+            aria-label="Broadcast mode"
+          >
+            <button
+              type="button"
+              onClick={() => { setMode('single'); setError(null) }}
+              className={[
+                'flex-1 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors',
+                mode === 'single'
+                  ? 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] shadow-sm'
+                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
+              ].join(' ')}
+              aria-pressed={mode === 'single'}
             >
-              Message
-            </label>
-            <textarea
-              id="sms-message"
-              ref={textareaRef}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={4}
-              maxLength={480}
-              placeholder="Type your SMS message here…"
-              name="message"
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors transition-shadow duration-200 resize-none"
-            />
-            <div className="flex justify-between text-xs text-[var(--color-text-muted)]">
-              <span>{Math.ceil(charCount / 160)} SMS credit{Math.ceil(charCount / 160) !== 1 ? 's' : ''}</span>
-              <span className={charCount > 440 ? 'text-amber-600' : ''}>{charCount}/480</span>
-            </div>
+              Single
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('bulk'); setError(null) }}
+              className={[
+                'flex-1 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors',
+                mode === 'bulk'
+                  ? 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] shadow-sm'
+                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
+              ].join(' ')}
+              aria-pressed={mode === 'bulk'}
+            >
+              Bulk
+            </button>
           </div>
 
-          {/* Schedule date (optional) */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="sms-scheduled"
-              className="block text-sm font-medium text-[var(--color-text-secondary)]"
-            >
-              Schedule For{' '}
-              <span className="text-[var(--color-text-muted)] font-normal">(optional — leave blank to save as draft)</span>
-            </label>
-            <DateTimePicker
-              id="sms-scheduled"
-              aria-label="Schedule date and time"
-              value={scheduledFor}
-              onChange={setScheduledFor}
-              minDate={new Date()}
-            />
-          </div>
+          {mode === 'single' ? (
+            <>
+              {/* English message textarea */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="sms-message"
+                  className="block text-sm font-medium text-[var(--color-text-secondary)]"
+                >
+                  Message (English)
+                </label>
+                <textarea
+                  id="sms-message"
+                  ref={textareaRef}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={4}
+                  maxLength={480}
+                  placeholder="Type your SMS message here…"
+                  name="message"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200 resize-none"
+                />
+                <div className="flex justify-between text-xs text-[var(--color-text-muted)]">
+                  <span>{Math.ceil(charCount / 160)} SMS credit{Math.ceil(charCount / 160) !== 1 ? 's' : ''}</span>
+                  <span className={charCount > 440 ? 'text-amber-600' : ''}>{charCount}/480</span>
+                </div>
+              </div>
 
-          {/* Status preview */}
-          <div className="flex items-center gap-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-4 py-2.5 text-sm text-[var(--color-text-secondary)]">
-            <span>Will be saved as:</span>
-            {statusBadge(isScheduled ? 'SCHEDULED' : 'DRAFT')}
-          </div>
+              {/* Bengali message textarea (optional) */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="sms-message-bn"
+                  className="block text-sm font-medium text-[var(--color-text-secondary)]"
+                >
+                  Message (Bengali){' '}
+                  <span className="text-[var(--color-text-muted)] font-normal">— optional</span>
+                </label>
+                <textarea
+                  id="sms-message-bn"
+                  value={messageBn}
+                  onChange={(e) => setMessageBn(e.target.value)}
+                  rows={3}
+                  maxLength={480}
+                  placeholder="বাংলায় বার্তা লিখুন…"
+                  name="messageBn"
+                  lang="bn"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200 resize-none"
+                />
+              </div>
+
+              {/* Schedule date (optional) */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="sms-scheduled"
+                  className="block text-sm font-medium text-[var(--color-text-secondary)]"
+                >
+                  Schedule For{' '}
+                  <span className="text-[var(--color-text-muted)] font-normal">(optional — leave blank to save as draft)</span>
+                </label>
+                <DateTimePicker
+                  id="sms-scheduled"
+                  aria-label="Schedule date and time"
+                  value={scheduledFor}
+                  onChange={setScheduledFor}
+                  minDate={new Date()}
+                />
+              </div>
+
+              {/* Status preview */}
+              <div className="flex items-center gap-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-4 py-2.5 text-sm text-[var(--color-text-secondary)]">
+                <span>Will be saved as:</span>
+                {statusBadge(isScheduled ? 'SCHEDULED' : 'DRAFT')}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Bulk textarea */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="sms-bulk"
+                  className="block text-sm font-medium text-[var(--color-text-secondary)]"
+                >
+                  Messages (one per line)
+                </label>
+                <textarea
+                  id="sms-bulk"
+                  ref={textareaRef}
+                  value={bulkText}
+                  onChange={(e) => setBulkText(e.target.value)}
+                  rows={8}
+                  placeholder={"English message\nAnother message | বাংলা বার্তা\nThird message | তৃতীয় বার্তা"}
+                  name="bulkText"
+                  spellCheck={false}
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200 resize-none font-mono"
+                />
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  One message per line. Add a Bengali translation after a vertical bar:{' '}
+                  <span className="font-mono text-[var(--color-text-secondary)]">English | বাংলা</span>
+                </p>
+                {/* Live preview line count */}
+                <p
+                  className="text-xs font-medium text-[var(--color-text-secondary)]"
+                  aria-live="polite"
+                >
+                  {bulkLineCount} message{bulkLineCount !== 1 ? 's' : ''} will be scheduled
+                </p>
+              </div>
+
+              {/* Bulk start date */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="sms-bulk-start"
+                  className="block text-sm font-medium text-[var(--color-text-secondary)]"
+                >
+                  Start date{' '}
+                  <span className="text-[var(--color-text-muted)] font-normal">
+                    (one message per day from here; defaults to tomorrow)
+                  </span>
+                </label>
+                <DateTimePicker
+                  id="sms-bulk-start"
+                  aria-label="Bulk start date"
+                  value={bulkStartDate}
+                  onChange={setBulkStartDate}
+                  minDate={new Date()}
+                />
+              </div>
+            </>
+          )}
 
           {/* Error */}
           {error && (
-            <p className="text-sm text-red-500">{error}</p>
+            <p className="text-sm text-red-500" role="alert" aria-live="polite">
+              {error}
+            </p>
           )}
 
           {/* Actions */}
@@ -258,7 +417,11 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
               fullWidth
               loading={submitting}
             >
-              {isScheduled ? 'Schedule Broadcast' : 'Save as Draft'}
+              {mode === 'bulk'
+                ? `Schedule ${bulkLineCount > 0 ? bulkLineCount : ''} message${bulkLineCount !== 1 ? 's' : ''}`.trim()
+                : isScheduled
+                  ? 'Schedule Broadcast'
+                  : 'Save as Draft'}
             </Button>
           </div>
         </form>
