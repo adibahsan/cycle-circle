@@ -5,6 +5,7 @@ import {
   getPredictionAccuracy,
   getUserRetention,
   getUserTrend,
+  getPredictionMae,
 } from '@/app/queries/analytics-queries'
 import { AnalyticsClient } from './AnalyticsClient'
 
@@ -30,12 +31,13 @@ export default async function AnalyticsPage({
   const range = rawRange in RANGE_TO_DAYS ? rawRange : '30d'
   const days = RANGE_TO_DAYS[range]
 
-  const [cycleLengths, symptoms, predictions, retention, trend] = await Promise.all([
+  const [cycleLengths, symptoms, predictions, retention, trend, predictionMae] = await Promise.all([
     getCycleLengthDistribution(),
     getSymptomsByCategory(),
     getPredictionAccuracy(),
     getUserRetention(),
     getUserTrend(days),
+    getPredictionMae(),
   ])
 
   return (
@@ -46,6 +48,7 @@ export default async function AnalyticsPage({
       retention={retention}
       trend={trend}
       range={range}
+      predictionMae={predictionMae}
     />
   )
 }

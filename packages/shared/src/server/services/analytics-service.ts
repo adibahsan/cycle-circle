@@ -1,5 +1,6 @@
 import { prisma } from '../db'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
+import { predictCycleLength, getPredictionTier } from '../../utils/cycle-utils'
 
 /**
  * Return KPI counts for the admin dashboard.
@@ -361,6 +362,65 @@ export async function getLoggingStreakDistribution(): Promise<
   for (const s of streaks) bucketCounts[getBucket(s)]++
 
   return BUCKETS.map(bucket => ({ bucket, count: bucketCounts[bucket] }))
+}
+
+const MS_PER_DAY = 86_400_000
+
+/**
+ * Backtest MAE by prediction tier. Each `series` entry is one profile's period
+ * START times in ms. For each profile we walk its cycles: using the cycle
+ * lengths observed so far (the same weighted-average the engine uses via
+ * predictCycleLength), predict the next start from the previous start, and
+ * compare to the actual next start. The tier is the one the engine would have
+ * been on given the number of observed cycles (>=6 -> ARIMA, else AVERAGE).
+ * Returns one row per tier; maeDays is null when there is no sample.
+ */
+export function computePredictionMaeByTier(
+  series: number[][],
+): { tier: 'AVERAGE' | 'ARIMA'; maeDays: number | null; sampleSize: number }[] {
+  const buckets = { AVERAGE: { sum: 0, n: 0 }, ARIMA: { sum: 0, n: 0 } }
+
+  for (const raw of series) {
+    const s = [...raw].sort((a, b) => a - b)
+    const n = s.length
+    if (n < 3) continue // need >=1 observed cycle length AND a following actual
+
+    // Observed cycle lengths c[k] = round(days between s[k] and s[k+1]).
+    const c: number[] = []
+    for (let k = 1; k < n; k++) c.push(Math.round((s[k] - s[k - 1]) / MS_PER_DAY))
+
+    // Predict s[j] (j >= 2) from history c[0..j-2] (length j-1 >= 1).
+    for (let j = 2; j < n; j++) {
+      const history = c.slice(0, j - 1)
+      const predictedLen = predictCycleLength(history, 28)
+      const predictedStart = s[j - 1] + predictedLen * MS_PER_DAY
+      const errDays = Math.round(Math.abs(predictedStart - s[j]) / MS_PER_DAY)
+      const tier = getPredictionTier(history.length) === 'arima' ? 'ARIMA' : 'AVERAGE'
+      buckets[tier].sum += errDays
+      buckets[tier].n += 1
+    }
+  }
+
+  return (['AVERAGE', 'ARIMA'] as const).map((tier) => ({
+    tier,
+    maeDays: buckets[tier].n > 0 ? Math.round((buckets[tier].sum / buckets[tier].n) * 10) / 10 : null,
+    sampleSize: buckets[tier].n,
+  }))
+}
+
+/** On-demand per-tier prediction MAE (days), backtested from period-log history. */
+export async function getPredictionAccuracyMae() {
+  const logs = await prisma.periodLog.findMany({
+    select: { profileId: true, startDate: true },
+    orderBy: [{ profileId: 'asc' }, { startDate: 'asc' }],
+  })
+  const byProfile = new Map<string, number[]>()
+  for (const l of logs) {
+    const arr = byProfile.get(l.profileId) ?? []
+    arr.push(l.startDate.getTime())
+    byProfile.set(l.profileId, arr)
+  }
+  return computePredictionMaeByTier([...byProfile.values()])
 }
 
 /**

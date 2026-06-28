@@ -11,6 +11,7 @@ import {
   getSymptomLoggingRate as svcGetSymptomLoggingRate,
   getLoggingStreakDistribution as svcGetLoggingStreakDistribution,
   getLoggingRetention as svcGetLoggingRetention,
+  getPredictionAccuracyMae as svcGetPredictionAccuracyMae,
 } from '@vesta/shared/server/services'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
@@ -91,6 +92,15 @@ export const getLoggingRetention = cache(async (weeks?: number) => {
   return unstable_cache(
     () => svcGetLoggingRetention(weeks),
     ['admin-logging-retention', String(weeks ?? 8)],
+    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getPredictionMae = cache(async () => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => svcGetPredictionAccuracyMae(),
+    ['admin-prediction-mae'],
     { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
   )()
 })

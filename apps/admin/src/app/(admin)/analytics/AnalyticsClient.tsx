@@ -35,6 +35,12 @@ interface UserTrendPoint {
   count: number
 }
 
+interface PredictionMae {
+  tier: string
+  maeDays: number | null
+  sampleSize: number
+}
+
 interface AnalyticsClientProps {
   cycleLengths: CycleLength[]
   symptoms: SymptomCategory[]
@@ -42,6 +48,7 @@ interface AnalyticsClientProps {
   retention: UserRetention[]
   trend: UserTrendPoint[]
   range: string
+  predictionMae: PredictionMae[]
 }
 
 // ── Color constants ────────────────────────────────────────────────────────
@@ -125,6 +132,7 @@ export function AnalyticsClient({
   predictions,
   retention,
   trend,
+  predictionMae,
 }: AnalyticsClientProps) {
   // Normalise cycle-length data for ChartPanel (xKey must be a string)
   const cycleLengthData = cycleLengths.map((d) => ({
@@ -190,6 +198,45 @@ export function AnalyticsClient({
             emptyLabel="No prediction data yet."
           />
           <TierBadges data={predictions} />
+        </div>
+
+        {/* 3b — Prediction MAE by Tier */}
+        <div>
+          <ChartPanel
+            title="Prediction Accuracy (MAE · days)"
+            data={predictionMae.map((d) => ({
+              tier: d.tier,
+              maeDays: d.maeDays ?? 0,
+            }))}
+            xKey="tier"
+            series={[{ key: 'maeDays', label: 'MAE (days)', color: INDIGO }]}
+            kinds={['bar']}
+            defaultKind="bar"
+            height={240}
+            emptyLabel="Not enough period-log history to backtest."
+          />
+          <div className="mt-3 flex flex-wrap gap-2">
+            {predictionMae.map((d) => (
+              <div
+                key={d.tier}
+                className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-1"
+              >
+                <span
+                  className="h-2 w-2 rounded-full shrink-0"
+                  style={{ background: INDIGO }}
+                />
+                <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                  {d.tier}
+                </span>
+                <span className="text-xs tabular-nums text-[var(--color-text-muted)]">
+                  {d.maeDays !== null ? `${d.maeDays}d MAE` : 'no data'} · {d.sampleSize} samples
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+            Lower MAE = more accurate predictions. Backtested from all period-log history (global, not range-bound).
+          </p>
         </div>
 
         {/* 4 — User Retention */}
