@@ -41,6 +41,21 @@ interface PredictionMae {
   sampleSize: number
 }
 
+interface FeedbackVolumePoint {
+  date: string
+  count: number
+}
+
+interface FeedbackCategoryPoint {
+  category: string
+  count: number
+}
+
+interface FeedbackRatingPoint {
+  rating: number | null
+  count: number
+}
+
 interface AnalyticsClientProps {
   cycleLengths: CycleLength[]
   symptoms: SymptomCategory[]
@@ -49,6 +64,9 @@ interface AnalyticsClientProps {
   trend: UserTrendPoint[]
   range: string
   predictionMae: PredictionMae[]
+  feedbackVolume: FeedbackVolumePoint[]
+  feedbackCategories: FeedbackCategoryPoint[]
+  feedbackRatings: FeedbackRatingPoint[]
 }
 
 // ── Color constants ────────────────────────────────────────────────────────
@@ -133,6 +151,9 @@ export function AnalyticsClient({
   retention,
   trend,
   predictionMae,
+  feedbackVolume,
+  feedbackCategories,
+  feedbackRatings,
 }: AnalyticsClientProps) {
   // Normalise cycle-length data for ChartPanel (xKey must be a string)
   const cycleLengthData = cycleLengths.map((d) => ({
@@ -144,6 +165,22 @@ export function AnalyticsClient({
   const retentionData = retention.map((d) => ({
     ...d,
     week: formatWeek(d.week),
+  }))
+
+  // Feedback chart data transformations — mirroring FeedbackClient.tsx
+  const feedbackVolumeChartData = feedbackVolume.map((d) => ({
+    date: d.date,
+    count: d.count,
+  }))
+
+  const feedbackCategoryChartData = feedbackCategories.map((d) => ({
+    category: d.category,
+    count: d.count,
+  }))
+
+  const feedbackRatingChartData = feedbackRatings.map((d) => ({
+    label: d.rating === null ? 'No rating' : `${d.rating}★`,
+    count: d.count,
   }))
 
   return (
@@ -269,6 +306,50 @@ export function AnalyticsClient({
         height={240}
         emptyLabel="No sign-up data for this period."
       />
+
+      {/* ── Feedback section ──────────────────────────────────────────────── */}
+      <section aria-label="Feedback analytics">
+        <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-4">
+          Feedback
+        </h2>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* Submission volume over time */}
+          <ChartPanel
+            title="Feedback Volume"
+            data={feedbackVolumeChartData}
+            xKey="date"
+            series={[{ key: 'count', label: 'Submissions' }]}
+            kinds={['area', 'line', 'bar']}
+            defaultKind="area"
+            height={240}
+            emptyLabel="No submissions in this period."
+          />
+
+          {/* Category breakdown */}
+          <ChartPanel
+            title="By Category"
+            data={feedbackCategoryChartData}
+            xKey="category"
+            series={[{ key: 'count', label: 'Count' }]}
+            kinds={['bar', 'pie']}
+            defaultKind="bar"
+            height={240}
+            emptyLabel="No category data."
+          />
+
+          {/* Rating distribution */}
+          <ChartPanel
+            title="Rating Distribution"
+            data={feedbackRatingChartData}
+            xKey="label"
+            series={[{ key: 'count', label: 'Count' }]}
+            kinds={['bar']}
+            defaultKind="bar"
+            height={240}
+            emptyLabel="No rating data."
+          />
+        </div>
+      </section>
     </div>
   )
 }

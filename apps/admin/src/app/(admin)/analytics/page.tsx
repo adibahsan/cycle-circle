@@ -7,6 +7,11 @@ import {
   getUserTrend,
   getPredictionMae,
 } from '@/app/queries/analytics-queries'
+import {
+  getFeedbackVolume,
+  getFeedbackCategories,
+  getFeedbackRatings,
+} from '@/app/queries/feedback-queries'
 import { AnalyticsClient } from './AnalyticsClient'
 
 // Map the ?range= URL param to a number of days for getUserTrend.
@@ -31,13 +36,26 @@ export default async function AnalyticsPage({
   const range = rawRange in RANGE_TO_DAYS ? rawRange : '30d'
   const days = RANGE_TO_DAYS[range]
 
-  const [cycleLengths, symptoms, predictions, retention, trend, predictionMae] = await Promise.all([
+  const [
+    cycleLengths,
+    symptoms,
+    predictions,
+    retention,
+    trend,
+    predictionMae,
+    feedbackVolume,
+    feedbackCategories,
+    feedbackRatings,
+  ] = await Promise.all([
     getCycleLengthDistribution(),
     getSymptomsByCategory(),
     getPredictionAccuracy(),
     getUserRetention(),
     getUserTrend(days),
     getPredictionMae(),
+    getFeedbackVolume(days),
+    getFeedbackCategories(days),
+    getFeedbackRatings(days),
   ])
 
   return (
@@ -49,6 +67,9 @@ export default async function AnalyticsPage({
       trend={trend}
       range={range}
       predictionMae={predictionMae}
+      feedbackVolume={feedbackVolume}
+      feedbackCategories={feedbackCategories}
+      feedbackRatings={feedbackRatings}
     />
   )
 }
