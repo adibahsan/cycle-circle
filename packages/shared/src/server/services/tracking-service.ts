@@ -1,3 +1,4 @@
+import { Prisma, type SymptomCategory } from '@prisma/client'
 import { prisma } from '../db'
 import {
   getLatestPeriodLog,
@@ -173,6 +174,56 @@ export async function setAllGoodToday(
       },
     })
   }
+}
+
+export async function saveSymptomLogs(
+  profileId: string,
+  userId: string,
+  data: {
+    date: string
+    added: { symptomId: string; category: SymptomCategory; value: string }[]
+    removed: string[]
+  },
+) {
+  await verifyProfileOwnership(profileId, userId)
+  const day = new Date(data.date)
+  const addedIds = data.added.map((a) => a.symptomId)
+
+  const ops: Prisma.PrismaPromise<unknown>[] = []
+  if (data.removed.length) {
+    ops.push(
+      prisma.symptomLog.deleteMany({
+        where: { profileId, date: day, symptomId: { in: data.removed } },
+      }),
+    )
+  }
+  if (data.added.length) {
+    // logging real symptoms clears the "all good" sentinel for the day
+    ops.push(
+      prisma.symptomLog.deleteMany({
+        where: { profileId, date: day, symptomId: ALL_GOOD_SYMPTOM_ID },
+      }),
+    )
+    // idempotent: drop any existing rows for these ids before recreating
+    ops.push(
+      prisma.symptomLog.deleteMany({
+        where: { profileId, date: day, symptomId: { in: addedIds } },
+      }),
+    )
+    ops.push(
+      prisma.symptomLog.createMany({
+        data: data.added.map((a) => ({
+          profileId,
+          date: day,
+          category: a.category,
+          symptomId: a.symptomId,
+          value: a.value,
+        })),
+      }),
+    )
+  }
+  if (ops.length) await prisma.$transaction(ops)
+  return { added: data.added.length, removed: data.removed.length }
 }
 
 // ── Engagement summary ─────────────────────────────────────────────────────────

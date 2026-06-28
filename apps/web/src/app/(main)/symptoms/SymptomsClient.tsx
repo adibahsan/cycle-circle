@@ -23,7 +23,7 @@ import { Card } from '@/components/ui/Card';
 import { useAppStore } from '@/lib/store';
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data';
 import { ALL_GOOD_SYMPTOM_ID } from '@vesta/shared/utils/symptoms';
-import { toggleSymptom, markAllGoodToday } from '@/app/actions/tracking-actions';
+import { toggleSymptom, markAllGoodToday, saveSymptoms } from '@/app/actions/tracking-actions';
 import { CelebrationModal } from '@/components/modals/CelebrationModal';
 import type { Profile, PrismaSymptomLog, SymptomCategory } from '@vesta/shared/types';
 import '@vesta/shared/utils/i18n';
@@ -354,29 +354,22 @@ export function SymptomsClient({
     const savedCount = added.length;
     setSaving(true);
     try {
-      for (const id of added) {
+      const addedPayload = added.flatMap((id) => {
         const symptom = SYMPTOMS_DATA.find((s) => s.id === id);
-        if (symptom) {
-          await toggleSymptom({
-            profileId: activeProfileId,
-            date,
-            category: toDbCategory(symptom.category),
-            symptomId: id,
-            value: id,
-          });
-        }
-      }
-      for (const id of removed) {
-        const symptom = SYMPTOMS_DATA.find((s) => s.id === id);
-        if (symptom) {
-          await toggleSymptom({
-            profileId: activeProfileId,
-            date,
-            category: toDbCategory(symptom.category),
-            symptomId: id,
-            value: id,
-          });
-        }
+        return symptom
+          ? [{ symptomId: id, category: toDbCategory(symptom.category), value: id }]
+          : [];
+      });
+      const removedPayload = removed.filter((id) =>
+        SYMPTOMS_DATA.some((s) => s.id === id),
+      );
+      if (addedPayload.length || removedPayload.length) {
+        await saveSymptoms({
+          profileId: activeProfileId,
+          date,
+          added: addedPayload,
+          removed: removedPayload,
+        });
       }
       // Re-fetch server components so dashboard/symptom data reflects new logs.
       router.refresh();

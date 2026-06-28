@@ -10,6 +10,7 @@ import {
   toggleSymptomLog,
   setAllGoodToday,
   recalculatePrediction,
+  saveSymptomLogs,
 } from '@vesta/shared/server/services'
 
 const createPeriodLogSchema = z.object({
@@ -107,4 +108,33 @@ export async function markAllGoodToday(profileId: string, date?: string) {
 
   revalidateTag(`symptoms:${data.profileId}`, { expire: 0 })
   revalidateTag(`tracking:${data.profileId}`, { expire: 0 })
+}
+
+const saveSymptomsSchema = z.object({
+  profileId: z.string().min(1),
+  date: z.string().min(1),
+  added: z.array(
+    z.object({
+      symptomId: z.string().min(1),
+      category: z.enum(['PHYSICAL', 'MOOD', 'DISCHARGE', 'LIFESTYLE']),
+      value: z.string().min(1),
+    }),
+  ),
+  removed: z.array(z.string().min(1)),
+})
+
+export async function saveSymptoms(input: z.infer<typeof saveSymptomsSchema>) {
+  const jwt = await requireAuth()
+  const user = await getAuthUser(jwt.sub)
+  const data = saveSymptomsSchema.parse(input)
+
+  const result = await saveSymptomLogs(data.profileId, user.id, {
+    date: data.date,
+    added: data.added,
+    removed: data.removed,
+  })
+
+  revalidateTag(`symptoms:${data.profileId}`, { expire: 0 })
+  revalidateTag(`tracking:${data.profileId}`, { expire: 0 })
+  return result
 }

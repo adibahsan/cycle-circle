@@ -5,9 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { X } from 'lucide-react'
 import type { FlowIntensity } from '@vesta/shared/types'
-import { parseISO } from 'date-fns'
+import { format } from 'date-fns'
 import { Button } from '@/components/ui/Button'
-import { DatePicker } from '@/components/ui/DatePicker'
 import { createPeriodLog, updatePeriodLog } from '@/app/actions/tracking-actions'
 import '@vesta/shared/utils/i18n'
 
@@ -49,8 +48,10 @@ export function PeriodLogModal({
 }: LogModalProps) {
   const { t } = useTranslation()
   const prefersReducedMotion = useReducedMotion()
-  const [startDate, setStartDate] = useState(initialStart)
-  const [endDate, setEndDate] = useState(initialEnd)
+  const isEdit = Boolean(existingLogId)
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+  const [startDate, setStartDate] = useState(initialStart || (isEdit ? '' : todayStr))
+  const [endDate, setEndDate] = useState(initialEnd || (isEdit ? '' : todayStr))
   const [flow, setFlow] = useState<FlowIntensity>(initialFlow)
   const [saved, setSaved] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -58,8 +59,6 @@ export function PeriodLogModal({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') onClose()
   }
-
-  const isEdit = Boolean(existingLogId)
 
   const handleSave = () => {
     if (!startDate || !endDate) return
@@ -141,12 +140,15 @@ export function PeriodLogModal({
           <label htmlFor="period-start-date" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
             {t('dashboard.startDate')}
           </label>
-          <DatePicker
+          <input
             id="period-start-date"
+            type="date"
             aria-label={t('dashboard.startDate')}
             value={startDate}
-            onChange={setStartDate}
-            maxDate={new Date()}
+            onChange={(e) => setStartDate(e.target.value)}
+            max={todayStr}
+            className="w-full rounded-xl border px-3 py-2.5 text-sm font-medium text-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] transition-colors duration-150"
+            style={{ borderColor: 'var(--color-border)' }}
           />
         </div>
 
@@ -155,13 +157,16 @@ export function PeriodLogModal({
           <label htmlFor="period-end-date" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
             {t('dashboard.endDate')}
           </label>
-          <DatePicker
+          <input
             id="period-end-date"
+            type="date"
             aria-label={t('dashboard.endDate')}
             value={endDate}
-            onChange={setEndDate}
-            minDate={startDate ? parseISO(startDate) : undefined}
-            maxDate={new Date()}
+            onChange={(e) => setEndDate(e.target.value)}
+            min={startDate || undefined}
+            max={todayStr}
+            className="w-full rounded-xl border px-3 py-2.5 text-sm font-medium text-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] transition-colors duration-150"
+            style={{ borderColor: 'var(--color-border)' }}
           />
         </div>
 

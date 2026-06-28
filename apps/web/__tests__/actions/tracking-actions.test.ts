@@ -13,6 +13,7 @@ vi.mock('@vesta/shared/server/services', () => ({
   deletePeriodLog: vi.fn(),
   toggleSymptomLog: vi.fn(),
   recalculatePrediction: vi.fn(),
+  saveSymptomLogs: vi.fn(),
 }))
 
 import {
@@ -20,6 +21,7 @@ import {
   updatePeriodLog,
   deletePeriodLog,
   toggleSymptom,
+  saveSymptoms,
 } from '../../src/app/actions/tracking-actions'
 import * as svc from '@vesta/shared/server/services'
 import { revalidateTag } from 'next/cache'
@@ -184,6 +186,34 @@ describe('toggleSymptom', () => {
       category: 'PHYSICAL',
       symptomId: 'cramps',
       value: 'mild',
+    })
+    expect(revalidateTag).toHaveBeenCalledWith('symptoms:profile-1', { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith('tracking:profile-1', { expire: 0 })
+  })
+})
+
+describe('saveSymptoms', () => {
+  it('batches all added and removed into a single service call', async () => {
+    vi.mocked(svc.saveSymptomLogs).mockResolvedValue({ added: 2, removed: 1 } as never)
+
+    await saveSymptoms({
+      profileId: 'profile-1',
+      date: '2026-01-15',
+      added: [
+        { symptomId: 'cramps', category: 'PHYSICAL', value: 'cramps' },
+        { symptomId: 'bloating', category: 'PHYSICAL', value: 'bloating' },
+      ],
+      removed: ['fatigue'],
+    })
+
+    expect(svc.saveSymptomLogs).toHaveBeenCalledTimes(1)
+    expect(svc.saveSymptomLogs).toHaveBeenCalledWith('profile-1', MOCK_AUTH_USER.id, {
+      date: '2026-01-15',
+      added: [
+        { symptomId: 'cramps', category: 'PHYSICAL', value: 'cramps' },
+        { symptomId: 'bloating', category: 'PHYSICAL', value: 'bloating' },
+      ],
+      removed: ['fatigue'],
     })
     expect(revalidateTag).toHaveBeenCalledWith('symptoms:profile-1', { expire: 0 })
     expect(revalidateTag).toHaveBeenCalledWith('tracking:profile-1', { expire: 0 })
