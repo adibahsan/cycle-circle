@@ -44,11 +44,28 @@ function escapeCsvField(value: string | number | null | undefined): string {
   return str
 }
 
-export async function exportUserDataCsv(): Promise<{ csv: string; filename: string }> {
+// Resolve which profiles to export. Default: just the requested (active)
+// profile. allProfiles:true is the explicit cross-profile opt-in. listProfiles
+// only returns the caller's own profiles, so an unowned/forged profileId can
+// never widen scope — it simply falls back to the user's first profile.
+async function resolveExportProfiles(
+  userId: string,
+  opts?: { profileId?: string; allProfiles?: boolean },
+) {
+  const profiles = await listProfiles(userId)
+  if (opts?.allProfiles) return profiles
+  if (opts?.profileId) {
+    const match = profiles.find((p) => p.id === opts.profileId)
+    if (match) return [match]
+  }
+  return profiles.slice(0, 1)
+}
+
+export async function exportUserDataCsv(opts?: { profileId?: string; allProfiles?: boolean }): Promise<{ csv: string; filename: string }> {
   const jwt = await requireAuth()
   const user = await getAuthUser(jwt.sub)
 
-  const profiles = await listProfiles(user.id)
+  const profiles = await resolveExportProfiles(user.id, opts)
 
   const periodRows: string[] = []
   const symptomRows: string[] = []
@@ -96,19 +113,20 @@ export async function exportUserDataCsv(): Promise<{ csv: string; filename: stri
   ]
 
   const csv = sections.join('\n')
-  const filename = `vesta-export-${new Date().toISOString().slice(0, 10)}.csv`
+  const scope = opts?.allProfiles ? 'all-profiles' : 'profile'
+  const filename = `vesta-export-${scope}-${new Date().toISOString().slice(0, 10)}.csv`
 
   return { csv, filename }
 }
 
-export async function exportUserDataRows(): Promise<{
+export async function exportUserDataRows(opts?: { profileId?: string; allProfiles?: boolean }): Promise<{
   periodLogs: string[][]
   symptomLogs: string[][]
   filename: string
 }> {
   const jwt = await requireAuth()
   const user = await getAuthUser(jwt.sub)
-  const profiles = await listProfiles(user.id)
+  const profiles = await resolveExportProfiles(user.id, opts)
 
   const periodLogs: string[][] = [['Profile', 'Relation', 'Start Date', 'End Date', 'Flow Intensity']]
   const symptomLogs: string[][] = [['Profile', 'Relation', 'Date', 'Category', 'Symptom ID']]
@@ -143,6 +161,6 @@ export async function exportUserDataRows(): Promise<{
   return {
     periodLogs,
     symptomLogs,
-    filename: `vesta-export-${new Date().toISOString().slice(0, 10)}.xlsx`,
+    filename: `vesta-export-${opts?.allProfiles ? 'all-profiles' : 'profile'}-${new Date().toISOString().slice(0, 10)}.xlsx`,
   }
 }

@@ -269,6 +269,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
     loggingReminder: activePrefs?.loggingReminder ?? true,
   })
 
+  const [exportAll, setExportAll] = useState(false)
   const [addingEmail, setAddingEmail] = useState(false)
   const [addingPhone, setAddingPhone] = useState(false)
   const [contactEmail, setContactEmail] = useState('')
@@ -393,7 +394,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
     setExporting(true)
     showToast(t('settings.csvPreparing'))
     try {
-      const { csv, filename } = await exportUserDataCsv()
+      const { csv, filename } = await exportUserDataCsv({ profileId: activeProfile?.id, allProfiles: exportAll })
       triggerDownload(csv, filename)
       showToast(t('settings.csvDownloaded'))
     } catch {
@@ -410,7 +411,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
     setExporting(true)
     showToast(t('settings.exportPreparing'))
     try {
-      const { periodLogs, symptomLogs, filename } = await exportUserDataRows()
+      const { periodLogs, symptomLogs, filename } = await exportUserDataRows({ profileId: activeProfile?.id, allProfiles: exportAll })
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(periodLogs), 'Period Logs')
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(symptomLogs), 'Symptom Logs')
@@ -589,6 +590,21 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                 <p className="text-xs text-[var(--color-text-muted)]">
                   {t('settings.exportDesc')}
                 </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="export-all-profiles"
+                    checked={exportAll}
+                    onChange={e => setExportAll(e.target.checked)}
+                    className="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--goal-accent)] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--goal-accent)]"
+                  />
+                  <label
+                    htmlFor="export-all-profiles"
+                    className="text-xs text-[var(--color-text-muted)] cursor-pointer select-none"
+                  >
+                    {t('settings.exportAllProfiles')}
+                  </label>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={handleExportCsv}
