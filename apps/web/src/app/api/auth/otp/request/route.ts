@@ -4,7 +4,7 @@ import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { validateMsisdn } from '@vesta/shared/server/auth'
 import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
 import { requestOtp } from '@vesta/shared/server/adapters/bdapps'
-import { createOtpChallenge } from '@vesta/shared/server/services'
+import { createOtpChallenge, getOtpResendCooldownRemaining } from '@vesta/shared/server/services'
 import { isDevModeEnabled } from '@vesta/shared/server/dev'
 
 const bodySchema = z.object({
@@ -16,6 +16,17 @@ export async function POST(request: Request): Promise<Response> {
     const body = await parseBody(request, bodySchema)
 
     const normalizedPhone = validateMsisdn(body.phone)
+
+    // SRS FR-AUTH: OTP resend only after a 60s cooldown. Checked before the
+    // abuse limiter so a blocked resend doesn't consume the per-minute budget.
+    const cooldown = await getOtpResendCooldownRemaining(normalizedPhone)
+    if (cooldown > 0) {
+      throw new ApiError(
+        429,
+        `Please wait ${cooldown}s before requesting a new code.`,
+        'OTP_COOLDOWN',
+      )
+    }
 
     const rl = await checkRateLimit(`otp:${normalizedPhone}`, 3, 60)
     if (!rl.allowed) {

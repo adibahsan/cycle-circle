@@ -41,6 +41,39 @@ export async function createOtpChallenge(phone: string, referenceNo: string, exp
   })
 }
 
+/** SRS FR-AUTH: OTP resend is only offered after a 60-second cooldown. */
+export const OTP_RESEND_COOLDOWN_SECONDS = 60
+
+/**
+ * Pure cooldown math: seconds remaining before another OTP may be requested,
+ * given the timestamp of the most recent challenge (null = none yet → allowed).
+ */
+export function otpCooldownRemaining(
+  lastCreatedAt: Date | null,
+  nowMs: number,
+  cooldownSeconds: number = OTP_RESEND_COOLDOWN_SECONDS,
+): number {
+  if (!lastCreatedAt) return 0
+  const remainingMs = cooldownSeconds * 1000 - (nowMs - lastCreatedAt.getTime())
+  return remainingMs > 0 ? Math.ceil(remainingMs / 1000) : 0
+}
+
+/**
+ * Server-side resend cooldown: returns seconds remaining for the given phone
+ * based on its most recent OtpChallenge. The OtpChallenge table is the source
+ * of truth, so this works regardless of Redis availability. 0 = may request.
+ */
+export async function getOtpResendCooldownRemaining(
+  phone: string,
+  cooldownSeconds: number = OTP_RESEND_COOLDOWN_SECONDS,
+): Promise<number> {
+  const last = await prisma.otpChallenge.findFirst({
+    where: { phone },
+    orderBy: { createdAt: 'desc' },
+  })
+  return otpCooldownRemaining(last?.createdAt ?? null, Date.now(), cooldownSeconds)
+}
+
 export async function findOtpChallenge(referenceNo: string) {
   return prisma.otpChallenge.findFirst({
     where: { referenceNo },
