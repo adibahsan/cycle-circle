@@ -91,6 +91,8 @@ function Toast({ toast }: { toast: ToastState | null }) {
 }
 
 const PROFILE_MODAL_DISMISSED_KEY = 'vesta_profile_modal_dismissed';
+// SRS FR-AUTH: the profile-completion popup appears ~1 minute after login.
+const PROFILE_COMPLETION_PROMPT_DELAY_MS = 60_000;
 const TOUR_REPLAY_KEY = 'vesta_replay_tour';
 
 const tourSteps: TourStep[] = [
@@ -140,6 +142,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Tracks the previous completion percent to detect increases (for progress toast).
   // Initialised to -1 so the very first load does NOT fire the progress toast.
   const prevPercentRef = useRef<number>(-1);
+  // Latest completion status (read inside the delayed auto-open timer below).
+  const completionStatusRef = useRef<ProfileCompletionStatus | null>(null);
+  completionStatusRef.current = completionStatus;
+  // Ensures the ~1-minute auto-open prompt is scheduled at most once per session.
+  const completionPromptScheduledRef = useRef(false);
 
   // ── Auth status fetch — populates user for tour gating + trial lock ─────
   useEffect(() => {
@@ -271,6 +278,30 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     window.addEventListener('vesta:profile-updated', handler);
     return () => window.removeEventListener('vesta:profile-updated', handler);
   }, [refreshCompletion, refreshLogging]);
+
+  // ── Auto-open the profile-completion popup ~1 min after login ─────────────
+  // SRS FR-AUTH: the popup appears ~1 minute after login for users with an
+  // incomplete profile, and persists until completed. Scheduled at most once
+  // per session (a ref guard), and snoozed for the session once dismissed
+  // (sessionStorage) so it does not nag — but re-prompts on the next login,
+  // since sessionStorage is cleared with the session.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (completionPromptScheduledRef.current) return;
+    if (!completionStatus || completionStatus.complete) return;
+    if (sessionStorage.getItem(PROFILE_MODAL_DISMISSED_KEY) === '1') return;
+
+    completionPromptScheduledRef.current = true;
+    const id = setTimeout(() => {
+      // Re-check at fire time: the user may have completed or dismissed via the
+      // always-visible tracker during the delay.
+      const latest = completionStatusRef.current;
+      if (!latest || latest.complete) return;
+      if (sessionStorage.getItem(PROFILE_MODAL_DISMISSED_KEY) === '1') return;
+      setShowCompletionModal(true);
+    }, PROFILE_COMPLETION_PROMPT_DELAY_MS);
+    return () => clearTimeout(id);
+  }, [completionStatus]);
 
   // ── Late period full-screen alert (once per day) ─────────────────────────
   useEffect(() => {
