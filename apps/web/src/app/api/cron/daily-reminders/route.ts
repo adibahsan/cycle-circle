@@ -1,5 +1,5 @@
 import { withCronAuth } from '@vesta/shared/server/middleware'
-import { runDailyReminders, dispatchScheduledBroadcast } from '@vesta/shared/server/services'
+import { runDailyReminders, dispatchScheduledBroadcast, isCronEnabled } from '@vesta/shared/server/services'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -25,9 +25,17 @@ export const maxDuration = 60
 // Vercel Cron invokes the path with GET (and injects the Bearer CRON_SECRET);
 // manual/admin triggers may POST. Export the same handler for both.
 const handler = withCronAuth(async (request) => {
-  const body = (await request.json().catch(() => ({}))) as {
+  // Only POST carries a JSON body. Calling request.json() on a bodyless GET
+  // (how Vercel Cron invokes the schedule) throws, so guard by method.
+  const body = (
+    request.method === 'POST' ? await request.json().catch(() => ({})) : {}
+  ) as {
     userId?: string
     force?: boolean
+    overrideDisabled?: boolean
+  }
+  if (!body.overrideDisabled && !(await isCronEnabled('daily-reminders'))) {
+    return Response.json({ skipped: true, reason: 'cron disabled' })
   }
   const result = await runDailyReminders({ userId: body.userId, force: body.force })
 

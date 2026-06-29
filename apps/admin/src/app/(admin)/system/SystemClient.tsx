@@ -5,8 +5,12 @@ import { ServerCog, Play } from 'lucide-react'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { triggerDailyReminders, triggerCaasCheck } from '@/app/actions/system-actions'
-import type { CronJobResult } from '@/app/actions/system-actions'
+import {
+  triggerDailyReminders,
+  triggerCaasCheck,
+  setCronEnabledAction,
+} from '@/app/actions/system-actions'
+import type { CronJobResult, CronSlug } from '@/app/actions/system-actions'
 
 function CountsDisplay({ counts }: { counts: Record<string, number> }) {
   const entries = Object.entries(counts)
@@ -34,9 +38,24 @@ interface JobCardProps {
   result: CronJobResult | null
   isPending: boolean
   onRun: () => void
+  slug: CronSlug
+  enabled: boolean
+  isToggling: boolean
+  onToggle: () => void
 }
 
-function JobCard({ title, caption, schedule, result, isPending, onRun }: JobCardProps) {
+function JobCard({
+  title,
+  caption,
+  schedule,
+  result,
+  isPending,
+  onRun,
+  slug: _slug,
+  enabled,
+  isToggling,
+  onToggle,
+}: JobCardProps) {
   return (
     <Card>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -46,8 +65,40 @@ function JobCard({ title, caption, schedule, result, isPending, onRun }: JobCard
           <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
             Production schedule: {schedule}
           </p>
+
+          {/* Daily schedule toggle */}
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-xs font-medium text-[var(--color-text-muted)]">
+              Daily schedule
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={enabled}
+              aria-label={`Daily schedule for ${title}`}
+              disabled={isToggling}
+              onClick={onToggle}
+              className={[
+                'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent',
+                'transition-colors focus-visible:outline-none focus-visible:ring-2',
+                'focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2',
+                'disabled:cursor-not-allowed disabled:opacity-50',
+                enabled ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-border)]',
+              ].join(' ')}
+            >
+              <span
+                aria-hidden="true"
+                className={[
+                  'pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm',
+                  'transition-transform',
+                  enabled ? 'translate-x-5' : 'translate-x-0',
+                ].join(' ')}
+              />
+            </button>
+          </div>
         </div>
-        <div className="shrink-0">
+
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
           <Button
             size="sm"
             loading={isPending}
@@ -58,6 +109,9 @@ function JobCard({ title, caption, schedule, result, isPending, onRun }: JobCard
             <Play size={13} aria-hidden="true" />
             Run now
           </Button>
+          <p className="text-xs text-[var(--color-text-muted)]">
+            Runs immediately, even when the daily schedule is off.
+          </p>
         </div>
       </div>
 
@@ -89,12 +143,19 @@ function JobCard({ title, caption, schedule, result, isPending, onRun }: JobCard
   )
 }
 
-export function SystemClient() {
+export function SystemClient({
+  initialSettings,
+}: {
+  initialSettings: Record<CronSlug, boolean>
+}) {
   const [remindersResult, setRemindersResult] = useState<CronJobResult | null>(null)
   const [caasResult, setCaasResult] = useState<CronJobResult | null>(null)
+  const [settings, setSettings] = useState(initialSettings)
+  const [togglingSlug, setTogglingSlug] = useState<CronSlug | null>(null)
 
   const [isRemindingPending, startReminders] = useTransition()
   const [isCaasPending, startCaas] = useTransition()
+  const [, startToggle] = useTransition()
 
   function handleRunReminders() {
     startReminders(async () => {
@@ -107,6 +168,23 @@ export function SystemClient() {
     startCaas(async () => {
       const result = await triggerCaasCheck()
       setCaasResult(result)
+    })
+  }
+
+  function handleToggle(slug: CronSlug) {
+    if (togglingSlug !== null) return
+    const prev = settings[slug]
+    const next = !prev
+    // Optimistic update
+    setSettings((s) => ({ ...s, [slug]: next }))
+    setTogglingSlug(slug)
+    startToggle(async () => {
+      const res = await setCronEnabledAction(slug, next)
+      if (!res.ok) {
+        // Revert on failure
+        setSettings((s) => ({ ...s, [slug]: prev }))
+      }
+      setTogglingSlug(null)
     })
   }
 
@@ -134,6 +212,10 @@ export function SystemClient() {
           result={remindersResult}
           isPending={isRemindingPending}
           onRun={handleRunReminders}
+          slug="daily-reminders"
+          enabled={settings['daily-reminders']}
+          isToggling={togglingSlug === 'daily-reminders'}
+          onToggle={() => handleToggle('daily-reminders')}
         />
 
         <JobCard
@@ -143,6 +225,10 @@ export function SystemClient() {
           result={caasResult}
           isPending={isCaasPending}
           onRun={handleRunCaas}
+          slug="caas-check"
+          enabled={settings['caas-check']}
+          isToggling={togglingSlug === 'caas-check'}
+          onToggle={() => handleToggle('caas-check')}
         />
       </div>
     </div>

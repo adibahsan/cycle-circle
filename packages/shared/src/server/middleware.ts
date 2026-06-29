@@ -54,7 +54,7 @@ export function withCronAuth(handler: (request: Request) => Promise<Response>) {
       if (!env.CRON_SECRET || !token || !safeEqual(token, env.CRON_SECRET)) {
         throw new ApiError(401, 'Invalid cron secret', 'UNAUTHORIZED')
       }
-      return handler(request)
+      return await handler(request)
     } catch (error) {
       return handleApiError(error)
     }

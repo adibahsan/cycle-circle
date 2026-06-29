@@ -432,3 +432,14 @@ model EmailLog {
   @@index([resendId])
   @@index([sentAt])
 }
+
+/// Per-cron on/off switch for scheduled (Vercel Cron) execution.
+/// An absent row means the cron is enabled, so existing deployments keep
+/// running with no behavior change. The manual "Run now" admin trigger bypasses
+/// this flag via an explicit override.
+model CronSetting {
+  slug      String   @id // 'daily-reminders' | 'caas-check'
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  updatedBy String? // admin user id who last changed it
+}

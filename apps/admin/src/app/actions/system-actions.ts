@@ -1,7 +1,15 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { requireAdminAuth, getAuthUser } from '@vesta/shared/server/auth'
-import { createAuditLog } from '@vesta/shared/server/services'
+import {
+  createAuditLog,
+  getCronSettings,
+  setCronEnabled,
+  type CronSlug,
+} from '@vesta/shared/server/services'
+
+export type { CronSlug } from '@vesta/shared/server/services'
 
 export type CronJobResult = {
   ok: boolean
@@ -25,7 +33,8 @@ async function runJob(
   try {
     const res = await fetch(`${base}/api/cron/${slug}`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${secret}` },
+      headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ overrideDisabled: true }),
       cache: 'no-store',
     })
     // The cron JSON can include non-numeric fields (e.g. daily-reminders'
@@ -75,7 +84,7 @@ export async function sendUserReminders(userId: string): Promise<CronJobResult> 
     const res = await fetch(`${base}/api/cron/daily-reminders`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, force: true }),
+      body: JSON.stringify({ userId, force: true, overrideDisabled: true }),
       cache: 'no-store',
     })
     // The cron JSON can include non-numeric fields (e.g. daily-reminders'
@@ -100,5 +109,26 @@ export async function sendUserReminders(userId: string): Promise<CronJobResult> 
     return { ok: true, counts }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Request failed' }
+  }
+}
+
+export async function getCronSettingsAction(): Promise<Record<CronSlug, boolean>> {
+  await requireAdminAuth()
+  return getCronSettings()
+}
+
+export async function setCronEnabledAction(
+  slug: CronSlug,
+  enabled: boolean,
+): Promise<{ ok: boolean; enabled: boolean; error?: string }> {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+  try {
+    await setCronEnabled(slug, enabled, admin.id)
+    await createAuditLog(admin.id, 'SET_CRON_ENABLED', 'CronJob', slug, { enabled })
+    revalidatePath('/system')
+    return { ok: true, enabled }
+  } catch (e) {
+    return { ok: false, enabled: !enabled, error: e instanceof Error ? e.message : 'Failed to update' }
   }
 }
