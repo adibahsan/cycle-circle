@@ -30,7 +30,7 @@ export async function sendPeriodAlert(params: {
       type: 'PERIOD_ALERT',
       userId: params.userId,
       profileId: params.profileId,
-    })
+    }).catch((err) => console.error('[EMAIL] Period alert failed:', err))
   }
 
   // SMS: only Pro subscribers with a phone number
@@ -68,7 +68,7 @@ export async function sendFertileAlert(params: {
       type: 'FERTILE_ALERT',
       userId: params.userId,
       profileId: params.profileId,
-    })
+    }).catch((err) => console.error('[EMAIL] Fertile alert failed:', err))
   }
 
   // SMS: only Pro subscribers with a phone number
@@ -104,7 +104,7 @@ export async function sendLoggingReminder(params: {
       type: 'LOGGING_REMINDER',
       userId: params.userId,
       profileId: params.profileId,
-    })
+    }).catch((err) => console.error('[EMAIL] Logging reminder failed:', err))
   }
 
   // SMS: only Pro subscribers with a phone number
@@ -140,7 +140,7 @@ export async function sendProfileCompletionReminder(params: {
     await sendEmail(params.email, subject, html, {
       type: 'PROFILE_COMPLETION_REMINDER',
       userId: params.userId,
-    })
+    }).catch((err) => console.error('[EMAIL] Profile completion reminder failed:', err))
   }
 
   // SMS: any user with a phone number (not Pro-gated)

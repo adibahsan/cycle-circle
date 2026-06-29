@@ -187,6 +187,17 @@ export interface CaasBalanceResult {
 export async function caasGetBalance(
   subscriberId: string,
 ): Promise<CaasBalanceResult> {
+  // Dev: skip the simulator and report a synthetic healthy balance so the
+  // caas-check cron doesn't ECONNREFUSED + retry against a non-running service.
+  if (env.DEV_MODE || env.NODE_ENV === 'development') {
+    console.log('[CAAS][dev] (not queried — simulator skipped) balance for', subscriberId)
+    return {
+      statusCode: 'S1000',
+      accountType: 'PREPAID',
+      accountStatus: 'ACTIVE',
+      chargeableBalance: '1000',
+    }
+  }
   const url = `${getBaseUrl()}/caas/get/balance`
   const data = await fetchWithRetry(url, {
     ...authFields(),
@@ -218,6 +229,12 @@ export async function smsSend(
   destinationAddresses: string[],
   deliveryStatusRequest = 1,
 ): Promise<SmsSendResult> {
+  // Dev: the BDApps simulator usually isn't running locally — log the message to
+  // the console instead of POSTing to it (avoids ECONNREFUSED + retry backoff).
+  if (env.DEV_MODE || env.NODE_ENV === 'development') {
+    console.log('[SMS][dev] (not sent — simulator skipped) →', destinationAddresses, '|', message)
+    return { messageId: `dev-${Date.now()}`, status: 'DEV' }
+  }
   const url = `${getBaseUrl()}/sms/send`
   const data = await fetchWithRetry(url, {
     ...authFields(),

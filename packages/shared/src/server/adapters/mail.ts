@@ -64,6 +64,12 @@ export async function sendEmail(
   const type: EmailType = meta?.type ?? 'MAGIC_LINK'
   const provider = resend ? 'RESEND' : 'SMTP'
 
+  // Dev: surface the email in the same console as the dev SMS logs. Delivery
+  // still proceeds below (to Mailpit when RESEND_API_KEY is absent).
+  if (env.DEV_MODE || env.NODE_ENV === 'development') {
+    console.log('[EMAIL][dev] →', to, '|', subject, `(${provider})`)
+  }
+
   try {
     let resendId: string | undefined
 
