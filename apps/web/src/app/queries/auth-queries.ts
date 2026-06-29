@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { verifyAuth, getAuthUser } from '@vesta/shared/server/auth'
 import type { AuthUser } from '@vesta/shared/server/auth'
+import { cacheTags, WEB_CACHE_TTL } from '@/lib/cache-tags'
 
 export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
   const jwt = await verifyAuth()
@@ -11,7 +12,7 @@ export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
     return await unstable_cache(
       () => getAuthUser(jwt.sub),
       ['user', jwt.sub],
-      { tags: [`user:${jwt.sub}`], revalidate: 300 }
+      { tags: [cacheTags.user(jwt.sub)], revalidate: WEB_CACHE_TTL }
     )()
   } catch {
     return null

@@ -1,29 +1,17 @@
 import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { requireCurrentUser } from './auth-queries'
-import { listProfiles, getProfileById } from '@vesta/shared/server/services'
+import { listProfiles } from '@vesta/shared/server/services'
 import { cookies } from 'next/headers'
+import { cacheTags, WEB_CACHE_TTL } from '@/lib/cache-tags'
 
 export const getProfiles = cache(async () => {
   const user = await requireCurrentUser()
   return unstable_cache(
     () => listProfiles(user.id),
     ['profiles', user.id],
-    { tags: [`profiles:${user.id}`], revalidate: 300 }
+    { tags: [cacheTags.profiles(user.id)], revalidate: WEB_CACHE_TTL }
   )()
-})
-
-export const getProfile = cache(async (profileId: string) => {
-  const user = await requireCurrentUser()
-  try {
-    return unstable_cache(
-      () => getProfileById(profileId, user.id),
-      ['profile', profileId],
-      { tags: [`profiles:${user.id}`], revalidate: 300 }
-    )()
-  } catch {
-    return null
-  }
 })
 
 export async function getActiveProfileId(
