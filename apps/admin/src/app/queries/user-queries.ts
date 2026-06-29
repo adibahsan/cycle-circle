@@ -50,7 +50,7 @@ export const getUserSignupTrendQuery = cache(async (days: number) => {
   await requireAdminUser()
   return unstable_cache(
     () => getUserSignupTrend({ days }),
-    ['admin-user-signup-trend', String(days)],
+    ['admin-users-signup-trend', String(days)],
     { tags: [adminCacheTags.users], revalidate: ADMIN_CACHE_TTL }
   )()
 })

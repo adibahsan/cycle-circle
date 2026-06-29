@@ -56,7 +56,7 @@ export const getUserTrend = cache(async (days: number) => {
   await requireAdminUser()
   return unstable_cache(
     () => svcGetUserTrend({ days }),
-    ['admin-user-trend', String(days)],
+    ['admin-analytics-user-trend', String(days)],
     { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
   )()
 })
