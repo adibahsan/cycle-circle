@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={manrope.variable} suppressHydrationWarning>
-      <body className="min-h-screen font-[var(--font-display)] antialiased">
+      <body className="min-h-screen font-[var(--font-display)] antialiased" suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>
