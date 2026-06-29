@@ -19,7 +19,7 @@ function CountsDisplay({ counts }: { counts: Record<string, number> }) {
             {key.replace(/([A-Z])/g, ' $1').trim()}
           </dt>
           <dd className="text-lg font-bold tabular-nums text-[var(--color-text-primary)]">
-            {value}
+            {typeof value === 'number' ? value : String(value)}
           </dd>
         </div>
       ))}

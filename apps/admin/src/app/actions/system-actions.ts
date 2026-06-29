@@ -28,7 +28,15 @@ async function runJob(
       headers: { Authorization: `Bearer ${secret}` },
       cache: 'no-store',
     })
-    const counts = (await res.json().catch(() => undefined)) as Record<string, number> | undefined
+    // The cron JSON can include non-numeric fields (e.g. daily-reminders'
+    // `smsBroadcast` object). Keep only numeric entries so the counts contract
+    // holds and the admin UI never tries to render an object as a React child.
+    const raw = (await res.json().catch(() => undefined)) as Record<string, unknown> | undefined
+    const counts = raw
+      ? (Object.fromEntries(
+          Object.entries(raw).filter(([, v]) => typeof v === 'number'),
+        ) as Record<string, number>)
+      : undefined
     await createAuditLog(
       admin.id,
       action,
@@ -70,7 +78,15 @@ export async function sendUserReminders(userId: string): Promise<CronJobResult> 
       body: JSON.stringify({ userId, force: true }),
       cache: 'no-store',
     })
-    const counts = (await res.json().catch(() => undefined)) as Record<string, number> | undefined
+    // The cron JSON can include non-numeric fields (e.g. daily-reminders'
+    // `smsBroadcast` object). Keep only numeric entries so the counts contract
+    // holds and the admin UI never tries to render an object as a React child.
+    const raw = (await res.json().catch(() => undefined)) as Record<string, unknown> | undefined
+    const counts = raw
+      ? (Object.fromEntries(
+          Object.entries(raw).filter(([, v]) => typeof v === 'number'),
+        ) as Record<string, number>)
+      : undefined
     await createAuditLog(
       admin.id,
       'SEND_USER_REMINDERS',
