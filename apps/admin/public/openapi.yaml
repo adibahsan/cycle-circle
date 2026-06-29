@@ -1,0 +1,1108 @@
+# Vesta REST API — OpenAPI 3.1 spec.
+# Hand-maintained: update alongside route changes in apps/web/src/app/api/**.
+# Dev-only routes under /api/simulator-check/* are intentionally excluded
+# (gated by isSimulatorCheckerEnabled(); they return 404 in production).
+openapi: 3.1.0
+info:
+  title: Vesta API
+  version: 1.0.0
+  description: >-
+    REST API for Vesta — a bilingual (English + Bengali) reproductive-health and
+    cycle-intelligence platform. These endpoints are served by the customer web
+    app (`apps/web`); the two Admin Auth endpoints are served by the separate
+    admin app on its own origin. Authentication is a JWT carried in an httpOnly
+    cookie (set on login); protected endpoints are marked `cookieAuth`. Cron
+    endpoints require an `Authorization: Bearer <CRON_SECRET>` header. Webhook
+    endpoints are protected server-side (Svix HMAC for Resend; BDApps source/IP
+    allowlist for the rest) and so are shown without a standard security scheme.
+
+servers:
+  - url: https://test-vesta.velirasolutions.com
+    description: Staging / test-prod (web origin)
+  - url: http://localhost:3000
+    description: Local development (web origin)
+
+tags:
+  - name: Auth
+    description: OTP / magic-link / dev login, session status (web origin)
+  - name: Admin Auth
+    description: Admin email+password login (admin origin)
+  - name: Profiles
+    description: Family profile CRUD (max 6 per user)
+  - name: Tracking
+    description: Period logs, symptoms, dashboard, calendar, engagement
+  - name: Predictions
+    description: Cycle prediction (tiered)
+  - name: Billing
+    description: Pro subscription via BDApps CAAS
+  - name: Webhooks
+    description: Inbound webhooks (BDApps SMS/USSD/subscription, Resend email)
+  - name: Cron
+    description: Scheduled jobs (Bearer CRON_SECRET; invoked by Vercel Cron via GET)
+  - name: Health
+    description: Liveness / dependency health checks (public)
+
+security: []
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: vesta_auth
+      description: >-
+        JWT session cookie set on login (httpOnly). Web app uses `vesta_auth`;
+        the admin app uses `vesta_admin_token` on its own origin.
+    cronBearer:
+      type: http
+      scheme: bearer
+      description: "Authorization: Bearer <CRON_SECRET> (injected by Vercel Cron)."
+
+  schemas:
+    Error:
+      type: object
+      description: Standard error envelope. Unhandled 500s may omit `code`.
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+          required: [message]
+      required: [error]
+
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    WebhookAck:
+      type: object
+      description: BDApps-style acknowledgement.
+      properties:
+        statusCode:
+          type: string
+          example: S1000
+        statusDetail:
+          type: string
+          example: Received
+      required: [statusCode, statusDetail]
+
+    AuthUser:
+      type: object
+      properties:
+        id: { type: string }
+        phone:
+          type: [string, "null"]
+        authMethod: { type: string, example: otp }
+        subscriptionStatus: { type: string, example: free }
+        language: { type: string, enum: [en, bn] }
+        profileCompleted: { type: boolean }
+        fullName:
+          type: [string, "null"]
+        createdAt: { type: string, format: date-time }
+
+    Profile:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        name: { type: string }
+        relation:
+          type: string
+          enum: [SELF, WIFE, SISTER, MOTHER, DAUGHTER, GIRLFRIEND]
+        cycleLength: { type: integer, example: 28 }
+        periodLength: { type: integer, example: 5 }
+        lastPeriodStart:
+          type: [string, "null"]
+          format: date-time
+        goal:
+          type: [string, "null"]
+        createdAt: { type: string, format: date-time }
+
+    PeriodLog:
+      type: object
+      properties:
+        id: { type: string }
+        profileId: { type: string }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
+        flowIntensity:
+          type: string
+          enum: [LIGHT, MEDIUM, HEAVY]
+        createdAt: { type: string, format: date-time }
+
+    SymptomLog:
+      type: object
+      properties:
+        id: { type: string }
+        profileId: { type: string }
+        date: { type: string, format: date-time }
+        category:
+          type: string
+          enum: [PHYSICAL, MOOD, DISCHARGE, LIFESTYLE]
+        symptomId: { type: string }
+        value: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    Prediction:
+      type: object
+      properties:
+        profileId: { type: string }
+        tier:
+          type: string
+          enum: [AVERAGE, ARIMA, LSTM]
+        predictedCycleLength: { type: integer }
+        nextPeriodStart:
+          type: [string, "null"]
+          format: date-time
+      additionalProperties: true
+
+  responses:
+    ValidationError:
+      description: Invalid request body or query parameters
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: { message: "Validation error: ...", code: VALIDATION_ERROR } }
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    TrialExpired:
+      description: Email-trial expired (use { allowExpiredTrial } routes to bypass)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: { message: "Trial expired", code: TRIAL_EXPIRED } }
+    Forbidden:
+      description: Forbidden (disabled feature, or unknown webhook source)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    RateLimited:
+      description: Rate limit or cooldown exceeded
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: { message: "Too many requests", code: RATE_LIMITED } }
+    ServerError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+paths:
+  # ─────────────────────────── Auth (web) ───────────────────────────
+  /api/auth/dev-login:
+    post:
+      tags: [Auth]
+      summary: Dev-only login (DEV_MODE)
+      description: Bypass OTP using a phone number. Returns 403 DEV_MODE_DISABLED when DEV_MODE is off.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone: { type: string }
+              required: [phone]
+      responses:
+        '200':
+          description: Logged in; sets vesta_auth cookie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/AuthUser' }
+                  token: { type: string }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Log out
+      description: "Blacklists the current JWT and clears auth/active-profile cookies. (The admin app exposes the same path on its own origin, returning `{ success: true }`.)"
+      security: []
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Message' }
+
+  /api/auth/magic-link/callback:
+    get:
+      tags: [Auth]
+      summary: Consume a magic-link token
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '302':
+          description: Redirect to `/?auth=success`; sets auth cookie
+        '400':
+          description: MISSING_TOKEN / INVALID_TOKEN / TOKEN_USED / TOKEN_EXPIRED
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/auth/magic-link/request:
+    post:
+      tags: [Auth]
+      summary: Request a magic-link email
+      description: Rate-limited to 3 per hour per email.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                language: { type: string, enum: [en, bn], default: en }
+              required: [email]
+      responses:
+        '200':
+          description: Magic link sent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Message' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/auth/otp/request:
+    post:
+      tags: [Auth]
+      summary: Request an OTP SMS
+      description: 60s resend cooldown (429 OTP_COOLDOWN) plus a 3/60s rate limit (429 RATE_LIMITED).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone: { type: string }
+              required: [phone]
+      responses:
+        '200':
+          description: OTP sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  referenceNo: { type: string }
+                  message: { type: string }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/auth/otp/verify:
+    post:
+      tags: [Auth]
+      summary: Verify an OTP
+      description: Rate-limited 5/300s. Errors 404 CHALLENGE_NOT_FOUND, 400 ALREADY_VERIFIED / CHALLENGE_EXPIRED / INVALID_OTP.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                referenceNo: { type: string }
+                otp: { type: string }
+              required: [referenceNo, otp]
+      responses:
+        '200':
+          description: Verified; sets auth cookie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      phone: { type: string }
+                      profileCompleted: { type: boolean }
+                  token: { type: string }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /api/auth/status:
+    get:
+      tags: [Auth]
+      summary: Current session user
+      description: Allowed even when the email trial is expired.
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: The authenticated user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/AuthUser' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ─────────────────────────── Admin Auth ───────────────────────────
+  /api/auth/login:
+    post:
+      tags: [Admin Auth]
+      summary: Admin login (admin origin)
+      description: "Served by the admin app. Verifies email+password and sets the `vesta_admin_token` cookie. The admin logout is the same `/api/auth/logout` path on the admin origin, returning `{ success: true }`."
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+              required: [email, password]
+      responses:
+        '200':
+          description: Logged in; sets admin JWT cookie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ─────────────────────────── Profiles ───────────────────────────
+  /api/profiles:
+    get:
+      tags: [Profiles]
+      summary: List profiles
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Profiles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profiles:
+                    type: array
+                    items: { $ref: '#/components/schemas/Profile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Profiles]
+      summary: Create a profile (max 6)
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 1, maxLength: 100 }
+                relation:
+                  type: string
+                  enum: [SELF, WIFE, SISTER, MOTHER, DAUGHTER, GIRLFRIEND]
+                cycleLength: { type: integer, minimum: 21, maximum: 45 }
+                periodLength: { type: integer, minimum: 1, maximum: 14 }
+                lastPeriodStart: { type: string }
+                goal: { type: string, maxLength: 500 }
+              required: [name, relation]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile: { $ref: '#/components/schemas/Profile' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/profiles/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Profiles]
+      summary: Get a profile + its prediction
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Profile and prediction
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile: { $ref: '#/components/schemas/Profile' }
+                  prediction:
+                    oneOf:
+                      - { $ref: '#/components/schemas/Prediction' }
+                      - { type: 'null' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Profiles]
+      summary: Update a profile
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 1, maxLength: 100 }
+                cycleLength: { type: integer, minimum: 21, maximum: 45 }
+                periodLength: { type: integer, minimum: 1, maximum: 14 }
+                goal: { type: [string, "null"], maxLength: 500 }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile: { $ref: '#/components/schemas/Profile' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Profiles]
+      summary: Delete a profile
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Message' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/profile/completion:
+    get:
+      tags: [Profiles]
+      summary: Profile-completion status
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Completion status (service getProfileCompletionStatus)
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ─────────────────────────── Tracking ───────────────────────────
+  /api/tracking/calendar:
+    get:
+      tags: [Tracking]
+      summary: Calendar days for a month
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: profileId, in: query, required: true, schema: { type: string } }
+        - { name: month, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}$' } }
+      responses:
+        '200':
+          description: Calendar days
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  days:
+                    type: array
+                    items: { type: object, additionalProperties: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/tracking/dashboard:
+    get:
+      tags: [Tracking]
+      summary: Dashboard data
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: profileId, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Dashboard payload (service getDashboardData)
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/tracking/engagement:
+    get:
+      tags: [Tracking]
+      summary: Engagement summary
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: profileId, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Engagement payload (service getEngagementSummary)
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/tracking/logging-status:
+    get:
+      tags: [Tracking]
+      summary: Today's logging status for the active profile
+      description: Resolves the active profile from the `vesta_active_profile` cookie (falls back to the first profile).
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Logging status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  goal: { type: [string, "null"] }
+                  loggedToday: { type: boolean }
+                  isPeriodLate: { type: boolean }
+                  daysLate: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/tracking/period-logs:
+    get:
+      tags: [Tracking]
+      summary: List period logs
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: profileId, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Period logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items: { $ref: '#/components/schemas/PeriodLog' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Tracking]
+      summary: Create a period log (triggers prediction recalculation)
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                profileId: { type: string }
+                startDate: { type: string }
+                endDate: { type: string }
+                flowIntensity: { type: string, enum: [LIGHT, MEDIUM, HEAVY] }
+              required: [profileId, startDate, endDate, flowIntensity]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  log: { $ref: '#/components/schemas/PeriodLog' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/tracking/period-logs/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    patch:
+      tags: [Tracking]
+      summary: Update a period log (recalculates prediction)
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                startDate: { type: string }
+                endDate: { type: string }
+                flowIntensity: { type: string, enum: [LIGHT, MEDIUM, HEAVY] }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  log: { $ref: '#/components/schemas/PeriodLog' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Tracking]
+      summary: Delete a period log
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Message' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/tracking/symptoms:
+    get:
+      tags: [Tracking]
+      summary: List symptom logs
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: profileId, in: query, required: true, schema: { type: string } }
+        - { name: date, in: query, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: Symptom logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items: { $ref: '#/components/schemas/SymptomLog' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Tracking]
+      summary: Toggle a symptom for a date
+      description: Creates the symptom log if absent (201), or removes it if present (200).
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                profileId: { type: string }
+                date: { type: string }
+                category: { type: string, enum: [PHYSICAL, MOOD, DISCHARGE, LIFESTYLE] }
+                symptomId: { type: string }
+                value: { type: string }
+              required: [profileId, date, category, symptomId, value]
+      responses:
+        '201':
+          description: Symptom log created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  log: { $ref: '#/components/schemas/SymptomLog' }
+        '200':
+          description: Symptom log removed (toggled off)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Message' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ─────────────────────────── Predictions ───────────────────────────
+  /api/predictions:
+    get:
+      tags: [Predictions]
+      summary: Cycle prediction for a profile
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: profileId, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Prediction + tier explanation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prediction: { $ref: '#/components/schemas/Prediction' }
+                  tierExplanation: { type: [string, "null"] }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ─────────────────────────── Billing ───────────────────────────
+  /api/billing/subscribe:
+    post:
+      tags: [Billing]
+      summary: Subscribe to Pro (CAAS direct-debit, 5 BDT)
+      description: Uses the authenticated user's phone. Returns 400 PHONE_REQUIRED if absent. Allowed even when the email trial is expired.
+      security: [{ cookieAuth: [] }]
+      responses:
+        '201':
+          description: Subscription + transaction
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription: { type: object, additionalProperties: true }
+                  transaction: { type: object, additionalProperties: true }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ─────────────────────────── Webhooks ───────────────────────────
+  /api/webhooks/sms/receive:
+    post:
+      tags: [Webhooks]
+      summary: Inbound SMS (BDApps)
+      description: Protected by the BDApps source/IP allowlist (403 FORBIDDEN if unknown). Idempotent on `messageId`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sourceAddress: { type: string }
+                message: { type: string }
+                messageId: { type: string }
+                timeStamp: { type: string }
+      responses:
+        '200':
+          description: Acknowledged
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WebhookAck' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/webhooks/sms/report:
+    post:
+      tags: [Webhooks]
+      summary: SMS delivery report (BDApps)
+      description: Source/IP allowlist. Idempotent on `requestId:destinationAddress`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                destinationAddress: { type: string }
+                requestId: { type: string }
+                deliveryStatus: { type: string }
+                timeStamp: { type: string }
+      responses:
+        '200':
+          description: Acknowledged
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WebhookAck' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/webhooks/subscription/notify:
+    post:
+      tags: [Webhooks]
+      summary: Subscription status change (BDApps CAAS)
+      description: Source/IP allowlist. Maps ACTIVE→PRO and INACTIVE/SUSPENDED/EXPIRED→LAPSED. Idempotent on `subscriberId:timeStamp`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subscriberId: { type: string }
+                status: { type: string }
+                reason: { type: string }
+                timeStamp: { type: string }
+      responses:
+        '200':
+          description: Acknowledged
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WebhookAck' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/webhooks/ussd/receive:
+    post:
+      tags: [Webhooks]
+      summary: Inbound USSD (BDApps)
+      description: Source/IP allowlist. Idempotent on `sessionId`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subscriberId: { type: string }
+                ussdContent: { type: string }
+                sessionId: { type: string }
+                status: { type: string }
+      responses:
+        '200':
+          description: Acknowledged
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WebhookAck' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/webhooks/resend:
+    post:
+      tags: [Webhooks]
+      summary: Resend email delivery events
+      description: Verified via Svix HMAC-SHA256 (`svix-id` / `svix-timestamp` / `svix-signature` headers + RESEND_WEBHOOK_SECRET). Returns plain text `OK`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [email.delivered, email.bounced, email.complained, email.delivery_delayed]
+                data:
+                  type: object
+                  properties:
+                    email_id: { type: string }
+                  required: [email_id]
+              required: [type, data]
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema: { type: string, example: OK }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ─────────────────────────── Cron ───────────────────────────
+  /api/cron/caas-check:
+    get:
+      tags: [Cron]
+      summary: CAAS keep-alive + subscription balance check
+      description: Runs a Supabase keep-alive query and checks PRO subscriptions' CAAS balance. Invoked by Vercel Cron via GET (identical handler on POST).
+      security: [{ cronBearer: [] }]
+      responses:
+        '200':
+          description: Result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checked: { type: integer }
+                  healthy: { type: integer }
+                  failures: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Cron]
+      summary: CAAS keep-alive + subscription balance check (POST alias)
+      security: [{ cronBearer: [] }]
+      responses:
+        '200':
+          description: Result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checked: { type: integer }
+                  healthy: { type: integer }
+                  failures: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/cron/daily-reminders:
+    get:
+      tags: [Cron]
+      summary: Daily reminders + scheduled SMS broadcast
+      description: Sends period/fertile/logging/completion reminders and dispatches the day's SMS broadcast. Invoked by Vercel Cron via GET (identical handler on POST).
+      security: [{ cronBearer: [] }]
+      responses:
+        '200':
+          description: Reminder run result
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  smsBroadcast: { type: object, additionalProperties: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Cron]
+      summary: Daily reminders + scheduled SMS broadcast (POST alias)
+      description: Optional body `{ userId?, force? }` to re-trigger a specific user's reminders.
+      security: [{ cronBearer: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId: { type: string }
+                force: { type: boolean }
+      responses:
+        '200':
+          description: Reminder run result
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ─────────────────────────── Health ───────────────────────────
+  /api/health/db:
+    get:
+      tags: [Health]
+      summary: Database health
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  latency: { type: number }
+        '503':
+          description: Unhealthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: error }
+                  message: { type: string }
+
+  /api/health/redis:
+    get:
+      tags: [Health]
+      summary: Redis health
+      description: "Returns `{ status: skipped, mode: in-memory }` when REDIS_URL is unset."
+      security: []
+      responses:
+        '200':
+          description: OK / skipped
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  mode: { type: string, example: in-memory }
+                  latency: { type: number }
+        '503':
+          description: Unhealthy
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/health/worker:
+    get:
+      tags: [Health]
+      summary: Background-worker heartbeat
+      security: []
+      responses:
+        '200':
+          description: Heartbeat status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  lastHeartbeat: { type: [string, "null"] }
+                  staleSeconds: { type: number }
+                  error: { type: string }
+
+  /api/health/bdapps:
+    get:
+      tags: [Health]
+      summary: BDApps simulator reachability
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  latency: { type: number }
+                  httpStatus: { type: integer }
+                  url: { type: string }
+        '503':
+          description: Unreachable
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+
+  /api/health/mailpit:
+    get:
+      tags: [Health]
+      summary: Mailpit reachability
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  latency: { type: number }
+                  httpStatus: { type: integer }
+                  url: { type: string }
+        '503':
+          description: Unreachable
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
