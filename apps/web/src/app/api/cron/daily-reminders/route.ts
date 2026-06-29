@@ -22,7 +22,9 @@ export const maxDuration = 60
  * When `force` is true, the per-day dedup checks are skipped so an admin can
  * re-trigger a specific user's reminder emails on demand.
  */
-export const POST = withCronAuth(async (request) => {
+// Vercel Cron invokes the path with GET (and injects the Bearer CRON_SECRET);
+// manual/admin triggers may POST. Export the same handler for both.
+const handler = withCronAuth(async (request) => {
   const body = (await request.json().catch(() => ({}))) as {
     userId?: string
     force?: boolean
@@ -38,3 +40,6 @@ export const POST = withCronAuth(async (request) => {
 
   return Response.json({ ...result, smsBroadcast })
 })
+
+export const GET = handler
+export const POST = handler
