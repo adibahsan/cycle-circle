@@ -12,6 +12,7 @@ import {
   recalculatePrediction,
   saveSymptomLogs,
 } from '@vesta/shared/server/services'
+import { cacheTags } from '@/lib/cache-tags'
 
 const createPeriodLogSchema = z.object({
   profileId: z.string().min(1),
@@ -34,7 +35,7 @@ export async function createPeriodLog(input: z.infer<typeof createPeriodLogSchem
   if (shouldRecalcPrediction) {
     await recalculatePrediction(data.profileId)
   }
-  revalidateTag(`tracking:${data.profileId}`, { expire: 0 })
+  revalidateTag(cacheTags.tracking(data.profileId), { expire: 0 })
   return log
 }
 
@@ -54,7 +55,7 @@ export async function updatePeriodLog(logId: string, input: z.infer<typeof updat
   if (shouldRecalcPrediction) {
     await recalculatePrediction(profileId)
   }
-  revalidateTag(`tracking:${profileId}`, { expire: 0 })
+  revalidateTag(cacheTags.tracking(profileId), { expire: 0 })
   return log
 }
 
@@ -67,7 +68,7 @@ export async function deletePeriodLog(logId: string) {
   if (shouldRecalcPrediction) {
     await recalculatePrediction(profileId)
   }
-  revalidateTag(`tracking:${profileId}`, { expire: 0 })
+  revalidateTag(cacheTags.tracking(profileId), { expire: 0 })
 }
 
 const createSymptomSchema = z.object({
@@ -90,8 +91,8 @@ export async function toggleSymptom(input: z.infer<typeof createSymptomSchema>) 
     value: data.value,
   })
 
-  revalidateTag(`symptoms:${data.profileId}`, { expire: 0 })
-  revalidateTag(`tracking:${data.profileId}`, { expire: 0 })
+  revalidateTag(cacheTags.symptoms(data.profileId), { expire: 0 })
+  revalidateTag(cacheTags.tracking(data.profileId), { expire: 0 })
 }
 
 const allGoodSchema = z.object({
@@ -106,8 +107,8 @@ export async function markAllGoodToday(profileId: string, date?: string) {
 
   await setAllGoodToday(data.profileId, user.id, data.date)
 
-  revalidateTag(`symptoms:${data.profileId}`, { expire: 0 })
-  revalidateTag(`tracking:${data.profileId}`, { expire: 0 })
+  revalidateTag(cacheTags.symptoms(data.profileId), { expire: 0 })
+  revalidateTag(cacheTags.tracking(data.profileId), { expire: 0 })
 }
 
 const saveSymptomsSchema = z.object({
@@ -134,7 +135,7 @@ export async function saveSymptoms(input: z.infer<typeof saveSymptomsSchema>) {
     removed: data.removed,
   })
 
-  revalidateTag(`symptoms:${data.profileId}`, { expire: 0 })
-  revalidateTag(`tracking:${data.profileId}`, { expire: 0 })
+  revalidateTag(cacheTags.symptoms(data.profileId), { expire: 0 })
+  revalidateTag(cacheTags.tracking(data.profileId), { expire: 0 })
   return result
 }

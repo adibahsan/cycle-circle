@@ -7,6 +7,8 @@ import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
 import { findOtpChallenge, completeOtpAuth } from '@vesta/shared/server/services'
 import { isDevModeEnabled } from '@vesta/shared/server/dev'
 import { DEV_OTP_CODES } from '@vesta/shared/utils/config'
+import { revalidateTag } from 'next/cache'
+import { cacheTags } from '@/lib/cache-tags'
 
 const bodySchema = z.object({
   referenceNo: z.string().min(1, 'referenceNo is required'),
@@ -43,6 +45,7 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const user = await completeOtpAuth(challenge.id, challenge.phone)
+    revalidateTag(cacheTags.user(user.id), { expire: 0 })
 
     const token = await issueJwt({
       sub: user.id,

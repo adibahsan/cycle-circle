@@ -1,6 +1,8 @@
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { validateWebhookSource, persistWebhookEvent } from '@vesta/shared/server/adapters/webhooks'
 import { handleSubscriptionWebhook } from '@vesta/shared/server/services'
+import { revalidateTag } from 'next/cache'
+import { cacheTags } from '@/lib/cache-tags'
 
 type SubscriptionStatus = 'PRO' | 'LAPSED' | 'FREE'
 
@@ -39,7 +41,8 @@ export async function POST(request: Request): Promise<Response> {
       ? payload.subscriberId
       : `tel:${payload.subscriberId}`
 
-    await handleSubscriptionWebhook(phone, newStatus)
+    const updated = await handleSubscriptionWebhook(phone, newStatus)
+    if (updated) revalidateTag(cacheTags.user(updated.id), { expire: 0 })
 
     return Response.json({ statusCode: 'S1000', statusDetail: 'Received' })
   } catch (error) {

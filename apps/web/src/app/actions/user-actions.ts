@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { revalidateTag } from 'next/cache'
 import { requireAuth, getAuthUser, validateMsisdn } from '@vesta/shared/server/auth'
 import { completeUserProfile, updateUserContact, updateUserName as svcUpdateUserName, completeOnboardingTour as svcCompleteOnboardingTour } from '@vesta/shared/server/services'
+import { cacheTags } from '@/lib/cache-tags'
 
 const completeProfileSchema = z.object({
   fullName: z.string().min(1).max(200),
@@ -20,8 +21,8 @@ export async function completeProfile(input: z.infer<typeof completeProfileSchem
     phone: data.phone,
   })
 
-  revalidateTag(`user:${user.id}`, { expire: 0 })
-  revalidateTag(`profiles:${user.id}`, { expire: 0 })
+  revalidateTag(cacheTags.user(user.id), { expire: 0 })
+  revalidateTag(cacheTags.profiles(user.id), { expire: 0 })
   return updated
 }
 
@@ -51,7 +52,7 @@ export async function updateContactInfo(input: z.infer<typeof updateContactSchem
 
   await updateUserContact(user.id, updateData)
 
-  revalidateTag(`user:${user.id}`, { expire: 0 })
+  revalidateTag(cacheTags.user(user.id), { expire: 0 })
   return { success: true }
 }
 
@@ -64,8 +65,8 @@ export async function updateUserName(input: string) {
 
   await svcUpdateUserName(user.id, name)
 
-  revalidateTag(`user:${user.id}`, { expire: 0 })
-  revalidateTag(`profiles:${user.id}`, { expire: 0 })
+  revalidateTag(cacheTags.user(user.id), { expire: 0 })
+  revalidateTag(cacheTags.profiles(user.id), { expire: 0 })
   return { success: true }
 }
 
@@ -73,6 +74,6 @@ export async function completeOnboardingTour() {
   const jwt = await requireAuth()
   const user = await getAuthUser(jwt.sub)
   await svcCompleteOnboardingTour(user.id)
-  revalidateTag(`user:${user.id}`, { expire: 0 })
+  revalidateTag(cacheTags.user(user.id), { expire: 0 })
   return { success: true }
 }

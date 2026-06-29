@@ -8,6 +8,8 @@ import {
 } from '@vesta/shared/server/services'
 import { caasDirectDebit } from '@vesta/shared/server/adapters/bdapps'
 import type { AuthUser } from '@vesta/shared/server/auth'
+import { revalidateTag } from 'next/cache'
+import { cacheTags } from '@/lib/cache-tags'
 
 const SUBSCRIPTION_AMOUNT_BDT = 5
 
@@ -48,6 +50,7 @@ export const POST = withAuth(async (request, { user }: { user: AuthUser }) => {
       })
 
       await markUserPro(user.id)
+      revalidateTag(cacheTags.user(user.id), { expire: 0 })
 
       return Response.json({ subscription, transaction }, { status: 201 })
     } catch (dbError) {

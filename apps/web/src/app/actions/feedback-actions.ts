@@ -1,7 +1,6 @@
 'use server'
 
 import { z } from 'zod'
-import { revalidateTag } from 'next/cache'
 import { requireAuth, getAuthUser } from '@vesta/shared/server/auth'
 import { createFeedback } from '@vesta/shared/server/services'
 
@@ -24,6 +23,5 @@ export async function submitFeedback(input: z.infer<typeof feedbackSchema>) {
     rating: data.rating,
   })
 
-  revalidateTag(`feedback:${user.id}`, { expire: 0 })
   return feedback
 }

@@ -4,6 +4,8 @@ import { handleApiError } from '@vesta/shared/server/api-error'
 import { parseBody } from '@vesta/shared/server/validation'
 import { listProfiles, createProfile } from '@vesta/shared/server/services'
 import type { AuthUser } from '@vesta/shared/server/auth'
+import { revalidateTag } from 'next/cache'
+import { cacheTags } from '@/lib/cache-tags'
 
 const createProfileSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -35,6 +37,8 @@ export const POST = withAuth(async (request, { user }: { user: AuthUser }) => {
       lastPeriodStart: body.lastPeriodStart,
       goal: body.goal,
     })
+
+    revalidateTag(cacheTags.profiles(user.id), { expire: 0 })
 
     return Response.json({ profile }, { status: 201 })
   } catch (error) {

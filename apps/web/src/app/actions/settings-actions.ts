@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { revalidateTag } from 'next/cache'
 import { requireAuth, getAuthUser } from '@vesta/shared/server/auth'
 import { upsertNotificationPrefs, listProfiles, listPeriodLogs, getSymptomLogs, setProfileReminderOptOut } from '@vesta/shared/server/services'
+import { cacheTags } from '@/lib/cache-tags'
 
 const updatePrefsSchema = z.object({
   profileId: z.string().min(1),
@@ -23,7 +24,6 @@ export async function updateNotificationPrefs(input: z.infer<typeof updatePrefsS
     loggingReminder: data.loggingReminder,
   })
 
-  revalidateTag(`notifications:${data.profileId}`, { expire: 0 })
   return updated
 }
 
@@ -31,7 +31,7 @@ export async function updateProfileReminderOptOut(optOut: boolean): Promise<bool
   const jwt = await requireAuth()
   const user = await getAuthUser(jwt.sub)
   const result = await setProfileReminderOptOut(user.id, optOut)
-  revalidateTag(`user:${user.id}`, { expire: 0 })
+  revalidateTag(cacheTags.user(user.id), { expire: 0 })
   return result
 }
 

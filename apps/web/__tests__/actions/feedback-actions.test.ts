@@ -46,7 +46,9 @@ describe('submitFeedback', () => {
       rating: 5,
     })
     expect(result).toEqual(MOCK_FEEDBACK)
-    expect(revalidateTag).toHaveBeenCalledWith('feedback:user-1', { expire: 0 })
+    // Feedback reads are uncached (no `feedback:*` unstable_cache tag exists),
+    // so submitFeedback intentionally performs no revalidation.
+    expect(revalidateTag).not.toHaveBeenCalled()
   })
 
   it('throws on invalid category', async () => {

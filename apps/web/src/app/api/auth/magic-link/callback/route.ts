@@ -1,6 +1,8 @@
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { issueJwt, setAuthCookie } from '@vesta/shared/server/auth'
 import { findMagicLink, completeMagicLinkAuth } from '@vesta/shared/server/services'
+import { revalidateTag } from 'next/cache'
+import { cacheTags } from '@/lib/cache-tags'
 
 export async function GET(request: Request): Promise<Response> {
   try {
@@ -24,6 +26,7 @@ export async function GET(request: Request): Promise<Response> {
     }
 
     const user = await completeMagicLinkAuth(magicLink.id, magicLink.email)
+    revalidateTag(cacheTags.user(user.id), { expire: 0 })
 
     const jwtToken = await issueJwt({
       sub: user.id,

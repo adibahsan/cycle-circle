@@ -47,7 +47,9 @@ describe('updateNotificationPrefs', () => {
       loggingReminder: false,
     })
     expect(result).toEqual(MOCK_NOTIF_PREF)
-    expect(revalidateTag).toHaveBeenCalledWith('notifications:profile-1', { expire: 0 })
+    // Notification prefs are read uncached (no `notifications:*` unstable_cache
+    // tag exists), so updateNotificationPrefs intentionally performs no revalidation.
+    expect(revalidateTag).not.toHaveBeenCalled()
   })
 
   it('throws when profile is not owned by the current user', async () => {

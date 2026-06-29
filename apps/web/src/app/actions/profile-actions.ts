@@ -14,6 +14,7 @@ import {
   updateUserName as svcUpdateUserName,
   completeUserProfile as svcCompleteUserProfile,
 } from '@vesta/shared/server/services'
+import { cacheTags } from '@/lib/cache-tags'
 
 const createProfileSchema = z.object({
   name: z.string().min(1).max(100),
@@ -42,7 +43,8 @@ export async function createProfile(input: z.infer<typeof createProfileSchema>) 
 
   await svcCompleteUserProfile(user.id, { fullName: data.userName ?? user.fullName ?? data.name })
 
-  revalidateTag(`profiles:${user.id}`, { expire: 0 })
+  revalidateTag(cacheTags.profiles(user.id), { expire: 0 })
+  revalidateTag(cacheTags.user(user.id), { expire: 0 })
   return profile
 }
 
@@ -52,7 +54,7 @@ export async function renameProfile(profileId: string, name: string) {
 
   const updated = await svcRenameProfile(profileId, user.id, z.string().min(1).max(100).parse(name))
 
-  revalidateTag(`profiles:${user.id}`, { expire: 0 })
+  revalidateTag(cacheTags.profiles(user.id), { expire: 0 })
   return updated
 }
 
@@ -78,10 +80,10 @@ export async function updateProfile(input: z.infer<typeof updateProfileSchema>) 
     goal: data.goal,
   })
 
-  revalidateTag(`profiles:${user.id}`, { expire: 0 })
+  revalidateTag(cacheTags.profiles(user.id), { expire: 0 })
   // Goal/cycle changes affect dashboard + calendar (mode, predictions),
   // which are cached under the tracking tag.
-  revalidateTag(`tracking:${data.profileId}`, { expire: 0 })
+  revalidateTag(cacheTags.tracking(data.profileId), { expire: 0 })
   return updated
 }
 
@@ -94,8 +96,8 @@ export async function deleteProfile(profileId: string) {
   if (cookieStore.get('vesta_active_profile')?.value === profileId) {
     cookieStore.delete('vesta_active_profile')
   }
-  revalidateTag(`profiles:${user.id}`, { expire: 0 })
-  revalidateTag(`tracking:${profileId}`, { expire: 0 })
+  revalidateTag(cacheTags.profiles(user.id), { expire: 0 })
+  revalidateTag(cacheTags.tracking(profileId), { expire: 0 })
 }
 
 export async function setActiveProfileCookie(profileId: string) {

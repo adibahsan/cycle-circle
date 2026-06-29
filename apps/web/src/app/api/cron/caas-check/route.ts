@@ -1,4 +1,6 @@
 import { withCronAuth } from '@vesta/shared/server/middleware'
+import { revalidateTag } from 'next/cache'
+import { cacheTags } from '@/lib/cache-tags'
 import { handleApiError } from '@vesta/shared/server/api-error'
 import { listProSubscriptions, recordSubscriptionCheckResult, isCronEnabled } from '@vesta/shared/server/services'
 import { caasGetBalance } from '@vesta/shared/server/adapters/bdapps'
@@ -42,12 +44,13 @@ const handler = withCronAuth(async (request) => {
           if (isHealthy) healthy++
           else failures++
 
-          await recordSubscriptionCheckResult(
+          const checkResult = await recordSubscriptionCheckResult(
             sub.id,
             sub.userId,
             isHealthy,
             sub.consecutiveFailures,
           )
+          if (checkResult.lapsed) revalidateTag(cacheTags.user(sub.userId), { expire: 0 })
         } catch (err) {
           failures++
           console.error(`CAAS balance check failed for sub ${sub.id}:`, err)

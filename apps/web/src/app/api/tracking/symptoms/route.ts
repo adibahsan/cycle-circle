@@ -4,6 +4,8 @@ import { handleApiError } from '@vesta/shared/server/api-error'
 import { parseBody, parseSearchParams } from '@vesta/shared/server/validation'
 import { getSymptomLogs, toggleSymptomLog } from '@vesta/shared/server/services'
 import type { AuthUser } from '@vesta/shared/server/auth'
+import { revalidateTag } from 'next/cache'
+import { cacheTags } from '@/lib/cache-tags'
 
 const getParamsSchema = z.object({
   profileId: z.string().min(1, 'profileId is required'),
@@ -37,6 +39,9 @@ export const POST = withAuth(async (request, { user }: { user: AuthUser }) => {
       symptomId: body.symptomId,
       value: body.value,
     })
+
+    revalidateTag(cacheTags.symptoms(body.profileId), { expire: 0 })
+    revalidateTag(cacheTags.tracking(body.profileId), { expire: 0 })
 
     if (result.action === 'created') {
       return Response.json({ log: result.log }, { status: 201 })
