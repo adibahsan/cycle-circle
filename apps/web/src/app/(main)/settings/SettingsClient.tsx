@@ -274,6 +274,8 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
   const [contactEmail, setContactEmail] = useState('')
   const [contactPhone, setContactPhone] = useState('')
   const [contactSaving, setContactSaving] = useState(false)
+  const [emailError, setEmailError] = useState('')
+  const [phoneError, setPhoneError] = useState('')
   const [exporting, setExporting] = useState(false)
   const exportingRef = useRef(false)
   const [loggingOut, setLoggingOut] = useState(false)
@@ -343,15 +345,21 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
   const handleAddEmail = async () => {
     if (!contactEmail) return
     setContactSaving(true)
+    setEmailError('')
     try {
-      await updateContactInfo({ email: contactEmail })
-      showToast(t('settings.emailAdded'))
-      setAddingEmail(false)
-      setContactEmail('')
-      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
-      router.refresh()
+      const res = await updateContactInfo({ email: contactEmail })
+      if (res.ok) {
+        showToast(t('settings.emailAdded'))
+        setAddingEmail(false)
+        setContactEmail('')
+        setEmailError('')
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
+        router.refresh()
+      } else {
+        setEmailError(res.code === 'EMAIL_TAKEN' ? t('settings.emailInUse') : t('settings.emailAddFailed'))
+      }
     } catch {
-      showToast(t('settings.emailAddFailed'))
+      setEmailError(t('settings.emailAddFailed'))
     } finally {
       setContactSaving(false)
     }
@@ -360,15 +368,21 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
   const handleAddPhone = async () => {
     if (!contactPhone) return
     setContactSaving(true)
+    setPhoneError('')
     try {
-      await updateContactInfo({ phone: contactPhone })
-      showToast(t('settings.phoneAdded'))
-      setAddingPhone(false)
-      setContactPhone('')
-      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
-      router.refresh()
+      const res = await updateContactInfo({ phone: contactPhone })
+      if (res.ok) {
+        showToast(t('settings.phoneAdded'))
+        setAddingPhone(false)
+        setContactPhone('')
+        setPhoneError('')
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
+        router.refresh()
+      } else {
+        setPhoneError(res.code === 'PHONE_TAKEN' ? t('settings.phoneInUse') : t('settings.phoneAddFailed'))
+      }
     } catch {
-      showToast(t('settings.phoneAddFailed'))
+      setPhoneError(t('settings.phoneAddFailed'))
     } finally {
       setContactSaving(false)
     }
@@ -664,34 +678,41 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   {!user.email && (
                     <div className="pt-1 border-t border-[var(--color-border)]">
                       {addingEmail ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="email"
-                            name="email"
-                            autoComplete="email"
-                            placeholder={t('settings.emailInputPlaceholder')}
-                            value={contactEmail}
-                            onChange={(e) => setContactEmail(e.target.value)}
-                            className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
-                            spellCheck={false}
-                          />
-                          <button
-                            onClick={handleAddEmail}
-                            disabled={!contactEmail || contactSaving}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white gradient-primary disabled:opacity-50 transition-opacity"
-                          >
-                            {contactSaving ? '...' : t('common.save')}
-                          </button>
-                          <button
-                            onClick={() => { setAddingEmail(false); setContactEmail('') }}
-                            className="px-2 py-1.5 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
-                          >
-                            {t('common.cancel')}
-                          </button>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="email"
+                              name="email"
+                              autoComplete="email"
+                              placeholder={t('settings.emailInputPlaceholder')}
+                              value={contactEmail}
+                              onChange={(e) => { setContactEmail(e.target.value); if (emailError) setEmailError('') }}
+                              className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+                              spellCheck={false}
+                            />
+                            <button
+                              onClick={handleAddEmail}
+                              disabled={!contactEmail || contactSaving}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white gradient-primary disabled:opacity-50 transition-opacity"
+                            >
+                              {contactSaving ? '...' : t('common.save')}
+                            </button>
+                            <button
+                              onClick={() => { setAddingEmail(false); setContactEmail(''); setEmailError('') }}
+                              className="px-2 py-1.5 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                            >
+                              {t('common.cancel')}
+                            </button>
+                          </div>
+                          {emailError && (
+                            <p role="alert" aria-live="polite" className="text-xs text-red-500 dark:text-red-400 mt-1">
+                              {emailError}
+                            </p>
+                          )}
                         </div>
                       ) : (
                         <button
-                          onClick={() => setAddingEmail(true)}
+                          onClick={() => { setAddingEmail(true); setEmailError('') }}
                           className="flex items-center gap-2 w-full py-1 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors"
                         >
                           <Mail size={12} aria-hidden="true" />
@@ -705,34 +726,41 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   {!user.phone && (
                     <div className="pt-1 border-t border-[var(--color-border)]">
                       {addingPhone ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="tel"
-                            name="phone"
-                            autoComplete="tel"
-                            placeholder="01XXXXXXXXX"
-                            value={contactPhone}
-                            onChange={(e) => setContactPhone(e.target.value)}
-                            className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
-                            spellCheck={false}
-                          />
-                          <button
-                            onClick={handleAddPhone}
-                            disabled={!contactPhone || contactSaving}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white gradient-primary disabled:opacity-50 transition-opacity"
-                          >
-                            {contactSaving ? '...' : t('common.save')}
-                          </button>
-                          <button
-                            onClick={() => { setAddingPhone(false); setContactPhone('') }}
-                            className="px-2 py-1.5 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
-                          >
-                            {t('common.cancel')}
-                          </button>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="tel"
+                              name="phone"
+                              autoComplete="tel"
+                              placeholder="01XXXXXXXXX"
+                              value={contactPhone}
+                              onChange={(e) => { setContactPhone(e.target.value); if (phoneError) setPhoneError('') }}
+                              className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+                              spellCheck={false}
+                            />
+                            <button
+                              onClick={handleAddPhone}
+                              disabled={!contactPhone || contactSaving}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white gradient-primary disabled:opacity-50 transition-opacity"
+                            >
+                              {contactSaving ? '...' : t('common.save')}
+                            </button>
+                            <button
+                              onClick={() => { setAddingPhone(false); setContactPhone(''); setPhoneError('') }}
+                              className="px-2 py-1.5 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                            >
+                              {t('common.cancel')}
+                            </button>
+                          </div>
+                          {phoneError && (
+                            <p role="alert" aria-live="polite" className="text-xs text-red-500 dark:text-red-400 mt-1">
+                              {phoneError}
+                            </p>
+                          )}
                         </div>
                       ) : (
                         <button
-                          onClick={() => setAddingPhone(true)}
+                          onClick={() => { setAddingPhone(true); setPhoneError('') }}
                           className="flex items-center gap-2 w-full py-1 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors"
                         >
                           <Phone size={12} aria-hidden="true" />

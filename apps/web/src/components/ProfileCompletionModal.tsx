@@ -121,21 +121,42 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
     setSubmitError('');
     try {
       if (needName && needPhone) {
-        await completeProfile({ fullName: fullName.trim(), phone });
-        if (needEmail) await updateContactInfo({ email: email.trim() });
+        const r1 = await completeProfile({ fullName: fullName.trim(), phone });
+        if (!r1.ok) {
+          if (r1.code === 'PHONE_TAKEN') setPhoneError(t('settings.phoneInUse'));
+          else if (r1.code === 'INVALID_PHONE') setPhoneError(t('settings.phoneAddFailed'));
+          else setSubmitError(t('settings.emailAddFailed'));
+          return;
+        }
+        if (needEmail) {
+          const r2 = await updateContactInfo({ email: email.trim() });
+          if (!r2.ok) {
+            setEmailError(r2.code === 'EMAIL_TAKEN' ? t('settings.emailInUse') : t('settings.emailAddFailed'));
+            return;
+          }
+        }
       } else {
         if (needName) await updateUserName(fullName.trim());
         const contact: { phone?: string; email?: string } = {};
         if (needPhone) contact.phone = phone;
         if (needEmail) contact.email = email.trim();
-        if (Object.keys(contact).length) await updateContactInfo(contact);
+        if (Object.keys(contact).length) {
+          const r = await updateContactInfo(contact);
+          if (!r.ok) {
+            if (r.code === 'PHONE_TAKEN') setPhoneError(t('settings.phoneInUse'));
+            else if (r.code === 'EMAIL_TAKEN') setEmailError(t('settings.emailInUse'));
+            else if (r.code === 'INVALID_PHONE') setPhoneError(t('settings.phoneAddFailed'));
+            else setSubmitError(t('settings.emailAddFailed'));
+            return;
+          }
+        }
       }
       setSuccess(true);
       onCompleted?.();
       if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
       setTimeout(() => { onClose(); }, 1500);
     } catch {
-      setSubmitError(needEmail ? t('settings.emailAddFailed') : 'Something went wrong. Please try again.');
+      setSubmitError('Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
     }

@@ -259,20 +259,18 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
     setPhoneError('')
     setPhonePending(true)
     try {
-      await updateContactInfo({ phone: enteredPhone })
+      const res = await updateContactInfo({ phone: enteredPhone })
+      if (!res.ok) {
+        setPhoneError(res.code === 'PHONE_TAKEN' ? t('subscription.phoneInUse') : t('subscription.phoneAddFailed'))
+        return
+      }
       // Phone saved — proceed to billing confirmation. Refresh RSC and client
       // completion/logging state so the sidebar reflects the added phone number.
       router.refresh()
       window.dispatchEvent(new Event('vesta:profile-updated'))
       setUpgradeStep('confirm')
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : ''
-      // Prisma unique constraint violation surfaces as P2002 in the message
-      if (msg.includes('P2002') || msg.toLowerCase().includes('unique')) {
-        setPhoneError(t('subscription.phoneInUse'))
-      } else {
-        setPhoneError(t('subscription.phoneAddFailed'))
-      }
+    } catch {
+      setPhoneError(t('subscription.phoneAddFailed'))
     } finally {
       setPhonePending(false)
     }
