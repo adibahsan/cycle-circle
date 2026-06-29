@@ -43,6 +43,10 @@ const TrialExpiredLock = dynamic(
   () => import('@/components/TrialExpiredLock').then((m) => m.TrialExpiredLock),
   { ssr: false },
 )
+const TrialCountdownPill = dynamic(
+  () => import('@/components/TrialCountdownPill').then((m) => m.TrialCountdownPill),
+  { ssr: false },
+)
 
 // ── Toast (single-slot, same pattern as SettingsClient) ───────────────────────
 
@@ -356,6 +360,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }
   }, [pathname, router]);
 
+  const handlePhoneAdded = useCallback(() => {
+    setTrialUser((prev) =>
+      prev ? { ...prev, emailTrialExpiresAt: null, subscriptionStatus: 'PRO' } : prev,
+    );
+    router.refresh();
+  }, [router]);
+
   function handleModalClose() {
     setShowCompletionModal(false);
     sessionStorage.setItem(PROFILE_MODAL_DISMISSED_KEY, '1');
@@ -472,6 +483,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
         {/* Sidebar footer — theme + language toggles */}
         <div className="px-4 py-4 border-t border-[var(--color-border)] flex flex-col gap-2">
+          {authStatusLoaded && (
+            <TrialCountdownPill trialUser={trialUser} onPhoneAdded={handlePhoneAdded} />
+          )}
           {completionStatus && !completionStatus.complete && (
             <div data-tour="profile-ring">
               <ProfileCompletionTracker
@@ -510,6 +524,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             </Link>
           </div>
           <div className="flex items-center gap-2">
+            {authStatusLoaded && (
+              <TrialCountdownPill trialUser={trialUser} onPhoneAdded={handlePhoneAdded} />
+            )}
             {completionStatus && !completionStatus.complete && (
               <div data-tour="profile-ring">
                 <ProfileCompletionTracker

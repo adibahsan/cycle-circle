@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { getTrialStatus, isTrialExpired, getTrialHoursLeft } from '@vesta/shared/utils/trial'
+import {
+  getTrialStatus,
+  isTrialExpired,
+  getTrialHoursLeft,
+  getTrialMsLeft,
+} from '@vesta/shared/utils/trial'
 
 const HOUR = 60 * 60 * 1000
 
@@ -43,5 +48,38 @@ describe('trial helper (getTrialStatus / isTrialExpired)', () => {
   it('returns none when emailTrialExpiresAt is missing', () => {
     expect(getTrialStatus({ authMethod: 'EMAIL', subscriptionStatus: 'FREE', emailTrialExpiresAt: null })).toBe('none')
     expect(getTrialHoursLeft(null)).toBeNull()
+  })
+})
+
+describe('getTrialMsLeft (live countdown)', () => {
+  it('returns positive ms remaining for an active trial', () => {
+    const ms = getTrialMsLeft({
+      authMethod: 'EMAIL',
+      subscriptionStatus: 'FREE',
+      emailTrialExpiresAt: new Date(Date.now() + 11 * HOUR + 30 * 60 * 1000),
+    })
+    expect(ms).not.toBeNull()
+    // ~11.5h remaining, allowing for test execution time
+    expect(ms!).toBeGreaterThan(11 * HOUR)
+    expect(ms!).toBeLessThanOrEqual(11.5 * HOUR)
+  })
+
+  it('returns null for an expired trial (caller should stop ticking)', () => {
+    expect(
+      getTrialMsLeft({
+        authMethod: 'EMAIL',
+        subscriptionStatus: 'FREE',
+        emailTrialExpiresAt: new Date(Date.now() - HOUR),
+      }),
+    ).toBeNull()
+  })
+
+  it('returns null for PRO users and when the expiry is missing', () => {
+    expect(
+      getTrialMsLeft({ authMethod: 'EMAIL', subscriptionStatus: 'PRO', emailTrialExpiresAt: new Date(Date.now() + HOUR) }),
+    ).toBeNull()
+    expect(
+      getTrialMsLeft({ authMethod: 'EMAIL', subscriptionStatus: 'FREE', emailTrialExpiresAt: null }),
+    ).toBeNull()
   })
 })

@@ -241,6 +241,19 @@ export async function updateUserContact(
   })
 }
 
+/**
+ * Save an OTP-verified phone on an email-trial account and upgrade it to PRO,
+ * clearing the email trial. Used by the in-app "add your number to keep access"
+ * flow. Assumes `phone` is already validated/normalized and OTP-verified, and
+ * that uniqueness was pre-checked (a racing duplicate still surfaces as P2002).
+ */
+export async function keepAccountWithVerifiedPhone(userId: string, phone: string) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { phone, emailTrialExpiresAt: null, subscriptionStatus: 'PRO' },
+  })
+}
+
 export async function getUserByPhone(phone: string) {
   return prisma.user.findFirst({
     where: { phone },
