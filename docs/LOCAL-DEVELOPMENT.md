@@ -85,6 +85,14 @@ Prisma CLI commands (`just db-*`, `just studio`) load env from `apps/web/.env.lo
 
 **Important:** `JWT_SECRET` must be identical in web and admin `.env.local` (shared auth cookie).
 
+### Notable env vars
+
+| Var | App | Notes |
+|-----|-----|-------|
+| `MAILPIT_UI_URL` | web | Override Mailpit UI link (default `http://localhost:8025`) |
+| `SEED_DEMO` | shared | Set `SEED_DEMO=true` in production to seed demo user + dummy users; omit (or set false) to seed admin only |
+| `DIRECT_URL` | admin | Direct Postgres connection (port 5432, bypasses PgBouncer) — required for `prisma migrate resolve` and migrations |
+
 ---
 
 ## Default test credentials

@@ -65,7 +65,7 @@ All Prisma operations run from `packages/shared/`.
 
 ## Tech Stack
 
-Next.js 16, React 19, TypeScript, Tailwind CSS v4, Zustand (client state), i18next (bilingual EN+BN), Prisma (PostgreSQL on Supabase with RLS), Upstash Redis + QStash, BDApps (OTP, CAAS billing, SMS), Resend (transactional email).
+Next.js 16, React 19, TypeScript, Tailwind CSS v4, Zustand (client state), i18next (bilingual EN+BN), Prisma (PostgreSQL on Supabase with RLS), Upstash Redis + QStash (QStash not yet wired — cron email is sent synchronously; Vercel Cron handles scheduling in prod), BDApps (OTP, CAAS billing, SMS), Resend (transactional email).
 
 ## Key References
 
@@ -91,7 +91,7 @@ Single Super Admin account (email/password login at `/login`). Seeded via `packa
 
 **Pattern:** RSC pages fetch data via `queries/*.ts` (thin `cache()` wrappers over shared services), pass to `*Client.tsx` components. Mutations go through `actions/*.ts` (thin `'use server'` wrappers over shared services + `revalidatePath`).
 
-**Env:** Admin needs only `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET` — does not need BDApps or CRON_SECRET (these are optional in shared env.ts).
+**Env:** Admin requires `DATABASE_URL`, `DIRECT_URL` (for migrations), `JWT_SECRET`, `AUTH_COOKIE_NAME=vesta_admin_token`, `APP_URL` (web URL, for cron-trigger calls from System page), and `CRON_SECRET` (same as web). `REDIS_URL` and BDApps vars are optional (in-memory fallback / not used by admin).
 
 ---
 

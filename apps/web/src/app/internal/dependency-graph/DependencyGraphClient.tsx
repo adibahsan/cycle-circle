@@ -77,14 +77,14 @@ const FLOWS: FlowNode[] = [
     group: 0, type: 'docker', status: 'partial', deps: [],
     api: [], store: [],
     files: ['ops/docker/compose.yml', 'ops/docker/worker/Dockerfile'],
-    steps: ['Build worker image', 'Inject DATABASE_URL, PRISMA_FIELD_ENCRYPTION_KEY', 'Wait for postgres healthy', 'restart: unless-stopped'],
+    steps: ['Build worker image', 'Inject DATABASE_URL', 'Wait for postgres healthy', 'restart: unless-stopped'],
   },
 
   // ══════════════════════════════════════════════════════
   // GROUP 1: CORE PLATFORM
   // ══════════════════════════════════════════════════════
   {
-    id: 'env-validation', name: 'Env Validation', desc: 'Zod schema validates all required env vars at startup. Required: DATABASE_URL, BDAPPS_APP_ID, BDAPPS_PASSWORD, JWT_SECRET (min 32), PRISMA_FIELD_ENCRYPTION_KEY, CRON_SECRET.',
+    id: 'env-validation', name: 'Env Validation', desc: 'Zod schema validates all required env vars at startup. Required: DATABASE_URL, BDAPPS_APP_ID, BDAPPS_PASSWORD, JWT_SECRET (min 32), CRON_SECRET.',
     group: 1, type: 'config', status: 'complete', deps: [],
     api: [], store: [],
     files: ['src/lib/env.ts'],
@@ -105,18 +105,18 @@ const FLOWS: FlowNode[] = [
     steps: ['11 enums defined', '13 models with relations', 'Indexes on profileId, phone, idempotencyKey', 'SymptomLog.value annotated @encrypted'],
   },
   {
-    id: 'prisma-client', name: 'Prisma Client', desc: 'Singleton PrismaClient extended with prisma-field-encryption (AES-GCM-256). Cached on globalThis in dev to prevent pool exhaustion.',
-    group: 1, type: 'infra', status: 'complete', deps: ['db-schema', 'prisma-config', 'field-encryption'],
+    id: 'prisma-client', name: 'Prisma Client', desc: 'Singleton PrismaClient (plain, no extensions). Cached on globalThis in dev to prevent pool exhaustion.',
+    group: 1, type: 'infra', status: 'complete', deps: ['db-schema', 'prisma-config'],
     api: [], store: [],
     files: ['src/server/db.ts'],
-    steps: ['Create base PrismaClient', 'Extend with fieldEncryptionExtension', 'Cache on globalThis in non-production'],
+    steps: ['Create base PrismaClient', 'Cache on globalThis in non-production'],
   },
   {
-    id: 'field-encryption', name: 'Field Encryption', desc: 'prisma-field-encryption 1.6.0 with AES-GCM-256. Key format: k1.aesgcm256.{base64}. Encrypts SymptomLog.value transparently.',
-    group: 1, type: 'infra', status: 'complete', deps: ['env-validation'],
+    id: 'field-encryption', name: 'Field Encryption', desc: 'Deferred / not wired. prisma-field-encryption (AES-GCM-256) is intentionally out of scope for v1.x. SymptomLog.value is plaintext. Planned for v2 (FR-ENC).',
+    group: 1, type: 'infra', status: 'stub', deps: [],
     api: [], store: [],
-    files: ['src/server/db.ts', 'prisma/schema.prisma'],
-    steps: ['PRISMA_FIELD_ENCRYPTION_KEY from env', 'fieldEncryptionExtension applied to client', 'SymptomLog.value encrypted/decrypted transparently'],
+    files: ['prisma/schema.prisma'],
+    steps: ['(deferred) Install prisma-field-encryption', '(deferred) Add PRISMA_FIELD_ENCRYPTION_KEY env var', '(deferred) Extend PrismaClient with fieldEncryptionExtension', '(deferred) SymptomLog.value encrypted transparently'],
   },
   {
     id: 'redis-adapter', name: 'Redis Adapter', desc: 'ioredis singleton. JWT blacklist (SET with TTL), sliding-window rate limiter (sorted sets: ZREMRANGEBYSCORE, ZADD, ZCARD, EXPIRE).',
