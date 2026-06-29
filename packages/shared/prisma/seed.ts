@@ -125,13 +125,14 @@ async function seedDummyUsers() {
   // ── 1. Active Streaker ── OTP, 7-day consecutive symptom streak ─────────────
   const streaker = await prisma.user.upsert({
     where: { phone: '+8801700000001' },
-    update: {},
+    update: { subscriptionStatus: SubscriptionStatus.PRO },
     create: {
       phone: '+8801700000001',
       fullName: 'Rina Akter (Streaker)',
       authMethod: AuthMethod.OTP,
       profileCompleted: true,
       language: 'EN',
+      subscriptionStatus: SubscriptionStatus.PRO,
     },
   })
   const streakerProfile = await prisma.profile.upsert({
@@ -168,13 +169,14 @@ async function seedDummyUsers() {
   // ── 2. "All Good" Streaker ── 5-day streak mixing all_good sentinel ─────────
   const allGoodUser = await prisma.user.upsert({
     where: { phone: '+8801700000002' },
-    update: {},
+    update: { subscriptionStatus: SubscriptionStatus.PRO },
     create: {
       phone: '+8801700000002',
       fullName: 'Sultana Begum (AllGood)',
       authMethod: AuthMethod.OTP,
       profileCompleted: true,
       language: 'BN',
+      subscriptionStatus: SubscriptionStatus.PRO,
     },
   })
   const allGoodProfile = await prisma.profile.upsert({
@@ -209,13 +211,14 @@ async function seedDummyUsers() {
   // ── 3. Stale User ── last log was 8 days ago, streak = 0 ───────────────────
   const staleUser = await prisma.user.upsert({
     where: { phone: '+8801700000003' },
-    update: {},
+    update: { subscriptionStatus: SubscriptionStatus.PRO },
     create: {
       phone: '+8801700000003',
       fullName: 'Nasrin Jahan (Stale)',
       authMethod: AuthMethod.OTP,
       profileCompleted: true,
       language: 'EN',
+      subscriptionStatus: SubscriptionStatus.PRO,
     },
   })
   const staleProfile = await prisma.profile.upsert({
@@ -249,13 +252,14 @@ async function seedDummyUsers() {
   // ── 4. Power User / Tier-2 (ARIMA) ── 8+ period logs, high confidence ──────
   const powerUser = await prisma.user.upsert({
     where: { phone: '+8801700000004' },
-    update: {},
+    update: { subscriptionStatus: SubscriptionStatus.PRO },
     create: {
       phone: '+8801700000004',
       fullName: 'Farida Khanam (Power)',
       authMethod: AuthMethod.OTP,
       profileCompleted: true,
       language: 'EN',
+      subscriptionStatus: SubscriptionStatus.PRO,
     },
   })
   const powerProfile = await prisma.profile.upsert({
@@ -299,13 +303,14 @@ async function seedDummyUsers() {
   // ── 5. Brand-New User ── 1 profile, 1 period log, no symptoms (Tier-1) ──────
   const newUser = await prisma.user.upsert({
     where: { phone: '+8801700000005' },
-    update: {},
+    update: { subscriptionStatus: SubscriptionStatus.PRO },
     create: {
       phone: '+8801700000005',
       fullName: 'Mitu Akter (NewUser)',
       authMethod: AuthMethod.OTP,
       profileCompleted: true,
       language: 'BN',
+      subscriptionStatus: SubscriptionStatus.PRO,
     },
   })
   const newProfile = await prisma.profile.upsert({
@@ -526,12 +531,13 @@ async function main() {
   // ── Demo User ──────────────────────────────────────────────────────────────
   const demoUser = await prisma.user.upsert({
     where: { phone: '+8801712345678' },
-    update: {},
+    update: { subscriptionStatus: SubscriptionStatus.PRO },
     create: {
       phone: '+8801712345678',
       fullName: 'Demo User',
       authMethod: AuthMethod.OTP,
       profileCompleted: true,
+      subscriptionStatus: SubscriptionStatus.PRO,
     },
   })
 

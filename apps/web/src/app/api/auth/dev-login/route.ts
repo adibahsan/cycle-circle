@@ -9,12 +9,13 @@ function mapPartialAuthUser(raw: {
   id: string
   phone?: string | null
   profileCompleted: boolean
+  subscriptionStatus: string
 }) {
   return {
     id: raw.id,
     phone: String(raw.phone ?? '').replace(/^\+/, ''),
     authMethod: 'otp' as const,
-    subscriptionStatus: 'free' as const,
+    subscriptionStatus: raw.subscriptionStatus.toLowerCase() as 'free' | 'pro',
     language: 'en' as const,
     profileCompleted: Boolean(raw.profileCompleted),
     fullName: '',
@@ -48,6 +49,7 @@ export async function POST(request: Request): Promise<Response> {
       id: user.id,
       phone: user.phone,
       profileCompleted: user.profileCompleted,
+      subscriptionStatus: user.subscriptionStatus,
     })
 
     return Response.json({ user: mapped, token })
