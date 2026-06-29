@@ -894,7 +894,10 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
             initialEnd={toDateStr(editingLog.endDate)}
             initialFlow={editingLog.flowIntensity.toLowerCase() as FlowIntensity}
             onClose={() => setEditingLog(null)}
-            onSaved={() => router.refresh()}
+            onSaved={() => {
+              router.refresh()
+              window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
+            }}
           />
         )}
       </AnimatePresence>
@@ -909,6 +912,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
         onSaved={() => {
           setBackfillDate(null)
           router.refresh()
+          window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
         }}
       />
     </div>

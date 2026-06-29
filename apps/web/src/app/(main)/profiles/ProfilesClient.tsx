@@ -948,6 +948,12 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
     setDeleteError('');
     try {
       await deleteProfile(deleteTarget.id);
+      // If the deleted profile was active, clear the Zustand store selection.
+      if (deleteTarget.id === activeProfileId) {
+        setActiveProfile('', '');
+      }
+      router.refresh();
+      window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
       closeDeleteDialog();
     } catch (err) {
       const message = err instanceof Error ? err.message : t('profiles.serverError');
@@ -977,6 +983,11 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
         periodLength: data.periodLength,
         goal: data.goal,
       });
+      // If the renamed profile is currently active, update the Zustand store so
+      // the sidebar label reflects the new name immediately.
+      if (editTarget.id === activeProfileId) {
+        setActiveProfile(editTarget.id, data.name);
+      }
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
       }

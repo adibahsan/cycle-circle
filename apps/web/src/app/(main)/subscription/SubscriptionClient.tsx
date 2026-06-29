@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'motion/react'
 import {
@@ -223,6 +224,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
 // ── Page ───────────────────────────────────────────────────────────────────────
 export function SubscriptionClient({ user }: SubscriptionClientProps) {
   const { t } = useTranslation()
+  const router = useRouter()
 
   const [upgradeStep, setUpgradeStep] = useState<UpgradeStep>('idle')
   // Local override so the UI reflects success without a full page reload
@@ -258,7 +260,10 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
     setPhonePending(true)
     try {
       await updateContactInfo({ phone: enteredPhone })
-      // Phone saved — proceed to billing confirmation
+      // Phone saved — proceed to billing confirmation. Refresh RSC and client
+      // completion/logging state so the sidebar reflects the added phone number.
+      router.refresh()
+      window.dispatchEvent(new Event('vesta:profile-updated'))
       setUpgradeStep('confirm')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : ''
@@ -285,6 +290,10 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
         const body = await res.json().catch(() => null)
         throw new Error(body?.error?.message ?? `Subscribe request failed (${res.status})`)
       }
+      // Upgrade succeeded — refresh RSC and re-fetch auth/trial state so the
+      // TrialExpiredLock and TrialCountdownPill clear without a full reload.
+      router.refresh()
+      window.dispatchEvent(new Event('vesta:profile-updated'))
       setUpgradeStep('success')
     } catch (err) {
       console.error(err)

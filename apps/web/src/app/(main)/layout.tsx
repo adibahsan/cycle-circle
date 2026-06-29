@@ -168,13 +168,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Ensures the ~1-minute auto-open prompt is scheduled at most once per session.
   const completionPromptScheduledRef = useRef(false);
 
-  // ── Auth status fetch (ONCE per session) — trial lock + tour eligibility ──
-  // Fetched on mount only; navigating between in-app routes must NOT re-hit this
-  // endpoint. Pathname-dependent tour gating is handled in the next effect using
-  // the captured `tourEligible` flag — with no additional network request.
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/auth/status')
+  // ── Auth status fetch — trial lock + tour eligibility ────────────────────
+  // Stable callback so it can be called both on mount and from the
+  // 'vesta:profile-updated' event handler to refresh subscription state after
+  // a billing upgrade or profile change.
+  const refreshAuthStatus = useCallback(() => {
+    const controller = new AbortController();
+
+    fetch('/api/auth/status', { cache: 'no-store', signal: controller.signal })
       .then((r) => {
         if (r.status === 401) { window.location.assign('/login'); return null }
         return r.ok ? r.json() : null
@@ -187,7 +188,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           emailTrialExpiresAt?: string | null;
         }
       } | null) => {
-        if (cancelled) return;
         const user = data?.user;
 
         // Capture trial-relevant fields for the lock overlay
@@ -202,13 +202,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         setTourEligible(!!user && !user.onboardingTourCompletedAt);
         setAuthStatusLoaded(true);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setAuthStatusLoaded(true); // unblock on error — don't permanently show lock
         setTourState('done'); // unblock check-in on fetch error
       });
 
-    return () => { cancelled = true; };
-  }, []);
+    return () => controller.abort();
+  }, [setTourState]);
+
+  // Call once on mount. Navigating between in-app routes must NOT re-hit this
+  // endpoint; pathname-dependent tour gating uses the captured `tourEligible`
+  // flag without a network request (see effect below).
+  useEffect(() => {
+    const cleanup = refreshAuthStatus();
+    return cleanup;
+  }, [refreshAuthStatus]);
 
   // ── Tour gating — reacts to pathname using the captured eligibility flag ──
   // No network. The tour only runs on /dashboard; a replay can be requested from
@@ -239,7 +248,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const refreshLogging = useCallback(() => {
     const controller = new AbortController();
 
-    fetch('/api/tracking/logging-status', { signal: controller.signal })
+    fetch('/api/tracking/logging-status', { cache: 'no-store', signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null) => {
         if (!data) return;
@@ -260,7 +269,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const refreshCompletion = useCallback(() => {
     const controller = new AbortController();
 
-    fetch('/api/profile/completion', { signal: controller.signal })
+    fetch('/api/profile/completion', { cache: 'no-store', signal: controller.signal })
       .then((r) => {
         if (r.status === 401) { window.location.assign('/login'); return null }
         return r.ok ? r.json() : null
@@ -304,14 +313,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   // Re-fetch when Settings/Modal/Profiles dispatch 'vesta:profile-updated'
   // (covers same-page updates where pathname does not change).
+  // refreshAuthStatus is included so subscription/trial state also refreshes
+  // after a billing upgrade or phone-add without a full page reload.
   useEffect(() => {
     const handler = () => {
       refreshCompletion();
       refreshLogging();
+      refreshAuthStatus();
     };
     window.addEventListener('vesta:profile-updated', handler);
     return () => window.removeEventListener('vesta:profile-updated', handler);
-  }, [refreshCompletion, refreshLogging]);
+  }, [refreshCompletion, refreshLogging, refreshAuthStatus]);
 
   // ── Auto-open the profile-completion popup ~1 min after login ─────────────
   // SRS FR-AUTH: the popup appears ~1 minute after login for users with an
