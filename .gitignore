@@ -56,3 +56,6 @@ target/
 
 review/screenshots/
 .vercel
+
+# Local DB backups / dumps (contain real data — never commit)
+ops/backups/
