@@ -11,6 +11,7 @@ import {
 import { grantPro, revokePro } from '@vesta/shared/server/services'
 import { revalidateTag } from 'next/cache'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
+import { revalidateWebTags } from '@/lib/revalidate-web'
 
 function revalidateUserTags(userId: string) {
   revalidateTag(adminCacheTags.users, { expire: 0 })
@@ -25,6 +26,7 @@ export async function suspendUser(userId: string, reason?: string) {
   await svcSuspendUser(userId, admin.id, reason)
 
   revalidateUserTags(userId)
+  await revalidateWebTags([`user:${userId}`])
   return { success: true }
 }
 
@@ -35,6 +37,7 @@ export async function reactivateUser(userId: string) {
   await svcReactivateUser(userId, admin.id)
 
   revalidateUserTags(userId)
+  await revalidateWebTags([`user:${userId}`])
   return { success: true }
 }
 
@@ -45,6 +48,7 @@ export async function softDeleteUser(userId: string) {
   await svcSoftDeleteUser(userId, admin.id)
 
   revalidateUserTags(userId)
+  await revalidateWebTags([`user:${userId}`])
   return { success: true }
 }
 
@@ -56,6 +60,7 @@ export async function grantProAccess(userId: string) {
 
   revalidateUserTags(userId)
   revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
+  await revalidateWebTags([`user:${userId}`])
   return { success: true }
 }
 
@@ -67,6 +72,7 @@ export async function revokeProAccess(userId: string) {
 
   revalidateUserTags(userId)
   revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
+  await revalidateWebTags([`user:${userId}`])
   return { success: true }
 }
 
@@ -78,6 +84,7 @@ export async function setUserSubscriptionStatus(userId: string, status: 'PRO' | 
 
   revalidateUserTags(userId)
   revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
+  await revalidateWebTags([`user:${userId}`])
   return { success: true }
 }
 

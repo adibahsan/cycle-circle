@@ -11,6 +11,7 @@ import {
 } from '@vesta/shared/server/services'
 import { revalidateTag } from 'next/cache'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
+import { revalidateWebTags } from '@/lib/revalidate-web'
 
 function revalidateContentTags(articleId?: string) {
   revalidateTag(adminCacheTags.content, { expire: 0 })
@@ -34,6 +35,7 @@ export async function createArticle(data: {
   const article = await svcCreateArticle(admin.id, data)
 
   revalidateContentTags()
+  await revalidateWebTags(['articles'])
   return article
 }
 
@@ -54,6 +56,7 @@ export async function updateArticle(
   const article = await svcUpdateArticle(id, data)
 
   revalidateContentTags(id)
+  await revalidateWebTags(['articles'])
   return article
 }
 
@@ -64,6 +67,7 @@ export async function deleteArticle(id: string) {
   await removeArticle(id, admin.id)
 
   revalidateContentTags(id)
+  await revalidateWebTags(['articles'])
   return { success: true }
 }
 
@@ -82,6 +86,7 @@ export async function updateCategory(id: string, name: string) {
   const category = await svcUpdateCategory(id, name)
 
   revalidateContentTags()
+  await revalidateWebTags(['articles'])
   return category
 }
 
@@ -91,5 +96,6 @@ export async function deleteCategory(id: string) {
   await removeCategory(id)
 
   revalidateContentTags()
+  await revalidateWebTags(['articles'])
   return { success: true }
 }
