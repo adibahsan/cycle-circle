@@ -21,6 +21,7 @@ import { Card } from '@/components/ui/Card'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { SubscriptionStatus } from '@vesta/shared/types'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
+import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
 import { updateContactInfo } from '@/app/actions/user-actions'
 
 // ── Props ──────────────────────────────────────────────────────────────────────
@@ -305,8 +306,9 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
     setPhoneError('')
   }
 
-  // Case-insensitive: runtime DB value is uppercase ('PRO'), local optimistic value is 'pro'.
-  const isPro = String(status).toUpperCase() === 'PRO'
+  // Use shared helper: phone (OTP) users are always PRO, LAPSED is distinct from FREE.
+  const tier = getSubscriptionTier({ authMethod: user.authMethod, subscriptionStatus: status })
+  const isProUser = tier === 'PRO'
 
   return (
     <div className="py-4 space-y-6">
@@ -339,7 +341,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                   {t('subscription.currentPlan')}
                 </p>
                 <p className="text-lg font-bold text-[var(--color-text-primary)]">
-                  {isPro ? t('subscription.vestaPro') : t('subscription.vestaFree')}
+                  {tier === 'FREE' ? t('subscription.vestaFree') : t('subscription.vestaPro')}
                 </p>
                 {trial === 'active' && hoursLeft !== null && (
                   <p className="text-xs text-[var(--color-accent)] font-medium">
@@ -351,11 +353,20 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                     {t('subscription.trialExpiredNote')}
                   </p>
                 )}
+                {tier === 'LAPSED' && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">
+                    {t('subscription.planLapsedNote')}
+                  </p>
+                )}
               </div>
 
-              {isPro ? (
+              {tier === 'PRO' ? (
                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full gradient-primary text-white text-xs font-bold shadow-soft">
                   <Crown size={12} /> PRO
+                </span>
+              ) : tier === 'LAPSED' ? (
+                <span className="px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 text-xs font-semibold">
+                  {t('subscription.planLapsed')}
                 </span>
               ) : (
                 <span className="px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-muted)] text-xs font-semibold">
@@ -365,7 +376,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
             </div>
 
             <div className="mt-4 space-y-1.5">
-              {isPro ? (
+              {isProUser ? (
                 PRO_FEATURE_KEYS.map(({ icon: Icon, labelKey }) => (
                   <div
                     key={labelKey}
@@ -391,7 +402,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
         </motion.div>
 
         {/* ── Pro Plan Upgrade Card ── */}
-        {!isPro && (
+        {!isProUser && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -503,7 +514,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
       </motion.div>
 
       {/* ── Footer note ── */}
-      {!isPro && (
+      {!isProUser && (
         <p className="text-center text-xs text-[var(--color-text-muted)] pb-2">
           {t('subscription.cancelAnytime')}
         </p>

@@ -39,6 +39,7 @@ import {
 } from '@/app/actions/user-actions'
 import { sendUserReminders, type CronJobResult } from '@/app/actions/system-actions'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
+import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types (mirror the Prisma include shape from getUserDetail)
@@ -667,7 +668,8 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
   const status = getUserStatus(user)
   const isSuspended = status === 'suspended'
   const isDeleted = status === 'deleted'
-  const isPro = user.subscriptionStatus === 'PRO'
+  const userTier = getSubscriptionTier(user)
+  const isPro = userTier === 'PRO'
 
   async function handleConfirm() {
     if (!modalAction) return
@@ -737,7 +739,8 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
                   {displayName}
                 </h1>
                 <StatusBadge status={status} />
-                {isPro && <Badge variant="success">Pro</Badge>}
+                {userTier === 'PRO' && <Badge variant="success">Pro</Badge>}
+                {userTier === 'LAPSED' && <Badge variant="warning">Lapsed</Badge>}
                 {user.role === 'ADMIN' && <Badge variant="info">Admin</Badge>}
                 {(() => {
                   const trial = getTrialStatus(user)
@@ -906,7 +909,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
         {activeTab === 'subscription' && (
           <SubscriptionTab
             subscriptions={user.subscriptions}
-            userStatus={user.subscriptionStatus}
+            userStatus={userTier}
           />
         )}
         {activeTab === 'feedback' && <FeedbackTab feedback={user.feedback} />}

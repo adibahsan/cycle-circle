@@ -33,6 +33,7 @@ import { updateNotificationPrefs, exportUserDataCsv, exportUserDataRows, updateP
 import { updateContactInfo } from '@/app/actions/user-actions'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { Language, Theme } from '@vesta/shared/types'
+import { isPro as isProHelper, getSubscriptionTier } from '@vesta/shared/utils/subscription'
 
 // ── DB types ───────────────────────────────────────────────────────────────────
 interface DbProfile {
@@ -772,15 +773,22 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
 
                   <div className="flex items-center justify-between pt-1 border-t border-[var(--color-border)]">
                     <span className="text-xs text-[var(--color-text-muted)]">{t('settings.plan')}</span>
-                    <span
-                      className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                        user.subscriptionStatus === 'pro'
-                          ? 'gradient-primary text-white'
-                          : 'bg-[var(--color-border)] text-[var(--color-text-muted)]'
-                      }`}
-                    >
-                      {user.subscriptionStatus?.toUpperCase() ?? 'FREE'}
-                    </span>
+                    {(() => {
+                      const planTier = getSubscriptionTier(user)
+                      return (
+                        <span
+                          className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                            planTier === 'PRO'
+                              ? 'gradient-primary text-white'
+                              : planTier === 'LAPSED'
+                              ? 'bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400'
+                              : 'bg-[var(--color-border)] text-[var(--color-text-muted)]'
+                          }`}
+                        >
+                          {planTier === 'PRO' ? 'PRO' : planTier === 'LAPSED' ? t('subscription.planLapsed') : 'FREE'}
+                        </span>
+                      )
+                    })()}
                   </div>
                 </div>
 
@@ -792,7 +800,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                     icon={Crown}
                     label={t('nav.subscription')}
                     href="/subscription"
-                    badge={user.subscriptionStatus !== 'pro' ? t('settings.upgradeLabel') : undefined}
+                    badge={!isProHelper(user) ? t('settings.upgradeLabel') : undefined}
                   />
                   <button
                     onClick={() => {

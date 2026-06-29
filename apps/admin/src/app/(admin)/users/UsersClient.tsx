@@ -20,6 +20,7 @@ import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { DateRangeControl } from '@/components/charts/DateRangeControl'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
+import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
 
 type UserRow = {
   id: string
@@ -87,9 +88,10 @@ function AuthMethodBadge({ method }: { method: string }) {
   )
 }
 
-function SubBadge({ status }: { status: string }) {
-  if (status === 'PRO') return <Badge variant="success" size="sm">Pro</Badge>
-  if (status === 'LAPSED') return <Badge variant="warning" size="sm">Lapsed</Badge>
+function SubBadge({ status, authMethod }: { status: string; authMethod: string }) {
+  const tier = getSubscriptionTier({ authMethod, subscriptionStatus: status })
+  if (tier === 'PRO') return <Badge variant="success" size="sm">Pro</Badge>
+  if (tier === 'LAPSED') return <Badge variant="warning" size="sm">Lapsed</Badge>
   return <Badge variant="neutral" size="sm">Free</Badge>
 }
 
@@ -131,7 +133,7 @@ const COLUMNS: Column<UserRow>[] = [
   {
     key: 'subscriptionStatus',
     header: 'Subscription',
-    render: (row) => <SubBadge status={row.subscriptionStatus} />,
+    render: (row) => <SubBadge status={row.subscriptionStatus} authMethod={row.authMethod} />,
   },
   {
     key: 'emailTrialExpiresAt',
