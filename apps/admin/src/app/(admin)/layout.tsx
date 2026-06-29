@@ -15,6 +15,7 @@ import {
   ScrollText,
   Mail,
   ServerCog,
+  BookOpen,
   Sun,
   Moon,
   LogOut,
@@ -38,6 +39,7 @@ const NAV_ITEMS = [
   { href: '/emails', icon: Mail, label: 'Emails' },
   { href: '/audit-logs', icon: ScrollText, label: 'Audit Logs' },
   { href: '/system', icon: ServerCog, label: 'System' },
+  { href: '/api-docs', icon: BookOpen, label: 'API Docs' },
 ]
 
 interface SidebarContentProps {
