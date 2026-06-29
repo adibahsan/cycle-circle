@@ -528,6 +528,12 @@ async function seedDummyUsers() {
 async function main() {
   console.log('Seeding database…')
 
+  // Demo + dummy data are for local/dev only. In production they are skipped
+  // unless SEED_DEMO=true is explicitly set (e.g. a staging smoke-test seed).
+  const seedDemo = process.env.NODE_ENV !== 'production' || process.env.SEED_DEMO === 'true'
+  console.log(`[seed] Demo/dummy seeding: ${seedDemo ? 'ENABLED' : 'SKIPPED (production — set SEED_DEMO=true to opt in)'}`)
+
+  if (seedDemo) {
   // ── Demo User ──────────────────────────────────────────────────────────────
   const demoUser = await prisma.user.upsert({
     where: { phone: '+8801712345678' },
@@ -706,6 +712,7 @@ async function main() {
   ])
 
   console.log('Notification preferences upserted for both profiles')
+  } // end if (seedDemo)
 
   // ── Admin User ──────────────────────────────────────────────────────────────
   const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12)
@@ -729,7 +736,9 @@ async function main() {
   console.log(`  Password: ${ADMIN_PASSWORD}`)
 
   // ── Dummy test users for engagement/streak feature ─────────────────────────
-  await seedDummyUsers()
+  if (seedDemo) {
+    await seedDummyUsers()
+  }
 
   console.log('Seeding complete.')
 }
