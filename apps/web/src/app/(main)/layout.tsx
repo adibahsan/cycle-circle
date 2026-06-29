@@ -364,7 +364,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     setTrialUser((prev) =>
       prev ? { ...prev, emailTrialExpiresAt: null, subscriptionStatus: 'PRO' } : prev,
     );
+    // Refresh RSC (account page, etc.) and re-fetch the client-side completion /
+    // logging status so the ring updates from 83% → 100% without a reload.
     router.refresh();
+    window.dispatchEvent(new Event('vesta:profile-updated'));
   }, [router]);
 
   function handleModalClose() {

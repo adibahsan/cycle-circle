@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { revalidateTag } from 'next/cache'
 import { parseBody } from '@vesta/shared/server/validation'
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { verifyOtp } from '@vesta/shared/server/adapters/bdapps'
@@ -59,6 +60,12 @@ export const POST = withAuth(async (request, { user }) => {
       }
       throw e
     }
+
+    // Bust the cached user/profiles (getCurrentUser uses unstable_cache with these
+    // tags) so the account page + RSC reflect the new phone / PRO status without
+    // waiting for the 5-min TTL. Mirrors updateContactInfo in user-actions.ts.
+    revalidateTag(`user:${user.id}`, { expire: 0 })
+    revalidateTag(`profiles:${user.id}`, { expire: 0 })
 
     return Response.json({ ok: true })
   } catch (error) {
