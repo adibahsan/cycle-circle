@@ -70,10 +70,12 @@ pnpm docs:sync      # Sync source docs to docs/site/
 pnpm docs:check     # Verify docs/site/ hasn't drifted from source
 ```
 
-To rebuild the Word export:
+To rebuild exports from `SRS.md`:
 
 ```bash
-HTML_TO_DOCX_DIR=/tmp/vesta-html-to-docx node scripts/build-srs-docx.mjs
+pnpm docs:docx   # Word (.docx) via pandoc
+pnpm docs:pdf    # PDF (rendered markdown style) via pandoc + Chrome
+pnpm docs:export # both
 ```
 
 ## BDApps Simulator

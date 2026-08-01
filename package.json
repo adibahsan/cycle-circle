@@ -15,6 +15,9 @@
     "db:studio": "pnpm --filter @vesta/shared db:studio",
     "docs:sync": "node scripts/sync-netlify-docs.mjs --sync",
     "docs:check": "node scripts/sync-netlify-docs.mjs --check",
+    "docs:docx": "node scripts/build-srs-docx.mjs",
+    "docs:pdf": "node scripts/build-srs-pdf.mjs",
+    "docs:export": "pnpm docs:docx && pnpm docs:pdf",
     "docker:dev": "docker compose -f ops/docker/compose.yml up -d --build",
     "docker:down": "docker compose -f ops/docker/compose.yml down",
     "docker:logs": "docker compose -f ops/docker/compose.yml logs -f"
