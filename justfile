@@ -240,6 +240,10 @@ health:
     @echo "Mailpit: $(curl -s http://localhost:3000/api/health/mailpit | head -c 80)"
     @echo "Worker:  $(curl -s http://localhost:3000/api/health/worker | head -c 80)"
 
+# Smoke-test the four production BDApps webhook listeners (web must be on :3000)
+webhook-smoke:
+    bash scripts/smoke-bdapps-webhooks.sh
+
 # ─── CRON (manual trigger) ──────────────────────────────
 
 # Trigger daily reminders cron manually

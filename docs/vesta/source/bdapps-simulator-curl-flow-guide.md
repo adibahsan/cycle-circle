@@ -8,9 +8,9 @@ This guide provides copy-paste cURL checks for the local Dockerized BDApps simul
 | --- | --- |
 | Simulator Web UI | `http://localhost:10001/mchoice-tap-sdk` |
 | Simulator REST base | `http://127.0.0.1:7002` |
-| Vesta checker page | `http://localhost:3001/internal/simulator-check` |
-| Vesta checker API base | `http://localhost:3001/api/simulator-check` |
-| Callback URL base for simulator UI | `http://host.docker.internal:3001` |
+| Vesta checker page | `http://localhost:3000/internal/simulator-check` |
+| Vesta checker API base | `http://localhost:3000/api/simulator-check` |
+| Callback URL base for simulator UI | `http://host.docker.internal:3000` |
 
 Use `127.0.0.1:7002` for terminal cURL requests to avoid localhost/IPv6 loopback quirks.
 
@@ -18,8 +18,8 @@ Use `127.0.0.1:7002` for terminal cURL requests to avoid localhost/IPv6 loopback
 
 - The BDApps simulator container is already running.
 - The Vesta checker app is running if testing callbacks.
-- The current Vesta checker dev server is on port `3001`.
-- If the checker runs on another port, replace every `3001` below with that port.
+- The current Vesta checker dev server is on port `3000`.
+- If the checker runs on another port, replace every `3000` below with that port.
 
 ## Status Code Notes
 
@@ -54,7 +54,7 @@ Expected: any HTTP response, commonly `404`. A connection error means the REST s
 ### 1.3 Vesta Checker Preflight
 
 ```bash
-curl -sS "http://localhost:3001/api/simulator-check/preflight"
+curl -sS "http://localhost:3000/api/simulator-check/preflight"
 ```
 
 Expected: JSON containing `config`, `callbacks`, `defaults`, and `checks`.
@@ -151,7 +151,7 @@ These commands call the local Vesta checker, which forwards to the simulator and
 ### 3.1 SMS MT Through Checker
 
 ```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/sms/send" \
+curl -sS -X POST "http://localhost:3000/api/simulator-check/sms/send" \
   -H "Content-Type: application/json" \
   -d '{
     "applicationId": "APP_000006",
@@ -168,7 +168,7 @@ Expected: `interpretedStatus: "success"` and simulator `statusCode: "S1000"`.
 ### 3.2 USSD MT Through Checker
 
 ```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/ussd/send" \
+curl -sS -X POST "http://localhost:3000/api/simulator-check/ussd/send" \
   -H "Content-Type: application/json" \
   -d '{
     "applicationId": "APP_003117",
@@ -184,7 +184,7 @@ curl -sS -X POST "http://localhost:3001/api/simulator-check/ussd/send" \
 ### 3.3 CAAS Balance Through Checker
 
 ```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/caas/balance" \
+curl -sS -X POST "http://localhost:3000/api/simulator-check/caas/balance" \
   -H "Content-Type: application/json" \
   -d '{
     "applicationId": "APP_000010",
@@ -198,7 +198,7 @@ curl -sS -X POST "http://localhost:3001/api/simulator-check/caas/balance" \
 ### 3.4 CAAS Direct Debit Through Checker
 
 ```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/caas/direct-debit" \
+curl -sS -X POST "http://localhost:3000/api/simulator-check/caas/direct-debit" \
   -H "Content-Type: application/json" \
   -d '{
     "externalTrxId": "vesta-local-002",
@@ -216,18 +216,20 @@ curl -sS -X POST "http://localhost:3001/api/simulator-check/caas/direct-debit" \
 
 These commands simulate callbacks arriving at Vesta. They do not require the BDApps simulator UI; they test the local checker callback receivers directly.
 
+For the **production** BDApps listeners (DB-backed `/api/webhooks/*`, not the checker mirrors), run `just webhook-smoke` with the web app on port 3000.
+
 ### 4.1 SMS MO Receive Callback
 
 Equivalent checker callback URL for the simulator UI:
 
 ```text
-http://host.docker.internal:3001/api/simulator-check/webhooks/sms/receive
+http://host.docker.internal:3000/api/simulator-check/webhooks/sms/receive
 ```
 
 Terminal test:
 
 ```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/webhooks/sms/receive" \
+curl -sS -X POST "http://localhost:3000/api/simulator-check/webhooks/sms/receive" \
   -H "Content-Type: application/json" \
   -d '{
     "applicationId": "APP_000006",
@@ -247,13 +249,13 @@ Expected: checker response with `statusCode: "S1000"` and an event with `type: "
 Equivalent checker callback URL for the simulator UI:
 
 ```text
-http://host.docker.internal:3001/api/simulator-check/webhooks/sms/report
+http://host.docker.internal:3000/api/simulator-check/webhooks/sms/report
 ```
 
 Terminal test:
 
 ```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/webhooks/sms/report" \
+curl -sS -X POST "http://localhost:3000/api/simulator-check/webhooks/sms/report" \
   -H "Content-Type: application/json" \
   -d '{
     "destinationAddress": "tel:8801812345678",
@@ -270,13 +272,13 @@ Expected: checker response with `statusCode: "S1000"` and an event with `type: "
 Equivalent checker callback URL for the simulator UI:
 
 ```text
-http://host.docker.internal:3001/api/simulator-check/webhooks/ussd/receive
+http://host.docker.internal:3000/api/simulator-check/webhooks/ussd/receive
 ```
 
 Terminal test:
 
 ```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/webhooks/ussd/receive" \
+curl -sS -X POST "http://localhost:3000/api/simulator-check/webhooks/ussd/receive" \
   -H "Content-Type: application/json" \
   -d '{
     "applicationId": "APP_003117",
@@ -297,13 +299,13 @@ Expected: checker response with `statusCode: "S1000"` and an event with `type: "
 Equivalent checker callback URL for the simulator UI:
 
 ```text
-http://host.docker.internal:3001/api/simulator-check/webhooks/subscription/notify
+http://host.docker.internal:3000/api/simulator-check/webhooks/subscription/notify
 ```
 
 Terminal test:
 
 ```bash
-curl -sS -X POST "http://localhost:3001/api/simulator-check/webhooks/subscription/notify" \
+curl -sS -X POST "http://localhost:3000/api/simulator-check/webhooks/subscription/notify" \
   -H "Content-Type: application/json" \
   -d '{
     "subscriberId": "tel:8801812345678",
@@ -320,7 +322,7 @@ Expected: checker response with `statusCode: "S1000"` and an event with `type: "
 ### 5.1 Read Callback Log
 
 ```bash
-curl -sS "http://localhost:3001/api/simulator-check/callbacks"
+curl -sS "http://localhost:3000/api/simulator-check/callbacks"
 ```
 
 Expected: JSON object with an `events` array.
@@ -328,7 +330,7 @@ Expected: JSON object with an `events` array.
 ### 5.2 Clear Callback Log
 
 ```bash
-curl -sS -X DELETE "http://localhost:3001/api/simulator-check/callbacks"
+curl -sS -X DELETE "http://localhost:3000/api/simulator-check/callbacks"
 ```
 
 Expected: `{"events":[]}`.
@@ -343,13 +345,13 @@ http://localhost:10001/mchoice-tap-sdk
 
 For SMS MO:
 
-- Set the application URL to `http://host.docker.internal:3001/api/simulator-check/webhooks/sms/receive`.
-- If delivery reports are enabled, set delivery report URL to `http://host.docker.internal:3001/api/simulator-check/webhooks/sms/report`.
+- Set the application URL to `http://host.docker.internal:3000/api/simulator-check/webhooks/sms/receive`.
+- If delivery reports are enabled, set delivery report URL to `http://host.docker.internal:3000/api/simulator-check/webhooks/sms/report`.
 - Use status/error code `S1000` for a happy-path run.
 
 For USSD MO:
 
-- Set the application URL to `http://host.docker.internal:3001/api/simulator-check/webhooks/ussd/receive`.
+- Set the application URL to `http://host.docker.internal:3000/api/simulator-check/webhooks/ussd/receive`.
 - Use service code such as `*213#`.
 - Use status/error code `S1000` for a happy-path run.
 
@@ -379,7 +381,7 @@ That can be normal. Test endpoint-specific POSTs such as `/sms/send` and `/caas/
 Use `host.docker.internal` when the simulator runs in Docker and Vesta runs on the host:
 
 ```text
-http://host.docker.internal:3001/api/simulator-check/webhooks/sms/receive
+http://host.docker.internal:3000/api/simulator-check/webhooks/sms/receive
 ```
 
 If Vesta runs inside the same Docker Compose network later, use the service DNS name instead, for example:

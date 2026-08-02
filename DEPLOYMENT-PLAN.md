@@ -280,7 +280,8 @@ Free tier: 3,000 emails/month, 100/day. At launch with a small user base this is
 The CAAS direct-debit API requires `paymentInstrumentName` to be pre-registered in the BDApps dashboard. Complete this before testing billing end-to-end.
 
 **Step 6.3 — Register webhook URLs**
-Once Vercel deploy is live, register the following URLs in the BDApps portal:
+Once Vercel deploy is live, register the following URLs in the BDApps portal
+(same list as `apps/web/env.prod.example` / staging checklist):
 
 | Event | URL |
 |-------|-----|
@@ -289,8 +290,11 @@ Once Vercel deploy is live, register the following URLs in the BDApps portal:
 | USSD event | `https://[your-domain]/api/webhooks/ussd/receive` |
 | Subscription notification | `https://[your-domain]/api/webhooks/subscription/notify` |
 
+Local/staging smoke (web running): `just webhook-smoke` or
+`BASE_URL=https://[your-domain] just webhook-smoke`.
+
 **Step 6.4 — Obtain BDApps IP whitelist**
-Request the list of IP addresses BDApps uses to send webhook callbacks. Set these as `BDAPPS_WEBHOOK_IPS` (comma-separated). Without this, webhook IP validation is permissive.
+Request the list of IP addresses BDApps uses to send webhook callbacks. Set these as `BDAPPS_WEBHOOK_IPS` (comma-separated). Without this, webhook IP validation is permissive. Non-whitelisted sources receive HTTP **401** (NFR-SEC-07).
 
 **Step 6.5 — Remove simulator config**
 Ensure `BDAPPS_BASE_URL` is NOT set in production (it will default to `https://developer.bdapps.com`). Ensure `BDAPPS_SIMULATOR_BASE_URL` and `ENABLE_BDAPPS_SIMULATOR_CHECKER` are not present in the Vercel environment.
