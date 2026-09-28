@@ -16,6 +16,7 @@ tsconfig.tsbuildinfo
 # Local environment
 .env*
 !.env.example
+!ops/monitoring/stub/.env.*
 **/env.prod
 !**/env.prod.example
 apps/web/env.local

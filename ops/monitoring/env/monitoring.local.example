@@ -1,0 +1,6 @@
+# Optional — copy to ops/monitoring/.env.local (gitignored) to override dev Grafana login.
+# Defaults are set in compose.local.override.yml (admin / vesta_dev_grafana).
+
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=vesta_dev_grafana
+GRAFANA_ROOT_URL=http://localhost:3030

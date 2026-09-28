@@ -39,8 +39,11 @@ No Resend / JWT / CRON values belong in git — copy from Vercel dashboard local
 ## Out of scope (later)
 
 - Off-box backup sync (Contabo Object Storage)
-- Grafana/Prometheus stack — **spec in progress:** [.scratch/monitoring/spec.md](../monitoring/spec.md) (enable on VPS after ticket 07 hardening)
 - CI-built images (build on VPS is fine for v1)
+
+## Monitoring (in repo)
+
+Prometheus + Grafana stack: [.scratch/monitoring/spec.md](../monitoring/spec.md) — landed in repo ([ticket 01](../monitoring/issues/01-monitoring-stack-repo-local-and-prod.md), `pnpm monitoring:verify`). **Public** `https://monitoring.cycle-circle.com` go-live is [ticket 02](../monitoring/issues/02-vps-monitoring-public-go-live.md) and requires [07-host-hardening](./issues/07-host-hardening.md) first.
 
 ## Tickets
 
