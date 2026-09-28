@@ -2,7 +2,7 @@
 
 Docker Compose deploy of Vesta (web + admin + self-hosted Postgres + Redis) behind nginx on the Contabo VPS. For SSH access see [01-access.md](./01-access.md); for installing Docker/hardening the host see [02-server-setup.md](./02-server-setup.md); for env var meanings see [04-env-reference.md](./04-env-reference.md); for logs/backups/incidents see [05-operations.md](./05-operations.md).
 
-**Status:** none of the production deploy artifacts exist yet (see §2). This doc documents the target architecture and the exact runbook to follow once they're built — do not attempt Step 4 below until §2's artifacts are in the repo.
+**Status:** production deploy artifacts live under `ops/deploy/` (see [ops/deploy/README.md](../../ops/deploy/README.md)). Nginx uses **`cycle-circle.bootstrap.conf`** until Let's Encrypt certs exist, then set `NGINX_CONF=cycle-circle.conf` in `ops/deploy/.env` (documented in that README).
 
 ---
 
@@ -57,13 +57,9 @@ publishes host ports; web/admin/postgres/redis are internal-only.
 
 ## 2. To build before first deploy
 
-Nothing production-shaped exists in the repo yet:
+Local dev remains under `ops/docker/*` (dev Dockerfile, Mailpit, simulator). Production uses **`ops/deploy/*`** — separate from dev on purpose.
 
-- `ops/docker/app/Dockerfile` is a **dev** image (`CMD ["pnpm", "--dir", "apps/web", "dev"]`) — not usable in prod.
-- `ops/docker/compose.yml` is the **local dev** stack (Mailpit, BDApps simulator, host-port Postgres/Redis) — not usable in prod.
-- There is no production nginx config, no TLS setup, and no cron file.
-
-The following artifacts are proposed (sketched below, not created by this doc — building them is a separate task). Filenames follow the convention `ops/deploy/*`, kept alongside but separate from the existing `ops/docker/*` (local dev) tree.
+The sections below retain the **reference sketches** aligned with the checked-in files; if they drift, trust the repo copies first.
 
 | Artifact | Purpose |
 |---|---|
@@ -402,11 +398,14 @@ Run these as the `vesta` user (sudo where noted). Assumes §2's artifacts exist 
      -d cycle-circle.com -d www.cycle-circle.com -d admin.cycle-circle.com \
      --email <ops contact email> --agree-tos --no-eff-email
    docker compose -f ops/deploy/compose.prod.yml exec nginx nginx -s reload
+   echo 'NGINX_CONF=cycle-circle.conf' >> ops/deploy/.env
+   docker compose -f ops/deploy/compose.prod.yml up -d --force-recreate nginx
    ```
 
 10. **Enable the crontab** (app crons + cert renewal, §2):
     ```bash
-    crontab -u vesta ops/deploy/vesta-crontab
+    sed "s/CRON_SECRET_PLACEHOLDER/$(grep ^CRON_SECRET= /opt/vesta/.env.web.production | cut -d= -f2-)/" ops/deploy/vesta-crontab | crontab -u vesta -
+    chmod +x /opt/vesta/ops/deploy/scripts/backup-db.sh
     sudo mkdir -p /var/log/vesta && sudo chown vesta:vesta /var/log/vesta
     crontab -u vesta -l   # confirm it installed
     ```

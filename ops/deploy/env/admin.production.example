@@ -1,0 +1,12 @@
+# Copy to /opt/vesta/.env.admin.production (chmod 600, owner vesta)
+# JWT_SECRET and CRON_SECRET must match web exactly.
+
+NODE_ENV=production
+
+DATABASE_URL=postgresql://vesta:POSTGRES_PASSWORD_HERE@postgres:5432/vesta
+DIRECT_URL=postgresql://vesta:POSTGRES_PASSWORD_HERE@postgres:5432/vesta
+
+JWT_SECRET=GENERATE-WITH-openssl-rand-hex-32
+AUTH_COOKIE_NAME=vesta_admin_token
+APP_URL=https://cycle-circle.com
+CRON_SECRET=GENERATE-WITH-openssl-rand-hex-16

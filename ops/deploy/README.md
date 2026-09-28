@@ -1,0 +1,49 @@
+# Production deploy (`ops/deploy`)
+
+Docker Compose stack for the Contabo VPS. Full runbook: [docs/ops/03-deployment.md](../../docs/ops/03-deployment.md).
+
+## Layout
+
+| Path | Purpose |
+|---|---|
+| `compose.prod.yml` | nginx, certbot, web, admin, postgres, redis |
+| `Dockerfile.web` / `Dockerfile.admin` | Multi-stage prod images |
+| `nginx/cycle-circle.bootstrap.conf` | HTTP-only until TLS certs exist (default) |
+| `nginx/cycle-circle.conf` | HTTPS + redirects (after certbot) |
+| `env/*.example` | Templates for `/opt/vesta/.env.*.production` |
+| `vesta-crontab` | App crons, cert renewal, backups |
+| `scripts/backup-db.sh` | Nightly `pg_dump` (referenced by crontab) |
+
+## TLS bootstrap
+
+Nginx cannot load `cycle-circle.conf` until Let's Encrypt files exist. The compose file defaults to **`cycle-circle.bootstrap.conf`** (port 80 only, no HTTPS redirect).
+
+After successful certbot:
+
+```bash
+cd /opt/vesta
+echo 'NGINX_CONF=cycle-circle.conf' >> ops/deploy/.env
+docker compose -f ops/deploy/compose.prod.yml up -d --force-recreate nginx
+```
+
+## Staging vs go-live
+
+| Concern | Staging | Production |
+|---|---|---|
+| `DEV_MODE` in `.env.web.production` | `true` | `false` |
+| `NEXT_PUBLIC_DEV_MODE` | Set `NEXT_PUBLIC_DEV_MODE=true` in `ops/deploy/.env`, then **rebuild web** | `false` (compose default) |
+
+## Quick commands
+
+```bash
+export COMPOSE_FILE=/opt/vesta/ops/deploy/compose.prod.yml
+cd /opt/vesta
+
+docker compose build
+docker compose up -d --wait postgres redis
+docker compose run --rm --entrypoint sh web -c \
+  'cd packages/shared && pnpm exec prisma migrate deploy --schema ./prisma/schema.prisma'
+docker compose up -d
+```
+
+Routine release: [docs/ops/03-deployment.md §5](../../docs/ops/03-deployment.md#5-routine-deploy).

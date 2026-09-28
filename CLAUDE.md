@@ -91,6 +91,18 @@ Full file-by-file audits with line numbers are in `review/`:
 
 ---
 
+## Agent skills
+
+### Issue tracker
+
+Work is tracked as markdown under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` at repo root and ADRs in `docs/adr/`. See `docs/agents/domain.md`.
+
+---
+
 ## MCP Tools: code-review-graph
 
 **IMPORTANT: This project has a knowledge graph. ALWAYS use the
