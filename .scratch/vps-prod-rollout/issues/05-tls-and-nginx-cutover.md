@@ -11,5 +11,5 @@
 - [ ] Certbot `certonly` succeeds for `cycle-circle.com`, `www`, `admin` using webroot challenge
 - [ ] `NGINX_CONF=cycle-circle.conf` set in `ops/deploy/.env`; nginx recreated (after LE)
 - [x] `curl -kfsS https://cycle-circle.com/api/health/db` returns ok (self-signed)
-- [ ] `https://admin.cycle-circle.com/login` returns 200 (needs admin DNS + trusted or `-k` cert)
+- [x] `https://admin.cycle-circle.com/login` returns 200 (self-signed; browser warning expected)
 - [x] `http://cycle-circle.com/` redirects to HTTPS
