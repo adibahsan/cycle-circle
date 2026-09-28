@@ -22,7 +22,7 @@ function mapBdappsStatus(status: string): SubscriptionStatus {
 export async function POST(request: Request): Promise<Response> {
   try {
     if (!validateWebhookSource(request)) {
-      throw new ApiError(403, 'Forbidden: unknown webhook source', 'FORBIDDEN')
+      throw new ApiError(401, 'Unauthorized: unknown webhook source', 'UNAUTHORIZED')
     }
 
     const payload = await request.json() as {

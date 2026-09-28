@@ -1,0 +1,5 @@
+# Copy to /opt/vesta/.env.postgres.production (chmod 600, owner vesta)
+
+POSTGRES_USER=vesta
+POSTGRES_PASSWORD=GENERATE-WITH-openssl-rand-hex-20
+POSTGRES_DB=vesta

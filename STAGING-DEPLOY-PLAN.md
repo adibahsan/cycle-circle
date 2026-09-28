@@ -231,9 +231,17 @@ quick smoke test.
 - **Postgres RLS / pgcrypto** — not built; isolation is **app-layer only** (JWT →
   Prisma `userId` scoping in `middleware.ts`). Go/no-go before a real launch.
 - **Real BDApps OTP / CAAS / SMS + webhook registration** — deferred (no creds).
-  When ready: set real `BDAPPS_APP_ID`/`PASSWORD`, populate `BDAPPS_WEBHOOK_IPS`,
-  register the webhook URLs (`/api/webhooks/sms/receive|report`, `/ussd/receive`,
-  `/subscription/notify`) + the Resend webhook (needs `RESEND_WEBHOOK_SECRET`).
+  When credentials exist, complete this checklist (see also `DEPLOYMENT-PLAN.md` §6):
+  1. Set `BDAPPS_APP_ID` / `BDAPPS_PASSWORD` (do not set `BDAPPS_BASE_URL` — prod default applies).
+  2. Request BDApps webhook egress IPs; set `BDAPPS_WEBHOOK_IPS` (comma-separated).
+  3. Register these four listener URLs in the BDApps portal against public `APP_URL`:
+     - `{APP_URL}/api/webhooks/sms/receive`
+     - `{APP_URL}/api/webhooks/sms/report`
+     - `{APP_URL}/api/webhooks/ussd/receive`
+     - `{APP_URL}/api/webhooks/subscription/notify`
+  4. Smoke locally/staging with `just webhook-smoke` (or `BASE_URL=https://… just webhook-smoke`).
+  5. Confirm non-whitelisted IP → HTTP 401; subscription notify updates Pro/Lapsed.
+  6. Register Resend webhook separately (`RESEND_WEBHOOK_SECRET`).
 - **QStash async jobs** — not wired; cron sends email synchronously (fine at
   <100 users within the function timeout).
 - **CI/CD** — none; the Pre-flight gate is manual.

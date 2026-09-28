@@ -1,0 +1,25 @@
+# Copy to /opt/vesta/.env.web.production (chmod 600, owner vesta)
+# See docs/ops/04-env-reference.md
+
+APP_URL=https://cycle-circle.com
+NODE_ENV=production
+
+DATABASE_URL=postgresql://vesta:POSTGRES_PASSWORD_HERE@postgres:5432/vesta
+DIRECT_URL=postgresql://vesta:POSTGRES_PASSWORD_HERE@postgres:5432/vesta
+REDIS_URL=redis://redis:6379
+
+JWT_SECRET=GENERATE-WITH-openssl-rand-hex-32
+AUTH_COOKIE_NAME=vesta_token
+CRON_SECRET=GENERATE-WITH-openssl-rand-hex-16
+
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=Vesta <noreply@cycle-circle.com>
+RESEND_WEBHOOK_SECRET=
+
+BDAPPS_APP_ID=
+BDAPPS_PASSWORD=
+BDAPPS_WEBHOOK_IPS=
+
+# Staging: DEV_MODE=true and rebuild web with NEXT_PUBLIC_DEV_MODE=true (ops/deploy/.env)
+DEV_MODE=false
+NEXT_PUBLIC_USE_DUMMY_DATA=false

@@ -10,18 +10,6 @@
 
 ---
 
-## Monorepo Layout
-
-```
-apps/web/            Customer-facing Next.js 16 app (port 3000)
-apps/admin/          Admin panel Next.js app (port 3001)
-packages/shared/     @vesta/shared: Prisma, server logic, auth, adapters, types, utils
-ops/                 Docker Compose, BDApps simulator, vendor SDK
-docs/                SRS, knowledge base, client site
-scripts/             Build and sync scripts
-review/              UI audits, fix plans, architecture reviews
-```
-
 ## Import Conventions
 
 Within each app, `@/` maps to `./src/*` via tsconfig paths.
@@ -42,36 +30,18 @@ Shared code uses the `@vesta/shared` package:
 App-specific files stay as `@/lib/*` and `@/components/*`:
 `store`, `api`, `api-mappers`, `hydrate-store`, `post-auth`, `dummy-data`
 
-## Development Workflow
+## Gotchas (not derivable from the code)
 
-| Command | What |
-|---|---|
-| `just w` | Start web dev server (port 3000) |
-| `just a` | Start admin dev server (port 3001) |
-| `just wa` | Start both in parallel |
-| `just setup` | Copy env, start infra, reset DB, seed |
-| `just doctor` | Pre-flight checks for local development |
-| `just setup-check` | Smoke-test Docker services |
-| `just typecheck` | Type-check web app |
-| `just typecheck-all` | Type-check all packages |
-| `just db-generate` | Generate Prisma client |
-| `just db-migrate` | Create + apply migration |
-| `just studio` | Open Prisma Studio |
-| `just up` | Start all Docker services (web in container) |
-| `just infra` | Start postgres, redis, mailpit, bdapps-simulator |
-| `just down` | Stop Docker services |
-
-All Prisma operations run from `packages/shared/`.
-
-## Tech Stack
-
-Next.js 16, React 19, TypeScript, Tailwind CSS v4, Zustand (client state), i18next (bilingual EN+BN), Prisma (PostgreSQL on Supabase with RLS), Upstash Redis + QStash (QStash not yet wired — cron email is sent synchronously; Vercel Cron handles scheduling in prod), BDApps (OTP, CAAS billing, SMS), Resend (transactional email).
+- All Prisma operations run from `packages/shared/`.
+- Prisma targets PostgreSQL on Supabase with **RLS** enabled.
+- QStash is **not yet wired** — cron email is sent synchronously; Vercel Cron handles scheduling in prod.
 
 ## Key References
 
 | What | Where |
 |---|---|
 | Local development setup | `docs/LOCAL-DEVELOPMENT.md` |
+| Prod VPS access, setup, deploy, ops (Contabo) | `docs/ops/README.md` |
 | Implementation status | `DEV_SRS.md` |
 | Sprint checklist | `CHECKLIST.md` |
 | Full SRS (IEEE 830) | `docs/vesta/source/SRS.md` |
@@ -79,41 +49,7 @@ Next.js 16, React 19, TypeScript, Tailwind CSS v4, Zustand (client state), i18ne
 | Admin UI review | `review/ADMIN-UI-REVIEW.md` (2026-05-30) |
 | Architecture fix plan | `review/FIX-PLAN.md` (2026-05-29) |
 
----
-
-## Admin App
-
-Single Super Admin account (email/password login at `/login`). Seeded via `packages/shared/prisma/seed.ts` with env vars `ADMIN_EMAIL` / `ADMIN_PASSWORD` (defaults: `admin@vesta.health` / `admin123`).
-
-**Auth flow:** bcrypt password verification in `@vesta/shared/server/auth` (`verifyAdminLogin`), same JWT/cookie system as web app with `role=ADMIN` check in Edge proxy + server-side `requireAdminAuth()`.
-
-**Pages:** Dashboard, Users (list + detail), Subscriptions, Content/CMS (Tiptap 3.x rich-text editor with EN/BN side-by-side), Analytics (Recharts 3.x), SMS Broadcasts, Feedback.
-
-**Pattern:** RSC pages fetch data via `queries/*.ts` (thin `cache()` wrappers over shared services), pass to `*Client.tsx` components. Mutations go through `actions/*.ts` (thin `'use server'` wrappers over shared services + `revalidatePath`).
-
-**Env:** Admin requires `DATABASE_URL`, `DIRECT_URL` (for migrations), `JWT_SECRET`, `AUTH_COOKIE_NAME=vesta_admin_token`, `APP_URL` (web URL, for cron-trigger calls from System page), and `CRON_SECRET` (same as web). `REDIS_URL` and BDApps vars are optional (in-memory fallback / not used by admin).
-
----
-
-## Shared Services Layer
-
-11 pure async service modules in `packages/shared/src/server/services/` — no Next.js dependencies. Both apps use thin wrappers (auth + validation + revalidatePath/cache).
-
-| Service | Scope |
-|---------|-------|
-| `profile-service` | CRUD, 6-profile cap, ownership checks |
-| `tracking-service` | Period logs, symptoms, dashboard/calendar data |
-| `content-service` | Article/category CRUD, published article listing |
-| `feedback-service` | Create, list, export feedback |
-| `notification-service` | Notification preference upsert |
-| `user-service` | Profile completion, suspend/reactivate/soft-delete |
-| `subscription-service` | Grant/revoke Pro, list subscriptions |
-| `audit-service` | Admin audit log creation |
-| `analytics-service` | Dashboard stats, trends, distributions, retention |
-| `sms-service` | Broadcast CRUD |
-| `export-service` | CSV generation (feedback, users) |
-
-Import via `@vesta/shared/server/services`.
+Subdirectory memory (loads when you work under that path): `apps/admin/CLAUDE.md` (admin app), `packages/shared/CLAUDE.md` (shared services layer).
 
 ---
 
@@ -155,6 +91,18 @@ Full file-by-file audits with line numbers are in `review/`:
 
 ---
 
+## Agent skills
+
+### Issue tracker
+
+Work is tracked as markdown under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` at repo root and ADRs in `docs/adr/`. See `docs/agents/domain.md`.
+
+---
+
 ## MCP Tools: code-review-graph
 
 **IMPORTANT: This project has a knowledge graph. ALWAYS use the
@@ -171,24 +119,4 @@ scanning cannot.
 - **Finding relationships**: `query_graph` with callers_of/callees_of/imports_of/tests_for
 - **Architecture questions**: `get_architecture_overview` + `list_communities`
 
-Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
-
-### Key Tools
-
-| Tool | Use when |
-|------|----------|
-| `detect_changes` | Reviewing code changes — gives risk-scored analysis |
-| `get_review_context` | Need source snippets for review — token-efficient |
-| `get_impact_radius` | Understanding blast radius of a change |
-| `get_affected_flows` | Finding which execution paths are impacted |
-| `query_graph` | Tracing callers, callees, imports, tests, dependencies |
-| `semantic_search_nodes` | Finding functions/classes by name or keyword |
-| `get_architecture_overview` | Understanding high-level codebase structure |
-| `refactor_tool` | Planning renames, finding dead code |
-
-### Workflow
-
-1. The graph auto-updates on file changes (via hooks).
-2. Use `detect_changes` for code review.
-3. Use `get_affected_flows` to understand impact.
-4. Use `query_graph` pattern="tests_for" to check coverage.
+Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need. Run `code-review-graph` with no args (or see `/mcp`) for the full tool list.
