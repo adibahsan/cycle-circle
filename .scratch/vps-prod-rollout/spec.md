@@ -39,7 +39,7 @@ No Resend / JWT / CRON values belong in git — copy from Vercel dashboard local
 ## Out of scope (later)
 
 - Off-box backup sync (Contabo Object Storage)
-- Grafana/Prometheus stack
+- Grafana/Prometheus stack — **spec in progress:** [.scratch/monitoring/spec.md](../monitoring/spec.md) (enable on VPS after ticket 07 hardening)
 - CI-built images (build on VPS is fine for v1)
 
 ## Tickets
