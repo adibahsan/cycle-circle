@@ -13,6 +13,7 @@ Checklist for **public DNS** and **server-side env files** before the first VPS 
 | `cycle-circle.com` | A | `62.171.155.231` | Web + ACME |
 | `www.cycle-circle.com` | A | `62.171.155.231` | Web (nginx redirects to apex) |
 | `admin.cycle-circle.com` | A | `62.171.155.231` | Admin app + ACME for admin vhost |
+| `monitoring.cycle-circle.com` | A | `62.171.155.231` | Grafana (HTTPS via nginx; enable after [host hardening](../../.scratch/vps-prod-rollout/issues/07-host-hardening.md)) |
 | `cycle-circle.com` | AAAA (optional) | `2a02:c207:2361:2692::1` | IPv6 clients |
 
 DNS is **client-owned** (registrar / Namecheap, etc.). The **admin** subdomain is easy to miss — nginx and certbot expect `admin.cycle-circle.com` to resolve to the VPS (see [03-deployment.md §1](./03-deployment.md)).
@@ -25,7 +26,7 @@ Use an **external** resolver so you are not fooled by stale laptop cache:
 
 ```bash
 VPS_IP=62.171.155.231
-for h in cycle-circle.com www.cycle-circle.com admin.cycle-circle.com; do
+for h in cycle-circle.com www.cycle-circle.com admin.cycle-circle.com monitoring.cycle-circle.com; do
   echo "=== $h (A @1.1.1.1) ==="
   dig +short A "$h" @1.1.1.1
 done

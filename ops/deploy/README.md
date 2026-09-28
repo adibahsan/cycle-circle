@@ -18,7 +18,7 @@ CI on the merge source branch should pass `pnpm typecheck`, `pnpm lint`, and `pn
 
 | Path | Purpose |
 |---|---|
-| `compose.prod.yml` | nginx, certbot, web, admin, postgres, redis |
+| `compose.prod.yml` | nginx, certbot, web, admin, postgres, redis, monitoring (via `include`) |
 | `Dockerfile.web` / `Dockerfile.admin` | Multi-stage prod images |
 | `nginx/cycle-circle.bootstrap.conf` | HTTP-only until TLS certs exist (default) |
 | `nginx/cycle-circle.selfsigned.conf` | HTTPS with OpenSSL self-signed cert (staging) |
@@ -82,3 +82,7 @@ docker compose up -d
 ```
 
 Routine release: [docs/ops/03-deployment.md §5](../../docs/ops/03-deployment.md#5-routine-deploy).
+
+## Monitoring
+
+Prometheus + Grafana merge via `include` in `compose.prod.yml` ([ops/monitoring/README.md](../monitoring/README.md)). Issue or renew TLS with **`monitoring.cycle-circle.com`** on the certbot `-d` list (see deployment doc). Do not expose Prometheus on nginx — Grafana only.

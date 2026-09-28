@@ -65,7 +65,7 @@ The sections below retain the **reference sketches** aligned with the checked-in
 |---|---|
 | `ops/deploy/Dockerfile.web` | Multi-stage prod image for `apps/web`, `next build` + `next start` |
 | `ops/deploy/Dockerfile.admin` | Same pattern for `apps/admin` |
-| `ops/deploy/compose.prod.yml` | Prod Compose stack: nginx, certbot, web, admin, postgres, redis |
+| `ops/deploy/compose.prod.yml` | Prod Compose stack: nginx, certbot, web, admin, postgres, redis, monitoring (Prometheus/Grafana + exporters) |
 | `ops/deploy/nginx/cycle-circle.conf` | TLS-terminating vhost config, based on `ops/docker/nginx/edge.conf` |
 | `ops/deploy/vesta-crontab` | Host crontab: the two app crons + cert renewal |
 
@@ -398,7 +398,7 @@ Run these as the `vesta` user (sudo where noted). Assumes §2's artifacts exist 
    ```bash
    docker compose -f ops/deploy/compose.prod.yml run --rm certbot certonly \
      --webroot -w /var/www/certbot \
-     -d cycle-circle.com -d www.cycle-circle.com -d admin.cycle-circle.com \
+     -d cycle-circle.com -d www.cycle-circle.com -d admin.cycle-circle.com -d monitoring.cycle-circle.com \
      --email <ops contact email> --agree-tos --no-eff-email
    docker compose -f ops/deploy/compose.prod.yml exec nginx nginx -s reload
    echo 'NGINX_CONF=cycle-circle.conf' >> ops/deploy/.env
