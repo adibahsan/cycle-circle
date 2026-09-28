@@ -31,6 +31,8 @@ Use this before merging deploy work to `main` and before the first VPS `docker c
 | `docs/ops/03-deployment.md` | First deploy and releases |
 | `docs/ops/04-env-reference.md` | Env var reference |
 | `docs/ops/06-merge-to-main-runbook.md` | Human merge steps to `main` |
+| `docs/ops/07-dns-and-env-runbook.md` | DNS + `/opt/vesta` env preflight |
+| `scripts/verify-vps-preflight.mjs` | `pnpm vps:preflight` |
 
 ---
 

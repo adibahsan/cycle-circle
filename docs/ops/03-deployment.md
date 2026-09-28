@@ -301,6 +301,8 @@ Both cron routes accept `GET` and `POST` and export the same `withCronAuth`-wrap
 
 ## 3. DNS setup + verification
 
+Ticket **03** runbook (env paths, must-match secrets, staging flags, last DNS snapshot): [07-dns-and-env-runbook.md](./07-dns-and-env-runbook.md). Local check: `pnpm vps:preflight`.
+
 | Record | Type | Value |
 |---|---|---|
 | `cycle-circle.com` | A | `62.171.155.231` |
@@ -348,14 +350,15 @@ Run these as the `vesta` user (sudo where noted). Assumes §2's artifacts exist 
    echo 'export COMPOSE_FILE=/opt/vesta/ops/deploy/compose.prod.yml' >> ~/.bashrc && source ~/.bashrc
    ```
 
-3. **Create the env files** (values from [04-env-reference.md](./04-env-reference.md); generate secrets per that doc's snippet):
+3. **Create the env files** from `ops/deploy/env/*.example` (details in [07-dns-and-env-runbook.md §3–§5](./07-dns-and-env-runbook.md); values from [04-env-reference.md](./04-env-reference.md)):
    ```bash
-   sudo touch /opt/vesta/.env.web.production /opt/vesta/.env.admin.production /opt/vesta/.env.postgres.production
-   sudo chown vesta:vesta /opt/vesta/.env.*.production
-   sudo chmod 600 /opt/vesta/.env.*.production
+   cp ops/deploy/env/web.production.example    /opt/vesta/.env.web.production
+   cp ops/deploy/env/admin.production.example  /opt/vesta/.env.admin.production
+   cp ops/deploy/env/postgres.production.example /opt/vesta/.env.postgres.production
+   chmod 600 /opt/vesta/.env.*.production
    # Edit each with a real editor (vim/nano) — never echo secrets into shell history.
    ```
-   Double-check: `JWT_SECRET` and `CRON_SECRET` identical across `.env.web.production` and `.env.admin.production`; `DEV_MODE=false` and `NEXT_PUBLIC_DEV_MODE=false` in `.env.web.production` for a real launch (leave `true` only if intentionally mirroring the staging DEV_MODE setup — see `STAGING-DEPLOY-PLAN.md`).
+   Double-check: `JWT_SECRET` and `CRON_SECRET` identical across web and admin; postgres password in `DATABASE_URL` matches `POSTGRES_PASSWORD` in `.env.postgres.production`. For VPS v1 staging, use `DEV_MODE=true` in web env and `NEXT_PUBLIC_DEV_MODE=true` in `ops/deploy/.env` before web build — see [07-dns-and-env-runbook.md §5](./07-dns-and-env-runbook.md).
 
 4. **Build the images:**
    ```bash

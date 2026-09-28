@@ -26,6 +26,7 @@
     "docs:sync": "node scripts/sync-netlify-docs.mjs --sync",
     "docs:check": "node scripts/sync-netlify-docs.mjs --check",
     "deploy:verify": "node scripts/verify-deploy-assets.mjs",
+    "vps:preflight": "node scripts/verify-vps-preflight.mjs",
     "docker:dev": "docker compose -f ops/docker/compose.yml up -d --build",
     "docker:down": "docker compose -f ops/docker/compose.yml down",
     "docker:logs": "docker compose -f ops/docker/compose.yml logs -f",
