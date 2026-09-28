@@ -216,7 +216,11 @@ function getEventStore() {
   return globalThis.__vestaBdappsSimulatorEvents;
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = DEFAULT_TIMEOUT_MS) {
+type FetchWithTimeoutInit = RequestInit & {
+  cache?: 'default' | 'force-cache' | 'no-cache' | 'no-store' | 'only-if-cached';
+};
+
+async function fetchWithTimeout(url: string, init: FetchWithTimeoutInit, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 

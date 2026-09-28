@@ -2,6 +2,18 @@
 
 Docker Compose stack for the Contabo VPS. Full runbook: [docs/ops/03-deployment.md](../../docs/ops/03-deployment.md).
 
+## Merge readiness (VPS v1)
+
+Before the first VPS deploy, **`main` must include this directory** (especially `compose.prod.yml`). That stack landed on **`first-testing/bug-fixing`** (deploy commit **`397031a`**); open a PR from that branch into **`main`**, review, and merge.
+
+| Check | Action |
+|---|---|
+| Canonical clone branch | VPS v1 clones and tracks **`main`** (or a release tag cut from it after merge) |
+| Prod compose file on `main` | Confirm `test -f ops/deploy/compose.prod.yml` after merge |
+| Local prod image build | From repo root: `pnpm docker:prod:build` (runs `docker compose -f ops/deploy/compose.prod.yml build web admin`) |
+
+CI on the merge source branch should pass `pnpm typecheck`, `pnpm lint`, and `pnpm docs:check` before merge.
+
 ## Layout
 
 | Path | Purpose |
