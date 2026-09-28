@@ -13,3 +13,17 @@
 ## Comments
 
 - Branch already pushed to `origin/first-testing/bug-fixing` (2026-09-28).
+
+## Answer
+
+**In-repo verification (ticket 01 coder pass):**
+
+- Deploy stack present on merge source branches (`397031a` lineage); **`git show main:ops/deploy/compose.prod.yml` fails** — merge PR still required.
+- Added `pnpm deploy:verify`, [docs/ops/deploy-artifacts-verification.md](../../../docs/ops/deploy-artifacts-verification.md), and [docs/ops/06-merge-to-main-runbook.md](../../../docs/ops/06-merge-to-main-runbook.md) with `gh pr` steps for the human.
+- No open GitHub PR `first-testing/bug-fixing` → `main` at verification time (`gh pr list --base main --head first-testing/bug-fixing` empty).
+
+**Acceptance (unchanged until human steps):**
+
+- [ ] PR merged to `main` — human
+- [ ] `main` builds / compose present — re-run `pnpm deploy:verify` on `main` after merge
+- [ ] Team agrees VPS tracks `main` — human (see runbook §4)

@@ -32,6 +32,8 @@ This is the operations handbook for Vesta's production VPS: how to reach the ser
 | [03-deployment.md](./03-deployment.md) | Docker Compose deploy on the VPS |
 | [04-env-reference.md](./04-env-reference.md) | Environment variables reference |
 | [05-operations.md](./05-operations.md) | Logs, backups, restore, updates, incidents |
+| [06-merge-to-main-runbook.md](./06-merge-to-main-runbook.md) | Merge deploy stack PR into `main` (human) |
+| [deploy-artifacts-verification.md](./deploy-artifacts-verification.md) | `ops/deploy/` file checklist + `pnpm deploy:verify` |
 
 ---
 
