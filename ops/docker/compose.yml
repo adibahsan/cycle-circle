@@ -111,6 +111,11 @@ services:
     environment:
       TAP_REST_PORT: "7000"
       TAP_UI_PORT: "10001"
+    networks:
+      default:
+      edge:
+        # Fixed so the web app can allowlist it via BDAPPS_WEBHOOK_IPS (just edge-wa).
+        ipv4_address: 172.31.250.10
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:10001/mchoice-tap-sdk"]
@@ -118,6 +123,31 @@ services:
       timeout: 10s
       retries: 5
       start_period: 90s
+
+  # Local stand-in for the prod VM reverse proxy (just edge-up). Proxies to the
+  # host dev servers; see ops/docker/nginx/edge.conf.
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "8088:80"
+    volumes:
+      - ./nginx/edge.conf:/etc/nginx/conf.d/default.conf:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      edge:
+        ipv4_address: 172.31.250.2
+        # Lets the simulator call back to http://cycle-circle.localhost/... like BDApps would.
+        aliases:
+          - cycle-circle.localhost
+          - admin.cycle-circle.localhost
+    restart: unless-stopped
+
+networks:
+  edge:
+    ipam:
+      config:
+        - subnet: 172.31.250.0/24
 
 volumes:
   postgres_data:

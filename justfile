@@ -148,6 +148,33 @@ a:
 wa:
     {{web}} dev & {{admin}} dev & wait
 
+# ─── LOCAL EDGE (fake prod: nginx + simulator keys) ─────
+# Browser: http://cycle-circle.localhost:8088 · http://admin.cycle-circle.localhost:8088/login
+# Simulator callback base: http://cycle-circle.localhost (resolves to nginx inside Docker)
+
+edge_ip := "172.31.250.10"
+edge_env := "APP_URL=http://cycle-circle.localhost:8088 BDAPPS_WEBHOOK_IPS=" + edge_ip + " BDAPPS_APP_ID=APP_SIMULATOR BDAPPS_PASSWORD=simulator_password"
+
+# Start nginx edge (+ recreate simulator on the edge network)
+edge-up:
+    {{compose}} up -d --wait nginx bdapps-simulator
+
+# Stop nginx edge
+edge-down:
+    {{compose}} stop nginx
+
+# Web + admin dev servers with prod-like webhook allowlist and fake BDApps keys
+edge-wa:
+    {{edge_env}} {{web}} dev & {{edge_env}} {{admin}} dev & wait
+
+# Webhook smoke through nginx: from the allowlisted simulator (expect S1000) and from the host (expect 401)
+edge-smoke:
+    @echo "── from simulator container (allowlisted {{edge_ip}}) ──"
+    {{compose}} exec -T -e BASE_URL=http://cycle-circle.localhost bdapps-simulator bash -s < scripts/smoke-bdapps-webhooks.sh
+    @echo "── from host (not allowlisted, expect 401) ──"
+    @code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://cycle-circle.localhost:8088/api/webhooks/subscription/notify -H 'Content-Type: application/json' -H 'X-Real-IP: {{edge_ip}}' -d '{"subscriberId":"tel:8801812345678","status":"ACTIVE","timeStamp":"0"}'); \
+      if [ "$code" = "401" ]; then echo "OK:   spoofed X-Real-IP from host → 401"; else echo "FAIL: host got HTTP $code (expected 401)"; exit 1; fi
+
 # Start the local cron worker (BullMQ → triggers /api/cron/* on schedule). For hybrid `just infra` + `just w`.
 worker:
     {{web}} worker

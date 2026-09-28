@@ -41,6 +41,7 @@ App-specific files stay as `@/lib/*` and `@/components/*`:
 | What | Where |
 |---|---|
 | Local development setup | `docs/LOCAL-DEVELOPMENT.md` |
+| Prod VPS access, setup, deploy, ops (Contabo) | `docs/ops/README.md` |
 | Implementation status | `DEV_SRS.md` |
 | Sprint checklist | `CHECKLIST.md` |
 | Full SRS (IEEE 830) | `docs/vesta/source/SRS.md` |
