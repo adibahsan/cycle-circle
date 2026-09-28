@@ -38,6 +38,7 @@ Use when you want **port 443** working immediately (browser security warning is 
 
 ```bash
 cd /opt/vesta
+mkdir -p ssl && chmod 700 ssl   # before first nginx recreate (avoids Docker creating ssl/ as root)
 chmod +x ops/deploy/scripts/generate-selfsigned-cert.sh
 ./ops/deploy/scripts/generate-selfsigned-cert.sh   # writes /opt/vesta/ssl/{fullchain,privkey}.pem
 
