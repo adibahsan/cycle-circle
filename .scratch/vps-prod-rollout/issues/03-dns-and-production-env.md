@@ -11,4 +11,4 @@
 - [ ] `/opt/vesta/.env.web.production`, `.env.admin.production`, `.env.postgres.production` created from `ops/deploy/env/*.example`, mode `600`, owner `vesta`
 - [ ] `JWT_SECRET` and `CRON_SECRET` byte-identical in web and admin env files
 - [ ] Postgres password in env files matches `POSTGRES_PASSWORD` in postgres env
-- [ ] Staging choice documented: `DEV_MODE=true` on web for first bring-up; `NEXT_PUBLIC_DEV_MODE` handled via `ops/deploy/.env` at **build** time when applicable
+- [x] Staging choice documented in `spec.md`: mirror Vercel staging env + Docker Postgres + `DEV_MODE=true`; `NEXT_PUBLIC_DEV_MODE=true` in `ops/deploy/.env` before web build

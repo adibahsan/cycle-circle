@@ -6,8 +6,8 @@
 
 **Blocked by:** 01 (merge deploy to main)
 
-- [ ] Ed25519 deploy key created on VPS (`~/.ssh/vesta_deploy_key`), public key added to GitHub repo **Deploy keys** (read-only)
-- [ ] `~/.ssh/config` on VPS uses that key for `github.com`
+- [x] Ed25519 deploy key created on VPS (`~/.ssh/vesta_deploy_key`), public key added to GitHub repo **Deploy keys** (read-only)
+- [x] `~/.ssh/config` on VPS uses that key for `github.com`; `ssh -T git@github.com` → `Hi adibahsan/cycle-circle!`
 - [ ] Repository cloned to `/opt/vesta` from `main` (or chosen release ref)
 - [ ] `export COMPOSE_FILE=/opt/vesta/ops/deploy/compose.prod.yml` in `vesta` user shell profile
 - [ ] `sg docker -c 'docker compose version'` succeeds for `vesta`

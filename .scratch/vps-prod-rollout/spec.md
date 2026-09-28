@@ -18,6 +18,24 @@ Run Vesta (web + admin + Postgres + Redis) on the Contabo VPS behind nginx with 
 - Docker, 4G swap, UTC timezone installed (2026-09-28)
 - `/opt/vesta` directories exist; **repo not cloned**, **no prod env files**
 
+## Staging parity (VPS v1)
+
+Mirror **Vercel staging** env values from gitignored `apps/web/env.prod` / `apps/admin/env.prod` (see `STAGING-DEPLOY-PLAN.md` Step 3), with these overrides only:
+
+| Area | VPS value |
+|------|-----------|
+| `DATABASE_URL` / `DIRECT_URL` | `postgresql://vesta:<password>@postgres:5432/vesta` (Compose hostname `postgres`) |
+| `REDIS_URL` | `redis://redis:6379` (optional on Vercel; set on VPS) |
+| `APP_URL` (web) | Public web origin, e.g. `https://cycle-circle.com` |
+| `APP_URL` (admin env) | Same **web** URL (not admin hostname) |
+| `DEV_MODE` | `true` (OTP `420420` / `840840`) |
+| `NEXT_PUBLIC_DEV_MODE` | `true` via `ops/deploy/.env` at **web build** time |
+| `NODE_ENV` | `production` (same as staging Vercel) |
+| BDApps | Placeholder / empty like staging — no simulator in prod compose |
+| Mailpit / simulator vars | Unset |
+
+No Resend / JWT / CRON values belong in git — copy from Vercel dashboard locally onto the server.
+
 ## Out of scope (later)
 
 - Off-box backup sync (Contabo Object Storage)
