@@ -7,8 +7,13 @@ SSL_DIR="${1:-/opt/vesta/ssl}"
 DAYS="${SELF_SIGNED_DAYS:-365}"
 CN="${SELF_SIGNED_CN:-cycle-circle.com}"
 
-mkdir -p "$SSL_DIR"
-chmod 700 "$SSL_DIR"
+if [[ ! -d "$SSL_DIR" ]]; then
+  mkdir -p "$SSL_DIR"
+  chmod 700 "$SSL_DIR"
+elif [[ ! -w "$SSL_DIR" ]]; then
+  echo "error: ${SSL_DIR} exists but is not writable (often created as root by Docker). Run: sudo chown -R \$(whoami):\$(whoami) ${SSL_DIR}" >&2
+  exit 1
+fi
 
 openssl req -x509 -nodes -newkey rsa:2048 -days "$DAYS" \
   -keyout "$SSL_DIR/privkey.pem" \
