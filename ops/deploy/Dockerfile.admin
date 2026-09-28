@@ -13,6 +13,13 @@ RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 COPY --from=deps /workspace ./
 COPY . .
 RUN pnpm install --frozen-lockfile
+# Satisfy @vesta/shared env parse during `next build`; runtime uses env_file on the host.
+ENV DATABASE_URL="postgresql://build:build@postgres:5432/vesta" \
+    DIRECT_URL="postgresql://build:build@postgres:5432/vesta" \
+    JWT_SECRET="0000000000000000000000000000000000000000000000000000000000000000" \
+    CRON_SECRET="00000000000000000000000000000000" \
+    AUTH_COOKIE_NAME="vesta_admin_token" \
+    APP_URL="http://127.0.0.1:3000"
 RUN pnpm --filter @vesta/shared db:generate
 RUN pnpm --filter @vesta/admin build
 

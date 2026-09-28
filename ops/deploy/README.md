@@ -21,7 +21,9 @@ CI on the merge source branch should pass `pnpm typecheck`, `pnpm lint`, and `pn
 | `compose.prod.yml` | nginx, certbot, web, admin, postgres, redis |
 | `Dockerfile.web` / `Dockerfile.admin` | Multi-stage prod images |
 | `nginx/cycle-circle.bootstrap.conf` | HTTP-only until TLS certs exist (default) |
+| `nginx/cycle-circle.selfsigned.conf` | HTTPS with OpenSSL self-signed cert (staging) |
 | `nginx/cycle-circle.conf` | HTTPS + redirects (after certbot) |
+| `scripts/generate-selfsigned-cert.sh` | Create `/opt/vesta/ssl/*.pem` for self-signed nginx |
 | `env/*.example` | Templates for `/opt/vesta/.env.*.production` |
 | `vesta-crontab` | App crons, cert renewal, backups |
 | `scripts/backup-db.sh` | Nightly `pg_dump` (referenced by crontab) |
@@ -29,6 +31,26 @@ CI on the merge source branch should pass `pnpm typecheck`, `pnpm lint`, and `pn
 ## TLS bootstrap
 
 Nginx cannot load `cycle-circle.conf` until Let's Encrypt files exist. The compose file defaults to **`cycle-circle.bootstrap.conf`** (port 80 only, no HTTPS redirect).
+
+### Self-signed HTTPS (staging, before Let's Encrypt)
+
+Use when you want **port 443** working immediately (browser security warning is expected):
+
+```bash
+cd /opt/vesta
+chmod +x ops/deploy/scripts/generate-selfsigned-cert.sh
+./ops/deploy/scripts/generate-selfsigned-cert.sh   # writes /opt/vesta/ssl/{fullchain,privkey}.pem
+
+# ops/deploy/.env — keep NEXT_PUBLIC_DEV_MODE if staging; switch nginx config:
+grep -q '^NGINX_CONF=' ops/deploy/.env && \
+  sed -i 's/^NGINX_CONF=.*/NGINX_CONF=cycle-circle.selfsigned.conf/' ops/deploy/.env || \
+  echo 'NGINX_CONF=cycle-circle.selfsigned.conf' >> ops/deploy/.env
+
+docker compose up -d --force-recreate nginx
+curl -kfsS https://cycle-circle.com/api/health/db
+```
+
+Replace `cycle-circle.selfsigned.conf` with `cycle-circle.conf` after certbot (below). Self-signed certs are not trusted by browsers or webhooks — use Let's Encrypt before go-live.
 
 After successful certbot:
 
