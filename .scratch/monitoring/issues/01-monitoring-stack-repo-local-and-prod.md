@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] Shared monitoring module (Compose fragment, Prometheus scrape config, Grafana provisioning/datasources/dashboards) is the single source of truth for both environments
 - [ ] Local: documented command merges monitoring with the existing dev Compose stack after infra is up; Grafana on localhost fixed port with dev credentials in example env only; Postgres, Redis, and container metrics scrape successfully (`UP` targets)
