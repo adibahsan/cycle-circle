@@ -15,7 +15,7 @@ This is the operations handbook for Vesta's production VPS: how to reach the ser
 | OS | Ubuntu 24.04.5 LTS, kernel 6.8, timezone Europe/Berlin |
 | Resources | 6 vCPU, 11 GiB RAM, 193 GB disk |
 | VNC | 169.58.1.198:63026 (separate VNC password set via the lock icon in the portal; max ~8 chars; unencrypted, emergency only) |
-| Domain (client-owned) | cycle-circle.com (planned: `cycle-circle.com`, `www.`, `admin.` → 62.171.155.231; DNS not yet pointed) |
+| Domain (client-owned) | cycle-circle.com — apex + `www` → 62.171.155.231 (verified 2026-09-28 @1.1.1.1); **`admin.` A record still missing** — see [07-dns-and-env-runbook.md](./07-dns-and-env-runbook.md) |
 | Users | `vesta` (uid 1001, groups `sudo`, passwordless sudo via `/etc/sudoers.d/90-vesta`, no password, key-only login). `root` (password = Contabo secret "Circle Root"; key also installed) |
 | Authorized key | the ed25519 key from the admin Mac (`~/.ssh/id_ed25519.pub`) installed for `vesta` and `root` |
 | sshd (current state) | port 22, `PermitRootLogin yes`, `PasswordAuthentication yes` — hardening is documented but **not yet applied**, see [02-server-setup.md](./02-server-setup.md) |
@@ -33,6 +33,7 @@ This is the operations handbook for Vesta's production VPS: how to reach the ser
 | [04-env-reference.md](./04-env-reference.md) | Environment variables reference |
 | [05-operations.md](./05-operations.md) | Logs, backups, restore, updates, incidents |
 | [06-merge-to-main-runbook.md](./06-merge-to-main-runbook.md) | Merge deploy stack PR into `main` (human) |
+| [07-dns-and-env-runbook.md](./07-dns-and-env-runbook.md) | Public DNS checks, `/opt/vesta` env files, staging flags (`pnpm vps:preflight`) |
 | [deploy-artifacts-verification.md](./deploy-artifacts-verification.md) | `ops/deploy/` file checklist + `pnpm deploy:verify` |
 
 ---
