@@ -23,10 +23,14 @@ if [[ ! -d "$SSL_DIR" ]]; then
   chmod 700 "$SSL_DIR"
 fi
 
-sg docker -c "docker run --rm \
+sg docker -c "docker run --rm --user $(id -u):$(id -g) \
   -v ${CERTBOT_VOLUME}:/etc/letsencrypt:ro \
   -v ${SSL_DIR}:/out \
   alpine:3.20 sh -c 'set -e; test -f ${LIVE}/fullchain.pem; test -f ${LIVE}/privkey.pem; cp -L ${LIVE}/fullchain.pem /out/fullchain.pem; cp -L ${LIVE}/privkey.pem /out/privkey.pem; chmod 600 /out/fullchain.pem /out/privkey.pem'"
 
 echo "Synced ${CERT_NAME} from certbot volume → ${SSL_DIR}/"
-openssl x509 -in "${SSL_DIR}/fullchain.pem" -noout -subject -issuer -dates
+if [[ -r "${SSL_DIR}/fullchain.pem" ]]; then
+  openssl x509 -in "${SSL_DIR}/fullchain.pem" -noout -subject -issuer -dates
+else
+  echo "warning: ${SSL_DIR}/fullchain.pem not readable by $(whoami); run: sudo chown -R \$(whoami):\$(whoami) ${SSL_DIR}" >&2
+fi

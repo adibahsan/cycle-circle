@@ -7,6 +7,7 @@ COMPOSE_FILE="${COMPOSE_FILE:-${REPO_ROOT}/ops/deploy/compose.prod.yml}"
 ENV_FILE="${REPO_ROOT}/ops/deploy/.env"
 NGINX_CONF="${NGINX_CONF:-cycle-circle.conf}"
 CERT_NAME="${CERT_NAME:-cycle-circle.com}"
+CERTBOT_VOLUME="${CERTBOT_VOLUME:-vesta_certbot_conf}"
 
 cd "$REPO_ROOT"
 
@@ -14,7 +15,7 @@ compose() {
   sg docker -c "docker compose -f ${COMPOSE_FILE} $*"
 }
 
-compose run --rm --entrypoint sh certbot -c "test -f /etc/letsencrypt/live/${CERT_NAME}/fullchain.pem"
+sg docker -c "docker run --rm -v ${CERTBOT_VOLUME}:/etc/letsencrypt:ro alpine:3.20 sh -c 'test -f /etc/letsencrypt/live/${CERT_NAME}/fullchain.pem'"
 
 if [[ -f "$ENV_FILE" ]]; then
   if grep -q '^NGINX_CONF=' "$ENV_FILE"; then
