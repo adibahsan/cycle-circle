@@ -2,6 +2,8 @@
 #   docker compose -f ops/deploy/compose.prod.yml …
 # Env files live on the host at /opt/vesta/.env.*.production (see env/*.example).
 # Optional ops/deploy/.env: NGINX_CONF, NEXT_PUBLIC_DEV_MODE build override.
+# On VPS, pass monitoring secrets for Compose interpolation:
+#   docker compose --env-file /opt/vesta/.env.monitoring.production -f ops/deploy/compose.prod.yml …
 
 include:
   - path: ../monitoring/compose.yml

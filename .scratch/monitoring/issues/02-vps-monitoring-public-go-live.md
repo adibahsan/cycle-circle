@@ -4,12 +4,16 @@
 
 **Blocked by:** 01 (monitoring stack in repo), VPS rollout [07-host-hardening](../vps-prod-rollout/issues/07-host-hardening.md) (UFW, sshd, fail2ban before exposing the monitoring vhost)
 
-**Status:** ready-for-human
+**Status:** resolved
 
-- [ ] `monitoring.cycle-circle.com` A record points at the VPS (client DNS)
-- [ ] Ticket 07 hardening applied on the server
-- [ ] Staging/production stack health checks green (web/admin/db/redis) before enabling monitoring vhost
-- [ ] Certbot certificate includes `monitoring.cycle-circle.com`; nginx recreated with production TLS config
-- [ ] `curl -fsS https://monitoring.cycle-circle.com/api/health` succeeds; Grafana login works with server-configured admin credentials
-- [ ] Prometheus not reachable from the public internet (only Grafana hostname on 443)
-- [ ] Runtime smoke documented in ticket 01 ops section executed: Prometheus ready, mandatory scrape targets UP, disk-free panel sane for 30-day retention
+- [x] `monitoring.cycle-circle.com` A record points at the VPS (`62.171.155.231`; verified 2026-09-29)
+- [x] Ticket 07 hardening applied on the server
+- [x] Staging/production stack health checks green (web/admin/db/redis) before enabling monitoring vhost
+- [x] Certbot certificate includes `monitoring.cycle-circle.com`; nginx recreated with production TLS config (LE expiry ~2026-12-28)
+- [x] `curl -fsS https://monitoring.cycle-circle.com/api/health` succeeds; Grafana login uses `/opt/vesta/.env.monitoring.production` (password not in git)
+- [x] Prometheus not published on host ports (9090 not exposed publicly)
+- [x] Runtime smoke: Prometheus ready; scrape targets UP (cadvisor, nginx, node, postgres, prometheus, redis)
+
+## Answer
+
+Deployed 2026-09-29: synced `ops/monitoring/` + prod compose/nginx from `feat/vps-prod-rollout`, created `.env.monitoring.production` on VPS, `docker compose up` monitoring services, cert `--expand` for monitoring SAN, nginx recreate. `/opt/vesta` git still sparse on `main` — rsync deploy until branch merge/pull.

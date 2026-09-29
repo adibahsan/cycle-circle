@@ -2,7 +2,8 @@
 # Used by Grafana and postgres_exporter in the production Compose merge.
 
 GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASSWORD=GENERATE-WITH-openssl-rand-hex-24
+# Grafana 11 password policy: use mixed case + symbol (hex-only may fail on admin reset).
+GRAFANA_ADMIN_PASSWORD=GENERATE-WITH-openssl-rand-base64-24
 
 # Must match POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB in .env.postgres.production
 POSTGRES_EXPORTER_DSN=postgresql://vesta:POSTGRES_PASSWORD_HERE@postgres:5432/vesta?sslmode=disable

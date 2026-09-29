@@ -2,6 +2,17 @@
 
 Shared observability module for **local Docker** and **production Compose**. Spec: [.scratch/monitoring/spec.md](../../.scratch/monitoring/spec.md).
 
+## Grafana dashboards (folder **Vesta**)
+
+| Dashboard | Metrics source |
+|-----------|----------------|
+| **Vesta host system** | node_exporter — CPU, memory, load, disk space/I/O, network, inodes, uptime |
+| **Vesta containers** | cAdvisor — per-container CPU, memory, network, filesystem I/O |
+| **Vesta data services** | nginx/postgres/redis exporters + scrape `up` |
+| **Vesta infrastructure** | All jobs — scrape target availability |
+
+On macOS local dev, **node_exporter** reflects the Linux VM in Docker, not the Mac host; host dashboards are authoritative on the VPS.
+
 ## Layout
 
 | Path | Purpose |
@@ -35,7 +46,9 @@ pnpm docker:monitoring:down
 
 ## Production env (on VPS only)
 
-Copy [env/monitoring.production.example](./env/monitoring.production.example) to `/opt/vesta/.env.monitoring.production` (mode `600`, owner `vesta`). Set `GRAFANA_ADMIN_PASSWORD` and `POSTGRES_EXPORTER_DSN` to match Postgres credentials.
+Copy [env/monitoring.production.example](./env/monitoring.production.example) to `/opt/vesta/.env.monitoring.production` (mode `600`, owner `vesta`). Set `GRAFANA_ADMIN_PASSWORD` (mixed case + symbol; Grafana 11 policy) and `POSTGRES_EXPORTER_DSN` to match Postgres credentials.
+
+On the VPS, run Compose with **`--env-file /opt/vesta/.env.monitoring.production`** so `GRAFANA_ADMIN_PASSWORD` is applied (see `compose.prod.override.yml`). The same file is mounted into Grafana/postgres-exporter via `env_file`. On first start the admin password is written to the Grafana volume; if you only set the file later, reset with `grafana cli admin reset-admin-password` or use the default **`admin` / `changeme`** until fixed.
 
 ## Verification
 
