@@ -28,6 +28,7 @@ const REQUIRED_DEPLOY_PATHS = [
   'ops/deploy/scripts/apply-letsencrypt-nginx.sh',
   'ops/deploy/scripts/sync-letsencrypt-to-ssl.sh',
   'ops/deploy/scripts/dump-le-metadata.sh',
+  'ops/deploy/scripts/install-vesta-crontab.sh',
   'ops/deploy/ssl/README.md',
   'ops/deploy/tls/production-inventory.json',
   'ops/deploy/tls/archives/cycle-circle.com-fullchain.pem',

@@ -23,6 +23,12 @@ sudo chown vesta:vesta "$LOG_DIR"
 
 TMP=$(mktemp)
 trap 'rm -f "$TMP"' EXIT
-sed "s/CRON_SECRET_PLACEHOLDER/${CRON_SECRET}/g" "$CRONTAB_SRC" > "$TMP"
+# Substitute secret only on schedule lines (never in comments).
+while IFS= read -r line || [[ -n "$line" ]]; do
+  if [[ "$line" =~ ^[0-9] ]]; then
+    line=${line//CRON_SECRET_PLACEHOLDER/$CRON_SECRET}
+  fi
+  printf '%s\n' "$line"
+done < "$CRONTAB_SRC" > "$TMP"
 crontab "$TMP"
 echo "Installed crontab for $(whoami) ($(crontab -l | grep -c '^[0-9]' || true) jobs)"
