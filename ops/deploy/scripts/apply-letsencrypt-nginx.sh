@@ -14,7 +14,7 @@ compose() {
   sg docker -c "docker compose -f ${COMPOSE_FILE} $*"
 }
 
-compose run --rm --entrypoint sh certbot -c "test -f /etc/letsencrypt/live/${CERT_NAME}/fullchain.pem"
+compose run --rm certbot sh -c "test -f /etc/letsencrypt/live/${CERT_NAME}/fullchain.pem"
 
 if [[ -f "$ENV_FILE" ]]; then
   if grep -q '^NGINX_CONF=' "$ENV_FILE"; then
