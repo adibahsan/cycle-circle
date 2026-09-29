@@ -50,16 +50,28 @@ services:
     restart: unless-stopped
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    image: gcr.io/cadvisor/cadvisor:v0.52.1
     privileged: true
+    command:
+      - --disable_metrics=disk,diskIO
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
+      - /run/containerd/containerd.sock:/run/containerd/containerd.sock:ro
     devices:
       - /dev/kmsg
+    restart: unless-stopped
+
+  container-metrics:
+    build:
+      context: ./container-metrics-exporter
+      dockerfile: Dockerfile
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
 
   nginx-exporter:

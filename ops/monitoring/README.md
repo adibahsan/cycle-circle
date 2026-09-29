@@ -7,7 +7,7 @@ Shared observability module for **local Docker** and **production Compose**. Spe
 | Dashboard | Metrics source |
 |-----------|----------------|
 | **Vesta host system** | node_exporter — CPU, memory, load, disk space/I/O, network, inodes, uptime |
-| **Vesta containers** | cAdvisor — per-container CPU, memory, network, filesystem I/O |
+| **Vesta containers** | Docker API exporter (`vesta_container_*`) — CPU, memory, network; cAdvisor kept for host/cgroup where available |
 | **Vesta data services** | nginx/postgres/redis exporters + scrape `up` |
 | **Vesta infrastructure** | All jobs — scrape target availability |
 

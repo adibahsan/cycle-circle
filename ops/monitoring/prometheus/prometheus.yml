@@ -15,6 +15,12 @@ scrape_configs:
     static_configs:
       - targets: ['cadvisor:8080']
 
+  - job_name: container_metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['container-metrics:9487']
+
   - job_name: nginx
     static_configs:
       - targets: ['nginx-exporter:9113']

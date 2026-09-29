@@ -11,7 +11,7 @@
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 1 },
-          "unit": "percentunit"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -20,12 +20,12 @@
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } },
       "targets": [
         {
-          "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name=~\".+\"}[5m]))",
-          "legendFormat": "{{name}}",
+          "expr": "vesta_container_cpu_cores",
+          "legendFormat": "{{compose_service}} ({{container_name}})",
           "refId": "A"
         }
       ],
-      "title": "Container CPU (cores)",
+      "title": "Container CPU (cores in use)",
       "type": "timeseries"
     },
     {
@@ -43,12 +43,12 @@
       "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } },
       "targets": [
         {
-          "expr": "sum by (name) (container_memory_usage_bytes{name=~\".+\"})",
-          "legendFormat": "{{name}}",
+          "expr": "vesta_container_memory_bytes",
+          "legendFormat": "{{compose_service}}",
           "refId": "A"
         }
       ],
-      "title": "Container memory (working set)",
+      "title": "Container memory",
       "type": "timeseries"
     },
     {
@@ -66,55 +66,55 @@
       "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
       "targets": [
         {
-          "expr": "sum by (name) (rate(container_network_receive_bytes_total{name=~\".+\"}[5m]))",
-          "legendFormat": "rx {{name}}",
+          "expr": "rate(vesta_container_network_rx_bytes[5m])",
+          "legendFormat": "rx {{compose_service}}",
           "refId": "A"
         },
         {
-          "expr": "sum by (name) (rate(container_network_transmit_bytes_total{name=~\".+\"}[5m]))",
-          "legendFormat": "tx {{name}}",
+          "expr": "rate(vesta_container_network_tx_bytes[5m])",
+          "legendFormat": "tx {{compose_service}}",
           "refId": "B"
         }
       ],
-      "title": "Container network",
+      "title": "Container network throughput",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "description": "cAdvisor may be empty on Docker containerd snapshotter; this dashboard uses the Docker API exporter.",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1 },
-          "unit": "Bps"
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "options": { "0": { "color": "red", "index": 0, "text": "DOWN" } }, "type": "value" },
+            { "options": { "1": { "color": "green", "index": 1, "text": "UP" } }, "type": "value" }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 18 },
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 18 },
       "id": 4,
-      "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
       "targets": [
-        {
-          "expr": "sum by (name) (rate(container_fs_reads_bytes_total{name=~\".+\"}[5m]))",
-          "legendFormat": "read {{name}}",
-          "refId": "A"
-        },
-        {
-          "expr": "sum by (name) (rate(container_fs_writes_bytes_total{name=~\".+\"}[5m]))",
-          "legendFormat": "write {{name}}",
-          "refId": "B"
-        }
+        { "expr": "up{job=\"container_metrics\"}", "legendFormat": "container_metrics", "refId": "A" },
+        { "expr": "count(vesta_container_memory_bytes)", "legendFormat": "containers scraped", "refId": "B" }
       ],
-      "title": "Container filesystem I/O",
-      "type": "timeseries"
+      "title": "Exporter health",
+      "type": "stat"
     }
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["vesta", "docker", "cadvisor"],
+  "tags": ["vesta", "docker", "containers"],
   "templating": { "list": [] },
   "time": { "from": "now-6h", "to": "now" },
   "timezone": "browser",
   "title": "Vesta containers",
   "uid": "vesta-containers-v1",
-  "version": 1
+  "version": 2
 }
