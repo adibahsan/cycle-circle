@@ -30,6 +30,8 @@ const REQUIRED_DEPLOY_PATHS = [
   'ops/deploy/scripts/dump-le-metadata.sh',
   'ops/deploy/ssl/README.md',
   'ops/deploy/tls/production-inventory.json',
+  'ops/deploy/tls/archives/cycle-circle.com-fullchain.pem',
+  'ops/deploy/tls/archives/README.md',
   'ops/deploy/vesta-crontab',
   'ops/docker/postgres/init.sql',
   '.dockerignore',
