@@ -22,7 +22,7 @@ if [[ ! -d "$SSL_DIR" ]]; then
   chmod 700 "$SSL_DIR"
 fi
 
-sg docker -c "docker compose -f ${COMPOSE_FILE} run --rm -v ${SSL_DIR}:/out certbot sh -c 'set -e; test -f ${LIVE}/fullchain.pem; test -f ${LIVE}/privkey.pem; cp -L ${LIVE}/fullchain.pem /out/fullchain.pem; cp -L ${LIVE}/privkey.pem /out/privkey.pem; chmod 600 /out/fullchain.pem /out/privkey.pem'"
+sg docker -c "docker compose -f ${COMPOSE_FILE} run --rm -v ${SSL_DIR}:/out --entrypoint sh certbot -c 'set -e; test -f ${LIVE}/fullchain.pem; test -f ${LIVE}/privkey.pem; cp -L ${LIVE}/fullchain.pem /out/fullchain.pem; cp -L ${LIVE}/privkey.pem /out/privkey.pem; chmod 600 /out/fullchain.pem /out/privkey.pem'"
 
 echo "Synced ${CERT_NAME} from certbot volume → ${SSL_DIR}/"
 openssl x509 -in "${SSL_DIR}/fullchain.pem" -noout -subject -issuer -dates
