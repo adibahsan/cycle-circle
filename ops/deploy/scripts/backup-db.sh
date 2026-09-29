@@ -9,8 +9,8 @@ FILE="$BACKUP_DIR/vesta-$TIMESTAMP.sql.gz"
 mkdir -p "$BACKUP_DIR"
 
 cd /opt/vesta
-docker compose -f ops/deploy/compose.prod.yml exec -T postgres sh -c \
-  'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --format=plain --no-acl --no-owner' | gzip > "$FILE"
+sg docker -c "docker compose -f ops/deploy/compose.prod.yml exec -T postgres sh -c \
+  'pg_dump -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" --format=plain --no-acl --no-owner'" | gzip > "$FILE"
 
 find "$BACKUP_DIR" -name 'vesta-*.sql.gz' -mtime "+$RETENTION_DAYS" -delete
 
