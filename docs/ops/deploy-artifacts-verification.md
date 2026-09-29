@@ -19,6 +19,10 @@ Use this before merging deploy work to `main` and before the first VPS `docker c
 | `ops/deploy/nginx/cycle-circle.conf` | TLS vhost |
 | `ops/deploy/nginx/cycle-circle.bootstrap.conf` | Pre-cert bootstrap vhost |
 | `ops/deploy/scripts/backup-db.sh` | DB backup helper |
+| `ops/deploy/scripts/apply-letsencrypt-nginx.sh` | Switch nginx to LE (`cycle-circle.conf`) |
+| `ops/deploy/scripts/sync-letsencrypt-to-ssl.sh` | Mirror LE PEMs to `/opt/vesta/ssl` (interim config only) |
+| `ops/deploy/scripts/dump-le-metadata.sh` | Export cert metadata JSON (no private key) |
+| `ops/deploy/tls/production-inventory.json` | Committed LE inventory (metadata only) |
 | `ops/deploy/vesta-crontab` | Host cron template |
 | `ops/docker/postgres/init.sql` | Postgres init (bind-mounted from compose) |
 | `.dockerignore` | Docker build context |

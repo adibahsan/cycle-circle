@@ -53,13 +53,23 @@ curl -kfsS https://cycle-circle.com/api/health/db
 
 Replace `cycle-circle.selfsigned.conf` with `cycle-circle.conf` after certbot (below). Self-signed certs are not trusted by browsers or webhooks — use Let's Encrypt before go-live.
 
-After successful certbot:
+After successful certbot (recommended — nginx reads the certbot volume directly):
 
 ```bash
 cd /opt/vesta
-echo 'NGINX_CONF=cycle-circle.conf' >> ops/deploy/.env
-docker compose -f ops/deploy/compose.prod.yml up -d --force-recreate nginx
+chmod +x ops/deploy/scripts/apply-letsencrypt-nginx.sh
+./ops/deploy/scripts/apply-letsencrypt-nginx.sh
 ```
+
+Optional mirror to `/opt/vesta/ssl` (only if you keep `cycle-circle.selfsigned.conf`):
+
+```bash
+chmod +x ops/deploy/scripts/sync-letsencrypt-to-ssl.sh
+./ops/deploy/scripts/sync-letsencrypt-to-ssl.sh
+docker compose -f ops/deploy/compose.prod.yml exec -T nginx nginx -s reload
+```
+
+Non-secret cert metadata for the repo: run `./ops/deploy/scripts/dump-le-metadata.sh` and merge into `ops/deploy/tls/production-inventory.json`. **Never commit `privkey.pem`.**
 
 ## Staging vs go-live
 
