@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import docker
@@ -61,41 +62,49 @@ def _cpu_cores(stats: dict) -> float:
     return (cpu_delta / sys_delta) * online
 
 
+def _sample(container) -> tuple | None:
+    name = container.name
+    labels = container.labels or {}
+    service = labels.get("com.docker.compose.service") or name
+    try:
+        stats = container.stats(stream=False)
+    except docker.errors.APIError:
+        return None
+
+    mem = (stats.get("memory_stats") or {}).get("usage")
+    rx = 0
+    tx = 0
+    for iface in (stats.get("networks") or {}).values():
+        rx += iface.get("rx_bytes", 0)
+        tx += iface.get("tx_bytes", 0)
+    return name, service, _cpu_cores(stats), mem, rx, tx
+
+
 def collect() -> None:
-    CPU_CORES.clear()
-    MEM_BYTES.clear()
-    NET_RX.clear()
-    NET_TX.clear()
+    # Each stats(stream=False) call blocks ~2s waiting for a second CPU sample,
+    # so fetch in parallel and hold the lock only for the gauge swap; otherwise
+    # scrapes block past Prometheus' scrape_timeout.
+    containers = _docker().containers.list()
+    with ThreadPoolExecutor(max_workers=max(1, min(16, len(containers)))) as pool:
+        samples = [s for s in pool.map(_sample, containers) if s is not None]
 
-    client = _docker()
-    for container in client.containers.list():
-        name = container.name
-        labels = container.labels or {}
-        service = labels.get("com.docker.compose.service") or name
-        try:
-            stats = container.stats(stream=False)
-        except docker.errors.APIError:
-            continue
-
-        CPU_CORES.labels(name, service).set(_cpu_cores(stats))
-        mem = (stats.get("memory_stats") or {}).get("usage")
-        if mem is not None:
-            MEM_BYTES.labels(name, service).set(mem)
-
-        rx = 0
-        tx = 0
-        for iface in (stats.get("networks") or {}).values():
-            rx += iface.get("rx_bytes", 0)
-            tx += iface.get("tx_bytes", 0)
-        NET_RX.labels(name, service).set(rx)
-        NET_TX.labels(name, service).set(tx)
+    with _lock:
+        CPU_CORES.clear()
+        MEM_BYTES.clear()
+        NET_RX.clear()
+        NET_TX.clear()
+        for name, service, cpu, mem, rx, tx in samples:
+            CPU_CORES.labels(name, service).set(cpu)
+            if mem is not None:
+                MEM_BYTES.labels(name, service).set(mem)
+            NET_RX.labels(name, service).set(rx)
+            NET_TX.labels(name, service).set(tx)
 
 
 def _refresh_loop() -> None:
     while True:
         try:
-            with _lock:
-                collect()
+            collect()
         except Exception:
             pass
         time.sleep(REFRESH_SECONDS)
