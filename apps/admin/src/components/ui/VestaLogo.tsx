@@ -1,46 +1,25 @@
 'use client';
 
-import { useId } from 'react';
-
 interface VestaLogoProps {
   size?: number;
   animate?: boolean;
   className?: string;
 }
 
-/** Pure SVG logo — rounded square with gradient and bold "V". */
+/** Cycle Circle drop mark: brand-red drop on a navy disc. */
 export function VestaLogoSVG({ size = 32, className }: Omit<VestaLogoProps, 'animate'>) {
-  const uid = useId();
-  const gradId = `vesta-logo-gradient-${uid}`;
-
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 48 48"
       fill="none"
-      aria-label="Vesta logo"
+      aria-label="Cycle Circle"
       role="img"
       className={className}
     >
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#E8476C" />
-          <stop offset="100%" stopColor="#9B7FD4" />
-        </linearGradient>
-      </defs>
-      <rect width="48" height="48" rx="12" fill={`url(#${gradId})`} />
-      <text
-        x="24"
-        y="33"
-        textAnchor="middle"
-        fontFamily="var(--font-display), system-ui, sans-serif"
-        fontWeight="700"
-        fontSize="28"
-        fill="white"
-      >
-        V
-      </text>
+      <circle cx="24" cy="24" r="23.25" fill="#1A232C" stroke="#FFFFFF" strokeOpacity="0.22" strokeWidth="1.5" />
+      <path d="M24 9.5C24 9.5 14.5 21.6 14.5 28.6A9.5 9.5 0 0 0 33.5 28.6C33.5 21.6 24 9.5 24 9.5Z" fill="#D4151E" />
     </svg>
   );
 }
