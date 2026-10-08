@@ -66,6 +66,14 @@ export function computePrediction(profile: UserProfile): Prediction {
   };
 }
 
+const CYCLE_PHASES: readonly CyclePhase[] = ['menstrual', 'follicular', 'ovulation', 'luteal'];
+
+/** Case-insensitive parse of a phase name (e.g. an article tag); null when it is not a known phase. */
+export function parseCyclePhase(value: string): CyclePhase | null {
+  const v = value.toLowerCase();
+  return CYCLE_PHASES.find((p) => p === v) ?? null;
+}
+
 export function getPhaseColor(phase: CyclePhase): string {
   switch (phase) {
     case 'menstrual': return 'var(--color-menstrual)';

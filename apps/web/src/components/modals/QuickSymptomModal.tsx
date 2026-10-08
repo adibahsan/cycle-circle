@@ -16,7 +16,7 @@ import {
   CATEGORY_COLORS,
   toDbCategory,
 } from '@/app/(main)/symptoms/SymptomsClient';
-import { localDayString } from '@/lib/local-date';
+import { deviceDayString } from '@/lib/local-date';
 import { goalAccentVar } from '@vesta/shared/utils/goal';
 import type { SymptomCategory } from '@vesta/shared/types';
 import '@vesta/shared/utils/i18n';
@@ -79,7 +79,7 @@ export function QuickSymptomModal({
 
   // Date to log against — defaults to today in YYYY-MM-DD format.
   // When `initialDate` is provided (backfill from ConsistencyGrid), we log against that date.
-  const logDate = initialDate ?? localDayString();
+  const logDate = initialDate ?? deviceDayString();
 
   const handleToggle = useCallback((id: string) => {
     setSelected((prev) => {

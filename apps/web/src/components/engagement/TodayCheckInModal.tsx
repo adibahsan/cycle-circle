@@ -17,7 +17,7 @@ import {
 import { saveSymptoms, markAllGoodToday } from '@/app/actions/tracking-actions';
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal';
 import { useToast } from '@/components/ui/Toast';
-import { localDayString } from '@/lib/local-date';
+import { deviceDayString } from '@/lib/local-date';
 import type { PopupLayer } from '@vesta/shared/utils/popup-core';
 import '@vesta/shared/utils/i18n';
 
@@ -151,7 +151,7 @@ export function TodayCheckInModal({
       if (addedPayload.length) {
         await saveSymptoms({
           profileId,
-          date: localDayString(),
+          date: deviceDayString(),
           added: addedPayload,
           removed: [],
         });

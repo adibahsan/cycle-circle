@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import type { FlowIntensity } from '@vesta/shared/types'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
-import { localDayString } from '@/lib/local-date'
+import { deviceDayString } from '@/lib/local-date'
 import { createPeriodLog, updatePeriodLog } from '@/app/actions/tracking-actions'
 import '@vesta/shared/utils/i18n'
 
@@ -64,7 +64,7 @@ export function PeriodLogModal({
   const { profileId: logProfileId, existingLogId: logId } = frozen.current
 
   const isEdit = Boolean(logId)
-  const todayStr = localDayString()
+  const todayStr = deviceDayString()
   const [startDate, setStartDate] = useState(initialStart || (isEdit ? '' : todayStr))
   const [endDate, setEndDate] = useState(initialEnd || (isEdit ? '' : todayStr))
   const [flow, setFlow] = useState<FlowIntensity>(initialFlow)
@@ -75,7 +75,7 @@ export function PeriodLogModal({
   useEffect(() => {
     if (!open) return
     const edit = Boolean(existingLogId)
-    const today = localDayString()
+    const today = deviceDayString()
     setStartDate(initialStart || (edit ? '' : today))
     setEndDate(initialEnd || (edit ? '' : today))
     setFlow(initialFlow)

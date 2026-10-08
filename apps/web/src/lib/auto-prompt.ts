@@ -40,8 +40,8 @@ export const LOCAL_UTC_OFFSET_MS = 6 * HOUR // Bangladesh, UTC+6
 export const PROFILE_MIN_GAP_MS = 3 * 24 * HOUR
 export const PROFILE_MIN_ACCOUNT_AGE_MS = 24 * HOUR
 
-/** Local calendar day (UTC+6) as YYYY-MM-DD. */
-export function localDayKey(ms: number): string {
+/** Bangladesh calendar day (fixed UTC+6, independent of the device clock; see deviceDayString for the device day) as YYYY-MM-DD. */
+export function bdDayKey(ms: number): string {
   return new Date(ms + LOCAL_UTC_OFFSET_MS).toISOString().slice(0, 10)
 }
 
@@ -54,7 +54,7 @@ function cadenceAllows(id: PromptId, c: Candidate, input: DecideInput): boolean 
     return last === null || input.now - last >= PROFILE_MIN_GAP_MS
   }
   if (c.ignoreCadence || last === null) return true
-  return localDayKey(last) !== localDayKey(input.now)
+  return bdDayKey(last) !== bdDayKey(input.now)
 }
 
 export function decideAutoPrompt(input: DecideInput): Decision {

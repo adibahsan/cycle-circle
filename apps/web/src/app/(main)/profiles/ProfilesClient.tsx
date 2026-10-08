@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { useHeld } from '@/lib/use-held';
-import { localDayString } from '@/lib/local-date';
+import { deviceDayString } from '@/lib/local-date';
 import '@vesta/shared/utils/i18n';
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -496,8 +496,8 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
               setLastPeriodDate(e.target.value);
               if (lastPeriodError) setLastPeriodError('');
             }}
-            max={localDayString()}
-            min={localDayString(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))}
+            max={deviceDayString()}
+            min={deviceDayString(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))}
             required
             aria-invalid={!!lastPeriodError}
             aria-describedby={lastPeriodError ? 'last-period-date-error' : undefined}

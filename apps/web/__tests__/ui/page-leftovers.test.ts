@@ -19,7 +19,7 @@ describe('profiles page', () => {
 
   it('last-period date bounds use the local day, not the UTC day', () => {
     expect(src).not.toContain('toISOString().slice(0, 10)')
-    expect(src).toContain('localDayString')
+    expect(src).toContain('deviceDayString')
   })
 })
 

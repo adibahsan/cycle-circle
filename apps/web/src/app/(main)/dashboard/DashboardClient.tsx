@@ -27,6 +27,7 @@ import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogMo
 import { setActiveProfileCookie } from '@/app/actions/profile-actions'
 import type { ProfileCompletionStatus } from '@/lib/profile-completion'
 import { CompletionRow } from '@/components/prompts/CompletionRow'
+import { formatShortDate } from '@/lib/format-date'
 import { checkInCandidateState, daysSinceLastLog as daysSinceLastLogFor } from '@/lib/prompt-rules'
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
@@ -527,7 +528,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                   {lastPeriodDisplay ? (
                     <>
                       <p className="text-sm font-bold text-[var(--color-text-primary)]">
-                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(lastPeriodDisplay.startDate))}
+                        {formatShortDate(language, parseISO(lastPeriodDisplay.startDate))}
                       </p>
                       <p className="text-xs text-[var(--color-text-muted)]">
                         {t('dashboard.durationDays', { count: lastPeriodDisplay.duration })}
@@ -690,7 +691,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
 
                     {prediction && (
                       <p className="text-xs text-[var(--color-text-muted)]">
-                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(prediction.nextPeriodStart))}
+                        {formatShortDate(language, parseISO(prediction.nextPeriodStart))}
                       </p>
                     )}
                   </div>
@@ -714,7 +715,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     {lastPeriodDisplay ? (
                       <>
                         <p className="text-sm font-bold text-[var(--color-text-primary)]">
-                          {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(lastPeriodDisplay.startDate))}
+                          {formatShortDate(language, parseISO(lastPeriodDisplay.startDate))}
                         </p>
                         <p className="text-xs text-[var(--color-text-muted)]">
                           {t('dashboard.durationDays', { count: lastPeriodDisplay.duration })}
@@ -844,8 +845,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                       ] as const
                     ).map(({ ph, labelKey, days }) => {
                       const isActive = ph === phase
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      const color = getPhaseColor(ph as any)
+                      const color = getPhaseColor(ph)
                       return (
                         <div
                           key={ph}
@@ -886,9 +886,9 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                           <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('dashboard.fertileWindow')}</span>
                         </div>
                         <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                          {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(prediction.fertileStart))}
+                          {formatShortDate(language, parseISO(prediction.fertileStart))}
                           {' – '}
-                          {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(prediction.fertileEnd))}
+                          {formatShortDate(language, parseISO(prediction.fertileEnd))}
                         </span>
                       </div>
                       <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[var(--color-bg-secondary)]">
@@ -897,7 +897,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                           <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('dashboard.ovulationDay')}</span>
                         </div>
                         <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                          {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(prediction.ovulationDay))}
+                          {formatShortDate(language, parseISO(prediction.ovulationDay))}
                         </span>
                       </div>
                     </div>

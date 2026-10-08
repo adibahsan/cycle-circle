@@ -5,7 +5,18 @@ import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { BookOpen, ChevronRight, Info, Loader2 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { getPhaseColor, getPhaseEmoji } from '@vesta/shared/utils/cycle-utils'
+import { getPhaseColor, getPhaseEmoji, parseCyclePhase } from '@vesta/shared/utils/cycle-utils'
+
+/** Phase accent colour for a phase name (article tag / tab id); neutral accent when unknown. */
+function phaseColorFor(name: string): string {
+  const phase = parseCyclePhase(name)
+  return phase ? getPhaseColor(phase) : 'var(--goal-accent)'
+}
+
+function phaseEmojiFor(name: string): string {
+  const phase = parseCyclePhase(name)
+  return phase ? getPhaseEmoji(phase) : ''
+}
 import '@vesta/shared/utils/i18n'
 import { getArticleBody } from '@/app/actions/content-actions'
 import { PageContainer } from '@/components/ui/PageContainer'
@@ -152,9 +163,9 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                 <span
                   key={phase}
                   className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                  style={{ backgroundColor: getPhaseColor(phase.toLowerCase() as any), color: `var(--color-on-${phase.toLowerCase()})` }}
+                  style={{ backgroundColor: phaseColorFor(phase), color: `var(--color-on-${phase.toLowerCase()})` }}
                 >
-                  {getPhaseEmoji(phase.toLowerCase() as any)} {phase}
+                  {phaseEmojiFor(phase)} {phase}
                 </span>
               ))}
             </div>
@@ -216,7 +227,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
           {PHASE_TABS.map(tab => {
             const isActive = currentFilter === tab.id
             const isCurrentPhaseTab = tab.id !== 'all' && tab.id === currentPhase
-            const accent = tab.id === 'all' ? 'var(--goal-accent)' : getPhaseColor(tab.id.toLowerCase() as any)
+            const accent = tab.id === 'all' ? 'var(--goal-accent)' : phaseColorFor(tab.id)
             const onAccent = tab.id === 'all' ? 'var(--color-on-accent)' : `var(--color-on-${tab.id.toLowerCase()})`
             return (
               <button
@@ -326,11 +337,11 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                             key={phase}
                             className="px-1.5 py-0.5 rounded text-[11px] font-semibold"
                             style={{
-                              backgroundColor: `color-mix(in srgb, ${getPhaseColor(phase.toLowerCase() as any)} 13%, transparent)`,
-                              color: getPhaseColor(phase.toLowerCase() as any),
+                              backgroundColor: `color-mix(in srgb, ${phaseColorFor(phase)} 13%, transparent)`,
+                              color: phaseColorFor(phase),
                             }}
                           >
-                            {getPhaseEmoji(phase.toLowerCase() as any)} {phase}
+                            {phaseEmojiFor(phase)} {phase}
                           </span>
                         ))}
                       </div>
