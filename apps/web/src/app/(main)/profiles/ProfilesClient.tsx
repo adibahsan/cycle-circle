@@ -13,6 +13,8 @@ import { createProfile, deleteProfile, updateProfile, setActiveProfileCookie } f
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import '@vesta/shared/utils/i18n';
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -1016,24 +1018,14 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
 
   return (
     <>
-      <div className="flex flex-col min-h-[calc(100dvh-8rem)] pb-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="pt-3 pb-4"
-        >
-          <h1 className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)]">
-            {t('profiles.title')}
-          </h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-            {profiles.length} / {MAX_PROFILES} {t('nav.profiles').toLowerCase()}
-          </p>
-        </motion.div>
+      <PageContainer className="min-h-[calc(100dvh-8rem)]">
+        <PageHeader
+          title={t('profiles.title')}
+          subtitle={`${profiles.length} / ${MAX_PROFILES} ${t('nav.profiles').toLowerCase()}`}
+        />
 
         {/* Profile list */}
-        <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
+        <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-5">
           <AnimatePresence mode="popLayout">
             {profiles.map((profile) => (
               <ProfileCard
@@ -1167,7 +1159,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             </p>
           </div>
         </motion.div>
-      </div>
+      </PageContainer>
 
       {/* Delete confirmation dialog */}
       <AnimatePresence>

@@ -1,8 +1,9 @@
+import { PageContainer } from '@/components/ui/PageContainer'
 import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function CalendarLoading() {
   return (
-    <div className="flex flex-col gap-4 py-3 animate-pulse-soft">
+    <PageContainer width="wide" className="animate-pulse-soft">
       {/* Page Header */}
       <div>
         <Shimmer className="h-7 w-28 rounded-lg" />
@@ -82,6 +83,6 @@ export default function CalendarLoading() {
           </div>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

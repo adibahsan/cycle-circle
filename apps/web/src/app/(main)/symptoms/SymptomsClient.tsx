@@ -27,6 +27,8 @@ import { toggleSymptom, markAllGoodToday, saveSymptoms } from '@/app/actions/tra
 import { CelebrationModal } from '@/components/modals/CelebrationModal';
 import type { Profile, PrismaSymptomLog, SymptomCategory } from '@vesta/shared/types';
 import '@vesta/shared/utils/i18n';
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -393,22 +395,16 @@ export function SymptomsClient({
   const activeTabIndex = CATEGORIES.findIndex((c) => c.key === activeCategory);
 
   return (
-    <div className="flex flex-col gap-4 py-3 pb-24">
+    <PageContainer className="pb-24">
+      <PageHeader
+        title={t('symptoms.title')}
+        subtitle={format(selectedDate, 'EEEE, MMMM d', { locale: dateLocale })}
+      />
       {/* ── Desktop: calendar left, symptoms right ── */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col xl:flex-row gap-5">
 
         {/* ── Left: month calendar + summary ── */}
-        <div className="lg:w-[480px] lg:shrink-0 lg:sticky lg:top-4 lg:self-start flex flex-col gap-3">
-          {/* Header */}
-          <div>
-            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-              {t('symptoms.title')}
-            </h1>
-            <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-              {format(selectedDate, 'EEEE, MMMM d', { locale: dateLocale })}
-            </p>
-          </div>
-
+        <div className="xl:w-[440px] xl:shrink-0 xl:sticky xl:top-4 xl:self-start flex flex-col gap-3">
           {/* Full month calendar */}
           <MiniCalendar
             selectedDate={selectedDate}
@@ -564,7 +560,7 @@ export function SymptomsClient({
                 onClick={handleSave}
                 disabled={saving}
                 aria-label={`Save ${changeCount} changes`}
-                className="hidden lg:flex w-full rounded-2xl px-5 py-3.5 items-center justify-center gap-3 shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-70 transition-colors duration-200"
+                className="hidden xl:flex w-full rounded-2xl px-5 py-3.5 items-center justify-center gap-3 shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-70 transition-colors duration-200"
                 style={{
                   background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
                 }}
@@ -593,7 +589,7 @@ export function SymptomsClient({
       <div
         aria-live="polite"
         aria-atomic="true"
-        className="fixed bottom-[60px] md:bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-30 lg:hidden"
+        className="fixed bottom-[60px] md:bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-30 xl:hidden"
       >
         <AnimatePresence mode="wait">
           {hasChanges ? (
@@ -680,6 +676,6 @@ export function SymptomsClient({
         kind="symptom"
         count={celebrationCount ?? 0}
       />
-    </div>
+    </PageContainer>
   );
 }

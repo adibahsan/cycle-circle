@@ -413,7 +413,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {/* Sidebar header / branding */}
         <div className="px-5 py-5 flex items-center gap-3">
           <VestaLogo size={28} animate={false} />
-          <h1 className="text-xl font-extrabold text-[var(--color-text-primary)]">Cycle Circle</h1>
+          <span className="text-xl font-extrabold text-[var(--color-text-primary)]">Cycle Circle</span>
         </div>
 
         {/* Profile switcher */}
@@ -529,7 +529,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <header className="sticky top-0 z-40 glass px-4 py-3 flex items-center justify-between md:hidden">
           <div className="flex items-center gap-3">
             <VestaLogo size={24} animate={false} />
-            <h1 className="text-xl font-extrabold text-[var(--color-text-primary)]">Cycle Circle</h1>
+            <span className="text-xl font-extrabold text-[var(--color-text-primary)]">Cycle Circle</span>
             <Link
               href="/profiles"
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] text-xs font-medium hover:bg-[var(--color-bg-primary)] transition-colors"
@@ -563,15 +563,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </header>
 
         {/* Page content */}
-        <main className="flex-1 px-4 pb-24 pt-2 md:pb-8 md:max-w-4xl md:mx-auto md:w-full md:px-8">
+        <main className="flex-1 pb-24 md:pb-8">
           {/* Profile completion pill — shown on all main pages */}
           {completionStatus && (
-            <ProfileCompletionTracker
-              variant="pill"
-              status={completionStatus}
-              onComplete={() => setShowCompletionModal(true)}
-              className="mb-4"
-            />
+            <div className="w-full max-w-4xl px-4 md:px-8 pt-4">
+              <ProfileCompletionTracker
+                variant="pill"
+                status={completionStatus}
+                onComplete={() => setShowCompletionModal(true)}
+              />
+            </div>
           )}
           {children}
         </main>

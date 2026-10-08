@@ -1,8 +1,9 @@
+import { PageContainer } from '@/components/ui/PageContainer'
 import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function ProfilesLoading() {
   return (
-    <div className="flex flex-col gap-4 py-3 pb-6 animate-pulse-soft">
+    <PageContainer className="animate-pulse-soft">
       {/* Page Header */}
       <div>
         <Shimmer className="h-7 w-36 rounded-lg" />
@@ -62,6 +63,6 @@ export default function ProfilesLoading() {
           </div>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

@@ -482,6 +482,8 @@ const resources = {
       common: {
         save: 'Save', cancel: 'Cancel', delete: 'Delete', edit: 'Edit', back: 'Back', next: 'Next',
         loading: 'Loading...', error: 'Something went wrong',
+        errorBody: 'An unexpected error occurred. Please try again or log in.', tryAgain: 'Try again', goToLogin: 'Go to login',
+        notFoundTitle: 'Page not found', notFoundBody: "The page you're looking for doesn't exist.", goToDashboard: 'Go to dashboard',
         later: 'Later', saving: 'Saving…', profile: 'Profile', confirm: 'Confirm',
       },
       landing: {
@@ -1130,6 +1132,8 @@ const resources = {
       common: {
         save: 'সংরক্ষণ', cancel: 'বাতিল', delete: 'মুছুন', edit: 'সম্পাদনা', back: 'ফিরে যান', next: 'পরবর্তী',
         loading: 'লোড হচ্ছে...', error: 'কিছু একটা ভুল হয়েছে',
+        errorBody: 'অপ্রত্যাশিত একটি সমস্যা হয়েছে। আবার চেষ্টা করুন অথবা লগইন করুন।', tryAgain: 'আবার চেষ্টা করুন', goToLogin: 'লগইনে যান',
+        notFoundTitle: 'পাতাটি খুঁজে পাওয়া যায়নি', notFoundBody: 'আপনি যে পাতাটি খুঁজছেন তা নেই।', goToDashboard: 'ড্যাশবোর্ডে যান',
         later: 'পরে', saving: 'সংরক্ষণ হচ্ছে…', profile: 'প্রোফাইল', confirm: 'নিশ্চিত করুন',
       },
       landing: {

@@ -32,6 +32,8 @@ import { CelebrationModal } from '@/components/modals/CelebrationModal'
 import { TodayCheckInStrip } from '@/components/engagement/TodayCheckInStrip'
 import { ProgressToUnlockMeter } from '@/components/engagement/ProgressToUnlockMeter'
 import dynamic from 'next/dynamic'
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 const TodayCheckInModal = dynamic(
   () => import('@/components/engagement/TodayCheckInModal').then((m) => m.TodayCheckInModal),
@@ -299,12 +301,15 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   // Guard: no profile found
   if (!profile) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-[var(--color-text-muted)]">{t('dashboard.noProfileFound')}</p>
-        <Link href="/profiles">
-          <Button variant="primary">{t('dashboard.setUpProfile')}</Button>
-        </Link>
-      </div>
+      <PageContainer width="wide">
+        <PageHeader title={t('nav.dashboard')} />
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <p className="text-[var(--color-text-muted)]">{t('dashboard.noProfileFound')}</p>
+          <Link href="/profiles">
+            <Button variant="primary">{t('dashboard.setUpProfile')}</Button>
+          </Link>
+        </div>
+      </PageContainer>
     )
   }
 
@@ -421,10 +426,11 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         />
       </div>
 
-      <div
-        className="flex flex-col gap-5 py-3"
+      <PageContainer
+        width="wide"
         style={{ ['--goal-accent' as string]: goalAccentVar(goal) } as React.CSSProperties}
       >
+        <PageHeader title={t('nav.dashboard')} subtitle={profile.name} />
         {pregnancy ? (
           <>
             {/* ── Pregnancy: Coming Soon Panel ───────────────────── */}
@@ -582,7 +588,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="surface-wash rounded-3xl flex flex-col items-center md:flex-row md:items-start md:gap-8 p-5 md:p-6"
+              className="surface-wash rounded-3xl flex flex-col items-center lg:flex-row lg:items-start lg:gap-8 p-5 md:p-6"
             >
               <CycleRing
                 cycleDay={cycleDay}
@@ -639,7 +645,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             />
 
             {/* ── Cards Grid ─────────────────────────────────────────── */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
 
               {/* Countdown Card */}
               <motion.div
@@ -821,7 +827,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             )}
 
             {/* ── Cycle Phase Overview + Predicted Windows ─────────── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -908,7 +914,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             </div>
           </>
         )}
-      </div>
+      </PageContainer>
 
       {/* ── Period Log Modal ──────────────────────────────────── */}
       <AnimatePresence>
