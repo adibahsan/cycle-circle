@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useId, useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { useReducedMotion } from 'motion/react';
-import { CheckCircle2, ChevronDown, ChevronUp, Circle } from 'lucide-react';
+import { CheckCircle2, Circle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useHasMounted } from '@/components/motion/useHasMounted';
@@ -26,7 +26,7 @@ export interface ProfileCompletionStatus {
 
 export interface ProfileCompletionTrackerProps {
   status: ProfileCompletionStatus;
-  variant?: 'card' | 'header' | 'pill';  // default 'card'
+  variant?: 'card' | 'header';  // default 'card'
   onComplete?: () => void;               // opens the profile-completion modal
   className?: string;
 }
@@ -302,51 +302,6 @@ function ChecklistItem({
   );
 }
 
-// ── DoneItem ──────────────────────────────────────────────────────────────────
-
-function DoneItem({ itemKey }: { itemKey: string }) {
-  const label = useItemLabel(itemKey);
-  return (
-    <div className="flex items-center gap-2.5 py-1.5 px-3">
-      <CheckCircle2 size={15} className="text-[var(--color-secondary)] shrink-0" aria-hidden="true" />
-      <span className="text-xs text-[var(--color-text-muted)] line-through">{label}</span>
-    </div>
-  );
-}
-
-// ── StaggeredChecklistItem ────────────────────────────────────────────────────
-// Wraps ChecklistItem with a per-index staggered entrance animation (pill panel).
-
-function StaggeredChecklistItem({
-  itemKey,
-  onComplete,
-  index,
-  prefersReducedMotion,
-}: {
-  itemKey: string;
-  onComplete?: () => void;
-  index: number;
-  prefersReducedMotion: boolean;
-}) {
-  if (prefersReducedMotion) {
-    return <ChecklistItem itemKey={itemKey} onComplete={onComplete} />;
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        delay: index * 0.04,
-        ease: [0.22, 1, 0.36, 1],
-        duration: 0.28,
-      }}
-    >
-      <ChecklistItem itemKey={itemKey} onComplete={onComplete} />
-    </motion.div>
-  );
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ProfileCompletionTracker({
@@ -366,29 +321,11 @@ export function ProfileCompletionTracker({
   const countUpEnabled = mounted && !prefersReducedMotion;
   const displayPercent = useCountUp(status.percent, countUpEnabled);
 
-  // Pill variant expand/collapse state — always initialised to false for SSR safety.
-  const [expanded, setExpanded] = useState(false);
-  const pillPanelId = useId();
-
-  useEffect(() => {
-    if (variant === 'pill') {
-      try {
-        const stored = localStorage.getItem('vesta_completion_pill_expanded');
-        if (stored === '1') setExpanded(true);
-      } catch {
-        // localStorage unavailable — silently ignore
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally empty: runs once after mount
-
   // All variants hide at 100%. `complete` now requires every item — including
   // both contact methods — so reaching 100% genuinely means nothing is pending.
   if (status.complete) return null;
 
   const pendingItems = status.items.filter((item) => !item.done);
-  // Email not yet provided → draw attention to the completion banner.
-  const emailMissing = status.items.some((item) => item.key === 'email' && !item.done);
 
   // ── Header variant ───────────────────────────────────────────────────────────
   if (variant === 'header') {
@@ -432,182 +369,6 @@ export function ProfileCompletionTracker({
     );
   }
 
-  // ── Pill variant ─────────────────────────────────────────────────────────────
-  if (variant === 'pill') {
-    const PILL_RING_SIZE = 32;
-    const PILL_RING_STROKE = 3;
-
-    const expandLabel = t('profileCompletion.expandLabel');
-    const collapseLabel = t('profileCompletion.collapseLabel');
-    const toggleAriaLabel = expanded
-      ? `${collapseLabel} — ${t('profileCompletion.percentComplete', { percent: status.percent })}`
-      : `${expandLabel} — ${t('profileCompletion.percentComplete', { percent: status.percent })}`;
-
-    const handleToggle = () => {
-      setExpanded((prev) => {
-        const next = !prev;
-        try {
-          localStorage.setItem('vesta_completion_pill_expanded', next ? '1' : '0');
-        } catch {
-          // ignore
-        }
-        return next;
-      });
-    };
-
-    return (
-      <div className={['w-full', className ?? ''].join(' ').trim()}>
-        {/* ── Collapsed row / toggle button ── */}
-        <button
-          type="button"
-          aria-expanded={expanded}
-          aria-controls={pillPanelId}
-          aria-label={toggleAriaLabel}
-          onClick={handleToggle}
-          className={[
-            'w-full flex items-center gap-3 px-4 rounded-xl',
-            'surface-peach border border-[var(--color-border)]',
-            'hover:border-[var(--goal-accent)] transition-colors',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]',
-            'min-h-[56px]',
-            emailMissing ? 'animate-attn-blink' : '',
-          ].join(' ')}
-        >
-          {/* Mini progress ring — no center label here, percent is shown prominently below */}
-          <div aria-hidden="true">
-            <ProgressRing
-              percent={status.percent}
-              displayPercent={displayPercent}
-              size={PILL_RING_SIZE}
-              stroke={PILL_RING_STROKE}
-              prefersReducedMotion={prefersReducedMotion}
-              mounted={mounted}
-              incomplete={!status.complete}
-            />
-          </div>
-
-          {/* Prominent percent + secondary label */}
-          <div className="flex-1 min-w-0 flex flex-col justify-center overflow-hidden">
-            {/* PRIMARY: large bold percent */}
-            <span
-              className="text-xl font-extrabold leading-tight tabular-nums"
-              style={{
-                color: 'var(--goal-accent, var(--color-primary))',
-                fontVariantNumeric: 'tabular-nums',
-              }}
-              aria-hidden="true"
-            >
-              {displayPercent}%
-            </span>
-            {/* SECONDARY: demoted title */}
-            <span className="text-xs text-[var(--color-text-muted)] truncate leading-snug mt-0.5">
-              {t('profileCompletion.title')}
-            </span>
-          </div>
-
-          {/* Chevron */}
-          <div
-            className={[
-              'shrink-0 text-[var(--color-text-muted)]',
-              !prefersReducedMotion ? 'transition-transform duration-200' : '',
-              expanded ? 'rotate-0' : '',
-            ].join(' ')}
-            aria-hidden="true"
-          >
-            {expanded ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
-          </div>
-        </button>
-
-        {/* ── Expandable panel ── */}
-        {prefersReducedMotion ? (
-          expanded ? (
-            <div
-              id={pillPanelId}
-              role="region"
-              aria-label={t('profileCompletion.title')}
-              aria-live="polite"
-              className="pt-2"
-            >
-              {/* Pending items — static (no stagger) when reduced-motion */}
-              {pendingItems.length > 0 && (
-                <div className="flex flex-col gap-1.5 mb-3">
-                  {pendingItems.map((item, i) => (
-                    <StaggeredChecklistItem
-                      key={item.key}
-                      itemKey={item.key}
-                      onComplete={onComplete}
-                      index={i}
-                      prefersReducedMotion={prefersReducedMotion}
-                    />
-                  ))}
-                </div>
-              )}
-              {/* Done items */}
-              {status.items.filter((i) => i.done).length > 0 && (
-                <div className="flex flex-col gap-1 mb-3 opacity-50">
-                  {status.items.filter((i) => i.done).map((item) => (
-                    <DoneItem key={item.key} itemKey={item.key} />
-                  ))}
-                </div>
-              )}
-              {!status.complete && (
-                <Button variant="primary" size="sm" fullWidth onClick={onComplete} className="text-xs mb-2">
-                  {t('profileCompletion.completeCta')}
-                </Button>
-              )}
-            </div>
-          ) : null
-        ) : (
-          <AnimatePresence initial={false}>
-            {expanded && (
-              <motion.div
-                id={pillPanelId}
-                role="region"
-                aria-label={t('profileCompletion.title')}
-                aria-live="polite"
-                key="pill-panel"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                style={{ overflow: 'hidden' }}
-              >
-                <div className="pt-2">
-                  {/* Pending items — staggered entrance */}
-                  {pendingItems.length > 0 && (
-                    <div className="flex flex-col gap-1.5 mb-3">
-                      {pendingItems.map((item, i) => (
-                        <StaggeredChecklistItem
-                          key={item.key}
-                          itemKey={item.key}
-                          onComplete={onComplete}
-                          index={i}
-                          prefersReducedMotion={prefersReducedMotion}
-                        />
-                      ))}
-                    </div>
-                  )}
-                  {/* Done items */}
-                  {status.items.filter((i) => i.done).length > 0 && (
-                    <div className="flex flex-col gap-1 mb-3 opacity-50">
-                      {status.items.filter((i) => i.done).map((item) => (
-                        <DoneItem key={item.key} itemKey={item.key} />
-                      ))}
-                    </div>
-                  )}
-                  {!status.complete && (
-                    <Button variant="primary" size="sm" fullWidth onClick={onComplete} className="text-xs mb-2">
-                      {t('profileCompletion.completeCta')}
-                    </Button>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        )}
-      </div>
-    );
-  }
 
   // ── Card variant ─────────────────────────────────────────────────────────────
   const RING_SIZE = 64;

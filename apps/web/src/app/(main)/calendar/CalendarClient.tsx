@@ -25,7 +25,6 @@ import { useAppStore } from '@/lib/store'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
 import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
-import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import type { FlowIntensity } from '@vesta/shared/types'
 import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
 import { selectFertileWindow } from '@vesta/shared/utils/fertile-window'
@@ -504,34 +503,6 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
     return s
   }, [last30])
 
-  // ── Nudge data ──────────────────────────────────────────────────────────────
-
-  const nudgeData = useMemo(() => {
-    const latestPeriod = periodLogs.length > 0
-      ? new Date(periodLogs[0].startDate)
-      : null
-    const latestSymptom = symptomLogs.length > 0
-      ? new Date(symptomLogs[0].date)
-      : null
-
-    const hasAnyLogs = !!latestPeriod || !!latestSymptom
-
-    let daysSinceLastLog: number | null = null
-    if (latestPeriod || latestSymptom) {
-      const candidates: Date[] = []
-      if (latestPeriod) candidates.push(latestPeriod)
-      if (latestSymptom) candidates.push(latestSymptom)
-      const mostRecent = candidates.reduce((a, b) => (a > b ? a : b))
-      const now = new Date()
-      now.setHours(0, 0, 0, 0)
-      const then = new Date(mostRecent)
-      then.setHours(0, 0, 0, 0)
-      daysSinceLastLog = Math.floor((now.getTime() - then.getTime()) / 86_400_000)
-    }
-
-    return { hasAnyLogs, daysSinceLastLog }
-  }, [periodLogs, symptomLogs])
-
   // Build the API calendar lookup map
   const apiCalendarMap = useMemo(() => {
     if (!days) return null
@@ -630,14 +601,6 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
       <PageHeader
         title={t('nav.calendar')}
         subtitle={format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}
-      />
-
-      {/* ── Logging Nudge ── */}
-      <LoggingNudge
-        profileId={activeProfileId}
-        hasAnyLogs={nudgeData.hasAnyLogs}
-        daysSinceLastLog={nudgeData.daysSinceLastLog}
-        goal={goal}
       />
 
       {/* ── Decorative blobs ── */}
