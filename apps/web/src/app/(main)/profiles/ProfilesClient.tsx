@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { useHeld } from '@/lib/use-held';
+import { localDayString } from '@/lib/local-date';
 import '@vesta/shared/utils/i18n';
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -184,7 +185,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
               </span>
               {isActive && (
                 <span
-                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                  className="text-[11px] font-bold px-1.5 py-0.5 rounded-full"
                   style={{
                     background: 'var(--goal-accent)',
                     color: 'var(--color-on-accent)',
@@ -443,7 +444,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
                     {GOAL_ICON_COMPONENTS[g]}
                   </span>
                   <span
-                    className="text-[10px] font-semibold leading-tight"
+                    className="text-[11px] font-semibold leading-tight"
                     style={{ color: isSelected ? accentVar : 'var(--color-text-muted)' }}
                   >
                     {t(GOAL_I18N_KEYS[g])}
@@ -492,8 +493,8 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
               setLastPeriodDate(e.target.value);
               if (lastPeriodError) setLastPeriodError('');
             }}
-            max={new Date().toISOString().slice(0, 10)}
-            min={new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+            max={localDayString()}
+            min={localDayString(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))}
             required
             aria-invalid={!!lastPeriodError}
             aria-describedby={lastPeriodError ? 'last-period-date-error' : undefined}
@@ -759,7 +760,7 @@ function EditProfileForm({ open, profile, onClose, onSubmit, serverError, disabl
                       {GOAL_ICON_COMPONENTS[g]}
                     </span>
                     <span
-                      className="text-[10px] font-semibold leading-tight"
+                      className="text-[11px] font-semibold leading-tight"
                       style={{ color: isSelected ? accentVar : 'var(--color-text-muted)' }}
                     >
                       {t(GOAL_I18N_KEYS[g])}
@@ -1007,6 +1008,94 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
               />
             ))}
           </AnimatePresence>
+          {/* Add Profile Section */}
+          <div className={showForm ? 'lg:col-span-2' : undefined}>
+            <AnimatePresence mode="wait">
+              {showForm ? (
+                <AddProfileForm
+                  key="form"
+                  onClose={closeAddForm}
+                  serverError={addError}
+                  onSubmit={handleAddProfile}
+                  disabled={isPending}
+                />
+              ) : (
+                <motion.div
+                  key="add-btn"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {atMax ? (
+                    <div
+                      className="rounded-2xl border border-dashed p-4 flex flex-col items-center gap-1.5 text-center"
+                      style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-secondary)' }}
+                    >
+                      <span className="text-2xl">🔒</span>
+                      <p className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                        {t('profiles.maxReached')}
+                      </p>
+                      <p className="text-xs text-[var(--color-text-muted)]">
+                        {t('profiles.deleteToAdd')}
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setAddError('');
+                        setShowForm(true);
+                      }}
+                      className="w-full rounded-2xl border border-dashed p-4 flex items-center justify-center gap-2.5 transition-colors duration-200 group hover:border-[var(--goal-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                      style={{
+                        borderColor: 'var(--color-border)',
+                        background: 'var(--color-bg-secondary)',
+                      }}
+                    >
+                      <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
+                        style={{
+                          background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
+                        }}
+                      >
+                        <Plus size={18} color="var(--color-on-accent)" strokeWidth={2.5} />
+                      </div>
+                      <div className="text-left">
+                        <p
+                          className="font-semibold text-sm group-hover:text-[var(--goal-accent)] transition-colors"
+                          style={{ color: 'var(--color-text-secondary)' }}
+                        >
+                          {t('profiles.add')}
+                        </p>
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                          {MAX_PROFILES - profiles.length} slot{MAX_PROFILES - profiles.length !== 1 ? 's' : ''} remaining
+                        </p>
+                      </div>
+                    </button>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Data isolation note */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            className="lg:col-span-2 rounded-2xl p-4 flex items-start gap-3"
+            style={{ background: 'color-mix(in srgb, var(--color-secondary) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--color-secondary) 20%, transparent)' }}
+          >
+            <span className="text-xl flex-shrink-0 mt-0.5">🔐</span>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--color-secondary)' }}>
+                Data Isolation
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+                Each profile&apos;s cycle data, symptoms, and history are stored completely separately. Switching profiles never mixes data.
+              </p>
+            </div>
+          </motion.div>
         </div>
 
         {/* Switch confirmation toast */}
@@ -1033,94 +1122,6 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
           )}
         </AnimatePresence>
 
-        {/* Add Profile Section */}
-        <div className="mt-4">
-          <AnimatePresence mode="wait">
-            {showForm ? (
-              <AddProfileForm
-                key="form"
-                onClose={closeAddForm}
-                serverError={addError}
-                onSubmit={handleAddProfile}
-                disabled={isPending}
-              />
-            ) : (
-              <motion.div
-                key="add-btn"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
-                transition={{ duration: 0.2 }}
-              >
-                {atMax ? (
-                  <div
-                    className="rounded-2xl border border-dashed p-4 flex flex-col items-center gap-1.5 text-center"
-                    style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-secondary)' }}
-                  >
-                    <span className="text-2xl">🔒</span>
-                    <p className="text-sm font-semibold text-[var(--color-text-secondary)]">
-                      {t('profiles.maxReached')}
-                    </p>
-                    <p className="text-xs text-[var(--color-text-muted)]">
-                      {t('profiles.deleteToAdd')}
-                    </p>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setAddError('');
-                      setShowForm(true);
-                    }}
-                    className="w-full rounded-2xl border border-dashed p-4 flex items-center justify-center gap-2.5 transition-colors duration-200 group hover:border-[var(--goal-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
-                    style={{
-                      borderColor: 'var(--color-border)',
-                      background: 'var(--color-bg-secondary)',
-                    }}
-                  >
-                    <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
-                      style={{
-                        background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
-                      }}
-                    >
-                      <Plus size={18} color="var(--color-on-accent)" strokeWidth={2.5} />
-                    </div>
-                    <div className="text-left">
-                      <p
-                        className="font-semibold text-sm group-hover:text-[var(--goal-accent)] transition-colors"
-                        style={{ color: 'var(--color-text-secondary)' }}
-                      >
-                        {t('profiles.add')}
-                      </p>
-                      <p className="text-xs text-[var(--color-text-muted)]">
-                        {MAX_PROFILES - profiles.length} slot{MAX_PROFILES - profiles.length !== 1 ? 's' : ''} remaining
-                      </p>
-                    </div>
-                  </button>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Data isolation note */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
-          className="mt-5 rounded-2xl p-4 flex items-start gap-3"
-          style={{ background: 'color-mix(in srgb, var(--color-secondary) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--color-secondary) 20%, transparent)' }}
-        >
-          <span className="text-xl flex-shrink-0 mt-0.5">🔐</span>
-          <div>
-            <p className="text-sm font-semibold" style={{ color: 'var(--color-secondary)' }}>
-              Data Isolation
-            </p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-              Each profile&apos;s cycle data, symptoms, and history are stored completely separately. Switching profiles never mixes data.
-            </p>
-          </div>
-        </motion.div>
       </PageContainer>
 
       {/* Delete confirmation dialog: stays mounted so the exit animation plays */}

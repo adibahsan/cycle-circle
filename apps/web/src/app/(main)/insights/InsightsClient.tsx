@@ -30,6 +30,7 @@ import type {
 } from '@/app/queries/insights-queries'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { hasAnyInsightsData, groupInsights, type InsightKey } from '@/lib/insights-data'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -213,7 +214,7 @@ function CycleLengthTrendChart({
   const xAxis = (
     <XAxis
       dataKey="date"
-      tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+      tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
       tickLine={false}
       axisLine={false}
       tickFormatter={(v: string) => {
@@ -225,7 +226,7 @@ function CycleLengthTrendChart({
 
   const yAxis = (
     <YAxis
-      tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+      tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
       tickLine={false}
       axisLine={false}
       tickFormatter={(v: number) => `${v}${daysLabel}`}
@@ -337,13 +338,13 @@ function SymptomFrequencyChart({
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
         <XAxis
           dataKey="category"
-          tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+          tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v: string) => v.charAt(0) + v.slice(1).toLowerCase()}
         />
         <YAxis
-          tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+          tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
           tickLine={false}
           axisLine={false}
           allowDecimals={false}
@@ -561,6 +562,14 @@ export function InsightsClient({
   )
 
   const noData = t('insights.noData')
+  const grouped = groupInsights({
+    cycleLengthTrend: filteredCycleLengthTrend,
+    symptomFrequency: filteredSymptomFrequency,
+    periodRegularity,
+    fertileWindowHistory: filteredFertileWindowHistory,
+  })
+  const shows = (k: InsightKey) => grouped.present.includes(k)
+  const hasData = hasAnyInsightsData({ cycleLengthTrend, symptomFrequency, periodRegularity, fertileWindowHistory })
 
   return (
     // tabular-nums on Recharts numeric axis ticks (FR-INSIGHTS NFR) — applied
@@ -572,6 +581,15 @@ export function InsightsClient({
         subtitle={activeProfile ? `${t('insights.subtitle')} · ${activeProfile.name}` : t('insights.subtitle')}
       />
 
+      {!hasData ? (
+        <Card padding="lg">
+          <div role="status" className="flex flex-col items-center gap-2 py-10 text-center" data-testid="insights-empty">
+            <p className="text-base font-semibold text-[var(--color-text-primary)]">{t('insights.emptyTitle')}</p>
+            <p className="text-sm text-[var(--color-text-muted)] max-w-sm">{noData}</p>
+          </div>
+        </Card>
+      ) : (
+        <>
       {/* ── Global controls ───────────────────────────────────────────────── */}
       <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 8 } : false}
@@ -588,7 +606,8 @@ export function InsightsClient({
       </motion.div>
 
       {/* ── Cycle Length Trend ─────────────────────────────────────────────── */}
-      <motion.div
+      {shows('cycleLengthTrend') && (
+        <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15, duration: 0.4 }}
@@ -615,9 +634,11 @@ export function InsightsClient({
           </div>
         </Card>
       </motion.div>
+      )}
 
       {/* ── Symptom Frequency ──────────────────────────────────────────────── */}
-      <motion.div
+      {shows('symptomFrequency') && (
+        <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.22, duration: 0.4 }}
@@ -634,9 +655,11 @@ export function InsightsClient({
           </div>
         </Card>
       </motion.div>
+      )}
 
       {/* ── Period Regularity ──────────────────────────────────────────────── */}
-      <motion.div
+      {shows('periodRegularity') && (
+        <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.29, duration: 0.4 }}
@@ -655,9 +678,11 @@ export function InsightsClient({
           </div>
         </Card>
       </motion.div>
+      )}
 
       {/* ── Fertile Window History ─────────────────────────────────────────── */}
-      <motion.div
+      {shows('fertileWindowHistory') && (
+        <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.36, duration: 0.4 }}
@@ -673,6 +698,18 @@ export function InsightsClient({
           </div>
         </Card>
       </motion.div>
+      )}
+      {grouped.missing.length > 0 && (
+        <p
+          role="note"
+          data-testid="insights-missing-note"
+          className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-3 text-sm text-[var(--color-text-muted)]"
+        >
+          {t('insights.missingNote', { charts: grouped.missing.map((k) => t(`insights.${k}`)).join(', ') })}
+        </p>
+      )}
+        </>
+      )}
     </PageContainer>
   )
 }

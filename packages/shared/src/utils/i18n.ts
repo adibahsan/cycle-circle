@@ -163,6 +163,8 @@ const resources = {
         regularityStable: 'Stable',
         regularityVariable: 'Variable',
         count: 'Count',
+        emptyTitle: 'No insights yet',
+        missingNote: 'Not enough data yet for: {{charts}}. Keep logging to unlock them.',
         noData: 'Not enough data yet — log a few cycles to see your trends.',
       },
       symptoms: {
@@ -816,6 +818,8 @@ const resources = {
         regularityStable: 'নিয়মিত',
         regularityVariable: 'অনিয়মিত',
         count: 'সংখ্যা',
+        emptyTitle: 'এখনো কোনো ইনসাইট নেই',
+        missingNote: 'এগুলোর জন্য এখনো যথেষ্ট তথ্য নেই: {{charts}}। আনলক করতে লগ করতে থাকুন।',
         noData: 'এখনো যথেষ্ট তথ্য নেই — আপনার প্রবণতা দেখতে কয়েকটি চক্র লগ করুন।',
       },
       symptoms: {

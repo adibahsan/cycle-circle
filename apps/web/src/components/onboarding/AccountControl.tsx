@@ -47,7 +47,7 @@ export function AccountControl({ user, className }: AccountControlProps) {
           className="shrink-0 text-[var(--color-text-muted)]"
         />
         <span
-          className={`truncate max-w-[8rem] text-xs text-[var(--color-text-muted)] ${
+          className={`sr-only sm:not-sr-only sm:truncate sm:max-w-[8rem] text-xs text-[var(--color-text-muted)] ${
             isPhone ? 'font-mono' : ''
           }`}
           {...(!isPhone ? { spellCheck: false } : {})}

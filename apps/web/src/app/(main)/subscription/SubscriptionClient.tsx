@@ -313,7 +313,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
       />
 
       {/* ── Current Plan + Upgrade Cards ── */}
-      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2">
+      <div className={`flex flex-col gap-5 ${isProUser ? "" : "lg:grid lg:grid-cols-2"}`}>
         {/* ── Current Plan Card ── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}

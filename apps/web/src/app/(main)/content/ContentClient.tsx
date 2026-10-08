@@ -141,7 +141,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
 
         <article className="glass rounded-2xl p-6">
           {selectedArticle.category && (
-            <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)] mb-3">
+            <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)] mb-3">
               {selectedArticle.category.name}
             </span>
           )}
@@ -151,7 +151,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
               {selectedArticle.cyclePhases.map(phase => (
                 <span
                   key={phase}
-                  className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                  className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
                   style={{ backgroundColor: getPhaseColor(phase.toLowerCase() as any), color: `var(--color-on-${phase.toLowerCase()})` }}
                 >
                   {getPhaseEmoji(phase.toLowerCase() as any)} {phase}
@@ -292,13 +292,13 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
                       {article.category && (
-                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)]">
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)]">
                           {article.category.name}
                         </span>
                       )}
                       {/* "For you" badge when surfacing */}
                       {isForCurrentPhase && (
-                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold text-[var(--color-on-accent)]"
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold text-[var(--color-on-accent)]"
                           style={{ backgroundColor: 'var(--goal-accent)' }}
                         >
                           {t('content.forYou')}

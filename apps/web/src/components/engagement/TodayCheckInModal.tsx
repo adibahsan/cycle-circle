@@ -229,7 +229,7 @@ export function TodayCheckInModal({
               {t('checkIn.subtitle')}
             </p>
             {cycleDay && phase && (
-              <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">
+              <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
                 {t('dashboard.day')} {cycleDay} · {phase}
               </p>
             )}
