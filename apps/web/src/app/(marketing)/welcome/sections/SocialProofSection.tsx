@@ -2,6 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { Languages, Lock, MapPin } from 'lucide-react';
+import { LANDING_CONTAINER, LANDING_SECTION } from './layout';
 import { RevealOnScroll } from '@/components/motion/RevealOnScroll';
 
 const PROOF_ITEMS = [
@@ -15,17 +16,17 @@ export function SocialProofSection() {
 
   return (
     <section
-      className="relative py-16 px-4"
+      className={LANDING_SECTION}
       aria-labelledby="proof-heading"
     >
-      <div className="max-w-3xl mx-auto">
-        <RevealOnScroll>
+      <div className={LANDING_CONTAINER}>
+        <div>
           <h2 id="proof-heading" className="sr-only">
             {t('app.tagline')}
           </h2>
           <div className="flex flex-wrap items-center justify-center gap-3">
-            {PROOF_ITEMS.map(({ key, icon: Icon }, i) => (
-              <RevealOnScroll key={key} delay={i * 0.08}>
+            {PROOF_ITEMS.map(({ key, icon: Icon }) => (
+              <RevealOnScroll key={key}>
                 <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft">
                   <Icon
                     size={15}
@@ -39,7 +40,7 @@ export function SocialProofSection() {
               </RevealOnScroll>
             ))}
           </div>
-        </RevealOnScroll>
+        </div>
       </div>
     </section>
   );

@@ -2,6 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { CalendarHeart, Sparkles, ShieldCheck, Users } from 'lucide-react';
+import { LANDING_CONTAINER, LANDING_SECTION } from './layout';
 import { RevealOnScroll } from '@/components/motion/RevealOnScroll';
 import { Card } from '@/components/ui/Card';
 
@@ -37,10 +38,10 @@ export function FeaturesSection() {
 
   return (
     <section
-      className="relative py-20 px-4"
+      className={LANDING_SECTION}
       aria-labelledby="features-heading"
     >
-      <div className="max-w-4xl mx-auto">
+      <div className={LANDING_CONTAINER}>
         <RevealOnScroll className="text-center mb-12">
           <h2
             id="features-heading"
@@ -51,8 +52,8 @@ export function FeaturesSection() {
         </RevealOnScroll>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {FEATURES.map(({ key, icon: Icon, accentVar, fallbackColor }, i) => (
-            <RevealOnScroll key={key} delay={i * 0.08}>
+          {FEATURES.map(({ key, icon: Icon, accentVar, fallbackColor }) => (
+            <RevealOnScroll key={key}>
               <Card hover padding="lg" className="h-full">
                 <div className="flex flex-col gap-4">
                   {/* Icon with phase-color accent */}
