@@ -74,3 +74,11 @@ describe('toasts live on the shared toast layer', () => {
     })
   }
 })
+
+describe('PeriodLogModal resets by remounting, not by a suppressed effect', () => {
+  it('has no exhaustive-deps override and keys the body on the open session', () => {
+    const src = read('components/PeriodLogModal.tsx')
+    expect(src).not.toContain('exhaustive-deps')
+    expect(src).toMatch(/<PeriodLogModalBody key=\{session\}/)
+  })
+})

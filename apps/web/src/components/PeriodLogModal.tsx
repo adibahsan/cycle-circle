@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { FlowIntensity } from '@vesta/shared/types'
 import { Button } from '@/components/ui/Button'
@@ -45,7 +45,21 @@ interface LogModalProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function PeriodLogModal({
+/**
+ * A fresh form each time the pop-up opens: the body is keyed on the open session, so its
+ * state initialises from the props at that moment (no reset effect).
+ */
+export function PeriodLogModal(props: LogModalProps) {
+  const [session, setSession] = useState(0)
+  const [wasOpen, setWasOpen] = useState(props.open)
+  if (props.open !== wasOpen) {
+    setWasOpen(props.open)
+    if (props.open) setSession((n) => n + 1)
+  }
+  return <PeriodLogModalBody key={session} {...props} />
+}
+
+function PeriodLogModalBody({
   open,
   profileId,
   existingLogId,
@@ -70,18 +84,6 @@ export function PeriodLogModal({
   const [flow, setFlow] = useState<FlowIntensity>(initialFlow)
   const [error, setError] = useState(false)
   const [isPending, startTransition] = useTransition()
-
-  // Fresh form each time the pop-up opens.
-  useEffect(() => {
-    if (!open) return
-    const edit = Boolean(existingLogId)
-    const today = deviceDayString()
-    setStartDate(initialStart || (edit ? '' : today))
-    setEndDate(initialEnd || (edit ? '' : today))
-    setFlow(initialFlow)
-    setError(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
 
   const handleSave = () => {
     if (!startDate || !endDate) return
