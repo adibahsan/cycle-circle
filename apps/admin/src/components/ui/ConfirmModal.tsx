@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { clsx } from 'clsx';
 import { Button } from './Button';
+import { Modal } from './Modal';
 
 interface ConfirmModalProps {
   open: boolean;
@@ -25,55 +25,15 @@ export function ConfirmModal({
   variant = 'danger',
   loading,
 }: ConfirmModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-
-  // Close on Escape key
-  useEffect(() => {
-    if (!open) return;
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !loading) onClose();
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, loading, onClose]);
-
-  // Trap focus when open
-  useEffect(() => {
-    if (open) {
-      const prev = document.activeElement as HTMLElement | null;
-      dialogRef.current?.focus();
-      return () => prev?.focus();
-    }
-  }, [open]);
-
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 overscroll-contain"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-modal-title"
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={() => !loading && onClose()}
-        aria-hidden="true"
-      />
-
-      {/* Dialog card */}
-      <div
-        ref={dialogRef}
-        tabIndex={-1}
-        className="relative z-10 w-full max-w-md rounded-2xl glass border border-[var(--color-border)] p-6 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
-      >
+    <Modal open={open} onClose={onClose} titleId="confirm-modal-title" dismissible={!loading}>
+      <div className="p-6">
         {/* Icon */}
         <div
           className={clsx(
             'mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full',
-            variant === 'danger' && 'bg-red-100 dark:bg-red-900/30',
-            variant === 'warning' && 'bg-amber-100 dark:bg-amber-900/30'
+            variant === 'danger' && 'bg-[var(--color-danger-bg)]',
+            variant === 'warning' && 'bg-[var(--color-warning-bg)]'
           )}
         >
           {variant === 'danger' ? (
@@ -81,7 +41,7 @@ export function ConfirmModal({
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="currentColor"
-              className="h-6 w-6 text-red-600 dark:text-red-400"
+              className="h-6 w-6 text-[var(--color-danger)]"
               aria-hidden="true"
             >
               <path
@@ -95,7 +55,7 @@ export function ConfirmModal({
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="currentColor"
-              className="h-6 w-6 text-amber-600 dark:text-amber-400"
+              className="h-6 w-6 text-[var(--color-warning)]"
               aria-hidden="true"
             >
               <path
@@ -134,6 +94,6 @@ export function ConfirmModal({
           </Button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

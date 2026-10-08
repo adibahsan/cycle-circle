@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { useReducedMotion } from 'motion/react';
-import { Sparkles, CalendarPlus, Flame, X, type LucideIcon } from 'lucide-react';
+import { Sparkles, CalendarPlus, X, type LucideIcon } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useHasMounted } from '@/components/motion/useHasMounted';
 import { isTTC, isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal';
+import { loggingNudgeVariant } from '@/lib/prompt-rules';
 import '@vesta/shared/utils/i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -20,9 +21,6 @@ export interface LoggingNudgeProps {
   daysSinceLastLog: number | null; // null when no logs; >= 3 → stale variant
   goal?: string | null;            // 'conceive' → TTC-tailored copy
   onLogPeriod?: () => void;        // primary CTA callback; if absent, CTA is a <Link href="/calendar">
-  onLogSymptoms?: () => void;      // secondary CTA callback; if absent, CTA is a <Link href="/symptoms">
-  streak?: number;                 // current streak count
-  streakAtRisk?: boolean;          // true → streak-at-risk variant (highest priority)
   phase?: string | null;           // current cycle phase for phase-aware enrichment
   className?: string;
 }
@@ -35,9 +33,6 @@ export function LoggingNudge({
   daysSinceLastLog,
   goal,
   onLogPeriod,
-  onLogSymptoms,
-  streak,
-  streakAtRisk,
   phase,
   className,
 }: LoggingNudgeProps): React.JSX.Element | null {
@@ -65,20 +60,12 @@ export function LoggingNudge({
     if (snoozeUntil && Date.now() < snoozeUntil) setDismissed(true);
   }, [mounted, DISMISSED_KEY, SNOOZE_KEY]);
 
-  // Determine which variant to show (priority: streakAtRisk > empty > stale)
-  const isStreakAtRisk = !!streakAtRisk && (streak ?? 0) > 0;
-  const isEmptyState = !hasAnyLogs;
-  const isStale =
-    hasAnyLogs &&
-    daysSinceLastLog != null &&
-    daysSinceLastLog >= 3;
+  // Dismissed, or fewer than 3 days since the last log → render null
+  const variant = loggingNudgeVariant({ hasAnyLogs, daysSinceLastLog });
+  if (!variant || dismissed) return null;
+  const isEmptyState = variant === 'empty';
 
-  // None of the conditions met → render null
-  if (!isStreakAtRisk && !isEmptyState && !isStale) return null;
-  // Dismissed → render null
-  if (dismissed) return null;
-
-  // Resolve copy keys — streak-at-risk takes highest priority
+  // Resolve copy keys
   const goalIsPregnancy = isPregnancy(goal);
   const goalIsTTC = isTTC(goal);
   const accentVar = goalAccentVar(goal);
@@ -88,12 +75,7 @@ export function LoggingNudge({
   let ctaLabel: string;
   let Icon: LucideIcon;
 
-  if (isStreakAtRisk) {
-    title = t('nudge.streakAtRiskTitle');
-    description = t('nudge.streakAtRiskBody', { count: streak ?? 0 });
-    ctaLabel = t('nudge.logSymptomsCta');
-    Icon = Flame;
-  } else if (isEmptyState) {
+  if (isEmptyState) {
     if (goalIsPregnancy) {
       title = t('nudge.pregnancyTitle');
       description = t('nudge.pregnancyDescription');
@@ -132,13 +114,12 @@ export function LoggingNudge({
   const content = (
     <Card
       className={[
-        'relative overflow-hidden',
+        'relative overflow-hidden surface-peach !border-0 shadow-none',
         className ?? '',
       ].join(' ').trim()}
       padding="md"
       style={{
         ['--goal-accent']: accentVar,
-        boxShadow: '0 0 0 1.5px color-mix(in srgb, var(--goal-accent) 30%, transparent), 0 4px 20px color-mix(in srgb, var(--goal-accent) 12%, transparent)',
       } as React.CSSProperties}
     >
       {/* One-shot accent sheen sweep — absolutely-positioned overlay, gated */}
@@ -177,14 +158,14 @@ export function LoggingNudge({
           aria-hidden="true"
         >
           {prefersReducedMotion ? (
-            <Icon size={18} className="text-white" aria-hidden="true" />
+            <Icon size={18} className="text-[var(--color-on-accent)]" aria-hidden="true" />
           ) : (
             <motion.span
               animate={{ scale: [1, 1.06, 1] }}
               transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
               className="flex items-center justify-center"
             >
-              <Icon size={18} className="text-white" aria-hidden="true" />
+              <Icon size={18} className="text-[var(--color-on-accent)]" aria-hidden="true" />
             </motion.span>
           )}
         </div>
@@ -194,12 +175,12 @@ export function LoggingNudge({
           <p className="text-sm font-bold text-[var(--color-text-primary)] leading-snug">
             {title}
           </p>
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5 leading-relaxed">
+          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 leading-relaxed">
             {description}
           </p>
 
-          {/* Phase-aware enrichment (only when phase provided and NOT streak-at-risk) */}
-          {!isStreakAtRisk && phase && (
+          {/* Phase-aware enrichment (only when phase provided) */}
+          {phase && (
             <p className="text-xs text-[var(--color-text-muted)] mt-0.5 opacity-80 leading-relaxed">
               {t('nudge.phaseAwareBody', { phase })}
             </p>
@@ -207,37 +188,7 @@ export function LoggingNudge({
 
           {/* CTAs */}
           <div className="flex flex-wrap items-center gap-2 mt-3">
-            {isStreakAtRisk ? (
-              /* Streak-at-risk: single CTA → log symptoms */
-              onLogSymptoms ? (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={onLogSymptoms}
-                  className="text-xs focus-visible:ring-[var(--goal-accent)]"
-                  style={{
-                    background: 'var(--goal-accent)',
-                    borderColor: 'var(--goal-accent)',
-                  } as React.CSSProperties}
-                >
-                  {ctaLabel}
-                </Button>
-              ) : (
-                <Link href="/symptoms">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="text-xs focus-visible:ring-[var(--goal-accent)]"
-                    style={{
-                      background: 'var(--goal-accent)',
-                      borderColor: 'var(--goal-accent)',
-                    } as React.CSSProperties}
-                  >
-                    {ctaLabel}
-                  </Button>
-                </Link>
-              )
-            ) : isEmptyState ? (
+            {isEmptyState ? (
               <>
                 {/* Empty-state: Primary CTA — Log first period */}
                 {onLogPeriod ? (
@@ -270,32 +221,20 @@ export function LoggingNudge({
                 )}
 
                 {/* Secondary CTA */}
-                {onLogSymptoms ? (
-                  <button
-                    type="button"
-                    onClick={onLogSymptoms}
-                    className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:rounded-sm"
-                    style={{ color: 'var(--goal-accent)' } as React.CSSProperties}
-                  >
-                    {t('nudge.logSymptomsCta')}
-                  </button>
-                ) : (
-                  <Link
-                    href="/symptoms"
-                    className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:rounded-sm"
-                    style={{ color: 'var(--goal-accent)' } as React.CSSProperties}
-                  >
-                    {t('nudge.logSymptomsCta')}
-                  </Link>
-                )}
+                <Link
+                  href="/symptoms"
+                  className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:rounded-sm"
+                  style={{ color: 'var(--goal-accent)' } as React.CSSProperties}
+                >
+                  {t('nudge.logSymptomsCta')}
+                </Link>
               </>
             ) : (
               /* Stale variant: single primary CTA — Log symptoms */
-              onLogSymptoms ? (
+              <Link href="/symptoms">
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={onLogSymptoms}
                   className="text-xs focus-visible:ring-[var(--goal-accent)]"
                   style={{
                     background: 'var(--goal-accent)',
@@ -304,21 +243,7 @@ export function LoggingNudge({
                 >
                   {t('nudge.logSymptomsCta')}
                 </Button>
-              ) : (
-                <Link href="/symptoms">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="text-xs focus-visible:ring-[var(--goal-accent)]"
-                    style={{
-                      background: 'var(--goal-accent)',
-                      borderColor: 'var(--goal-accent)',
-                    } as React.CSSProperties}
-                  >
-                    {t('nudge.logSymptomsCta')}
-                  </Button>
-                </Link>
-              )
+              </Link>
             )}
           </div>
         </div>
@@ -329,7 +254,7 @@ export function LoggingNudge({
   // Entrance animation (gated)
   if (prefersReducedMotion || !mounted) {
     return (
-      <div aria-live="polite">
+      <div aria-live="polite" data-testid="logging-nudge">
         {content}
       </div>
     );
@@ -338,6 +263,7 @@ export function LoggingNudge({
   return (
     <motion.div
       aria-live="polite"
+      data-testid="logging-nudge"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 8 }}

@@ -7,6 +7,7 @@ import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { Phone, Shield, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { devMode, DEV_DEFAULT_PHONE } from '@vesta/shared/utils/config';
 import '@vesta/shared/utils/i18n';
 
@@ -89,18 +90,16 @@ export default function LoginPage() {
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           className="mb-4"
         >
-          <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary)] flex items-center justify-center shadow-soft">
-            <span className="text-white text-2xl font-bold">V</span>
-          </div>
+          <BrandLogo size={64} alt="" className="w-16 h-16" />
         </motion.div>
 
-        <h1 className="text-3xl font-bold mb-1 text-[var(--color-primary)]">
-          Vesta
+        <h1 className="text-3xl font-extrabold mb-1 text-[var(--color-text-primary)]">
+          Cycle Circle
         </h1>
         <p className="text-sm text-[var(--color-text-muted)] text-center leading-relaxed px-4">
-          আপনার স্বাস্থ্য, আপনার নিয়ন্ত্রণে
+          {t('auth.loginHeadline')}
           <br />
-          <span className="text-[var(--color-text-secondary)]">Your cycle, your way</span>
+          <span className="text-[var(--color-text-secondary)]">{t('app.tagline')}</span>
         </p>
       </motion.div>
 
@@ -110,15 +109,13 @@ export default function LoginPage() {
         variants={FADE_UP}
         initial="hidden"
         animate="show"
-        className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft p-6 mx-0"
+        className="rounded-3xl surface-wash border border-[var(--color-border)] shadow-soft p-6 mx-0"
       >
         <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">
           {t('auth.login')}
         </h2>
         <p className="text-sm text-[var(--color-text-muted)] mb-5">
-          {devMode
-            ? 'Dev mode: OTP verification with test codes'
-            : 'Enter your phone number to receive a one-time code'}
+          {devMode ? t('auth.devModeHint') : t('auth.phoneHint')}
         </p>
 
         {/* Phone input */}
@@ -138,12 +135,12 @@ export default function LoginPage() {
               name="phone"
               autoComplete="tel"
               spellCheck={false}
-              placeholder="01XXXXXXXXX…"
+              placeholder={t('auth.phonePlaceholder')}
               value={phone}
               onChange={handlePhoneChange}
               maxLength={11}
-              className={`w-full pl-20 pr-4 py-3.5 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors duration-200 text-base tracking-widest font-medium ${
-                error ? 'border-red-400 focus:ring-red-300' : 'border-[var(--color-border)]'
+              className={`w-full pl-20 pr-4 py-3.5 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200 text-base tracking-widest font-medium ${
+                error ? 'border-[var(--color-error)] focus-visible:ring-[var(--color-error)]/30' : 'border-[var(--color-border)]'
               }`}
             />
             {phone.length === 11 && !error && (
@@ -152,7 +149,7 @@ export default function LoginPage() {
               </span>
             )}
           </div>
-          {error && <p aria-live="polite" className="mt-1.5 text-sm text-red-500 flex items-center gap-1"><span>⚠</span>{error}</p>}
+          {error && <p aria-live="polite" className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1"><span>⚠</span>{error}</p>}
         </div>
 
         <Button
@@ -160,7 +157,7 @@ export default function LoginPage() {
           size="lg"
           onClick={handleSendOtp}
           disabled={loading}
-          className="rounded-2xl text-base font-bold tracking-wide"
+          className="text-base font-bold tracking-wide"
         >
           {loading ? (
             <span className="flex items-center gap-2">
@@ -173,7 +170,7 @@ export default function LoginPage() {
           ) : (
             <span className="flex items-center gap-2">
               <Phone size={18} aria-hidden="true" />
-              {devMode ? `${t('auth.sendOtp')} (dev)` : t('auth.sendOtp')}
+              {devMode ? `${t('auth.sendOtp')} ${t('auth.devSuffix')}` : t('auth.sendOtp')}
             </span>
           )}
         </Button>
@@ -211,10 +208,10 @@ export default function LoginPage() {
           </span>
         </div>
         <p className="text-[11px] text-[var(--color-text-muted)] text-center leading-relaxed px-6">
-          By continuing you agree to Vesta&apos;s{' '}
-          <Link href="/privacy" className="text-[var(--color-secondary)] font-medium hover:underline underline-offset-2">Privacy Policy</Link>{' '}
-          &amp;{' '}
-          <Link href="/terms" className="text-[var(--color-secondary)] font-medium hover:underline underline-offset-2">Terms of Service</Link>
+          {t('auth.agreePrefix')}{' '}
+          <Link href="/privacy" className="text-[var(--color-secondary)] font-medium hover:underline underline-offset-2">{t('auth.privacyPolicy')}</Link>{' '}
+          {t('auth.and')}{' '}
+          <Link href="/terms" className="text-[var(--color-secondary)] font-medium hover:underline underline-offset-2">{t('auth.termsOfService')}</Link>
         </p>
       </motion.div>
     </div>

@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
+import { placePopover, Z_CLASS } from '@vesta/shared/utils/popup-core';
+import { popupStack } from '@vesta/shared/utils/popup-runtime';
 import { CalendarClock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Select } from './Select';
 
@@ -79,6 +82,11 @@ export function DateTimePicker({
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const inputFocused = useRef(false);
+  const popRef = useRef<HTMLDivElement>(null);
+  const idRef = useRef<symbol>(Symbol('date-picker'));
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  // Render inside the enclosing pop-up's root (not clipped by its scrolling body, not inert).
+  const [host, setHost] = useState<HTMLElement | null>(null);
 
   // Mirror external value changes (e.g. calendar clicks) into the input —
   // but never while the user is mid-typing, to avoid clobbering the cursor.
@@ -91,14 +99,22 @@ export function DateTimePicker({
     if (selected) setViewMonth(new Date(selected.getFullYear(), selected.getMonth(), 1));
   }, [selected]);
 
-  // Close on outside click / Escape.
+  // Join the ESC stack while open so ESC closes only the picker, then place it.
   useEffect(() => {
     if (!open) return;
+    const id = idRef.current;
+    popupStack.push(id);
+    setHost(
+      (rootRef.current?.closest('[data-popup-root]') as HTMLElement | null) ?? document.body,
+    );
     function handlePointer(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (rootRef.current?.contains(t) || popRef.current?.contains(t)) return;
+      setOpen(false);
     }
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && popupStack.isTop(id)) {
+        e.stopPropagation();
         setOpen(false);
         inputRef.current?.focus();
       }
@@ -106,10 +122,35 @@ export function DateTimePicker({
     document.addEventListener('mousedown', handlePointer);
     document.addEventListener('keydown', handleKey);
     return () => {
+      popupStack.remove(id);
       document.removeEventListener('mousedown', handlePointer);
       document.removeEventListener('keydown', handleKey);
     };
   }, [open]);
+
+  // Position against the anchor; follow scroll/resize.
+  useEffect(() => {
+    if (!open || !host) return;
+    function place() {
+      const anchor = rootRef.current?.getBoundingClientRect();
+      const pop = popRef.current;
+      if (!anchor) return;
+      setPos(
+        placePopover(
+          anchor,
+          { width: pop?.offsetWidth ?? 320, height: pop?.offsetHeight ?? 380 },
+          { width: window.innerWidth, height: window.innerHeight },
+        ),
+      );
+    }
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [open, host, viewMonth]);
 
   const minDay = minDate ? startOfDay(minDate) : null;
 
@@ -219,14 +260,16 @@ export function DateTimePicker({
         </button>
       </div>
 
-      {open && (
+      {open && host && createPortal(
         <div
+          ref={popRef}
           id={`${pickerId}-dialog`}
           role="dialog"
           aria-modal="false"
           aria-label="Choose date and time"
+          style={{ left: pos?.left ?? 0, top: pos?.top ?? 0, visibility: pos ? 'visible' : 'hidden', overscrollBehavior: 'contain' }}
           className={clsx(
-            'absolute z-50 mt-1.5 w-[20rem] max-w-[calc(100vw-2rem)] overscroll-contain',
+            `fixed ${Z_CLASS.popover} w-[20rem] max-w-[calc(100vw-1rem)] overscroll-contain`,
             'rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3 shadow-lg'
           )}
         >
@@ -286,7 +329,7 @@ export function DateTimePicker({
                     'flex h-8 w-full items-center justify-center rounded-lg text-sm tabular-nums',
                     'transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30',
                     isSelected
-                      ? 'bg-[var(--color-primary)] text-white font-medium'
+                      ? 'bg-[var(--color-action)] text-[var(--color-on-action)] font-medium'
                       : inMonth
                         ? 'text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]'
                         : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-secondary)]',
@@ -322,7 +365,8 @@ export function DateTimePicker({
               />
             </div>
           </div>
-        </div>
+        </div>,
+        host,
       )}
     </div>
   );

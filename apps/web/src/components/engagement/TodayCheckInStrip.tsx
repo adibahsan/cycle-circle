@@ -82,10 +82,8 @@ export function TodayCheckInStrip({
           <button
             type="button"
             onClick={onOpenCheckIn}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent,var(--color-primary))]"
-            style={{
-              background: 'linear-gradient(135deg, var(--goal-accent, var(--color-primary)) 0%, color-mix(in srgb, var(--goal-accent, var(--color-primary)) 70%, var(--color-secondary)) 100%)',
-            }}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold text-[var(--color-on-accent)] transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent,var(--color-primary))]"
+            style={{ backgroundColor: 'var(--goal-accent, var(--color-primary))' }}
             aria-label={t('checkIn.cta')}
           >
             {t('checkIn.cta')}

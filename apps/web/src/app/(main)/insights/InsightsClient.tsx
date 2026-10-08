@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
 import { useReducedMotion } from 'motion/react'
-import { TrendingUp } from 'lucide-react'
 import {
   ResponsiveContainer,
   LineChart,
@@ -29,6 +28,9 @@ import type {
   PeriodRegularity,
   FertileWindowPoint,
 } from '@/app/queries/insights-queries'
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { hasAnyInsightsData, groupInsights, type InsightKey } from '@/lib/insights-data'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,11 +89,11 @@ function filterSymptomByDate(
 const SYMPTOM_COLORS: Record<string, string> = {
   PHYSICAL: 'var(--goal-accent)',
   MOOD: 'var(--color-secondary)',
-  DISCHARGE: 'var(--color-fertile)',
-  LIFESTYLE: 'var(--color-ovulation)',
+  DISCHARGE: 'var(--color-coral)',
+  LIFESTYLE: 'var(--color-accent)',
 }
 
-const SYMPTOM_FALLBACK = '#a78bfa'
+const SYMPTOM_FALLBACK = 'var(--color-primary-light)'
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -139,7 +141,7 @@ function DateRangeControl({
           aria-pressed={value === key}
           className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--goal-accent)] ${
             value === key
-              ? 'bg-[var(--goal-accent)] text-white'
+              ? 'bg-[var(--goal-accent)] text-[var(--color-on-accent)]'
               : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-[var(--color-border)]'
           }`}
         >
@@ -212,7 +214,7 @@ function CycleLengthTrendChart({
   const xAxis = (
     <XAxis
       dataKey="date"
-      tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+      tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
       tickLine={false}
       axisLine={false}
       tickFormatter={(v: string) => {
@@ -224,7 +226,7 @@ function CycleLengthTrendChart({
 
   const yAxis = (
     <YAxis
-      tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+      tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
       tickLine={false}
       axisLine={false}
       tickFormatter={(v: number) => `${v}${daysLabel}`}
@@ -236,6 +238,11 @@ function CycleLengthTrendChart({
 
   const tooltip = (
     <Tooltip
+      cursor={
+        chartType === 'bar'
+          ? { fill: 'color-mix(in srgb, var(--color-text-primary) 8%, transparent)' }
+          : { stroke: 'var(--color-border-strong)' }
+      }
       contentStyle={{
         background: 'var(--color-bg-card)',
         border: '1px solid var(--color-border)',
@@ -312,11 +319,13 @@ function SymptomFrequencyChart({
   data,
   noDataLabel,
   countLabel,
+  categoryLabel,
   animate,
 }: {
   data: SymptomFrequencyPoint[]
   noDataLabel: string
   countLabel: string
+  categoryLabel: (category: string) => string
   animate: boolean
 }) {
   const total = data.reduce((s, d) => s + d.count, 0)
@@ -331,19 +340,20 @@ function SymptomFrequencyChart({
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
         <XAxis
           dataKey="category"
-          tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+          tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(v: string) => v.charAt(0) + v.slice(1).toLowerCase()}
+          tickFormatter={(v: string) => categoryLabel(v)}
         />
         <YAxis
-          tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+          tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
           tickLine={false}
           axisLine={false}
           allowDecimals={false}
           width={28}
         />
         <Tooltip
+          cursor={{ fill: 'color-mix(in srgb, var(--color-text-primary) 8%, transparent)' }}
           contentStyle={{
             background: 'var(--color-bg-card)',
             border: '1px solid var(--color-border)',
@@ -354,7 +364,7 @@ function SymptomFrequencyChart({
           formatter={(v) => [v ?? 0, countLabel]}
           labelFormatter={(label) =>
             typeof label === 'string'
-              ? label.charAt(0) + label.slice(1).toLowerCase()
+              ? categoryLabel(label)
               : label
           }
         />
@@ -391,6 +401,7 @@ function PeriodRegularityCard({
   if (data.sampleSize === 0) return <NoDataMessage label={noDataLabel} />
 
   const badgeColor = data.regular ? 'var(--color-fertile)' : 'var(--color-menstrual)'
+  const badgeTextColor = data.regular ? 'var(--color-on-fertile)' : 'var(--color-on-menstrual)'
   const badgeLabel = data.regular ? stableLabel : variableLabel
 
   return (
@@ -425,8 +436,8 @@ function PeriodRegularityCard({
 
       {/* Badge */}
       <div
-        className="inline-flex items-center px-3 py-1.5 rounded-full text-white text-xs font-bold self-start sm:self-center"
-        style={{ backgroundColor: badgeColor }}
+        className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold self-start sm:self-center"
+        style={{ backgroundColor: badgeColor, color: badgeTextColor }}
         aria-label={badgeLabel}
       >
         {badgeLabel}
@@ -451,6 +462,7 @@ function FertileWindowHistoryList({
   noDataLabel: string
   language: string
 }) {
+  const { t } = useTranslation()
   if (data.length === 0) return <NoDataMessage label={noDataLabel} />
 
   const locale = language === 'bn' ? 'bn-BD' : undefined
@@ -485,9 +497,9 @@ function FertileWindowHistoryList({
                 </span>
                 <span
                   className="text-xs font-bold tabular-nums"
-                  style={{ color: 'var(--color-fertile)' }}
+                  style={{ color: 'var(--color-text-primary)' }}
                 >
-                  {fertileSpan}d
+                  {t('common.daysShort', { count: fertileSpan })}
                 </span>
               </div>
               {/* Visual bar */}
@@ -502,7 +514,7 @@ function FertileWindowHistoryList({
             {/* Ovulation day */}
             <span
               className="text-xs font-bold tabular-nums shrink-0 hidden sm:block"
-              style={{ color: 'var(--color-ovulation)' }}
+              style={{ color: 'var(--color-text-primary)' }}
             >
               ⊕ {fmt(entry.ovulationDay)}
             </span>
@@ -553,32 +565,34 @@ export function InsightsClient({
   )
 
   const noData = t('insights.noData')
+  const grouped = groupInsights({
+    cycleLengthTrend: filteredCycleLengthTrend,
+    symptomFrequency: filteredSymptomFrequency,
+    periodRegularity,
+    fertileWindowHistory: filteredFertileWindowHistory,
+  })
+  const shows = (k: InsightKey) => grouped.present.includes(k)
+  const hasData = hasAnyInsightsData({ cycleLengthTrend, symptomFrequency, periodRegularity, fertileWindowHistory })
 
   return (
     // tabular-nums on Recharts numeric axis ticks (FR-INSIGHTS NFR) — applied
     // to the tick value text so chart axes line up digit-for-digit.
-    <div className="flex flex-col gap-5 py-3 [&_.recharts-cartesian-axis-tick-value]:[font-variant-numeric:tabular-nums]">
+    <PageContainer className="[&_.recharts-cartesian-axis-tick-value]:[font-variant-numeric:tabular-nums]">
       {/* ── Page header ──────────────────────────────────────────────────── */}
-      <motion.div
-        initial={shouldAnimate ? { opacity: 0, y: 12 } : false}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex flex-col gap-1 pt-2"
-      >
-        <div className="flex items-center gap-2">
-          <TrendingUp size={20} className="text-[var(--goal-accent)]" aria-hidden="true" />
-          <h1 className="text-2xl font-extrabold text-[var(--color-text-primary)]">
-            {t('insights.title')}
-          </h1>
-        </div>
-        <p className="text-sm text-[var(--color-text-muted)]">{t('insights.subtitle')}</p>
-        {activeProfile && (
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-            {activeProfile.name}
-          </p>
-        )}
-      </motion.div>
+      <PageHeader
+        title={t('insights.title')}
+        subtitle={activeProfile ? `${t('insights.subtitle')} · ${activeProfile.name}` : t('insights.subtitle')}
+      />
 
+      {!hasData ? (
+        <Card padding="lg">
+          <div role="status" className="flex flex-col items-center gap-2 py-10 text-center" data-testid="insights-empty">
+            <p className="text-base font-semibold text-[var(--color-text-primary)]">{t('insights.emptyTitle')}</p>
+            <p className="text-sm text-[var(--color-text-muted)] max-w-sm">{noData}</p>
+          </div>
+        </Card>
+      ) : (
+        <>
       {/* ── Global controls ───────────────────────────────────────────────── */}
       <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 8 } : false}
@@ -595,7 +609,8 @@ export function InsightsClient({
       </motion.div>
 
       {/* ── Cycle Length Trend ─────────────────────────────────────────────── */}
-      <motion.div
+      {shows('cycleLengthTrend') && (
+        <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15, duration: 0.4 }}
@@ -622,9 +637,11 @@ export function InsightsClient({
           </div>
         </Card>
       </motion.div>
+      )}
 
       {/* ── Symptom Frequency ──────────────────────────────────────────────── */}
-      <motion.div
+      {shows('symptomFrequency') && (
+        <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.22, duration: 0.4 }}
@@ -636,14 +653,17 @@ export function InsightsClient({
               data={filteredSymptomFrequency}
               noDataLabel={noData}
               countLabel={t('insights.count')}
+              categoryLabel={(c) => t(`symptoms.${c.toLowerCase()}`)}
               animate={shouldAnimate}
             />
           </div>
         </Card>
       </motion.div>
+      )}
 
       {/* ── Period Regularity ──────────────────────────────────────────────── */}
-      <motion.div
+      {shows('periodRegularity') && (
+        <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.29, duration: 0.4 }}
@@ -662,9 +682,11 @@ export function InsightsClient({
           </div>
         </Card>
       </motion.div>
+      )}
 
       {/* ── Fertile Window History ─────────────────────────────────────────── */}
-      <motion.div
+      {shows('fertileWindowHistory') && (
+        <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.36, duration: 0.4 }}
@@ -680,6 +702,18 @@ export function InsightsClient({
           </div>
         </Card>
       </motion.div>
-    </div>
+      )}
+      {grouped.missing.length > 0 && (
+        <p
+          role="note"
+          data-testid="insights-missing-note"
+          className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-3 text-sm text-[var(--color-text-muted)]"
+        >
+          {t('insights.missingNote', { charts: grouped.missing.map((k) => t(`insights.${k}`)).join(', ') })}
+        </p>
+      )}
+        </>
+      )}
+    </PageContainer>
   )
 }

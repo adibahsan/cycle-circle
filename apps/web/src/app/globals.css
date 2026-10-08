@@ -1,44 +1,69 @@
 @import "tailwindcss";
+/* Layer classes (Z_CLASS) are literal strings in the shared package; Tailwind must scan them. */
+@source "../../../../packages/shared/src/utils/popup-core.ts";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Deep Rose + Lavender — Flo Modern palette */
-  --color-primary: #E8476C;
-  --color-primary-light: #F2728E;
-  --color-primary-dark: #C93558;
-  --goal-accent: var(--color-primary);
-  --color-secondary: #9B7FD4;
-  --color-secondary-light: #B9A4E3;
-  --color-accent: #FF8C6B;
+  /* Cycle Circle — "Flo blend" palette (spec #18). Dark overrides live in .dark. */
+  /* Logo primitives (logo artwork only) */
+  --color-brand-navy: #1A232C;
+  --color-brand-gold: #C2993F;
+  --color-brand-red: #D4151E;
 
-  /* Cycle phases */
-  --color-menstrual: #E8476C;
-  --color-follicular: #9B7FD4;
-  --color-ovulation: #FF8C6B;
-  --color-luteal: #F2728E;
-  --color-fertile: #7BC5AE;
+  /* Action — primary CTA (rose pill) */
+  --color-action: #D02F58;
+  --color-on-action: #FFFFFF;
+  --color-on-accent: #FFFFFF;
 
-  /* Neutrals */
-  --color-bg-primary: #FFF8F9;
-  --color-bg-secondary: #FFF0F3;
+  --color-primary: #D02F58;
+  --color-primary-light: #FF8FA8;
+  --color-primary-dark: #A8234A;
+  --goal-accent: var(--color-goal-tracking);
+  --color-secondary: #8E5BC4;
+  --color-secondary-light: #C9A3EC;
+  --color-accent: #C2993F;            /* logo gold: Pro + decoration only, never text */
+  --color-gold-ink: #8C6A1F;          /* gold when used as text */
+  --color-coral: #FF8C66;
+  --color-error: #B4441C;             /* always paired with icon + text */
+
+  /* Goal accents (text on any of these uses --color-on-accent) */
+  --color-goal-tracking: #D02F58;
+  --color-goal-conceive: #8C6A1F;
+  --color-goal-pregnancy: #8E5BC4;
+  --color-goal-perimenopause: #B4527A;
+
+  /* Cycle phases, each with a matching on-* text token */
+  --color-menstrual: #D91F45;
+  --color-follicular: #FF8FA8;
+  --color-ovulation: #C2993F;
+  --color-fertile: #F2C46D;
+  --color-luteal: #8E5BC4;
+  --color-on-menstrual: #FFFFFF;
+  --color-on-follicular: #1A232C;
+  --color-on-ovulation: #1A232C;
+  --color-on-fertile: #1A232C;
+  --color-on-luteal: #FFFFFF;
+
+  /* Surfaces */
+  --color-bg-primary: #FFF7F8;
+  --color-bg-secondary: #FFEEF1;
   --color-bg-card: #FFFFFF;
-  --color-text-primary: #2D1F24;
-  --color-text-secondary: #6B5660;
-  --color-text-muted: #9B8A92;
-  --color-border: #F3E4E8;
+  --color-bg-peach: #FDF0E6;
+  --color-text-primary: #1A232C;
+  --color-text-secondary: #565266;
+  --color-text-muted: #6E6779;
+  --color-border: #F6DDE3;
+  --color-border-strong: #9A858D;      /* control outlines + switch off-track, >=3:1 on every surface */
+  --color-ring-offset: #FFFFFF;        /* equals --color-bg-card; applied as --tw-ring-offset-color */
+  --color-scrollbar-thumb: #F6DDE3;
 
-  /* Dark mode */
-  --color-dark-bg-primary: #1A0E12;
-  --color-dark-bg-secondary: #2D1A20;
-  --color-dark-bg-card: #3A2229;
-  --color-dark-text-primary: #FFF0F3;
-  --color-dark-text-secondary: #D4B8C0;
-  --color-dark-border: #4A2D35;
 
-  /* Fonts */
+  /* Fonts — Manrope + Noto Sans Bengali only */
   --font-display: "Manrope", sans-serif;
+  --font-heading: "Manrope", sans-serif;
   --font-bengali: "Noto Sans Bengali", sans-serif;
+  --font-bengali-heading: "Noto Sans Bengali", sans-serif;
 
   /* Radius */
   --radius-sm: 0.5rem;
@@ -56,34 +81,80 @@
 }
 
 .dark {
-  --color-bg-primary: #1A0E12;
-  --color-bg-secondary: #2D1A20;
-  --color-bg-card: #3A2229;
-  --color-text-primary: #FFF0F3;
-  --color-text-secondary: #D4B8C0;
-  --color-text-muted: #9B8A92;
-  --color-border: #4A2D35;
+  --color-bg-primary: #10151B;
+  --color-bg-secondary: #171F28;
+  --color-bg-card: #222C38;
+  --color-bg-peach: #2A2433;
+  --color-text-primary: #F7EEF0;
+  --color-text-secondary: #D6CBD0;
+  --color-text-muted: #B9B0BE;
+  --color-border: #3A4756;
+  --color-border-strong: #7A8899;
+  --color-ring-offset: #222C38;
+  --color-scrollbar-thumb: #4A5868;
+  --color-action: #FF7A99;
+  --color-on-action: #1A232C;
+  --color-on-accent: #1A232C;
+  --color-primary: #FF7A99;
+  --color-primary-light: #FFB3C4;
+  --color-primary-dark: #E85C7E;
+  --color-secondary: #C9A3EC;
+  --color-accent: #D4B26A;
+  --color-gold-ink: #E2C27A;
+  --color-coral: #FFB199;
+  --color-error: #E58A62;
+  --color-goal-tracking: #FF7A99;
+  --color-goal-conceive: #E2C27A;
+  --color-goal-pregnancy: #C9A3EC;
+  --color-goal-perimenopause: #E596B8;
+  --color-menstrual: #FF6B7F;
+  --color-on-menstrual: #1A232C;
+  --color-follicular: #FFB3C4;
+  --color-ovulation: #D4B26A;
+  --color-fertile: #F2C46D;
+  --color-luteal: #C9A3EC;
+  --color-on-luteal: #1A232C;
 }
 
 .dark .app-shell {
-  --color-bg-primary:     color-mix(in srgb, var(--goal-accent)  7%, #0E0C10);
-  --color-bg-secondary:   color-mix(in srgb, var(--goal-accent) 11%, #16131A);
-  --color-bg-card:        color-mix(in srgb, var(--goal-accent) 14%, #1D1822);
-  --color-border:         color-mix(in srgb, var(--goal-accent) 26%, #2B2533);
-  --color-text-primary:   color-mix(in srgb, var(--goal-accent)  6%, #FBF7FB);
-  --color-text-secondary: color-mix(in srgb, var(--goal-accent) 14%, #C9C2CC);
+  --color-bg-primary:     color-mix(in srgb, var(--goal-accent)  3%, #10151B);
+  --color-bg-secondary:   color-mix(in srgb, var(--goal-accent)  5%, #171F28);
+  --color-bg-card:        color-mix(in srgb, var(--goal-accent)  5%, #222C38);
+  --color-border:         color-mix(in srgb, var(--goal-accent) 12%, #3A4756);
+  --color-ring-offset:    var(--color-bg-card);
+  --color-text-primary:   #F7EEF0;
+  --color-text-secondary: #D6CBD0;
 }
+
+/* Phone shell: height of the bottom nav's content row (safe-area inset is added
+   separately by the nav and by anything that offsets from it). 0 where the nav is hidden. */
+:root { --bottom-nav-h: 3.5rem; }
+@media (min-width: 768px) { :root { --bottom-nav-h: 0px; } }
 
 @layer base {
   :root {
-    color-scheme: dark light;
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+  /* Focus-ring offset sits on the card surface in both themes (no white halo in dark). */
+  *, ::before, ::after, ::backdrop {
+    --tw-ring-offset-color: var(--color-ring-offset);
   }
   body {
-    font-family: var(--font-display);
+    font-family: var(--font-display), var(--font-bengali), sans-serif;
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, .font-heading {
+    font-family: var(--font-heading), var(--font-bengali-heading), sans-serif;
+    letter-spacing: -0.02em;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--color-primary) 22%, transparent);
   }
 }
 
@@ -96,11 +167,14 @@
     box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.06);
   }
   .dark .glass {
-    background: color-mix(in srgb, var(--goal-accent) 9%, rgba(14, 12, 16, 0.82));
+    background: color-mix(in srgb, var(--goal-accent) 3%, rgba(20, 26, 33, 0.88));
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
   .shadow-soft {
-    box-shadow: 0 8px 32px -8px color-mix(in srgb, var(--goal-accent) 10%, transparent), 0 2px 8px -2px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 10px 30px -12px color-mix(in srgb, var(--goal-accent) 22%, transparent), 0 2px 6px -2px color-mix(in srgb, var(--color-brand-navy) 6%, transparent);
+  }
+  .dark .shadow-soft {
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.6);
   }
   .shadow-glow {
     box-shadow: 0 0 40px 8px color-mix(in srgb, var(--goal-accent) 12%, transparent), 0 8px 24px -8px color-mix(in srgb, var(--goal-accent) 16%, transparent);
@@ -109,8 +183,16 @@
     background: linear-gradient(135deg, var(--goal-accent) 0%, color-mix(in srgb, var(--goal-accent) 55%, white) 100%);
   }
   .gradient-warm {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-coral) 100%);
   }
+  /* Soft blush + coral wash for hero cards and empty states */
+  .surface-wash {
+    background:
+      radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--goal-accent) 14%, transparent) 0%, transparent 60%),
+      radial-gradient(100% 90% at 100% 100%, color-mix(in srgb, var(--color-coral) 16%, transparent) 0%, transparent 55%),
+      var(--color-bg-card);
+  }
+  .surface-peach { background: var(--color-bg-peach); }
 
   /* Fluid type utilities */
   .text-fluid-sm { font-size: var(--text-fluid-sm); line-height: 1.5; }
@@ -235,7 +317,7 @@
 /* Thin modern scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -248,7 +330,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: var(--color-scrollbar-thumb);
   border-radius: 3px;
 }
 
@@ -256,10 +338,4 @@
   background: var(--color-text-muted);
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: var(--color-dark-border);
-}
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
-}

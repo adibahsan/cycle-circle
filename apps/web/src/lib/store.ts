@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import i18n from '@vesta/shared/utils/i18n'
+import { chooseTheme, restoreTheme, type Theme } from '@vesta/shared/utils/theme'
 
 interface AppStore {
   // Language
@@ -8,8 +9,10 @@ interface AppStore {
   setLanguage: (lang: 'en' | 'bn') => void
 
   // Theme
-  theme: 'light' | 'dark'
-  setTheme: (theme: 'light' | 'dark') => void
+  theme: Theme
+  setTheme: (theme: Theme) => void
+  /** True once the user picked a theme; until then the system preference applies and nothing is persisted. */
+  themeChosen: boolean
 
   // Active profile selection (UI state only)
   activeProfileId: string
@@ -19,10 +22,6 @@ interface AppStore {
   // Onboarding
   onboardingComplete: boolean
   setOnboardingComplete: (v: boolean) => void
-
-  // Tour sequencing (NOT persisted — resets to 'pending' on every reload)
-  tourState: 'pending' | 'active' | 'done'
-  setTourState: (s: 'pending' | 'active' | 'done') => void
 }
 
 export const useAppStore = create<AppStore>()(
@@ -35,7 +34,8 @@ export const useAppStore = create<AppStore>()(
       },
 
       theme: 'light',
-      setTheme: (theme) => set({ theme }),
+      setTheme: (theme) => set(chooseTheme(theme)),
+      themeChosen: false,
 
       activeProfileId: '',
       activeProfileName: '',
@@ -43,22 +43,22 @@ export const useAppStore = create<AppStore>()(
 
       onboardingComplete: false,
       setOnboardingComplete: (onboardingComplete) => set({ onboardingComplete }),
-
-      tourState: 'pending',
-      setTourState: (tourState) => set({ tourState }),
     }),
     {
       name: 'vesta-store',
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<AppStore>
+        return { ...current, ...p, ...restoreTheme(p.theme) }
+      },
       onRehydrateStorage: () => (state) => {
         if (state?.language) i18n.changeLanguage(state.language)
       },
       partialize: (state) => ({
         language: state.language,
-        theme: state.theme,
+        theme: state.themeChosen ? state.theme : undefined,
         activeProfileId: state.activeProfileId,
         activeProfileName: state.activeProfileName,
         onboardingComplete: state.onboardingComplete,
-        // tourState is intentionally excluded — it must reset to 'pending' each session
       }),
     },
   ),

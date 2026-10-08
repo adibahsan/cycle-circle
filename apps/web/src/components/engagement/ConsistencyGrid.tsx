@@ -1,5 +1,6 @@
 'use client';
 
+import { deviceDayString } from '@/lib/local-date';
 import { motion } from 'motion/react';
 import { useReducedMotion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -24,7 +25,7 @@ interface ConsistencyGridProps {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getTodayStr(): string {
-  return new Date().toISOString().slice(0, 10);
+  return deviceDayString();
 }
 
 function isFuture(dateStr: string): boolean {
@@ -132,7 +133,7 @@ export function ConsistencyGrid({ last30, onBackfill, variant = 'inline', classN
             <span key={entry.date}>{renderDot(entry, i)}</span>
           ))}
         </div>
-        <p className="text-[10px] text-[var(--color-text-muted)]">
+        <p className="text-[11px] text-[var(--color-text-muted)]">
           {t('consistency.tapToLog')}
         </p>
       </div>
@@ -153,7 +154,7 @@ export function ConsistencyGrid({ last30, onBackfill, variant = 'inline', classN
       {/* DOW headers */}
       <div className="grid grid-cols-7 gap-1 mb-0.5" aria-hidden="true">
         {['S','M','T','W','T','F','S'].map((d, i) => (
-          <span key={i} className="text-[9px] text-center font-bold text-[var(--color-text-muted)] uppercase">{d}</span>
+          <span key={i} className="text-[11px] text-center font-bold text-[var(--color-text-muted)] uppercase">{d}</span>
         ))}
       </div>
       <div
@@ -169,16 +170,16 @@ export function ConsistencyGrid({ last30, onBackfill, variant = 'inline', classN
         ))}
       </div>
       <div className="flex items-center gap-3 mt-1">
-        <span className="flex items-center gap-1.5 text-[10px] text-[var(--color-text-muted)]">
+        <span className="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--goal-accent, var(--color-primary))' }} aria-hidden="true" />
           {t('consistency.logged')}
         </span>
-        <span className="flex items-center gap-1.5 text-[10px] text-[var(--color-text-muted)]">
+        <span className="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
           <span className="w-2.5 h-2.5 rounded-full border border-[var(--color-border)]" aria-hidden="true" />
           {t('consistency.missed')}
         </span>
       </div>
-      <p className="text-[10px] text-[var(--color-text-muted)]">
+      <p className="text-[11px] text-[var(--color-text-muted)]">
         {t('consistency.tapToLog')}
       </p>
     </div>

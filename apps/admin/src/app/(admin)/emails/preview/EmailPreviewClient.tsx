@@ -33,7 +33,7 @@ export function EmailPreviewClient() {
       {/* Back link */}
       <Link
         href="/emails"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition-colors hover:text-gray-900 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
+        className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)] focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
       >
         <ChevronLeft aria-hidden="true" className="h-4 w-4" />
         Back to Email Logs
@@ -46,13 +46,13 @@ export function EmailPreviewClient() {
       />
 
       {/* Controls card */}
-      <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-gray-100">
+      <div className="rounded-lg bg-[var(--color-bg-card)] p-5 shadow-sm ring-1 ring-[var(--color-border)]">
         <div className="flex flex-wrap items-end gap-4">
           {/* Template selector */}
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="template-select"
-              className="text-xs font-medium text-gray-600"
+              className="text-xs font-medium text-[var(--color-text-secondary)]"
             >
               Template
             </label>
@@ -60,7 +60,7 @@ export function EmailPreviewClient() {
               id="template-select"
               value={template}
               onChange={(e) => setTemplate(e.target.value as TemplateKey)}
-              className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 transition-colors focus-visible:border-pink-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/30"
+              className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)] transition-colors focus-visible:border-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--color-primary)_30%,transparent)]"
             >
               {(
                 Object.entries(TEMPLATE_LABELS) as [TemplateKey, string][]
@@ -74,11 +74,11 @@ export function EmailPreviewClient() {
 
           {/* Language toggle */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-gray-600">Language</span>
+            <span className="text-xs font-medium text-[var(--color-text-secondary)]">Language</span>
             <div
               role="group"
               aria-label="Language"
-              className="flex rounded-md border border-gray-200 bg-gray-50 p-0.5"
+              className="flex rounded-md border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-0.5"
             >
               {(['en', 'bn'] as const).map((lang) => (
                 <button
@@ -87,10 +87,10 @@ export function EmailPreviewClient() {
                   onClick={() => setLanguage(lang)}
                   aria-pressed={language === lang}
                   className={[
-                    'rounded px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500',
+                    'rounded px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]',
                     language === lang
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700',
+                      ? 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] shadow-sm'
+                      : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]',
                   ].join(' ')}
                 >
                   {lang === 'en' ? 'EN' : 'BN'}
@@ -103,7 +103,7 @@ export function EmailPreviewClient() {
           {isPending && (
             <p
               aria-live="polite"
-              className="text-sm text-gray-400"
+              className="text-sm text-[var(--color-text-muted)]"
             >
               Loading preview…
             </p>
@@ -112,24 +112,24 @@ export function EmailPreviewClient() {
       </div>
 
       {/* Preview card */}
-      <div className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-100">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <div className="rounded-lg bg-[var(--color-bg-card)] p-6 shadow-sm ring-1 ring-[var(--color-border)]">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
           Preview — {TEMPLATE_LABELS[template]}
         </h2>
 
-        <div className="flex justify-center rounded-md border border-gray-200 bg-gray-50 p-4">
+        <div className="flex justify-center rounded-md border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4">
           {html ? (
             <iframe
               title={`Email preview: ${TEMPLATE_LABELS[template]}`}
               srcDoc={html}
               sandbox=""
-              className="h-[640px] w-full max-w-[600px] rounded border-0 bg-white"
+              className="h-[640px] w-full max-w-[600px] rounded border-0 bg-[var(--color-email-canvas)]"
               aria-label={`Rendered email preview for ${TEMPLATE_LABELS[template]} in ${language === 'en' ? 'English' : 'Bengali'}`}
             />
           ) : (
             <div
               aria-live="polite"
-              className="flex h-[640px] w-full max-w-[600px] items-center justify-center rounded border border-dashed border-gray-200 bg-white text-sm text-gray-400"
+              className="flex h-[640px] w-full max-w-[600px] items-center justify-center rounded border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-muted)]"
             >
               {isPending ? 'Generating preview…' : 'Select a template to preview'}
             </div>

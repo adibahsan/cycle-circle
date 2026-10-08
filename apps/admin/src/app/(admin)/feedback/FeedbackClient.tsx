@@ -78,7 +78,7 @@ function StarRating({ rating }: { rating: number | null }) {
           key={i}
           className={
             i < filled
-              ? 'text-amber-400 text-base leading-none'
+              ? 'text-[var(--color-warning)] text-base leading-none'
               : 'text-[var(--color-border)] text-base leading-none'
           }
           aria-hidden="true"
@@ -116,7 +116,7 @@ function MessageCell({ message }: { message: string }) {
             e.stopPropagation()
             setExpanded((v) => !v)
           }}
-          className="mt-0.5 text-xs text-[var(--color-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-rose-500 rounded"
+          className="mt-0.5 text-xs text-[var(--color-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] rounded"
         >
           {expanded ? 'Show less' : 'Show more'}
         </button>
@@ -338,7 +338,7 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
             loading={exporting}
             disabled={exporting}
           >
-            <Download size={15} />
+            <Download aria-hidden="true" size={15} />
             {exporting ? 'Exporting…' : 'Export CSV'}
           </Button>
         }

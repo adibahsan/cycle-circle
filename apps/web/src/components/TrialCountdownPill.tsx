@@ -291,7 +291,7 @@ export function TrialCountdownPill({ trialUser, onPhoneAdded }: TrialCountdownPi
         type="button"
         onClick={handleOpen}
         aria-label={ariaLabel}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold surface-peach text-[var(--color-text-primary)] border border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] hover:border-[var(--color-accent)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
       >
         {/* Hourglass icon — inline SVG so no extra import needed */}
         <svg
@@ -424,7 +424,7 @@ export function TrialCountdownPill({ trialUser, onPhoneAdded }: TrialCountdownPi
                         setFocusedIndex(index);
                       }}
                       onBlur={() => setFocusedIndex(null)}
-                      aria-label={`Digit ${index + 1}`}
+                      aria-label={t('auth.otpDigit', { n: index + 1 })}
                       className={[
                         'w-full aspect-square text-center text-lg font-bold rounded-xl border-2',
                         'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]',
@@ -433,7 +433,7 @@ export function TrialCountdownPill({ trialUser, onPhoneAdded }: TrialCountdownPi
                         digit
                           ? 'border-[var(--color-primary)] bg-[var(--color-bg-card)]'
                           : 'border-[var(--color-border)]',
-                        codeError ? 'border-red-400' : '',
+                        codeError ? 'border-[var(--color-error)]' : '',
                         'focus:border-[var(--color-primary)]',
                       ]
                         .filter(Boolean)
@@ -451,7 +451,7 @@ export function TrialCountdownPill({ trialUser, onPhoneAdded }: TrialCountdownPi
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="text-sm text-red-500 flex items-center gap-1"
+                    className="text-sm text-[var(--color-error)] flex items-center gap-1"
                   >
                     <span aria-hidden="true">⚠</span> {codeError}
                   </motion.p>
@@ -516,9 +516,9 @@ export function TrialCountdownPill({ trialUser, onPhoneAdded }: TrialCountdownPi
                     ? { duration: 0.15 }
                     : { type: 'spring', stiffness: 260, damping: 18 }
                 }
-                className="w-16 h-16 rounded-full bg-[var(--color-primary)] flex items-center justify-center shadow-glow"
+                className="w-16 h-16 rounded-full bg-[var(--color-action)] flex items-center justify-center shadow-glow"
               >
-                <CheckCircle2 size={32} className="text-white" aria-hidden="true" />
+                <CheckCircle2 size={32} className="text-[var(--color-on-action)]" aria-hidden="true" />
               </motion.div>
               <p className="text-sm font-semibold text-[var(--color-text-primary)] text-center">
                 {t('trial.success')}

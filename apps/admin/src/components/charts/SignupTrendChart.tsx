@@ -10,6 +10,7 @@ import {
   CartesianGrid,
 } from 'recharts'
 import { Card } from '@/components/ui/Card'
+import { CHART_VAR, useChartColors } from '@/lib/chart-palette'
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr)
@@ -37,6 +38,8 @@ function ChartTooltip({
 }
 
 export function SignupTrendChart({ data }: { data: { date: string; count: number }[] }) {
+  const toColor = useChartColors()
+  const color = toColor(CHART_VAR.primary)
   return (
     <Card padding="lg">
       <div className="mb-6 flex items-center justify-between">
@@ -56,8 +59,8 @@ export function SignupTrendChart({ data }: { data: { date: string; count: number
           <AreaChart data={data} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
             <defs>
               <linearGradient id="signupGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#E8476C" stopOpacity={0.28} />
-                <stop offset="95%" stopColor="#E8476C" stopOpacity={0} />
+                <stop offset="5%" stopColor={color} stopOpacity={0.28} />
+                <stop offset="95%" stopColor={color} stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid
@@ -92,11 +95,11 @@ export function SignupTrendChart({ data }: { data: { date: string; count: number
             <Area
               type="monotone"
               dataKey="count"
-              stroke="#E8476C"
+              stroke={color}
               strokeWidth={2}
               fill="url(#signupGradient)"
               dot={false}
-              activeDot={{ r: 5, fill: '#E8476C', strokeWidth: 2, stroke: '#fff' }}
+              activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: toColor(CHART_VAR.surface) }}
             />
           </AreaChart>
         </ResponsiveContainer>

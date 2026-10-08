@@ -3,10 +3,10 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { parseISO } from 'date-fns'
 import Link from 'next/link'
-import { CalendarDays, Activity, ChevronRight, Droplets, Baby } from 'lucide-react'
+import { CalendarDays, Activity, Droplets, Baby } from 'lucide-react'
 
 import { useAppStore } from '@/lib/store'
 import '@vesta/shared/utils/i18n'
@@ -23,15 +23,21 @@ import type { FlowIntensity, ProfileRelation } from '@vesta/shared/types'
 import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { PeriodLogModal, FLOW_COLORS } from '@/components/PeriodLogModal'
+import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
 import { setActiveProfileCookie } from '@/app/actions/profile-actions'
-import type { ProfileCompletionStatus } from '@/components/ProfileCompletionTracker'
+import type { ProfileCompletionStatus } from '@/lib/profile-completion'
+import { CompletionRow } from '@/components/prompts/CompletionRow'
+import { formatShortDate } from '@/lib/format-date'
+import { checkInCandidateState, daysSinceLastLog as daysSinceLastLogFor } from '@/lib/prompt-rules'
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
-import { CelebrationModal } from '@/components/modals/CelebrationModal'
+import { useToast } from '@/components/ui/Toast'
+import { useAutoPrompt, useAutoPromptCandidate } from '@/components/prompts/AutoPromptProvider'
 import { TodayCheckInStrip } from '@/components/engagement/TodayCheckInStrip'
 import { ProgressToUnlockMeter } from '@/components/engagement/ProgressToUnlockMeter'
 import dynamic from 'next/dynamic'
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 const TodayCheckInModal = dynamic(
   () => import('@/components/engagement/TodayCheckInModal').then((m) => m.TodayCheckInModal),
@@ -108,7 +114,8 @@ interface Props {
   completion: ProfileCompletionStatus
   lastSymptomLogDate: Date | string | null
   goal: string | null
-  engagement: EngagementSummary | null
+  /** undefined = not loaded yet, null = settled without data. */
+  engagement?: EngagementSummary | null
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -165,23 +172,13 @@ function CycleRing({
         width={SIZE}
         height={SIZE}
         className="absolute rotate-[-90deg]"
-        style={{ filter: 'drop-shadow(0 4px 24px rgba(232,71,108,0.12))' }}
       >
-        <defs>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
         <circle
           cx={SIZE / 2}
           cy={SIZE / 2}
           r={RADIUS}
           fill="none"
-          stroke="var(--color-border)"
+          stroke="color-mix(in srgb, var(--goal-accent) 14%, transparent)"
           strokeWidth={STROKE}
         />
         <motion.circle
@@ -207,7 +204,6 @@ function CycleRing({
                 }
               : { duration: 1.2, ease: 'easeOut' }
           }
-          filter="url(#glow)"
         />
       </svg>
 
@@ -244,7 +240,8 @@ function CycleRing({
 export function DashboardClient({ profiles, user: _user, activeProfileId, dashboardData, completion, lastSymptomLogDate, goal, engagement }: Props) {
   const { t } = useTranslation()
   const router = useRouter()
-  const { setActiveProfile, language, tourState } = useAppStore()
+  const { setActiveProfile, language } = useAppStore()
+  const prompt = useAutoPrompt()
   const prefersReducedMotion = useReducedMotion()
 
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
@@ -269,35 +266,31 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   // ── Check-in modal ───────────────────────────────────────────────────────
   const [checkInOpen, setCheckInOpen] = useState(false)
 
-  // Auto-open once per session per day when not yet logged.
-  // Guard: wait until the onboarding tour has resolved so the two don't overlap.
-  useEffect(() => {
-    if (tourState !== 'done') return
-    if (!engagement || engagement.loggedToday) return
-    const todayKey = `vesta_checkin_shown_${activeProfileId}_${new Date().toISOString().slice(0, 10)}`
-    if (typeof window !== 'undefined' && !sessionStorage.getItem(todayKey)) {
-      setCheckInOpen(true)
-      sessionStorage.setItem(todayKey, '1')
-    }
-  }, [activeProfileId, engagement, tourState])
+  // The arbiter decides whether the check-in auto-opens (once per local day per profile).
+  useAutoPromptCandidate('check-in', checkInCandidateState(engagement), { scope: activeProfileId })
+  const trialLocked = prompt.locked
+  const closeAutoCheckIn = prompt.close
+  useEffect(() => () => closeAutoCheckIn('check-in'), [closeAutoCheckIn])
+  const checkInIsOpen = !prompt.locked && (checkInOpen || prompt.isActive('check-in'))
 
   // ── Part C: Quick symptom modal ──────────────────────────────────────────
   const [showQuickSymptom, setShowQuickSymptom] = useState(false)
   const openQuickSymptom = useCallback(() => setShowQuickSymptom(true), [])
 
-  // ── Part D: Celebration modal ────────────────────────────────────────────
-  const [celebration, setCelebration] = useState<{ kind: 'period' | 'symptom'; count?: number } | null>(null)
+  // ── Part D: Celebration toast (shown after the source pop-up closes) ──────
+  const toast = useToast()
 
   const handleSaved = useCallback(() => {
     // Trigger a server re-render to pick up updated data
     router.refresh()
-    // Part D: fire celebration after a period log
-    setCelebration({ kind: 'period' })
-  }, [router])
+    toast.celebrate('period')
+  }, [router, toast])
 
   // ── App-wide alert integration: open period-log modal on request ──────────
   useEffect(() => {
     if (typeof window === 'undefined') return
+    // Nothing opens over the trial lock.
+    if (trialLocked) return
     if (sessionStorage.getItem('vesta_open_period_log') === '1') {
       sessionStorage.removeItem('vesta_open_period_log')
       openNewLog()
@@ -305,17 +298,20 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
     const handler = () => openNewLog()
     window.addEventListener('vesta:open-period-log', handler)
     return () => window.removeEventListener('vesta:open-period-log', handler)
-  }, [openNewLog])
+  }, [openNewLog, trialLocked])
 
   // Guard: no profile found
   if (!profile) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-[var(--color-text-muted)]">{t('dashboard.noProfileFound')}</p>
-        <Link href="/profiles">
-          <Button variant="primary">{t('dashboard.setUpProfile')}</Button>
-        </Link>
-      </div>
+      <PageContainer width="wide">
+        <PageHeader title={t('nav.dashboard')} />
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <p className="text-[var(--color-text-muted)]">{t('dashboard.noProfileFound')}</p>
+          <Link href="/profiles">
+            <Button variant="primary">{t('dashboard.setUpProfile')}</Button>
+          </Link>
+        </div>
+      </PageContainer>
     )
   }
 
@@ -397,18 +393,9 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
 
   const hasAnyLogs = !!lastPeriodDate || !!lastSymptomDate
 
-  let daysSinceLastLog: number | null = null
-  if (lastPeriodDate || lastSymptomDate) {
-    const candidates: Date[] = []
-    if (lastPeriodDate) candidates.push(lastPeriodDate)
-    if (lastSymptomDate) candidates.push(lastSymptomDate)
-    const mostRecent = candidates.reduce((a, b) => (a > b ? a : b))
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const then = new Date(mostRecent)
-    then.setHours(0, 0, 0, 0)
-    daysSinceLastLog = Math.floor((today.getTime() - then.getTime()) / 86_400_000)
-  }
+  const daysSinceLastLog = daysSinceLastLogFor(
+    [lastPeriodDate, lastSymptomDate].filter((d): d is Date => d !== null),
+  )
 
   // Confidence tier label (only relevant when a prediction exists)
   const tierLabel = prediction?.tier === 'arima' ? t('dashboard.tierArima') : t('dashboard.tierAverage')
@@ -432,10 +419,12 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         />
       </div>
 
-      <div
-        className="flex flex-col gap-5 py-3"
+      <PageContainer
+        width="wide"
         style={{ ['--goal-accent' as string]: goalAccentVar(goal) } as React.CSSProperties}
       >
+        <PageHeader title={t('nav.dashboard')} subtitle={profile.name} />
+        <CompletionRow status={completion} />
         {pregnancy ? (
           <>
             {/* ── Pregnancy: Coming Soon Panel ───────────────────── */}
@@ -519,9 +508,6 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               daysSinceLastLog={daysSinceLastLog}
               goal={goal}
               onLogPeriod={openNewLog}
-              onLogSymptoms={() => setCheckInOpen(true)}
-              streak={engagement?.streak}
-              streakAtRisk={engagement?.streakAtRisk}
               phase={dashboardData?.currentPhase ?? null}
             />
 
@@ -531,7 +517,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, type: 'spring', stiffness: 100, damping: 20 }}
             >
-              <Card padding="md">
+              <Card padding="md" className="!border-0 shadow-soft">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-1.5">
                     <Droplets size={14} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
@@ -542,14 +528,14 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                   {lastPeriodDisplay ? (
                     <>
                       <p className="text-sm font-bold text-[var(--color-text-primary)]">
-                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(lastPeriodDisplay.startDate))}
+                        {formatShortDate(language, parseISO(lastPeriodDisplay.startDate))}
                       </p>
                       <p className="text-xs text-[var(--color-text-muted)]">
                         {t('dashboard.durationDays', { count: lastPeriodDisplay.duration })}
                       </p>
                       <div
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-white self-start"
-                        style={{ backgroundColor: FLOW_COLORS[lastPeriodDisplay.flowIntensity] }}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold self-start"
+                        style={{ backgroundColor: FLOW_COLORS[lastPeriodDisplay.flowIntensity], color: FLOW_TEXT[lastPeriodDisplay.flowIntensity] }}
                       >
                         🩸 {t(`dashboard.flow${capitalize(lastPeriodDisplay.flowIntensity)}`)}
                       </div>
@@ -567,7 +553,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, type: 'spring', stiffness: 100, damping: 20 }}
             >
-              <Card padding="md">
+              <Card padding="md" className="!border-0 shadow-soft">
                 <div className="flex flex-col gap-2.5">
                   <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                     {t('dashboard.quickActions')}
@@ -593,7 +579,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="flex flex-col items-center md:flex-row md:items-start md:gap-8 pt-4 pb-2"
+              className="surface-wash rounded-3xl flex flex-col items-center lg:flex-row lg:items-start lg:gap-8 p-5 md:p-6"
             >
               <CycleRing
                 cycleDay={cycleDay}
@@ -605,7 +591,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               />
 
               {/* Right column: check-in strip + compact phase/day */}
-              <div className="mt-4 md:mt-0 w-full md:flex-1 flex flex-col gap-3">
+              <div className="mt-4 lg:mt-0 w-full lg:flex-1 lg:self-center grid gap-4 xl:grid-cols-2 xl:items-center">
                 {engagement && (
                   <TodayCheckInStrip
                     variant="hero"
@@ -615,22 +601,35 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     onOpenCheckIn={() => setCheckInOpen(true)}
                   />
                 )}
-                {/* Compact phase/day line, or prominent late button */}
+                {/* Phase panel (or prominent late button) fills the right half */}
                 {isPeriodLate ? (
                   <button
                     type="button"
                     onClick={openNewLog}
-                    className="self-start flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-sm font-semibold shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-menstrual)] cursor-pointer"
-                    style={{ backgroundColor: 'var(--color-menstrual)' }}
-                    aria-label={t('dashboard.periodLateOpenPrompt', { defaultValue: 'Period late — tap for support' })}
+                    className="self-start flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-menstrual)] cursor-pointer"
+                    style={{ backgroundColor: 'var(--color-menstrual)', color: 'var(--color-on-menstrual)' }}
+                    aria-label={t('dashboard.periodLateOpenPrompt')}
                   >
                     <span aria-hidden="true">🩸</span>
                     <span>{t('dashboard.periodLate')} · {t('dashboard.daysOverdue', { count: daysLate })}</span>
                   </button>
                 ) : (
-                  <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                    <span aria-hidden="true" className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: phaseColor }} />
-                    <span><span aria-hidden="true">{phaseEmoji}</span> {phaseLabel} · {t('dashboard.dayOf', { day: cycleDay, total: profile.cycleLength })}</span>
+                  <div
+                    data-testid="hero-phase-panel"
+                    className="rounded-2xl p-4 flex flex-col gap-2 bg-[var(--color-bg-secondary)]"
+                  >
+                    <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                      <span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: phaseColor }} />
+                      <span>{t('dashboard.dayOf', { day: cycleDay, total: profile.cycleLength })}</span>
+                    </div>
+                    <p className="text-2xl font-bold text-[var(--color-text-primary)]">
+                      <span aria-hidden="true">{phaseEmoji}</span> {phaseLabel}
+                    </p>
+                    {daysUntilNext != null && (
+                      <p className="text-sm text-[var(--color-text-secondary)] tabular-nums">
+                        {t('dashboard.nextPeriodCard')} · <span className="font-semibold text-[var(--color-text-primary)]">{Math.abs(daysUntilNext)}</span> {t('dashboard.daysAway', { count: Math.abs(daysUntilNext) })}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -643,14 +642,11 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               daysSinceLastLog={daysSinceLastLog}
               goal={goal}
               onLogPeriod={openNewLog}
-              onLogSymptoms={() => setCheckInOpen(true)}
-              streak={engagement?.streak}
-              streakAtRisk={engagement?.streakAtRisk}
               phase={dashboardData?.currentPhase ?? null}
             />
 
             {/* ── Cards Grid ─────────────────────────────────────────── */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
 
               {/* Countdown Card */}
               <motion.div
@@ -658,7 +654,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}
               >
-                <Card padding="md" className="h-full">
+                <Card padding="md" className="h-full !border-0 shadow-soft">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-1.5">
                       <CalendarDays
@@ -695,7 +691,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
 
                     {prediction && (
                       <p className="text-xs text-[var(--color-text-muted)]">
-                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(prediction.nextPeriodStart))}
+                        {formatShortDate(language, parseISO(prediction.nextPeriodStart))}
                       </p>
                     )}
                   </div>
@@ -708,7 +704,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.18, type: 'spring', stiffness: 100, damping: 20 }}
               >
-                <Card padding="md" className="h-full">
+                <Card padding="md" className="h-full !border-0 shadow-soft">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-1.5">
                       <Droplets size={14} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
@@ -719,14 +715,14 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     {lastPeriodDisplay ? (
                       <>
                         <p className="text-sm font-bold text-[var(--color-text-primary)]">
-                          {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(lastPeriodDisplay.startDate))}
+                          {formatShortDate(language, parseISO(lastPeriodDisplay.startDate))}
                         </p>
                         <p className="text-xs text-[var(--color-text-muted)]">
                           {t('dashboard.durationDays', { count: lastPeriodDisplay.duration })}
                         </p>
                         <div
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-white self-start"
-                          style={{ backgroundColor: FLOW_COLORS[lastPeriodDisplay.flowIntensity] }}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold self-start"
+                          style={{ backgroundColor: FLOW_COLORS[lastPeriodDisplay.flowIntensity], color: FLOW_TEXT[lastPeriodDisplay.flowIntensity] }}
                         >
                           🩸 {t(`dashboard.flow${capitalize(lastPeriodDisplay.flowIntensity)}`)}
                         </div>
@@ -744,7 +740,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.26, type: 'spring', stiffness: 100, damping: 20 }}
               >
-                <Card padding="md" className="h-full">
+                <Card padding="md" className="h-full !border-0 shadow-soft">
                   <div className="flex flex-col gap-2">
                     <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                       {t('dashboard.confidence')}
@@ -773,7 +769,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     </div>
 
                     <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] self-start">
-                      <span className="text-[10px] font-semibold" style={{ color: 'var(--goal-accent)' }}>
+                      <span className="text-[11px] font-semibold" style={{ color: 'var(--goal-accent)' }}>
                         {tierLabel}
                       </span>
                     </div>
@@ -787,7 +783,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.34, type: 'spring', stiffness: 100, damping: 20 }}
               >
-                <Card padding="md" className="h-full">
+                <Card padding="md" className="h-full !border-0 shadow-soft">
                   <div className="flex flex-col gap-2.5 h-full">
                     <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                       {t('dashboard.quickActions')}
@@ -802,19 +798,16 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     >
                       🩸 {t('dashboard.logPeriod')}
                     </Button>
-                    <button
-                      type="button"
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      fullWidth
                       onClick={openQuickSymptom}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--goal-accent)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:outline-none"
+                      className="text-xs gap-1.5 whitespace-nowrap px-2"
                     >
-                      <div className="flex items-center gap-1.5">
-                        <Activity size={12} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
-                        <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
-                          {t('dashboard.logSymptoms')}
-                        </span>
-                      </div>
-                      <ChevronRight size={12} className="text-[var(--color-text-muted)]" aria-hidden="true" />
-                    </button>
+                      <Activity size={12} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
+                      {t('dashboard.logSymptoms')}
+                    </Button>
                   </div>
                 </Card>
               </motion.div>
@@ -832,13 +825,13 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             )}
 
             {/* ── Cycle Phase Overview + Predicted Windows ─────────── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.45, duration: 0.45 }}
               >
-                <Card padding="md" className="h-full">
+                <Card padding="md" className="h-full !border-0 shadow-soft">
                   <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
                     {t('dashboard.cycleOverview')}
                   </h3>
@@ -852,28 +845,23 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                       ] as const
                     ).map(({ ph, labelKey, days }) => {
                       const isActive = ph === phase
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      const color = getPhaseColor(ph as any)
+                      const color = getPhaseColor(ph)
                       return (
                         <div
                           key={ph}
-                          className={`flex-1 rounded-lg px-1 py-2 md:py-3 flex flex-col items-center gap-1 transition-colors ${
-                            isActive ? 'ring-2' : ''
-                          }`}
+                          className="flex-1 rounded-lg px-1 py-2 md:py-3 flex flex-col items-center gap-1 transition-colors"
                           style={{
-                            backgroundColor: `${color}20`,
+                            backgroundColor: `color-mix(in srgb, ${color} 13%, transparent)`,
                             outline: isActive ? `2px solid ${color}` : 'none',
                           }}
                         >
                           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                           <span className="text-base md:text-lg">{getPhaseEmoji(ph as any)}</span>
-                          <span
-                            className="text-[11px] md:text-xs font-bold text-center leading-tight"
-                            style={{ color }}
-                          >
+                          <span className="text-[11px] md:text-xs font-bold text-center leading-tight text-[var(--color-text-primary)] inline-flex items-center gap-1">
+                            <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                             {t(labelKey)}
                           </span>
-                          <span className="text-[11px] md:text-xs text-[var(--color-text-muted)]">{days}d</span>
+                          <span className="text-[11px] md:text-xs text-[var(--color-text-secondary)] tabular-nums">{t('common.daysShort', { count: days })}</span>
                         </div>
                       )
                     })}
@@ -887,7 +875,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.52, duration: 0.45 }}
                 >
-                  <Card padding="md" className="h-full">
+                  <Card padding="md" className="h-full !border-0 shadow-soft">
                     <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
                       {t('dashboard.predictedWindows')}
                     </h3>
@@ -898,9 +886,9 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                           <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('dashboard.fertileWindow')}</span>
                         </div>
                         <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                          {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(prediction.fertileStart))}
+                          {formatShortDate(language, parseISO(prediction.fertileStart))}
                           {' – '}
-                          {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(prediction.fertileEnd))}
+                          {formatShortDate(language, parseISO(prediction.fertileEnd))}
                         </span>
                       </div>
                       <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[var(--color-bg-secondary)]">
@@ -909,7 +897,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                           <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('dashboard.ovulationDay')}</span>
                         </div>
                         <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                          {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(prediction.ovulationDay))}
+                          {formatShortDate(language, parseISO(prediction.ovulationDay))}
                         </span>
                       </div>
                     </div>
@@ -919,21 +907,17 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             </div>
           </>
         )}
-      </div>
+      </PageContainer>
 
       {/* ── Period Log Modal ──────────────────────────────────── */}
-      <AnimatePresence>
-        {showModal && (
-          <PeriodLogModal
-            key="log-modal"
-            profileId={profile.id}
-            existingLogId={editLogId}
-            initialFlow="medium"
-            onClose={closeModal}
-            onSaved={handleSaved}
-          />
-        )}
-      </AnimatePresence>
+      <PeriodLogModal
+        open={showModal}
+        profileId={profile.id}
+        existingLogId={editLogId}
+        initialFlow="medium"
+        onClose={closeModal}
+        onSaved={handleSaved}
+      />
 
       {/* ── Part C: Quick Symptom Modal ───────────────────────── */}
       <QuickSymptomModal
@@ -943,24 +927,19 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         goal={goal}
         onSaved={(count) => {
           setShowQuickSymptom(false)
-          setCelebration({ kind: 'symptom', count })
+          if (count > 0) toast.celebrate('symptom', count)
         }}
-      />
-
-      {/* ── Part D: Celebration Modal ─────────────────────────── */}
-      <CelebrationModal
-        open={celebration != null}
-        onClose={() => setCelebration(null)}
-        goal={goal}
-        kind={celebration?.kind ?? 'period'}
-        count={celebration?.count}
       />
 
       {/* ── Check-In Modal ───────────────────────────────────── */}
       {engagement && (
         <TodayCheckInModal
-          open={checkInOpen}
-          onClose={() => setCheckInOpen(false)}
+          open={checkInIsOpen}
+          layer={!checkInOpen && prompt.isActive('check-in') ? 'prompt' : 'popup'}
+          onClose={() => {
+            setCheckInOpen(false)
+            prompt.close('check-in')
+          }}
           profileId={activeProfileId}
           goal={goal}
           engagement={engagement}

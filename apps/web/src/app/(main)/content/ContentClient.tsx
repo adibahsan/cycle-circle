@@ -5,9 +5,22 @@ import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { BookOpen, ChevronRight, Info, Loader2 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { getPhaseColor, getPhaseEmoji } from '@vesta/shared/utils/cycle-utils'
+import { getPhaseColor, getPhaseEmoji, parseCyclePhase } from '@vesta/shared/utils/cycle-utils'
+
+/** Phase accent colour for a phase name (article tag / tab id); neutral accent when unknown. */
+function phaseColorFor(name: string): string {
+  const phase = parseCyclePhase(name)
+  return phase ? getPhaseColor(phase) : 'var(--goal-accent)'
+}
+
+function phaseEmojiFor(name: string): string {
+  const phase = parseCyclePhase(name)
+  return phase ? getPhaseEmoji(phase) : ''
+}
 import '@vesta/shared/utils/i18n'
 import { getArticleBody } from '@/app/actions/content-actions'
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 type FilterTab = 'all' | 'MENSTRUAL' | 'FOLLICULAR' | 'OVULATION' | 'LUTEAL'
 
@@ -128,7 +141,8 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
 
   if (selectedArticle) {
     return (
-      <div className="py-4">
+      <PageContainer>
+        <PageHeader title={getTitle(selectedArticle)} />
         <button
           onClick={() => setSelectedArticle(null)}
           className="flex items-center gap-1 text-sm text-[var(--goal-accent)] font-medium mb-4 hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
@@ -138,24 +152,20 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
 
         <article className="glass rounded-2xl p-6">
           {selectedArticle.category && (
-            <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[var(--goal-accent)]/10 text-[var(--goal-accent)] mb-3">
+            <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)] mb-3">
               {selectedArticle.category.name}
             </span>
           )}
-
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">
-            {getTitle(selectedArticle)}
-          </h1>
 
           {selectedArticle.cyclePhases.length > 0 && (
             <div className="flex gap-1.5 mb-4">
               {selectedArticle.cyclePhases.map(phase => (
                 <span
                   key={phase}
-                  className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
-                  style={{ backgroundColor: getPhaseColor(phase.toLowerCase() as any) }}
+                  className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                  style={{ backgroundColor: phaseColorFor(phase), color: `var(--color-on-${phase.toLowerCase()})` }}
                 >
-                  {getPhaseEmoji(phase.toLowerCase() as any)} {phase}
+                  {phaseEmojiFor(phase)} {phase}
                 </span>
               ))}
             </div>
@@ -203,20 +213,13 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
             />
           )}
         </article>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="py-4">
-      <div className="mb-5">
-        <h2 className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)]">
-          {t('content.title')}
-        </h2>
-        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-          {t('content.subtitle')}
-        </p>
-      </div>
+    <PageContainer>
+      <PageHeader title={t('content.title')} subtitle={t('content.subtitle')} />
 
       {/* Phase filter tabs */}
       <div className="mb-5 -mx-4 px-4">
@@ -224,7 +227,8 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
           {PHASE_TABS.map(tab => {
             const isActive = currentFilter === tab.id
             const isCurrentPhaseTab = tab.id !== 'all' && tab.id === currentPhase
-            const accent = tab.id === 'all' ? 'var(--goal-accent)' : getPhaseColor(tab.id.toLowerCase() as any)
+            const accent = tab.id === 'all' ? 'var(--goal-accent)' : phaseColorFor(tab.id)
+            const onAccent = tab.id === 'all' ? 'var(--color-on-accent)' : `var(--color-on-${tab.id.toLowerCase()})`
             return (
               <button
                 key={tab.id}
@@ -232,7 +236,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                 className="flex-none flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors duration-200 active:scale-95 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                 style={
                   isActive
-                    ? { backgroundColor: accent, borderColor: accent, color: '#fff' }
+                    ? { backgroundColor: accent, borderColor: accent, color: onAccent }
                     : {
                         backgroundColor: 'var(--color-bg-card)',
                         borderColor: 'var(--color-border)',
@@ -244,8 +248,8 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                 {isCurrentPhaseTab && (
                   <span
                     className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
-                    style={{ backgroundColor: isActive ? '#fff' : accent }}
-                    aria-label="your current phase"
+                    style={{ backgroundColor: isActive ? onAccent : accent }}
+                    aria-label={t('content.currentPhase')}
                   />
                 )}
                 <span aria-hidden="true">{tab.emoji}</span>
@@ -299,13 +303,13 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
                       {article.category && (
-                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[var(--goal-accent)]/10 text-[var(--goal-accent)]">
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)]">
                           {article.category.name}
                         </span>
                       )}
                       {/* "For you" badge when surfacing */}
                       {isForCurrentPhase && (
-                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold text-[var(--color-on-accent)]"
                           style={{ backgroundColor: 'var(--goal-accent)' }}
                         >
                           {t('content.forYou')}
@@ -313,7 +317,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                       )}
                       {/* EN locale chip */}
                       {showEnChip && (
-                        <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] border border-[var(--color-border)]">
+                        <span className="inline-block px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] border border-[var(--color-border)]">
                           EN
                         </span>
                       )}
@@ -331,13 +335,13 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                         {article.cyclePhases.map(phase => (
                           <span
                             key={phase}
-                            className="px-1.5 py-0.5 rounded text-[9px] font-semibold"
+                            className="px-1.5 py-0.5 rounded text-[11px] font-semibold"
                             style={{
-                              backgroundColor: `${getPhaseColor(phase.toLowerCase() as any)}20`,
-                              color: getPhaseColor(phase.toLowerCase() as any),
+                              backgroundColor: `color-mix(in srgb, ${phaseColorFor(phase)} 13%, transparent)`,
+                              color: phaseColorFor(phase),
                             }}
                           >
-                            {getPhaseEmoji(phase.toLowerCase() as any)} {phase}
+                            {phaseEmojiFor(phase)} {phase}
                           </span>
                         ))}
                       </div>
@@ -354,6 +358,6 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
           })}
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

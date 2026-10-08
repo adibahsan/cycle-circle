@@ -1,13 +1,14 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { LANDING_CONTAINER, LANDING_SECTION } from './landing-layout';
 import { RevealOnScroll } from '@/components/motion/RevealOnScroll';
 
 const PHASES = [
-  { labelKey: 'dashboard.menstrual', colorVar: '--color-menstrual', fallback: '#E8476C', delay: 0 },
-  { labelKey: 'dashboard.follicular', colorVar: '--color-follicular', fallback: '#9B7FD4', delay: 0.15 },
-  { labelKey: 'dashboard.ovulation', colorVar: '--color-ovulation', fallback: '#FF8C6B', delay: 0.3 },
-  { labelKey: 'dashboard.luteal', colorVar: '--color-luteal', fallback: '#9B7FD4', delay: 0.45 },
+  { labelKey: 'dashboard.menstrual', colorVar: '--color-menstrual', delay: 0 },
+  { labelKey: 'dashboard.follicular', colorVar: '--color-follicular', delay: 0.15 },
+  { labelKey: 'dashboard.ovulation', colorVar: '--color-ovulation', delay: 0.3 },
+  { labelKey: 'dashboard.luteal', colorVar: '--color-luteal', delay: 0.45 },
 ] as const;
 
 export function PhaseShowcaseSection() {
@@ -15,10 +16,10 @@ export function PhaseShowcaseSection() {
 
   return (
     <section
-      className="relative py-16 px-4"
+      className={LANDING_SECTION}
       aria-labelledby="phases-heading"
     >
-      <div className="max-w-3xl mx-auto">
+      <div className={LANDING_CONTAINER}>
         <RevealOnScroll className="text-center mb-10">
           <h2
             id="phases-heading"
@@ -29,15 +30,15 @@ export function PhaseShowcaseSection() {
         </RevealOnScroll>
 
         <div className="flex flex-wrap items-center justify-center gap-8">
-          {PHASES.map(({ labelKey, colorVar, fallback, delay }) => (
-            <RevealOnScroll key={labelKey} delay={delay}>
+          {PHASES.map(({ labelKey, colorVar, delay }) => (
+            <RevealOnScroll key={labelKey}>
               <div className="flex flex-col items-center gap-3">
                 {/* Decorative phase circle */}
                 <div
                   aria-hidden="true"
                   className="animate-breathe w-16 h-16 rounded-full shadow-soft"
                   style={{
-                    background: `radial-gradient(circle at 35% 35%, var(${colorVar}, ${fallback}), var(${colorVar}, ${fallback}))`,
+                    background: `radial-gradient(circle at 35% 35%, var(${colorVar}), color-mix(in srgb, var(${colorVar}) 80%, var(--color-bg-primary)))`,
                     opacity: 0.85,
                     animationDelay: `${delay}s`,
                   }}

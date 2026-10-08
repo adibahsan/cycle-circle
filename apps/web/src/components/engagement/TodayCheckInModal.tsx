@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useId } from 'react';
+import { useState, useCallback, useEffect, useId, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useReducedMotion } from 'motion/react';
@@ -16,7 +16,9 @@ import {
 } from '@/app/(main)/symptoms/SymptomsClient';
 import { saveSymptoms, markAllGoodToday } from '@/app/actions/tracking-actions';
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal';
-import { CelebrationModal } from '@/components/modals/CelebrationModal';
+import { useToast } from '@/components/ui/Toast';
+import { deviceDayString } from '@/lib/local-date';
+import type { PopupLayer } from '@vesta/shared/utils/popup-core';
 import '@vesta/shared/utils/i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -42,7 +44,12 @@ interface TodayCheckInModalProps {
   engagement: EngagementSummary;
   cycleDay?: number | null;
   phase?: string | null;
+  /** 'prompt' when the arbiter opened it, 'popup' when the user did. */
+  layer?: PopupLayer;
 }
+
+/** Let the check-in finish its exit animation before the next pop-up opens (never two at once). */
+const HANDOFF_MS = 260;
 
 // ── Quick chip IDs ────────────────────────────────────────────────────────────
 
@@ -80,6 +87,7 @@ export function TodayCheckInModal({
   engagement,
   cycleDay,
   phase,
+  layer = 'popup',
 }: TodayCheckInModalProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -92,10 +100,24 @@ export function TodayCheckInModal({
 
   const [localSelected, setLocalSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
-  const [showQuick, setShowQuick] = useState(false);
-  const [backfillDate, setBackfillDate] = useState<string | null>(null);
-  const [celebration, setCelebration] = useState<{ kind: 'streak' | 'milestone' | 'symptom'; count?: number } | null>(null);
-  const [celebrationOpen, setCelebrationOpen] = useState(false);
+  const toast = useToast();
+  // Hand-over to the full symptom list: check-in hides first, then quick symptom opens
+  // (and the reverse on close), so the two never overlap.
+  const [handoff, setHandoff] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
+  const handoffTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (handoffTimer.current) clearTimeout(handoffTimer.current); }, []);
+
+  function openQuick() {
+    setHandoff(true);
+    if (handoffTimer.current) clearTimeout(handoffTimer.current);
+    handoffTimer.current = setTimeout(() => setQuickOpen(true), HANDOFF_MS);
+  }
+  function closeQuick() {
+    setQuickOpen(false);
+    if (handoffTimer.current) clearTimeout(handoffTimer.current);
+    handoffTimer.current = setTimeout(() => setHandoff(false), HANDOFF_MS);
+  }
 
   const quickSymptoms = SYMPTOMS_DATA.filter((s) => QUICK_CHIP_IDS.includes(s.id));
 
@@ -113,8 +135,7 @@ export function TodayCheckInModal({
   }, []);
 
   function fireCelebration(kind: 'streak' | 'milestone', count: number) {
-    setCelebration({ kind, count });
-    setCelebrationOpen(true);
+    toast.celebrate(kind, count);
   }
 
   async function handleSave() {
@@ -130,7 +151,7 @@ export function TodayCheckInModal({
       if (addedPayload.length) {
         await saveSymptoms({
           profileId,
-          date: new Date().toISOString().slice(0, 10),
+          date: deviceDayString(),
           added: addedPayload,
           removed: [],
         });
@@ -173,22 +194,16 @@ export function TodayCheckInModal({
     }
   }
 
-  // Vignette backdrop: darker at edges, slightly transparent center — focuses on panel
-  const vignetteStyle: React.CSSProperties = {
-    background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.40) 0%, rgba(0,0,0,0.82) 100%)',
-  };
-
   return (
     <>
       <Modal
-        open={open}
+        open={open && !handoff}
         onClose={onClose}
+        layer={layer}
         titleId={titleId}
         accentVar="var(--goal-accent, var(--color-primary))"
         closeOnBackdrop={true}
         hideClose={false}
-        backdropClassName="backdrop-blur-sm"
-        backdropStyle={vignetteStyle}
         panelClassName="max-w-sm"
       >
         <div className="px-5 pt-4 pb-6 flex flex-col gap-4">
@@ -207,7 +222,7 @@ export function TodayCheckInModal({
               {t('checkIn.subtitle')}
             </p>
             {cycleDay && phase && (
-              <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">
+              <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
                 {t('dashboard.day')} {cycleDay} · {phase}
               </p>
             )}
@@ -260,7 +275,7 @@ export function TodayCheckInModal({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setShowQuick(true)}
+              onClick={openQuick}
               aria-label={t('checkIn.more')}
               className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-xs font-semibold text-[var(--color-text-secondary)] transition-colors hover:border-[var(--goal-accent,var(--color-primary))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent,var(--color-primary))]/40"
             >
@@ -275,7 +290,7 @@ export function TodayCheckInModal({
               whileTap={prm ? undefined : { scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               aria-label={t('checkIn.allGood')}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold text-white transition-opacity disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold text-[var(--color-on-accent)] transition-opacity disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               style={{
                 background: 'linear-gradient(135deg, var(--goal-accent, var(--color-primary)) 0%, color-mix(in srgb, var(--goal-accent, var(--color-primary)) 70%, var(--color-secondary)) 100%)',
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -284,7 +299,7 @@ export function TodayCheckInModal({
             >
               {saving ? (
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="animate-spin">
-                  <circle cx="7" cy="7" r="5" stroke="white" strokeWidth="2" strokeDasharray="24" strokeDashoffset="8" strokeLinecap="round" />
+                  <circle cx="7" cy="7" r="5" stroke="var(--color-on-accent)" strokeWidth="2" strokeDasharray="24" strokeDashoffset="8" strokeLinecap="round" />
                 </svg>
               ) : (
                 <CheckCircle2 size={14} aria-hidden="true" />
@@ -308,13 +323,11 @@ export function TodayCheckInModal({
                   type="button"
                   onClick={handleSave}
                   disabled={saving}
-                  className="w-full py-3 rounded-xl font-bold text-sm text-white transition-opacity disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  className="w-full py-3 rounded-xl font-bold text-sm text-[var(--color-on-accent)] transition-opacity disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                   style={{
                     background: 'linear-gradient(135deg, var(--goal-accent, var(--color-primary)) 0%, color-mix(in srgb, var(--goal-accent, var(--color-primary)) 65%, var(--color-secondary)) 100%)',
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     ['--tw-ring-color' as any]: 'color-mix(in srgb, var(--goal-accent, var(--color-primary)) 50%, transparent)',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    ['--tw-ring-offset-color' as any]: 'var(--color-bg-card)',
                   }}
                 >
                   {saving
@@ -327,39 +340,22 @@ export function TodayCheckInModal({
         </div>
       </Modal>
 
-      {/* ── Full symptom modal (More / backfill) ── */}
+      {/* ── Full symptom modal (More) ── */}
       <QuickSymptomModal
-        open={showQuick || backfillDate !== null}
-        onClose={() => {
-          setShowQuick(false);
-          setBackfillDate(null);
-        }}
+        open={open && quickOpen}
+        onClose={closeQuick}
         profileId={profileId}
         goal={goal}
-        initialDate={backfillDate ?? undefined}
         onSaved={(count) => {
-          setShowQuick(false);
-          setBackfillDate(null);
+          setQuickOpen(false);
+          setHandoff(false);
           router.refresh();
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
           }
-          setCelebration({ kind: 'symptom', count });
-          setCelebrationOpen(true);
+          if (count > 0) toast.celebrate('symptom', count);
           onClose();
         }}
-      />
-
-      {/* ── Celebration modal — stays mounted briefly after popup closes ── */}
-      <CelebrationModal
-        open={celebrationOpen}
-        onClose={() => {
-          setCelebrationOpen(false);
-          setCelebration(null);
-        }}
-        goal={goal}
-        kind={celebration?.kind ?? 'streak'}
-        count={celebration?.count}
       />
     </>
   );

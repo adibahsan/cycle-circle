@@ -124,7 +124,7 @@ export function EmailDetailClient({ log }: EmailDetailClientProps) {
     <div className="space-y-6 page-enter">
       <Link
         href="/emails"
-        className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+        className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
       >
         <ArrowLeft size={15} aria-hidden="true" />
         Back to email logs
@@ -138,7 +138,7 @@ export function EmailDetailClient({ log }: EmailDetailClientProps) {
 
       <div
         role="status"
-        className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        className="flex gap-3 rounded-xl border border-[var(--color-warning)] bg-[var(--color-warning-bg)] px-4 py-3 text-sm text-[var(--color-warning)]"
       >
         <AlertTriangle size={18} className="shrink-0 mt-0.5" aria-hidden="true" />
         <p>
@@ -162,7 +162,7 @@ export function EmailDetailClient({ log }: EmailDetailClientProps) {
                   onClick={handleRefreshStatus}
                   disabled={isRefreshing}
                   aria-label="Refresh delivery status from Resend"
-                  className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-2 py-1 text-xs font-medium text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-2 py-1 text-xs font-medium text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-50"
                 >
                   <RefreshCw
                     size={13}
@@ -173,7 +173,7 @@ export function EmailDetailClient({ log }: EmailDetailClientProps) {
                 </button>
               )}
               {refreshError && (
-                <span role="alert" className="text-xs text-red-600">
+                <span role="alert" className="text-xs text-[var(--color-danger)]">
                   {refreshError}
                 </span>
               )}
@@ -184,14 +184,14 @@ export function EmailDetailClient({ log }: EmailDetailClientProps) {
           {log.resendId && <MetaRow label="Resend ID">{log.resendId}</MetaRow>}
           {log.error && (
             <MetaRow label="Error">
-              <span className="text-red-600">{log.error}</span>
+              <span className="text-[var(--color-danger)]">{log.error}</span>
             </MetaRow>
           )}
           {log.user && (
             <MetaRow label="User">
               <Link
                 href={`/users/${log.user.id}`}
-                className="text-[var(--color-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
+                className="text-[var(--color-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] rounded"
               >
                 {log.user.fullName ?? log.user.email ?? log.user.id}
               </Link>
@@ -213,13 +213,13 @@ export function EmailDetailClient({ log }: EmailDetailClientProps) {
               title={`Email preview: ${log.type}`}
               srcDoc={previewHtml}
               sandbox=""
-              className="h-[640px] w-full max-w-[600px] rounded border-0 bg-white"
+              className="h-[640px] w-full max-w-[600px] rounded border-0 bg-[var(--color-email-canvas)]"
               aria-label={`Rendered email preview for ${log.type}`}
             />
           ) : (
             <div
               aria-live="polite"
-              className="flex h-[640px] w-full max-w-[600px] items-center justify-center rounded border border-dashed border-[var(--color-border)] bg-white text-sm text-[var(--color-text-muted)]"
+              className="flex h-[640px] w-full max-w-[600px] items-center justify-center rounded border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-muted)]"
             >
               {previewError ?? (isPending ? 'Generating preview…' : 'Loading preview…')}
             </div>

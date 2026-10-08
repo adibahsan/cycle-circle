@@ -1,0 +1,17 @@
+/* Scroll-reveal as progressive enhancement. Content is fully opaque and in place by default;
+   browsers with scroll-driven animations add a small upward drift as it enters the viewport.
+   Opacity is never lowered, so full-page captures, no-JS and reduced-motion all show everything. */
+@keyframes reveal-drift {
+  from { transform: translateY(var(--reveal-y, 24px)); }
+  to { transform: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal-on-scroll {
+      animation: reveal-drift linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+  }
+}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, memo } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
@@ -18,17 +18,21 @@ import {
   parseISO,
 } from 'date-fns'
 import { bn } from 'date-fns/locale/bn'
-import { ChevronLeft, ChevronRight, X, Pencil, Baby } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Pencil, Baby, Plus } from 'lucide-react'
 
 import { Card } from '@/components/ui/Card'
+import { formatShortDate } from '@/lib/format-date'
 import { useAppStore } from '@/lib/store'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
-import { PeriodLogModal } from '@/components/PeriodLogModal'
+import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
-import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import type { FlowIntensity } from '@vesta/shared/types'
 import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
+import { selectFertileWindow } from '@vesta/shared/utils/fertile-window'
 import '@vesta/shared/utils/i18n'
+import { DAY_STYLES, dayStyleKind, type DayStyleKind } from '@/lib/calendar-day-style'
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -85,6 +89,8 @@ interface Props {
   activeProfileId: string
   month: string
   days: CalendarDay[] | null
+  /** prev + visible + next month days, so a window straddling a month edge isn't truncated */
+  windowDays?: CalendarDay[]
   symptomLogs: SymptomLog[]
   periodLogs: PeriodLog[]
   goal: string | null
@@ -95,27 +101,29 @@ interface Props {
 
 function Legend({ pregnancy }: { pregnancy: boolean }) {
   const { t } = useTranslation()
-  const allItems = [
-    { color: 'var(--color-menstrual)', label: t('calendar.period'), ring: false, predictive: false },
-    { color: 'var(--color-fertile)', label: t('calendar.fertile'), ring: false, predictive: true },
-    { color: 'var(--color-ovulation)', label: t('calendar.ovulationDay'), ring: false, predictive: true },
-    { color: 'var(--color-text-primary)', label: t('calendar.today'), ring: true, predictive: false },
+  const allItems: { kind: DayStyleKind | 'today'; label: string; predictive: boolean }[] = [
+    { kind: 'period', label: t('calendar.period'), predictive: false },
+    { kind: 'predictedPeriod', label: t('calendar.predictedPeriod'), predictive: true },
+    { kind: 'fertile', label: t('calendar.fertile'), predictive: true },
+    { kind: 'ovulation', label: t('calendar.ovulationDay'), predictive: true },
+    { kind: 'today', label: t('calendar.today'), predictive: false },
   ]
 
   const items = pregnancy ? allItems.filter((i) => !i.predictive) : allItems
 
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center">
-      {items.map(({ color, label, ring }) => (
-        <div key={label} className="flex items-center gap-1.5">
-          {ring ? (
-            <div
-              className="w-4 h-4 rounded-md border-2"
-              style={{ borderColor: 'var(--color-text-primary)' }}
-            />
-          ) : (
-            <div className="w-4 h-4 rounded-md" style={{ backgroundColor: color }} />
-          )}
+      {items.map(({ kind, label }) => (
+        <div key={kind} className="flex items-center gap-1.5">
+          <div
+            className="w-4 h-4 rounded-md"
+            aria-hidden="true"
+            style={
+              kind === 'today'
+                ? { border: '2px solid var(--color-text-primary)' }
+                : { background: DAY_STYLES[kind].background, border: DAY_STYLES[kind].border }
+            }
+          />
           <span className="text-[11px] font-medium text-[var(--color-text-secondary)]">{label}</span>
         </div>
       ))}
@@ -135,103 +143,64 @@ interface DayCellProps {
 }
 
 const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSelect, isGhostDay = false, onGhostTap }: DayCellProps) {
-  const { date, isPeriod, isFertile, isOvulation, isFuturePredicted } = meta
-  const today = new Date()
-  const isToday = isSameDay(date, today)
-  const prefersReducedMotion = useReducedMotion()
-
-  let bgColor = 'transparent'
-  let textColor = isCurrentMonth ? 'var(--color-text-primary)' : 'var(--color-text-muted)'
-  const opacity = isFuturePredicted ? 0.5 : 1
-
-  if (isPeriod && isCurrentMonth) {
-    bgColor = isFuturePredicted ? '#F2728E40' : '#E8476C22'
-    textColor = 'var(--color-menstrual)'
-  } else if (isOvulation && isCurrentMonth) {
-    bgColor = '#FF8C6B22'
-    textColor = 'var(--color-ovulation)'
-  } else if (isFertile && isCurrentMonth) {
-    bgColor = '#7BC5AE22'
-    textColor = 'var(--color-fertile)'
-  }
+  const { t } = useTranslation()
+  const language = useAppStore((s) => s.language)
+  const { date } = meta
+  const isToday = isSameDay(date, new Date())
+  const kind = isCurrentMonth ? dayStyleKind(meta) : 'plain'
+  const style = DAY_STYLES[kind]
+  const showAdd = isGhostDay && isCurrentMonth
 
   return (
-    <button
+    <div className="group relative aspect-square w-full">
+      <button
       onClick={() => onSelect(date)}
-      className={`relative flex flex-col items-center justify-center aspect-square w-full rounded-xl transition-[color,background-color,transform] duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40 focus-visible:ring-offset-1${(isPeriod || isFertile || isOvulation) && isCurrentMonth ? ' hover:scale-105' : ''}`}
-      style={{
-        backgroundColor: isSelected
-          ? isPeriod
-            ? '#E8476C33'
-            : isFertile
-              ? '#7BC5AE33'
-              : isOvulation
-                ? '#FF8C6B33'
-                : 'var(--color-bg-secondary)'
-          : bgColor,
-        opacity,
-      }}
-    >
-      {/* Today ring */}
-      {isToday && (
-        <motion.div
-          className="absolute inset-0.5 rounded-[10px] border-2 pointer-events-none"
-          style={{ borderColor: 'var(--color-text-primary)' }}
-          animate={prefersReducedMotion ? {} : { opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      )}
-
-      {/* Ovulation accent dot */}
-      {isOvulation && isCurrentMonth && (
-        <div
-          className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
-          style={{ backgroundColor: 'var(--color-ovulation)' }}
-        />
-      )}
-
-      {/* Date number */}
-      <span
-        className="text-sm md:text-base font-semibold leading-none"
-        style={{ color: isCurrentMonth ? textColor : 'var(--color-text-muted)', fontWeight: isToday ? 800 : 600 }}
+        aria-pressed={isSelected}
+        className="absolute inset-0 flex flex-col items-center justify-center w-full h-full rounded-xl transition-colors duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/60"
+        style={{
+          background: isSelected && kind === 'plain' ? 'var(--color-bg-secondary)' : style.background,
+          border: style.border,
+        }}
       >
-        {format(date, 'd')}
-      </span>
-
-      {/* Future dashed border */}
-      {isFuturePredicted && isCurrentMonth && (isPeriod || isFertile || isOvulation) && (
-        <div
-          className="absolute inset-0.5 rounded-[10px] border border-dashed pointer-events-none"
+        <span
+          className={`text-sm md:text-base leading-none tabular-nums${showAdd ? ' group-hover:opacity-0 group-focus-within:opacity-0 transition-opacity' : ''}`}
           style={{
-            borderColor: isPeriod
-              ? 'var(--color-menstrual)'
-              : isOvulation
-                ? 'var(--color-ovulation)'
-                : 'var(--color-fertile)',
+            color: isCurrentMonth ? style.color : 'var(--color-text-muted)',
+            fontWeight: isToday ? 800 : 600,
           }}
-        />
-      )}
+        >
+          {format(date, 'd')}
+        </span>
 
-      {/* Ghost ring — unlogged past day within the 30-day window */}
-      {isGhostDay && isCurrentMonth && (
+        {/* Today ring */}
+        {isToday && (
+          <div
+            className="absolute inset-0.5 rounded-[10px] border-2 pointer-events-none"
+            style={{ borderColor: 'var(--color-text-primary)' }}
+          />
+        )}
+
+        {/* Selected ring */}
+        {isSelected && (
+          <div
+            className="absolute inset-0 rounded-xl border-2 pointer-events-none"
+            style={{ borderColor: 'var(--goal-accent)' }}
+          />
+        )}
+      </button>
+
+      {/* Unlogged past day: "+" appears on hover or focus and taps through to add a log */}
+      {showAdd && (
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onGhostTap?.(format(date, 'yyyy-MM-dd')); }}
-          aria-label={`Add log for ${format(date, 'MMMM d')}`}
-          className="absolute inset-0.5 rounded-[10px] border border-dashed pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/50 focus-visible:ring-offset-1"
-          style={{ borderColor: 'var(--color-text-muted)', opacity: 0.35 }}
-          tabIndex={0}
-        />
+          onClick={(e) => { e.stopPropagation(); onGhostTap?.(format(date, 'yyyy-MM-dd')) }}
+          aria-label={t('calendar.addLogFor', { date: format(date, 'MMMM d', { locale: language === 'bn' ? bn : undefined }) })}
+          className="absolute inset-0 z-10 flex items-center justify-center rounded-xl text-[var(--color-text-secondary)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/60"
+        >
+          <Plus size={16} aria-hidden="true" />
+        </button>
       )}
-
-      {/* Selected ring */}
-      {isSelected && (
-        <div
-          className="absolute inset-0 rounded-xl border-2 pointer-events-none"
-          style={{ borderColor: 'var(--goal-accent)' }}
-        />
-      )}
-    </button>
+    </div>
   )
 })
 
@@ -250,9 +219,19 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
   const dateLocale = language === 'bn' ? bn : undefined
   const today = new Date()
   const isFuture = date > today
+  const ref = useRef<HTMLDivElement>(null)
+  const reduce = useReducedMotion()
+
+  // Below the two-column breakpoint the detail card sits under the grid: bring it into view.
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 1279px)').matches) return
+    ref.current?.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' })
+  }, [reduce])
 
   return (
     <motion.div
+      ref={ref}
+      className="scroll-mb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+1.5rem)]"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
@@ -264,14 +243,14 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
           <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
             {format(date, 'EEEE, MMMM d', { locale: dateLocale })}
             {isFuture && (
-              <span className="ml-2 text-[10px] font-medium text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)] px-2 py-0.5 rounded-full">
+              <span className="ml-2 text-[11px] font-medium text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)] px-2 py-0.5 rounded-full">
                 {t('calendar.predicted')}
               </span>
             )}
           </h3>
           <button
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t('common.close')}
             className="p-1.5 rounded-full hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
           >
             <X size={14} className="text-[var(--color-text-muted)]" aria-hidden="true" />
@@ -282,24 +261,24 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
         <div className="flex flex-wrap gap-2 mb-3">
           {meta.isPeriod && (
             <div
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-white"
-              style={{ backgroundColor: 'var(--color-menstrual)' }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+              style={{ backgroundColor: 'var(--color-menstrual)', color: 'var(--color-on-menstrual)' }}
             >
               🩸 {t('calendar.periodDay')}
             </div>
           )}
           {meta.isOvulation && (
             <div
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-white"
-              style={{ backgroundColor: 'var(--color-ovulation)' }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+              style={{ backgroundColor: 'var(--color-ovulation)', color: 'var(--color-on-ovulation)' }}
             >
               🌸 {t('calendar.ovulationLabel')}
             </div>
           )}
           {meta.isFertile && !meta.isOvulation && (
             <div
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-white"
-              style={{ backgroundColor: 'var(--color-fertile)' }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+              style={{ backgroundColor: 'var(--color-fertile)', color: 'var(--color-on-fertile)' }}
             >
               🌱 {t('calendar.fertileWindowLabel')}
             </div>
@@ -345,9 +324,9 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
 // ─── Recent Periods ────────────────────────────────────────────────────────────
 
 const FLOW_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  LIGHT: { bg: 'var(--color-fertile)', text: '#fff', label: 'Light' },
-  MEDIUM: { bg: '#F59E0B', text: '#fff', label: 'Medium' },
-  HEAVY: { bg: 'var(--color-menstrual)', text: '#fff', label: 'Heavy' },
+  LIGHT: { bg: FLOW_COLORS.light, text: FLOW_TEXT.light, label: 'Light' },
+  MEDIUM: { bg: FLOW_COLORS.medium, text: FLOW_TEXT.medium, label: 'Medium' },
+  HEAVY: { bg: FLOW_COLORS.heavy, text: FLOW_TEXT.heavy, label: 'Heavy' },
 }
 
 const PAGE_SIZE = 6
@@ -413,7 +392,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.2 }}
                     onClick={() => onEditLog(log)}
-                    aria-label={`Edit period log starting ${fmt.format(start)}`}
+                    aria-label={t('calendar.editLogStarting', { date: fmt.format(start) })}
                     className="w-full flex items-center justify-between gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0 cursor-pointer hover:bg-[var(--color-bg-secondary)] rounded-lg px-1 -mx-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
                   >
                     <div className="flex flex-col gap-0.5 min-w-0 text-left">
@@ -445,7 +424,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                 <button
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  aria-label="Previous page of period logs"
+                  aria-label={t('calendar.prevPage')}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
                 >
                   <ChevronLeft size={12} aria-hidden="true" />
@@ -457,7 +436,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page === totalPages - 1}
-                  aria-label="Next page of period logs"
+                  aria-label={t('calendar.nextPage')}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
                 >
                   {t('calendar.next')}
@@ -474,7 +453,18 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
 
 // ─── Calendar Client ───────────────────────────────────────────────────────────
 
-export function CalendarClient({ profiles: _profiles, activeProfileId, month, days, symptomLogs, periodLogs, goal, last30 = [] }: Props) {
+/** Latest logged period start that is not in the future (YYYY-MM-DD), or null. */
+function lastPeriodStartIso(logs: PeriodLog[]): string | null {
+  const today = format(new Date(), 'yyyy-MM-dd')
+  let best: string | null = null
+  for (const l of logs) {
+    const s = format(new Date(l.startDate), 'yyyy-MM-dd')
+    if (s <= today && (!best || s > best)) best = s
+  }
+  return best
+}
+
+export function CalendarClient({ profiles: _profiles, activeProfileId, month, days, windowDays, symptomLogs, periodLogs, goal, last30 = [] }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const { language } = useAppStore()
@@ -514,34 +504,6 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
     }
     return s
   }, [last30])
-
-  // ── Nudge data ──────────────────────────────────────────────────────────────
-
-  const nudgeData = useMemo(() => {
-    const latestPeriod = periodLogs.length > 0
-      ? new Date(periodLogs[0].startDate)
-      : null
-    const latestSymptom = symptomLogs.length > 0
-      ? new Date(symptomLogs[0].date)
-      : null
-
-    const hasAnyLogs = !!latestPeriod || !!latestSymptom
-
-    let daysSinceLastLog: number | null = null
-    if (latestPeriod || latestSymptom) {
-      const candidates: Date[] = []
-      if (latestPeriod) candidates.push(latestPeriod)
-      if (latestSymptom) candidates.push(latestSymptom)
-      const mostRecent = candidates.reduce((a, b) => (a > b ? a : b))
-      const now = new Date()
-      now.setHours(0, 0, 0, 0)
-      const then = new Date(mostRecent)
-      then.setHours(0, 0, 0, 0)
-      daysSinceLastLog = Math.floor((now.getTime() - then.getTime()) / 86_400_000)
-    }
-
-    return { hasAnyLogs, daysSinceLastLog }
-  }, [periodLogs, symptomLogs])
 
   // Build the API calendar lookup map
   const apiCalendarMap = useMemo(() => {
@@ -627,8 +589,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
   // client-side so no forward-looking data is ever derived or shown.
   const firstPredictedPeriod = !pregnancy ? days?.find((d) => d.predicted && d.period) : undefined
   const ovulationDay = !pregnancy ? days?.find((d) => d.ovulation) : undefined
-  const fertileStart = !pregnancy ? days?.find((d) => d.fertile && !d.ovulation) : undefined
-  const fertileEnd = !pregnancy ? [...(days ?? [])].reverse().find((d) => d.fertile) : undefined
+  const fertileWindow = !pregnancy ? selectFertileWindow(windowDays ?? days ?? [], format(new Date(), 'yyyy-MM-dd'), lastPeriodStartIso(periodLogs)) : null
 
   const DOW = [
     t('calendar.sun'), t('calendar.mon'), t('calendar.tue'), t('calendar.wed'),
@@ -636,28 +597,12 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
   ]
 
   return (
-    <div className="flex flex-col gap-4 py-3 relative overflow-hidden">
+    <PageContainer width="wide" className="relative overflow-hidden">
 
       {/* ── Page header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-          {t('nav.calendar')}
-        </h1>
-        <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-          {format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}
-        </p>
-      </motion.div>
-
-      {/* ── Logging Nudge ── */}
-      <LoggingNudge
-        profileId={activeProfileId}
-        hasAnyLogs={nudgeData.hasAnyLogs}
-        daysSinceLastLog={nudgeData.daysSinceLastLog}
-        goal={goal}
+      <PageHeader
+        title={t('nav.calendar')}
+        subtitle={format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}
       />
 
       {/* ── Decorative blobs ── */}
@@ -677,20 +622,20 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
       />
 
       {/* ── Desktop: side-by-side layout (calendar + detail panel) ── */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col xl:flex-row gap-5">
 
         {/* ── Calendar card (constrained width on desktop) ── */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="lg:w-[480px] lg:shrink-0"
+          className="xl:w-[480px] xl:shrink-0"
         >
           <Card padding="md">
             <div className="flex items-center justify-between mb-4">
               <button
                 onClick={prevMonth}
-                aria-label="Previous month"
+                aria-label={t('calendar.previousMonth')}
                 className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors"
               >
                 <ChevronLeft size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
@@ -708,7 +653,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
 
               <button
                 onClick={nextMonth}
-                aria-label="Next month"
+                aria-label={t('calendar.nextMonth')}
                 className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors"
               >
                 <ChevronRight size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
@@ -744,7 +689,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
             <div className="grid grid-cols-7 mb-1 md:mb-2">
               {DOW.map((d) => (
                 <div key={d} className="flex items-center justify-center">
-                  <span className="text-[10px] md:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                  <span className="text-[11px] md:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
                     {d}
                   </span>
                 </div>
@@ -796,7 +741,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
         </motion.div>
 
         {/* ── Right panel: Day Detail + Monthly Summary (sticky on desktop) ── */}
-        <div className="flex-1 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start min-w-0">
+        <div className="flex-1 flex flex-col gap-4 xl:sticky xl:top-4 xl:self-start min-w-0">
 
           {/* Day Detail */}
           <AnimatePresence mode="wait">
@@ -812,7 +757,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
           </AnimatePresence>
 
           {/* Monthly Summary — hidden for pregnancy profiles */}
-          {!pregnancy && (firstPredictedPeriod || ovulationDay || fertileStart) && (
+          {!pregnancy && (firstPredictedPeriod || ovulationDay || fertileWindow) && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -830,7 +775,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                         <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.nextPeriod')}</span>
                       </div>
                       <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(firstPredictedPeriod.date))}
+                        {formatShortDate(language, parseISO(firstPredictedPeriod.date))}
                       </span>
                     </div>
                   )}
@@ -841,20 +786,20 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                         <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.ovulationDayLabel')}</span>
                       </div>
                       <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(ovulationDay.date))}
+                        {formatShortDate(language, parseISO(ovulationDay.date))}
                       </span>
                     </div>
                   )}
-                  {fertileStart && fertileEnd && (
+                  {fertileWindow && (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-fertile)' }} />
                         <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.fertileWindow')}</span>
                       </div>
                       <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(fertileStart.date))}
+                        {formatShortDate(language, parseISO(fertileWindow.start))}
                         {' – '}
-                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(fertileEnd.date))}
+                        {formatShortDate(language, parseISO(fertileWindow.end))}
                       </span>
                     </div>
                   )}
@@ -884,23 +829,19 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
       </div>
 
       {/* ── Edit Period Log Modal ── */}
-      <AnimatePresence>
-        {editingLog && (
-          <PeriodLogModal
-            key="edit-period-modal"
-            profileId={editingLog.profileId}
-            existingLogId={editingLog.id}
-            initialStart={toDateStr(editingLog.startDate)}
-            initialEnd={toDateStr(editingLog.endDate)}
-            initialFlow={editingLog.flowIntensity.toLowerCase() as FlowIntensity}
-            onClose={() => setEditingLog(null)}
-            onSaved={() => {
-              router.refresh()
-              window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
-            }}
-          />
-        )}
-      </AnimatePresence>
+      <PeriodLogModal
+        open={editingLog !== null}
+        profileId={editingLog?.profileId ?? activeProfileId}
+        existingLogId={editingLog?.id}
+        initialStart={editingLog ? toDateStr(editingLog.startDate) : undefined}
+        initialEnd={editingLog ? toDateStr(editingLog.endDate) : undefined}
+        initialFlow={editingLog ? (editingLog.flowIntensity.toLowerCase() as FlowIntensity) : undefined}
+        onClose={() => setEditingLog(null)}
+        onSaved={() => {
+          router.refresh()
+          window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
+        }}
+      />
 
       {/* ── Ghost-day backfill modal ── */}
       <QuickSymptomModal
@@ -915,7 +856,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
           window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
         }}
       />
-    </div>
+    </PageContainer>
   )
 }
 

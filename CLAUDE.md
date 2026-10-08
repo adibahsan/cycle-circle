@@ -1,6 +1,6 @@
 ## Project Overview
 
-**Vesta** is a bilingual (English + Bengali) reproductive health and cycle intelligence platform for Bangladesh. Users track periods, symptoms, and cycle predictions across up to 6 family profiles, with Pro billing via BDApps CAAS.
+**Cycle Circle** (code name **Vesta**) is a bilingual (English + Bengali) reproductive health and cycle intelligence platform for Bangladesh. Users track periods, symptoms, and cycle predictions across up to 6 family profiles, with Pro billing via BDApps CAAS. The rename is user-facing only: internal identifiers (`@vesta/*`, `VESTA_*`, cookies, storage keys, file/component names, infra names) stay `vesta` — do not "fix" them. See `docs/adr/0001-cycle-circle-rename-is-user-facing-only.md`.
 
 ## Working Principles
 

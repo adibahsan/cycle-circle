@@ -50,7 +50,7 @@ function StarRating({ rating }: { rating: number | null }) {
           key={i}
           className={
             i < filled
-              ? 'text-amber-400 text-lg leading-none'
+              ? 'text-[var(--color-warning)] text-lg leading-none'
               : 'text-[var(--color-border)] text-lg leading-none'
           }
           aria-hidden="true"
@@ -84,7 +84,7 @@ export function FeedbackDetailClient({ feedback }: FeedbackDetailClientProps) {
     <div className="space-y-6 page-enter">
       <Link
         href="/feedback"
-        className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+        className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
       >
         <ArrowLeft size={15} aria-hidden="true" />
         Back to feedback
@@ -118,7 +118,7 @@ export function FeedbackDetailClient({ feedback }: FeedbackDetailClientProps) {
             </h2>
             <Link
               href={`/users/${feedback.user.id}`}
-              className="mt-2 inline-flex items-center gap-2 text-[var(--color-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
+              className="mt-2 inline-flex items-center gap-2 text-[var(--color-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] rounded"
             >
               <User size={15} aria-hidden="true" />
               <span className="font-medium">{displayName}</span>

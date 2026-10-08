@@ -1,11 +1,14 @@
 'use client';
 
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 import { Sun, Moon } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const { theme, setTheme } = useAppStore();
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
@@ -16,13 +19,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <LanguageToggle />
         <button
           onClick={toggleTheme}
-          className="p-2.5 rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft hover:border-[var(--color-primary)] transition-colors duration-200 active:scale-95"
-          aria-label="Toggle theme"
+          className="p-2.5 rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft hover:border-[var(--color-primary)] transition-colors duration-200 active:scale-95 focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+          aria-label={theme === 'dark' ? t('nav.switchToLight') : t('nav.switchToDark')}
         >
           {theme === 'dark' ? (
-            <Sun size={18} className="text-[var(--color-text-primary)]" />
+            <Sun size={18} className="text-[var(--color-text-primary)]" aria-hidden="true" />
           ) : (
-            <Moon size={18} className="text-[var(--color-text-primary)]" />
+            <Moon size={18} className="text-[var(--color-text-primary)]" aria-hidden="true" />
           )}
         </button>
       </div>
@@ -68,24 +71,25 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="relative z-10 px-12 lg:px-16 max-w-lg"
         >
-          <h1 className="text-5xl lg:text-6xl font-bold mb-4 text-[var(--color-primary)]">
-            Vesta
-          </h1>
+          <BrandLogo size={160} className="w-32 h-32 lg:w-40 lg:h-40 mb-4" />
+          <p className="text-4xl lg:text-5xl font-extrabold mb-4 text-[var(--color-text-primary)]" aria-hidden="true">
+            Cycle Circle
+          </p>
           <p className="text-lg lg:text-xl text-[var(--color-text-secondary)] leading-relaxed mb-6">
-            Smart cycle tracking with predictive insights. Understand your body, plan your life.
+            {t('auth.brandBlurb')}
           </p>
           <div className="flex gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
               <span className="text-sm">🩸</span>
-              <span className="text-xs font-medium text-[var(--color-text-secondary)]">Period Tracking</span>
+              <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('auth.pillTracking')}</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
               <span className="text-sm">🌸</span>
-              <span className="text-xs font-medium text-[var(--color-text-secondary)]">Predictions</span>
+              <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('auth.pillPredictions')}</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
               <span className="text-sm">📊</span>
-              <span className="text-xs font-medium text-[var(--color-text-secondary)]">Insights</span>
+              <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('auth.pillInsights')}</span>
             </div>
           </div>
         </motion.div>

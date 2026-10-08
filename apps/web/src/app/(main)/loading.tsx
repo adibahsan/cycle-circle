@@ -1,8 +1,9 @@
+import { PageContainer } from '@/components/ui/PageContainer';
 import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function MainFallbackLoading() {
   return (
-    <div className="space-y-6 max-w-4xl mx-auto p-4 animate-pulse-soft">
+    <PageContainer className="animate-pulse-soft">
       {/* Header skeleton */}
       <div className="space-y-2">
         <Shimmer className="h-8 w-40 rounded-lg" />
@@ -27,6 +28,6 @@ export default function MainFallbackLoading() {
           <Shimmer className="h-10 w-32 rounded-xl" />
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

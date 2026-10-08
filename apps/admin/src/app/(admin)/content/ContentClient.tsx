@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Pagination } from '@/components/ui/Pagination'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { deleteArticle, createCategory, updateCategory, deleteCategory } from '@/app/actions/content-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
@@ -63,10 +64,10 @@ const PHASE_LABELS: Record<string, string> = {
 }
 
 const PHASE_COLORS: Record<string, string> = {
-  MENSTRUAL: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  FOLLICULAR: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-  OVULATION: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  LUTEAL: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
+  MENSTRUAL: 'bg-[color-mix(in_srgb,var(--color-menstrual)_22%,transparent)] text-[var(--color-text-primary)]',
+  FOLLICULAR: 'bg-[color-mix(in_srgb,var(--color-follicular)_22%,transparent)] text-[var(--color-text-primary)]',
+  OVULATION: 'bg-[color-mix(in_srgb,var(--color-ovulation)_22%,transparent)] text-[var(--color-text-primary)]',
+  LUTEAL: 'bg-[color-mix(in_srgb,var(--color-luteal)_22%,transparent)] text-[var(--color-text-primary)]',
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -83,7 +84,7 @@ function PhaseBadges({ phases }: { phases: string[] }) {
       {phases.map((phase) => (
         <span
           key={phase}
-          className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${PHASE_COLORS[phase] ?? 'bg-gray-100 text-gray-700'}`}
+          className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${PHASE_COLORS[phase] ?? 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]'}`}
         >
           {PHASE_LABELS[phase] ?? phase}
         </span>
@@ -297,7 +298,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
               e.stopPropagation()
               router.push(`/content/${row.id}`)
             }}
-            className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+            className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
             aria-label="Edit article"
             title="Edit article"
           >
@@ -309,7 +310,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
               e.stopPropagation()
               setDeleteTarget(row)
             }}
-            className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+            className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-error)] hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
             aria-label="Delete article"
             title="Delete article"
           >
@@ -442,22 +443,15 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
       />
 
       {/* Category manager modal */}
-      {showCategoryManager && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 overscroll-contain"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="category-manager-title"
-        >
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => !saving && !deletingCategory && setShowCategoryManager(false)}
-            aria-hidden="true"
-          />
-
-          {/* Dialog card */}
-          <div className="relative z-10 w-full max-w-lg rounded-2xl glass border border-[var(--color-border)] shadow-soft flex flex-col max-h-[80vh]">
+      <Modal
+        open={showCategoryManager}
+        onClose={() => setShowCategoryManager(false)}
+        titleId="category-manager-title"
+        dismissible={!saving && !deletingCategory}
+        panelClassName="max-w-lg"
+        initialFocusRef={categoryInputRef}
+      >
+        <div className="flex flex-col">
             {/* Modal header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] shrink-0">
               <h2
@@ -470,7 +464,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                 type="button"
                 onClick={() => setShowCategoryManager(false)}
                 disabled={saving || deletingCategory}
-                className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Close category manager"
               >
                 <X size={16} aria-hidden="true" />
@@ -542,6 +536,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                     e.preventDefault()
                                     commitRenameCategory(cat.id)
                                   } else if (e.key === 'Escape') {
+                                    e.stopPropagation() // cancels the rename only, not the manager
                                     cancelEditCategory()
                                   }
                                 }}
@@ -550,10 +545,10 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                 spellCheck={false}
                                 autoComplete="off"
                                 aria-label={`Rename category ${cat.name}`}
-                                className="w-full px-2 py-1 text-sm font-medium rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-rose-500 focus:outline-none disabled:opacity-60"
+                                className="w-full px-2 py-1 text-sm font-medium rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] focus-visible:outline-none disabled:opacity-60"
                               />
                               {renameError && (
-                                <span className="text-xs text-red-600" aria-live="polite">
+                                <span className="text-xs text-[var(--color-danger)]" aria-live="polite">
                                   {renameError}
                                 </span>
                               )}
@@ -579,7 +574,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => commitRenameCategory(cat.id)}
                                 disabled={renamingSaving || !editingCategoryName.trim()}
-                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-success)] hover:bg-[var(--color-success-bg)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
                                 aria-label={`Save category name`}
                               >
                                 <Check size={14} aria-hidden="true" />
@@ -589,7 +584,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={cancelEditCategory}
                                 disabled={renamingSaving}
-                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
                                 aria-label="Cancel rename"
                               >
                                 <X size={14} aria-hidden="true" />
@@ -601,7 +596,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                 type="button"
                                 onClick={() => startEditCategory(cat)}
                                 disabled={isBusy}
-                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
                                 aria-label={`Rename category ${cat.name}`}
                               >
                                 <Pencil size={13} aria-hidden="true" />
@@ -613,7 +608,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                   type="button"
                                   onClick={() => setCategoryToDelete(cat)}
                                   disabled={hasArticles || isBusy}
-                                  className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[var(--color-text-muted)] disabled:hover:bg-transparent"
+                                  className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-error)] hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[var(--color-text-muted)] disabled:hover:bg-transparent"
                                   aria-label={`Delete category ${cat.name}`}
                                 >
                                   <Trash2 size={13} aria-hidden="true" />
@@ -642,8 +637,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
               </Button>
             </div>
           </div>
-        </div>
-      )}
+      </Modal>
 
       {/* Delete category confirm */}
       <ConfirmModal

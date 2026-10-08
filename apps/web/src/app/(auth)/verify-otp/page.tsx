@@ -166,12 +166,13 @@ export default function VerifyOtpPage() {
         initial="hidden"
         animate="show"
         onClick={() => router.back()}
-        className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] font-medium mb-6 hover:text-[var(--color-primary)] transition-colors self-start focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+        className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] font-medium mb-6 hover:text-[var(--color-primary)] transition-colors self-start focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
       >
         <ArrowLeft size={16} aria-hidden="true" />
         {t('common.back')}
       </motion.button>
 
+      <div className="rounded-3xl surface-wash border border-[var(--color-border)] shadow-soft p-6">
       {/* Header */}
       <motion.div
         custom={1}
@@ -182,9 +183,9 @@ export default function VerifyOtpPage() {
       >
         <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-soft bg-[var(--color-primary)]">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-            <rect x="4" y="8" width="20" height="15" rx="3" stroke="white" strokeWidth="2" />
-            <path d="M4 12l10 7 10-7" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="21" cy="7" r="4" fill="white" fillOpacity="0.9" />
+            <rect x="4" y="8" width="20" height="15" rx="3" stroke="var(--color-on-accent)" strokeWidth="2" />
+            <path d="M4 12l10 7 10-7" stroke="var(--color-on-accent)" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="21" cy="7" r="4" fill="var(--color-on-accent)" fillOpacity="0.9" />
             <path d="M19.5 7l1 1 2-2" stroke="var(--color-primary)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
@@ -232,12 +233,12 @@ export default function VerifyOtpPage() {
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onFocus={(e) => { e.target.select(); setFocusedIndex(index); }}
                 onBlur={() => setFocusedIndex(null)}
-                className={`w-full aspect-square text-center text-xl font-bold rounded-xl border-2 bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none transition-colors duration-200 ${
+                className={`w-full aspect-square text-center text-xl font-bold rounded-xl border-2 bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus-visible:outline-none transition-colors duration-200 ${
                   digit
                     ? 'border-[var(--color-primary)] bg-[var(--color-bg-card)]'
                     : 'border-[var(--color-border)]'
-                } ${error ? 'border-red-400' : ''} focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/25`}
-                aria-label={`Digit ${index + 1}`}
+                } ${error ? 'border-[var(--color-error)]' : ''} focus-visible:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/25`}
+                aria-label={t('auth.otpDigit', { n: index + 1 })}
               />
             </motion.div>
           ))}
@@ -260,7 +261,7 @@ export default function VerifyOtpPage() {
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="text-sm text-red-500 mb-3 flex items-center gap-1"
+            className="text-sm text-[var(--color-error)] mb-3 flex items-center gap-1"
           >
             <span>⚠</span> {error}
           </motion.p>
@@ -274,7 +275,7 @@ export default function VerifyOtpPage() {
           size="lg"
           onClick={handleVerify}
           disabled={loading || success || !allFilled}
-          className="rounded-2xl text-base font-bold"
+          className="text-base font-bold"
         >
           <AnimatePresence mode="wait" initial={false}>
             {success ? (
@@ -284,7 +285,7 @@ export default function VerifyOtpPage() {
                 animate={{ scale: 1, opacity: 1 }}
                 className="flex items-center gap-2"
               >
-                <CheckCircle2 size={20} />
+                <CheckCircle2 aria-hidden="true" size={20} />
                 {t('auth.verified')}
               </motion.span>
             ) : loading ? (
@@ -373,9 +374,9 @@ export default function VerifyOtpPage() {
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.05 }}
-              className="w-24 h-24 rounded-full flex items-center justify-center shadow-[0_8px_40px_rgba(232,71,108,0.4)] bg-[var(--color-primary)]"
+              className="w-24 h-24 rounded-full flex items-center justify-center shadow-[0_8px_40px_color-mix(in_srgb,var(--color-primary)_40%,transparent)] bg-[var(--color-primary)]"
             >
-              <CheckCircle2 size={44} className="text-white" strokeWidth={2} />
+              <CheckCircle2 size={44} className="text-[var(--color-on-accent)]" strokeWidth={2} aria-hidden="true" />
             </motion.div>
             <motion.p
               initial={{ opacity: 0, y: 10 }}
@@ -388,6 +389,7 @@ export default function VerifyOtpPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }

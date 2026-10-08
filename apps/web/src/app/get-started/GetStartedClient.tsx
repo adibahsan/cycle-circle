@@ -58,10 +58,11 @@ function ProgressDots({
   step: number;
   prefersReducedMotion: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       className="flex items-center gap-1.5 justify-center"
-      aria-label={`Step ${step} of ${TOTAL_STEPS}`}
+      aria-label={t('onboarding.stepOf', { step, total: TOTAL_STEPS })}
     >
       {Array.from({ length: TOTAL_STEPS }, (_, i) => {
         const isActive = i + 1 === step;
@@ -192,7 +193,7 @@ function FeatureIllustration({
           boxShadow: `0 8px 32px color-mix(in srgb, ${accentVar} 35%, transparent)`,
         }}
       >
-        <Icon size={36} className="text-white" aria-hidden="true" />
+        <Icon size={36} className="text-[var(--color-on-accent)]" aria-hidden="true" />
       </div>
     </motion.div>
   );
@@ -249,19 +250,19 @@ function FinalScreen({ prefersReducedMotion }: { prefersReducedMotion: boolean }
         variants={FADE_UP}
         initial={prefersReducedMotion ? false : 'hidden'}
         animate="show"
-        className="gradient-primary rounded-[var(--radius-xl)] shadow-glow px-8 py-8 lg:py-10 flex flex-col items-center gap-6 w-full max-w-sm lg:max-w-lg"
+        className="bg-[var(--goal-accent)] rounded-[var(--radius-xl)] shadow-glow px-8 py-8 lg:py-10 flex flex-col items-center gap-6 w-full max-w-sm lg:max-w-lg"
       >
-        <h1 className="text-fluid-xl font-bold text-white">
+        <h1 className="text-fluid-xl font-bold text-[var(--color-on-accent)]">
           {t('getStarted.finalTitle')}
         </h1>
-        <p className="text-fluid-md text-white/80 max-w-sm leading-relaxed">
+        <p className="text-fluid-md text-[var(--color-on-accent)] opacity-90 max-w-sm leading-relaxed">
           {t('getStarted.finalSubtitle')}
         </p>
         <Link href="/login">
           <Button
             variant="secondary"
             size="lg"
-            className="rounded-2xl font-bold min-w-[180px] bg-white text-[var(--color-primary)] hover:bg-white/90 border-0 shadow-soft"
+            className="rounded-2xl font-bold min-w-[180px] bg-[var(--color-bg-card)] text-[var(--color-text-primary)] hover:opacity-90 border-0 shadow-soft"
           >
             {t('getStarted.finalCta')}
           </Button>
@@ -276,7 +277,7 @@ function FinalScreen({ prefersReducedMotion }: { prefersReducedMotion: boolean }
       >
         <Link
           href="/login"
-          className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
+          className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
         >
           {t('getStarted.haveAccount')}
         </Link>
@@ -352,8 +353,8 @@ export function GetStartedClient() {
       {/* ── Header (shrink-0) ── */}
       <div className="shrink-0 px-5 pt-5 pb-3 md:px-7">
         <div className="flex items-center justify-between">
-          {/* Vesta wordmark — always visible */}
-          <span className="text-lg font-bold text-[var(--color-primary)]">
+          {/* Cycle Circle wordmark — always visible */}
+          <span className="text-lg font-extrabold text-[var(--color-text-primary)]">
             {t('app.name')}
           </span>
           <div className="flex items-center gap-3">
@@ -362,7 +363,7 @@ export function GetStartedClient() {
             <Link
               href="/login"
               aria-label={t('getStarted.skip')}
-              className="text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
+              className="text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
             >
               {t('getStarted.skip')}
             </Link>

@@ -1,13 +1,13 @@
-# Vesta REST API — OpenAPI 3.1 spec.
+# Cycle Circle REST API — OpenAPI 3.1 spec.
 # Hand-maintained: update alongside route changes in apps/web/src/app/api/**.
 # Dev-only routes under /api/simulator-check/* are intentionally excluded
 # (gated by isSimulatorCheckerEnabled(); they return 404 in production).
 openapi: 3.1.0
 info:
-  title: Vesta API
+  title: Cycle Circle API
   version: 1.0.0
   description: >-
-    REST API for Vesta — a bilingual (English + Bengali) reproductive-health and
+    REST API for Cycle Circle — a bilingual (English + Bengali) reproductive-health and
     cycle-intelligence platform. These endpoints are served by the customer web
     app (`apps/web`); the two Admin Auth endpoints are served by the separate
     admin app on its own origin. Authentication is a JWT carried in an httpOnly

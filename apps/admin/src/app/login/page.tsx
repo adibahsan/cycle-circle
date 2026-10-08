@@ -62,8 +62,8 @@ export default function AdminLoginPage() {
           <div className="flex flex-col items-center gap-3 mb-8">
             <VestaLogo size={48} animate />
             <div className="text-center">
-              <h1 className="text-2xl font-bold" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                Vesta Admin
+              <h1 className="text-2xl font-extrabold text-[var(--color-text-primary)]">
+                Cycle Circle Admin
               </h1>
               <p className="text-sm text-[var(--color-text-muted)] mt-1">
                 Sign in to the admin panel
@@ -88,7 +88,7 @@ export default function AdminLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@vesta.health…"
                 disabled={state === 'loading'}
-                className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 transition-colors disabled:opacity-60"
+                className="w-full px-4 py-3 rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] transition-colors disabled:opacity-60"
               />
             </div>
 
@@ -107,14 +107,14 @@ export default function AdminLoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password…"
                   disabled={state === 'loading'}
-                  className="w-full px-4 py-3 pr-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 transition-colors disabled:opacity-60"
+                  className="w-full px-4 py-3 pr-11 rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] transition-colors disabled:opacity-60"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   disabled={state === 'loading'}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded transition-colors disabled:opacity-60"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] rounded transition-colors disabled:opacity-60"
                 >
                   {showPassword
                     ? <Eye size={16} aria-hidden="true" />
@@ -133,7 +133,7 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={state === 'loading' || !email.trim() || !password}
-              className="w-full py-3 rounded-xl gradient-primary text-white text-sm font-semibold shadow-soft hover:opacity-90 active:scale-[0.98] transition-[opacity,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+              className="w-full py-3 rounded-xl bg-[var(--color-action)] text-[var(--color-on-action)] text-sm font-semibold shadow-soft hover:opacity-90 active:scale-[0.98] transition-[opacity,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               {state === 'loading' ? (
                 <span className="inline-flex items-center justify-center gap-2">
@@ -150,7 +150,7 @@ export default function AdminLoginPage() {
                 type="button"
                 onClick={handleDevLogin}
                 disabled={state === 'loading'}
-                className="w-full py-2.5 rounded-xl border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] text-xs font-medium hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2.5 rounded-xl border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] text-xs font-medium hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Dev — sign in as admin@vesta.health
               </button>
@@ -159,7 +159,7 @@ export default function AdminLoginPage() {
         </div>
 
         <p className="text-center text-xs text-[var(--color-text-muted)] mt-6">
-          Vesta Admin &mdash; restricted access only
+          Cycle Circle Admin &mdash; restricted access only
         </p>
       </div>
     </div>

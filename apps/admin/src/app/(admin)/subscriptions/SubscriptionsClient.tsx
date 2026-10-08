@@ -14,6 +14,7 @@ import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { DateRangeControl } from '@/components/charts/DateRangeControl'
+import { CHART_VAR } from '@/lib/chart-palette'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types — mirror the Prisma include shape from getSubscriptions
@@ -277,7 +278,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
           return <span className="text-sm tabular-nums text-[var(--color-text-muted)]">0</span>
         }
         return (
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-600 dark:text-amber-400">
+          <span className="inline-flex items-center gap-1 text-sm font-medium text-[var(--color-warning)]">
             <AlertTriangle size={13} aria-hidden="true" />
             {count}
           </span>
@@ -297,7 +298,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
           <span
             className={
               isExpired
-                ? 'text-sm text-red-600 dark:text-red-400'
+                ? 'text-sm text-[var(--color-danger)]'
                 : 'text-sm text-[var(--color-text-secondary)]'
             }
           >
@@ -392,7 +393,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
                 title="New Subscriptions"
                 data={trend.map((d) => ({ date: d.date.slice(5), count: d.count }))}
                 xKey="date"
-                series={[{ key: 'count', label: 'Subscriptions', color: '#E8476C' }]}
+                series={[{ key: 'count', label: 'Subscriptions', color: CHART_VAR.primary }]}
                 kinds={['area', 'bar', 'line']}
                 defaultKind="area"
                 height={240}
@@ -418,7 +419,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
                 title={`CAAS Result Distribution — last ${range}`}
                 data={caasDistribution.map((d) => ({ result: d.result, count: d.count }))}
                 xKey="result"
-                series={[{ key: 'count', label: 'Transactions', color: '#6366F1' }]}
+                series={[{ key: 'count', label: 'Transactions', color: CHART_VAR.secondary }]}
                 kinds={['bar', 'pie']}
                 defaultKind="bar"
                 height={220}

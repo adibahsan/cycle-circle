@@ -22,8 +22,18 @@ export default async function CalendarPage({
   const month =
     params.month || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
-  const [calendarDays, symptomLogs, periodLogs, engagement] = await Promise.all([
+  // Fertile windows can straddle a month boundary, so the "This Cycle" panel
+  // picks its window from the previous, visible and next months together.
+  const [y, m] = month.split('-').map(Number)
+  const adjacent = (offset: number) => {
+    const d = new Date(y, m - 1 + offset, 1)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  }
+
+  const [calendarDays, prevDays, nextDays, symptomLogs, periodLogs, engagement] = await Promise.all([
     getCalendarData(profileId, month),
+    getCalendarData(profileId, adjacent(-1)),
+    getCalendarData(profileId, adjacent(1)),
     getSymptomLogs(profileId),
     getPeriodLogs(profileId),
     getEngagementSummary(profileId),
@@ -37,6 +47,7 @@ export default async function CalendarPage({
       activeProfileId={profileId}
       month={month}
       days={calendarDays}
+      windowDays={[...(prevDays ?? []), ...(calendarDays ?? []), ...(nextDays ?? [])]}
       symptomLogs={symptomLogs}
       periodLogs={periodLogs}
       goal={activeProfile?.goal ?? null}

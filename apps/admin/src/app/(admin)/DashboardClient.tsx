@@ -13,6 +13,7 @@ import { StatCard } from '@/components/ui/StatCard'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { DateRangeControl } from '@/components/charts/DateRangeControl'
+import { CHART_VAR } from '@/lib/chart-palette'
 
 const SignupTrendChart = dynamic(
   () => import('@/components/charts/SignupTrendChart').then((m) => m.SignupTrendChart),
@@ -82,22 +83,22 @@ export function DashboardClient({ stats, userTrend, signupTrend, subscriptionTre
           title="Total Users"
           value={formatNumber(stats.totalUsers)}
           change={{ value: stats.userGrowth, label: growthLabel }}
-          icon={<Users size={18} />}
+          icon={<Users aria-hidden="true" size={18} />}
         />
         <StatCard
           title="Active Users (30d)"
           value={formatNumber(stats.activeUsers)}
-          icon={<UserCheck size={18} />}
+          icon={<UserCheck aria-hidden="true" size={18} />}
         />
         <StatCard
           title="Pro Subscribers"
           value={formatNumber(stats.proSubscribers)}
-          icon={<Crown size={18} />}
+          icon={<Crown aria-hidden="true" size={18} />}
         />
         <StatCard
           title="Logs Today"
           value={formatNumber(stats.dailyLogs)}
-          icon={<Activity size={18} />}
+          icon={<Activity aria-hidden="true" size={18} />}
         />
       </div>
 
@@ -116,7 +117,7 @@ export function DashboardClient({ stats, userTrend, signupTrend, subscriptionTre
         </div>
         <div className="glass rounded-2xl border border-[var(--color-border)] p-5 flex items-center gap-4 shadow-soft">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-bg-secondary)] text-[var(--color-primary)]">
-            {growthPositive ? <TrendingUp size={20} aria-hidden="true" /> : <TrendingDown size={20} aria-hidden="true" className="text-red-500" />}
+            {growthPositive ? <TrendingUp size={20} aria-hidden="true" /> : <TrendingDown size={20} aria-hidden="true" className="text-[var(--color-danger)]" />}
           </div>
           <div>
             <p className="text-xs font-medium text-[var(--color-text-muted)]">New Users This Week</p>
@@ -128,14 +129,14 @@ export function DashboardClient({ stats, userTrend, signupTrend, subscriptionTre
         <div className="glass rounded-2xl border border-[var(--color-border)] p-5 flex items-center gap-4 shadow-soft">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-bg-secondary)]">
             <span
-              className={`text-sm font-bold tabular-nums ${growthPositive ? 'text-emerald-600' : 'text-red-500'}`}
+              className={`text-sm font-bold tabular-nums ${growthPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}
             >
               {growthPositive ? '+' : ''}{stats.userGrowth}%
             </span>
           </div>
           <div>
             <p className="text-xs font-medium text-[var(--color-text-muted)]">Week-over-Week Growth</p>
-            <p className={`text-base font-semibold ${growthPositive ? 'text-emerald-600' : 'text-red-500'}`}>
+            <p className={`text-base font-semibold ${growthPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
               {growthPositive ? 'Trending up' : 'Trending down'}
             </p>
           </div>
@@ -164,7 +165,7 @@ export function DashboardClient({ stats, userTrend, signupTrend, subscriptionTre
             title="New Users Over Time"
             data={signupTrend.map((d) => ({ date: formatDate(d.date), count: d.count }))}
             xKey="date"
-            series={[{ key: 'count', label: 'New users', color: '#E8476C' }]}
+            series={[{ key: 'count', label: 'New users', color: CHART_VAR.primary }]}
             kinds={['area', 'line', 'bar']}
             defaultKind="area"
             height={260}
@@ -174,7 +175,7 @@ export function DashboardClient({ stats, userTrend, signupTrend, subscriptionTre
             title="New Subscriptions Over Time"
             data={subscriptionTrend.map((d) => ({ date: formatDate(d.date), count: d.count }))}
             xKey="date"
-            series={[{ key: 'count', label: 'New subscriptions', color: '#6366F1' }]}
+            series={[{ key: 'count', label: 'New subscriptions', color: CHART_VAR.secondary }]}
             kinds={['area', 'line', 'bar']}
             defaultKind="area"
             height={260}

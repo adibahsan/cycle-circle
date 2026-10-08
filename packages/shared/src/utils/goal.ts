@@ -47,23 +47,24 @@ export function defaultNotificationPrefsForGoal(goal?: string | null): {
 }
 
 /**
- * Per-goal accent — returns an EXISTING CSS variable (no new colors).
- * Used to set a scoped `--goal-accent` custom property.
- *   tracking      → --color-primary   (rose)
- *   conceive      → --color-fertile   (teal)
- *   pregnancy     → --color-secondary (lavender)
- *   perimenopause → --color-accent    (coral)
+ * Per-goal accent — returns a `--color-goal-*` CSS variable (theme-aware).
+ * Used to set a scoped `--goal-accent` custom property. Text on an accent
+ * fill uses `--color-on-accent`.
+ *   tracking      → --color-goal-tracking      (rose)
+ *   conceive      → --color-goal-conceive      (gold ink)
+ *   pregnancy     → --color-goal-pregnancy     (lilac)
+ *   perimenopause → --color-goal-perimenopause (mauve)
  */
 export function goalAccentVar(goal?: string | null): string {
   switch (normalizeGoal(goal)) {
     case 'conceive':
-      return 'var(--color-fertile)';
+      return 'var(--color-goal-conceive)';
     case 'pregnancy':
-      return 'var(--color-secondary)';
+      return 'var(--color-goal-pregnancy)';
     case 'perimenopause':
-      return 'var(--color-accent)';
+      return 'var(--color-goal-perimenopause)';
     case 'tracking':
     default:
-      return 'var(--color-primary)';
+      return 'var(--color-goal-tracking)';
   }
 }

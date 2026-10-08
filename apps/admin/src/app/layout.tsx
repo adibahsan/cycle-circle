@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Manrope } from 'next/font/google';
 import { Providers } from '@/components/Providers';
+import { themeBootScript } from '@vesta/shared/utils/theme';
 import './globals.css';
 
 const manrope = Manrope({
@@ -16,10 +17,10 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Vesta Admin',
-    template: '%s | Vesta Admin',
+    default: 'Cycle Circle Admin',
+    template: '%s | Cycle Circle Admin',
   },
-  description: 'Admin panel for the Vesta reproductive health platform',
+  description: 'Admin panel for the Cycle Circle reproductive health platform',
   robots: {
     index: false,
     follow: false,
@@ -29,7 +30,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={manrope.variable} suppressHydrationWarning>
-      <body className="min-h-screen font-[var(--font-display)] antialiased" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript('vesta-admin-store') }} />
+      </head>
+      <body className="min-h-screen antialiased" suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

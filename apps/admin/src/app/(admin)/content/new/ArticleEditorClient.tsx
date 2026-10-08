@@ -31,10 +31,10 @@ interface ArticleEditorClientProps {
 }
 
 const CYCLE_PHASES = [
-  { value: 'MENSTRUAL', label: 'Menstrual', color: 'text-red-600' },
-  { value: 'FOLLICULAR', label: 'Follicular', color: 'text-purple-600' },
-  { value: 'OVULATION', label: 'Ovulation', color: 'text-orange-600' },
-  { value: 'LUTEAL', label: 'Luteal', color: 'text-pink-600' },
+  { value: 'MENSTRUAL', label: 'Menstrual', color: 'text-[var(--color-text-primary)]' },
+  { value: 'FOLLICULAR', label: 'Follicular', color: 'text-[var(--color-text-primary)]' },
+  { value: 'OVULATION', label: 'Ovulation', color: 'text-[var(--color-text-primary)]' },
+  { value: 'LUTEAL', label: 'Luteal', color: 'text-[var(--color-text-primary)]' },
 ]
 
 const STATUS_OPTIONS = [
@@ -104,7 +104,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
       <div className="flex items-center justify-between gap-4">
         <Link
           href="/content"
-          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] rounded"
         >
           <ArrowLeft size={15} aria-hidden="true" />
           Back to Content
@@ -115,7 +115,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
           onClick={handleSave}
           loading={isPending}
           disabled={isPending}
-          className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+          className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
         >
           <Save size={15} aria-hidden="true" />
           Save Article
@@ -123,7 +123,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
       </div>
 
       {error && (
-        <div aria-live="polite" className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+        <div aria-live="polite" className="rounded-xl border border-[var(--color-danger)] bg-[var(--color-danger-bg)] px-4 py-3 text-sm text-[var(--color-danger)]">
           {error}
         </div>
       )}
@@ -139,7 +139,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label htmlFor="title-en" className="block text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
-                  English Title <span className="text-red-500">*</span>
+                  English Title <span className="text-[var(--color-danger)]">*</span>
                 </label>
                 <input
                   id="title-en"
@@ -183,8 +183,8 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
                   <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                     English Body
                   </span>
-                  <span className="text-red-500 text-xs">*</span>
-                  <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-medium">
+                  <span className="text-[var(--color-danger)] text-xs">*</span>
+                  <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-info-bg)] text-[var(--color-info)] text-xs font-medium">
                     EN
                   </span>
                 </div>
@@ -202,7 +202,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
                   <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                     Bengali Body
                   </span>
-                  <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+                  <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-success-bg)] text-[var(--color-success)] text-xs font-medium">
                     বাং
                   </span>
                 </div>
@@ -233,7 +233,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
                     key={opt.value}
                     type="button"
                     onClick={() => { setStatus(opt.value); setIsDirty(true) }}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-colors transition-shadow duration-150 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-colors transition-shadow duration-150 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] ${
                       isSelected
                         ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/8'
                         : 'border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)]'
@@ -323,7 +323,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
             onClick={handleSave}
             loading={isPending}
             disabled={isPending}
-            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
           >
             <Save size={16} aria-hidden="true" />
             Save Article
