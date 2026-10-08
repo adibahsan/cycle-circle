@@ -38,7 +38,7 @@ export const DAY_STYLES: Record<DayStyleKind, DayStyle> = {
     color: 'var(--color-text-primary)',
   },
   fertile: {
-    background: 'color-mix(in oklab, var(--color-fertile) 16%, var(--color-bg-card))',
+    background: 'color-mix(in oklab, var(--color-fertile) 38%, var(--color-bg-card))',
     border: 'none',
     color: 'var(--color-text-primary)',
   },
