@@ -30,7 +30,7 @@ import type {
 } from '@/app/queries/insights-queries'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { hasAnyInsightsData } from '@/lib/insights-data'
+import { hasAnyInsightsData, groupInsights, type InsightKey } from '@/lib/insights-data'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -562,6 +562,13 @@ export function InsightsClient({
   )
 
   const noData = t('insights.noData')
+  const grouped = groupInsights({
+    cycleLengthTrend: filteredCycleLengthTrend,
+    symptomFrequency: filteredSymptomFrequency,
+    periodRegularity,
+    fertileWindowHistory: filteredFertileWindowHistory,
+  })
+  const shows = (k: InsightKey) => grouped.present.includes(k)
   const hasData = hasAnyInsightsData({ cycleLengthTrend, symptomFrequency, periodRegularity, fertileWindowHistory })
 
   return (
@@ -599,7 +606,8 @@ export function InsightsClient({
       </motion.div>
 
       {/* ── Cycle Length Trend ─────────────────────────────────────────────── */}
-      <motion.div
+      {shows('cycleLengthTrend') && (
+        <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15, duration: 0.4 }}
@@ -626,9 +634,11 @@ export function InsightsClient({
           </div>
         </Card>
       </motion.div>
+      )}
 
       {/* ── Symptom Frequency ──────────────────────────────────────────────── */}
-      <motion.div
+      {shows('symptomFrequency') && (
+        <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.22, duration: 0.4 }}
@@ -645,9 +655,11 @@ export function InsightsClient({
           </div>
         </Card>
       </motion.div>
+      )}
 
       {/* ── Period Regularity ──────────────────────────────────────────────── */}
-      <motion.div
+      {shows('periodRegularity') && (
+        <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.29, duration: 0.4 }}
@@ -666,9 +678,11 @@ export function InsightsClient({
           </div>
         </Card>
       </motion.div>
+      )}
 
       {/* ── Fertile Window History ─────────────────────────────────────────── */}
-      <motion.div
+      {shows('fertileWindowHistory') && (
+        <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.36, duration: 0.4 }}
@@ -684,6 +698,16 @@ export function InsightsClient({
           </div>
         </Card>
       </motion.div>
+      )}
+      {grouped.missing.length > 0 && (
+        <p
+          role="note"
+          data-testid="insights-missing-note"
+          className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-3 text-sm text-[var(--color-text-muted)]"
+        >
+          {t('insights.missingNote', { charts: grouped.missing.map((k) => t(`insights.${k}`)).join(', ') })}
+        </p>
+      )}
         </>
       )}
     </PageContainer>

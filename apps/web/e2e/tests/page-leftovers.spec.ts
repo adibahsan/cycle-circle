@@ -2,18 +2,24 @@ import { test, expect } from '@playwright/test'
 import { statePath } from '../support/auth'
 import { gotoQuiet, expectNoHorizontalOverflow, expectWithinViewport, PHONE_375, DESKTOP } from '../guards/helpers'
 
-/** Cards that are direct grid children must not leave a half-width card beside a full-width sibling. */
+/** No half-width card may sit alone in its row (a lone half-width card beside empty space). */
 async function expectNoHalfWidthPair(page: import('@playwright/test').Page, containerSel: string) {
-  const widths = await page.locator(containerSel).evaluate((el) =>
-    Array.from(el.children)
+  const { parentW, rects } = await page.locator(containerSel).evaluate((el) => ({
+    parentW: Math.round(el.getBoundingClientRect().width),
+    rects: Array.from(el.children)
       .map((c) => c.getBoundingClientRect())
-      .filter((r) => r.width > 0)
+      .filter((r) => r.width > 0 && r.height > 0)
       .map((r) => ({ w: Math.round(r.width), top: Math.round(r.top) })),
-  )
-  const parentW = await page.locator(containerSel).evaluate((el) => Math.round(el.getBoundingClientRect().width))
-  const half = widths.filter((r) => r.w < parentW * 0.6)
-  const full = widths.filter((r) => r.w >= parentW * 0.9)
-  expect(half.length > 0 && full.length > 0, `mixed widths ${JSON.stringify(widths)}`).toBe(false)
+  }))
+  const rows = new Map<number, number[]>()
+  for (const r of rects) {
+    const key = [...rows.keys()].find((k) => Math.abs(k - r.top) < 8) ?? r.top
+    rows.set(key, [...(rows.get(key) ?? []), r.w])
+  }
+  // The grid also holds the animated add-profile region; only assert on rows that hold cards.
+  for (const [, ws] of rows) {
+    if (ws.length === 1) expect(ws[0], `lone card ${ws[0]}/${parentW} ${JSON.stringify(rects)}`).toBeGreaterThanOrEqual(parentW * 0.9)
+  }
 }
 
 test.describe('desktop', () => {
@@ -28,6 +34,12 @@ test.describe('desktop', () => {
   test('feedback: form and history are same-width cards', async ({ page }) => {
     await gotoQuiet(page, '/feedback')
     await expectNoHalfWidthPair(page, 'main .lg\\:grid')
+  })
+
+  test('insights with partial data collapses empty charts into one note', async ({ page }) => {
+    await gotoQuiet(page, '/insights')
+    await expect(page.getByText(/not enough data yet/i)).toHaveCount(1)
+    await expect(page.getByTestId('insights-missing-note')).toHaveCount(1)
   })
 
   test.describe('empty account', () => {

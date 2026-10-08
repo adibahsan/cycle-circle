@@ -1083,7 +1083,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.4 }}
-            className="mt-5 rounded-2xl p-4 flex items-start gap-3"
+            className="lg:col-span-2 rounded-2xl p-4 flex items-start gap-3"
             style={{ background: 'color-mix(in srgb, var(--color-secondary) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--color-secondary) 20%, transparent)' }}
           >
             <span className="text-xl flex-shrink-0 mt-0.5">🔐</span>

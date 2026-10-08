@@ -34,3 +34,34 @@ describe('insights chart text', () => {
     expect(src).not.toMatch(/fontSize:\s*(\d|10)\b(?!\d)/)
   })
 })
+
+import { groupInsights } from '@/lib/insights-data'
+
+describe('groupInsights', () => {
+  it('lists every chart as missing when nothing has data', () => {
+    const g = groupInsights(none)
+    expect(g.present).toEqual([])
+    expect(g.missing).toEqual(['cycleLengthTrend', 'symptomFrequency', 'periodRegularity', 'fertileWindowHistory'])
+  })
+  it('splits charts with data from empty ones, keeping page order', () => {
+    const g = groupInsights({
+      ...none,
+      cycleLengthTrend: [{ cycleStart: '2026-01-01', length: 28 }] as never,
+      fertileWindowHistory: [{}] as never,
+    })
+    expect(g.present).toEqual(['cycleLengthTrend', 'fertileWindowHistory'])
+    expect(g.missing).toEqual(['symptomFrequency', 'periodRegularity'])
+  })
+  it('treats all-zero symptom counts as missing', () => {
+    expect(groupInsights({ ...none, symptomFrequency: [{ symptom: 'x', count: 0 }] as never }).present).toEqual([])
+  })
+  it('has no missing charts when everything has data', () => {
+    const g = groupInsights({
+      cycleLengthTrend: [{}] as never,
+      symptomFrequency: [{ symptom: 'x', count: 2 }] as never,
+      periodRegularity: { mean: 28, stdDev: 1, regular: true, sampleSize: 4 },
+      fertileWindowHistory: [{}] as never,
+    })
+    expect(g.missing).toEqual([])
+  })
+})
