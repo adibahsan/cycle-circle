@@ -33,7 +33,7 @@ export function EmailPreviewClient() {
       {/* Back link */}
       <Link
         href="/emails"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition-colors hover:text-gray-900 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition-colors hover:text-gray-900 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
       >
         <ChevronLeft aria-hidden="true" className="h-4 w-4" />
         Back to Email Logs
@@ -60,7 +60,7 @@ export function EmailPreviewClient() {
               id="template-select"
               value={template}
               onChange={(e) => setTemplate(e.target.value as TemplateKey)}
-              className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 transition-colors focus-visible:border-pink-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/30"
+              className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 transition-colors focus-visible:border-pink-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--color-primary)_30%,transparent)]"
             >
               {(
                 Object.entries(TEMPLATE_LABELS) as [TemplateKey, string][]
@@ -87,7 +87,7 @@ export function EmailPreviewClient() {
                   onClick={() => setLanguage(lang)}
                   aria-pressed={language === lang}
                   className={[
-                    'rounded px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500',
+                    'rounded px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]',
                     language === lang
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-500 hover:text-gray-700',

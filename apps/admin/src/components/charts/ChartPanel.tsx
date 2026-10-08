@@ -19,18 +19,11 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { Card } from '@/components/ui/Card'
+import { CHART_TOKENS, CHART_VAR, useChartColors } from '@/lib/chart-palette'
 
-// ── Color palette — mirrors AnalyticsClient exactly ────────────────────────
-const PRIMARY  = '#E8476C'
-const BLUE     = '#3B82F6'
-const INDIGO   = '#6366F1'
-const GREEN    = '#10B981'
-const AMBER    = '#F59E0B'
-const PURPLE   = '#9B7FD4'
-const CORAL    = '#FF8C6B'
+/** Ordered series palette as var() strings; resolved to concrete colours at render. */
+export const CHART_PALETTE = CHART_TOKENS.map((t) => `var(${t.cssVar})`)
 
-/** Ordered fallback palette — same as FALLBACK_COLORS in AnalyticsClient */
-export const CHART_PALETTE = [PRIMARY, INDIGO, GREEN, AMBER, PURPLE, CORAL, BLUE] as const
 
 // ── Public types ──────────────────────────────────────────────────────────
 
@@ -114,7 +107,7 @@ function PieTooltip({ active, payload }: PieTooltipProps) {
   return (
     <TooltipBox>
       <p className="font-semibold text-[var(--color-text-primary)]">{name}</p>
-      <p className="font-bold tabular-nums" style={{ color: inner?.fill ?? PRIMARY }}>
+      <p className="font-bold tabular-nums" style={{ color: inner?.fill ?? CHART_VAR.primary }}>
         {value ?? '–'}
       </p>
     </TooltipBox>
@@ -166,6 +159,7 @@ function BarRenderer({
   xKey: string
   series: ChartSeries[]
 }) {
+  const rc = useChartColors()
   return (
     <BarChart data={data} margin={CARTESIAN_MARGIN}>
       <CartesianGrid
@@ -201,8 +195,8 @@ function BarRenderer({
         <Bar
           key={s.key}
           dataKey={s.key}
-          name={s.key}
-          fill={resolveColor(s, i)}
+          name={s.label}
+          fill={rc(resolveColor(s, i))}
           radius={[4, 4, 0, 0]}
           maxBarSize={40}
         />
@@ -222,6 +216,7 @@ function LineRenderer({
   xKey: string
   series: ChartSeries[]
 }) {
+  const rc = useChartColors()
   return (
     <LineChart data={data} margin={CARTESIAN_MARGIN}>
       <CartesianGrid
@@ -254,17 +249,17 @@ function LineRenderer({
         />
       )}
       {series.map((s, i) => {
-        const color = resolveColor(s, i)
+        const color = rc(resolveColor(s, i))
         return (
           <Line
             key={s.key}
             type="monotone"
             dataKey={s.key}
-            name={s.key}
+            name={s.label}
             stroke={color}
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: '#fff' }}
+            activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: rc(CHART_VAR.surface) }}
           />
         )
       })}
@@ -283,11 +278,12 @@ function AreaRenderer({
   xKey: string
   series: ChartSeries[]
 }) {
+  const rc = useChartColors()
   return (
     <AreaChart data={data} margin={CARTESIAN_MARGIN}>
       <defs>
         {series.map((s, i) => {
-          const color = resolveColor(s, i)
+          const color = rc(resolveColor(s, i))
           return (
             <linearGradient key={s.key} id={`areaGrad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor={color} stopOpacity={0.25} />
@@ -326,18 +322,18 @@ function AreaRenderer({
         />
       )}
       {series.map((s, i) => {
-        const color = resolveColor(s, i)
+        const color = rc(resolveColor(s, i))
         return (
           <Area
             key={s.key}
             type="monotone"
             dataKey={s.key}
-            name={s.key}
+            name={s.label}
             stroke={color}
             strokeWidth={2}
             fill={`url(#areaGrad-${s.key})`}
             dot={false}
-            activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: '#fff' }}
+            activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: rc(CHART_VAR.surface) }}
           />
         )
       })}
@@ -356,6 +352,7 @@ function PieRenderer({
   xKey: string
   series: ChartSeries[]
 }) {
+  const rc = useChartColors()
   // First series key is the value, xKey is the name
   const valueKey = series[0].key
   return (
@@ -374,7 +371,7 @@ function PieRenderer({
         {data.map((_, index) => (
           <Cell
             key={index}
-            fill={CHART_PALETTE[index % CHART_PALETTE.length]}
+            fill={rc(CHART_PALETTE[index % CHART_PALETTE.length])}
           />
         ))}
       </Pie>

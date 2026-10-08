@@ -90,7 +90,7 @@ export function DataTable<T extends Record<string, unknown>>({
                 {col.sortable ? (
                   <button
                     onClick={() => handleSort(col)}
-                    className="inline-flex items-center gap-1 select-none hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded"
+                    className="inline-flex items-center gap-1 select-none hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] rounded"
                   >
                     {col.header}
                     <span className="flex flex-col leading-none opacity-50">
@@ -150,7 +150,7 @@ export function DataTable<T extends Record<string, unknown>>({
                 className={clsx(
                   'border-b border-[var(--color-border)] last:border-0 transition-colors duration-150',
                   'hover:bg-[var(--color-bg-secondary)]',
-                  onRowClick && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-rose-500'
+                  onRowClick && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-primary)]'
                 )}
               >
                 {columns.map((col) => (

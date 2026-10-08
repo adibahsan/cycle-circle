@@ -13,6 +13,7 @@ import { StatCard } from '@/components/ui/StatCard'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { DateRangeControl } from '@/components/charts/DateRangeControl'
+import { CHART_VAR } from '@/lib/chart-palette'
 
 const SignupTrendChart = dynamic(
   () => import('@/components/charts/SignupTrendChart').then((m) => m.SignupTrendChart),
@@ -164,7 +165,7 @@ export function DashboardClient({ stats, userTrend, signupTrend, subscriptionTre
             title="New Users Over Time"
             data={signupTrend.map((d) => ({ date: formatDate(d.date), count: d.count }))}
             xKey="date"
-            series={[{ key: 'count', label: 'New users', color: '#E8476C' }]}
+            series={[{ key: 'count', label: 'New users', color: CHART_VAR.primary }]}
             kinds={['area', 'line', 'bar']}
             defaultKind="area"
             height={260}
@@ -174,7 +175,7 @@ export function DashboardClient({ stats, userTrend, signupTrend, subscriptionTre
             title="New Subscriptions Over Time"
             data={subscriptionTrend.map((d) => ({ date: formatDate(d.date), count: d.count }))}
             xKey="date"
-            series={[{ key: 'count', label: 'New subscriptions', color: '#6366F1' }]}
+            series={[{ key: 'count', label: 'New subscriptions', color: CHART_VAR.secondary }]}
             kinds={['area', 'line', 'bar']}
             defaultKind="area"
             height={260}

@@ -636,7 +636,7 @@ function FeedbackTab({ feedback }: { feedback: Feedback[] }) {
               </span>
               <Link
                 href={`/feedback/${fb.id}`}
-                className="text-xs font-medium text-[var(--color-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
+                className="text-xs font-medium text-[var(--color-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] rounded"
               >
                 View
               </Link>
@@ -717,7 +717,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
       <div className="flex items-center justify-between gap-4">
         <button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
         >
           <ArrowLeft size={15} aria-hidden="true" />
           Back to users
@@ -891,7 +891,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors transition-shadow duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors transition-shadow duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] ${
               activeTab === tab.key
                 ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-soft'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'

@@ -122,7 +122,7 @@ function PageSizeSelect({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={`Rows per page: ${value}`}
-        className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-1 text-[var(--color-text-primary)] tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 hover:border-[var(--color-primary)]"
+        className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-1 text-[var(--color-text-primary)] tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] hover:border-[var(--color-primary)]"
       >
         {value}
         <ChevronDown
@@ -234,7 +234,7 @@ export function Pagination({
             'flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors duration-150',
             'hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]',
             'disabled:opacity-40 disabled:cursor-not-allowed',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500'
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]'
           )}
           aria-label="Previous page"
         >
@@ -256,7 +256,7 @@ export function Pagination({
               aria-current={page === currentPage ? 'page' : undefined}
               className={clsx(
                 'flex h-8 w-8 items-center justify-center rounded-lg border text-sm font-medium transition-colors duration-150',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]',
                 page === currentPage
                   ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
                   : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]'
@@ -274,7 +274,7 @@ export function Pagination({
             'flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors duration-150',
             'hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]',
             'disabled:opacity-40 disabled:cursor-not-allowed',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500'
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]'
           )}
           aria-label="Next page"
         >

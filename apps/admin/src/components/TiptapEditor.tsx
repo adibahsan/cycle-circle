@@ -27,7 +27,7 @@ function ToolbarButton({ onClick, active, title, children }: ToolbarButtonProps)
       aria-label={title}
       onClick={onClick}
       className={clsx(
-        'inline-flex items-center justify-center h-8 w-8 rounded-lg text-sm font-semibold transition-colors transition-shadow duration-150 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500',
+        'inline-flex items-center justify-center h-8 w-8 rounded-lg text-sm font-semibold transition-colors transition-shadow duration-150 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]',
         active
           ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)]'
           : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]'
