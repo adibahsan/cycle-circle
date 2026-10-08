@@ -30,6 +30,8 @@ import type { FlowIntensity } from '@vesta/shared/types'
 import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
 import { selectFertileWindow } from '@vesta/shared/utils/fertile-window'
 import '@vesta/shared/utils/i18n'
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -652,21 +654,13 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
   ]
 
   return (
-    <div className="flex flex-col gap-4 py-3 relative overflow-hidden">
+    <PageContainer width="wide" className="relative overflow-hidden">
 
       {/* ── Page header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-          {t('nav.calendar')}
-        </h1>
-        <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-          {format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}
-        </p>
-      </motion.div>
+      <PageHeader
+        title={t('nav.calendar')}
+        subtitle={format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}
+      />
 
       {/* ── Logging Nudge ── */}
       <LoggingNudge
@@ -693,14 +687,14 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
       />
 
       {/* ── Desktop: side-by-side layout (calendar + detail panel) ── */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col xl:flex-row gap-5">
 
         {/* ── Calendar card (constrained width on desktop) ── */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="lg:w-[480px] lg:shrink-0"
+          className="xl:w-[480px] xl:shrink-0"
         >
           <Card padding="md">
             <div className="flex items-center justify-between mb-4">
@@ -812,7 +806,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
         </motion.div>
 
         {/* ── Right panel: Day Detail + Monthly Summary (sticky on desktop) ── */}
-        <div className="flex-1 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start min-w-0">
+        <div className="flex-1 flex flex-col gap-4 xl:sticky xl:top-4 xl:self-start min-w-0">
 
           {/* Day Detail */}
           <AnimatePresence mode="wait">
@@ -931,7 +925,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
           window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
         }}
       />
-    </div>
+    </PageContainer>
   )
 }
 

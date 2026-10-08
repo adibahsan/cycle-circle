@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
 import { useReducedMotion } from 'motion/react'
-import { TrendingUp } from 'lucide-react'
 import {
   ResponsiveContainer,
   LineChart,
@@ -29,6 +28,8 @@ import type {
   PeriodRegularity,
   FertileWindowPoint,
 } from '@/app/queries/insights-queries'
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -558,27 +559,12 @@ export function InsightsClient({
   return (
     // tabular-nums on Recharts numeric axis ticks (FR-INSIGHTS NFR) — applied
     // to the tick value text so chart axes line up digit-for-digit.
-    <div className="flex flex-col gap-5 py-3 [&_.recharts-cartesian-axis-tick-value]:[font-variant-numeric:tabular-nums]">
+    <PageContainer className="[&_.recharts-cartesian-axis-tick-value]:[font-variant-numeric:tabular-nums]">
       {/* ── Page header ──────────────────────────────────────────────────── */}
-      <motion.div
-        initial={shouldAnimate ? { opacity: 0, y: 12 } : false}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex flex-col gap-1 pt-2"
-      >
-        <div className="flex items-center gap-2">
-          <TrendingUp size={20} className="text-[var(--goal-accent)]" aria-hidden="true" />
-          <h1 className="text-2xl font-extrabold text-[var(--color-text-primary)]">
-            {t('insights.title')}
-          </h1>
-        </div>
-        <p className="text-sm text-[var(--color-text-muted)]">{t('insights.subtitle')}</p>
-        {activeProfile && (
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-            {activeProfile.name}
-          </p>
-        )}
-      </motion.div>
+      <PageHeader
+        title={t('insights.title')}
+        subtitle={activeProfile ? `${t('insights.subtitle')} · ${activeProfile.name}` : t('insights.subtitle')}
+      />
 
       {/* ── Global controls ───────────────────────────────────────────────── */}
       <motion.div
@@ -681,6 +667,6 @@ export function InsightsClient({
           </div>
         </Card>
       </motion.div>
-    </div>
+    </PageContainer>
   )
 }

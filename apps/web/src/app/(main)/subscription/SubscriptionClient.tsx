@@ -23,6 +23,8 @@ import type { SubscriptionStatus } from '@vesta/shared/types'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
 import { updateContactInfo } from '@/app/actions/user-actions'
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 interface SubscriptionClientProps {
@@ -309,23 +311,14 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
   const isProUser = tier === 'PRO'
 
   return (
-    <div className="py-4 space-y-6">
-      {/* ── Page title ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-      >
-        <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
-          {t('subscription.title')}
-        </h1>
-        <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-          {t('subscription.unlockTagline')}
-        </p>
-      </motion.div>
+    <PageContainer>
+      <PageHeader
+        title={t('subscription.title')}
+        subtitle={t('subscription.unlockTagline')}
+      />
 
       {/* ── Current Plan + Upgrade Cards ── */}
-      <div className="flex flex-col gap-6 md:grid md:grid-cols-2">
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2">
         {/* ── Current Plan Card ── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -625,6 +618,6 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
           onCancel={handleClose}
         />
       )}
-    </div>
+    </PageContainer>
   )
 }

@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/Button'
 import { submitFeedback } from '@/app/actions/feedback-actions'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import '@vesta/shared/utils/i18n'
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // ── Prisma Feedback shape (from DB) ───────────────────────────────────────────
 interface DbFeedback {
@@ -244,17 +246,12 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
   }
 
   return (
-    <div className="py-4">
+    <PageContainer>
       {/* ── Page header ── */}
-      <motion.div custom={0} variants={FADE_UP} initial="hidden" animate="show" className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
-          {t('feedback.title')}
-        </h1>
-        <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('feedback.helpUs')}</p>
-      </motion.div>
+      <PageHeader title={t('feedback.title')} subtitle={t('feedback.helpUs')} />
 
       {/* ── Feedback Form Card + History (side-by-side on desktop) ── */}
-      <div className="md:grid md:grid-cols-2 md:gap-6">
+      <div className="lg:grid lg:grid-cols-2 lg:gap-5">
         <motion.div custom={1} variants={FADE_UP} initial="hidden" animate="show">
           <Card padding="md" className="mb-6">
             <AnimatePresence mode="wait">
@@ -472,6 +469,6 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
           )}
         </div>
       </div>
-    </div>
+    </PageContainer>
   )
 }

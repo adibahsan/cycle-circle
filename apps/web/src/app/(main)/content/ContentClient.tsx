@@ -8,6 +8,8 @@ import { useAppStore } from '@/lib/store'
 import { getPhaseColor, getPhaseEmoji } from '@vesta/shared/utils/cycle-utils'
 import '@vesta/shared/utils/i18n'
 import { getArticleBody } from '@/app/actions/content-actions'
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 type FilterTab = 'all' | 'MENSTRUAL' | 'FOLLICULAR' | 'OVULATION' | 'LUTEAL'
 
@@ -128,7 +130,8 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
 
   if (selectedArticle) {
     return (
-      <div className="py-4">
+      <PageContainer>
+        <PageHeader title={getTitle(selectedArticle)} />
         <button
           onClick={() => setSelectedArticle(null)}
           className="flex items-center gap-1 text-sm text-[var(--goal-accent)] font-medium mb-4 hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
@@ -142,10 +145,6 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
               {selectedArticle.category.name}
             </span>
           )}
-
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">
-            {getTitle(selectedArticle)}
-          </h1>
 
           {selectedArticle.cyclePhases.length > 0 && (
             <div className="flex gap-1.5 mb-4">
@@ -203,20 +202,13 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
             />
           )}
         </article>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="py-4">
-      <div className="mb-5">
-        <h2 className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)]">
-          {t('content.title')}
-        </h2>
-        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-          {t('content.subtitle')}
-        </p>
-      </div>
+    <PageContainer>
+      <PageHeader title={t('content.title')} subtitle={t('content.subtitle')} />
 
       {/* Phase filter tabs */}
       <div className="mb-5 -mx-4 px-4">
@@ -355,6 +347,6 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
           })}
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

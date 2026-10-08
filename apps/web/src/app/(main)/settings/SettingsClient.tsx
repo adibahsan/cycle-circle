@@ -34,6 +34,8 @@ import { updateContactInfo } from '@/app/actions/user-actions'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { Language, Theme } from '@vesta/shared/types'
 import { isPro as isProHelper, getSubscriptionTier } from '@vesta/shared/utils/subscription'
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // ── DB types ───────────────────────────────────────────────────────────────────
 interface DbProfile {
@@ -467,19 +469,10 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
     <>
       <Toast toast={toast} />
 
-      <div className="py-4 space-y-6">
-        {/* ── Page title ── */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
-            {t('settings.title')}
-          </h1>
-        </motion.div>
+      <PageContainer>
+        <PageHeader title={t('settings.title')} />
 
-        <div className="md:grid md:grid-cols-2 md:gap-6 space-y-6 md:space-y-0">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-5 space-y-5 lg:space-y-0">
           {/* ── Left column ── */}
           <div className="space-y-6">
             {/* 1. Language & Appearance */}
@@ -885,10 +878,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
             </motion.div>
           </div>
         </div>
-
-        {/* Bottom spacer */}
-        <div className="h-4" />
-      </div>
+      </PageContainer>
 
       {showLogoutConfirm && (
         <div

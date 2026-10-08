@@ -1,8 +1,9 @@
+import { PageContainer } from '@/components/ui/PageContainer';
 import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function DashboardLoading() {
   return (
-    <div className="space-y-6 max-w-4xl mx-auto p-4 animate-pulse-soft">
+    <PageContainer width="wide" className="animate-pulse-soft">
       {/* Header greeting skeleton */}
       <div className="space-y-2">
         <Shimmer className="h-8 w-48 rounded-lg" />
@@ -79,6 +80,6 @@ export default function DashboardLoading() {
           </div>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
