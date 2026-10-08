@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { VestaLogoSVG } from '@/components/ui/VestaLogo';
+import { ContactBlock } from '@/components/legal/ContactBlock';
 
 export function LandingFooter() {
   const { t } = useTranslation();
@@ -13,7 +14,7 @@ export function LandingFooter() {
         {/* Logo + wordmark */}
         <div className="flex items-center gap-2.5">
           <VestaLogoSVG size={28} />
-          <span className="font-bold text-[var(--color-primary)] text-lg tracking-wide">
+          <span className="font-extrabold text-[var(--color-text-primary)] text-lg">
             {t('app.name')}
           </span>
         </div>
@@ -24,7 +25,7 @@ export function LandingFooter() {
             <li>
               <Link
                 href="/privacy"
-                className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
+                className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
               >
                 {t('landing.footer.privacy')}
               </Link>
@@ -32,7 +33,7 @@ export function LandingFooter() {
             <li>
               <Link
                 href="/terms"
-                className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
+                className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
               >
                 {t('landing.footer.terms')}
               </Link>
@@ -40,7 +41,7 @@ export function LandingFooter() {
             <li>
               <Link
                 href="/login"
-                className="text-sm font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
+                className="text-sm font-semibold text-[var(--color-primary)] hover:text-[var(--color-text-primary)] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
               >
                 {t('landing.footer.login')}
               </Link>
@@ -48,11 +49,14 @@ export function LandingFooter() {
           </ul>
         </nav>
 
-        {/* Rights / copyright */}
-        <p className="text-xs text-[var(--color-text-muted)]">
-          {t('landing.footer.rights')}
-        </p>
+        {/* Contact */}
+        <ContactBlock showHeading className="w-full sm:w-auto" />
       </div>
+
+      {/* Rights / copyright */}
+      <p className="mt-8 text-center text-xs text-[var(--color-text-muted)]">
+        {t('landing.footer.rights')}
+      </p>
     </footer>
   );
 }
