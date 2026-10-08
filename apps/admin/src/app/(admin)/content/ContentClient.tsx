@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Pagination } from '@/components/ui/Pagination'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { deleteArticle, createCategory, updateCategory, deleteCategory } from '@/app/actions/content-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
@@ -442,22 +443,15 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
       />
 
       {/* Category manager modal */}
-      {showCategoryManager && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 overscroll-contain"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="category-manager-title"
-        >
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => !saving && !deletingCategory && setShowCategoryManager(false)}
-            aria-hidden="true"
-          />
-
-          {/* Dialog card */}
-          <div className="relative z-10 w-full max-w-lg rounded-2xl glass border border-[var(--color-border)] shadow-soft flex flex-col max-h-[80vh]">
+      <Modal
+        open={showCategoryManager}
+        onClose={() => setShowCategoryManager(false)}
+        titleId="category-manager-title"
+        dismissible={!saving && !deletingCategory}
+        panelClassName="max-w-lg"
+        initialFocusRef={categoryInputRef}
+      >
+        <div className="flex flex-col">
             {/* Modal header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] shrink-0">
               <h2
@@ -542,6 +536,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                     e.preventDefault()
                                     commitRenameCategory(cat.id)
                                   } else if (e.key === 'Escape') {
+                                    e.stopPropagation() // cancels the rename only, not the manager
                                     cancelEditCategory()
                                   }
                                 }}
@@ -642,8 +637,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
               </Button>
             </div>
           </div>
-        </div>
-      )}
+      </Modal>
 
       {/* Delete category confirm */}
       <ConfirmModal

@@ -128,6 +128,7 @@ export function Select({
         break;
       case 'Escape':
         e.preventDefault();
+        e.stopPropagation(); // closes only the list, not the pop-up around it
         setOpen(false);
         buttonRef.current?.focus();
         break;

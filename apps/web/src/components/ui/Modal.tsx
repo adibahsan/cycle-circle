@@ -20,37 +20,12 @@ import { useHasMounted } from '@/components/motion/useHasMounted';
 import {
   Z_CLASS,
   FOCUSABLE_SELECTOR,
-  createInertManager,
-  createPopupStack,
-  createScrollLock,
   nextTrapIndex,
   type PopupLayer,
 } from '@/components/ui/popup-core';
+import { popupStack, inertManager, getScrollLock, backgroundElements } from '@vesta/shared/utils/popup-runtime';
 
-// ─── Module singletons (shared by every open pop-up) ─────────────────────────
-
-const stack = createPopupStack();
-const inertManager = createInertManager<HTMLElement>();
-let scrollLock: ReturnType<typeof createScrollLock> | null = null;
-
-function getScrollLock() {
-  if (!scrollLock) {
-    scrollLock = createScrollLock({
-      html: document.documentElement,
-      body: document.body,
-      scrollbarWidth: () => window.innerWidth - document.documentElement.clientWidth,
-    });
-  }
-  return scrollLock;
-}
-
-const NEVER_INERT = new Set(['SCRIPT', 'STYLE', 'LINK', 'NOSCRIPT', 'TEMPLATE']);
-
-function backgroundElements(own: HTMLElement): HTMLElement[] {
-  return Array.from(document.body.children).filter(
-    (el): el is HTMLElement => el instanceof HTMLElement && el !== own && !NEVER_INERT.has(el.tagName),
-  );
-}
+const stack = popupStack;
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 

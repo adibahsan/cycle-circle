@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { DateTimePicker } from '@/components/ui/DateTimePicker'
 import {
@@ -116,11 +117,9 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
   const [error, setError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Focus textarea when modal opens; reset all state when it closes
+  // Reset all state when the modal closes (the shell focuses [data-autofocus] on open)
   useEffect(() => {
-    if (open) {
-      setTimeout(() => textareaRef.current?.focus(), 50)
-    } else {
+    if (!open) {
       setMode('single')
       setMessage('')
       setMessageBn('')
@@ -130,18 +129,6 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
       setError(null)
     }
   }, [open])
-
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !submitting) onClose()
-    }
-    document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
-  }, [open, submitting, onClose])
-
-  if (!open) return null
 
   const bulkLineCount = bulkText
     .split('\n')
@@ -192,22 +179,15 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
   const isScheduled = Boolean(scheduledFor)
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="create-broadcast-title"
-      style={{ overscrollBehavior: 'contain' }}
+    <Modal
+      open={open}
+      onClose={onClose}
+      titleId="create-broadcast-title"
+      dismissible={!submitting}
+      panelClassName="max-w-lg"
+      initialFocusRef={textareaRef}
     >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={() => !submitting && onClose()}
-        aria-hidden="true"
-      />
-
-      {/* Card */}
-      <div className="relative z-10 w-full max-w-lg rounded-2xl glass border border-[var(--color-border)] shadow-soft focus:outline-none max-h-[90vh] overflow-y-auto">
+      <div>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <div className="flex items-center gap-2.5">
@@ -426,7 +406,7 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
           </div>
         </form>
       </div>
-    </div>
+    </Modal>
   )
 }
 
