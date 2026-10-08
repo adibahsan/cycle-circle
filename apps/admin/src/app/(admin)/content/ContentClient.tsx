@@ -58,9 +58,9 @@ const STATUS_OPTIONS = [
 
 const PHASE_LABELS: Record<string, string> = {
   MENSTRUAL: 'Menstrual',
-  FOLLICULAR: 'bg-[color-mix(in_srgb,var(--color-follicular)_22%,transparent)] text-[var(--color-text-primary)]',
-  OVULATION: 'bg-[color-mix(in_srgb,var(--color-ovulation)_22%,transparent)] text-[var(--color-text-primary)]',
-  LUTEAL: 'bg-[color-mix(in_srgb,var(--color-luteal)_22%,transparent)] text-[var(--color-text-primary)]',
+  FOLLICULAR: 'Follicular',
+  OVULATION: 'Ovulation',
+  LUTEAL: 'Luteal',
 }
 
 const PHASE_COLORS: Record<string, string> = {

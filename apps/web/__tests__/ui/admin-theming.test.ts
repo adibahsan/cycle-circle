@@ -57,6 +57,13 @@ const THEMED_FILES = [
   'apps/admin/src/app/(admin)/subscriptions/SubscriptionsClient.tsx',
   'apps/admin/src/app/(admin)/sms/SmsClient.tsx',
   'apps/admin/src/app/(admin)/DashboardClient.tsx',
+  'apps/admin/src/app/(admin)/content/ContentClient.tsx',
+  'apps/admin/src/app/(admin)/feedback/FeedbackClient.tsx',
+  'apps/admin/src/app/(admin)/feedback/[id]/FeedbackDetailClient.tsx',
+  'apps/admin/src/app/(admin)/content/new/ArticleEditorClient.tsx',
+  'apps/admin/src/app/(admin)/content/[id]/EditArticleClient.tsx',
+  'apps/admin/src/components/ui/Select.tsx',
+  'apps/admin/src/components/ui/Button.tsx',
 ]
 
 describe('admin theming: no hard-coded light palette in themed surfaces', () => {
@@ -74,6 +81,20 @@ describe('admin theming: no hard-coded light palette in themed surfaces', () => 
     for (const f of THEMED_FILES.slice(0, 2)) {
       const src = read(f)
       expect(src).not.toMatch(/bg-gray-|ring-gray-|text-gray-/)
+    }
+  })
+})
+
+describe('content phase labels', () => {
+  it('PHASE_LABELS holds plain labels, never class strings or tokens', () => {
+    const src = read('apps/admin/src/app/(admin)/content/ContentClient.tsx')
+    const m = src.match(/const PHASE_LABELS[^{]*\{([^}]*)\}/)
+    expect(m).not.toBeNull()
+    const values = [...m![1].matchAll(/:\s*'([^']*)'/g)].map((x) => x[1])
+    expect(values).toEqual(['Menstrual', 'Follicular', 'Ovulation', 'Luteal'])
+    for (const v of values) {
+      expect(v).not.toContain('var(')
+      expect(v).not.toContain('bg-')
     }
   })
 })
