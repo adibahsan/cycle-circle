@@ -6,7 +6,7 @@
  */
 import { test, expect, type Locator, type Page } from '@playwright/test'
 import i18n from '@vesta/shared/utils/i18n'
-import { PHONE_375, DESKTOP, dialog, gotoQuiet, mockApi, settle, suppressAutoPrompts } from '../guards/helpers'
+import { PHONE_375, DESKTOP, asFreeSubscriber, dialog, gotoQuiet, gotoSubscriptionClientSide, mockApi, settle, suppressAutoPrompts } from '../guards/helpers'
 import { collectTexts, latinOffenders } from '../support/latin-scan'
 
 const bn = i18n.getFixedT('bn')
@@ -74,20 +74,24 @@ interface Popup {
   phone?: boolean
   /** Leave auto prompts alone (the pop-up IS an auto prompt). */
   loud?: boolean
+  /** Opens inline content, not a shell dialog. */
+  inline?: boolean
+  /** Rewrite the subscription page into an email-trial user with a phone. */
+  freeSubscriber?: boolean
   open: (page: Page) => Locator | Promise<Locator>
 }
 
 const POPUPS: Popup[] = [
   { id: 'period-log', route: '/dashboard', open: (p) => p.getByRole('button', { name: bn('dashboard.logPeriod') }).first() },
   { id: 'quick-symptom', route: '/dashboard', open: (p) => p.getByRole('button', { name: bn('dashboard.logSymptoms') }).first() },
-  { id: 'calendar-day', route: '/calendar', open: (p) => p.locator('[role="gridcell"] button:visible').first() },
-  { id: 'period-log-edit', route: '/calendar', open: (p) => p.locator(`button[aria-label^="${bn('calendar.editLogStarting', { date: '@@' }).split('@@')[0]}"]:visible`).first() },
+  { id: 'calendar-day', route: '/calendar', inline: true, open: (p) => p.locator('button[aria-pressed]:visible').first() },
+  { id: 'period-log-edit', route: '/calendar', open: (p) => p.locator(`button[aria-label$="${bn('calendar.editLogStarting', { date: '@@' }).split('@@')[1]}"]:visible`).first() },
   { id: 'logout', route: '/settings', open: (p) => p.getByRole('button', { name: bn('settings.logout') }).first() },
   { id: 'profile-edit', route: '/profiles', open: (p) => p.locator(`button[aria-label^="${bn('profiles.editProfile')}"]:visible`).first() },
-  { id: 'profile-add', route: '/profiles', open: (p) => p.getByRole('button', { name: bn('profiles.add') }).first() },
-  { id: 'paywall', route: '/subscription', mocks: ['free-user'], open: (p) => p.locator('main button:visible').filter({ hasText: bn('subscription.upgradeButton') }).first() },
-  { id: 'profile-completion', route: '/dashboard', mocks: ['incomplete-profile'], open: (p) => p.locator('[data-tour="profile-ring"] button, [data-tour="profile-ring"]').first() },
-  { id: 'trial-pill', route: '/dashboard', mocks: ['email-trial'], open: (p) => p.locator('button[aria-label*="Trial ends"], button[aria-label*="ট্রায়াল"]').first() },
+  { id: 'profile-add', route: '/profiles', inline: true, open: (p) => p.getByRole('button', { name: bn('profiles.add') }).first() },
+  { id: 'paywall', route: '/subscription', freeSubscriber: true, open: (p) => p.getByRole('button', { name: bn('subscription.upgradeButton') }).first() },
+  { id: 'profile-completion', route: '/dashboard', mocks: ['incomplete-profile'], open: (p) => p.locator('[data-tour="profile-ring"]:visible').first() },
+  { id: 'trial-pill', route: '/dashboard', mocks: ['email-trial'], open: (p) => p.locator('button[aria-label*="ট্রায়াল"]:visible').first() },
   { id: 'more-sheet', route: '/dashboard', phone: true, open: (p) => p.locator('nav button[aria-haspopup="dialog"]:visible').first() },
 ]
 
@@ -97,11 +101,16 @@ for (const c of POPUPS) {
     test('has no English', async ({ page }) => {
       await useBengali(page)
       if (c.mocks) await mockApi(page, c.mocks)
-      await gotoQuiet(page, c.route)
+      if (c.freeSubscriber) {
+        await asFreeSubscriber(page, false)
+        await gotoSubscriptionClientSide(page)
+      } else {
+        await gotoQuiet(page, c.route)
+      }
       const trigger = await c.open(page)
       await expect(trigger).toBeVisible({ timeout: 15_000 })
       await trigger.click()
-      await expect(dialog(page)).toBeVisible()
+      if (!c.inline) await expect(dialog(page)).toBeVisible()
       await settle(page, 600)
       await expectNoEnglish(page, `pop-up ${c.id}`)
     })
