@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { resolveTheme, themeBootScript } from '@vesta/shared/utils/theme'
+import { chooseTheme, resolveTheme, restoreTheme, themeBootScript } from '@vesta/shared/utils/theme'
 
 const ROOT = path.resolve(__dirname, '../../../..')
 const read = (rel: string) => readFileSync(path.join(ROOT, rel), 'utf8')
@@ -119,6 +119,17 @@ describe('resolveTheme', () => {
     expect(resolveTheme(undefined, true)).toBe('dark')
     expect(resolveTheme(null, false)).toBe('light')
     expect(resolveTheme('garbage', true)).toBe('dark')
+  })
+})
+
+describe('theme store patches (shared by web and admin stores)', () => {
+  it('an explicit choice is remembered', () => {
+    expect(chooseTheme('dark')).toEqual({ theme: 'dark', themeChosen: true })
+  })
+  it('rehydrating keeps a valid choice, otherwise follows the system without marking it chosen', () => {
+    expect(restoreTheme('light', true)).toEqual({ theme: 'light', themeChosen: true })
+    expect(restoreTheme(undefined, true)).toEqual({ theme: 'dark', themeChosen: false })
+    expect(restoreTheme('garbage', false)).toEqual({ theme: 'light', themeChosen: false })
   })
 })
 

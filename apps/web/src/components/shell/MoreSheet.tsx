@@ -3,18 +3,12 @@
 import { useId } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, Settings, MessageSquare, Users, CreditCard, Sun, Moon, type LucideIcon } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
-import { MORE_ITEMS, isNavActive, type NavIconKey } from '@/components/shell/nav-config';
-
-const ICONS: Partial<Record<NavIconKey, LucideIcon>> = {
-  content: BookOpen,
-  profiles: Users,
-  subscription: CreditCard,
-  feedback: MessageSquare,
-  settings: Settings,
-};
+import { MORE_ITEMS, isNavActive } from '@/components/shell/nav-config';
+import { NAV_ICONS } from '@/components/shell/nav-icons';
+import type { Theme } from '@vesta/shared/utils/theme';
 
 /** Phone "More" sheet: the destinations that left the bottom nav, plus theme and language. */
 export function MoreSheet({
@@ -27,7 +21,7 @@ export function MoreSheet({
   open: boolean;
   onClose: () => void;
   pathname: string | null;
-  theme: 'light' | 'dark' | string;
+  theme: Theme;
   onToggleTheme: () => void;
 }) {
   const { t } = useTranslation();
@@ -47,7 +41,7 @@ export function MoreSheet({
     >
       <ul className="flex flex-col gap-1 px-3 pb-2">
         {MORE_ITEMS.map(({ href, icon, labelKey }) => {
-          const Icon = ICONS[icon]!;
+          const Icon = NAV_ICONS[icon];
           const active = isNavActive(href, pathname);
           return (
             <li key={href}>

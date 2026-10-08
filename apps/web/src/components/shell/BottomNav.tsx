@@ -2,15 +2,9 @@
 
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { Home, CalendarDays, Activity, TrendingUp, Menu } from 'lucide-react';
-import { BOTTOM_NAV_ITEMS, isMoreActive, isNavActive, type NavIconKey } from '@/components/shell/nav-config';
-
-const ICONS: Partial<Record<NavIconKey, typeof Home>> = {
-  home: Home,
-  calendar: CalendarDays,
-  symptoms: Activity,
-  insights: TrendingUp,
-};
+import { Menu } from 'lucide-react';
+import { BOTTOM_NAV_ITEMS, isMoreActive, isNavActive } from '@/components/shell/nav-config';
+import { NAV_ICONS } from '@/components/shell/nav-icons';
 
 const SLOT =
   'relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--goal-accent)]';
@@ -47,7 +41,7 @@ export function BottomNav({
     >
       <div className="grid grid-cols-5 gap-0.5 px-1 py-1" style={{ height: 'var(--bottom-nav-h)' }}>
         {BOTTOM_NAV_ITEMS.map(({ href, icon, labelKey, tourKey }) => {
-          const Icon = ICONS[icon]!;
+          const Icon = NAV_ICONS[icon];
           const active = isNavActive(href, pathname);
           const showDot = href === '/symptoms' && notLoggedToday;
           return (
