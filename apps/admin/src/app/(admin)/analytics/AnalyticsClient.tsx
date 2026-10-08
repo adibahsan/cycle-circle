@@ -4,6 +4,7 @@ import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { DateRangeControl } from '@/components/charts/DateRangeControl'
+import { CHART_VAR } from '@/lib/chart-palette'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -77,10 +78,10 @@ interface AnalyticsClientProps {
 
 // ── Color constants ────────────────────────────────────────────────────────
 
-const GREEN = '#10B981'
-const AMBER = '#F59E0B'
-const PRIMARY = '#E8476C'
-const INDIGO = '#6366F1'
+const GREEN = CHART_VAR.good
+const AMBER = CHART_VAR.mid
+const PRIMARY = CHART_VAR.low
+const INDIGO = CHART_VAR.secondary
 
 // ── Tier summary badges (KPI) ──────────────────────────────────────────────
 
@@ -307,7 +308,7 @@ export function AnalyticsClient({
             data={retentionData}
             xKey="week"
             series={[
-              { key: 'created', label: 'Created', color: '#3B82F6' },
+              { key: 'created', label: 'Created', color: CHART_VAR.slate },
               { key: 'retained', label: 'Retained', color: GREEN },
             ]}
             kinds={['line', 'area', 'bar']}
