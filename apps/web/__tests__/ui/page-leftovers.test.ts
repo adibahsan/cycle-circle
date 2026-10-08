@@ -50,3 +50,16 @@ describe('onboarding header at 375px', () => {
     expect(src).toMatch(/sr-only sm:not-sr-only/)
   })
 })
+
+describe('no sub-11px text anywhere in the web app', () => {
+  const walk = (dir: string): string[] =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const full = path.join(dir, e.name)
+      if (e.isDirectory()) return e.name === 'internal' ? [] : walk(full)
+      return /\.(tsx?|css)$/.test(e.name) ? [full] : []
+    })
+  it('bans text-[9px] and text-[10px] outside app/internal', () => {
+    const offenders = walk(SRC).filter((f) => /text-\[(9|10)px\]/.test(fs.readFileSync(f, 'utf8')))
+    expect(offenders.map((f) => path.relative(SRC, f))).toEqual([])
+  })
+})

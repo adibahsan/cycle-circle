@@ -306,7 +306,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                       )}
                       {/* EN locale chip */}
                       {showEnChip && (
-                        <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] border border-[var(--color-border)]">
+                        <span className="inline-block px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] border border-[var(--color-border)]">
                           EN
                         </span>
                       )}
@@ -324,7 +324,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                         {article.cyclePhases.map(phase => (
                           <span
                             key={phase}
-                            className="px-1.5 py-0.5 rounded text-[9px] font-semibold"
+                            className="px-1.5 py-0.5 rounded text-[11px] font-semibold"
                             style={{
                               backgroundColor: `color-mix(in srgb, ${getPhaseColor(phase.toLowerCase() as any)} 13%, transparent)`,
                               color: getPhaseColor(phase.toLowerCase() as any),

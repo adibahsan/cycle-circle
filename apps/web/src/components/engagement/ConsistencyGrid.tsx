@@ -154,7 +154,7 @@ export function ConsistencyGrid({ last30, onBackfill, variant = 'inline', classN
       {/* DOW headers */}
       <div className="grid grid-cols-7 gap-1 mb-0.5" aria-hidden="true">
         {['S','M','T','W','T','F','S'].map((d, i) => (
-          <span key={i} className="text-[9px] text-center font-bold text-[var(--color-text-muted)] uppercase">{d}</span>
+          <span key={i} className="text-[11px] text-center font-bold text-[var(--color-text-muted)] uppercase">{d}</span>
         ))}
       </div>
       <div

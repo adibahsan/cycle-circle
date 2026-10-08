@@ -502,7 +502,7 @@ export function SymptomsClient({
                     {t(labelKey)}
                     {count > 0 && (
                       <span
-                        className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center leading-none"
+                        className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full text-[11px] font-bold flex items-center justify-center leading-none"
                         style={{ background: CATEGORY_COLORS[key].text, color: CATEGORY_COLORS[key].on }}
                       >
                         {count}
