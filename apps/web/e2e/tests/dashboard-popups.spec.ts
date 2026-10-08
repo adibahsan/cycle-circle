@@ -4,6 +4,7 @@
  * Nothing here saves data: the seed database is shared with other guards.
  */
 import { test, expect, type Locator, type Page } from '@playwright/test'
+import { statePath } from '../support/auth'
 import {
   DESKTOP,
   PHONE_375,
@@ -19,6 +20,8 @@ import {
 
 interface Case {
   name: string
+  /** 'fresh' = e2e persona who has not logged today (check-in available); never saves anything. */
+  persona?: 'fresh'
   mocks: string[]
   trigger: (page: Page) => Locator
 }
@@ -36,6 +39,7 @@ const CASES: Case[] = [
   },
   {
     name: 'check-in',
+    persona: 'fresh',
     mocks: [],
     trigger: (page) => page.getByRole('button', { name: 'Check in', exact: true }).locator('visible=true').first(),
   },
@@ -50,9 +54,6 @@ async function prepare(page: Page, c: Case): Promise<Locator> {
   if (c.mocks.length) await mockApi(page, c.mocks)
   await gotoQuiet(page, '/dashboard')
   const trigger = c.trigger(page)
-  // The check-in button only exists when the seed user has not logged today (engagement is
-  // server-rendered and cannot be mocked); those cases skip otherwise.
-  if ((await trigger.count()) === 0) test.skip(true, `${c.name}: trigger not present for the seed data`)
   await expect(trigger).toBeVisible({ timeout: 15_000 })
   return trigger
 }
@@ -63,6 +64,7 @@ for (const [label, viewport] of [['desktop', DESKTOP], ['375x667', PHONE_375]] a
 
     for (const c of CASES) {
       test.describe(c.name, () => {
+        if (c.persona) test.use({ storageState: statePath(c.persona) })
         test('dialog semantics, ESC closes, focus returns', async ({ page }) => {
           const trigger = await prepare(page, c)
           const d = await openPopup(page, trigger)
@@ -98,6 +100,7 @@ for (const [label, viewport] of [['desktop', DESKTOP], ['375x667', PHONE_375]] a
 }
 
 test.describe('check-in to quick symptom hand-over', () => {
+  test.use({ storageState: statePath('fresh') })
   test('never two dialogs at once, and ESC returns to the check-in', async ({ page }) => {
     const trigger = await prepare(page, CASES[2])
     await openPopup(page, trigger)
