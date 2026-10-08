@@ -45,6 +45,7 @@ import {
   useAutoPromptCandidate,
   useAutoPromptExpect,
 } from '@/components/prompts/AutoPromptProvider';
+import { OPEN_COMPLETION_EVENT } from '@/components/prompts/CompletionRow';
 import type { CandidateState } from '@/lib/auto-prompt';
 import dynamic from 'next/dynamic';
 
@@ -319,8 +320,8 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
   // The dashboard completion row asks the layout (which owns the pop-up) to open it.
   useEffect(() => {
     const open = () => setShowCompletionModal(true);
-    window.addEventListener('vesta:open-completion', open);
-    return () => window.removeEventListener('vesta:open-completion', open);
+    window.addEventListener(OPEN_COMPLETION_EVENT, open);
+    return () => window.removeEventListener(OPEN_COMPLETION_EVENT, open);
   }, []);
 
   const handleLateClose = useCallback(() => prompt.close('late-alert'), [prompt]);

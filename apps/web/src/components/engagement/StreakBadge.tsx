@@ -118,7 +118,7 @@ export function StreakBadge({ streak, streakAtRisk, className }: StreakBadgeProp
             >
               {displayCount}
             </span>
-            <span className="text-[10px] text-[var(--color-text-muted)] font-medium leading-none mt-0.5">
+            <span className="text-[11px] text-[var(--color-text-muted)] font-medium leading-none mt-0.5">
               {t('streak.count', { count: streak })}
             </span>
           </>
@@ -132,7 +132,7 @@ export function StreakBadge({ streak, streakAtRisk, className }: StreakBadgeProp
       {/* At-risk helper text */}
       {streakAtRisk && hasStreak && (
         <span
-          className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+          className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
           style={{
             color: 'var(--color-gold-ink)',
             backgroundColor: 'color-mix(in srgb, var(--color-accent) 12%, transparent)',
