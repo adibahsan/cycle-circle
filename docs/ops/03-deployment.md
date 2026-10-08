@@ -451,8 +451,8 @@ The push triggers [`.github/workflows/production.yml`](../../.github/workflows/p
    - checks out `production`
    - backs up the DB (`backup-db.sh`)
    - builds the images and runs `prisma migrate deploy`
-   - restarts web, then admin, health-checking each one from inside its container
-   - finishes with a public `/api/health/db` check
+   - restarts web, then admin, checking after each that the site loads over HTTPS (`cycle-circle.com/login`, `admin.cycle-circle.com/login`)
+   - brings up the rest of the stack, then checks both sites again (an `up -d` can recreate nginx)
 3. One deploy runs at a time; a second push waits.
 
 **Required repo secrets** (GitHub → Settings → Secrets and variables → Actions, attached to a `production` environment):

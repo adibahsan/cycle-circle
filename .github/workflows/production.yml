@@ -81,5 +81,8 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "$USER@$HOST" \
             "cd /opt/vesta && git fetch --prune origin production && git checkout -B production origin/production && bash ops/deploy/scripts/deploy.sh ${{ github.sha }}"
-      - name: Public health check
-        run: curl -fsS --retry 5 --retry-delay 5 https://cycle-circle.com/api/health/db
+      - name: Check the sites are live
+        run: |
+          for url in https://cycle-circle.com/login https://admin.cycle-circle.com/login; do
+            curl -fsSL -o /dev/null -w "%{http_code} $url\n" --retry 5 --retry-delay 5 --retry-all-errors "$url"
+          done
