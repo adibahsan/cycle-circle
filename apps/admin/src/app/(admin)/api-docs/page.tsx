@@ -49,7 +49,7 @@ export default function ApiDocsPage() {
         </p>
       </header>
 
-      {/* Swagger UI mounts here. Light surface so its theme renders cleanly. */}
+      {/* Swagger UI mounts here. Intentionally light: Swagger UI ships a light-only theme. */}
       <div
         id="swagger-ui"
         className="rounded-2xl bg-white overflow-hidden border border-[var(--color-border)]"

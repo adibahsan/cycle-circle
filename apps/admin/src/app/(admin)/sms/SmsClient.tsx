@@ -267,7 +267,7 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
                 />
                 <div className="flex justify-between text-xs text-[var(--color-text-muted)]">
                   <span>{Math.ceil(charCount / 160)} SMS credit{Math.ceil(charCount / 160) !== 1 ? 's' : ''}</span>
-                  <span className={charCount > 440 ? 'text-amber-600' : ''}>{charCount}/480</span>
+                  <span className={charCount > 440 ? 'text-[var(--color-warning)]' : ''}>{charCount}/480</span>
                 </div>
               </div>
 
@@ -375,7 +375,7 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
 
           {/* Error */}
           {error && (
-            <p className="text-sm text-red-500" role="alert" aria-live="polite">
+            <p className="text-sm text-[var(--color-danger)]" role="alert" aria-live="polite">
               {error}
             </p>
           )}
@@ -548,7 +548,7 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
       key: 'deliveredCount',
       header: 'Delivered',
       render: (row) => (
-        <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">
+        <span className="text-sm text-[var(--color-success)] font-medium tabular-nums">
           {row.deliveredCount?.toLocaleString() ?? '—'}
         </span>
       ),
@@ -557,7 +557,7 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
       key: 'failedCount',
       header: 'Failed',
       render: (row) => (
-        <span className="text-sm text-red-500 dark:text-red-400 font-medium tabular-nums">
+        <span className="text-sm text-[var(--color-danger)] font-medium tabular-nums">
           {row.failedCount?.toLocaleString() ?? '—'}
         </span>
       ),
@@ -596,7 +596,7 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
                 e.stopPropagation()
                 setDeleteTarget(row)
               }}
-              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)] transition-colors"
               aria-label="Delete broadcast"
               title="Delete"
             >

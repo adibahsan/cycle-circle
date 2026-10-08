@@ -278,7 +278,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
           return <span className="text-sm tabular-nums text-[var(--color-text-muted)]">0</span>
         }
         return (
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-600 dark:text-amber-400">
+          <span className="inline-flex items-center gap-1 text-sm font-medium text-[var(--color-warning)]">
             <AlertTriangle size={13} aria-hidden="true" />
             {count}
           </span>
@@ -298,7 +298,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
           <span
             className={
               isExpired
-                ? 'text-sm text-red-600 dark:text-red-400'
+                ? 'text-sm text-[var(--color-danger)]'
                 : 'text-sm text-[var(--color-text-secondary)]'
             }
           >

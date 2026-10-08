@@ -120,17 +120,17 @@ function JobCard({
           aria-live="polite"
           className={`mt-4 rounded-xl border px-4 py-3 ${
             result.ok
-              ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40'
-              : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/40'
+              ? 'border-[var(--color-success)] bg-[var(--color-success-bg)]'
+              : 'border-[var(--color-danger)] bg-[var(--color-danger-bg)]'
           }`}
         >
           {result.error && (
-            <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">
+            <p role="alert" className="text-sm font-medium text-[var(--color-danger)]">
               {result.error}
             </p>
           )}
           {result.ok && !result.error && (
-            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+            <p className="text-sm font-medium text-[var(--color-success)]">
               Job completed successfully.
             </p>
           )}

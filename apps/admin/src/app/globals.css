@@ -26,6 +26,16 @@
   --color-gold-ink: #8C6A1F;          /* gold when used as text */
   --color-coral: #FF8C66;
   --color-error: #B4441C;             /* always paired with icon + text */
+  /* Status: text + tint pairs, >=4.5:1 on their tint and on every surface. Pair with an icon or label. */
+  --color-success: #0A6140;
+  --color-success-bg: #DDF3E8;
+  --color-warning: #8A4B08;
+  --color-warning-bg: #FBEBC8;
+  --color-danger: #B42318;
+  --color-danger-bg: #FBE0DD;
+  --color-info: #1D4F9F;
+  --color-info-bg: #DCE9FB;
+  --color-email-canvas: #FFFFFF;      /* rendered emails are light documents in both themes */
 
   /* Goal accents (text on any of these uses --color-on-accent) */
   --color-goal-tracking: #D02F58;
@@ -103,6 +113,14 @@
   --color-gold-ink: #E2C27A;
   --color-coral: #FFB199;
   --color-error: #E58A62;
+  --color-success: #5FD9A5;
+  --color-success-bg: #14382B;
+  --color-warning: #F5C26B;
+  --color-warning-bg: #43310F;
+  --color-danger: #FF9A9A;
+  --color-danger-bg: #4A1D22;
+  --color-info: #8DB8F5;
+  --color-info-bg: #17304F;
   --color-goal-tracking: #FF7A99;
   --color-goal-conceive: #E2C27A;
   --color-goal-pregnancy: #C9A3EC;
