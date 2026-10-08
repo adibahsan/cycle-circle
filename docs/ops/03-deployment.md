@@ -474,7 +474,9 @@ cd /opt/vesta && git fetch origin production && git checkout -B production origi
 bash ops/deploy/scripts/deploy.sh
 ```
 
-> **Monitoring env file:** `compose.prod.yml` `include:`s the monitoring stack. Any manual `up` or `run` must pass `--env-file /opt/vesta/.env.monitoring.production` before `-f`. Without it, Compose recreates `postgres-exporter` with an empty `POSTGRES_EXPORTER_DSN`, and `pg_up` drops to 0. `deploy.sh` adds the flag itself.
+> **Env files for Compose:** every manual `up`, `run` or `build` must pass both env files, before `-f`:
+> `docker compose --env-file ops/deploy/.env --env-file .env.monitoring.production -f ops/deploy/compose.prod.yml …`
+> Passing any `--env-file` stops Compose from reading `ops/deploy/.env` on its own. That file sets `NGINX_CONF` (without it, nginx falls back to the HTTP-only bootstrap config and HTTPS goes down) and `NEXT_PUBLIC_DEV_MODE` (a web build argument). The monitoring file sets `POSTGRES_EXPORTER_DSN` (without it, `pg_up` drops to 0). `deploy.sh` passes both itself.
 
 The script performs the following steps, kept here for reference:
 

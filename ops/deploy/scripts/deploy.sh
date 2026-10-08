@@ -10,13 +10,20 @@ set -euo pipefail
 
 REPO_DIR=/opt/vesta
 BRANCH=production
-MONITORING_ENV=/opt/vesta/.env.monitoring.production
-# compose.prod.yml `include:`s the monitoring stack, which needs this env file for interpolation
-# (POSTGRES_EXPORTER_DSN, GRAFANA_ADMIN_*). Without it, `up -d` recreates postgres-exporter with an empty DSN.
-COMPOSE=(docker compose -f ops/deploy/compose.prod.yml)
-if [[ -f "$MONITORING_ENV" ]]; then
-  COMPOSE=(docker compose --env-file "$MONITORING_ENV" -f ops/deploy/compose.prod.yml)
-fi
+# Compose interpolation needs BOTH env files. Passing any --env-file makes Compose skip the
+# default ops/deploy/.env, so it must be listed explicitly:
+#   ops/deploy/.env                    NGINX_CONF (443 config) and NEXT_PUBLIC_DEV_MODE (web build arg)
+#   .env.monitoring.production         POSTGRES_EXPORTER_DSN, GRAFANA_ADMIN_* (compose.prod.yml includes monitoring)
+# Missing the first serves the HTTP-only bootstrap nginx config; missing the second empties the exporter DSN.
+COMPOSE=(docker compose)
+for env_file in "$REPO_DIR/ops/deploy/.env" "$REPO_DIR/.env.monitoring.production"; do
+  if [[ -f "$env_file" ]]; then
+    COMPOSE+=(--env-file "$env_file")
+  else
+    echo "warning: $env_file not found; compose interpolation will use defaults" >&2
+  fi
+done
+COMPOSE+=(-f ops/deploy/compose.prod.yml)
 EXPECTED_SHA="${1:-}"
 
 cd "$REPO_DIR"
@@ -32,6 +39,17 @@ PREVIOUS_SHA=$(git rev-parse HEAD)
 
 echo "==> Checking out $BRANCH at $TARGET_SHA (was $PREVIOUS_SHA)"
 git checkout -B "$BRANCH" "origin/$BRANCH"
+
+echo "==> Pre-flight: checking resolved compose config"
+RESOLVED=$("${COMPOSE[@]}" config 2>/dev/null)
+if grep -q "nginx/cycle-circle.bootstrap.conf" <<<"$RESOLVED"; then
+  echo "nginx would get the HTTP-only bootstrap config (NGINX_CONF unset). Is ops/deploy/.env present? Aborting before any restart." >&2
+  exit 1
+fi
+if grep -qE "DATA_SOURCE_NAME: \"?\"?$" <<<"$RESOLVED"; then
+  echo "postgres-exporter DSN would be empty. Is .env.monitoring.production present? Aborting before any restart." >&2
+  exit 1
+fi
 
 echo "==> Backing up the database before migrating"
 bash ops/deploy/scripts/backup-db.sh
