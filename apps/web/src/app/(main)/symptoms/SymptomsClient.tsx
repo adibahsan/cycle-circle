@@ -589,7 +589,7 @@ export function SymptomsClient({
       <div
         aria-live="polite"
         aria-atomic="true"
-        className="fixed bottom-[60px] md:bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-30 xl:hidden"
+        className="fixed bottom-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+0.75rem)] md:bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-30 xl:hidden"
       >
         <AnimatePresence mode="wait">
           {hasChanges ? (

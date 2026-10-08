@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback, useId } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, useReducedMotion } from 'motion/react';
 import { Button } from '@/components/ui/Button';
 import { useHasMounted } from '@/components/motion/useHasMounted';
+import { Z_CLASS, FOCUSABLE_SELECTOR, nextTrapIndex } from '@/components/ui/popup-core';
+import { tourCardPlacement } from '@/components/shell/tour-placement';
 import '@vesta/shared/utils/i18n';
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -195,22 +198,13 @@ export function OnboardingTour({
       if (e.key === 'Tab') {
         const card = document.getElementById(`tour-card-${uid}`);
         if (!card) return;
-        const focusable = card.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (!first || !last) return;
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            e.preventDefault();
-            last.focus();
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-          }
+        const focusable = Array.from(card.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+        if (focusable.length === 0) return;
+        const idx = focusable.indexOf(document.activeElement as HTMLElement);
+        const next = nextTrapIndex(focusable.length, idx, e.shiftKey);
+        if (next !== null) {
+          e.preventDefault();
+          focusable[next]?.focus();
         }
       }
     }
@@ -235,7 +229,7 @@ export function OnboardingTour({
 
   // ── Early return ──────────────────────────────────────────────────────────
 
-  if (!open || steps.length === 0 || !step) return null;
+  if (!open || !mounted || steps.length === 0 || !step) return null;
 
   // ── Spotlight geometry ────────────────────────────────────────────────────
 
@@ -288,13 +282,21 @@ export function OnboardingTour({
       maxWidth: CARD_MAX_WIDTH,
     };
   } else if (isMobileViewport) {
-    // Pin to bottom as a sheet on narrow viewports
+    // Phone: float above the bottom nav (and above the spotlit item when it is in the nav).
+    const navEl = document.querySelector('[data-bottom-nav]');
+    const navTop = navEl ? navEl.getBoundingClientRect().top : viewportHeight;
     cardStyle = {
       position: 'fixed',
-      left: VIEWPORT_MARGIN,
-      right: VIEWPORT_MARGIN,
-      bottom: VIEWPORT_MARGIN,
       maxWidth: '100%',
+      ...tourCardPlacement({
+        viewportWidth,
+        viewportHeight,
+        navTop,
+        target: targetRect,
+        spotlightPadding: SPOTLIGHT_PADDING,
+        cardHeight: CARD_APPROX_HEIGHT,
+        margin: VIEWPORT_MARGIN,
+      }),
     };
   } else {
     // Centered fallback (no rect, wide viewport)
@@ -345,13 +347,13 @@ export function OnboardingTour({
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
       aria-describedby={descId}
-      className="fixed inset-0 z-[60]"
+      className={`fixed inset-0 ${Z_CLASS.prompt}`}
     >
       {/* ── Backdrop / Spotlight layer ─────────────────────────────────────── */}
       {targetRect ? (
@@ -477,6 +479,7 @@ export function OnboardingTour({
           </button>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -24,7 +24,18 @@ import {
   Sun,
   Moon,
   TrendingUp,
+  type LucideIcon,
 } from 'lucide-react';
+import { BottomNav } from '@/components/shell/BottomNav';
+import { MoreSheet } from '@/components/shell/MoreSheet';
+import { ProfileChip } from '@/components/shell/ProfileChip';
+import {
+  SIDEBAR_MENU_ITEMS,
+  SIDEBAR_MORE_ITEMS,
+  isNavActive,
+  type NavIconKey,
+} from '@/components/shell/nav-config';
+import { Z_CLASS } from '@/components/ui/popup-core';
 import { LatePeriodFullScreenAlert } from '@/components/modals/LatePeriodFullScreenAlert';
 import { GOAL_ICON_COMPONENTS, GOAL_I18N_KEYS } from '@/lib/goal-display';
 import { goalAccentVar, normalizeGoal } from '@vesta/shared/utils/goal';
@@ -75,7 +86,7 @@ function Toast({ toast }: { toast: ToastState | null }) {
     <div
       aria-live="polite"
       aria-atomic="true"
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-[70] w-full max-w-xs px-4 pointer-events-none"
+      className={`fixed top-4 left-1/2 -translate-x-1/2 ${Z_CLASS.toast} w-full max-w-xs px-4 pointer-events-none`}
     >
       <AnimatePresence>
         {toast && (
@@ -119,20 +130,17 @@ const tourSteps: TourStep[] = [
   { targetSelector: '[data-tour="profile-ring"]', titleKey: 'tour.profileTitle', descKey: 'tour.profileDesc' },
 ];
 
-const NAV_ITEMS = [
-  { href: '/dashboard', icon: Home, labelKey: 'nav.dashboard', tourKey: undefined },
-  { href: '/calendar', icon: CalendarDays, labelKey: 'nav.calendar', tourKey: 'nav-calendar' },
-  { href: '/symptoms', icon: Activity, labelKey: 'nav.symptoms', tourKey: undefined },
-  { href: '/insights', icon: TrendingUp, labelKey: 'nav.insights', tourKey: 'nav-insights' },
-  { href: '/content', icon: BookOpen, labelKey: 'nav.content', tourKey: undefined },
-  { href: '/settings', icon: Settings, labelKey: 'nav.settings', tourKey: undefined },
-];
-
-const SIDEBAR_EXTRA_ITEMS = [
-  { href: '/profiles', icon: Users, labelKey: 'nav.profiles' },
-  { href: '/feedback', icon: MessageSquare, labelKey: 'nav.feedback' },
-  { href: '/subscription', icon: CreditCard, labelKey: 'nav.subscription' },
-];
+const SIDEBAR_ICONS: Record<NavIconKey, LucideIcon> = {
+  home: Home,
+  calendar: CalendarDays,
+  symptoms: Activity,
+  insights: TrendingUp,
+  content: BookOpen,
+  settings: Settings,
+  profiles: Users,
+  feedback: MessageSquare,
+  subscription: CreditCard,
+};
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -146,6 +154,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [tourOpen, setTourOpen] = useState(false);
   const [logging, setLogging] = useState<{ goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null>(null);
   const [showLateAlert, setShowLateAlert] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [trialUser, setTrialUser] = useState<{
     authMethod?: string | null;
     subscriptionStatus?: string | null;
@@ -394,6 +403,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     void completeOnboardingTour();
   }
 
+  // The More sheet is for navigating: close it when the route changes.
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [pathname]);
+
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
@@ -416,15 +430,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <span className="text-xl font-extrabold text-[var(--color-text-primary)]">Cycle Circle</span>
         </div>
 
-        {/* Profile switcher */}
+        {/* Profile chip */}
         <div className="px-4 mb-4">
-          <Link
-            href="/profiles"
-            className="flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--color-bg-secondary)] text-sm font-medium hover:bg-[var(--color-bg-primary)] transition-colors"
-          >
-            <Users size={14} aria-hidden="true" />
-            <span className="truncate">{activeProfileName || 'Profile'}</span>
-          </Link>
+          <ProfileChip
+            name={activeProfileName}
+            status={completionStatus}
+            onOpenCompletion={() => setShowCompletionModal(true)}
+          />
           {activeGoal && (
             <div className="mt-1.5 px-1 flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--goal-accent)' }}>
               <span className="inline-flex items-center [&_svg]:w-3.5 [&_svg]:h-3.5" aria-hidden="true">{GOAL_ICON_COMPONENTS[activeGoal]}</span>
@@ -438,34 +450,35 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <p className="px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
             {t('nav.menu')}
           </p>
-          {NAV_ITEMS.map(({ href, icon: Icon, labelKey, tourKey }) => {
-            const isActive = pathname === href;
-            const isSymptoms = href === '/symptoms';
-            const showDot = isSymptoms && logging?.loggedToday === false;
+          {SIDEBAR_MENU_ITEMS.map(({ href, icon, labelKey, tourKey }) => {
+            const Icon = SIDEBAR_ICONS[icon];
+            const isActive = isNavActive(href, pathname);
+            const showDot = href === '/symptoms' && logging?.loggedToday === false;
             return (
               <Link
                 key={href}
                 href={href}
+                aria-current={isActive ? 'page' : undefined}
                 {...(tourKey ? { 'data-tour': tourKey } : {})}
-                {...(showDot ? { 'aria-label': `${t(labelKey)} — ${t('nav.notLoggedToday')}` } : {})}
-                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors ${
+                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
                   isActive
                     ? ''
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
                 }`}
                 style={isActive ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 12%, transparent)' } : undefined}
               >
-                {showDot && (
-                  <span
-                    aria-hidden="true"
-                    className="animate-attn-glow pointer-events-none absolute inset-0 rounded-full"
-                    style={{ boxShadow: 'inset 0 0 0 1.5px var(--goal-accent)' }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-3">
+                <span className="relative">
                   <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
-                  <span className="text-sm font-semibold" style={showDot && !isActive ? { color: 'var(--goal-accent)' } : undefined}>{t(labelKey)}</span>
+                  {showDot && (
+                    <span
+                      data-testid="symptoms-dot"
+                      aria-hidden="true"
+                      className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-[var(--goal-accent)] ring-2 ring-[var(--color-bg-card)]"
+                    />
+                  )}
                 </span>
+                <span className="text-sm font-semibold">{t(labelKey)}</span>
+                {showDot && <span className="sr-only">{t('nav.notLoggedToday')}</span>}
               </Link>
             );
           })}
@@ -476,13 +489,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <p className="px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
             {t('nav.more')}
           </p>
-          {SIDEBAR_EXTRA_ITEMS.map(({ href, icon: Icon, labelKey }) => {
-            const isActive = pathname === href;
+          {SIDEBAR_MORE_ITEMS.map(({ href, icon, labelKey }) => {
+            const Icon = SIDEBAR_ICONS[icon];
+            const isActive = isNavActive(href, pathname);
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors ${
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
                   isActive
                     ? ''
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
@@ -501,16 +516,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           {authStatusLoaded && (
             <TrialCountdownPill trialUser={trialUser} onPhoneAdded={handlePhoneAdded} />
           )}
-          {completionStatus && !completionStatus.complete && (
-            <div data-tour="profile-ring">
-              <ProfileCompletionTracker
-                status={completionStatus}
-                variant="header"
-                onComplete={() => setShowCompletionModal(true)}
-                className="w-full"
-              />
-            </div>
-          )}
           <button
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -526,44 +531,24 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       {/* ── Main content column ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top header — mobile only; sidebar handles desktop navigation */}
-        <header className="sticky top-0 z-40 glass px-4 py-3 flex items-center justify-between md:hidden">
-          <div className="flex items-center gap-3">
-            <VestaLogo size={24} animate={false} />
-            <span className="text-xl font-extrabold text-[var(--color-text-primary)]">Cycle Circle</span>
-            <Link
-              href="/profiles"
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] text-xs font-medium hover:bg-[var(--color-bg-primary)] transition-colors"
-            >
-              <Users size={12} aria-hidden="true" />
-              <span className="truncate">{activeProfileName || 'Profile'}</span>
-            </Link>
+        <header className="sticky top-0 z-40 glass px-4 py-2.5 flex items-center justify-between gap-3 md:hidden">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <VestaLogo size={26} animate={false} />
+            <ProfileChip
+              name={activeProfileName}
+              status={completionStatus}
+              onOpenCompletion={() => setShowCompletionModal(true)}
+            />
           </div>
-          <div className="flex items-center gap-2">
-            {authStatusLoaded && (
+          {authStatusLoaded && (
+            <div className="shrink-0">
               <TrialCountdownPill trialUser={trialUser} onPhoneAdded={handlePhoneAdded} />
-            )}
-            {completionStatus && !completionStatus.complete && (
-              <div data-tour="profile-ring">
-                <ProfileCompletionTracker
-                  status={completionStatus}
-                  variant="header"
-                  onComplete={() => setShowCompletionModal(true)}
-                />
-              </div>
-            )}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-primary)] hover:border-[var(--goal-accent)] transition-colors"
-              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
-            </button>
-            <LanguageToggle />
-          </div>
+            </div>
+          )}
         </header>
 
         {/* Page content */}
-        <main className="flex-1 pb-24 md:pb-8">
+        <main className="flex-1 pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+1.5rem)] md:pb-8">
           {/* Profile completion pill — shown on all main pages */}
           {completionStatus && (
             <div className="w-full max-w-4xl px-4 md:px-8 pt-4">
@@ -579,43 +564,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       {/* ── Mobile Bottom Navigation (< md) ── */}
-      <nav className="fixed bottom-0 left-0 right-0 glass border-t border-[var(--color-border)] z-40 md:hidden" aria-label="Mobile navigation">
-        <div className="flex items-center justify-around py-2 max-w-md mx-auto">
-          {NAV_ITEMS.map(({ href, icon: Icon, labelKey, tourKey }) => {
-            const isActive = pathname === href;
-            const isSymptoms = href === '/symptoms';
-            const showDot = isSymptoms && logging?.loggedToday === false;
-            return (
-              <Link
-                key={href}
-                href={href}
-                {...(tourKey ? { 'data-tour': tourKey } : {})}
-                {...(showDot ? { 'aria-label': `${t(labelKey)} — ${t('nav.notLoggedToday')}` } : {})}
-                className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
-                  isActive
-                    ? ''
-                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
-                }`}
-                style={isActive ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 12%, transparent)' } : undefined}
-              >
-                {showDot && (
-                  <span
-                    aria-hidden="true"
-                    className="animate-attn-glow pointer-events-none absolute inset-0 rounded-full"
-                    style={{ boxShadow: 'inset 0 0 0 1.5px var(--goal-accent)' }}
-                  />
-                )}
-                <span className="relative z-10 flex flex-col items-center gap-0.5">
-                  <span className="relative">
-                    <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
-                  </span>
-                  <span className="text-[11px] font-medium" style={showDot && !isActive ? { color: 'var(--goal-accent)' } : undefined}>{t(labelKey)}</span>
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      <BottomNav
+        pathname={pathname}
+        notLoggedToday={logging?.loggedToday === false}
+        moreOpen={moreOpen}
+        onToggleMore={() => setMoreOpen((v) => !v)}
+      />
+      <MoreSheet
+        open={moreOpen}
+        onClose={() => setMoreOpen(false)}
+        pathname={pathname}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
 
       {/* ── Profile Completion Modal ── */}
       {showCompletionModal && (

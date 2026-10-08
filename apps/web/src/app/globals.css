@@ -126,6 +126,11 @@
   --color-text-secondary: #D6CBD0;
 }
 
+/* Phone shell: height of the bottom nav's content row (safe-area inset is added
+   separately by the nav and by anything that offsets from it). 0 where the nav is hidden. */
+:root { --bottom-nav-h: 3.5rem; }
+@media (min-width: 768px) { :root { --bottom-nav-h: 0px; } }
+
 @layer base {
   :root {
     color-scheme: light;
