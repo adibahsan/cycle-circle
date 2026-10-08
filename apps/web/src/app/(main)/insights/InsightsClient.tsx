@@ -30,6 +30,7 @@ import type {
 } from '@/app/queries/insights-queries'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { hasAnyInsightsData } from '@/lib/insights-data'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -213,7 +214,7 @@ function CycleLengthTrendChart({
   const xAxis = (
     <XAxis
       dataKey="date"
-      tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+      tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
       tickLine={false}
       axisLine={false}
       tickFormatter={(v: string) => {
@@ -225,7 +226,7 @@ function CycleLengthTrendChart({
 
   const yAxis = (
     <YAxis
-      tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+      tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
       tickLine={false}
       axisLine={false}
       tickFormatter={(v: number) => `${v}${daysLabel}`}
@@ -337,13 +338,13 @@ function SymptomFrequencyChart({
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
         <XAxis
           dataKey="category"
-          tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+          tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v: string) => v.charAt(0) + v.slice(1).toLowerCase()}
         />
         <YAxis
-          tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+          tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
           tickLine={false}
           axisLine={false}
           allowDecimals={false}
@@ -561,6 +562,7 @@ export function InsightsClient({
   )
 
   const noData = t('insights.noData')
+  const hasData = hasAnyInsightsData({ cycleLengthTrend, symptomFrequency, periodRegularity, fertileWindowHistory })
 
   return (
     // tabular-nums on Recharts numeric axis ticks (FR-INSIGHTS NFR) — applied
@@ -572,6 +574,15 @@ export function InsightsClient({
         subtitle={activeProfile ? `${t('insights.subtitle')} · ${activeProfile.name}` : t('insights.subtitle')}
       />
 
+      {!hasData ? (
+        <Card padding="lg">
+          <div role="status" className="flex flex-col items-center gap-2 py-10 text-center" data-testid="insights-empty">
+            <p className="text-base font-semibold text-[var(--color-text-primary)]">{t('insights.emptyTitle')}</p>
+            <p className="text-sm text-[var(--color-text-muted)] max-w-sm">{noData}</p>
+          </div>
+        </Card>
+      ) : (
+        <>
       {/* ── Global controls ───────────────────────────────────────────────── */}
       <motion.div
         initial={shouldAnimate ? { opacity: 0, y: 8 } : false}
@@ -673,6 +684,8 @@ export function InsightsClient({
           </div>
         </Card>
       </motion.div>
+        </>
+      )}
     </PageContainer>
   )
 }
