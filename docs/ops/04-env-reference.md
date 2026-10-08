@@ -111,6 +111,20 @@ These three live in a separate small env file (e.g. `/opt/vesta/.env.postgres.pr
 
 ---
 
+## Monitoring (`/opt/vesta/.env.monitoring.production`)
+
+Loaded by Grafana and `postgres-exporter` in prod Compose. Template: [ops/monitoring/env/monitoring.production.example](../../ops/monitoring/env/monitoring.production.example).
+
+| Variable | Required? | Notes |
+|---|---|---|
+| `GRAFANA_ADMIN_USER` | Yes | Built-in Grafana login user (v1: no SSO). |
+| `GRAFANA_ADMIN_PASSWORD` | Yes | `<generate: openssl rand -hex 24>` — never commit. |
+| `POSTGRES_EXPORTER_DSN` | Yes | Same credentials as `DATABASE_URL` against Compose `postgres:5432`. |
+
+Prometheus retention on VPS is **30 days** (`PROMETHEUS_RETENTION=30d` in prod overlay). Only nginx publishes **80/443**; Grafana is reached via `https://monitoring.cycle-circle.com`.
+
+---
+
 ## Related docs
 
 - [03-deployment.md](./03-deployment.md) — how these files are created, permissioned, and loaded; the Dockerfile build-arg mechanics for `NEXT_PUBLIC_*`

@@ -2,6 +2,12 @@
 #   docker compose -f ops/deploy/compose.prod.yml …
 # Env files live on the host at /opt/vesta/.env.*.production (see env/*.example).
 # Optional ops/deploy/.env: NGINX_CONF, NEXT_PUBLIC_DEV_MODE build override.
+# On VPS, pass monitoring secrets for Compose interpolation:
+#   docker compose --env-file /opt/vesta/.env.monitoring.production -f ops/deploy/compose.prod.yml …
+
+include:
+  - path: ../monitoring/compose.yml
+  - path: ../monitoring/compose.prod.override.yml
 
 name: vesta
 
@@ -34,7 +40,7 @@ services:
       args:
         NEXT_PUBLIC_DEV_MODE: ${NEXT_PUBLIC_DEV_MODE:-false}
         NEXT_PUBLIC_USE_DUMMY_DATA: ${NEXT_PUBLIC_USE_DUMMY_DATA:-false}
-    env_file: /opt/vesta/.env.web.production
+    env_file: ${VESTA_WEB_ENV_FILE:-/opt/vesta/.env.web.production}
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,7 +52,7 @@ services:
     build:
       context: ../..
       dockerfile: ops/deploy/Dockerfile.admin
-    env_file: /opt/vesta/.env.admin.production
+    env_file: ${VESTA_ADMIN_ENV_FILE:-/opt/vesta/.env.admin.production}
     environment:
       PORT: "3001"
     depends_on:
@@ -56,7 +62,7 @@ services:
 
   postgres:
     image: postgres:17.10-alpine
-    env_file: /opt/vesta/.env.postgres.production
+    env_file: ${VESTA_POSTGRES_ENV_FILE:-/opt/vesta/.env.postgres.production}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ../docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro

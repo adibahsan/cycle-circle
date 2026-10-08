@@ -1,0 +1,13 @@
+# Used by pnpm monitoring:verify only — stub /opt/vesta env paths for compose config render.
+
+services:
+  web:
+    env_file: ../monitoring/stub/.env.web.production
+  admin:
+    env_file: ../monitoring/stub/.env.admin.production
+  postgres:
+    env_file: ../monitoring/stub/.env.postgres.production
+  grafana:
+    env_file: ../monitoring/stub/.env.monitoring.production
+  postgres-exporter:
+    env_file: ../monitoring/stub/.env.monitoring.production

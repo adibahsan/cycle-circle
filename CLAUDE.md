@@ -95,11 +95,76 @@ Full file-by-file audits with line numbers are in `review/`:
 
 ### Issue tracker
 
-Work is tracked as markdown under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+GitHub Issues on `adibahsan/cycle-circle` via the `gh` CLI; specs are parent issues, tickets are sub-issues with native blocking links. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-role vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Single-context: `CONTEXT.md` at repo root and ADRs in `docs/adr/`. See `docs/agents/domain.md`.
+Single-context: `GLOSSARY.md` at repo root and ADRs in `docs/adr/`. See `docs/agents/domain.md`.
+
+---
+
+## implement-orchestrated
+
+Use when running Matt Pocock’s **implement-orchestrated** skill from **Cursor** (not Claude Code agent-bridge). The skill file lives at `~/.claude/plugins/cache/ryoshumei/implement-orchestrated/0.1.6/skills/implement-orchestrated/SKILL.md`; this section overrides repo-specific mechanics.
+
+### Provider routing (Cursor)
+
+- **Orchestrator:** the main Cursor Agent session. It does not write feature code.
+- **Coders:** Cursor **Task** subagents (`generalPurpose`), up to **3** concurrent. Do **not** use `agent-bridge`, `cursor-agent` CLI, or `isolation: "worktree"` (Claude-only).
+- **Reviewers:** Cursor **Task** with `subagent_type: "reviewer"` (read-only brief). Fallback: `generalPurpose` with an explicit read-only reviewer brief.
+- **Final review:** personal skill at `~/.claude/skills/code-review/SKILL.md` (Matt’s two-axis review), then a `reviewer` Task for the final gate brief.
+
+Skip bridge preflight (`agent-bridge status`, `cursor-agent` / `opencode` / `agy` on PATH).
+
+### Worktree bootstrap
+
+Before the first typecheck in a **new** worktree:
+
+```bash
+pnpm install
+pnpm db:generate
+```
+
+### Worktrees (manual)
+
+Cursor has no built-in per-ticket worktree isolation. The orchestrator creates one worktree per ticket:
+
+```bash
+# From main checkout on feat/<feature-slug>, after prior merges:
+git worktree add ../cycle-circle-wt-<NN> -b ticket/<NN>-<slug> HEAD
+```
+
+- **Base ref:** branch from **current `HEAD`** on the feature branch (same intent as Claude `worktree.baseRef: "head"`). Stay on `feat/<feature-slug>` in the main checkout; do not branch coders from `origin/main` while the feature branch is ahead.
+- **Fix rounds:** reuse the same worktree path; do not spawn a second worktree for the same ticket.
+- **Cleanup:** after merge, `git worktree remove ../cycle-circle-wt-<NN>` and delete `ticket/<NN>-<slug>`.
+
+Put orchestration state under `/tmp/implement-orchestrated/<feature-slug>/state.md` (or the session scratchpad if one exists).
+
+### Stateful checks
+
+Only the orchestrator runs these, **one at a time** across all tickets:
+
+- `pnpm docker:dev` / anything binding **5432, 6379, 3000, 3001** (local Compose stack).
+
+Coders run **non-stateful** checks only.
+
+### Full suite
+
+From repo root on the feature branch (main checkout or after each merge):
+
+```bash
+pnpm typecheck && pnpm lint && pnpm docs:check
+```
+
+Optional before VPS-facing tickets: `pnpm docker:prod:build` (orchestrator only; can be slow).
+
+### VPS rollout tickets
+
+The VPS rollout spec (#5) and its sub-issues mix **human** steps (SSH, DNS, merge to `main`, UFW) with **agent** runbook/doc/script work. Coders must not pretend server steps are done—update checklists, ops docs, and repo scripts only unless the ticket explicitly includes verifiable local automation.
 
 ---
 

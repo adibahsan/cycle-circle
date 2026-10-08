@@ -10,7 +10,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 0 2 * * * curl -fsS -X POST -H "Authorization: Bearer CRON_SECRET_PLACEHOLDER" https://cycle-circle.com/api/cron/caas-check >> /var/log/vesta/cron-caas-check.log 2>&1
 
 # TLS renewal (certbot no-ops unless cert expires within 30 days)
-0 3,15 * * * cd /opt/vesta && docker compose -f ops/deploy/compose.prod.yml run --rm certbot renew --webroot -w /var/www/certbot --quiet && docker compose -f ops/deploy/compose.prod.yml exec -T nginx nginx -s reload >> /var/log/vesta/certbot-renew.log 2>&1
+0 3,15 * * * cd /opt/vesta && sg docker -c 'docker compose -f ops/deploy/compose.prod.yml run --rm certbot renew --webroot -w /var/www/certbot --quiet && docker compose -f ops/deploy/compose.prod.yml exec -T nginx nginx -s reload' >> /var/log/vesta/certbot-renew.log 2>&1
 
 # Nightly DB backup (see ops/deploy/scripts/backup-db.sh)
 0 4 * * * /opt/vesta/ops/deploy/scripts/backup-db.sh >> /var/log/vesta/backup.log 2>&1

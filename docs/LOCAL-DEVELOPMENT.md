@@ -68,6 +68,23 @@ Prisma CLI commands (`just db-*`, `just studio`) load env from `apps/web/.env.lo
 | Mailpit SMTP | 1025 | `smtp://localhost:1025` |
 | BDApps simulator UI | 10001 | http://localhost:10001/mchoice-tap-sdk |
 | BDApps REST | 7002 | maps to container port 7000 |
+| Grafana (optional) | 3030 | http://localhost:3030 — see [Monitoring overlay](#monitoring-overlay) |
+
+---
+
+## Monitoring overlay
+
+Optional **Prometheus + Grafana** stack sharing prod dashboards. Start **after** Postgres/Redis are up (`pnpm docker:dev` or `just infra`).
+
+```bash
+pnpm docker:monitoring
+```
+
+- **URL:** http://localhost:3030 (default login in [ops/monitoring/env/monitoring.local.example](../ops/monitoring/env/monitoring.local.example) only — not production passwords)
+- **Retention:** 7 days locally (30 days on VPS)
+- **node_exporter** on macOS does not reflect real Mac host CPU/RAM; use container (cAdvisor) and Postgres/Redis panels locally.
+
+Stop: `pnpm docker:monitoring:down`. Verify config in CI/review: `pnpm monitoring:verify`. Details: [ops/monitoring/README.md](../ops/monitoring/README.md).
 
 ---
 

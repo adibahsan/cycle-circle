@@ -16,6 +16,7 @@ tsconfig.tsbuildinfo
 # Local environment
 .env*
 !.env.example
+!ops/monitoring/stub/.env.*
 **/env.prod
 !**/env.prod.example
 apps/web/env.local
@@ -59,3 +60,11 @@ review/screenshots/
 
 # Local DB backups / dumps (contain real data — never commit)
 ops/backups/
+
+# TLS private keys and certificates (never commit PEM material)
+ops/deploy/ssl/*.pem
+ops/deploy/ssl/**/*.pem
+**/privkey.pem
+**/fullchain.pem
+!ops/deploy/tls/archives/*-fullchain.pem
+!ops/deploy/tls/production-inventory.json

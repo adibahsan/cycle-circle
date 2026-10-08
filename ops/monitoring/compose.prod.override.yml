@@ -1,0 +1,23 @@
+# Production overlay — 30-day retention, no published Grafana/Prometheus ports.
+
+services:
+  prometheus:
+    environment:
+      PROMETHEUS_RETENTION: 30d
+
+  grafana:
+    env_file: ${VESTA_MONITORING_ENV_FILE:-/opt/vesta/.env.monitoring.production}
+    environment:
+      GF_SERVER_ROOT_URL: https://monitoring.cycle-circle.com
+      # Override base compose defaults so env_file credentials apply (base sets changeme).
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-changeme}
+
+  postgres-exporter:
+    env_file: ${VESTA_MONITORING_ENV_FILE:-/opt/vesta/.env.monitoring.production}
+
+  nginx:
+    depends_on:
+      - web
+      - admin
+      - grafana

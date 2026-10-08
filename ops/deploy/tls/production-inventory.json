@@ -1,0 +1,18 @@
+{
+  "updatedAt": "2026-09-29",
+  "note": "Metadata only — no PEM or private key material. Refresh with ops/deploy/scripts/dump-le-metadata.sh on the VPS.",
+  "certificateName": "cycle-circle.com",
+  "identifiers": [
+    "cycle-circle.com",
+    "www.cycle-circle.com",
+    "admin.cycle-circle.com"
+  ],
+  "issuer": "Let's Encrypt",
+  "notAfter": "2026-12-27T17:33:15+00:00",
+  "keyType": "ECDSA",
+  "vpsStorage": {
+    "certbotVolume": "vesta_certbot_conf (Compose) → /etc/letsencrypt/live/cycle-circle.com/"
+  },
+  "nginxProductionConfig": "ops/deploy/nginx/cycle-circle.conf",
+  "pendingIdentifiers": ["monitoring.cycle-circle.com"]
+}
