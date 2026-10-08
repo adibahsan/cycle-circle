@@ -26,7 +26,7 @@ const envSchema = z.object({
 
   // Email
   RESEND_API_KEY: z.string().optional(),
-  RESEND_FROM_EMAIL: z.string().default('Vesta <noreply@vesta.app>'),
+  RESEND_FROM_EMAIL: z.string().default('Cycle Circle <noreply@vesta.app>'),
   MAILPIT_SMTP_URL: z.string().default('smtp://localhost:1025'),
   RESEND_WEBHOOK_SECRET: z.string().optional(),
 

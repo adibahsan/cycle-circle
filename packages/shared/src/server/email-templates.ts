@@ -55,7 +55,7 @@ function wrapLayout(lang: Language, bodyContent: string): string {
           <!-- Header -->
           <tr>
             <td style="background:linear-gradient(135deg,#E8476C 0%,#9B7FD4 100%);padding:28px 32px;">
-              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">Vesta</h1>
+              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">Cycle Circle</h1>
               <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">
                 ${lang === 'BN' ? 'আপনার স্বাস্থ্য সঙ্গী' : 'Your cycle companion'}
               </p>
@@ -74,8 +74,8 @@ function wrapLayout(lang: Language, bodyContent: string): string {
             <td style="padding:20px 32px 28px;border-top:1px solid #F3E8EC;">
               <p style="margin:0;color:#B0849A;font-size:12px;line-height:1.6;">
                 ${lang === 'BN'
-    ? 'এই ইমেইল পাচ্ছেন কারণ আপনি Vesta-তে নোটিফিকেশন চালু রেখেছেন। নোটিফিকেশন বন্ধ করতে অ্যাপের সেটিংসে যান।'
-    : 'You received this email because you have notifications enabled in Vesta. To unsubscribe, visit Settings in the app.'}
+    ? 'এই ইমেইল পাচ্ছেন কারণ আপনি সাইকেল সার্কেলে নোটিফিকেশন চালু রেখেছেন। নোটিফিকেশন বন্ধ করতে অ্যাপের সেটিংসে যান।'
+    : 'You received this email because you have notifications enabled in Cycle Circle. To unsubscribe, visit Settings in the app.'}
               </p>
             </td>
           </tr>
@@ -95,8 +95,8 @@ export function periodAlertEmail(data: PeriodAlertData): EmailResult {
   const isBn = language === 'BN'
 
   const subject = isBn
-    ? `ভেস্তা: আপনার পিরিয়ড ${daysUntil} দিনের মধ্যে আসবে`
-    : `Vesta: Your period is expected in ${daysUntil} days`
+    ? `সাইকেল সার্কেল: আপনার পিরিয়ড ${daysUntil} দিনের মধ্যে আসবে`
+    : `Cycle Circle: Your period is expected in ${daysUntil} days`
 
   const greeting = isBn
     ? `হ্যালো ${userName},`
@@ -166,8 +166,8 @@ export function fertileWindowEmail(data: FertileWindowData): EmailResult {
   const isBn = language === 'BN'
 
   const subject = isBn
-    ? 'ভেস্তা: আপনার উর্বর সময় আজ শুরু'
-    : 'Vesta: Your fertile window starts today'
+    ? 'সাইকেল সার্কেল: আপনার উর্বর সময় আজ শুরু'
+    : 'Cycle Circle: Your fertile window starts today'
 
   const greeting = isBn
     ? `হ্যালো ${userName},`
@@ -239,8 +239,8 @@ export function loggingReminderEmail(data: LoggingReminderData): EmailResult {
   const isBn = language === 'BN'
 
   const subject = isBn
-    ? 'ভেস্তা: আপনার সাইকেল লগ করতে ভুলবেন না'
-    : 'Vesta: Don\'t forget to log your cycle'
+    ? 'সাইকেল সার্কেল: আপনার সাইকেল লগ করতে ভুলবেন না'
+    : 'Cycle Circle: Don\'t forget to log your cycle'
 
   const greeting = isBn
     ? `হ্যালো ${userName},`
@@ -315,8 +315,8 @@ export function profileCompletionReminderEmail(data: ProfileCompletionReminderDa
   const isBn = language === 'BN'
 
   const subject = isBn
-    ? 'ভেস্তা: আপনার প্রোফাইল সেটআপ শেষ করুন'
-    : 'Vesta: Finish setting up your profile'
+    ? 'সাইকেল সার্কেল: আপনার প্রোফাইল সেটআপ শেষ করুন'
+    : 'Cycle Circle: Finish setting up your profile'
 
   const greeting = isBn
     ? `হ্যালো ${userName},`
@@ -327,8 +327,8 @@ export function profileCompletionReminderEmail(data: ProfileCompletionReminderDa
     : 'Your profile is almost ready'
 
   const mainText = isBn
-    ? 'আপনি Vesta-তে যোগ দিয়েছেন — অসাধারণ! আপনার প্রোফাইল সম্পূর্ণ করলে আমরা আপনাকে আরও সঠিক সাইকেল পূর্বাভাস এবং ব্যক্তিগতকৃত স্বাস্থ্য তথ্য দিতে পারব।'
-    : 'You\'ve joined Vesta — that\'s a great first step! Completing your profile helps us give you more accurate cycle predictions and personalised health insights.'
+    ? 'আপনি সাইকেল সার্কেলে যোগ দিয়েছেন — অসাধারণ! আপনার প্রোফাইল সম্পূর্ণ করলে আমরা আপনাকে আরও সঠিক সাইকেল পূর্বাভাস এবং ব্যক্তিগতকৃত স্বাস্থ্য তথ্য দিতে পারব।'
+    : 'You\'ve joined Cycle Circle — that\'s a great first step! Completing your profile helps us give you more accurate cycle predictions and personalised health insights.'
 
   const ctaText = isBn
     ? 'প্রোফাইল সম্পূর্ণ করুন'

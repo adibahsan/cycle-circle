@@ -16,10 +16,10 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Vesta Admin',
-    template: '%s | Vesta Admin',
+    default: 'Cycle Circle Admin',
+    template: '%s | Cycle Circle Admin',
   },
-  description: 'Admin panel for the Vesta reproductive health platform',
+  description: 'Admin panel for the Cycle Circle reproductive health platform',
   robots: {
     index: false,
     follow: false,

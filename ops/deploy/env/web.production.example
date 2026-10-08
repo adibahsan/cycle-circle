@@ -13,7 +13,7 @@ AUTH_COOKIE_NAME=vesta_token
 CRON_SECRET=GENERATE-WITH-openssl-rand-hex-16
 
 RESEND_API_KEY=
-RESEND_FROM_EMAIL=Vesta <noreply@cycle-circle.com>
+RESEND_FROM_EMAIL=Cycle Circle <noreply@cycle-circle.com>
 RESEND_WEBHOOK_SECRET=
 
 BDAPPS_APP_ID=

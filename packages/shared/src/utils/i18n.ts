@@ -4,7 +4,13 @@ import { initReactI18next } from 'react-i18next';
 const resources = {
   en: {
     translation: {
-      app: { name: 'Vesta', tagline: 'Your cycle, your way' },
+      app: { name: 'Cycle Circle', tagline: 'Your cycle, your way' },
+      contactInfo: {
+        heading: 'Contact us',
+        emailLabel: 'Email', email: 'info@cycle-circle.com',
+        phoneLabel: 'Phone', phone: '+880 18102 04718',
+        addressLabel: 'Address', address: 'AWR U Tower, Plot 35, Road 133, Gulshan 1, Dhaka 1212',
+      },
       nav: { dashboard: 'Dashboard', calendar: 'Calendar', insights: 'Insights', symptoms: 'Symptoms', content: 'Learn', settings: 'Settings', feedback: 'Feedback', profiles: 'Profiles', subscription: 'Subscription', menu: 'Menu', more: 'More', notLoggedToday: 'Nothing logged today' },
       auth: {
         login: 'Log In', signup: 'Sign Up', phone: 'Phone Number', otp: 'Enter OTP',
@@ -29,7 +35,7 @@ const resources = {
         verified: 'Verified!',
       },
       onboarding: {
-        welcome: 'Welcome to Vesta', privacy: 'Your data is encrypted & private',
+        welcome: 'Welcome to Cycle Circle', privacy: 'Your data is encrypted & private',
         goal: 'What is your goal?', goalTracking: 'Period Tracking',
         goalConceive: 'Trying to Conceive', goalPerimenopause: 'Menopause', goalPregnancy: 'Pregnancy',
         cycleLength: 'Typical cycle length', periodLength: 'Typical period length',
@@ -42,7 +48,7 @@ const resources = {
         relationship: 'Relationship',
         namePlaceholder: 'Your name',
         allSet: "You're all set!",
-        personalised: 'Vesta is personalised and ready for you.',
+        personalised: 'Cycle Circle is personalised and ready for you.',
         yourSetup: 'Your Setup',
         goalLabel: 'Goal',
         profileLabel: 'Profile',
@@ -188,13 +194,13 @@ const resources = {
         title: 'Feedback', bug: 'Bug Report', feature: 'Feature Request',
         general: 'General', satisfaction: 'Satisfaction', message: 'Your message...',
         rating: 'Rating', submit: 'Submit Feedback', success: 'Thank you for your feedback!',
-        helpUs: 'Help us make Vesta better for you',
+        helpUs: 'Help us make Cycle Circle better for you',
         category: 'Category',
         optional: 'optional',
         messageLabel: 'Message',
         selectCategory: 'Please select a category to submit',
         submitting: 'Submitting…',
-        yourFeedbackHelps: 'Your feedback helps us improve Vesta',
+        yourFeedbackHelps: 'Your feedback helps us improve Cycle Circle',
         previousFeedback: 'Your Previous Feedback',
         noFeedbackYet: 'No feedback submitted yet — your input means a lot!',
         poor: 'Poor', fair: 'Fair', good: 'Good', great: 'Great', excellent: 'Excellent',
@@ -204,8 +210,8 @@ const resources = {
         upgrade: 'Upgrade to Pro', price: '৳99/month', features: 'Pro Features',
         smsAlerts: 'SMS Period & Fertile Alerts', prioritySupport: 'Priority Support',
         advancedInsights: 'Advanced Cycle Insights',
-        unlockTagline: 'Unlock the full power of Vesta',
-        vestaPro: 'Vesta Pro', vestaFree: 'Vesta Free',
+        unlockTagline: 'Unlock the full power of Cycle Circle',
+        vestaPro: 'Cycle Circle Pro', vestaFree: 'Cycle Circle Free',
         planLapsed: 'Expired', planLapsedNote: 'Your subscription has expired. Renew to keep Pro.',
         trialHoursLeft: 'Trial · {{hours}}h remaining',
         trialExpiredNote: 'Your free trial has ended — upgrade to continue.',
@@ -219,7 +225,7 @@ const resources = {
         freeVsPro: 'Free vs Pro', featureHeader: 'Feature',
         upgradeButton: 'Upgrade to Pro',
         cancelAnytime: 'Cancel anytime. No hidden fees.',
-        chargeMobile: 'Charge to mobile balance', perDay: 'per day · Vesta Pro',
+        chargeMobile: 'Charge to mobile balance', perDay: 'per day · Cycle Circle Pro',
         billingNumber: 'Billing number', mobileBilling: 'Mobile Billing',
         confirmDeduction: 'By confirming, ৳5 will be deducted from your mobile balance each day. Cancel anytime.',
         processing: 'Processing payment…',
@@ -346,7 +352,7 @@ const resources = {
         phaseAwareBody: "You're in your {{phase}} phase — many notice changes now. Anything to log?",
       },
       quickSymptom: {
-        header: 'Every signal you log makes Vesta smarter for you 💪',
+        header: 'Every signal you log makes Cycle Circle smarter for you 💪',
         subheader: 'Tap how you\'re feeling today',
         save: 'Save symptoms',
         saving: 'Saving…',
@@ -364,8 +370,8 @@ const resources = {
         periodTitle: 'Logged! 🎉',
         periodBody: 'Your cycle just got smarter. Predictions updated.',
         symptomTitle: 'Nicely done! 🎉',
-        symptomBody_one: '{{count}} symptom saved — every log helps Vesta understand you.',
-        symptomBody_other: '{{count}} symptoms saved — every log helps Vesta understand you.',
+        symptomBody_one: '{{count}} symptom saved — every log helps Cycle Circle understand you.',
+        symptomBody_other: '{{count}} symptoms saved — every log helps Cycle Circle understand you.',
         close: 'Done',
         streakTitle_one: '{{count}}-day streak! 🔥',
         streakTitle_other: '{{count}}-day streak! 🔥',
@@ -448,7 +454,7 @@ const resources = {
         completionDone: 'All set! Your profile is complete 🎉',
       },
       tour: {
-        welcomeTitle: 'Welcome to Vesta',
+        welcomeTitle: 'Welcome to Cycle Circle',
         welcomeDesc: "Let's take a quick tour so you feel right at home. It takes 20 seconds.",
         logTitle: 'Log your period',
         logDesc: 'Tap here whenever your period starts or ends — it powers your predictions.',
@@ -497,7 +503,7 @@ const resources = {
         },
         finalCtaTitle: 'Start understanding your body today',
         finalCtaSubtitle: 'Free to begin. No card required.',
-        footer: { privacy: 'Privacy', terms: 'Terms', login: 'Log In', rights: '© Vesta' },
+        footer: { privacy: 'Privacy', terms: 'Terms', login: 'Log In', rights: '© Cycle Circle' },
       },
       getStarted: {
         skip: 'Skip',
@@ -511,22 +517,22 @@ const resources = {
       terms: {
         title: 'Terms & Conditions',
         effective: 'Effective: May 2026',
-        intro: 'Please read these Terms & Conditions carefully before using Vesta. They set out your rights and responsibilities when using our cycle-tracking application.',
+        intro: 'Please read these Terms & Conditions carefully before using Cycle Circle. They set out your rights and responsibilities when using our cycle-tracking application.',
         sections: {
           acceptance: {
             title: 'Acceptance of Terms',
-            body: 'By downloading, installing, or using Vesta you agree to be bound by these Terms & Conditions. If you do not agree with any part of these terms, please do not use the application.',
+            body: 'By downloading, installing, or using Cycle Circle you agree to be bound by these Terms & Conditions. If you do not agree with any part of these terms, please do not use the application.',
           },
           service: {
             title: 'Service Description',
-            intro: 'Vesta provides the following features:',
+            intro: 'Cycle Circle provides the following features:',
             features: [
               'Menstrual cycle tracking and period prediction',
               'Fertile window estimation',
               'Symptom and mood logging',
               'Bilingual content (English and Bengali)',
             ],
-            disclaimer: 'Vesta is not a medical device. Content provided is for informational purposes only and does not constitute medical advice, diagnosis, or treatment.',
+            disclaimer: 'Cycle Circle is not a medical device. Content provided is for informational purposes only and does not constitute medical advice, diagnosis, or treatment.',
           },
           accounts: {
             title: 'Account & Profiles',
@@ -539,7 +545,7 @@ const resources = {
           },
           subscription: {
             title: 'Subscription (Pro)',
-            intro: 'Vesta Pro is available for ৳99/month, billed via BDApps Content & Application Aggregation Service (CAAS).',
+            intro: 'Cycle Circle Pro is available for ৳99/month, billed via BDApps Content & Application Aggregation Service (CAAS).',
             items: [
               { desc: 'Charges are applied directly to your Grameenphone mobile balance.' },
               { desc: 'Billing is monthly and renews automatically unless cancelled.' },
@@ -549,7 +555,7 @@ const resources = {
           },
           data: {
             title: 'Data & Privacy',
-            body: 'Your use of Vesta is also governed by our Privacy Policy, which is incorporated into these Terms by reference.',
+            body: 'Your use of Cycle Circle is also governed by our Privacy Policy, which is incorporated into these Terms by reference.',
             items: [
               { desc: 'All health data is encrypted at rest with AES-256-GCM.' },
               { desc: 'We do not sell, rent, or share your personal or health data with third parties for commercial purposes.' },
@@ -560,26 +566,26 @@ const resources = {
             title: 'Limitations & Disclaimer',
             body: 'Cycle predictions and fertile window estimates are algorithmic approximations based on the data you provide. They are not a substitute for professional medical advice.',
             items: [
-              { desc: 'Do not rely on Vesta for contraception or family planning decisions.' },
+              { desc: 'Do not rely on Cycle Circle for contraception or family planning decisions.' },
               { desc: 'Always consult a qualified healthcare professional for medical decisions.' },
-              { desc: 'Vesta is provided "as is" without warranties of any kind, including accuracy of predictions or uninterrupted service.' },
+              { desc: 'Cycle Circle is provided "as is" without warranties of any kind, including accuracy of predictions or uninterrupted service.' },
             ],
           },
           changes: {
             title: 'Changes to Terms',
             body1: 'We may update these Terms & Conditions from time to time. When we do, we will update the effective date at the top of this page.',
-            body2: 'Your continued use of Vesta after changes are posted constitutes your acceptance of the revised terms. If you disagree with updated terms, you may stop using the app and request account deletion.',
+            body2: 'Your continued use of Cycle Circle after changes are posted constitutes your acceptance of the revised terms. If you disagree with updated terms, you may stop using the app and request account deletion.',
           },
         },
       },
       privacy: {
         title: 'Privacy Policy',
         updated: 'Last updated: May 2026',
-        intro: 'Vesta is a personal health companion. We take privacy seriously — especially for sensitive health data. This policy explains exactly what we collect, why, and how we protect it.',
+        intro: 'Cycle Circle is a personal health companion. We take privacy seriously — especially for sensitive health data. This policy explains exactly what we collect, why, and how we protect it.',
         sections: {
           collection: {
             title: 'Data Collection',
-            intro: 'We collect only what is necessary to provide Vesta\'s services:',
+            intro: 'We collect only what is necessary to provide Cycle Circle\'s services:',
             items: [
               { term: 'Phone number', desc: 'used for authentication via BDApps OTP' },
               { term: 'Cycle data', desc: 'period start/end dates, cycle length, and predictions' },
@@ -590,7 +596,7 @@ const resources = {
           },
           usage: {
             title: 'How We Use Your Data',
-            intro: 'Your data is used exclusively to power Vesta\'s features:',
+            intro: 'Your data is used exclusively to power Cycle Circle\'s features:',
             items: [
               { desc: 'Generate accurate cycle predictions and fertile window estimates' },
               { desc: 'Deliver personalised content and health insights in your chosen language' },
@@ -609,7 +615,7 @@ const resources = {
           },
           isolation: {
             title: 'Data Isolation (Multi-Profile)',
-            intro: 'Vesta supports up to 6 profiles under a single account. Profile data is completely isolated at the database level.',
+            intro: 'Cycle Circle supports up to 6 profiles under a single account. Profile data is completely isolated at the database level.',
             items: [
               { desc: 'Each profile has its own encrypted data partition.' },
               { desc: 'One profile\'s cycle logs, symptoms, and notes never appear in another profile\'s view.' },
@@ -618,7 +624,7 @@ const resources = {
           },
           thirdParty: {
             title: 'Third-Party Services',
-            intro: 'We use a minimal set of third-party services to run Vesta:',
+            intro: 'We use a minimal set of third-party services to run Cycle Circle:',
             items: [
               { term: 'BDApps', desc: 'handles phone authentication (OTP) and in-app billing via CAAS. Only your phone number is shared for authentication purposes.' },
               { term: 'Resend', desc: 'transactional email notifications (if you provide an email address). No health data is included in emails.' },
@@ -637,7 +643,7 @@ const resources = {
           contact: {
             title: 'Contact Us',
             intro: 'If you have questions about this Privacy Policy or want to exercise your rights, please reach out to us:',
-            email: 'support@vesta.health',
+            email: 'info@cycle-circle.com',
             response: 'We aim to respond within 2 business days.',
           },
         },
@@ -646,7 +652,13 @@ const resources = {
   },
   bn: {
     translation: {
-      app: { name: 'ভেস্তা', tagline: 'আপনার চক্র, আপনার পথে' },
+      app: { name: 'সাইকেল সার্কেল', tagline: 'আপনার চক্র, আপনার পথে' },
+      contactInfo: {
+        heading: 'যোগাযোগ করুন',
+        emailLabel: 'ইমেইল', email: 'info@cycle-circle.com',
+        phoneLabel: 'ফোন', phone: '+880 18102 04718',
+        addressLabel: 'ঠিকানা', address: 'AWR U Tower, Plot 35, Road 133, Gulshan 1, Dhaka 1212',
+      },
       nav: { dashboard: 'ড্যাশবোর্ড', calendar: 'ক্যালেন্ডার', insights: 'ইনসাইটস', symptoms: 'লক্ষণ', content: 'শিখুন', settings: 'সেটিংস', feedback: 'মতামত', profiles: 'প্রোফাইল', subscription: 'সাবস্ক্রিপশন', menu: 'মেনু', more: 'আরও', notLoggedToday: 'আজ কিছু লগ করা হয়নি' },
       auth: {
         login: 'লগ ইন', signup: 'সাইন আপ', phone: 'ফোন নম্বর', otp: 'ওটিপি দিন',
@@ -671,7 +683,7 @@ const resources = {
         verified: 'যাচাই হয়েছে!',
       },
       onboarding: {
-        welcome: 'ভেস্তায় স্বাগতম', privacy: 'আপনার তথ্য এনক্রিপ্টেড ও ব্যক্তিগত',
+        welcome: 'সাইকেল সার্কেলে স্বাগতম', privacy: 'আপনার তথ্য এনক্রিপ্টেড ও ব্যক্তিগত',
         goal: 'আপনার লক্ষ্য কী?', goalTracking: 'পিরিয়ড ট্র্যাকিং',
         goalConceive: 'গর্ভধারণের চেষ্টা', goalPerimenopause: 'মেনোপজ', goalPregnancy: 'গর্ভাবস্থা',
         cycleLength: 'সাধারণ চক্রের দৈর্ঘ্য', periodLength: 'সাধারণ পিরিয়ডের দৈর্ঘ্য',
@@ -684,7 +696,7 @@ const resources = {
         relationship: 'সম্পর্ক',
         namePlaceholder: 'আপনার নাম',
         allSet: 'সব ঠিক আছে!',
-        personalised: 'ভেস্তা আপনার জন্য কাস্টমাইজড এবং প্রস্তুত।',
+        personalised: 'সাইকেল সার্কেল আপনার জন্য কাস্টমাইজড এবং প্রস্তুত।',
         yourSetup: 'আপনার সেটআপ',
         goalLabel: 'লক্ষ্য',
         profileLabel: 'প্রোফাইল',
@@ -830,13 +842,13 @@ const resources = {
         title: 'মতামত', bug: 'বাগ রিপোর্ট', feature: 'ফিচার অনুরোধ',
         general: 'সাধারণ', satisfaction: 'সন্তুষ্টি', message: 'আপনার বার্তা...',
         rating: 'রেটিং', submit: 'মতামত জমা দিন', success: 'আপনার মতামতের জন্য ধন্যবাদ!',
-        helpUs: 'ভেস্তাকে আপনার জন্য আরও ভালো করতে সাহায্য করুন',
+        helpUs: 'সাইকেল সার্কেলকে আপনার জন্য আরও ভালো করতে সাহায্য করুন',
         category: 'বিভাগ',
         optional: 'ঐচ্ছিক',
         messageLabel: 'বার্তা',
         selectCategory: 'জমা দিতে একটি বিভাগ নির্বাচন করুন',
         submitting: 'জমা দেওয়া হচ্ছে…',
-        yourFeedbackHelps: 'আপনার মতামত ভেস্তাকে উন্নত করতে সাহায্য করে',
+        yourFeedbackHelps: 'আপনার মতামত সাইকেল সার্কেলকে উন্নত করতে সাহায্য করে',
         previousFeedback: 'আপনার আগের মতামত',
         noFeedbackYet: 'এখনো কোনো মতামত দেওয়া হয়নি — আপনার মতামত অনেক গুরুত্বপূর্ণ!',
         poor: 'দুর্বল', fair: 'মোটামুটি', good: 'ভালো', great: 'অনেক ভালো', excellent: 'অসাধারণ',
@@ -846,8 +858,8 @@ const resources = {
         upgrade: 'প্রো তে আপগ্রেড করুন', price: '৳৯৯/মাস', features: 'প্রো ফিচার',
         smsAlerts: 'এসএমএস পিরিয়ড ও উর্বর সতর্কতা', prioritySupport: 'অগ্রাধিকার সহায়তা',
         advancedInsights: 'উন্নত চক্র বিশ্লেষণ',
-        unlockTagline: 'ভেস্তার সম্পূর্ণ শক্তি আনলক করুন',
-        vestaPro: 'ভেস্তা প্রো', vestaFree: 'ভেস্তা ফ্রি',
+        unlockTagline: 'সাইকেল সার্কেলের সম্পূর্ণ শক্তি আনলক করুন',
+        vestaPro: 'সাইকেল সার্কেল প্রো', vestaFree: 'সাইকেল সার্কেল ফ্রি',
         planLapsed: 'মেয়াদোত্তীর্ণ', planLapsedNote: 'আপনার সাবস্ক্রিপশনের মেয়াদ শেষ হয়েছে। প্রো রাখতে নবায়ন করুন।',
         trialHoursLeft: 'ট্রায়াল · {{hours}} ঘণ্টা বাকি',
         trialExpiredNote: 'আপনার বিনামূল্যে ট্রায়াল শেষ হয়েছে — চালিয়ে যেতে আপগ্রেড করুন।',
@@ -861,7 +873,7 @@ const resources = {
         freeVsPro: 'ফ্রি বনাম প্রো', featureHeader: 'ফিচার',
         upgradeButton: 'প্রো তে আপগ্রেড করুন',
         cancelAnytime: 'যেকোনো সময় বাতিল করুন। কোনো লুকানো চার্জ নেই।',
-        chargeMobile: 'মোবাইল ব্যালেন্সে চার্জ করুন', perDay: 'প্রতিদিন · ভেস্তা প্রো',
+        chargeMobile: 'মোবাইল ব্যালেন্সে চার্জ করুন', perDay: 'প্রতিদিন · সাইকেল সার্কেল প্রো',
         billingNumber: 'বিলিং নম্বর', mobileBilling: 'মোবাইল বিলিং',
         confirmDeduction: 'নিশ্চিত করলে প্রতিদিন আপনার মোবাইল ব্যালেন্স থেকে ৳৫ কাটা হবে। যেকোনো সময় বাতিল করুন।',
         processing: 'পেমেন্ট প্রক্রিয়া হচ্ছে…',
@@ -988,7 +1000,7 @@ const resources = {
         phaseAwareBody: 'আপনি এখন {{phase}} পর্যায়ে আছেন — অনেকে এই সময়ে পরিবর্তন অনুভব করেন। কিছু লগ করবেন?',
       },
       quickSymptom: {
-        header: 'আপনার লগ করা প্রতিটি লক্ষণ ভেস্তাকে আপনার জন্য আরও স্মার্ট করে তোলে 💪',
+        header: 'আপনার লগ করা প্রতিটি লক্ষণ সাইকেল সার্কেলকে আপনার জন্য আরও স্মার্ট করে তোলে 💪',
         subheader: 'আজ কেমন অনুভব করছেন ট্যাপ করুন',
         save: 'লক্ষণ সংরক্ষণ করুন',
         saving: 'সংরক্ষণ হচ্ছে…',
@@ -1006,8 +1018,8 @@ const resources = {
         periodTitle: 'লগ হয়েছে! 🎉',
         periodBody: 'আপনার চক্র আরও স্মার্ট হলো। পূর্বাভাস হালনাগাদ হয়েছে।',
         symptomTitle: 'দারুণ! 🎉',
-        symptomBody_one: '{{count}}টি লক্ষণ সংরক্ষিত — প্রতিটি লগ ভেস্তাকে আপনাকে বুঝতে সাহায্য করে।',
-        symptomBody_other: '{{count}}টি লক্ষণ সংরক্ষিত — প্রতিটি লগ ভেস্তাকে আপনাকে বুঝতে সাহায্য করে।',
+        symptomBody_one: '{{count}}টি লক্ষণ সংরক্ষিত — প্রতিটি লগ সাইকেল সার্কেলকে আপনাকে বুঝতে সাহায্য করে।',
+        symptomBody_other: '{{count}}টি লক্ষণ সংরক্ষিত — প্রতিটি লগ সাইকেল সার্কেলকে আপনাকে বুঝতে সাহায্য করে।',
         close: 'শেষ',
         streakTitle_one: '{{count}} দিনের ধারা! 🔥',
         streakTitle_other: '{{count}} দিনের ধারা! 🔥',
@@ -1090,7 +1102,7 @@ const resources = {
         completionDone: 'সব ঠিক আছে! আপনার প্রোফাইল সম্পূর্ণ হয়েছে 🎉',
       },
       tour: {
-        welcomeTitle: 'ভেস্তায় স্বাগতম',
+        welcomeTitle: 'সাইকেল সার্কেলে স্বাগতম',
         welcomeDesc: 'চলুন একটু ঘুরে দেখি — মাত্র ২০ সেকেন্ড লাগবে, আপনি ঘরের মতো স্বাচ্ছন্দ্য বোধ করবেন।',
         logTitle: 'পিরিয়ড লগ করুন',
         logDesc: 'পিরিয়ড শুরু বা শেষ হলে এখানে ট্যাপ করুন — এটিই আপনার পূর্বাভাসকে শক্তি দেয়।',
@@ -1139,7 +1151,7 @@ const resources = {
         },
         finalCtaTitle: 'আজই আপনার শরীরকে বুঝতে শুরু করুন',
         finalCtaSubtitle: 'শুরু করতে কোনো খরচ নেই। কার্ডের প্রয়োজন নেই।',
-        footer: { privacy: 'গোপনীয়তা', terms: 'শর্তাবলী', login: 'লগ ইন', rights: '© ভেস্তা' },
+        footer: { privacy: 'গোপনীয়তা', terms: 'শর্তাবলী', login: 'লগ ইন', rights: '© সাইকেল সার্কেল' },
       },
       getStarted: {
         skip: 'এড়িয়ে যান',
@@ -1154,22 +1166,22 @@ const resources = {
       terms: {
         title: 'শর্তাবলী ও নিয়মাবলী',
         effective: 'কার্যকর: মে ২০২৬',
-        intro: 'ভেস্তা ব্যবহার করার আগে অনুগ্রহ করে এই শর্তাবলী ও নিয়মাবলী মনোযোগ দিয়ে পড়ুন। এগুলি আমাদের চক্র-ট্র্যাকিং অ্যাপ্লিকেশন ব্যবহারে আপনার অধিকার ও দায়িত্ব নির্ধারণ করে।',
+        intro: 'সাইকেল সার্কেল ব্যবহার করার আগে অনুগ্রহ করে এই শর্তাবলী ও নিয়মাবলী মনোযোগ দিয়ে পড়ুন। এগুলি আমাদের চক্র-ট্র্যাকিং অ্যাপ্লিকেশন ব্যবহারে আপনার অধিকার ও দায়িত্ব নির্ধারণ করে।',
         sections: {
           acceptance: {
             title: 'শর্তাবলী গ্রহণ',
-            body: 'ভেস্তা ডাউনলোড, ইনস্টল বা ব্যবহার করে আপনি এই শর্তাবলী ও নিয়মাবলীর সাথে আবদ্ধ হতে সম্মত হচ্ছেন। যদি এই শর্তাবলীর কোনো অংশের সাথে আপনি একমত না হন, তাহলে অনুগ্রহ করে অ্যাপ্লিকেশনটি ব্যবহার করবেন না।',
+            body: 'সাইকেল সার্কেল ডাউনলোড, ইনস্টল বা ব্যবহার করে আপনি এই শর্তাবলী ও নিয়মাবলীর সাথে আবদ্ধ হতে সম্মত হচ্ছেন। যদি এই শর্তাবলীর কোনো অংশের সাথে আপনি একমত না হন, তাহলে অনুগ্রহ করে অ্যাপ্লিকেশনটি ব্যবহার করবেন না।',
           },
           service: {
             title: 'সেবার বিবরণ',
-            intro: 'ভেস্তা নিম্নলিখিত ফিচারগুলি প্রদান করে:',
+            intro: 'সাইকেল সার্কেল নিম্নলিখিত ফিচারগুলি প্রদান করে:',
             features: [
               'মাসিক চক্র ট্র্যাকিং এবং পিরিয়ড পূর্বাভাস',
               'উর্বর সময়কাল অনুমান',
               'লক্ষণ ও মেজাজ লগিং',
               'দ্বিভাষিক বিষয়বস্তু (ইংরেজি ও বাংলা)',
             ],
-            disclaimer: 'ভেস্তা কোনো চিকিৎসা যন্ত্র নয়। এখানে প্রদত্ত বিষয়বস্তু শুধুমাত্র তথ্যমূলক উদ্দেশ্যে এবং এটি কোনো চিকিৎসা পরামর্শ, রোগনির্ণয় বা চিকিৎসা গঠন করে না।',
+            disclaimer: 'সাইকেল সার্কেল কোনো চিকিৎসা যন্ত্র নয়। এখানে প্রদত্ত বিষয়বস্তু শুধুমাত্র তথ্যমূলক উদ্দেশ্যে এবং এটি কোনো চিকিৎসা পরামর্শ, রোগনির্ণয় বা চিকিৎসা গঠন করে না।',
           },
           accounts: {
             title: 'অ্যাকাউন্ট ও প্রোফাইল',
@@ -1182,7 +1194,7 @@ const resources = {
           },
           subscription: {
             title: 'সাবস্ক্রিপশন (প্রো)',
-            intro: 'ভেস্তা প্রো ৳99/month মূল্যে পাওয়া যায়, BDApps কন্টেন্ট ও অ্যাপ্লিকেশন অ্যাগ্রিগেশন সার্ভিস (CAAS)-এর মাধ্যমে বিল করা হয়।',
+            intro: 'সাইকেল সার্কেল প্রো ৳99/month মূল্যে পাওয়া যায়, BDApps কন্টেন্ট ও অ্যাপ্লিকেশন অ্যাগ্রিগেশন সার্ভিস (CAAS)-এর মাধ্যমে বিল করা হয়।',
             items: [
               { desc: 'চার্জ সরাসরি আপনার Grameenphone মোবাইল ব্যালেন্স থেকে কাটা হয়।' },
               { desc: 'বিলিং মাসিক এবং বাতিল না করলে স্বয়ংক্রিয়ভাবে নবায়িত হয়।' },
@@ -1192,7 +1204,7 @@ const resources = {
           },
           data: {
             title: 'তথ্য ও গোপনীয়তা',
-            body: 'ভেস্তার ব্যবহার আমাদের গোপনীয়তা নীতি দ্বারাও নিয়ন্ত্রিত, যা রেফারেন্সের মাধ্যমে এই শর্তাবলীতে অন্তর্ভুক্ত।',
+            body: 'সাইকেল সার্কেলের ব্যবহার আমাদের গোপনীয়তা নীতি দ্বারাও নিয়ন্ত্রিত, যা রেফারেন্সের মাধ্যমে এই শর্তাবলীতে অন্তর্ভুক্ত।',
             items: [
               { desc: 'সকল স্বাস্থ্য তথ্য AES-256-GCM দিয়ে বিশ্রামে এনক্রিপ্ট করা হয়।' },
               { desc: 'আমরা বাণিজ্যিক উদ্দেশ্যে আপনার ব্যক্তিগত বা স্বাস্থ্য তথ্য তৃতীয় পক্ষের কাছে বিক্রি, ভাড়া বা শেয়ার করি না।' },
@@ -1203,26 +1215,26 @@ const resources = {
             title: 'সীমাবদ্ধতা ও দাবিত্যাগ',
             body: 'চক্র পূর্বাভাস এবং উর্বর সময়কাল অনুমান আপনার প্রদত্ত তথ্যের উপর ভিত্তি করে অ্যালগরিদমিক আনুমানিক হিসাব। এগুলি পেশাদার চিকিৎসা পরামর্শের বিকল্প নয়।',
             items: [
-              { desc: 'গর্ভনিরোধ বা পরিবার পরিকল্পনার সিদ্ধান্তে ভেস্তার উপর নির্ভর করবেন না।' },
+              { desc: 'গর্ভনিরোধ বা পরিবার পরিকল্পনার সিদ্ধান্তে সাইকেল সার্কেলের উপর নির্ভর করবেন না।' },
               { desc: 'চিকিৎসা সংক্রান্ত সিদ্ধান্তে সর্বদা একজন যোগ্য স্বাস্থ্যসেবা পেশাদারের পরামর্শ নিন।' },
-              { desc: 'ভেস্তা "যেমন আছে" ভিত্তিতে প্রদান করা হয়, পূর্বাভাসের নির্ভুলতা বা অবিচ্ছিন্ন সেবাসহ কোনো ধরনের ওয়ারেন্টি ছাড়া।' },
+              { desc: 'সাইকেল সার্কেল "যেমন আছে" ভিত্তিতে প্রদান করা হয়, পূর্বাভাসের নির্ভুলতা বা অবিচ্ছিন্ন সেবাসহ কোনো ধরনের ওয়ারেন্টি ছাড়া।' },
             ],
           },
           changes: {
             title: 'শর্তাবলীর পরিবর্তন',
             body1: 'আমরা সময়ে সময়ে এই শর্তাবলী ও নিয়মাবলী আপডেট করতে পারি। যখন করব, এই পৃষ্ঠার শীর্ষে কার্যকর তারিখ আপডেট করব।',
-            body2: 'পরিবর্তন পোস্ট করার পরে ভেস্তার ব্যবহার অব্যাহত রাখলে সংশোধিত শর্তাবলী গ্রহণ করা বোঝায়। আপডেট করা শর্তাবলীর সাথে একমত না হলে আপনি অ্যাপ ব্যবহার বন্ধ করতে এবং অ্যাকাউন্ট মুছে ফেলার অনুরোধ করতে পারবেন।',
+            body2: 'পরিবর্তন পোস্ট করার পরে সাইকেল সার্কেলের ব্যবহার অব্যাহত রাখলে সংশোধিত শর্তাবলী গ্রহণ করা বোঝায়। আপডেট করা শর্তাবলীর সাথে একমত না হলে আপনি অ্যাপ ব্যবহার বন্ধ করতে এবং অ্যাকাউন্ট মুছে ফেলার অনুরোধ করতে পারবেন।',
           },
         },
       },
       privacy: {
         title: 'গোপনীয়তা নীতি',
         updated: 'সর্বশেষ আপডেট: মে ২০২৬',
-        intro: 'ভেস্তা একটি ব্যক্তিগত স্বাস্থ্য সহচর। আমরা গোপনীয়তাকে গুরুত্বের সাথে নিই — বিশেষত সংবেদনশীল স্বাস্থ্য তথ্যের ক্ষেত্রে। এই নীতিটি ব্যাখ্যা করে আমরা ঠিক কী সংগ্রহ করি, কেন এবং কীভাবে সুরক্ষা করি।',
+        intro: 'সাইকেল সার্কেল একটি ব্যক্তিগত স্বাস্থ্য সহচর। আমরা গোপনীয়তাকে গুরুত্বের সাথে নিই — বিশেষত সংবেদনশীল স্বাস্থ্য তথ্যের ক্ষেত্রে। এই নীতিটি ব্যাখ্যা করে আমরা ঠিক কী সংগ্রহ করি, কেন এবং কীভাবে সুরক্ষা করি।',
         sections: {
           collection: {
             title: 'তথ্য সংগ্রহ',
-            intro: 'ভেস্তার সেবা প্রদানের জন্য যা প্রয়োজনীয় শুধু তাই সংগ্রহ করি:',
+            intro: 'সাইকেল সার্কেলের সেবা প্রদানের জন্য যা প্রয়োজনীয় শুধু তাই সংগ্রহ করি:',
             items: [
               { term: 'ফোন নম্বর', desc: 'BDApps OTP-এর মাধ্যমে প্রমাণীকরণে ব্যবহৃত' },
               { term: 'চক্রের তথ্য', desc: 'পিরিয়ড শুরু/শেষের তারিখ, চক্রের দৈর্ঘ্য এবং পূর্বাভাস' },
@@ -1233,7 +1245,7 @@ const resources = {
           },
           usage: {
             title: 'আমরা আপনার তথ্য কীভাবে ব্যবহার করি',
-            intro: 'আপনার তথ্য শুধুমাত্র ভেস্তার ফিচারগুলি পরিচালনার জন্য ব্যবহার করা হয়:',
+            intro: 'আপনার তথ্য শুধুমাত্র সাইকেল সার্কেলের ফিচারগুলি পরিচালনার জন্য ব্যবহার করা হয়:',
             items: [
               { desc: 'সঠিক চক্র পূর্বাভাস এবং উর্বর সময়কাল অনুমান তৈরি করা' },
               { desc: 'আপনার নির্বাচিত ভাষায় ব্যক্তিগতকৃত বিষয়বস্তু ও স্বাস্থ্য অন্তর্দৃষ্টি প্রদান করা' },
@@ -1252,7 +1264,7 @@ const resources = {
           },
           isolation: {
             title: 'তথ্য বিচ্ছিন্নতা (মাল্টি-প্রোফাইল)',
-            intro: 'ভেস্তা একটি অ্যাকাউন্টের অধীনে সর্বোচ্চ ৬টি প্রোফাইল সমর্থন করে। প্রোফাইল তথ্য ডেটাবেস স্তরে সম্পূর্ণরূপে বিচ্ছিন্ন।',
+            intro: 'সাইকেল সার্কেল একটি অ্যাকাউন্টের অধীনে সর্বোচ্চ ৬টি প্রোফাইল সমর্থন করে। প্রোফাইল তথ্য ডেটাবেস স্তরে সম্পূর্ণরূপে বিচ্ছিন্ন।',
             items: [
               { desc: 'প্রতিটি প্রোফাইলের নিজস্ব এনক্রিপ্টেড ডেটা পার্টিশন রয়েছে।' },
               { desc: 'একটি প্রোফাইলের চক্র লগ, লক্ষণ ও নোট কখনো অন্য প্রোফাইলের ভিউতে প্রদর্শিত হয় না।' },
@@ -1261,7 +1273,7 @@ const resources = {
           },
           thirdParty: {
             title: 'তৃতীয় পক্ষের সেবা',
-            intro: 'ভেস্তা পরিচালনার জন্য আমরা ন্যূনতম তৃতীয় পক্ষের সেবা ব্যবহার করি:',
+            intro: 'সাইকেল সার্কেল পরিচালনার জন্য আমরা ন্যূনতম তৃতীয় পক্ষের সেবা ব্যবহার করি:',
             items: [
               { term: 'BDApps', desc: 'ফোন প্রমাণীকরণ (OTP) এবং CAAS-এর মাধ্যমে অ্যাপ-মধ্যস্থ বিলিং পরিচালনা করে। শুধুমাত্র প্রমাণীকরণের উদ্দেশ্যে আপনার ফোন নম্বর শেয়ার করা হয়।' },
               { term: 'Resend', desc: 'লেনদেনমূলক ইমেইল বিজ্ঞপ্তি (যদি আপনি একটি ইমেইল ঠিকানা প্রদান করেন)। ইমেইলে কোনো স্বাস্থ্য তথ্য অন্তর্ভুক্ত নেই।' },
@@ -1280,7 +1292,7 @@ const resources = {
           contact: {
             title: 'যোগাযোগ করুন',
             intro: 'এই গোপনীয়তা নীতি সম্পর্কে প্রশ্ন থাকলে বা আপনার অধিকার প্রয়োগ করতে চাইলে আমাদের সাথে যোগাযোগ করুন:',
-            email: 'support@vesta.health',
+            email: 'info@cycle-circle.com',
             response: 'আমরা ২ কার্যদিবসের মধ্যে সাড়া দেওয়ার লক্ষ্য রাখি।',
           },
         },

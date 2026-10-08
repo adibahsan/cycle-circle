@@ -69,7 +69,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           className="relative z-10 px-12 lg:px-16 max-w-lg"
         >
           <h1 className="text-5xl lg:text-6xl font-bold mb-4 text-[var(--color-primary)]">
-            Vesta
+            Cycle Circle
           </h1>
           <p className="text-lg lg:text-xl text-[var(--color-text-secondary)] leading-relaxed mb-6">
             Smart cycle tracking with predictive insights. Understand your body, plan your life.

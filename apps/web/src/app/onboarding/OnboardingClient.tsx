@@ -1020,8 +1020,8 @@ export default function OnboardingClient({ user }: OnboardingClientProps) {
       {/* ── Header (shrink-0) ── */}
       <div className="shrink-0 px-5 pt-5 pb-3 md:px-7">
         <div className="flex items-center justify-between">
-          {/* Vesta wordmark — always visible now that the brand panel is gone */}
-          <span className="text-lg font-bold text-[var(--color-primary)]">Vesta</span>
+          {/* Cycle Circle wordmark — always visible now that the brand panel is gone */}
+          <span className="text-lg font-bold text-[var(--color-primary)]">Cycle Circle</span>
           {/* Right cluster: identity chip + language toggle + step counter */}
           <div className="flex items-center gap-2 min-w-0">
             <AccountControl user={user} />
