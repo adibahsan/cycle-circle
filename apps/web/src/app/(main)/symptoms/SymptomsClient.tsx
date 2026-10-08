@@ -395,7 +395,7 @@ export function SymptomsClient({
   const activeTabIndex = CATEGORIES.findIndex((c) => c.key === activeCategory);
 
   return (
-    <PageContainer className="pb-24">
+    <PageContainer className="pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+5rem)]">
       <PageHeader
         title={t('symptoms.title')}
         subtitle={format(selectedDate, 'EEEE, MMMM d', { locale: dateLocale })}
