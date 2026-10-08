@@ -5,30 +5,35 @@ import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'motion/react';
 import { useAppStore } from '@/lib/store';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import VestaLogo from '@/components/ui/VestaLogo';
-import { ProfileCompletionTracker, type ProfileCompletionStatus } from '@/components/ProfileCompletionTracker';
+import type { ProfileCompletionStatus } from '@/lib/profile-completion';
 import type { TourStep } from '@/components/onboarding/OnboardingTour';
 import { completeOnboardingTour } from '@/app/actions/user-actions';
+import { Sun, Moon } from 'lucide-react';
+import { NAV_ICONS } from '@/components/shell/nav-icons';
+import { BottomNav } from '@/components/shell/BottomNav';
+import { MoreSheet } from '@/components/shell/MoreSheet';
+import { ProfileChip } from '@/components/shell/ProfileChip';
 import {
-  Home,
-  CalendarDays,
-  Activity,
-  BookOpen,
-  Settings,
-  MessageSquare,
-  Users,
-  CreditCard,
-  Sun,
-  Moon,
-  TrendingUp,
-} from 'lucide-react';
+  SIDEBAR_MENU_ITEMS,
+  SIDEBAR_MORE_ITEMS,
+  isNavActive,
+} from '@/components/shell/nav-config';
 import { LatePeriodFullScreenAlert } from '@/components/modals/LatePeriodFullScreenAlert';
 import { GOAL_ICON_COMPONENTS, GOAL_I18N_KEYS } from '@/lib/goal-display';
 import { goalAccentVar, normalizeGoal } from '@vesta/shared/utils/goal';
 import { isTrialExpired } from '@vesta/shared/utils/trial';
+import { ToastProvider, useToast } from '@/components/ui/Toast';
+import {
+  AutoPromptProvider,
+  useAutoPrompt,
+  useAutoPromptCandidate,
+  useAutoPromptExpect,
+} from '@/components/prompts/AutoPromptProvider';
+import { OPEN_COMPLETION_EVENT } from '@/components/prompts/CompletionRow';
+import type { CandidateState } from '@/lib/auto-prompt';
 import dynamic from 'next/dynamic';
 
 const ProfileCompletionModal = dynamic(
@@ -48,65 +53,6 @@ const TrialCountdownPill = dynamic(
   { ssr: false },
 )
 
-// ── Toast (single-slot, same pattern as SettingsClient) ───────────────────────
-
-interface ToastState {
-  text: string;
-  seq: number;
-}
-
-function useToast() {
-  const [toast, setToast] = useState<ToastState | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const show = useCallback((text: string) => {
-    setToast((prev) => ({ text, seq: (prev?.seq ?? 0) + 1 }));
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setToast(null), 2500);
-  }, []);
-
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-
-  return { toast, show };
-}
-
-function Toast({ toast }: { toast: ToastState | null }) {
-  return (
-    <div
-      aria-live="polite"
-      aria-atomic="true"
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-[70] w-full max-w-xs px-4 pointer-events-none"
-    >
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            key="layout-toast-bar"
-            initial={{ opacity: 0, y: -16, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.94 }}
-            transition={{ type: 'spring', damping: 24, stiffness: 320 }}
-            className="grid rounded-xl bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] text-sm font-medium px-4 py-3 shadow-glow text-center"
-          >
-            <AnimatePresence>
-              <motion.span
-                key={toast.seq}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
-                className="col-start-1 row-start-1"
-              >
-                {toast.text}
-              </motion.span>
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-const PROFILE_MODAL_DISMISSED_KEY = 'vesta_profile_modal_dismissed';
 // SRS FR-AUTH: the profile-completion popup appears ~1 minute after login.
 const PROFILE_COMPLETION_PROMPT_DELAY_MS = 60_000;
 const TOUR_REPLAY_KEY = 'vesta_replay_tour';
@@ -119,33 +65,34 @@ const tourSteps: TourStep[] = [
   { targetSelector: '[data-tour="profile-ring"]', titleKey: 'tour.profileTitle', descKey: 'tour.profileDesc' },
 ];
 
-const NAV_ITEMS = [
-  { href: '/dashboard', icon: Home, labelKey: 'nav.dashboard', tourKey: undefined },
-  { href: '/calendar', icon: CalendarDays, labelKey: 'nav.calendar', tourKey: 'nav-calendar' },
-  { href: '/symptoms', icon: Activity, labelKey: 'nav.symptoms', tourKey: undefined },
-  { href: '/insights', icon: TrendingUp, labelKey: 'nav.insights', tourKey: 'nav-insights' },
-  { href: '/content', icon: BookOpen, labelKey: 'nav.content', tourKey: undefined },
-  { href: '/settings', icon: Settings, labelKey: 'nav.settings', tourKey: undefined },
-];
-
-const SIDEBAR_EXTRA_ITEMS = [
-  { href: '/profiles', icon: Users, labelKey: 'nav.profiles' },
-  { href: '/feedback', icon: MessageSquare, labelKey: 'nav.feedback' },
-  { href: '/subscription', icon: CreditCard, labelKey: 'nav.subscription' },
-];
-
 export default function MainLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ToastProvider>
+      <AutoPromptProvider>
+        <MainLayoutInner>{children}</MainLayoutInner>
+      </AutoPromptProvider>
+    </ToastProvider>
+  );
+}
+
+function MainLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslation();
-  const { theme, setTheme, activeProfileName, setTourState } = useAppStore();
-  const { toast, show: showToast } = useToast();
+  const { theme, setTheme, activeProfileName } = useAppStore();
+  const prompt = useAutoPrompt();
+  const setAccount = prompt.setAccount;
+  const claimPrompt = prompt.claim;
+  const { show: showToast } = useToast();
 
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionStatus, setCompletionStatus] = useState<ProfileCompletionStatus | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
-  const [logging, setLogging] = useState<{ goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null>(null);
-  const [showLateAlert, setShowLateAlert] = useState(false);
+  const [logging, setLogging] = useState<{ profileId?: string | null; goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null>(null);
+  const [loggingLoaded, setLoggingLoaded] = useState(false);
+  const [completionLoaded, setCompletionLoaded] = useState(false);
+  const [profileDelayDone, setProfileDelayDone] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [trialUser, setTrialUser] = useState<{
     authMethod?: string | null;
     subscriptionStatus?: string | null;
@@ -162,11 +109,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Tracks the previous completion percent to detect increases (for progress toast).
   // Initialised to -1 so the very first load does NOT fire the progress toast.
   const prevPercentRef = useRef<number>(-1);
-  // Latest completion status (read inside the delayed auto-open timer below).
-  const completionStatusRef = useRef<ProfileCompletionStatus | null>(null);
-  completionStatusRef.current = completionStatus;
-  // Ensures the ~1-minute auto-open prompt is scheduled at most once per session.
-  const completionPromptScheduledRef = useRef(false);
 
   // ── Auth status fetch — trial lock + tour eligibility ────────────────────
   // Stable callback so it can be called both on mount and from the
@@ -182,6 +124,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       })
       .then((data: {
         user?: {
+          id?: string;
+          createdAt?: string | null;
           onboardingTourCompletedAt?: string | null;
           authMethod?: string | null;
           subscriptionStatus?: string | null;
@@ -192,6 +136,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
         // Capture trial-relevant fields for the lock overlay
         if (user) {
+          const createdAt = Date.parse(user.createdAt ?? '');
+          if (user.id && Number.isFinite(createdAt)) setAccount({ id: user.id, createdAt });
           setTrialUser({
             authMethod: user.authMethod,
             subscriptionStatus: user.subscriptionStatus,
@@ -205,11 +151,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
         setAuthStatusLoaded(true); // unblock on error — don't permanently show lock
-        setTourState('done'); // unblock check-in on fetch error
       });
 
     return () => controller.abort();
-  }, [setTourState]);
+  }, [setAccount]);
 
   // Call once on mount. Navigating between in-app routes must NOT re-hit this
   // endpoint; pathname-dependent tour gating uses the captured `tourEligible`
@@ -219,30 +164,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     return cleanup;
   }, [refreshAuthStatus]);
 
-  // ── Tour gating — reacts to pathname using the captured eligibility flag ──
-  // No network. The tour only runs on /dashboard; a replay can be requested from
-  // Settings via sessionStorage (which navigates here). Eligibility is flipped
-  // off in handleTourClose, so a completed tour never re-opens this session.
+  // ── Tour replay (user-opened, bypasses the arbiter) ───────────────────────
+  // Settings sets a sessionStorage flag and navigates here. A replay is an explicit
+  // user action, so it opens directly (never over the trial lock).
   useEffect(() => {
-    if (!authStatusLoaded) return;
-
-    if (pathname !== '/dashboard') {
-      setTourState('done');
-      return;
-    }
-
-    const replayRequested = sessionStorage.getItem(TOUR_REPLAY_KEY) === '1';
-    if (replayRequested) {
-      sessionStorage.removeItem(TOUR_REPLAY_KEY);
-    }
-
-    if (replayRequested || tourEligible) {
-      setTourState('active');
-      setTourOpen(true);
-    } else {
-      setTourState('done');
-    }
-  }, [pathname, authStatusLoaded, tourEligible, setTourState]);
+    if (!authStatusLoaded || pathname !== '/dashboard') return;
+    if (sessionStorage.getItem(TOUR_REPLAY_KEY) !== '1') return;
+    sessionStorage.removeItem(TOUR_REPLAY_KEY);
+    if (prompt.locked) return;
+    claimPrompt('tour'); // no auto-prompt may open over (or after) the replay this page load
+    setTourOpen(true);
+  }, [pathname, authStatusLoaded, prompt.locked, claimPrompt]);
 
   // ── Logging status fetch ─────────────────────────────────────────────────
   const refreshLogging = useCallback(() => {
@@ -250,13 +182,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     fetch('/api/tracking/logging-status', { cache: 'no-store', signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null) => {
+      .then((data: { profileId?: string | null; goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null) => {
         if (!data) return;
         setLogging(data);
       })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-      });
+      })
+      .finally(() => setLoggingLoaded(true));
 
     return () => controller.abort();
   }, []);
@@ -294,7 +227,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       .catch((err: unknown) => {
         // Ignore AbortError from overlapping refreshes; silently ignore others.
         if (err instanceof DOMException && err.name === 'AbortError') return;
-      });
+      })
+      .finally(() => setCompletionLoaded(true));
 
     return () => controller.abort();
   }, [showToast, t]);
@@ -325,52 +259,56 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     return () => window.removeEventListener('vesta:profile-updated', handler);
   }, [refreshCompletion, refreshLogging, refreshAuthStatus]);
 
-  // ── Auto-open the profile-completion popup ~1 min after login ─────────────
-  // SRS FR-AUTH: the popup appears ~1 minute after login for users with an
-  // incomplete profile, and persists until completed. Scheduled at most once
-  // per session (a ref guard), and snoozed for the session once dismissed
-  // (sessionStorage) so it does not nag — but re-prompts on the next login,
-  // since sessionStorage is cleared with the session.
+  // ── Auto-prompt candidates (the arbiter picks at most one per page load) ───
+  // SRS FR-AUTH: the profile prompt only becomes a candidate ~1 minute after load.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (completionPromptScheduledRef.current) return;
-    if (!completionStatus || completionStatus.complete) return;
-    if (sessionStorage.getItem(PROFILE_MODAL_DISMISSED_KEY) === '1') return;
-
-    completionPromptScheduledRef.current = true;
-    const id = setTimeout(() => {
-      // Re-check at fire time: the user may have completed or dismissed via the
-      // always-visible tracker during the delay.
-      const latest = completionStatusRef.current;
-      if (!latest || latest.complete) return;
-      if (sessionStorage.getItem(PROFILE_MODAL_DISMISSED_KEY) === '1') return;
-      setShowCompletionModal(true);
-    }, PROFILE_COMPLETION_PROMPT_DELAY_MS);
+    const id = setTimeout(() => setProfileDelayDone(true), PROFILE_COMPLETION_PROMPT_DELAY_MS);
     return () => clearTimeout(id);
-  }, [completionStatus]);
+  }, []);
 
-  // ── Late period full-screen alert (once per day) ─────────────────────────
+  const trialLockState: CandidateState = !authStatusLoaded
+    ? 'pending'
+    : trialUser && isTrialExpired(trialUser) && pathname !== '/subscription'
+      ? 'yes'
+      : 'no';
+  const lateState: CandidateState = !loggingLoaded ? 'pending' : logging?.isPeriodLate ? 'yes' : 'no';
+  const tourState: CandidateState = !authStatusLoaded
+    ? 'pending'
+    : pathname === '/dashboard' && tourEligible
+      ? 'yes'
+      : 'no';
+  const profileState: CandidateState = !completionLoaded
+    ? 'pending'
+    : !completionStatus || completionStatus.complete
+      ? 'no'
+      : profileDelayDone
+        ? 'yes'
+        : 'pending';
+  useAutoPromptCandidate('trial-lock', trialLockState);
+  // A late period belongs to the active profile, so its daily cadence is per profile.
+  useAutoPromptCandidate('late-alert', lateState, { scope: logging?.profileId ?? null });
+  useAutoPromptCandidate('tour', tourState);
+  useAutoPromptCandidate('profile', profileState);
+  // The check-in is reported by the dashboard, which owns its data; hold lower prompts until it does.
+  useAutoPromptExpect('check-in', pathname === '/dashboard');
+
+  // The dashboard completion row asks the layout (which owns the pop-up) to open it.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!logging?.isPeriodLate) return;
-    const today = new Date().toISOString().slice(0, 10);
-    const key = `vesta_late_alert_seen_${today}`;
-    if (!localStorage.getItem(key)) {
-      localStorage.setItem(key, '1');
-      setShowLateAlert(true);
-    }
-  }, [logging?.isPeriodLate]);
+    const open = () => setShowCompletionModal(true);
+    window.addEventListener(OPEN_COMPLETION_EVENT, open);
+    return () => window.removeEventListener(OPEN_COMPLETION_EVENT, open);
+  }, []);
 
-  const handleLateClose = useCallback(() => setShowLateAlert(false), []);
+  const handleLateClose = useCallback(() => prompt.close('late-alert'), [prompt]);
   const handleLateLogPeriod = useCallback(() => {
-    setShowLateAlert(false);
+    prompt.close('late-alert');
     if (pathname === '/dashboard') {
       window.dispatchEvent(new CustomEvent('vesta:open-period-log'));
     } else {
       sessionStorage.setItem('vesta_open_period_log', '1');
       router.push('/dashboard');
     }
-  }, [pathname, router]);
+  }, [pathname, router, prompt]);
 
   const handlePhoneAdded = useCallback(() => {
     setTrialUser((prev) =>
@@ -384,15 +322,23 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   function handleModalClose() {
     setShowCompletionModal(false);
-    sessionStorage.setItem(PROFILE_MODAL_DISMISSED_KEY, '1');
+    prompt.close('profile');
   }
 
   function handleTourClose() {
     setTourOpen(false);
-    setTourState('done');
+    prompt.close('tour');
     setTourEligible(false); // don't re-open on return to /dashboard this session
     void completeOnboardingTour();
   }
+
+  // The More sheet is for navigating: close it when the route changes.
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [pathname]);
+
+  const profileModalOpen = !prompt.locked && (showCompletionModal || prompt.isActive('profile'));
+  const tourIsOpen = !prompt.locked && (tourOpen || prompt.isActive('tour'));
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -404,27 +350,25 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       style={{ ['--goal-accent' as string]: goalAccentVar(logging?.goal) } as React.CSSProperties}
     >
       {/* ── Trial expired lock overlay — renders only after auth status resolves ── */}
-      {authStatusLoaded && trialUser && isTrialExpired(trialUser) && pathname !== '/subscription' && (
+      {prompt.locked && (
         <TrialExpiredLock />
       )}
 
       {/* ── Desktop Sidebar (md+) ── */}
-      <aside className="hidden md:flex md:flex-col md:w-64 md:sticky md:top-0 md:h-screen md:shrink-0 glass border-r border-[var(--color-border)] z-40" aria-label="Sidebar navigation">
+      <aside className="hidden md:flex md:flex-col md:w-64 md:sticky md:top-0 md:h-screen md:shrink-0 glass border-r border-[var(--color-border)] z-40" aria-label={t('nav.sidebarNav')}>
         {/* Sidebar header / branding */}
         <div className="px-5 py-5 flex items-center gap-3">
           <VestaLogo size={28} animate={false} />
-          <h1 className="text-xl font-extrabold text-[var(--color-text-primary)]">Cycle Circle</h1>
+          <span className="text-xl font-extrabold text-[var(--color-text-primary)]">Cycle Circle</span>
         </div>
 
-        {/* Profile switcher */}
+        {/* Profile chip */}
         <div className="px-4 mb-4">
-          <Link
-            href="/profiles"
-            className="flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--color-bg-secondary)] text-sm font-medium hover:bg-[var(--color-bg-primary)] transition-colors"
-          >
-            <Users size={14} aria-hidden="true" />
-            <span className="truncate">{activeProfileName || 'Profile'}</span>
-          </Link>
+          <ProfileChip
+            name={activeProfileName}
+            status={completionStatus}
+            onOpenCompletion={() => setShowCompletionModal(true)}
+          />
           {activeGoal && (
             <div className="mt-1.5 px-1 flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--goal-accent)' }}>
               <span className="inline-flex items-center [&_svg]:w-3.5 [&_svg]:h-3.5" aria-hidden="true">{GOAL_ICON_COMPONENTS[activeGoal]}</span>
@@ -434,38 +378,39 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         {/* Main navigation */}
-        <nav className="flex-1 px-3 space-y-1 overflow-y-auto" aria-label="Main navigation">
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto" aria-label={t('nav.mainNav')}>
           <p className="px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
             {t('nav.menu')}
           </p>
-          {NAV_ITEMS.map(({ href, icon: Icon, labelKey, tourKey }) => {
-            const isActive = pathname === href;
-            const isSymptoms = href === '/symptoms';
-            const showDot = isSymptoms && logging?.loggedToday === false;
+          {SIDEBAR_MENU_ITEMS.map(({ href, icon, labelKey, tourKey }) => {
+            const Icon = NAV_ICONS[icon];
+            const isActive = isNavActive(href, pathname);
+            const showDot = href === '/symptoms' && logging?.loggedToday === false;
             return (
               <Link
                 key={href}
                 href={href}
+                aria-current={isActive ? 'page' : undefined}
                 {...(tourKey ? { 'data-tour': tourKey } : {})}
-                {...(showDot ? { 'aria-label': `${t(labelKey)} — ${t('nav.notLoggedToday')}` } : {})}
-                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors ${
+                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
                   isActive
                     ? ''
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
                 }`}
                 style={isActive ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 12%, transparent)' } : undefined}
               >
-                {showDot && (
-                  <span
-                    aria-hidden="true"
-                    className="animate-attn-glow pointer-events-none absolute inset-0 rounded-full"
-                    style={{ boxShadow: 'inset 0 0 0 1.5px var(--goal-accent)' }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-3">
+                <span className="relative">
                   <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
-                  <span className="text-sm font-semibold" style={showDot && !isActive ? { color: 'var(--goal-accent)' } : undefined}>{t(labelKey)}</span>
+                  {showDot && (
+                    <span
+                      data-testid="symptoms-dot"
+                      aria-hidden="true"
+                      className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-[var(--goal-accent)] ring-2 ring-[var(--color-bg-card)]"
+                    />
+                  )}
                 </span>
+                <span className="text-sm font-semibold">{t(labelKey)}</span>
+                {showDot && <span className="sr-only">{t('nav.notLoggedToday')}</span>}
               </Link>
             );
           })}
@@ -476,13 +421,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <p className="px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
             {t('nav.more')}
           </p>
-          {SIDEBAR_EXTRA_ITEMS.map(({ href, icon: Icon, labelKey }) => {
-            const isActive = pathname === href;
+          {SIDEBAR_MORE_ITEMS.map(({ href, icon, labelKey }) => {
+            const Icon = NAV_ICONS[icon];
+            const isActive = isNavActive(href, pathname);
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors ${
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
                   isActive
                     ? ''
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
@@ -501,19 +448,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           {authStatusLoaded && (
             <TrialCountdownPill trialUser={trialUser} onPhoneAdded={handlePhoneAdded} />
           )}
-          {completionStatus && !completionStatus.complete && (
-            <div data-tour="profile-ring">
-              <ProfileCompletionTracker
-                status={completionStatus}
-                variant="header"
-                onComplete={() => setShowCompletionModal(true)}
-                className="w-full"
-              />
-            </div>
-          )}
           <button
             onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={theme === 'dark' ? t('nav.switchToLight') : t('nav.switchToDark')}
             className="flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--color-bg-secondary)] text-sm font-medium hover:bg-[var(--color-bg-primary)] transition-colors w-full"
           >
             {theme === 'dark' ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
@@ -526,111 +463,58 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       {/* ── Main content column ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top header — mobile only; sidebar handles desktop navigation */}
-        <header className="sticky top-0 z-40 glass px-4 py-3 flex items-center justify-between md:hidden">
-          <div className="flex items-center gap-3">
-            <VestaLogo size={24} animate={false} />
-            <h1 className="text-xl font-extrabold text-[var(--color-text-primary)]">Cycle Circle</h1>
-            <Link
-              href="/profiles"
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] text-xs font-medium hover:bg-[var(--color-bg-primary)] transition-colors"
-            >
-              <Users size={12} aria-hidden="true" />
-              <span className="truncate">{activeProfileName || 'Profile'}</span>
-            </Link>
+        {/* Opaque, not .glass: Tailwind v4 (Lightning CSS) compiles .glass to only -webkit-backdrop-filter, so Chromium gets no blur and content shows through. */}
+        <header className="sticky top-0 z-40 bg-[var(--color-bg-card)] border-b border-[var(--color-border)] px-4 py-2.5 flex items-center justify-between gap-3 md:hidden">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <VestaLogo size={26} animate={false} />
+            <ProfileChip
+              name={activeProfileName}
+              status={completionStatus}
+              onOpenCompletion={() => setShowCompletionModal(true)}
+            />
           </div>
-          <div className="flex items-center gap-2">
-            {authStatusLoaded && (
+          {authStatusLoaded && (
+            <div className="shrink-0">
               <TrialCountdownPill trialUser={trialUser} onPhoneAdded={handlePhoneAdded} />
-            )}
-            {completionStatus && !completionStatus.complete && (
-              <div data-tour="profile-ring">
-                <ProfileCompletionTracker
-                  status={completionStatus}
-                  variant="header"
-                  onComplete={() => setShowCompletionModal(true)}
-                />
-              </div>
-            )}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-primary)] hover:border-[var(--goal-accent)] transition-colors"
-              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
-            </button>
-            <LanguageToggle />
-          </div>
+            </div>
+          )}
         </header>
 
         {/* Page content */}
-        <main className="flex-1 px-4 pb-24 pt-2 md:pb-8 md:max-w-4xl md:mx-auto md:w-full md:px-8">
-          {/* Profile completion pill — shown on all main pages */}
-          {completionStatus && (
-            <ProfileCompletionTracker
-              variant="pill"
-              status={completionStatus}
-              onComplete={() => setShowCompletionModal(true)}
-              className="mb-4"
-            />
-          )}
+        <main className="flex-1 pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+1.5rem)] md:pb-8">
           {children}
         </main>
       </div>
 
       {/* ── Mobile Bottom Navigation (< md) ── */}
-      <nav className="fixed bottom-0 left-0 right-0 glass border-t border-[var(--color-border)] z-40 md:hidden" aria-label="Mobile navigation">
-        <div className="flex items-center justify-around py-2 max-w-md mx-auto">
-          {NAV_ITEMS.map(({ href, icon: Icon, labelKey, tourKey }) => {
-            const isActive = pathname === href;
-            const isSymptoms = href === '/symptoms';
-            const showDot = isSymptoms && logging?.loggedToday === false;
-            return (
-              <Link
-                key={href}
-                href={href}
-                {...(tourKey ? { 'data-tour': tourKey } : {})}
-                {...(showDot ? { 'aria-label': `${t(labelKey)} — ${t('nav.notLoggedToday')}` } : {})}
-                className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
-                  isActive
-                    ? ''
-                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
-                }`}
-                style={isActive ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 12%, transparent)' } : undefined}
-              >
-                {showDot && (
-                  <span
-                    aria-hidden="true"
-                    className="animate-attn-glow pointer-events-none absolute inset-0 rounded-full"
-                    style={{ boxShadow: 'inset 0 0 0 1.5px var(--goal-accent)' }}
-                  />
-                )}
-                <span className="relative z-10 flex flex-col items-center gap-0.5">
-                  <span className="relative">
-                    <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
-                  </span>
-                  <span className="text-[11px] font-medium" style={showDot && !isActive ? { color: 'var(--goal-accent)' } : undefined}>{t(labelKey)}</span>
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      <BottomNav
+        pathname={pathname}
+        notLoggedToday={logging?.loggedToday === false}
+        moreOpen={moreOpen}
+        onToggleMore={() => setMoreOpen((v) => !v)}
+      />
+      <MoreSheet
+        open={moreOpen}
+        onClose={() => setMoreOpen(false)}
+        pathname={pathname}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
 
       {/* ── Profile Completion Modal ── */}
-      {showCompletionModal && (
-        <ProfileCompletionModal
-          open={showCompletionModal}
-          onClose={handleModalClose}
-          percent={completionStatus?.percent}
-          items={completionStatus?.items}
-          onCompleted={() => showToast(t('toast.completionDone'))}
-        />
-      )}
+      <ProfileCompletionModal
+        open={profileModalOpen}
+        onClose={handleModalClose}
+        layer={prompt.isActive('profile') ? 'prompt' : 'popup'}
+        percent={completionStatus?.percent}
+        items={completionStatus?.items}
+        onCompleted={() => showToast(t('toast.completionDone'))}
+      />
 
       {/* ── Onboarding spotlight tour ── */}
-      {tourOpen && (
+      {tourIsOpen && (
         <OnboardingTour
-          open={tourOpen}
+          open={tourIsOpen}
           steps={tourSteps}
           onClose={handleTourClose}
         />
@@ -638,15 +522,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       {/* ── Late period full-screen alert ── */}
       <LatePeriodFullScreenAlert
-        open={showLateAlert}
+        open={prompt.isActive('late-alert')}
         onClose={handleLateClose}
         daysLate={logging?.daysLate ?? 0}
         goal={logging?.goal ?? null}
         onLogPeriod={handleLateLogPeriod}
       />
 
-      {/* ── Layout-level toast ── */}
-      <Toast toast={toast} />
     </div>
   );
 }

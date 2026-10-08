@@ -33,7 +33,7 @@ export function Button({
             variant === 'outline',
           'text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)]':
             variant === 'ghost',
-          'bg-red-600 text-white hover:bg-red-700 shadow-soft':
+          'bg-[var(--color-error)] text-[var(--color-on-action)] hover:opacity-90 shadow-soft':
             variant === 'danger',
           'px-3 py-1.5 text-sm gap-1.5': size === 'sm',
           'px-5 py-2.5 text-base gap-2': size === 'md',

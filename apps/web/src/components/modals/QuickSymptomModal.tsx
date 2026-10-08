@@ -16,6 +16,7 @@ import {
   CATEGORY_COLORS,
   toDbCategory,
 } from '@/app/(main)/symptoms/SymptomsClient';
+import { deviceDayString } from '@/lib/local-date';
 import { goalAccentVar } from '@vesta/shared/utils/goal';
 import type { SymptomCategory } from '@vesta/shared/types';
 import '@vesta/shared/utils/i18n';
@@ -78,8 +79,7 @@ export function QuickSymptomModal({
 
   // Date to log against — defaults to today in YYYY-MM-DD format.
   // When `initialDate` is provided (backfill from ConsistencyGrid), we log against that date.
-  const today = new Date().toISOString().slice(0, 10);
-  const logDate = initialDate ?? today;
+  const logDate = initialDate ?? deviceDayString();
 
   const handleToggle = useCallback((id: string) => {
     setSelected((prev) => {
@@ -126,21 +126,9 @@ export function QuickSymptomModal({
   const categorySymptoms = SYMPTOMS_DATA.filter((s) => s.category === activeCategory);
   const activeTabIndex = CATEGORIES.findIndex((c) => c.key === activeCategory);
 
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      titleId="quick-symptom-title"
-      descId="quick-symptom-desc"
-      accentVar={accentVar}
-      closeOnBackdrop={false}
-    >
-      <div
-        className="flex flex-col gap-4 px-5 pb-6 pt-4"
-        style={{ '--goal-accent': accentVar } as React.CSSProperties}
-      >
-        {/* ── Header ── */}
-        <div className="pr-8">
+  const header = (
+    <div style={{ '--goal-accent': accentVar } as React.CSSProperties}>
+        <div className="px-5 pt-5 pb-2 pr-14">
           <h2
             id="quick-symptom-title"
             className="text-lg font-bold text-[var(--color-text-primary)] leading-snug"
@@ -154,7 +142,86 @@ export function QuickSymptomModal({
             {t('quickSymptom.subheader')}
           </p>
         </div>
+    </div>
+  );
 
+  const footer = (
+    <div className="px-5 pt-3 pb-5" style={{ '--goal-accent': accentVar } as React.CSSProperties}>
+        <button
+          onClick={handleSave}
+          disabled={!hasChanges || saving}
+          aria-label={
+            saving ? t('quickSymptom.saving') : t('quickSymptom.save')
+          }
+          className="w-full rounded-2xl px-5 py-3.5 flex items-center justify-center gap-2.5 font-bold text-sm text-[var(--color-on-accent)] transition-opacity duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
+          style={{
+            background: `linear-gradient(135deg, var(--goal-accent, var(--color-primary)) 0%, color-mix(in srgb, var(--goal-accent, var(--color-primary)) 70%, var(--color-secondary)) 100%)`,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ['--tw-ring-color' as any]: `color-mix(in srgb, var(--goal-accent, var(--color-primary)) 50%, transparent)`,
+          }}
+        >
+          {saving ? (
+            <>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+                className="animate-spin"
+              >
+                <circle
+                  cx="8"
+                  cy="8"
+                  r="6"
+                  stroke="var(--color-on-accent)"
+                  strokeWidth="2"
+                  strokeDasharray="28"
+                  strokeDashoffset="10"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span>{t('quickSymptom.saving')}</span>
+            </>
+          ) : (
+            <>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3 8.5l3.5 3.5L13 4"
+                  stroke="var(--color-on-accent)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span>{t('quickSymptom.save')}</span>
+            </>
+          )}
+        </button>
+    </div>
+  );
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      titleId="quick-symptom-title"
+      descId="quick-symptom-desc"
+      accentVar={accentVar}
+      closeOnBackdrop={false}
+      header={header}
+      footer={footer}
+    >
+      <div
+        className="flex flex-col gap-4 px-5 pb-3 pt-2"
+        style={{ '--goal-accent': accentVar } as React.CSSProperties}
+      >
         {/* ── Category tabs ── */}
         <div className="relative">
           <div
@@ -201,7 +268,7 @@ export function QuickSymptomModal({
                   {t(labelKey)}
                   {count > 0 && (
                     <span
-                      className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center leading-none"
+                      className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full text-[11px] font-bold flex items-center justify-center leading-none"
                       style={{
                         background: CATEGORY_COLORS[key].text,
                         color: CATEGORY_COLORS[key].on,
@@ -288,64 +355,6 @@ export function QuickSymptomModal({
           )}
         </AnimatePresence>
 
-        {/* ── Save button ── */}
-        <button
-          onClick={handleSave}
-          disabled={!hasChanges || saving}
-          aria-label={
-            saving ? t('quickSymptom.saving') : t('quickSymptom.save')
-          }
-          className="w-full rounded-2xl px-5 py-3.5 flex items-center justify-center gap-2.5 font-bold text-sm text-[var(--color-on-accent)] transition-opacity duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
-          style={{
-            background: `linear-gradient(135deg, var(--goal-accent, var(--color-primary)) 0%, color-mix(in srgb, var(--goal-accent, var(--color-primary)) 70%, var(--color-secondary)) 100%)`,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ['--tw-ring-color' as any]: `color-mix(in srgb, var(--goal-accent, var(--color-primary)) 50%, transparent)`,
-          }}
-        >
-          {saving ? (
-            <>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                aria-hidden="true"
-                className="animate-spin"
-              >
-                <circle
-                  cx="8"
-                  cy="8"
-                  r="6"
-                  stroke="var(--color-on-accent)"
-                  strokeWidth="2"
-                  strokeDasharray="28"
-                  strokeDashoffset="10"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <span>{t('quickSymptom.saving')}</span>
-            </>
-          ) : (
-            <>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M3 8.5l3.5 3.5L13 4"
-                  stroke="var(--color-on-accent)"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span>{t('quickSymptom.save')}</span>
-            </>
-          )}
-        </button>
       </div>
     </Modal>
   );

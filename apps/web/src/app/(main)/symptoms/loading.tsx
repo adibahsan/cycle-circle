@@ -1,8 +1,9 @@
+import { PageContainer } from '@/components/ui/PageContainer'
 import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function SymptomsLoading() {
   return (
-    <div className="flex flex-col gap-4 py-3 pb-24 animate-pulse-soft">
+    <PageContainer className="animate-pulse-soft">
       {/* Split layout */}
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Left Column: Title + Mini Calendar */}
@@ -72,6 +73,6 @@ export default function SymptomsLoading() {
           <Shimmer className="h-12 w-full rounded-2xl mt-2" />
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

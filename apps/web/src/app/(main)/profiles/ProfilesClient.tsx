@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, type MouseEvent } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
-import { useTranslation } from 'react-i18next';
+import { useToast } from '@/components/ui/Toast';
+import { useTranslation, Trans } from 'react-i18next';
 import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight, Pencil } from 'lucide-react';
 import { GOAL_ICON_COMPONENTS, GOAL_I18N_KEYS } from '@/lib/goal-display';
 import { GOAL_VALUES, normalizeGoal, goalAccentVar, type GoalValue } from '@vesta/shared/utils/goal';
@@ -12,7 +13,12 @@ import type { Profile, ProfileRelation } from '@vesta/shared/types';
 import { createProfile, deleteProfile, updateProfile, setActiveProfileCookie } from '@/app/actions/profile-actions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
+import { useHeld } from '@/lib/use-held';
+import { deviceDayString } from '@/lib/local-date';
 import '@vesta/shared/utils/i18n';
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -71,7 +77,9 @@ interface StepperProps {
   unit?: string;
 }
 
-function Stepper({ label, value, min, max, onChange, unit = 'days' }: StepperProps) {
+function Stepper({ label, value, min, max, onChange, unit }: StepperProps) {
+  const { t } = useTranslation();
+  const unitText = unit ?? t('common.days');
   return (
     <div className="flex items-center justify-between py-0.5">
       <span className="text-sm font-medium text-[var(--color-text-secondary)]">{label}</span>
@@ -84,13 +92,13 @@ function Stepper({ label, value, min, max, onChange, unit = 'days' }: StepperPro
             background: 'var(--color-bg-secondary)',
             borderColor: 'var(--color-border)',
           }}
-          aria-label={`Decrease ${label}`}
+          aria-label={t('profiles.decreaseField', { label })}
         >
-          <Minus size={13} className="text-[var(--color-text-primary)]" />
+          <Minus aria-hidden="true" size={13} className="text-[var(--color-text-primary)]" />
         </button>
         <div className="min-w-[52px] text-center">
           <span className="text-base font-bold text-[var(--color-text-primary)]">{value}</span>
-          <span className="text-xs text-[var(--color-text-muted)] ml-1">{unit}</span>
+          <span className="text-xs text-[var(--color-text-muted)] ml-1">{unitText}</span>
         </div>
         <button
           onClick={() => onChange(Math.min(max, value + 1))}
@@ -100,9 +108,9 @@ function Stepper({ label, value, min, max, onChange, unit = 'days' }: StepperPro
             background: 'var(--color-bg-secondary)',
             borderColor: 'var(--color-border)',
           }}
-          aria-label={`Increase ${label}`}
+          aria-label={t('profiles.increaseField', { label })}
         >
-          <Plus size={13} className="text-[var(--color-text-primary)]" />
+          <Plus aria-hidden="true" size={13} className="text-[var(--color-text-primary)]" />
         </button>
       </div>
     </div>
@@ -133,10 +141,8 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
       exit={{ opacity: 0, y: -8, scale: 0.95 }}
       transition={{ type: 'spring', stiffness: 400, damping: 35 }}
     >
-      <button
-        onClick={onSwitch}
-        disabled={isSwitching}
-        className="w-full text-left rounded-2xl border transition-[color,background-color,border-color,box-shadow] duration-200 p-4 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+      <div
+        className="w-full rounded-2xl border transition-[color,background-color,border-color,box-shadow] duration-200 relative overflow-hidden"
         style={{
           background: isActive
             ? 'linear-gradient(135deg, color-mix(in srgb, var(--goal-accent) 7%, transparent) 0%, color-mix(in srgb, var(--color-secondary) 7%, transparent) 100%)'
@@ -146,7 +152,6 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
             ? '0 0 0 2px color-mix(in srgb, var(--goal-accent) 20%, transparent), 0 4px 16px color-mix(in srgb, var(--goal-accent) 8%, transparent)'
             : '0 2px 8px color-mix(in srgb, var(--color-brand-navy) 4%, transparent)',
         }}
-        aria-label={`${t('profiles.switchTo')} ${profile.name}`}
       >
         {/* Active glow line */}
         {isActive && (
@@ -157,7 +162,16 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
           />
         )}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
+          {/* Switch control: avatar + info */}
+          <button
+            type="button"
+            onClick={onSwitch}
+            disabled={isSwitching}
+            aria-label={`${t('profiles.switchTo')} ${profile.name}`}
+            aria-current={isActive ? 'true' : undefined}
+            className="flex flex-1 min-w-0 items-center gap-3 text-left p-4 pr-2 min-h-11 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--goal-accent)]"
+          >
           {/* Avatar */}
           <div
             className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl flex-shrink-0"
@@ -174,13 +188,13 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
               </span>
               {isActive && (
                 <span
-                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                  className="text-[11px] font-bold px-1.5 py-0.5 rounded-full uppercase"
                   style={{
                     background: 'var(--goal-accent)',
                     color: 'var(--color-on-accent)',
                   }}
                 >
-                  ACTIVE
+                  {t('profiles.active')}
                 </span>
               )}
             </div>
@@ -194,36 +208,39 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
               </span>
               {/* Cycle info */}
               <span className="text-[11px] text-[var(--color-text-muted)]">
-                {profile.cycleLength}d cycle · {profile.periodLength}d period
+                {t('profiles.cycleSummary', { cycle: profile.cycleLength, period: profile.periodLength })}
               </span>
             </div>
           </div>
 
-          {/* Right: active checkmark or chevron */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Active checkmark or chevron */}
+          <div className="flex items-center flex-shrink-0">
             {isActive ? (
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center"
                 style={{ background: 'var(--goal-accent)' }}
               >
-                <Check size={14} color="var(--color-on-accent)" strokeWidth={2.5} />
+                <Check size={14} color="var(--color-on-accent)" strokeWidth={2.5} aria-hidden="true" />
               </div>
             ) : (
-              <ChevronRight size={16} className="text-[var(--color-text-muted)]" />
+              <ChevronRight size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
             )}
+          </div>
+          </button>
+
+          {/* Edit / delete controls: siblings of the switch button */}
+          <div className="flex items-center gap-1 flex-shrink-0 pr-3">
 
             {/* Edit button — always visible */}
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-              className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+              type="button"
+              onClick={onEdit}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
               style={{
                 background: 'color-mix(in srgb, var(--color-secondary) 10%, transparent)',
                 border: '1px solid color-mix(in srgb, var(--color-secondary) 25%, transparent)',
               }}
-              aria-label={`Edit ${profile.name}`}
+              aria-label={`${t('profiles.editProfile')} ${profile.name}`}
             >
               <Pencil size={13} color="var(--color-secondary)" aria-hidden="true" />
             </button>
@@ -231,11 +248,9 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
             {/* Delete — only for non-active profiles */}
             {!isActive && (
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-                className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                type="button"
+                onClick={onDelete}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                 style={{
                   background: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
                   border: '1px solid color-mix(in srgb, var(--color-error) 25%, transparent)',
@@ -247,7 +262,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
             )}
           </div>
         </div>
-      </button>
+      </div>
     </motion.div>
   );
 }
@@ -334,7 +349,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
             className="w-8 h-8 rounded-xl flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
           >
-            <UserPlus size={15} color="var(--color-on-accent)" />
+            <UserPlus aria-hidden="true" size={15} color="var(--color-on-accent)" />
           </div>
           <h3 className="font-bold text-[var(--color-text-primary)] text-base">
             {t('profiles.add')}
@@ -346,7 +361,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
           style={{ background: 'var(--color-bg-secondary)' }}
           aria-label={t('common.cancel')}
         >
-          <X size={14} className="text-[var(--color-text-muted)]" />
+          <X aria-hidden="true" size={14} className="text-[var(--color-text-muted)]" />
         </button>
       </div>
 
@@ -355,7 +370,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
         <Input
           id="add-profile-name"
           label={t('onboarding.nameLabel')}
-          placeholder="e.g. Nusrat…"
+          placeholder={t('profiles.namePlaceholder')}
           value={name}
           onChange={(e) => {
             setName(e.target.value);
@@ -369,7 +384,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
         {/* Relation picker */}
         <div>
           <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Relation
+            {t('profiles.relation')}
           </p>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
             {RELATIONS.map((rel) => {
@@ -432,7 +447,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
                     {GOAL_ICON_COMPONENTS[g]}
                   </span>
                   <span
-                    className="text-[10px] font-semibold leading-tight"
+                    className="text-[11px] font-semibold leading-tight"
                     style={{ color: isSelected ? accentVar : 'var(--color-text-muted)' }}
                   >
                     {t(GOAL_I18N_KEYS[g])}
@@ -471,7 +486,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
             htmlFor="last-period-date"
             className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5"
           >
-            Last period start *
+            {t('profiles.lastPeriodStart')} *
           </label>
           <input
             id="last-period-date"
@@ -481,8 +496,8 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
               setLastPeriodDate(e.target.value);
               if (lastPeriodError) setLastPeriodError('');
             }}
-            max={new Date().toISOString().slice(0, 10)}
-            min={new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+            max={deviceDayString()}
+            min={deviceDayString(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))}
             required
             aria-invalid={!!lastPeriodError}
             aria-describedby={lastPeriodError ? 'last-period-date-error' : undefined}
@@ -505,8 +520,8 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
 
         {/* Flow intensity */}
         <div>
-          <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Flow intensity</p>
-          <div className="flex gap-2" role="group" aria-label="Flow intensity">
+          <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">{t('dashboard.flowIntensity')}</p>
+          <div className="flex gap-2" role="group" aria-label={t('dashboard.flowIntensity')}>
             {(['light', 'medium', 'heavy'] as const).map((f) => (
               <button
                 key={f}
@@ -562,6 +577,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
 const GOAL_OPTIONS: GoalValue[] = [...GOAL_VALUES];
 
 interface EditProfileFormProps {
+  open: boolean;
   profile: Profile;
   onClose: () => void;
   serverError?: string;
@@ -575,7 +591,7 @@ interface EditProfileFormProps {
   }) => void;
 }
 
-function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: EditProfileFormProps) {
+function EditProfileForm({ open, profile, onClose, onSubmit, serverError, disabled }: EditProfileFormProps) {
   const { t } = useTranslation();
   const [name, setName] = useState(profile.name);
   const [relation, setRelation] = useState<ProfileRelation>(normalizeRelation(profile.relation));
@@ -599,63 +615,57 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-8"
-      style={{ background: 'color-mix(in srgb, var(--color-brand-navy) 55%, transparent)', backdropFilter: 'blur(4px)' }}
-      onClick={onClose}
-      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
-    >
-      <motion.div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="edit-profile-dialog-title"
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-        className="w-full max-w-md rounded-2xl border overflow-hidden overscroll-contain"
-        style={{
-          background: 'var(--color-bg-card)',
-          borderColor: 'var(--goal-accent)',
-          boxShadow: '0 0 0 2px color-mix(in srgb, var(--goal-accent) 15%, transparent), 0 8px 32px color-mix(in srgb, var(--goal-accent) 10%, transparent)',
-        }}
-        onClick={(e: MouseEvent) => e.stopPropagation()}
-      >
-        {/* Form header */}
+    <Modal
+      open={open}
+      onClose={onClose}
+      titleId="edit-profile-dialog-title"
+      panelClassName="sm:max-w-md"
+      header={
         <div
-          className="flex items-center justify-between px-5 py-4 border-b"
+          className="flex items-center gap-2 px-5 py-4 pr-14 border-b"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <div className="flex items-center gap-2">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
-            >
-              <Pencil size={15} color="var(--color-on-accent)" />
-            </div>
-            <h3 id="edit-profile-dialog-title" className="font-bold text-[var(--color-text-primary)] text-base">
-              {t('profiles.editProfile')}
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
-            style={{ background: 'var(--color-bg-secondary)' }}
-            aria-label={t('common.cancel')}
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
           >
-            <X size={14} className="text-[var(--color-text-muted)]" aria-hidden="true" />
-          </button>
+            <Pencil size={15} color="var(--color-on-accent)" aria-hidden="true" />
+          </div>
+          <h2 id="edit-profile-dialog-title" className="font-bold text-[var(--color-text-primary)] text-base">
+            {t('profiles.editProfile')}
+          </h2>
         </div>
-
+      }
+      footer={
+        <div className="px-5 py-3 border-t flex flex-col gap-2" style={{ borderColor: 'var(--color-border)' }}>
+          {/* Actions */}
+          <p
+            role="alert"
+            aria-live="polite"
+            aria-hidden={!serverError}
+            className={`text-sm text-[var(--color-error)] text-center min-h-[20px] transition-opacity duration-150 ${
+              serverError ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            {serverError || '\u00A0'}
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
+              {t('common.cancel')}
+            </Button>
+            <Button size="sm" onClick={handleSubmit} disabled={disabled} className="flex-1">
+        {t('profiles.saveChanges')}
+      </Button>
+    </div>
+        </div>
+      }
+    >
         <div className="px-5 py-4 flex flex-col gap-4">
           {/* Name */}
           <Input
             id="edit-profile-name"
             label={t('onboarding.nameLabel')}
-            placeholder="e.g. Nusrat…"
+            placeholder={t('profiles.namePlaceholder')}
             value={name}
             onChange={(e) => {
               setName(e.target.value);
@@ -663,13 +673,12 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
             }}
             error={nameError}
             maxLength={30}
-            autoFocus
           />
 
           {/* Relation picker */}
           <div>
             <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-              Relation
+              {t('profiles.relation')}
             </p>
             <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
               {RELATIONS.map((rel) => {
@@ -754,7 +763,7 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
                       {GOAL_ICON_COMPONENTS[g]}
                     </span>
                     <span
-                      className="text-[10px] font-semibold leading-tight"
+                      className="text-[11px] font-semibold leading-tight"
                       style={{ color: isSelected ? accentVar : 'var(--color-text-muted)' }}
                     >
                       {t(GOAL_I18N_KEYS[g])}
@@ -764,35 +773,15 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
               })}
             </div>
           </div>
-
-          {/* Actions */}
-          <p
-            role="alert"
-            aria-live="polite"
-            aria-hidden={!serverError}
-            className={`text-sm text-[var(--color-error)] text-center min-h-[20px] transition-opacity duration-150 ${
-              serverError ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            {serverError || '\u00A0'}
-          </p>
-          <div className="flex gap-2 pt-1">
-            <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
-              {t('common.cancel')}
-            </Button>
-            <Button size="sm" onClick={handleSubmit} disabled={disabled} className="flex-1">
-              {t('profiles.saveChanges')}
-            </Button>
-          </div>
         </div>
-      </motion.div>
-    </motion.div>
+    </Modal>
   );
 }
 
 // ─── Delete Confirm Dialog ────────────────────────────────────────────────────
 
 interface DeleteDialogProps {
+  open: boolean;
   profileName: string;
   error?: string;
   onConfirm: () => void;
@@ -800,43 +789,24 @@ interface DeleteDialogProps {
   disabled?: boolean;
 }
 
-function DeleteDialog({ profileName, error, onConfirm, onCancel, disabled }: DeleteDialogProps) {
+function DeleteDialog({ open, profileName, error, onConfirm, onCancel, disabled }: DeleteDialogProps) {
   const { t } = useTranslation();
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-8"
-      style={{ background: 'color-mix(in srgb, var(--color-brand-navy) 55%, transparent)', backdropFilter: 'blur(4px)' }}
-      onClick={onCancel}
-      onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
-    >
-      <motion.div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="delete-dialog-title"
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-        className="w-full max-w-md rounded-2xl p-5 overscroll-contain"
-        style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}
-        onClick={(e: MouseEvent) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--color-error) 10%, transparent)' }}>
-            <Trash2 size={18} color="var(--color-error)" />
+    <Modal open={open} onClose={onCancel} titleId="delete-dialog-title" panelClassName="sm:max-w-sm">
+      <div className="p-5 pt-6">
+        <div className="flex items-center gap-3 mb-3 pr-8">
+          <div className="w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--color-error) 10%, transparent)' }}>
+            <Trash2 size={18} color="var(--color-error)" aria-hidden="true" />
           </div>
           <div>
-            <h3 id="delete-dialog-title" className="font-bold text-[var(--color-text-primary)]">Remove Profile</h3>
+            <h2 id="delete-dialog-title" className="font-bold text-[var(--color-text-primary)]">{t('profiles.removeTitle')}</h2>
             <p className="text-sm text-[var(--color-text-muted)]">
-              Remove <strong>{profileName}</strong>?
+              <Trans i18nKey="profiles.removePrompt" values={{ name: profileName }} components={{ strong: <strong /> }} />
             </p>
           </div>
         </div>
         <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-          All symptom logs and data for this profile will be permanently deleted.
+          {t('profiles.removeWarning')}
         </p>
         <p
           role="alert"
@@ -849,10 +819,11 @@ function DeleteDialog({ profileName, error, onConfirm, onCancel, disabled }: Del
           {error || '\u00A0'}
         </p>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={onCancel} className="flex-1">
+          <Button variant="outline" size="sm" onClick={onCancel} className="flex-1" data-autofocus>
             {t('common.cancel')}
           </Button>
           <button
+            type="button"
             onClick={onConfirm}
             disabled={disabled}
             className="flex-1 py-2 rounded-xl text-sm font-bold text-[var(--color-on-action)] transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
@@ -861,8 +832,8 @@ function DeleteDialog({ profileName, error, onConfirm, onCancel, disabled }: Del
             {t('common.delete')}
           </button>
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </Modal>
   );
 }
 
@@ -880,7 +851,10 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [editTarget, setEditTarget] = useState<Profile | null>(null);
-  const [justSwitched, setJustSwitched] = useState<string | null>(null);
+  const [editKey, setEditKey] = useState(0);
+  const heldEdit = useHeld(editTarget);
+  const heldDelete = useHeld(deleteTarget);
+  const toast = useToast();
   const [isPending, setIsPending] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
   const [addError, setAddError] = useState('');
@@ -908,10 +882,9 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
     if (id === activeProfileId || isSwitching) return;
     setIsSwitching(true);
     setActiveProfile(id, name);
-    setJustSwitched(id);
+    toast.show(t('profiles.switchedTo', { name }));
     await setActiveProfileCookie(id);
     router.push('/dashboard');
-    setTimeout(() => setJustSwitched(null), 1500);
   }
 
   async function handleAddProfile(data: {
@@ -1009,24 +982,14 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
 
   return (
     <>
-      <div className="flex flex-col min-h-[calc(100dvh-8rem)] pb-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="pt-3 pb-4"
-        >
-          <h1 className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)]">
-            {t('profiles.title')}
-          </h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-            {profiles.length} / {MAX_PROFILES} {t('nav.profiles').toLowerCase()}
-          </p>
-        </motion.div>
+      <PageContainer className="min-h-[calc(100dvh-8rem)]">
+        <PageHeader
+          title={t('profiles.title')}
+          subtitle={`${profiles.length} / ${MAX_PROFILES} ${t('nav.profiles').toLowerCase()}`}
+        />
 
         {/* Profile list */}
-        <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
+        <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-5">
           <AnimatePresence mode="popLayout">
             {profiles.map((profile) => (
               <ProfileCard
@@ -1041,153 +1004,127 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                 }}
                 onEdit={() => {
                   setEditError('');
+                  setEditKey((k) => k + 1);
                   setEditTarget(profile);
                 }}
               />
             ))}
           </AnimatePresence>
-        </div>
-
-        {/* Switch confirmation toast */}
-        <div aria-live="polite" aria-atomic="true" className="sr-only">
-          {justSwitched ? `Switched to ${profiles.find((p) => p.id === justSwitched)?.name}` : ''}
-        </div>
-        <AnimatePresence>
-          {justSwitched && (
-            <motion.div
-              initial={{ opacity: 0, y: -16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-              className="fixed top-20 left-1/2 -translate-x-1/2 z-50 rounded-full px-4 py-2 flex items-center gap-2 shadow-glow"
-              style={{
-                background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
-              }}
-            >
-              <Check size={14} color="var(--color-on-accent)" />
-              <span className="text-[var(--color-on-accent)] text-sm font-semibold">
-                {t('profiles.switchedTo', { name: profiles.find((p) => p.id === justSwitched)?.name })}
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Add Profile Section */}
-        <div className="mt-4">
-          <AnimatePresence mode="wait">
-            {showForm ? (
-              <AddProfileForm
-                key="form"
-                onClose={closeAddForm}
-                serverError={addError}
-                onSubmit={handleAddProfile}
-                disabled={isPending}
-              />
-            ) : (
-              <motion.div
-                key="add-btn"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
-                transition={{ duration: 0.2 }}
-              >
-                {atMax ? (
-                  <div
-                    className="rounded-2xl border border-dashed p-4 flex flex-col items-center gap-1.5 text-center"
-                    style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-secondary)' }}
-                  >
-                    <span className="text-2xl">🔒</span>
-                    <p className="text-sm font-semibold text-[var(--color-text-secondary)]">
-                      {t('profiles.maxReached')}
-                    </p>
-                    <p className="text-xs text-[var(--color-text-muted)]">
-                      {t('profiles.deleteToAdd')}
-                    </p>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setAddError('');
-                      setShowForm(true);
-                    }}
-                    className="w-full rounded-2xl border border-dashed p-4 flex items-center justify-center gap-2.5 transition-colors duration-200 group hover:border-[var(--goal-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
-                    style={{
-                      borderColor: 'var(--color-border)',
-                      background: 'var(--color-bg-secondary)',
-                    }}
-                  >
+          {/* Add Profile Section */}
+          <div className={showForm ? 'lg:col-span-2' : undefined}>
+            <AnimatePresence mode="wait">
+              {showForm ? (
+                <AddProfileForm
+                  key="form"
+                  onClose={closeAddForm}
+                  serverError={addError}
+                  onSubmit={handleAddProfile}
+                  disabled={isPending}
+                />
+              ) : (
+                <motion.div
+                  key="add-btn"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {atMax ? (
                     <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
-                      style={{
-                        background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
-                      }}
+                      className="rounded-2xl border border-dashed p-4 flex flex-col items-center gap-1.5 text-center"
+                      style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-secondary)' }}
                     >
-                      <Plus size={18} color="var(--color-on-accent)" strokeWidth={2.5} />
-                    </div>
-                    <div className="text-left">
-                      <p
-                        className="font-semibold text-sm group-hover:text-[var(--goal-accent)] transition-colors"
-                        style={{ color: 'var(--color-text-secondary)' }}
-                      >
-                        {t('profiles.add')}
+                      <span className="text-2xl">🔒</span>
+                      <p className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                        {t('profiles.maxReached')}
                       </p>
                       <p className="text-xs text-[var(--color-text-muted)]">
-                        {MAX_PROFILES - profiles.length} slot{MAX_PROFILES - profiles.length !== 1 ? 's' : ''} remaining
+                        {t('profiles.deleteToAdd')}
                       </p>
                     </div>
-                  </button>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Data isolation note */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
-          className="mt-5 rounded-2xl p-4 flex items-start gap-3"
-          style={{ background: 'color-mix(in srgb, var(--color-secondary) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--color-secondary) 20%, transparent)' }}
-        >
-          <span className="text-xl flex-shrink-0 mt-0.5">🔐</span>
-          <div>
-            <p className="text-sm font-semibold" style={{ color: 'var(--color-secondary)' }}>
-              Data Isolation
-            </p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-              Each profile&apos;s cycle data, symptoms, and history are stored completely separately. Switching profiles never mixes data.
-            </p>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setAddError('');
+                        setShowForm(true);
+                      }}
+                      className="w-full rounded-2xl border border-dashed p-4 flex items-center justify-center gap-2.5 transition-colors duration-200 group hover:border-[var(--goal-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                      style={{
+                        borderColor: 'var(--color-border)',
+                        background: 'var(--color-bg-secondary)',
+                      }}
+                    >
+                      <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
+                        style={{
+                          background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
+                        }}
+                      >
+                        <Plus aria-hidden="true" size={18} color="var(--color-on-accent)" strokeWidth={2.5} />
+                      </div>
+                      <div className="text-left">
+                        <p
+                          className="font-semibold text-sm group-hover:text-[var(--goal-accent)] transition-colors"
+                          style={{ color: 'var(--color-text-secondary)' }}
+                        >
+                          {t('profiles.add')}
+                        </p>
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                          {t('profiles.slotsRemaining', { count: MAX_PROFILES - profiles.length })}
+                        </p>
+                      </div>
+                    </button>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </motion.div>
-      </div>
 
-      {/* Delete confirmation dialog */}
-      <AnimatePresence>
-        {deleteTarget && (
-          <DeleteDialog
-            profileName={deleteTarget.name}
-            error={deleteError}
-            onConfirm={handleDeleteConfirm}
-            onCancel={closeDeleteDialog}
-            disabled={isPending}
-          />
-        )}
-      </AnimatePresence>
+          {/* Data isolation note */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            className="lg:col-span-2 rounded-2xl p-4 flex items-start gap-3"
+            style={{ background: 'color-mix(in srgb, var(--color-secondary) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--color-secondary) 20%, transparent)' }}
+          >
+            <span className="text-xl flex-shrink-0 mt-0.5">🔐</span>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--color-secondary)' }}>
+                {t('profiles.isolationTitle')}
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+                {t('profiles.isolationBody')}
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </PageContainer>
+
+      {/* Delete confirmation dialog: stays mounted so the exit animation plays */}
+      {heldDelete && (
+        <DeleteDialog
+          open={deleteTarget !== null}
+          profileName={heldDelete.name}
+          error={deleteError}
+          onConfirm={handleDeleteConfirm}
+          onCancel={closeDeleteDialog}
+          disabled={isPending}
+        />
+      )}
 
       {/* Edit profile dialog */}
-      <AnimatePresence>
-        {editTarget && (
-          <EditProfileForm
-            key={editTarget.id}
-            profile={editTarget}
-            onClose={closeEditForm}
-            serverError={editError}
-            onSubmit={handleEditSubmit}
-            disabled={isPending}
-          />
-        )}
-      </AnimatePresence>
+      {heldEdit && (
+        <EditProfileForm
+          key={`${heldEdit.id}-${editKey}`}
+          open={editTarget !== null}
+          profile={heldEdit}
+          onClose={closeEditForm}
+          serverError={editError}
+          onSubmit={handleEditSubmit}
+          disabled={isPending}
+        />
+      )}
     </>
   );
 }

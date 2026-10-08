@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Layer classes (Z_CLASS) are literal strings in the shared package; Tailwind must scan them. */
+@source "../../../../packages/shared/src/utils/popup-core.ts";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -24,6 +26,16 @@
   --color-gold-ink: #8C6A1F;          /* gold when used as text */
   --color-coral: #FF8C66;
   --color-error: #B4441C;             /* always paired with icon + text */
+  /* Status: text + tint pairs, >=4.5:1 on their tint and on every surface. Pair with an icon or label. */
+  --color-success: #0A6140;
+  --color-success-bg: #DDF3E8;
+  --color-warning: #8A4B08;
+  --color-warning-bg: #FBEBC8;
+  --color-danger: #B42318;
+  --color-danger-bg: #FBE0DD;
+  --color-info: #1D4F9F;
+  --color-info-bg: #DCE9FB;
+  --color-email-canvas: #FFFFFF;      /* rendered emails are light documents in both themes */
 
   /* Goal accents (text on any of these uses --color-on-accent) */
   --color-goal-tracking: #D02F58;
@@ -52,14 +64,10 @@
   --color-text-secondary: #565266;
   --color-text-muted: #6E6779;
   --color-border: #F6DDE3;
+  --color-border-strong: #9A858D;      /* control outlines + switch off-track, >=3:1 on every surface */
+  --color-ring-offset: #FFFFFF;        /* equals --color-bg-card; applied as --tw-ring-offset-color */
+  --color-scrollbar-thumb: #F6DDE3;
 
-  /* Dark mode — brand navy */
-  --color-dark-bg-primary: #141A21;
-  --color-dark-bg-secondary: #1A222B;
-  --color-dark-bg-card: #1F2731;
-  --color-dark-text-primary: #F7EEF0;
-  --color-dark-text-secondary: #D6CBD0;
-  --color-dark-border: #2E3945;
 
   /* Fonts — Manrope + Noto Sans Bengali only */
   --font-display: "Manrope", sans-serif;
@@ -83,14 +91,17 @@
 }
 
 .dark {
-  --color-bg-primary: #141A21;
-  --color-bg-secondary: #1A222B;
-  --color-bg-card: #1F2731;
+  --color-bg-primary: #10151B;
+  --color-bg-secondary: #171F28;
+  --color-bg-card: #222C38;
   --color-bg-peach: #2A2433;
   --color-text-primary: #F7EEF0;
   --color-text-secondary: #D6CBD0;
   --color-text-muted: #B9B0BE;
-  --color-border: #2E3945;
+  --color-border: #3A4756;
+  --color-border-strong: #7A8899;
+  --color-ring-offset: #222C38;
+  --color-scrollbar-thumb: #4A5868;
   --color-action: #FF7A99;
   --color-on-action: #1A232C;
   --color-on-accent: #1A232C;
@@ -102,6 +113,14 @@
   --color-gold-ink: #E2C27A;
   --color-coral: #FFB199;
   --color-error: #E58A62;
+  --color-success: #5FD9A5;
+  --color-success-bg: #14382B;
+  --color-warning: #F5C26B;
+  --color-warning-bg: #43310F;
+  --color-danger: #FF9A9A;
+  --color-danger-bg: #4A1D22;
+  --color-info: #8DB8F5;
+  --color-info-bg: #17304F;
   --color-goal-tracking: #FF7A99;
   --color-goal-conceive: #E2C27A;
   --color-goal-pregnancy: #C9A3EC;
@@ -122,6 +141,10 @@
 
   .dark {
     color-scheme: dark;
+  }
+  /* Focus-ring offset sits on the card surface in both themes (no white halo in dark). */
+  *, ::before, ::after, ::backdrop {
+    --tw-ring-offset-color: var(--color-ring-offset);
   }
 
   body {
@@ -154,6 +177,9 @@
   }
   .shadow-soft {
     box-shadow: 0 10px 30px -12px color-mix(in srgb, var(--goal-accent) 22%, transparent), 0 2px 6px -2px color-mix(in srgb, var(--color-brand-navy) 6%, transparent);
+  }
+  .dark .shadow-soft {
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.6);
   }
   .shadow-glow {
     box-shadow: 0 0 40px 8px color-mix(in srgb, var(--goal-accent) 12%, transparent), 0 8px 24px -8px color-mix(in srgb, var(--goal-accent) 16%, transparent);
@@ -236,4 +262,47 @@
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Thin scrollbar that stays visible in dark */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Admin pop-up shell motion (bottom sheet below sm, card from sm up). Reduced motion: no animation,
+   and the exiting layer is hidden at once. Keep EXIT_MS in components/ui/Modal.tsx in sync. */
+@keyframes popup-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popup-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes popup-sheet-in { from { opacity: 0; transform: translateY(8%); } to { opacity: 1; transform: none; } }
+@keyframes popup-sheet-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(6%); } }
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-popup-backdrop][data-state='open'] { animation: popup-fade-in 200ms ease-out both; }
+  [data-popup-backdrop][data-state='closed'] { animation: popup-fade-out 200ms ease-in both; }
+  [data-popup-sheet][data-state='open'] { animation: popup-sheet-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  [data-popup-sheet][data-state='closed'] { animation: popup-sheet-out 200ms ease-in both; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-popup-backdrop][data-state='closed'],
+  [data-popup-sheet][data-state='closed'] { display: none; }
 }

@@ -24,9 +24,11 @@ import { useAppStore } from '@/lib/store';
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data';
 import { ALL_GOOD_SYMPTOM_ID } from '@vesta/shared/utils/symptoms';
 import { toggleSymptom, markAllGoodToday, saveSymptoms } from '@/app/actions/tracking-actions';
-import { CelebrationModal } from '@/components/modals/CelebrationModal';
+import { useToast } from '@/components/ui/Toast';
 import type { Profile, PrismaSymptomLog, SymptomCategory } from '@vesta/shared/types';
 import '@vesta/shared/utils/i18n';
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -108,7 +110,7 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => setViewMonth((m) => subMonths(m, 1))}
-          aria-label="Previous month"
+          aria-label={t('calendar.previousMonth')}
           className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
         >
           <ChevronLeft size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
@@ -118,7 +120,7 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
         </h2>
         <button
           onClick={() => setViewMonth((m) => addMonths(m, 1))}
-          aria-label="Next month"
+          aria-label={t('calendar.nextMonth')}
           className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
         >
           <ChevronRight size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
@@ -129,7 +131,7 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
       <div className="grid grid-cols-7 mb-2">
         {DOW.map((d) => (
           <div key={d} className="flex items-center justify-center">
-            <span className="text-[10px] md:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+            <span className="text-[11px] md:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
               {d}
             </span>
           </div>
@@ -248,7 +250,7 @@ export function SymptomsClient({
   const dateLocale = language === 'bn' ? bn : undefined;
   const [activeCategory, setActiveCategory] = useState<SymptomCategory>('physical');
   const [saving, setSaving] = useState(false);
-  const [celebrationCount, setCelebrationCount] = useState<number | null>(null);
+  const toast = useToast();
 
   const selectedDate = useMemo(() => parseISO(date), [date]);
 
@@ -383,7 +385,7 @@ export function SymptomsClient({
       }
       // Celebrate only when new symptoms were added.
       if (savedCount > 0) {
-        setCelebrationCount(savedCount);
+        toast.celebrate('symptom', savedCount);
       }
     } finally {
       setSaving(false);
@@ -393,22 +395,16 @@ export function SymptomsClient({
   const activeTabIndex = CATEGORIES.findIndex((c) => c.key === activeCategory);
 
   return (
-    <div className="flex flex-col gap-4 py-3 pb-24">
+    <PageContainer className="pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+5rem)]">
+      <PageHeader
+        title={t('symptoms.title')}
+        subtitle={format(selectedDate, 'EEEE, MMMM d', { locale: dateLocale })}
+      />
       {/* ── Desktop: calendar left, symptoms right ── */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col xl:flex-row gap-5">
 
         {/* ── Left: month calendar + summary ── */}
-        <div className="lg:w-[480px] lg:shrink-0 lg:sticky lg:top-4 lg:self-start flex flex-col gap-3">
-          {/* Header */}
-          <div>
-            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-              {t('symptoms.title')}
-            </h1>
-            <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-              {format(selectedDate, 'EEEE, MMMM d', { locale: dateLocale })}
-            </p>
-          </div>
-
+        <div className="xl:w-[440px] xl:shrink-0 xl:sticky xl:top-4 xl:self-start flex flex-col gap-3">
           {/* Full month calendar */}
           <MiniCalendar
             selectedDate={selectedDate}
@@ -429,7 +425,7 @@ export function SymptomsClient({
                     return (
                       <span
                         key={key}
-                        className="min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center leading-none"
+                        className="min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center leading-none"
                         style={{ background: CATEGORY_COLORS[key].text, color: CATEGORY_COLORS[key].on }}
                       >
                         {count}
@@ -506,7 +502,7 @@ export function SymptomsClient({
                     {t(labelKey)}
                     {count > 0 && (
                       <span
-                        className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center leading-none"
+                        className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full text-[11px] font-bold flex items-center justify-center leading-none"
                         style={{ background: CATEGORY_COLORS[key].text, color: CATEGORY_COLORS[key].on }}
                       >
                         {count}
@@ -563,8 +559,8 @@ export function SymptomsClient({
                 transition={{ duration: 0.2 }}
                 onClick={handleSave}
                 disabled={saving}
-                aria-label={`Save ${changeCount} changes`}
-                className="hidden lg:flex w-full rounded-2xl px-5 py-3.5 items-center justify-center gap-3 shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-70 transition-colors duration-200"
+                aria-label={t('symptoms.saveChanges', { count: changeCount })}
+                className="hidden xl:flex w-full rounded-2xl px-5 py-3.5 items-center justify-center gap-3 shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-70 transition-colors duration-200"
                 style={{
                   background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
                 }}
@@ -593,7 +589,7 @@ export function SymptomsClient({
       <div
         aria-live="polite"
         aria-atomic="true"
-        className="fixed bottom-[60px] md:bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-30 lg:hidden"
+        className="fixed bottom-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+0.75rem)] md:bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-30 xl:hidden"
       >
         <AnimatePresence mode="wait">
           {hasChanges ? (
@@ -605,7 +601,7 @@ export function SymptomsClient({
               transition={{ type: 'spring', stiffness: 400, damping: 35 }}
               onClick={handleSave}
               disabled={saving}
-              aria-label={`Save ${changeCount} changes`}
+              aria-label={t('symptoms.saveChanges', { count: changeCount })}
               className="w-full rounded-2xl px-5 py-3.5 flex items-center justify-center gap-3 shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-70 transition-colors duration-200"
               style={{
                 background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
@@ -673,13 +669,6 @@ export function SymptomsClient({
         </AnimatePresence>
       </div>
 
-      <CelebrationModal
-        open={celebrationCount != null}
-        onClose={() => setCelebrationCount(null)}
-        goal={goal}
-        kind="symptom"
-        count={celebrationCount ?? 0}
-      />
-    </div>
+    </PageContainer>
   );
 }

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { LANDING_CONTAINER, LANDING_FOOTER } from './landing-layout';
 import { VestaLogoSVG } from '@/components/ui/VestaLogo';
 import { ContactBlock } from '@/components/legal/ContactBlock';
 
@@ -9,8 +10,8 @@ export function LandingFooter() {
   const { t } = useTranslation();
 
   return (
-    <footer className="relative py-10 px-4 border-t border-[var(--color-border)]">
-      <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-5">
+    <footer className={LANDING_FOOTER}>
+      <div className={`${LANDING_CONTAINER} flex flex-col sm:flex-row items-center justify-between gap-5`}>
         {/* Logo + wordmark */}
         <div className="flex items-center gap-2.5">
           <VestaLogoSVG size={28} />
@@ -20,7 +21,7 @@ export function LandingFooter() {
         </div>
 
         {/* Nav links */}
-        <nav aria-label="Footer navigation">
+        <nav aria-label={t('nav.footerNav')}>
           <ul className="flex items-center gap-6 list-none p-0 m-0">
             <li>
               <Link

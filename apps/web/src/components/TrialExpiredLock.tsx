@@ -4,19 +4,15 @@ import { useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'motion/react';
-import { useReducedMotion } from 'motion/react';
 import { Lock } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
+import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { useHasMounted } from '@/components/motion/useHasMounted';
+
+const noop = () => {};
 
 export function TrialExpiredLock() {
   const { t } = useTranslation();
   const router = useRouter();
-  const hasMounted = useHasMounted();
-  const prefersReduced = useReducedMotion();
-  const prm = hasMounted && prefersReduced;
 
   const handleLogout = useCallback(async () => {
     try {
@@ -27,84 +23,46 @@ export function TrialExpiredLock() {
     router.push('/login');
   }, [router]);
 
-  const cardInitial = prm
-    ? { opacity: 1, scale: 1 }
-    : { opacity: 0, scale: 0.92, y: 24 };
-  const cardAnimate = { opacity: 1, scale: 1, y: 0 };
-  const cardTransition = prm
-    ? { duration: 0 }
-    : { type: 'spring' as const, damping: 22, stiffness: 260, delay: 0.05 };
-
-  const backdropInitial = prm ? { opacity: 1 } : { opacity: 0 };
-  const backdropAnimate = { opacity: 1 };
-  const backdropTransition = prm ? { duration: 0 } : { duration: 0.25 };
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="trial-expired-title"
-      className="fixed inset-0 z-[80] flex items-center justify-center px-4 overscroll-contain"
+    <Modal
+      open
+      onClose={noop}
+      layer="lock"
+      dismissible={false}
+      titleId="trial-expired-title"
+      descId="trial-expired-desc"
+      panelClassName="sm:max-w-sm"
     >
-      {/* Backdrop */}
-      <motion.div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        initial={backdropInitial}
-        animate={backdropAnimate}
-        transition={backdropTransition}
-        aria-hidden="true"
-      />
-
-      {/* Card */}
-      <motion.div
-        className="relative w-full max-w-sm"
-        initial={cardInitial}
-        animate={cardAnimate}
-        transition={cardTransition}
-      >
-        <Card padding="lg" className="text-center space-y-5">
-          {/* Lock icon */}
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-full bg-[var(--goal-accent)] flex items-center justify-center shadow-glow">
-              <Lock size={28} className="text-[var(--color-on-accent)]" aria-hidden="true" />
-            </div>
+      <div className="p-6 text-center space-y-5">
+        <div className="flex justify-center">
+          <div className="w-16 h-16 rounded-full bg-[var(--goal-accent)] flex items-center justify-center shadow-glow">
+            <Lock size={28} className="text-[var(--color-on-accent)]" aria-hidden="true" />
           </div>
+        </div>
 
-          {/* Heading */}
-          <div className="space-y-2">
-            <h2
-              id="trial-expired-title"
-              className="text-xl font-bold text-[var(--color-text-primary)]"
-            >
-              {t('trialExpired.title')}
-            </h2>
-            <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">
-              {t('trialExpired.body')}
-            </p>
-          </div>
+        <div className="space-y-2">
+          <h2 id="trial-expired-title" className="text-xl font-bold text-[var(--color-text-primary)]">
+            {t('trialExpired.title')}
+          </h2>
+          <p id="trial-expired-desc" className="text-sm text-[var(--color-text-muted)] leading-relaxed">
+            {t('trialExpired.body')}
+          </p>
+        </div>
 
-          {/* Actions */}
-          <div className="space-y-3 pt-1">
-            <Link href="/subscription" className="block">
-              <Button
-                variant="primary"
-                fullWidth
-                className="border-0"
-              >
-                {t('trialExpired.upgradeCta')}
-              </Button>
-            </Link>
+        <div className="space-y-3 pt-1">
+          <Link
+            href="/subscription"
+            data-autofocus
+            className="inline-flex w-full items-center justify-center rounded-full px-5 py-2.5 text-base font-semibold bg-[var(--color-action)] text-[var(--color-on-action)] shadow-soft hover:opacity-90 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+          >
+            {t('trialExpired.upgradeCta')}
+          </Link>
 
-            <Button
-              variant="ghost"
-              fullWidth
-              onClick={handleLogout}
-            >
-              {t('trialExpired.logout')}
-            </Button>
-          </div>
-        </Card>
-      </motion.div>
-    </div>
+          <Button variant="ghost" fullWidth onClick={handleLogout}>
+            {t('trialExpired.logout')}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }

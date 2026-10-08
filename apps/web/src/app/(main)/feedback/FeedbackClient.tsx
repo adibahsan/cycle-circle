@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/Button'
 import { submitFeedback } from '@/app/actions/feedback-actions'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import '@vesta/shared/utils/i18n'
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // ── Prisma Feedback shape (from DB) ───────────────────────────────────────────
 interface DbFeedback {
@@ -96,7 +98,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
   const [hovered, setHovered] = useState(0)
 
   return (
-    <div className="flex items-center gap-1.5" role="group" aria-label="Star rating">
+    <div className="flex items-center gap-1.5" role="group" aria-label={t('feedback.starRating')}>
       {[1, 2, 3, 4, 5].map(star => {
         const filled = star <= (hovered || value)
         return (
@@ -108,10 +110,10 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
             onMouseEnter={() => setHovered(star)}
             onMouseLeave={() => setHovered(0)}
             onClick={() => onChange(value === star ? 0 : star)}
-            aria-label={`${star} star${star !== 1 ? 's' : ''}`}
+            aria-label={t('feedback.starCount', { count: star })}
             className="p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
           >
-            <Star
+            <Star aria-hidden="true"
               size={28}
               className="transition-colors duration-150"
               fill={filled ? 'var(--goal-accent)' : 'transparent'}
@@ -164,7 +166,7 @@ function CategoryHistoryBadge({ category }: { category: DbFeedback['category'] }
   const { Icon } = cfg
   return (
     <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
       style={{ backgroundColor: cfg.bg, color: cfg.color }}
     >
       <Icon size={10} />
@@ -183,10 +185,10 @@ function HistoryItem({ item, index }: { item: DbFeedback; index: number }) {
 
   return (
     <motion.div custom={index} variants={FADE_UP} initial="hidden" animate="show">
-      <Card padding="sm" className="mb-3">
+      <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-3 mb-3 last:mb-0">
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <CategoryHistoryBadge category={item.category} />
-          <span className="text-[10px] text-[var(--color-text-muted)] flex-none">{date}</span>
+          <span className="text-[11px] text-[var(--color-text-muted)] flex-none">{date}</span>
         </div>
         {item.message && (
           <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed mb-1.5 line-clamp-2">
@@ -194,7 +196,7 @@ function HistoryItem({ item, index }: { item: DbFeedback; index: number }) {
           </p>
         )}
         <StarDisplay rating={item.rating} />
-      </Card>
+      </div>
     </motion.div>
   )
 }
@@ -244,19 +246,14 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
   }
 
   return (
-    <div className="py-4">
+    <PageContainer>
       {/* ── Page header ── */}
-      <motion.div custom={0} variants={FADE_UP} initial="hidden" animate="show" className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
-          {t('feedback.title')}
-        </h1>
-        <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('feedback.helpUs')}</p>
-      </motion.div>
+      <PageHeader title={t('feedback.title')} subtitle={t('feedback.helpUs')} />
 
       {/* ── Feedback Form Card + History (side-by-side on desktop) ── */}
-      <div className="md:grid md:grid-cols-2 md:gap-6">
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:items-start">
         <motion.div custom={1} variants={FADE_UP} initial="hidden" animate="show">
-          <Card padding="md" className="mb-6">
+          <Card padding="md">
             <AnimatePresence mode="wait">
               {submitted ? (
                 /* ── Success state ── */
@@ -382,7 +379,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                         className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/30 focus-visible:border-[var(--goal-accent)] transition-colors transition-shadow duration-200"
                       />
                       <span
-                        className="absolute bottom-2.5 right-3 text-[10px] font-medium"
+                        className="absolute bottom-2.5 right-3 text-[11px] font-medium"
                         style={{
                           color:
                             message.length > MAX_CHARS * 0.9
@@ -447,31 +444,23 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
         </motion.div>
 
         {/* ── Feedback History ── */}
-        <div>
-          {feedbackHistory.length > 0 ? (
-            <motion.div custom={2} variants={FADE_UP} initial="hidden" animate="show">
-              <h2 className="text-sm font-bold text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">
-                {t('feedback.previousFeedback')}
-              </h2>
-              {feedbackHistory.map((item, i) => (
+        <motion.div custom={2} variants={FADE_UP} initial="hidden" animate="show">
+          <Card padding="md">
+            <h2 className="text-sm font-bold text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">
+              {t('feedback.previousFeedback')}
+            </h2>
+            {feedbackHistory.length > 0 ? (
+              feedbackHistory.map((item, i) => (
                 <HistoryItem key={item.id} item={item} index={i} />
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div
-              custom={2}
-              variants={FADE_UP}
-              initial="hidden"
-              animate="show"
-              className="text-center py-6"
-            >
-              <p className="text-xs text-[var(--color-text-muted)]">
+              ))
+            ) : (
+              <p className="text-sm text-[var(--color-text-muted)] text-center py-6">
                 {t('feedback.noFeedbackYet')}
               </p>
-            </motion.div>
-          )}
-        </div>
+            )}
+          </Card>
+        </motion.div>
       </div>
-    </div>
+    </PageContainer>
   )
 }

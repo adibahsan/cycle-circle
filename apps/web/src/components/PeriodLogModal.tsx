@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useTransition, type MouseEvent } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { X } from 'lucide-react'
 import type { FlowIntensity } from '@vesta/shared/types'
-import { format } from 'date-fns'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
+import { deviceDayString } from '@/lib/local-date'
 import { createPeriodLog, updatePeriodLog } from '@/app/actions/tracking-actions'
 import '@vesta/shared/utils/i18n'
 
@@ -33,18 +32,35 @@ export const FLOW_TEXT: Record<FlowIntensity, string> = {
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface LogModalProps {
+  open: boolean
   profileId: string
   existingLogId?: string
   initialStart?: string
   initialEnd?: string
   initialFlow?: FlowIntensity
   onClose: () => void
+  /** Called after a successful save, right before `onClose`. */
   onSaved: () => void
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function PeriodLogModal({
+/**
+ * A fresh form each time the pop-up opens: the body is keyed on the open session, so its
+ * state initialises from the props at that moment (no reset effect).
+ */
+export function PeriodLogModal(props: LogModalProps) {
+  const [session, setSession] = useState(0)
+  const [wasOpen, setWasOpen] = useState(props.open)
+  if (props.open !== wasOpen) {
+    setWasOpen(props.open)
+    if (props.open) setSession((n) => n + 1)
+  }
+  return <PeriodLogModalBody key={session} {...props} />
+}
+
+function PeriodLogModalBody({
+  open,
   profileId,
   existingLogId,
   initialStart = '',
@@ -54,94 +70,94 @@ export function PeriodLogModal({
   onSaved,
 }: LogModalProps) {
   const { t } = useTranslation()
-  const prefersReducedMotion = useReducedMotion()
-  const isEdit = Boolean(existingLogId)
-  const todayStr = format(new Date(), 'yyyy-MM-dd')
+
+  // While closing, the parent may already have cleared the log being edited; keep the
+  // title and form stable until the exit animation is done.
+  const frozen = useRef({ profileId, existingLogId })
+  if (open) frozen.current = { profileId, existingLogId }
+  const { profileId: logProfileId, existingLogId: logId } = frozen.current
+
+  const isEdit = Boolean(logId)
+  const todayStr = deviceDayString()
   const [startDate, setStartDate] = useState(initialStart || (isEdit ? '' : todayStr))
   const [endDate, setEndDate] = useState(initialEnd || (isEdit ? '' : todayStr))
   const [flow, setFlow] = useState<FlowIntensity>(initialFlow)
-  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState(false)
   const [isPending, startTransition] = useTransition()
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') onClose()
-  }
 
   const handleSave = () => {
     if (!startDate || !endDate) return
+    setError(false)
     startTransition(async () => {
       try {
-        if (isEdit && existingLogId) {
-          await updatePeriodLog(existingLogId, {
+        if (isEdit && logId) {
+          await updatePeriodLog(logId, {
             startDate,
             endDate,
             flowIntensity: toActionFlow(flow),
           })
         } else {
           await createPeriodLog({
-            profileId,
+            profileId: logProfileId,
             startDate,
             endDate,
             flowIntensity: toActionFlow(flow),
           })
         }
-        setSaved(true)
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
         }
         onSaved()
-        setTimeout(onClose, 700)
+        onClose()
       } catch (err) {
         console.error('Failed to save period log:', err)
+        setError(true)
       }
     })
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onKeyDown={handleKeyDown}>
-      {/* Backdrop — does not close the modal on click; use the ✕ button or save instead */}
-      <motion.div
-        className="absolute inset-0 bg-black/50"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      />
-      <motion.div
-        role="dialog"
-        aria-modal="true"
-        aria-label={isEdit ? t('dashboard.editPeriodLog') : t('dashboard.logPeriod')}
-        className="relative w-full max-w-md max-h-[85dvh] overflow-y-auto overscroll-contain bg-[var(--color-bg-card)] rounded-t-3xl sm:rounded-3xl px-5 py-6 shadow-2xl"
-        initial={prefersReducedMotion ? { opacity: 0 } : { y: '100%' }}
-        animate={prefersReducedMotion ? { opacity: 1 } : { y: 0 }}
-        exit={
-          prefersReducedMotion
-            ? { opacity: 0, transition: { duration: 0.15 } }
-            : { y: '100%', transition: { type: 'tween', duration: 0.2, ease: 'easeIn' } }
-        }
-        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-        onClick={(e: MouseEvent) => e.stopPropagation()}
+  const title = isEdit ? t('dashboard.editPeriodLog') : t('dashboard.logPeriod')
+
+  const header = (
+    <div className="px-5 pt-6 pb-3 pr-14">
+      <h2 id="period-log-title" className="text-lg font-bold text-[var(--color-text-primary)]">
+        {title}
+      </h2>
+      <p id="period-log-desc" className="text-xs text-[var(--color-text-muted)] mt-0.5">
+        {t('dashboard.logPeriodMotivation')}
+      </p>
+    </div>
+  )
+
+  const footer = (
+    <div className="px-5 pt-3 pb-5">
+      {error && (
+        <p role="alert" className="mb-2 text-sm text-[var(--color-error)]">
+          {t('common.error')}
+        </p>
+      )}
+      <Button
+        variant="primary"
+        fullWidth
+        size="lg"
+        onClick={handleSave}
+        disabled={!startDate || !endDate || isPending}
       >
-        {/* Handle */}
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--color-border)] sm:hidden" />
+        {isPending ? t('common.loading') : isEdit ? t('dashboard.updateLog') : t('dashboard.savePeriod')}
+      </Button>
+    </div>
+  )
 
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
-              {isEdit ? t('dashboard.editPeriodLog') : t('dashboard.logPeriod')}
-            </h2>
-            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-              {t('dashboard.logPeriodMotivation')}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="p-2 rounded-full hover:bg-[var(--color-bg-secondary)] transition-colors"
-          >
-            <X size={18} className="text-[var(--color-text-muted)]" aria-hidden="true" />
-          </button>
-        </div>
-
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      titleId="period-log-title"
+      descId="period-log-desc"
+      header={header}
+      footer={footer}
+    >
+      <div className="px-5 pt-1 pb-3">
         {/* Start date */}
         <div className="mb-4">
           <label htmlFor="period-start-date" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
@@ -178,7 +194,7 @@ export function PeriodLogModal({
         </div>
 
         {/* Flow intensity */}
-        <div role="group" aria-labelledby="flow-intensity-label" className="mb-6">
+        <div role="group" aria-labelledby="flow-intensity-label">
           <span id="flow-intensity-label" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-2.5 uppercase tracking-wider">
             {t('dashboard.flowIntensity')}
           </span>
@@ -207,34 +223,7 @@ export function PeriodLogModal({
           </div>
         </div>
 
-        {/* Save */}
-        <div aria-live="polite">
-          <AnimatePresence mode="wait">
-            {saved ? (
-              <motion.div
-                key="saved"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full py-3 rounded-xl bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-center font-semibold"
-              >
-                {t('dashboard.saved')}
-              </motion.div>
-            ) : (
-              <motion.div key="save-btn">
-                <Button
-                  variant="primary"
-                  fullWidth
-                  size="lg"
-                  onClick={handleSave}
-                  disabled={!startDate || !endDate || isPending}
-                >
-                  {isPending ? t('common.loading') : isEdit ? t('dashboard.updateLog') : t('dashboard.savePeriod')}
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </motion.div>
-    </div>
+      </div>
+    </Modal>
   )
 }

@@ -217,7 +217,7 @@ function Toggle({ checked, onChange, label, disabled }: ToggleProps) {
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-        checked ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-border)]'
+        checked ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-border-strong)]'
       }`}
     >
       <span
@@ -288,7 +288,7 @@ function SendRemindersCard({ userId }: { userId: string }) {
 
       <div aria-live="polite">
         {reminderResult && reminderResult.ok && (
-          <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400 space-y-1">
+          <div className="rounded-xl bg-[var(--color-success-bg)] border border-[var(--color-success)] px-4 py-3 text-sm text-[var(--color-success)] space-y-1">
             {sent > 0 ? (
               <>
                 <p className="font-medium">
@@ -313,7 +313,7 @@ function SendRemindersCard({ userId }: { userId: string }) {
         {reminderResult && !reminderResult.ok && (
           <div
             role="alert"
-            className="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400"
+            className="flex items-center gap-2 rounded-xl bg-[var(--color-danger-bg)] border border-[var(--color-danger)] px-4 py-3 text-sm text-[var(--color-danger)]"
           >
             <AlertCircle size={15} aria-hidden="true" className="shrink-0" />
             {reminderResult.error ?? 'Failed to send reminders.'}
@@ -522,7 +522,7 @@ function SubscriptionTab({
               <>
                 <div>
                   <p className="text-xs text-[var(--color-text-muted)]">Source</p>
-                  <p className="font-medium text-amber-600">Admin Override</p>
+                  <p className="font-medium text-[var(--color-warning)]">Admin Override</p>
                 </div>
                 <div>
                   <p className="text-xs text-[var(--color-text-muted)]">Override at</p>
@@ -849,7 +849,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
 
         {/* Error banner */}
         {actionError && (
-          <div role="alert" className="mt-4 flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+          <div role="alert" className="mt-4 flex items-center gap-2 rounded-xl bg-[var(--color-danger-bg)] border border-[var(--color-danger)] px-4 py-3 text-sm text-[var(--color-danger)]">
             <AlertCircle size={15} aria-hidden="true" className="shrink-0" />
             {actionError}
           </div>
@@ -857,7 +857,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
 
         {/* Suspension note */}
         {isSuspended && user.suspendedAt && (
-          <div className="mt-4 flex items-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+          <div className="mt-4 flex items-center gap-2 rounded-xl bg-[var(--color-warning-bg)] border border-[var(--color-warning)] px-4 py-3 text-sm text-[var(--color-warning)]">
             <Shield size={15} aria-hidden="true" className="shrink-0" />
             Suspended on {formatDateTime(user.suspendedAt)}
           </div>

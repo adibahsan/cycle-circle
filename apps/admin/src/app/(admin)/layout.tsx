@@ -22,9 +22,9 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Menu,
-  X,
 } from 'lucide-react'
 import VestaLogo from '@/components/ui/VestaLogo'
+import { Drawer } from '@/components/ui/Drawer'
 import { useAdminStore } from '@/lib/store'
 
 const NAV_ITEMS = [
@@ -88,7 +88,7 @@ function SidebarContent({
           className="hidden md:flex p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
           aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          {sidebarCollapsed ? <PanelLeftOpen aria-hidden="true" size={16} /> : <PanelLeftClose aria-hidden="true" size={16} />}
         </button>
       </div>
 
@@ -142,7 +142,7 @@ function SidebarContent({
             sidebarCollapsed ? 'w-10 h-10 justify-center px-0' : 'w-full'
           }`}
         >
-          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          {theme === 'dark' ? <Sun aria-hidden="true" size={15} /> : <Moon aria-hidden="true" size={15} />}
           {!sidebarCollapsed && (
             <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
           )}
@@ -156,7 +156,7 @@ function SidebarContent({
             sidebarCollapsed ? 'w-10 h-10 justify-center px-0' : 'w-full'
           }`}
         >
-          <LogOut size={15} />
+          <LogOut aria-hidden="true" size={15} />
           {!sidebarCollapsed && <span>Sign out</span>}
         </button>
       </div>
@@ -202,43 +202,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         />
       </aside>
 
-      {/* ── Mobile Sidebar Overlay ── */}
-      {mobileMenuOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-40 md:hidden w-full cursor-default"
-          onClick={() => setMobileMenuOpen(false)}
-          aria-label="Close navigation menu"
-          tabIndex={-1}
-        >
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-        </button>
-      )}
-
-      {/* Mobile Sidebar drawer */}
-      <aside
-        role="dialog"
-        aria-label="Navigation menu"
-        aria-modal="true"
-        className={`fixed top-0 left-0 h-full w-72 z-50 flex flex-col glass border-r border-[var(--color-border)] md:hidden transition-transform duration-300 ease-in-out ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--color-border)]">
+      {/* Mobile Sidebar drawer (shell: ESC, focus trap, inert background, scroll lock) */}
+      <Drawer
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        label="Navigation menu"
+        title={
           <div className="flex items-center gap-3">
             <VestaLogo size={24} animate={false} />
             <span className="text-lg font-extrabold text-[var(--color-text-primary)]">
               Cycle Circle Admin
             </span>
           </div>
-          <button
-            onClick={() => setMobileMenuOpen(false)}
-            className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
-            aria-label="Close menu"
-          >
-            <X size={18} />
-          </button>
-        </div>
+        }
+      >
         <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
           {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
             const active = isActive(href)
@@ -262,20 +239,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="px-2 py-3 border-t border-[var(--color-border)] space-y-1">
           <button
             onClick={toggleTheme}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors w-full"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
           >
-            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            {theme === 'dark' ? <Sun aria-hidden="true" size={15} /> : <Moon aria-hidden="true" size={15} />}
             <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
           </button>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/8 transition-colors w-full"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/8 transition-colors w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
           >
-            <LogOut size={15} />
+            <LogOut aria-hidden="true" size={15} />
             <span>Sign out</span>
           </button>
         </div>
-      </aside>
+      </Drawer>
 
       {/* ── Main content column ── */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -287,7 +264,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
               aria-label="Open menu"
             >
-              <Menu size={18} />
+              <Menu aria-hidden="true" size={18} />
             </button>
             <div className="flex items-center gap-2">
               <VestaLogo size={22} animate={false} />
@@ -301,7 +278,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="p-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            {theme === 'dark' ? <Sun aria-hidden="true" size={16} /> : <Moon aria-hidden="true" size={16} />}
           </button>
         </header>
 

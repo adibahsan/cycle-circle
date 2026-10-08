@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
+import { useToast } from '@/components/ui/Toast'
 import {
   Globe,
   Moon,
@@ -34,6 +35,9 @@ import { updateContactInfo } from '@/app/actions/user-actions'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { Language, Theme } from '@vesta/shared/types'
 import { isPro as isProHelper, getSubscriptionTier } from '@vesta/shared/utils/subscription'
+import { LogoutConfirmModal } from '@/components/LogoutConfirmModal'
+import { PageContainer } from '@/components/ui/PageContainer'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // ── DB types ───────────────────────────────────────────────────────────────────
 interface DbProfile {
@@ -126,7 +130,7 @@ function Toggle({
       aria-label={label ?? id}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
-        checked ? 'gradient-primary' : 'bg-[var(--color-border)]'
+        checked ? 'gradient-primary' : 'bg-[var(--color-border-strong)]'
       }`}
     >
       <motion.span
@@ -136,66 +140,6 @@ function Toggle({
         style={{ width: 18, height: 18, translateX: checked ? 20 : 4 }}
       />
     </button>
-  )
-}
-
-interface ToastState {
-  text: string
-  seq: number // bumped on every message so the inner text crossfades
-}
-
-// Single-slot toast: only ever one on screen. New messages swap the text in
-// place (and reset the auto-dismiss timer) rather than stacking a new toast.
-function useToast() {
-  const [toast, setToast] = useState<ToastState | null>(null)
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const show = useCallback((text: string) => {
-    setToast(prev => ({ text, seq: (prev?.seq ?? 0) + 1 }))
-    if (timer.current) clearTimeout(timer.current)
-    timer.current = setTimeout(() => setToast(null), 2500)
-  }, [])
-
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
-
-  return { toast, show }
-}
-
-function Toast({ toast }: { toast: ToastState | null }) {
-  return (
-    <div
-      aria-live="polite"
-      aria-atomic="true"
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] w-full max-w-xs px-4 pointer-events-none"
-    >
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            key="toast-bar"
-            initial={{ opacity: 0, y: -16, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.94 }}
-            transition={{ type: 'spring', damping: 24, stiffness: 320 }}
-            className="grid rounded-xl bg-[var(--color-text-primary)] text-[var(--color-bg-card)] text-sm font-medium px-4 py-3 shadow-glow text-center"
-          >
-            {/* Spans share one grid cell, so swapping text crossfades without
-                shifting the bar's position or height. */}
-            <AnimatePresence>
-              <motion.span
-                key={toast.seq}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
-                className="col-start-1 row-start-1"
-              >
-                {toast.text}
-              </motion.span>
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
   )
 }
 
@@ -237,7 +181,7 @@ function AccountRow({
           {badge}
         </span>
       )}
-      <ChevronRight
+      <ChevronRight aria-hidden="true"
         size={15}
         className="text-[var(--color-border)] group-hover:text-[var(--color-text-muted)] transition-colors"
       />
@@ -251,7 +195,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
   const router = useRouter()
   const { language, setLanguage, theme, setTheme, activeProfileId, setActiveProfile } = useAppStore()
 
-  const { toast, show: showToast } = useToast()
+  const { show: showToast } = useToast()
 
   // Find the active profile's notification prefs, defaulting to all-on
   const activeProfile = profiles.find(p => p.id === activeProfileId) ?? profiles[0]
@@ -465,21 +409,11 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
 
   return (
     <>
-      <Toast toast={toast} />
 
-      <div className="py-4 space-y-6">
-        {/* ── Page title ── */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)]">
-            {t('settings.title')}
-          </h1>
-        </motion.div>
+      <PageContainer>
+        <PageHeader title={t('settings.title')} />
 
-        <div className="md:grid md:grid-cols-2 md:gap-6 space-y-6 md:space-y-0">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-5 space-y-5 lg:space-y-0">
           {/* ── Left column ── */}
           <div className="space-y-6">
             {/* 1. Language & Appearance */}
@@ -501,7 +435,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   </div>
                   <SegmentedControl<Language>
                     options={[
-                      { label: 'EN', value: 'en' },
+                      { label: t('nav.langShortEn'), value: 'en' },
                       { label: 'বাং', value: 'bn' },
                     ]}
                     value={language}
@@ -733,7 +667,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                               type="tel"
                               name="phone"
                               autoComplete="tel"
-                              placeholder="01XXXXXXXXX"
+                              placeholder={t('auth.phonePlaceholder')}
                               value={contactPhone}
                               onChange={(e) => { setContactPhone(e.target.value); if (phoneError) setPhoneError('') }}
                               className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
@@ -785,7 +719,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                               : 'bg-[var(--color-border)] text-[var(--color-text-muted)]'
                           }`}
                         >
-                          {planTier === 'PRO' ? 'PRO' : planTier === 'LAPSED' ? t('subscription.planLapsed') : 'FREE'}
+                          <span className="uppercase">{planTier === 'PRO' ? t('subscription.pro') : planTier === 'LAPSED' ? t('subscription.planLapsed') : t('subscription.free')}</span>
                         </span>
                       )
                     })()}
@@ -838,7 +772,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                     onClick={() => setShowLogoutConfirm(true)}
                     className="border-[var(--color-error)] text-[var(--color-error)] hover:bg-[var(--color-error)] hover:text-[var(--color-on-action)] hover:border-[var(--color-error)]"
                   >
-                    <LogOut size={15} className="mr-2" />
+                    <LogOut aria-hidden="true" size={15} className="mr-2" />
                     {t('settings.logout')}
                   </Button>
                 </div>
@@ -856,11 +790,11 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               <Card padding="md" className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[var(--color-text-secondary)]">{t('settings.appVersion')}</span>
-                  <span className="text-sm font-semibold text-[var(--color-text-primary)]">Cycle Circle v2.0</span>
+                  <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('settings.versionName', { version: '2.0' })}</span>
                 </div>
 
                 <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-3 py-2.5 flex items-start gap-2">
-                  <Lock size={14} className="text-[var(--color-secondary)] mt-0.5 shrink-0" />
+                  <Lock aria-hidden="true" size={14} className="text-[var(--color-secondary)] mt-0.5 shrink-0" />
                   <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
                     {t('settings.encryptionNote')}
                   </p>
@@ -885,51 +819,14 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
             </motion.div>
           </div>
         </div>
+      </PageContainer>
 
-        {/* Bottom spacer */}
-        <div className="h-4" />
-      </div>
-
-      {showLogoutConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-          onClick={() => setShowLogoutConfirm(false)}
-          onKeyDown={(e) => { if (e.key === 'Escape') setShowLogoutConfirm(false) }}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Confirm logout"
-        >
-          <div
-            className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-6 mx-4 max-w-sm w-full shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">
-              {t('settings.logout')}
-            </h3>
-            <p className="text-sm text-[var(--color-text-muted)] mb-5">
-              {t('settings.logoutConfirmMsg')}
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                fullWidth
-                onClick={() => setShowLogoutConfirm(false)}
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button
-                variant="primary"
-                fullWidth
-                onClick={() => { setShowLogoutConfirm(false); handleLogout() }}
-                disabled={loggingOut}
-                className="bg-[var(--color-error)] hover:opacity-90 text-[var(--color-on-action)] border-0"
-              >
-                {loggingOut ? t('settings.loggingOut') : t('settings.logout')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <LogoutConfirmModal
+        open={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        loggingOut={loggingOut}
+        onConfirm={() => { setShowLogoutConfirm(false); handleLogout() }}
+      />
     </>
   )
 }

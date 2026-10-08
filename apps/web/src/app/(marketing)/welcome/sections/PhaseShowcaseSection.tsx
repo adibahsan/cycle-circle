@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { LANDING_CONTAINER, LANDING_SECTION } from './landing-layout';
 import { RevealOnScroll } from '@/components/motion/RevealOnScroll';
 
 const PHASES = [
@@ -15,10 +16,10 @@ export function PhaseShowcaseSection() {
 
   return (
     <section
-      className="relative py-16 px-4"
+      className={LANDING_SECTION}
       aria-labelledby="phases-heading"
     >
-      <div className="max-w-3xl mx-auto">
+      <div className={LANDING_CONTAINER}>
         <RevealOnScroll className="text-center mb-10">
           <h2
             id="phases-heading"
@@ -30,7 +31,7 @@ export function PhaseShowcaseSection() {
 
         <div className="flex flex-wrap items-center justify-center gap-8">
           {PHASES.map(({ labelKey, colorVar, delay }) => (
-            <RevealOnScroll key={labelKey} delay={delay}>
+            <RevealOnScroll key={labelKey}>
               <div className="flex flex-col items-center gap-3">
                 {/* Decorative phase circle */}
                 <div
