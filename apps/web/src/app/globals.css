@@ -52,14 +52,10 @@
   --color-text-secondary: #565266;
   --color-text-muted: #6E6779;
   --color-border: #F6DDE3;
+  --color-border-strong: #9A858D;      /* control outlines + switch off-track, >=3:1 on every surface */
+  --color-ring-offset: #FFFFFF;        /* equals --color-bg-card; applied as --tw-ring-offset-color */
+  --color-scrollbar-thumb: #F6DDE3;
 
-  /* Dark mode — brand navy */
-  --color-dark-bg-primary: #141A21;
-  --color-dark-bg-secondary: #1A222B;
-  --color-dark-bg-card: #1F2731;
-  --color-dark-text-primary: #F7EEF0;
-  --color-dark-text-secondary: #D6CBD0;
-  --color-dark-border: #2E3945;
 
   /* Fonts — Manrope + Noto Sans Bengali only */
   --font-display: "Manrope", sans-serif;
@@ -83,14 +79,17 @@
 }
 
 .dark {
-  --color-bg-primary: #141A21;
-  --color-bg-secondary: #1A222B;
-  --color-bg-card: #1F2731;
+  --color-bg-primary: #10151B;
+  --color-bg-secondary: #171F28;
+  --color-bg-card: #222C38;
   --color-bg-peach: #2A2433;
   --color-text-primary: #F7EEF0;
   --color-text-secondary: #D6CBD0;
   --color-text-muted: #B9B0BE;
-  --color-border: #2E3945;
+  --color-border: #3A4756;
+  --color-border-strong: #7A8899;
+  --color-ring-offset: #222C38;
+  --color-scrollbar-thumb: #4A5868;
   --color-action: #FF7A99;
   --color-on-action: #1A232C;
   --color-on-accent: #1A232C;
@@ -116,17 +115,25 @@
 }
 
 .dark .app-shell {
-  --color-bg-primary:     color-mix(in srgb, var(--goal-accent)  3%, #141A21);
-  --color-bg-secondary:   color-mix(in srgb, var(--goal-accent)  5%, #1A222B);
-  --color-bg-card:        color-mix(in srgb, var(--goal-accent)  5%, #1F2731);
-  --color-border:         color-mix(in srgb, var(--goal-accent) 12%, #2E3945);
+  --color-bg-primary:     color-mix(in srgb, var(--goal-accent)  3%, #10151B);
+  --color-bg-secondary:   color-mix(in srgb, var(--goal-accent)  5%, #171F28);
+  --color-bg-card:        color-mix(in srgb, var(--goal-accent)  5%, #222C38);
+  --color-border:         color-mix(in srgb, var(--goal-accent) 12%, #3A4756);
+  --color-ring-offset:    var(--color-bg-card);
   --color-text-primary:   #F7EEF0;
   --color-text-secondary: #D6CBD0;
 }
 
 @layer base {
   :root {
-    color-scheme: dark light;
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+  /* Focus-ring offset sits on the card surface in both themes (no white halo in dark). */
+  *, ::before, ::after, ::backdrop {
+    --tw-ring-offset-color: var(--color-ring-offset);
   }
   body {
     font-family: var(--font-display), var(--font-bengali), sans-serif;
@@ -158,6 +165,9 @@
   }
   .shadow-soft {
     box-shadow: 0 10px 30px -12px color-mix(in srgb, var(--goal-accent) 22%, transparent), 0 2px 6px -2px color-mix(in srgb, var(--color-brand-navy) 6%, transparent);
+  }
+  .dark .shadow-soft {
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.6);
   }
   .shadow-glow {
     box-shadow: 0 0 40px 8px color-mix(in srgb, var(--goal-accent) 12%, transparent), 0 8px 24px -8px color-mix(in srgb, var(--goal-accent) 16%, transparent);
@@ -300,7 +310,7 @@
 /* Thin modern scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -313,7 +323,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: var(--color-scrollbar-thumb);
   border-radius: 3px;
 }
 
@@ -321,10 +331,4 @@
   background: var(--color-text-muted);
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: var(--color-dark-border);
-}
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
-}

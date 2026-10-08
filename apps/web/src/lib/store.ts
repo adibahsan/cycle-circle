@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import i18n from '@vesta/shared/utils/i18n'
+import { resolveTheme, systemPrefersDark } from '@vesta/shared/utils/theme'
 
 interface AppStore {
   // Language
@@ -10,6 +11,8 @@ interface AppStore {
   // Theme
   theme: 'light' | 'dark'
   setTheme: (theme: 'light' | 'dark') => void
+  /** True once the user picked a theme; until then the system preference applies and nothing is persisted. */
+  themeChosen: boolean
 
   // Active profile selection (UI state only)
   activeProfileId: string
@@ -35,7 +38,8 @@ export const useAppStore = create<AppStore>()(
       },
 
       theme: 'light',
-      setTheme: (theme) => set({ theme }),
+      setTheme: (theme) => set({ theme, themeChosen: true }),
+      themeChosen: false,
 
       activeProfileId: '',
       activeProfileName: '',
@@ -49,12 +53,17 @@ export const useAppStore = create<AppStore>()(
     }),
     {
       name: 'vesta-store',
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<AppStore>
+        const chosen = p.theme === 'light' || p.theme === 'dark'
+        return { ...current, ...p, theme: resolveTheme(p.theme, systemPrefersDark()), themeChosen: chosen }
+      },
       onRehydrateStorage: () => (state) => {
         if (state?.language) i18n.changeLanguage(state.language)
       },
       partialize: (state) => ({
         language: state.language,
-        theme: state.theme,
+        theme: state.themeChosen ? state.theme : undefined,
         activeProfileId: state.activeProfileId,
         activeProfileName: state.activeProfileName,
         onboardingComplete: state.onboardingComplete,

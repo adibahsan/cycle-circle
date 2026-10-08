@@ -334,7 +334,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                             key={phase}
                             className="px-1.5 py-0.5 rounded text-[9px] font-semibold"
                             style={{
-                              backgroundColor: `${getPhaseColor(phase.toLowerCase() as any)}20`,
+                              backgroundColor: `color-mix(in srgb, ${getPhaseColor(phase.toLowerCase() as any)} 13%, transparent)`,
                               color: getPhaseColor(phase.toLowerCase() as any),
                             }}
                           >

@@ -313,8 +313,6 @@ export function TodayCheckInModal({
                     background: 'linear-gradient(135deg, var(--goal-accent, var(--color-primary)) 0%, color-mix(in srgb, var(--goal-accent, var(--color-primary)) 65%, var(--color-secondary)) 100%)',
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     ['--tw-ring-color' as any]: 'color-mix(in srgb, var(--goal-accent, var(--color-primary)) 50%, transparent)',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    ['--tw-ring-offset-color' as any]: 'var(--color-bg-card)',
                   }}
                 >
                   {saving

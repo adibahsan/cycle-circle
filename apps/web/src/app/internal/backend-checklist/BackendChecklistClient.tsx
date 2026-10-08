@@ -155,7 +155,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-150
+      className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-[color,background-color,border-color,opacity,transform] duration-150
         bg-neutral-100 hover:bg-neutral-200 text-neutral-600
         dark:bg-neutral-700 dark:hover:bg-neutral-600 dark:text-neutral-300
         active:scale-95"
@@ -388,7 +388,7 @@ export default function BackendChecklistClient() {
             </div>
             <div className="w-24 h-2 rounded-full bg-[var(--color-border)] overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-pink-500 to-rose-400 transition-all duration-500"
+                className="h-full rounded-full bg-gradient-to-r from-pink-500 to-rose-400 transition-[width] duration-500"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
@@ -399,7 +399,7 @@ export default function BackendChecklistClient() {
         {/* Full-width progress bar */}
         <div className="h-0.5 bg-[var(--color-border)]">
           <div
-            className="h-full bg-gradient-to-r from-pink-500 via-rose-400 to-pink-400 transition-all duration-500"
+            className="h-full bg-gradient-to-r from-pink-500 via-rose-400 to-pink-400 transition-[width] duration-500"
             style={{ width: `${progressPct}%` }}
           />
         </div>
@@ -417,7 +417,7 @@ export default function BackendChecklistClient() {
                 bg-pink-50 hover:bg-pink-100 text-pink-700
                 dark:bg-pink-950/40 dark:hover:bg-pink-900/40 dark:text-pink-300
                 border border-pink-200 dark:border-pink-800
-                transition-all duration-150 active:scale-95"
+                transition-[color,background-color,border-color,opacity,transform] duration-150 active:scale-95"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -465,7 +465,7 @@ export default function BackendChecklistClient() {
                         bg-neutral-100 hover:bg-neutral-200 text-neutral-700
                         dark:bg-neutral-700/60 dark:hover:bg-neutral-700 dark:text-neutral-300
                         disabled:opacity-50 disabled:cursor-not-allowed
-                        transition-all duration-150 active:scale-95"
+                        transition-[color,background-color,border-color,opacity,transform] duration-150 active:scale-95"
                     >
                       {h.status === 'checking' ? 'Checking…' : 'Check'}
                     </button>
@@ -476,7 +476,7 @@ export default function BackendChecklistClient() {
                         rel="noopener noreferrer"
                         className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-700
                           dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700/60
-                          transition-all duration-150"
+                          transition-[color,background-color,border-color,opacity,transform] duration-150"
                         title="Open in browser"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -525,7 +525,7 @@ export default function BackendChecklistClient() {
                     onChange={() => toggleCheck(step.id)}
                     className="hidden"
                   />
-                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200
+                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-[color,background-color,border-color,opacity,transform] duration-200
                     ${checked[step.id]
                       ? 'bg-emerald-500 border-emerald-500'
                       : 'border-[var(--color-border)] group-hover:border-pink-300 dark:group-hover:border-pink-700'}`}
@@ -633,7 +633,7 @@ export default function BackendChecklistClient() {
                       text-sm font-medium text-white
                       bg-gradient-to-r ${test.color}
                       hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed
-                      shadow-md transition-all duration-150 active:scale-[0.98]`}
+                      shadow-md transition-[color,background-color,border-color,opacity,transform] duration-150 active:scale-[0.98]`}
                   >
                     <span>{test.icon}</span>
                     {result?.loading ? (

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Manrope } from 'next/font/google';
 import { Providers } from '@/components/Providers';
+import { themeBootScript } from '@vesta/shared/utils/theme';
 import './globals.css';
 
 const manrope = Manrope({
@@ -29,6 +30,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={manrope.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript('vesta-admin-store') }} />
+      </head>
       <body className="min-h-screen antialiased" suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>

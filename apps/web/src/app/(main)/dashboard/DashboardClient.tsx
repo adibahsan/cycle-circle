@@ -850,7 +850,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                             isActive ? 'ring-2' : ''
                           }`}
                           style={{
-                            backgroundColor: `${color}20`,
+                            backgroundColor: `color-mix(in srgb, ${color} 13%, transparent)`,
                             outline: isActive ? `2px solid ${color}` : 'none',
                           }}
                         >

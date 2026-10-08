@@ -169,7 +169,7 @@ export function DatePicker({
       {/* Manual-entry input + calendar toggle */}
       <div
         className={`flex w-full items-center gap-2 rounded-xl border bg-[var(--color-bg-secondary)] pl-4 pr-1.5 py-1 transition-colors transition-shadow duration-200 focus-within:ring-2 focus-within:ring-[var(--goal-accent)]/30 focus-within:border-[var(--goal-accent)] ${
-          open ? 'border-[var(--goal-accent)]' : 'border-[var(--color-border)]'
+          open ? 'border-[var(--goal-accent)]' : 'border-[var(--color-border-strong)]'
         } ${disabled ? 'opacity-60' : ''}`}
       >
         <input
