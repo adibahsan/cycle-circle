@@ -58,16 +58,16 @@ const STATUS_OPTIONS = [
 
 const PHASE_LABELS: Record<string, string> = {
   MENSTRUAL: 'Menstrual',
-  FOLLICULAR: 'Follicular',
-  OVULATION: 'Ovulation',
-  LUTEAL: 'Luteal',
+  FOLLICULAR: 'bg-[color-mix(in_srgb,var(--color-follicular)_22%,transparent)] text-[var(--color-text-primary)]',
+  OVULATION: 'bg-[color-mix(in_srgb,var(--color-ovulation)_22%,transparent)] text-[var(--color-text-primary)]',
+  LUTEAL: 'bg-[color-mix(in_srgb,var(--color-luteal)_22%,transparent)] text-[var(--color-text-primary)]',
 }
 
 const PHASE_COLORS: Record<string, string> = {
-  MENSTRUAL: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  FOLLICULAR: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-  OVULATION: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  LUTEAL: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
+  MENSTRUAL: 'bg-[color-mix(in_srgb,var(--color-menstrual)_22%,transparent)] text-[var(--color-text-primary)]',
+  FOLLICULAR: 'bg-[color-mix(in_srgb,var(--color-follicular)_22%,transparent)] text-[var(--color-text-primary)]',
+  OVULATION: 'bg-[color-mix(in_srgb,var(--color-ovulation)_22%,transparent)] text-[var(--color-text-primary)]',
+  LUTEAL: 'bg-[color-mix(in_srgb,var(--color-luteal)_22%,transparent)] text-[var(--color-text-primary)]',
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -84,7 +84,7 @@ function PhaseBadges({ phases }: { phases: string[] }) {
       {phases.map((phase) => (
         <span
           key={phase}
-          className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${PHASE_COLORS[phase] ?? 'bg-gray-100 text-gray-700'}`}
+          className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${PHASE_COLORS[phase] ?? 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]'}`}
         >
           {PHASE_LABELS[phase] ?? phase}
         </span>
@@ -548,7 +548,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                 className="w-full px-2 py-1 text-sm font-medium rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] focus-visible:outline-none disabled:opacity-60"
                               />
                               {renameError && (
-                                <span className="text-xs text-red-600" aria-live="polite">
+                                <span className="text-xs text-[var(--color-danger)]" aria-live="polite">
                                   {renameError}
                                 </span>
                               )}
@@ -574,7 +574,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => commitRenameCategory(cat.id)}
                                 disabled={renamingSaving || !editingCategoryName.trim()}
-                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-success)] hover:bg-[var(--color-success-bg)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
                                 aria-label={`Save category name`}
                               >
                                 <Check size={14} aria-hidden="true" />

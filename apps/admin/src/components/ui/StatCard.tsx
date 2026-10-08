@@ -31,8 +31,8 @@ export function StatCard({ title, value, change, icon, className }: StatCardProp
       {change && (
         <div
           className={clsx('flex items-center gap-1 text-sm font-medium', {
-            'text-emerald-600 dark:text-emerald-400': isPositive,
-            'text-red-600 dark:text-red-400': isNegative,
+            'text-[var(--color-success)]': isPositive,
+            'text-[var(--color-danger)]': isNegative,
           })}
         >
           {isPositive && (

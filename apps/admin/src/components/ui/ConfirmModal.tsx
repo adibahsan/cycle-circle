@@ -32,8 +32,8 @@ export function ConfirmModal({
         <div
           className={clsx(
             'mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full',
-            variant === 'danger' && 'bg-red-100 dark:bg-red-900/30',
-            variant === 'warning' && 'bg-amber-100 dark:bg-amber-900/30'
+            variant === 'danger' && 'bg-[var(--color-danger-bg)]',
+            variant === 'warning' && 'bg-[var(--color-warning-bg)]'
           )}
         >
           {variant === 'danger' ? (
@@ -41,7 +41,7 @@ export function ConfirmModal({
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="currentColor"
-              className="h-6 w-6 text-red-600 dark:text-red-400"
+              className="h-6 w-6 text-[var(--color-danger)]"
               aria-hidden="true"
             >
               <path
@@ -55,7 +55,7 @@ export function ConfirmModal({
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="currentColor"
-              className="h-6 w-6 text-amber-600 dark:text-amber-400"
+              className="h-6 w-6 text-[var(--color-warning)]"
               aria-hidden="true"
             >
               <path

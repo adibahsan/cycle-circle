@@ -50,7 +50,7 @@ function StarRating({ rating }: { rating: number | null }) {
           key={i}
           className={
             i < filled
-              ? 'text-amber-400 text-lg leading-none'
+              ? 'text-[var(--color-warning)] text-lg leading-none'
               : 'text-[var(--color-border)] text-lg leading-none'
           }
           aria-hidden="true"

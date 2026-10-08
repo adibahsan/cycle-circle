@@ -173,7 +173,7 @@ export function Select({
             ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/30'
             : 'border-[var(--color-border)] hover:border-[var(--color-primary)]/50',
           selectSize === 'sm' ? 'px-3 py-2.5 text-sm' : 'px-4 py-3 text-sm',
-          error && 'border-red-400',
+          error && 'border-[var(--color-danger)]',
           disabled && 'opacity-60 cursor-not-allowed',
           className
         )}
@@ -249,7 +249,7 @@ export function Select({
         </ul>
       )}
 
-      {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+      {error && <p className="mt-1 text-sm text-[var(--color-danger)]">{error}</p>}
     </div>
   );
 }
