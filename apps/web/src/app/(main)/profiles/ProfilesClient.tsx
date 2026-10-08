@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, type MouseEvent } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,8 @@ import type { Profile, ProfileRelation } from '@vesta/shared/types';
 import { createProfile, deleteProfile, updateProfile, setActiveProfileCookie } from '@/app/actions/profile-actions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
+import { useHeld } from '@/lib/use-held';
 import '@vesta/shared/utils/i18n';
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -571,6 +573,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
 const GOAL_OPTIONS: GoalValue[] = [...GOAL_VALUES];
 
 interface EditProfileFormProps {
+  open: boolean;
   profile: Profile;
   onClose: () => void;
   serverError?: string;
@@ -584,7 +587,7 @@ interface EditProfileFormProps {
   }) => void;
 }
 
-function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: EditProfileFormProps) {
+function EditProfileForm({ open, profile, onClose, onSubmit, serverError, disabled }: EditProfileFormProps) {
   const { t } = useTranslation();
   const [name, setName] = useState(profile.name);
   const [relation, setRelation] = useState<ProfileRelation>(normalizeRelation(profile.relation));
@@ -608,57 +611,51 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-8"
-      style={{ background: 'color-mix(in srgb, var(--color-brand-navy) 55%, transparent)', backdropFilter: 'blur(4px)' }}
-      onClick={onClose}
-      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
-    >
-      <motion.div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="edit-profile-dialog-title"
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-        className="w-full max-w-md rounded-2xl border overflow-hidden overscroll-contain"
-        style={{
-          background: 'var(--color-bg-card)',
-          borderColor: 'var(--goal-accent)',
-          boxShadow: '0 0 0 2px color-mix(in srgb, var(--goal-accent) 15%, transparent), 0 8px 32px color-mix(in srgb, var(--goal-accent) 10%, transparent)',
-        }}
-        onClick={(e: MouseEvent) => e.stopPropagation()}
-      >
-        {/* Form header */}
+    <Modal
+      open={open}
+      onClose={onClose}
+      titleId="edit-profile-dialog-title"
+      panelClassName="sm:max-w-md"
+      header={
         <div
-          className="flex items-center justify-between px-5 py-4 border-b"
+          className="flex items-center gap-2 px-5 py-4 pr-14 border-b"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <div className="flex items-center gap-2">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
-            >
-              <Pencil size={15} color="var(--color-on-accent)" />
-            </div>
-            <h3 id="edit-profile-dialog-title" className="font-bold text-[var(--color-text-primary)] text-base">
-              {t('profiles.editProfile')}
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
-            style={{ background: 'var(--color-bg-secondary)' }}
-            aria-label={t('common.cancel')}
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
           >
-            <X size={14} className="text-[var(--color-text-muted)]" aria-hidden="true" />
-          </button>
+            <Pencil size={15} color="var(--color-on-accent)" aria-hidden="true" />
+          </div>
+          <h2 id="edit-profile-dialog-title" className="font-bold text-[var(--color-text-primary)] text-base">
+            {t('profiles.editProfile')}
+          </h2>
         </div>
-
+      }
+      footer={
+        <div className="px-5 py-3 border-t flex flex-col gap-2" style={{ borderColor: 'var(--color-border)' }}>
+          {/* Actions */}
+          <p
+            role="alert"
+            aria-live="polite"
+            aria-hidden={!serverError}
+            className={`text-sm text-[var(--color-error)] text-center min-h-[20px] transition-opacity duration-150 ${
+              serverError ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            {serverError || '\u00A0'}
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
+              {t('common.cancel')}
+            </Button>
+            <Button size="sm" onClick={handleSubmit} disabled={disabled} className="flex-1">
+        {t('profiles.saveChanges')}
+      </Button>
+    </div>
+        </div>
+      }
+    >
         <div className="px-5 py-4 flex flex-col gap-4">
           {/* Name */}
           <Input
@@ -672,7 +669,6 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
             }}
             error={nameError}
             maxLength={30}
-            autoFocus
           />
 
           {/* Relation picker */}
@@ -773,35 +769,15 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
               })}
             </div>
           </div>
-
-          {/* Actions */}
-          <p
-            role="alert"
-            aria-live="polite"
-            aria-hidden={!serverError}
-            className={`text-sm text-[var(--color-error)] text-center min-h-[20px] transition-opacity duration-150 ${
-              serverError ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            {serverError || '\u00A0'}
-          </p>
-          <div className="flex gap-2 pt-1">
-            <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
-              {t('common.cancel')}
-            </Button>
-            <Button size="sm" onClick={handleSubmit} disabled={disabled} className="flex-1">
-              {t('profiles.saveChanges')}
-            </Button>
-          </div>
         </div>
-      </motion.div>
-    </motion.div>
+    </Modal>
   );
 }
 
 // ─── Delete Confirm Dialog ────────────────────────────────────────────────────
 
 interface DeleteDialogProps {
+  open: boolean;
   profileName: string;
   error?: string;
   onConfirm: () => void;
@@ -809,36 +785,17 @@ interface DeleteDialogProps {
   disabled?: boolean;
 }
 
-function DeleteDialog({ profileName, error, onConfirm, onCancel, disabled }: DeleteDialogProps) {
+function DeleteDialog({ open, profileName, error, onConfirm, onCancel, disabled }: DeleteDialogProps) {
   const { t } = useTranslation();
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-8"
-      style={{ background: 'color-mix(in srgb, var(--color-brand-navy) 55%, transparent)', backdropFilter: 'blur(4px)' }}
-      onClick={onCancel}
-      onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
-    >
-      <motion.div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="delete-dialog-title"
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-        className="w-full max-w-md rounded-2xl p-5 overscroll-contain"
-        style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}
-        onClick={(e: MouseEvent) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--color-error) 10%, transparent)' }}>
-            <Trash2 size={18} color="var(--color-error)" />
+    <Modal open={open} onClose={onCancel} titleId="delete-dialog-title" panelClassName="sm:max-w-sm">
+      <div className="p-5 pt-6">
+        <div className="flex items-center gap-3 mb-3 pr-8">
+          <div className="w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--color-error) 10%, transparent)' }}>
+            <Trash2 size={18} color="var(--color-error)" aria-hidden="true" />
           </div>
           <div>
-            <h3 id="delete-dialog-title" className="font-bold text-[var(--color-text-primary)]">Remove Profile</h3>
+            <h2 id="delete-dialog-title" className="font-bold text-[var(--color-text-primary)]">Remove Profile</h2>
             <p className="text-sm text-[var(--color-text-muted)]">
               Remove <strong>{profileName}</strong>?
             </p>
@@ -858,10 +815,11 @@ function DeleteDialog({ profileName, error, onConfirm, onCancel, disabled }: Del
           {error || '\u00A0'}
         </p>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={onCancel} className="flex-1">
+          <Button variant="outline" size="sm" onClick={onCancel} className="flex-1" data-autofocus>
             {t('common.cancel')}
           </Button>
           <button
+            type="button"
             onClick={onConfirm}
             disabled={disabled}
             className="flex-1 py-2 rounded-xl text-sm font-bold text-[var(--color-on-action)] transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
@@ -870,8 +828,8 @@ function DeleteDialog({ profileName, error, onConfirm, onCancel, disabled }: Del
             {t('common.delete')}
           </button>
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </Modal>
   );
 }
 
@@ -889,6 +847,9 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [editTarget, setEditTarget] = useState<Profile | null>(null);
+  const [editKey, setEditKey] = useState(0);
+  const heldEdit = useHeld(editTarget);
+  const heldDelete = useHeld(deleteTarget);
   const [justSwitched, setJustSwitched] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
@@ -1040,6 +1001,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                 }}
                 onEdit={() => {
                   setEditError('');
+                  setEditKey((k) => k + 1);
                   setEditTarget(profile);
                 }}
               />
@@ -1161,32 +1123,30 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
         </motion.div>
       </PageContainer>
 
-      {/* Delete confirmation dialog */}
-      <AnimatePresence>
-        {deleteTarget && (
-          <DeleteDialog
-            profileName={deleteTarget.name}
-            error={deleteError}
-            onConfirm={handleDeleteConfirm}
-            onCancel={closeDeleteDialog}
-            disabled={isPending}
-          />
-        )}
-      </AnimatePresence>
+      {/* Delete confirmation dialog: stays mounted so the exit animation plays */}
+      {heldDelete && (
+        <DeleteDialog
+          open={deleteTarget !== null}
+          profileName={heldDelete.name}
+          error={deleteError}
+          onConfirm={handleDeleteConfirm}
+          onCancel={closeDeleteDialog}
+          disabled={isPending}
+        />
+      )}
 
       {/* Edit profile dialog */}
-      <AnimatePresence>
-        {editTarget && (
-          <EditProfileForm
-            key={editTarget.id}
-            profile={editTarget}
-            onClose={closeEditForm}
-            serverError={editError}
-            onSubmit={handleEditSubmit}
-            disabled={isPending}
-          />
-        )}
-      </AnimatePresence>
+      {heldEdit && (
+        <EditProfileForm
+          key={`${heldEdit.id}-${editKey}`}
+          open={editTarget !== null}
+          profile={heldEdit}
+          onClose={closeEditForm}
+          serverError={editError}
+          onSubmit={handleEditSubmit}
+          disabled={isPending}
+        />
+      )}
     </>
   );
 }

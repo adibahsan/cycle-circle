@@ -34,6 +34,7 @@ import { updateContactInfo } from '@/app/actions/user-actions'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { Language, Theme } from '@vesta/shared/types'
 import { isPro as isProHelper, getSubscriptionTier } from '@vesta/shared/utils/subscription'
+import { LogoutConfirmModal } from '@/components/LogoutConfirmModal'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
 
@@ -880,46 +881,12 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
         </div>
       </PageContainer>
 
-      {showLogoutConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-          onClick={() => setShowLogoutConfirm(false)}
-          onKeyDown={(e) => { if (e.key === 'Escape') setShowLogoutConfirm(false) }}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Confirm logout"
-        >
-          <div
-            className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-6 mx-4 max-w-sm w-full shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">
-              {t('settings.logout')}
-            </h3>
-            <p className="text-sm text-[var(--color-text-muted)] mb-5">
-              {t('settings.logoutConfirmMsg')}
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                fullWidth
-                onClick={() => setShowLogoutConfirm(false)}
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button
-                variant="primary"
-                fullWidth
-                onClick={() => { setShowLogoutConfirm(false); handleLogout() }}
-                disabled={loggingOut}
-                className="bg-[var(--color-error)] hover:opacity-90 text-[var(--color-on-action)] border-0"
-              >
-                {loggingOut ? t('settings.loggingOut') : t('settings.logout')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <LogoutConfirmModal
+        open={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        loggingOut={loggingOut}
+        onConfirm={() => { setShowLogoutConfirm(false); handleLogout() }}
+      />
     </>
   )
 }
