@@ -34,14 +34,15 @@ export const CHART_VAR = {
   follicular: 'var(--color-follicular)',
   /** Stroke ring around active dots. */
   surface: 'var(--color-bg-card)',
-  /** Good / middling / poor status, always shown next to a number or label. */
-  good: 'var(--color-secondary)',
-  mid: 'var(--color-accent)',
-  low: 'var(--color-primary)',
+  /** Semantic status, matching admin's emerald/amber/red badges. Always shown next to a number or label. */
+  good: '#059669',
+  mid: '#D97706',
+  low: 'var(--color-error, #B4441C)',
 } as const
 
 const FALLBACKS: Record<string, string> = {
   '--color-bg-card': '#FFFFFF',
+  '--color-error': '#B4441C',
   ...Object.fromEntries(CHART_TOKENS.map((t) => [t.cssVar, t.fallback])),
 }
 

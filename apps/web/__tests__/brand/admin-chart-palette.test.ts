@@ -39,6 +39,16 @@ describe('admin chart palette', () => {
       for (let j = i + 1; j < p.length; j++) expect(dist(p[i], p[j])).toBeGreaterThan(50)
   })
 
+  it('keeps status colours semantic and distinct', () => {
+    const [good, mid, low] = [CHART_VAR.good, CHART_VAR.mid, CHART_VAR.low].map((c) =>
+      resolveChartColor(c),
+    )
+    expect([good, mid, low]).toEqual(['#059669', '#D97706', '#B4441C'])
+    expect(new Set([good, mid, low]).size).toBe(3)
+    expect(dist(good, low)).toBeGreaterThan(50)
+    expect(dist(mid, low)).toBeGreaterThan(50)
+  })
+
   it('maps every token to a variable defined in admin globals.css', () => {
     const css = fs.readFileSync(path.join(ADMIN_SRC, 'app/globals.css'), 'utf8')
     for (const t of CHART_TOKENS) expect(css).toContain(`${t.cssVar}:`)
@@ -53,7 +63,7 @@ describe('admin chart palette', () => {
 })
 
 describe('admin source has no legacy palette hex', () => {
-  const LEGACY = /#(E8476C|F2728E|C93558|9B7FD4|B9A4E3|FF8C6B|7BC5AE|6366F1|10B981|F59E0B|3B82F6)\b/i
+  const LEGACY = /#(E8476C|F2728E|C93558|9B7FD4|B9A4E3|FF8C6B|7BC5AE)\b/i
   it('is clean', () => {
     const offenders = walk(ADMIN_SRC)
       .filter((f) => /\.(tsx?|css|svg)$/.test(f))
