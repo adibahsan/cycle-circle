@@ -352,7 +352,7 @@ export function GetStartedClient() {
       {/* ── Header (shrink-0) ── */}
       <div className="shrink-0 px-5 pt-5 pb-3 md:px-7">
         <div className="flex items-center justify-between">
-          {/* Vesta wordmark — always visible */}
+          {/* Cycle Circle wordmark — always visible */}
           <span className="text-lg font-bold text-[var(--color-primary)]">
             {t('app.name')}
           </span>

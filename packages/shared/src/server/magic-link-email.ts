@@ -6,9 +6,9 @@ export function buildMagicLinkEmailHtml(
 ): { subject: string; html: string } {
   const isBn = language === 'bn' || language === 'BN'
   const langAttr = isBn ? 'bn' : 'en'
-  const subject = isBn ? 'ভেস্তা - লগইন লিঙ্ক' : 'Vesta - Login Link'
+  const subject = isBn ? 'সাইকেল সার্কেল - লগইন লিঙ্ক' : 'Cycle Circle - Login Link'
   const intro = isBn ? 'আপনার লগইন লিঙ্ক' : 'Your login link'
-  const buttonLabel = isBn ? 'লগইন করুন' : 'Sign in to Vesta'
+  const buttonLabel = isBn ? 'লগইন করুন' : 'Sign in to Cycle Circle'
   const expiry = isBn
     ? 'এই লিঙ্কটি ১৫ মিনিটের মধ্যে মেয়াদ শেষ হবে।'
     : 'This link will expire in 15 minutes.'
@@ -19,7 +19,7 @@ export function buildMagicLinkEmailHtml(
 <body style="font-family:system-ui,sans-serif;background:#f9f5f1;margin:0;padding:32px 0;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
     <tr><td style="background:#e87b9e;padding:24px 32px;">
-      <h1 style="color:#fff;margin:0;font-size:24px;font-weight:700;">Vesta</h1>
+      <h1 style="color:#fff;margin:0;font-size:24px;font-weight:700;">Cycle Circle</h1>
     </td></tr>
     <tr><td style="padding:32px;">
       <p style="color:#333;font-size:16px;margin:0 0 24px;">${intro}:</p>

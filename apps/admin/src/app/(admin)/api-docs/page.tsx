@@ -35,7 +35,7 @@ export default function ApiDocsPage() {
       <header>
         <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">API Reference</h1>
         <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-          OpenAPI 3.1 reference for the Vesta REST API. Spec:{' '}
+          OpenAPI 3.1 reference for the Cycle Circle REST API. Spec:{' '}
           <a
             href="/openapi.yaml"
             className="underline hover:text-[var(--color-primary)]"

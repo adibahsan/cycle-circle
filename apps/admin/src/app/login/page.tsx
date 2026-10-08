@@ -63,7 +63,7 @@ export default function AdminLoginPage() {
             <VestaLogo size={48} animate />
             <div className="text-center">
               <h1 className="text-2xl font-bold" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                Vesta Admin
+                Cycle Circle Admin
               </h1>
               <p className="text-sm text-[var(--color-text-muted)] mt-1">
                 Sign in to the admin panel
@@ -159,7 +159,7 @@ export default function AdminLoginPage() {
         </div>
 
         <p className="text-center text-xs text-[var(--color-text-muted)] mt-6">
-          Vesta Admin &mdash; restricted access only
+          Cycle Circle Admin &mdash; restricted access only
         </p>
       </div>
     </div>

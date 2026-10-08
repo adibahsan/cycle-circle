@@ -78,7 +78,7 @@ function SidebarContent({
         {!sidebarCollapsed && (
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold leading-tight" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Vesta Admin
+              Cycle Circle Admin
             </h1>
           </div>
         )}
@@ -228,7 +228,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-3">
             <VestaLogo size={24} animate={false} />
             <span className="text-lg font-bold" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Vesta Admin
+              Cycle Circle Admin
             </span>
           </div>
           <button
@@ -292,7 +292,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex items-center gap-2">
               <VestaLogo size={22} animate={false} />
               <span className="text-base font-bold" style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                Vesta Admin
+                Cycle Circle Admin
               </span>
             </div>
           </div>

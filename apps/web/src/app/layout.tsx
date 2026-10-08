@@ -23,8 +23,8 @@ const siteUrl = 'https://test-vesta.velirasolutions.com';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Vesta — Cycle Intelligence Platform',
-    template: '%s | Vesta',
+    default: 'Cycle Circle — Cycle Intelligence Platform',
+    template: '%s | Cycle Circle',
   },
   description:
     'Bilingual reproductive health & cycle intelligence for Bangladesh. Track periods, symptoms, and predictions across family profiles.',
@@ -35,14 +35,14 @@ export const metadata: Metadata = {
     'Bangladesh',
     'Bengali',
   ],
-  authors: [{ name: 'Vesta Health' }],
+  authors: [{ name: 'Cycle Circle' }],
   openGraph: {
     type: 'website',
     locale: 'en_US',
     alternateLocale: 'bn_BD',
     url: siteUrl,
-    siteName: 'Vesta',
-    title: 'Vesta — Cycle Intelligence Platform',
+    siteName: 'Cycle Circle',
+    title: 'Cycle Circle — Cycle Intelligence Platform',
     description:
       'Bilingual reproductive health & cycle intelligence for Bangladesh.',
     images: [
@@ -50,13 +50,13 @@ export const metadata: Metadata = {
         url: '/opengraph-image.png',
         width: 1200,
         height: 630,
-        alt: 'Vesta',
+        alt: 'Cycle Circle',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Vesta — Cycle Intelligence Platform',
+    title: 'Cycle Circle — Cycle Intelligence Platform',
     description:
       'Bilingual reproductive health & cycle intelligence for Bangladesh.',
     images: ['/opengraph-image.png'],

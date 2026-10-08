@@ -95,7 +95,7 @@ export default function LoginPage() {
         </motion.div>
 
         <h1 className="text-3xl font-bold mb-1 text-[var(--color-primary)]">
-          Vesta
+          Cycle Circle
         </h1>
         <p className="text-sm text-[var(--color-text-muted)] text-center leading-relaxed px-4">
           আপনার স্বাস্থ্য, আপনার নিয়ন্ত্রণে
@@ -211,7 +211,7 @@ export default function LoginPage() {
           </span>
         </div>
         <p className="text-[11px] text-[var(--color-text-muted)] text-center leading-relaxed px-6">
-          By continuing you agree to Vesta&apos;s{' '}
+          By continuing you agree to Cycle Circle&apos;s{' '}
           <Link href="/privacy" className="text-[var(--color-secondary)] font-medium hover:underline underline-offset-2">Privacy Policy</Link>{' '}
           &amp;{' '}
           <Link href="/terms" className="text-[var(--color-secondary)] font-medium hover:underline underline-offset-2">Terms of Service</Link>

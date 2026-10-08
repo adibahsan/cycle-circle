@@ -37,8 +37,8 @@ export async function sendPeriodAlert(params: {
   if (params.isProSubscriber && params.phone) {
     const smsText =
       params.language === 'BN'
-        ? `ভেস্তা: ${params.profileName} এর পিরিয়ড ${params.daysUntil} দিনের মধ্যে (${params.predictedDate})`
-        : `Vesta: ${params.profileName}'s period expected in ${params.daysUntil} days (${params.predictedDate})`
+        ? `সাইকেল সার্কেল: ${params.profileName} এর পিরিয়ড ${params.daysUntil} দিনের মধ্যে (${params.predictedDate})`
+        : `Cycle Circle: ${params.profileName}'s period expected in ${params.daysUntil} days (${params.predictedDate})`
     await smsSend(smsText, [params.phone]).catch((err) =>
       console.error('[SMS] Period alert failed:', err),
     )
@@ -75,8 +75,8 @@ export async function sendFertileAlert(params: {
   if (params.isProSubscriber && params.phone) {
     const smsText =
       params.language === 'BN'
-        ? `ভেস্তা: ${params.profileName} এর উর্বর সময় আজ শুরু (${params.fertileStart} - ${params.fertileEnd})`
-        : `Vesta: ${params.profileName}'s fertile window starts today (${params.fertileStart} - ${params.fertileEnd})`
+        ? `সাইকেল সার্কেল: ${params.profileName} এর উর্বর সময় আজ শুরু (${params.fertileStart} - ${params.fertileEnd})`
+        : `Cycle Circle: ${params.profileName}'s fertile window starts today (${params.fertileStart} - ${params.fertileEnd})`
     await smsSend(smsText, [params.phone]).catch((err) =>
       console.error('[SMS] Fertile alert failed:', err),
     )
@@ -111,8 +111,8 @@ export async function sendLoggingReminder(params: {
   if (params.isProSubscriber && params.phone) {
     const smsText =
       params.language === 'BN'
-        ? `ভেস্তা: ${params.profileName} এর সাইকেল লগ করতে ভুলবেন না। শেষ লগের পর ${params.daysSinceLastLog} দিন হয়েছে।`
-        : `Vesta: Don't forget to log ${params.profileName}'s cycle. Last logged ${params.daysSinceLastLog} days ago.`
+        ? `সাইকেল সার্কেল: ${params.profileName} এর সাইকেল লগ করতে ভুলবেন না। শেষ লগের পর ${params.daysSinceLastLog} দিন হয়েছে।`
+        : `Cycle Circle: Don't forget to log ${params.profileName}'s cycle. Last logged ${params.daysSinceLastLog} days ago.`
     await smsSend(smsText, [params.phone]).catch((err) =>
       console.error('[SMS] Logging reminder failed:', err),
     )
@@ -147,8 +147,8 @@ export async function sendProfileCompletionReminder(params: {
   if (params.phone) {
     const smsText =
       params.language === 'BN'
-        ? `ভেস্তা: ${userName}, আপনার প্রোফাইল সেটআপ এখনো শেষ হয়নি। অ্যাপে প্রবেশ করুন এবং সম্পূর্ণ করুন।`
-        : `Vesta: ${userName}, your profile setup isn't complete yet. Open the app to finish setting up.`
+        ? `সাইকেল সার্কেল: ${userName}, আপনার প্রোফাইল সেটআপ এখনো শেষ হয়নি। অ্যাপে প্রবেশ করুন এবং সম্পূর্ণ করুন।`
+        : `Cycle Circle: ${userName}, your profile setup isn't complete yet. Open the app to finish setting up.`
     await smsSend(smsText, [params.phone]).catch((err) =>
       console.error('[SMS] Profile completion reminder failed:', err),
     )

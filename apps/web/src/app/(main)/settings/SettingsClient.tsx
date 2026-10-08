@@ -856,7 +856,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               <Card padding="md" className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[var(--color-text-secondary)]">{t('settings.appVersion')}</span>
-                  <span className="text-sm font-semibold text-[var(--color-text-primary)]">Vesta v1.0</span>
+                  <span className="text-sm font-semibold text-[var(--color-text-primary)]">Cycle Circle v2.0</span>
                 </div>
 
                 <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-3 py-2.5 flex items-start gap-2">
