@@ -3,40 +3,69 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Deep Rose + Lavender — Flo Modern palette */
-  --color-primary: #E8476C;
-  --color-primary-light: #F2728E;
-  --color-primary-dark: #C93558;
-  --color-secondary: #9B7FD4;
-  --color-secondary-light: #B9A4E3;
-  --color-accent: #FF8C6B;
+  /* Cycle Circle — "Flo blend" palette (spec #18). Dark overrides live in .dark. */
+  /* Logo primitives (logo artwork only) */
+  --color-brand-navy: #1A232C;
+  --color-brand-gold: #C2993F;
+  --color-brand-red: #D4151E;
 
-  /* Cycle phases */
-  --color-menstrual: #E8476C;
-  --color-follicular: #9B7FD4;
-  --color-ovulation: #FF8C6B;
-  --color-luteal: #F2728E;
-  --color-fertile: #7BC5AE;
+  /* Action — primary CTA (rose pill) */
+  --color-action: #D02F58;
+  --color-on-action: #FFFFFF;
+  --color-on-accent: #FFFFFF;
 
-  /* Neutrals */
-  --color-bg-primary: #FFF8F9;
-  --color-bg-secondary: #FFF0F3;
+  --color-primary: #D02F58;
+  --color-primary-light: #FF8FA8;
+  --color-primary-dark: #A8234A;
+  --goal-accent: var(--color-goal-tracking);
+  --color-secondary: #8E5BC4;
+  --color-secondary-light: #C9A3EC;
+  --color-accent: #C2993F;            /* logo gold: Pro + decoration only, never text */
+  --color-gold-ink: #8C6A1F;          /* gold when used as text */
+  --color-coral: #FF8C66;
+  --color-error: #B4441C;             /* always paired with icon + text */
+
+  /* Goal accents (text on any of these uses --color-on-accent) */
+  --color-goal-tracking: #D02F58;
+  --color-goal-conceive: #8C6A1F;
+  --color-goal-pregnancy: #8E5BC4;
+  --color-goal-perimenopause: #B4527A;
+
+  /* Cycle phases, each with a matching on-* text token */
+  --color-menstrual: #D91F45;
+  --color-follicular: #FF8FA8;
+  --color-ovulation: #C2993F;
+  --color-fertile: #F2C46D;
+  --color-luteal: #8E5BC4;
+  --color-on-menstrual: #FFFFFF;
+  --color-on-follicular: #1A232C;
+  --color-on-ovulation: #1A232C;
+  --color-on-fertile: #1A232C;
+  --color-on-luteal: #FFFFFF;
+
+  /* Surfaces */
+  --color-bg-primary: #FFF7F8;
+  --color-bg-secondary: #FFEEF1;
   --color-bg-card: #FFFFFF;
-  --color-text-primary: #2D1F24;
-  --color-text-secondary: #6B5660;
-  --color-text-muted: #9B8A92;
-  --color-border: #F3E4E8;
+  --color-bg-peach: #FDF0E6;
+  --color-text-primary: #1A232C;
+  --color-text-secondary: #565266;
+  --color-text-muted: #6E6779;
+  --color-border: #F6DDE3;
 
-  /* Dark mode */
-  --color-dark-bg-primary: #1A0E12;
-  --color-dark-bg-secondary: #2D1A20;
-  --color-dark-bg-card: #3A2229;
-  --color-dark-text-primary: #FFF0F3;
-  --color-dark-text-secondary: #D4B8C0;
-  --color-dark-border: #4A2D35;
+  /* Dark mode — brand navy */
+  --color-dark-bg-primary: #141A21;
+  --color-dark-bg-secondary: #1A222B;
+  --color-dark-bg-card: #1F2731;
+  --color-dark-text-primary: #F7EEF0;
+  --color-dark-text-secondary: #D6CBD0;
+  --color-dark-border: #2E3945;
 
-  /* Fonts */
+  /* Fonts — Manrope + Noto Sans Bengali only */
   --font-display: "Manrope", sans-serif;
+  --font-heading: "Manrope", sans-serif;
+  --font-bengali: "Noto Sans Bengali", sans-serif;
+  --font-bengali-heading: "Noto Sans Bengali", sans-serif;
 
   /* Radius */
   --radius-sm: 0.5rem;
@@ -44,16 +73,46 @@
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
   --radius-full: 9999px;
+
+  /* Fluid type */
+  --text-fluid-sm: clamp(0.95rem, 0.9rem + 0.3vw, 1.05rem);
+  --text-fluid-md: clamp(1.1rem, 1rem + 0.6vw, 1.4rem);
+  --text-fluid-lg: clamp(1.5rem, 1.2rem + 1.6vw, 2.25rem);
+  --text-fluid-xl: clamp(2rem, 1.4rem + 3.2vw, 3.75rem);
+  --text-fluid-2xl: clamp(2.5rem, 1.6rem + 4.5vw, 5rem);
 }
 
 .dark {
-  --color-bg-primary: #1A0E12;
-  --color-bg-secondary: #2D1A20;
-  --color-bg-card: #3A2229;
-  --color-text-primary: #FFF0F3;
-  --color-text-secondary: #D4B8C0;
-  --color-text-muted: #9B8A92;
-  --color-border: #4A2D35;
+  --color-bg-primary: #141A21;
+  --color-bg-secondary: #1A222B;
+  --color-bg-card: #1F2731;
+  --color-bg-peach: #2A2433;
+  --color-text-primary: #F7EEF0;
+  --color-text-secondary: #D6CBD0;
+  --color-text-muted: #B9B0BE;
+  --color-border: #2E3945;
+  --color-action: #FF7A99;
+  --color-on-action: #1A232C;
+  --color-on-accent: #1A232C;
+  --color-primary: #FF7A99;
+  --color-primary-light: #FFB3C4;
+  --color-primary-dark: #E85C7E;
+  --color-secondary: #C9A3EC;
+  --color-accent: #D4B26A;
+  --color-gold-ink: #E2C27A;
+  --color-coral: #FFB199;
+  --color-error: #E58A62;
+  --color-goal-tracking: #FF7A99;
+  --color-goal-conceive: #E2C27A;
+  --color-goal-pregnancy: #C9A3EC;
+  --color-goal-perimenopause: #E596B8;
+  --color-menstrual: #FF6B7F;
+  --color-on-menstrual: #1A232C;
+  --color-follicular: #FFB3C4;
+  --color-ovulation: #D4B26A;
+  --color-fertile: #F2C46D;
+  --color-luteal: #C9A3EC;
+  --color-on-luteal: #1A232C;
 }
 
 @layer base {
@@ -66,11 +125,18 @@
   }
 
   body {
-    font-family: var(--font-display);
+    font-family: var(--font-display), var(--font-bengali), sans-serif;
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, .font-heading {
+    font-family: var(--font-heading), var(--font-bengali-heading), sans-serif;
+    letter-spacing: -0.02em;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--color-primary) 22%, transparent);
   }
 }
 
@@ -83,21 +149,29 @@
     box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.06);
   }
   .dark .glass {
-    background: rgba(26, 14, 18, 0.8);
+    background: color-mix(in srgb, var(--goal-accent) 3%, rgba(20, 26, 33, 0.88));
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
   .shadow-soft {
-    box-shadow: 0 8px 32px -8px rgba(232, 71, 108, 0.08), 0 2px 8px -2px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 10px 30px -12px color-mix(in srgb, var(--goal-accent) 22%, transparent), 0 2px 6px -2px color-mix(in srgb, var(--color-brand-navy) 6%, transparent);
   }
   .shadow-glow {
-    box-shadow: 0 0 40px 8px rgba(232, 71, 108, 0.12), 0 8px 24px -8px rgba(232, 71, 108, 0.16);
+    box-shadow: 0 0 40px 8px color-mix(in srgb, var(--goal-accent) 12%, transparent), 0 8px 24px -8px color-mix(in srgb, var(--goal-accent) 16%, transparent);
   }
   .gradient-primary {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+    background: linear-gradient(135deg, var(--goal-accent) 0%, color-mix(in srgb, var(--goal-accent) 55%, white) 100%);
   }
   .gradient-warm {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-coral) 100%);
   }
+  /* Soft blush + coral wash for hero cards and empty states */
+  .surface-wash {
+    background:
+      radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--goal-accent) 14%, transparent) 0%, transparent 60%),
+      radial-gradient(100% 90% at 100% 100%, color-mix(in srgb, var(--color-coral) 16%, transparent) 0%, transparent 55%),
+      var(--color-bg-card);
+  }
+  .surface-peach { background: var(--color-bg-peach); }
 }
 
 /* Flo-like soothing animations */
@@ -143,7 +217,7 @@
 }
 .glass-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(232, 71, 108, 0.08), 0 0 0 1px rgba(232, 71, 108, 0.1);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--color-primary) 8%, transparent), 0 0 0 1px color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
