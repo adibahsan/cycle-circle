@@ -103,6 +103,8 @@ git rev-parse --short HEAD
 
 ## 4. Team decision: VPS tracks `main`
 
+> **Superseded (2026-10-09):** the VPS now tracks the **`production`** branch, which is deployed by GitHub Actions on push. See [03-deployment.md §5](./03-deployment.md). The original decision is kept below for history.
+
 Agree in writing (Slack/issue comment):
 
 - **Default:** VPS `git pull` on **`main`** for routine releases ([03-deployment.md](./03-deployment.md) § routine release).
