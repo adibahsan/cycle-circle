@@ -13,6 +13,7 @@ import { createProfile, deleteProfile, updateProfile, setActiveProfileCookie } f
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { useHeld } from '@/lib/use-held';
 import '@vesta/shared/utils/i18n';
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -572,6 +573,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
 const GOAL_OPTIONS: GoalValue[] = [...GOAL_VALUES];
 
 interface EditProfileFormProps {
+  open: boolean;
   profile: Profile;
   onClose: () => void;
   serverError?: string;
@@ -585,7 +587,7 @@ interface EditProfileFormProps {
   }) => void;
 }
 
-function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: EditProfileFormProps) {
+function EditProfileForm({ open, profile, onClose, onSubmit, serverError, disabled }: EditProfileFormProps) {
   const { t } = useTranslation();
   const [name, setName] = useState(profile.name);
   const [relation, setRelation] = useState<ProfileRelation>(normalizeRelation(profile.relation));
@@ -610,7 +612,7 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
 
   return (
     <Modal
-      open
+      open={open}
       onClose={onClose}
       titleId="edit-profile-dialog-title"
       panelClassName="sm:max-w-md"
@@ -775,6 +777,7 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
 // ─── Delete Confirm Dialog ────────────────────────────────────────────────────
 
 interface DeleteDialogProps {
+  open: boolean;
   profileName: string;
   error?: string;
   onConfirm: () => void;
@@ -782,10 +785,10 @@ interface DeleteDialogProps {
   disabled?: boolean;
 }
 
-function DeleteDialog({ profileName, error, onConfirm, onCancel, disabled }: DeleteDialogProps) {
+function DeleteDialog({ open, profileName, error, onConfirm, onCancel, disabled }: DeleteDialogProps) {
   const { t } = useTranslation();
   return (
-    <Modal open onClose={onCancel} titleId="delete-dialog-title" panelClassName="sm:max-w-sm">
+    <Modal open={open} onClose={onCancel} titleId="delete-dialog-title" panelClassName="sm:max-w-sm">
       <div className="p-5 pt-6">
         <div className="flex items-center gap-3 mb-3 pr-8">
           <div className="w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--color-error) 10%, transparent)' }}>
@@ -844,6 +847,9 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [editTarget, setEditTarget] = useState<Profile | null>(null);
+  const [editKey, setEditKey] = useState(0);
+  const heldEdit = useHeld(editTarget);
+  const heldDelete = useHeld(deleteTarget);
   const [justSwitched, setJustSwitched] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
@@ -995,6 +1001,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                 }}
                 onEdit={() => {
                   setEditError('');
+                  setEditKey((k) => k + 1);
                   setEditTarget(profile);
                 }}
               />
@@ -1116,27 +1123,29 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
         </motion.div>
       </PageContainer>
 
-      {/* Delete confirmation dialog */}
-      {deleteTarget && (
-          <DeleteDialog
-            profileName={deleteTarget.name}
-            error={deleteError}
-            onConfirm={handleDeleteConfirm}
-            onCancel={closeDeleteDialog}
-            disabled={isPending}
-          />
+      {/* Delete confirmation dialog: stays mounted so the exit animation plays */}
+      {heldDelete && (
+        <DeleteDialog
+          open={deleteTarget !== null}
+          profileName={heldDelete.name}
+          error={deleteError}
+          onConfirm={handleDeleteConfirm}
+          onCancel={closeDeleteDialog}
+          disabled={isPending}
+        />
       )}
 
       {/* Edit profile dialog */}
-      {editTarget && (
-          <EditProfileForm
-            key={editTarget.id}
-            profile={editTarget}
-            onClose={closeEditForm}
-            serverError={editError}
-            onSubmit={handleEditSubmit}
-            disabled={isPending}
-          />
+      {heldEdit && (
+        <EditProfileForm
+          key={`${heldEdit.id}-${editKey}`}
+          open={editTarget !== null}
+          profile={heldEdit}
+          onClose={closeEditForm}
+          serverError={editError}
+          onSubmit={handleEditSubmit}
+          disabled={isPending}
+        />
       )}
     </>
   );

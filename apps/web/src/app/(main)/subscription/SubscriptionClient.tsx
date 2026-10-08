@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
+import { useHeld } from '@/lib/use-held'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { SubscriptionStatus } from '@vesta/shared/types'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
@@ -64,13 +65,14 @@ const FREE_FEATURE_KEYS = [
 
 // ── BDApps Modal ───────────────────────────────────────────────────────────────
 interface BDAppsModalProps {
+  open: boolean
   phone: string
   step: UpgradeStep
   onConfirm: () => void
   onCancel: () => void
 }
 
-function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
+function BDAppsModal({ open, phone, step, onConfirm, onCancel }: BDAppsModalProps) {
   const { t } = useTranslation()
   const statusText =
     step === 'loading'
@@ -82,7 +84,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
           : ''
   return (
     <Modal
-      open
+      open={open}
       onClose={onCancel}
       ariaLabel={t('subscription.mobileBilling')}
       titleId="bdapps-modal-title"
@@ -300,6 +302,8 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
   // Use shared helper: phone (OTP) users are always PRO, LAPSED is distinct from FREE.
   const tier = getSubscriptionTier({ authMethod: user.authMethod, subscriptionStatus: status })
   const isProUser = tier === 'PRO'
+  const bdStep = upgradeStep !== 'idle' && upgradeStep !== 'phone' ? upgradeStep : null
+  const heldBdStep = useHeld(bdStep)
 
   return (
     <PageContainer>
@@ -501,9 +505,9 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
       )}
 
       {/* ── Phone-entry step (email-auth users with no phone) ── */}
-      {upgradeStep === 'phone' && (
-        <Modal
-          open
+      {/* Always mounted so the shell can play the exit animation */}
+      <Modal
+          open={upgradeStep === 'phone'}
           onClose={handleClose}
           titleId="phone-step-title"
           panelClassName="overflow-hidden"
@@ -575,13 +579,13 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
         </div>
       </div>
         </Modal>
-      )}
 
-      {/* ── BDApps Modal ── */}
-      {upgradeStep !== 'idle' && upgradeStep !== 'phone' && (
+      {/* ── BDApps Modal (held through the exit animation) ── */}
+      {heldBdStep && (
         <BDAppsModal
+          open={bdStep !== null}
           phone={enteredPhone || (user.phone ?? '')}
-          step={upgradeStep}
+          step={heldBdStep}
           onConfirm={handleConfirm}
           onCancel={handleClose}
         />

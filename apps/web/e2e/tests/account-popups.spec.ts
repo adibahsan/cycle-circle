@@ -14,6 +14,7 @@ import {
   mockApi,
   openPopup,
   settle,
+  sampleTransforms,
 } from '../guards/helpers'
 
 /**
@@ -227,4 +228,35 @@ test.describe('trial lock at 375x667', () => {
     await page.keyboard.press('Escape')
     await expect(d).toBeVisible()
   })
+})
+
+test.describe('exit animation (close only is sampled, so the open animation cannot satisfy it)', () => {
+  const cases = [
+    { name: 'profile delete', sel: 'button[aria-label^="Delete "]' },
+    { name: 'profile edit', sel: 'button[aria-label^="Edit "]' },
+  ]
+  async function closeTransforms(page: Page, sel: string) {
+    await mockApi(page, ['free-user'])
+    await gotoQuiet(page, '/profiles')
+    const trigger = page.locator(sel).first()
+    await expect(trigger).toBeVisible({ timeout: 15_000 })
+    await trigger.click()
+    await expect(dialog(page)).toBeVisible()
+    await settle(page, 800)
+    return sampleTransforms(page, async () => {
+      await page.keyboard.press('Escape')
+      await expect(dialog(page)).toBeHidden()
+    })
+  }
+
+  for (const c of cases) {
+    test(`${c.name}: close animates with full motion`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'no-preference' })
+      expect((await closeTransforms(page, c.sel)).length).toBeGreaterThan(0)
+    })
+    test(`${c.name}: no transform on close with reduced motion`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      expect(await closeTransforms(page, c.sel)).toEqual([])
+    })
+  }
 })
