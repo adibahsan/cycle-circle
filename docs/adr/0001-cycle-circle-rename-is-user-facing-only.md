@@ -1,0 +1,3 @@
+# The Cycle Circle rename is user-facing only; internal identifiers stay "vesta"
+
+The product was renamed from Vesta to Cycle Circle together with a new visual identity. Only what users see changes: UI copy (English and Bengali), page metadata, logo and icons, email and SMS text, and the design tokens. Internal identifiers deliberately keep the old name — the `@vesta/*` package scope, `VESTA_*` env vars, cookie and storage keys, component names, Docker/database/VPS names. Renaming them would cost a cookie/storage migration (logging users out), a database and volume move, and a ~350-import churn for no user-visible gain. A `vesta` string in code is therefore expected, not a missed rename; a `Vesta` string a user can see is a bug.
