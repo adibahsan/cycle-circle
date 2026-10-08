@@ -40,6 +40,13 @@ import { LatePeriodFullScreenAlert } from '@/components/modals/LatePeriodFullScr
 import { GOAL_ICON_COMPONENTS, GOAL_I18N_KEYS } from '@/lib/goal-display';
 import { goalAccentVar, normalizeGoal } from '@vesta/shared/utils/goal';
 import { isTrialExpired } from '@vesta/shared/utils/trial';
+import {
+  AutoPromptProvider,
+  useAutoPrompt,
+  useAutoPromptCandidate,
+  useAutoPromptExpect,
+} from '@/components/prompts/AutoPromptProvider';
+import type { CandidateState } from '@/lib/auto-prompt';
 import dynamic from 'next/dynamic';
 
 const ProfileCompletionModal = dynamic(
@@ -117,7 +124,6 @@ function Toast({ toast }: { toast: ToastState | null }) {
   );
 }
 
-const PROFILE_MODAL_DISMISSED_KEY = 'vesta_profile_modal_dismissed';
 // SRS FR-AUTH: the profile-completion popup appears ~1 minute after login.
 const PROFILE_COMPLETION_PROMPT_DELAY_MS = 60_000;
 const TOUR_REPLAY_KEY = 'vesta_replay_tour';
@@ -143,17 +149,29 @@ const SIDEBAR_ICONS: Record<NavIconKey, LucideIcon> = {
 };
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AutoPromptProvider>
+      <MainLayoutInner>{children}</MainLayoutInner>
+    </AutoPromptProvider>
+  );
+}
+
+function MainLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslation();
-  const { theme, setTheme, activeProfileName, setTourState } = useAppStore();
+  const { theme, setTheme, activeProfileName } = useAppStore();
+  const prompt = useAutoPrompt();
+  const setAccount = prompt.setAccount;
   const { toast, show: showToast } = useToast();
 
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionStatus, setCompletionStatus] = useState<ProfileCompletionStatus | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
   const [logging, setLogging] = useState<{ goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null>(null);
-  const [showLateAlert, setShowLateAlert] = useState(false);
+  const [loggingLoaded, setLoggingLoaded] = useState(false);
+  const [completionLoaded, setCompletionLoaded] = useState(false);
+  const [profileDelayDone, setProfileDelayDone] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [trialUser, setTrialUser] = useState<{
     authMethod?: string | null;
@@ -171,11 +189,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Tracks the previous completion percent to detect increases (for progress toast).
   // Initialised to -1 so the very first load does NOT fire the progress toast.
   const prevPercentRef = useRef<number>(-1);
-  // Latest completion status (read inside the delayed auto-open timer below).
-  const completionStatusRef = useRef<ProfileCompletionStatus | null>(null);
-  completionStatusRef.current = completionStatus;
-  // Ensures the ~1-minute auto-open prompt is scheduled at most once per session.
-  const completionPromptScheduledRef = useRef(false);
 
   // ── Auth status fetch — trial lock + tour eligibility ────────────────────
   // Stable callback so it can be called both on mount and from the
@@ -191,6 +204,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       })
       .then((data: {
         user?: {
+          id?: string;
+          createdAt?: string | null;
           onboardingTourCompletedAt?: string | null;
           authMethod?: string | null;
           subscriptionStatus?: string | null;
@@ -201,6 +216,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
         // Capture trial-relevant fields for the lock overlay
         if (user) {
+          const createdAt = Date.parse(user.createdAt ?? '');
+          if (user.id && Number.isFinite(createdAt)) setAccount({ id: user.id, createdAt });
           setTrialUser({
             authMethod: user.authMethod,
             subscriptionStatus: user.subscriptionStatus,
@@ -214,11 +231,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
         setAuthStatusLoaded(true); // unblock on error — don't permanently show lock
-        setTourState('done'); // unblock check-in on fetch error
       });
 
     return () => controller.abort();
-  }, [setTourState]);
+  }, [setAccount]);
 
   // Call once on mount. Navigating between in-app routes must NOT re-hit this
   // endpoint; pathname-dependent tour gating uses the captured `tourEligible`
@@ -228,30 +244,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     return cleanup;
   }, [refreshAuthStatus]);
 
-  // ── Tour gating — reacts to pathname using the captured eligibility flag ──
-  // No network. The tour only runs on /dashboard; a replay can be requested from
-  // Settings via sessionStorage (which navigates here). Eligibility is flipped
-  // off in handleTourClose, so a completed tour never re-opens this session.
+  // ── Tour replay (user-opened, bypasses the arbiter) ───────────────────────
+  // Settings sets a sessionStorage flag and navigates here. A replay is an explicit
+  // user action, so it opens directly (never over the trial lock).
   useEffect(() => {
-    if (!authStatusLoaded) return;
-
-    if (pathname !== '/dashboard') {
-      setTourState('done');
-      return;
-    }
-
-    const replayRequested = sessionStorage.getItem(TOUR_REPLAY_KEY) === '1';
-    if (replayRequested) {
-      sessionStorage.removeItem(TOUR_REPLAY_KEY);
-    }
-
-    if (replayRequested || tourEligible) {
-      setTourState('active');
-      setTourOpen(true);
-    } else {
-      setTourState('done');
-    }
-  }, [pathname, authStatusLoaded, tourEligible, setTourState]);
+    if (!authStatusLoaded || pathname !== '/dashboard') return;
+    if (sessionStorage.getItem(TOUR_REPLAY_KEY) !== '1') return;
+    sessionStorage.removeItem(TOUR_REPLAY_KEY);
+    if (!prompt.locked) setTourOpen(true);
+  }, [pathname, authStatusLoaded, prompt.locked]);
 
   // ── Logging status fetch ─────────────────────────────────────────────────
   const refreshLogging = useCallback(() => {
@@ -265,7 +266,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-      });
+      })
+      .finally(() => setLoggingLoaded(true));
 
     return () => controller.abort();
   }, []);
@@ -303,7 +305,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       .catch((err: unknown) => {
         // Ignore AbortError from overlapping refreshes; silently ignore others.
         if (err instanceof DOMException && err.name === 'AbortError') return;
-      });
+      })
+      .finally(() => setCompletionLoaded(true));
 
     return () => controller.abort();
   }, [showToast, t]);
@@ -334,52 +337,48 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     return () => window.removeEventListener('vesta:profile-updated', handler);
   }, [refreshCompletion, refreshLogging, refreshAuthStatus]);
 
-  // ── Auto-open the profile-completion popup ~1 min after login ─────────────
-  // SRS FR-AUTH: the popup appears ~1 minute after login for users with an
-  // incomplete profile, and persists until completed. Scheduled at most once
-  // per session (a ref guard), and snoozed for the session once dismissed
-  // (sessionStorage) so it does not nag — but re-prompts on the next login,
-  // since sessionStorage is cleared with the session.
+  // ── Auto-prompt candidates (the arbiter picks at most one per page load) ───
+  // SRS FR-AUTH: the profile prompt only becomes a candidate ~1 minute after load.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (completionPromptScheduledRef.current) return;
-    if (!completionStatus || completionStatus.complete) return;
-    if (sessionStorage.getItem(PROFILE_MODAL_DISMISSED_KEY) === '1') return;
-
-    completionPromptScheduledRef.current = true;
-    const id = setTimeout(() => {
-      // Re-check at fire time: the user may have completed or dismissed via the
-      // always-visible tracker during the delay.
-      const latest = completionStatusRef.current;
-      if (!latest || latest.complete) return;
-      if (sessionStorage.getItem(PROFILE_MODAL_DISMISSED_KEY) === '1') return;
-      setShowCompletionModal(true);
-    }, PROFILE_COMPLETION_PROMPT_DELAY_MS);
+    const id = setTimeout(() => setProfileDelayDone(true), PROFILE_COMPLETION_PROMPT_DELAY_MS);
     return () => clearTimeout(id);
-  }, [completionStatus]);
+  }, []);
 
-  // ── Late period full-screen alert (once per day) ─────────────────────────
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!logging?.isPeriodLate) return;
-    const today = new Date().toISOString().slice(0, 10);
-    const key = `vesta_late_alert_seen_${today}`;
-    if (!localStorage.getItem(key)) {
-      localStorage.setItem(key, '1');
-      setShowLateAlert(true);
-    }
-  }, [logging?.isPeriodLate]);
+  const trialLockState: CandidateState = !authStatusLoaded
+    ? 'pending'
+    : trialUser && isTrialExpired(trialUser) && pathname !== '/subscription'
+      ? 'yes'
+      : 'no';
+  const lateState: CandidateState = !loggingLoaded ? 'pending' : logging?.isPeriodLate ? 'yes' : 'no';
+  const tourState: CandidateState = !authStatusLoaded
+    ? 'pending'
+    : pathname === '/dashboard' && tourEligible
+      ? 'yes'
+      : 'no';
+  const profileState: CandidateState = !completionLoaded
+    ? 'pending'
+    : !completionStatus || completionStatus.complete
+      ? 'no'
+      : profileDelayDone
+        ? 'yes'
+        : 'pending';
+  useAutoPromptCandidate('trial-lock', trialLockState);
+  useAutoPromptCandidate('late-alert', lateState);
+  useAutoPromptCandidate('tour', tourState);
+  useAutoPromptCandidate('profile', profileState);
+  // The check-in is reported by the dashboard, which owns its data; hold lower prompts until it does.
+  useAutoPromptExpect('check-in', pathname === '/dashboard');
 
-  const handleLateClose = useCallback(() => setShowLateAlert(false), []);
+  const handleLateClose = useCallback(() => prompt.close('late-alert'), [prompt]);
   const handleLateLogPeriod = useCallback(() => {
-    setShowLateAlert(false);
+    prompt.close('late-alert');
     if (pathname === '/dashboard') {
       window.dispatchEvent(new CustomEvent('vesta:open-period-log'));
     } else {
       sessionStorage.setItem('vesta_open_period_log', '1');
       router.push('/dashboard');
     }
-  }, [pathname, router]);
+  }, [pathname, router, prompt]);
 
   const handlePhoneAdded = useCallback(() => {
     setTrialUser((prev) =>
@@ -393,12 +392,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   function handleModalClose() {
     setShowCompletionModal(false);
-    sessionStorage.setItem(PROFILE_MODAL_DISMISSED_KEY, '1');
+    prompt.close('profile');
   }
 
   function handleTourClose() {
     setTourOpen(false);
-    setTourState('done');
+    prompt.close('tour');
     setTourEligible(false); // don't re-open on return to /dashboard this session
     void completeOnboardingTour();
   }
@@ -407,6 +406,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     setMoreOpen(false);
   }, [pathname]);
+
+  const profileModalOpen = !prompt.locked && (showCompletionModal || prompt.isActive('profile'));
+  const tourIsOpen = !prompt.locked && (tourOpen || prompt.isActive('tour'));
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -418,7 +420,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       style={{ ['--goal-accent' as string]: goalAccentVar(logging?.goal) } as React.CSSProperties}
     >
       {/* ── Trial expired lock overlay — renders only after auth status resolves ── */}
-      {authStatusLoaded && trialUser && isTrialExpired(trialUser) && pathname !== '/subscription' && (
+      {prompt.locked && (
         <TrialExpiredLock />
       )}
 
@@ -580,9 +582,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       />
 
       {/* ── Profile Completion Modal ── */}
-      {showCompletionModal && (
+      {profileModalOpen && (
         <ProfileCompletionModal
-          open={showCompletionModal}
+          open={profileModalOpen}
           onClose={handleModalClose}
           percent={completionStatus?.percent}
           items={completionStatus?.items}
@@ -591,9 +593,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       )}
 
       {/* ── Onboarding spotlight tour ── */}
-      {tourOpen && (
+      {tourIsOpen && (
         <OnboardingTour
-          open={tourOpen}
+          open={tourIsOpen}
           steps={tourSteps}
           onClose={handleTourClose}
         />
@@ -601,7 +603,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       {/* ── Late period full-screen alert ── */}
       <LatePeriodFullScreenAlert
-        open={showLateAlert}
+        open={prompt.isActive('late-alert')}
         onClose={handleLateClose}
         daysLate={logging?.daysLate ?? 0}
         goal={logging?.goal ?? null}

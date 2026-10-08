@@ -8,6 +8,8 @@ type Ctx = { now: Date }
 interface MockDef {
   status?: (ctx: Ctx) => Json
   logging?: (ctx: Ctx) => Json
+  /** patches /api/profile/completion */
+  completion?: (ctx: Ctx) => Json
 }
 
 const iso = (d: Date, deltaMs: number) => new Date(d.getTime() + deltaMs).toISOString()
@@ -29,6 +31,9 @@ export const MOCKS: Record<string, MockDef> = {
       emailTrialExpiresAt: iso(now, 5 * 3_600_000), onboardingTourCompletedAt: iso(now, -DAY),
     }),
   },
+  'incomplete-profile': {
+    completion: () => ({ percent: 50, complete: false }),
+  },
   'late-period': {
     logging: () => ({ isPeriodLate: true, daysLate: 4 }),
   },
@@ -43,5 +48,11 @@ export function applyStatusMock(body: Json, names: string[], now = new Date()): 
 export function applyLoggingMock(body: Json, names: string[], now = new Date()): Json {
   const out = { ...body }
   for (const n of names) Object.assign(out, MOCKS[n]?.logging?.({ now }) ?? {})
+  return out
+}
+
+export function applyCompletionMock(body: Json, names: string[], now = new Date()): Json {
+  const out = { ...body }
+  for (const n of names) Object.assign(out, MOCKS[n]?.completion?.({ now }) ?? {})
   return out
 }

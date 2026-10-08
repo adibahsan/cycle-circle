@@ -11,29 +11,25 @@
  * Phone guards: `test.use({ viewport: PHONE_375 })` at the top of the spec.
  */
 import { expect, type Locator, type Page } from '@playwright/test'
-import { applyLoggingMock, applyStatusMock } from '../support/mocks'
+import { applyCompletionMock, applyLoggingMock, applyStatusMock } from '../support/mocks'
 
 export const PHONE_375 = { width: 375, height: 667 }
 export const PHONE_390 = { width: 390, height: 844 }
 export const DESKTOP = { width: 1366, height: 900 }
 
 /**
- * Suppress auto pop-ups (profile modal, late alert, check-in) so guards start from a clean page.
- * Mirrors the app's gates (UTC day, `.toISOString().slice(0, 10)`):
- *  - layout.tsx:   sessionStorage `vesta_profile_modal_dismissed`, localStorage `vesta_late_alert_seen_<day>`
- *  - Dashboard:    sessionStorage `vesta_checkin_shown_<activeProfileId>_<day>`
- * The profile id is unknown before the first load (empty store), so sessionStorage.getItem is
- * shimmed to report any `vesta_checkin_shown_*` key as already shown.
+ * Suppress auto-prompts (late alert, tour, check-in, profile) so guards start from a clean page.
+ * The arbiter (src/lib/auto-prompt.ts) persists last-shown times in localStorage under keys starting
+ * with `vesta_prompt_last:`; those keys include the account/profile id, unknown before the first load,
+ * so localStorage.getItem is shimmed to report any such key as "shown just now". The trial lock is
+ * absolute and is NOT suppressed. Explicit user actions (tour replay) are unaffected.
  */
 export async function suppressAutoPrompts(page: Page) {
   await page.addInitScript(() => {
     try {
-      const day = new Date().toISOString().slice(0, 10)
-      sessionStorage.setItem('vesta_profile_modal_dismissed', '1')
-      localStorage.setItem('vesta_late_alert_seen_' + day, '1')
       const orig = Storage.prototype.getItem
       Storage.prototype.getItem = function (key: string) {
-        if (this === window.sessionStorage && typeof key === 'string' && key.startsWith('vesta_checkin_shown_')) return '1'
+        if (this === window.localStorage && typeof key === 'string' && key.startsWith('vesta_prompt_last:')) return String(Date.now())
         return orig.call(this, key)
       }
     } catch {}
@@ -97,11 +93,15 @@ export async function expectWithinViewport(page: Page, container: Locator) {
   expect(box!.x + box!.width).toBeLessThanOrEqual(vw)
 }
 
-/** Apply named mocks (see e2e/support/mocks.ts) to /api/auth/status and /api/tracking/logging-status. Call before goto. */
+/** Apply named mocks (see e2e/support/mocks.ts) to /api/auth/status, /api/tracking/logging-status and /api/profile/completion. Call before goto. */
 export async function mockApi(page: Page, names: string[]) {
   await page.route('**/api/auth/status', async (route) => {
     const res = await route.fetch()
     await route.fulfill({ response: res, json: applyStatusMock(await res.json(), names) })
+  })
+  await page.route('**/api/profile/completion', async (route) => {
+    const res = await route.fetch()
+    await route.fulfill({ response: res, json: applyCompletionMock(await res.json(), names) })
   })
   await page.route('**/api/tracking/logging-status', async (route) => {
     const res = await route.fetch()
