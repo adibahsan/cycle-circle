@@ -480,6 +480,17 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
 
 // ─── Calendar Client ───────────────────────────────────────────────────────────
 
+/** Latest logged period start that is not in the future (YYYY-MM-DD), or null. */
+function lastPeriodStartIso(logs: PeriodLog[]): string | null {
+  const today = format(new Date(), 'yyyy-MM-dd')
+  let best: string | null = null
+  for (const l of logs) {
+    const s = format(new Date(l.startDate), 'yyyy-MM-dd')
+    if (s <= today && (!best || s > best)) best = s
+  }
+  return best
+}
+
 export function CalendarClient({ profiles: _profiles, activeProfileId, month, days, windowDays, symptomLogs, periodLogs, goal, last30 = [] }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
@@ -633,7 +644,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
   // client-side so no forward-looking data is ever derived or shown.
   const firstPredictedPeriod = !pregnancy ? days?.find((d) => d.predicted && d.period) : undefined
   const ovulationDay = !pregnancy ? days?.find((d) => d.ovulation) : undefined
-  const fertileWindow = !pregnancy ? selectFertileWindow(windowDays ?? days ?? [], format(new Date(), 'yyyy-MM-dd')) : null
+  const fertileWindow = !pregnancy ? selectFertileWindow(windowDays ?? days ?? [], format(new Date(), 'yyyy-MM-dd'), lastPeriodStartIso(periodLogs)) : null
 
   const DOW = [
     t('calendar.sun'), t('calendar.mon'), t('calendar.tue'), t('calendar.wed'),

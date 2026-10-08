@@ -36,4 +36,14 @@ describe('selectFertileWindow', () => {
   it('handles unsorted input', () => {
     expect(selectFertileWindow([...twoWindows].reverse(), '2026-10-10')).toEqual({ start: '2026-10-26', end: '2026-10-30' })
   })
+
+  it('after this cycle\'s window but before the next, shows the current cycle window', () => {
+    const days = [...run('2026-09-26', 7), ...run('2026-10-24', 7)]
+    expect(selectFertileWindow(days, '2026-10-08', '2026-09-17')).toEqual({ start: '2026-09-26', end: '2026-10-02' })
+  })
+
+  it('ignores runs from before the cycle start and falls to the next upcoming', () => {
+    const days = [...run('2026-09-26', 7), ...run('2026-10-24', 7)]
+    expect(selectFertileWindow(days, '2026-10-08', '2026-10-05')).toEqual({ start: '2026-10-24', end: '2026-10-30' })
+  })
 })
