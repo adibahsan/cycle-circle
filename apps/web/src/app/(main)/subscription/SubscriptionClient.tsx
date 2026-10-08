@@ -105,7 +105,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
             {step === 'confirm' && (
               <div className="space-y-5">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--goal-accent)] flex items-center justify-center">
                     <Zap size={16} className="text-[var(--color-on-accent)]" />
                   </div>
                   <div>
@@ -140,7 +140,6 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                     variant="primary"
                     onClick={onConfirm}
                     fullWidth
-                    className="gradient-primary border-0"
                   >
                     {t('subscription.confirm')}
                   </Button>
@@ -151,7 +150,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
             {step === 'loading' && (
               <div className="flex flex-col items-center gap-4 py-6">
                 <motion.div
-                  className="w-14 h-14 rounded-full gradient-primary flex items-center justify-center"
+                  className="w-14 h-14 rounded-full bg-[var(--goal-accent)] flex items-center justify-center"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                 >
@@ -171,7 +170,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                 transition={{ type: 'spring', damping: 18, stiffness: 260 }}
               >
                 <motion.div
-                  className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center shadow-glow"
+                  className="w-16 h-16 rounded-full bg-[var(--goal-accent)] flex items-center justify-center shadow-glow"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.1, type: 'spring', damping: 14 }}
@@ -190,7 +189,6 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                   variant="primary"
                   onClick={onCancel}
                   fullWidth
-                  className="gradient-primary border-0"
                 >
                   {t('subscription.getStarted')}
                 </Button>
@@ -553,7 +551,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
 
               <div className="p-6 space-y-5">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--goal-accent)] flex items-center justify-center">
                     <Phone size={16} className="text-[var(--color-on-accent)]" aria-hidden="true" />
                   </div>
                   <div>
@@ -608,7 +606,6 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                     onClick={handlePhoneSubmit}
                     fullWidth
                     disabled={phonePending || !enteredPhone.trim()}
-                    className="gradient-primary border-0"
                   >
                     {phonePending ? t('common.saving') : t('subscription.addPhoneCta')}
                   </Button>

@@ -258,7 +258,7 @@ export function Pagination({
                 'flex h-8 w-8 items-center justify-center rounded-lg border text-sm font-medium transition-colors duration-150',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]',
                 page === currentPage
-                  ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
+                  ? 'border-[var(--color-action)] bg-[var(--color-action)] text-[var(--color-on-action)]'
                   : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]'
               )}
             >
