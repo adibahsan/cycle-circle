@@ -22,14 +22,13 @@ export function ErrorState({ variant, reset, standalone = false }: ErrorStatePro
   const isError = variant === 'error'
 
   const body = (
-    <PageContainer className="items-center text-center">
+    <PageContainer>
       <BrandLogo size={64} alt="" />
       <PageHeader
-        className="justify-center text-center"
         title={isError ? t('common.error') : t('common.notFoundTitle')}
         subtitle={isError ? t('common.errorBody') : t('common.notFoundBody')}
       />
-      <div className="flex items-center justify-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         {isError ? (
           <>
             <button
