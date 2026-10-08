@@ -35,3 +35,17 @@ export function loggingNudgeVariant(input: {
   if (input.daysSinceLastLog != null && input.daysSinceLastLog >= NUDGE_STALE_DAYS) return 'stale'
   return null
 }
+
+/**
+ * Candidate state for the daily check-in pop-up.
+ *  - undefined: the engagement data has not arrived yet -> 'pending' (blocks lower-priority prompts from winning early)
+ *  - null: the load settled without data (error / no access) -> 'no'
+ *  - otherwise: 'yes' only when nothing was logged today.
+ */
+export function checkInCandidateState(
+  engagement: { loggedToday: boolean } | null | undefined,
+): 'pending' | 'yes' | 'no' {
+  if (engagement === undefined) return 'pending'
+  if (engagement === null || engagement.loggedToday) return 'no'
+  return 'yes'
+}

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { daysSinceLastLog, loggingNudgeVariant, showCompletionRow } from '@/lib/prompt-rules'
+import { checkInCandidateState, daysSinceLastLog, loggingNudgeVariant, showCompletionRow } from '@/lib/prompt-rules'
 
 const src = (p: string) => readFileSync(resolve(__dirname, '../../src', p), 'utf8')
 
@@ -23,6 +23,19 @@ describe('daysSinceLastLog', () => {
   it('counts whole local days from the most recent log', () => {
     expect(daysSinceLastLog([new Date(2026, 9, 1), new Date(2026, 9, 5, 23, 0)], today)).toBe(3)
     expect(daysSinceLastLog([new Date(2026, 9, 8, 0, 1)], today)).toBe(0)
+  })
+})
+
+describe('checkInCandidateState', () => {
+  it('is pending until the engagement data arrives', () => {
+    expect(checkInCandidateState(undefined)).toBe('pending')
+  })
+  it('is no once the load settled without data', () => {
+    expect(checkInCandidateState(null)).toBe('no')
+  })
+  it('is no when something was already logged today, yes otherwise', () => {
+    expect(checkInCandidateState({ loggedToday: true })).toBe('no')
+    expect(checkInCandidateState({ loggedToday: false })).toBe('yes')
   })
 })
 

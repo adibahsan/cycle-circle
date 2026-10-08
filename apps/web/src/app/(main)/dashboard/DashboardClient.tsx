@@ -27,7 +27,7 @@ import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogMo
 import { setActiveProfileCookie } from '@/app/actions/profile-actions'
 import type { ProfileCompletionStatus } from '@/lib/profile-completion'
 import { CompletionRow } from '@/components/prompts/CompletionRow'
-import { daysSinceLastLog as daysSinceLastLogFor } from '@/lib/prompt-rules'
+import { checkInCandidateState, daysSinceLastLog as daysSinceLastLogFor } from '@/lib/prompt-rules'
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
 import { useToast } from '@/components/ui/Toast'
@@ -113,7 +113,8 @@ interface Props {
   completion: ProfileCompletionStatus
   lastSymptomLogDate: Date | string | null
   goal: string | null
-  engagement: EngagementSummary | null
+  /** undefined = not loaded yet, null = settled without data. */
+  engagement?: EngagementSummary | null
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -265,7 +266,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   const [checkInOpen, setCheckInOpen] = useState(false)
 
   // The arbiter decides whether the check-in auto-opens (once per local day per profile).
-  useAutoPromptCandidate('check-in', !engagement || engagement.loggedToday ? 'no' : 'yes', { scope: activeProfileId })
+  useAutoPromptCandidate('check-in', checkInCandidateState(engagement), { scope: activeProfileId })
   const trialLocked = prompt.locked
   const closeAutoCheckIn = prompt.close
   useEffect(() => () => closeAutoCheckIn('check-in'), [closeAutoCheckIn])
