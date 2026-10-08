@@ -7,6 +7,7 @@ import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { Phone, Shield, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { devMode, DEV_DEFAULT_PHONE } from '@vesta/shared/utils/config';
 import '@vesta/shared/utils/i18n';
 
@@ -89,8 +90,7 @@ export default function LoginPage() {
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           className="mb-4"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/cycle-circle-logo.svg" alt="" width={64} height={64} className="w-16 h-16" />
+          <BrandLogo size={64} alt="" className="w-16 h-16" />
         </motion.div>
 
         <h1 className="text-3xl font-extrabold mb-1 text-[var(--color-text-primary)]">

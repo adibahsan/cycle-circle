@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { goalAccentVar } from '@vesta/shared/utils/goal';
 import { Button } from '@/components/ui/Button';
-import { VestaLogoSVG } from '@/components/ui/VestaLogo';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
@@ -210,7 +210,7 @@ function StepWelcome({ onNext, prefersReducedMotion }: { onNext: () => void; pre
         <div className="absolute bottom-10 right-3 w-3 h-3 rounded-full bg-[var(--color-primary)]/40 animate-float" style={{ animationDelay: '1.7s' }} aria-hidden="true" />
         {/* Center logo mark */}
         <div className="relative z-10 w-20 h-20 rounded-full flex items-center justify-center shadow-glow">
-          <VestaLogoSVG size={80} />
+          <BrandLogo size={80} className="h-20 w-20" />
         </div>
       </motion.div>
 

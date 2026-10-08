@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { SplitWords } from '@/components/motion/SplitWords';
 import { useHasMounted } from '@/components/motion/useHasMounted';
 import { Button } from '@/components/ui/Button';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -41,14 +42,7 @@ export function HeroSection() {
           animate={prefersReducedMotion ? undefined : { opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, ease: EASE }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/brand/cycle-circle-logo.svg"
-            alt="Cycle Circle"
-            width={160}
-            height={160}
-            className="h-32 w-32 sm:h-40 sm:w-40"
-          />
+          <BrandLogo size={160} className="h-32 w-32 sm:h-40 sm:w-40" />
         </motion.div>
 
         {/* Hero headline — split-word staggered animation */}
