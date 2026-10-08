@@ -238,7 +238,7 @@ export default function VerifyOtpPage() {
                     ? 'border-[var(--color-primary)] bg-[var(--color-bg-card)]'
                     : 'border-[var(--color-border)]'
                 } ${error ? 'border-[var(--color-error)]' : ''} focus-visible:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/25`}
-                aria-label={`Digit ${index + 1}`}
+                aria-label={t('auth.otpDigit', { n: index + 1 })}
               />
             </motion.div>
           ))}

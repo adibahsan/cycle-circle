@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight, Pencil } from 'lucide-react';
 import { GOAL_ICON_COMPONENTS, GOAL_I18N_KEYS } from '@/lib/goal-display';
 import { GOAL_VALUES, normalizeGoal, goalAccentVar, type GoalValue } from '@vesta/shared/utils/goal';
@@ -76,7 +76,9 @@ interface StepperProps {
   unit?: string;
 }
 
-function Stepper({ label, value, min, max, onChange, unit = 'days' }: StepperProps) {
+function Stepper({ label, value, min, max, onChange, unit }: StepperProps) {
+  const { t } = useTranslation();
+  const unitText = unit ?? t('common.days');
   return (
     <div className="flex items-center justify-between py-0.5">
       <span className="text-sm font-medium text-[var(--color-text-secondary)]">{label}</span>
@@ -89,13 +91,13 @@ function Stepper({ label, value, min, max, onChange, unit = 'days' }: StepperPro
             background: 'var(--color-bg-secondary)',
             borderColor: 'var(--color-border)',
           }}
-          aria-label={`Decrease ${label}`}
+          aria-label={t('profiles.decreaseField', { label })}
         >
           <Minus size={13} className="text-[var(--color-text-primary)]" />
         </button>
         <div className="min-w-[52px] text-center">
           <span className="text-base font-bold text-[var(--color-text-primary)]">{value}</span>
-          <span className="text-xs text-[var(--color-text-muted)] ml-1">{unit}</span>
+          <span className="text-xs text-[var(--color-text-muted)] ml-1">{unitText}</span>
         </div>
         <button
           onClick={() => onChange(Math.min(max, value + 1))}
@@ -105,7 +107,7 @@ function Stepper({ label, value, min, max, onChange, unit = 'days' }: StepperPro
             background: 'var(--color-bg-secondary)',
             borderColor: 'var(--color-border)',
           }}
-          aria-label={`Increase ${label}`}
+          aria-label={t('profiles.increaseField', { label })}
         >
           <Plus size={13} className="text-[var(--color-text-primary)]" />
         </button>
@@ -185,13 +187,13 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
               </span>
               {isActive && (
                 <span
-                  className="text-[11px] font-bold px-1.5 py-0.5 rounded-full"
+                  className="text-[11px] font-bold px-1.5 py-0.5 rounded-full uppercase"
                   style={{
                     background: 'var(--goal-accent)',
                     color: 'var(--color-on-accent)',
                   }}
                 >
-                  ACTIVE
+                  {t('profiles.active')}
                 </span>
               )}
             </div>
@@ -205,7 +207,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
               </span>
               {/* Cycle info */}
               <span className="text-[11px] text-[var(--color-text-muted)]">
-                {profile.cycleLength}d cycle · {profile.periodLength}d period
+                {t('profiles.cycleSummary', { cycle: profile.cycleLength, period: profile.periodLength })}
               </span>
             </div>
           </div>
@@ -367,7 +369,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
         <Input
           id="add-profile-name"
           label={t('onboarding.nameLabel')}
-          placeholder="e.g. Nusrat…"
+          placeholder={t('profiles.namePlaceholder')}
           value={name}
           onChange={(e) => {
             setName(e.target.value);
@@ -381,7 +383,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
         {/* Relation picker */}
         <div>
           <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Relation
+            {t('profiles.relation')}
           </p>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
             {RELATIONS.map((rel) => {
@@ -483,7 +485,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
             htmlFor="last-period-date"
             className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5"
           >
-            Last period start *
+            {t('profiles.lastPeriodStart')} *
           </label>
           <input
             id="last-period-date"
@@ -517,8 +519,8 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
 
         {/* Flow intensity */}
         <div>
-          <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Flow intensity</p>
-          <div className="flex gap-2" role="group" aria-label="Flow intensity">
+          <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">{t('dashboard.flowIntensity')}</p>
+          <div className="flex gap-2" role="group" aria-label={t('dashboard.flowIntensity')}>
             {(['light', 'medium', 'heavy'] as const).map((f) => (
               <button
                 key={f}
@@ -662,7 +664,7 @@ function EditProfileForm({ open, profile, onClose, onSubmit, serverError, disabl
           <Input
             id="edit-profile-name"
             label={t('onboarding.nameLabel')}
-            placeholder="e.g. Nusrat…"
+            placeholder={t('profiles.namePlaceholder')}
             value={name}
             onChange={(e) => {
               setName(e.target.value);
@@ -675,7 +677,7 @@ function EditProfileForm({ open, profile, onClose, onSubmit, serverError, disabl
           {/* Relation picker */}
           <div>
             <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-              Relation
+              {t('profiles.relation')}
             </p>
             <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
               {RELATIONS.map((rel) => {
@@ -796,14 +798,14 @@ function DeleteDialog({ open, profileName, error, onConfirm, onCancel, disabled 
             <Trash2 size={18} color="var(--color-error)" aria-hidden="true" />
           </div>
           <div>
-            <h2 id="delete-dialog-title" className="font-bold text-[var(--color-text-primary)]">Remove Profile</h2>
+            <h2 id="delete-dialog-title" className="font-bold text-[var(--color-text-primary)]">{t('profiles.removeTitle')}</h2>
             <p className="text-sm text-[var(--color-text-muted)]">
-              Remove <strong>{profileName}</strong>?
+              <Trans i18nKey="profiles.removePrompt" values={{ name: profileName }} components={{ strong: <strong /> }} />
             </p>
           </div>
         </div>
         <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-          All symptom logs and data for this profile will be permanently deleted.
+          {t('profiles.removeWarning')}
         </p>
         <p
           role="alert"
@@ -1068,7 +1070,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                           {t('profiles.add')}
                         </p>
                         <p className="text-xs text-[var(--color-text-muted)]">
-                          {MAX_PROFILES - profiles.length} slot{MAX_PROFILES - profiles.length !== 1 ? 's' : ''} remaining
+                          {t('profiles.slotsRemaining', { count: MAX_PROFILES - profiles.length })}
                         </p>
                       </div>
                     </button>
@@ -1089,10 +1091,10 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             <span className="text-xl flex-shrink-0 mt-0.5">🔐</span>
             <div>
               <p className="text-sm font-semibold" style={{ color: 'var(--color-secondary)' }}>
-                Data Isolation
+                {t('profiles.isolationTitle')}
               </p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-                Each profile&apos;s cycle data, symptoms, and history are stored completely separately. Switching profiles never mixes data.
+                {t('profiles.isolationBody')}
               </p>
             </div>
           </motion.div>
@@ -1100,7 +1102,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
 
         {/* Switch confirmation toast */}
         <div aria-live="polite" aria-atomic="true" className="sr-only">
-          {justSwitched ? `Switched to ${profiles.find((p) => p.id === justSwitched)?.name}` : ''}
+          {justSwitched ? t('profiles.switchedTo', { name: profiles.find((p) => p.id === justSwitched)?.name }) : ''}
         </div>
         <AnimatePresence>
           {justSwitched && (

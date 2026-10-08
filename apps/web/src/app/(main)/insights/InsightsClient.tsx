@@ -319,11 +319,13 @@ function SymptomFrequencyChart({
   data,
   noDataLabel,
   countLabel,
+  categoryLabel,
   animate,
 }: {
   data: SymptomFrequencyPoint[]
   noDataLabel: string
   countLabel: string
+  categoryLabel: (category: string) => string
   animate: boolean
 }) {
   const total = data.reduce((s, d) => s + d.count, 0)
@@ -341,7 +343,7 @@ function SymptomFrequencyChart({
           tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(v: string) => v.charAt(0) + v.slice(1).toLowerCase()}
+          tickFormatter={(v: string) => categoryLabel(v)}
         />
         <YAxis
           tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
@@ -362,7 +364,7 @@ function SymptomFrequencyChart({
           formatter={(v) => [v ?? 0, countLabel]}
           labelFormatter={(label) =>
             typeof label === 'string'
-              ? label.charAt(0) + label.slice(1).toLowerCase()
+              ? categoryLabel(label)
               : label
           }
         />
@@ -460,6 +462,7 @@ function FertileWindowHistoryList({
   noDataLabel: string
   language: string
 }) {
+  const { t } = useTranslation()
   if (data.length === 0) return <NoDataMessage label={noDataLabel} />
 
   const locale = language === 'bn' ? 'bn-BD' : undefined
@@ -496,7 +499,7 @@ function FertileWindowHistoryList({
                   className="text-xs font-bold tabular-nums"
                   style={{ color: 'var(--color-text-primary)' }}
                 >
-                  {fertileSpan}d
+                  {t('common.daysShort', { count: fertileSpan })}
                 </span>
               </div>
               {/* Visual bar */}
@@ -650,6 +653,7 @@ export function InsightsClient({
               data={filteredSymptomFrequency}
               noDataLabel={noData}
               countLabel={t('insights.count')}
+              categoryLabel={(c) => t(`symptoms.${c.toLowerCase()}`)}
               animate={shouldAnimate}
             />
           </div>

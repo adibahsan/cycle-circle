@@ -495,7 +495,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   </div>
                   <SegmentedControl<Language>
                     options={[
-                      { label: 'EN', value: 'en' },
+                      { label: t('nav.langShortEn'), value: 'en' },
                       { label: 'বাং', value: 'bn' },
                     ]}
                     value={language}
@@ -727,7 +727,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                               type="tel"
                               name="phone"
                               autoComplete="tel"
-                              placeholder="01XXXXXXXXX"
+                              placeholder={t('auth.phonePlaceholder')}
                               value={contactPhone}
                               onChange={(e) => { setContactPhone(e.target.value); if (phoneError) setPhoneError('') }}
                               className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
@@ -779,7 +779,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                               : 'bg-[var(--color-border)] text-[var(--color-text-muted)]'
                           }`}
                         >
-                          {planTier === 'PRO' ? 'PRO' : planTier === 'LAPSED' ? t('subscription.planLapsed') : 'FREE'}
+                          <span className="uppercase">{planTier === 'PRO' ? t('subscription.pro') : planTier === 'LAPSED' ? t('subscription.planLapsed') : t('subscription.free')}</span>
                         </span>
                       )
                     })()}
@@ -850,7 +850,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               <Card padding="md" className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[var(--color-text-secondary)]">{t('settings.appVersion')}</span>
-                  <span className="text-sm font-semibold text-[var(--color-text-primary)]">Cycle Circle v2.0</span>
+                  <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('settings.versionName', { version: '2.0' })}</span>
                 </div>
 
                 <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-3 py-2.5 flex items-start gap-2">

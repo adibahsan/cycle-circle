@@ -264,7 +264,7 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
                     name="phone"
                     autoComplete="tel"
                     spellCheck={false}
-                    placeholder="01XXXXXXXXX…"
+                    placeholder={t('auth.phonePlaceholder')}
                     value={phone}
                     onChange={handlePhoneChange}
                     maxLength={11}
@@ -374,10 +374,7 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
                   aria-hidden="true"
                 />
                 <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                  {t(
-                    'profile.trialNote',
-                    'Your 24-hour trial is active. Add a phone number to keep full access after it ends.'
-                  )}
+                  {t('profile.trialNote')}
                 </p>
               </div>
             )}

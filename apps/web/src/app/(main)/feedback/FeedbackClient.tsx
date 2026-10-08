@@ -98,7 +98,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
   const [hovered, setHovered] = useState(0)
 
   return (
-    <div className="flex items-center gap-1.5" role="group" aria-label="Star rating">
+    <div className="flex items-center gap-1.5" role="group" aria-label={t('feedback.starRating')}>
       {[1, 2, 3, 4, 5].map(star => {
         const filled = star <= (hovered || value)
         return (
@@ -110,7 +110,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
             onMouseEnter={() => setHovered(star)}
             onMouseLeave={() => setHovered(0)}
             onClick={() => onChange(value === star ? 0 : star)}
-            aria-label={`${star} star${star !== 1 ? 's' : ''}`}
+            aria-label={t('feedback.starCount', { count: star })}
             className="p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
           >
             <Star

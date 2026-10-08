@@ -349,7 +349,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
 
               {tier === 'PRO' ? (
                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-bg-card))] text-[var(--color-text-primary)] text-xs font-bold">
-                  <Crown size={12} aria-hidden="true" /> PRO
+                  <Crown size={12} aria-hidden="true" /> <span className="uppercase">{t('subscription.pro')}</span>
                 </span>
               ) : tier === 'LAPSED' ? (
                 <span className="px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 text-xs font-semibold">
@@ -357,7 +357,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                 </span>
               ) : (
                 <span className="px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-muted)] text-xs font-semibold">
-                  FREE
+                  <span className="uppercase">{t('subscription.free')}</span>
                 </span>
               )}
             </div>
@@ -400,18 +400,18 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               <div className="relative p-6 space-y-5">
                 <div className="flex items-center gap-2.5">
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-bg-card))] text-[var(--color-text-primary)] text-xs font-bold">
-                    <Crown size={12} aria-hidden="true" /> PRO
+                    <Crown size={12} aria-hidden="true" /> <span className="uppercase">{t('subscription.pro')}</span>
                   </span>
-                  <h2 className="text-xl font-bold text-[var(--color-text-primary)]">Go Pro</h2>
+                  <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{t('subscription.title')}</h2>
                 </div>
 
                 <div>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-3xl font-extrabold text-[var(--color-text-primary)]">৳5</span>
-                    <span className="text-[var(--color-text-secondary)] text-sm">/day</span>
+                    <span className="text-[var(--color-text-secondary)] text-sm">/{t('subscription.dayUnit')}</span>
                   </div>
                   <p className="text-[var(--color-text-muted)] text-xs mt-0.5">
-                    Charged to your mobile balance via BDApps
+                    {t('subscription.billedViaBDApps')}
                   </p>
                 </div>
 
@@ -460,12 +460,12 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
             </div>
             <div className="px-2 py-3 text-center">
               <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
-                Free
+                {t('subscription.free')}
               </span>
             </div>
             <div className="px-2 py-3 text-center">
               <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-bg-card))] text-[var(--color-text-primary)]">
-                <Crown size={10} aria-hidden="true" /> Pro
+                <Crown size={10} aria-hidden="true" /> {t('subscription.pro')}
               </span>
             </div>
           </div>

@@ -44,7 +44,7 @@ async function main() {
         baseURL, storageState, viewport: VIEWPORTS[shot.viewport], colorScheme: shot.theme,
         isMobile: isPhone, hasTouch: isPhone,
       })
-      await ctx.addInitScript(`try{const k='vesta-store';const s=JSON.parse(localStorage.getItem(k)||'{"state":{},"version":0}');s.state.theme='${shot.theme}';s.state.language='en';localStorage.setItem(k,JSON.stringify(s))}catch(e){}`)
+      await ctx.addInitScript(`try{const k='vesta-store';const s=JSON.parse(localStorage.getItem(k)||'{"state":{},"version":0}');s.state.theme='${shot.theme}';s.state.language='${process.env.E2E_LANG==='bn'?'bn':'en'}';localStorage.setItem(k,JSON.stringify(s))}catch(e){}`)
       const page = await ctx.newPage()
       if (!args.popup) {
         // A named pop-up is the subject; otherwise keep auto prompts out of the base page.

@@ -424,7 +424,7 @@ export function TrialCountdownPill({ trialUser, onPhoneAdded }: TrialCountdownPi
                         setFocusedIndex(index);
                       }}
                       onBlur={() => setFocusedIndex(null)}
-                      aria-label={`Digit ${index + 1}`}
+                      aria-label={t('auth.otpDigit', { n: index + 1 })}
                       className={[
                         'w-full aspect-square text-center text-lg font-bold rounded-xl border-2',
                         'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]',
