@@ -13,7 +13,7 @@ const resources = {
       },
       nav: { dashboard: 'Dashboard', calendar: 'Calendar', insights: 'Insights', symptoms: 'Symptoms', content: 'Learn', settings: 'Settings', feedback: 'Feedback', profiles: 'Profiles', subscription: 'Subscription', menu: 'Menu', more: 'More', notLoggedToday: 'Nothing logged today', theme: 'Theme', language: 'Language', switchToLight: 'Switch to light mode', switchToDark: 'Switch to dark mode', switchLanguage: 'Switch language', profileSwitcher: 'Profiles — {{name}}', sidebarNav: 'Sidebar navigation', mainNav: 'Main navigation', mobileNav: 'Mobile navigation', footerNav: 'Footer navigation', langShortEn: 'EN', langShortBn: 'BN' },
       auth: {
-        brandBlurb: 'Smart cycle tracking with predictive insights. Understand your body, plan your life.',
+        brandBlurb: 'Track your cycle and know what is coming. Understand your body and plan around it.',
         pillTracking: 'Period Tracking',
         pillPredictions: 'Predictions',
         pillInsights: 'Insights',
@@ -394,8 +394,6 @@ const resources = {
         pregnancyDescription: 'Log how you\'re feeling each day — symptoms, mood, and notes.',
         dismiss: 'Dismiss',
         logSymptomsCta: 'Log symptoms',
-        streakAtRiskTitle: 'Keep your streak alive',
-        streakAtRiskBody: "Log today so you don't lose your {{count}}-day streak",
         phaseAwareBody: "You're in your {{phase}} phase — many notice changes now. Anything to log?",
       },
       quickSymptom: {
@@ -445,8 +443,6 @@ const resources = {
         recommendedEmail: 'Add an email address',
         recommendedPhone: 'Add a phone number',
         recommendedCta: 'Add',
-        expandLabel: "Show what's left",
-        collapseLabel: 'Hide details',
       },
       checkIn: {
         greetingMorning: 'Good morning',
@@ -1100,8 +1096,6 @@ const resources = {
         pregnancyDescription: 'প্রতিদিন আপনি কেমন অনুভব করছেন তা লগ করুন — উপসর্গ, মেজাজ এবং নোট।',
         dismiss: 'বাদ দিন',
         logSymptomsCta: 'লক্ষণ লগ করুন',
-        streakAtRiskTitle: 'আপনার ধারাবাহিকতা ধরে রাখুন',
-        streakAtRiskBody: 'আজ লগ করুন, নইলে {{count}} দিনের ধারা থেমে যাবে',
         phaseAwareBody: 'আপনি এখন {{phase}} পর্যায়ে আছেন — অনেকে এই সময়ে পরিবর্তন অনুভব করেন। কিছু লগ করবেন?',
       },
       quickSymptom: {
@@ -1151,8 +1145,6 @@ const resources = {
         recommendedEmail: 'একটি ইমেইল ঠিকানা যোগ করুন',
         recommendedPhone: 'একটি ফোন নম্বর যোগ করুন',
         recommendedCta: 'যোগ করুন',
-        expandLabel: 'বাকিটা দেখুন',
-        collapseLabel: 'বিস্তারিত লুকান',
       },
       checkIn: {
         greetingMorning: 'শুভ সকাল',

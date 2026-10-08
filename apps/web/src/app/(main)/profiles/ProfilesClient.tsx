@@ -485,7 +485,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
             htmlFor="last-period-date"
             className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5"
           >
-            Last period start *
+            {t('profiles.lastPeriodStart')} *
           </label>
           <input
             id="last-period-date"
