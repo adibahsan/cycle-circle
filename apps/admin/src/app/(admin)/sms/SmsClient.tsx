@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { DateTimePicker } from '@/components/ui/DateTimePicker'
 import {
@@ -116,11 +117,9 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
   const [error, setError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Focus textarea when modal opens; reset all state when it closes
+  // Reset all state when the modal closes (the shell focuses [data-autofocus] on open)
   useEffect(() => {
-    if (open) {
-      setTimeout(() => textareaRef.current?.focus(), 50)
-    } else {
+    if (!open) {
       setMode('single')
       setMessage('')
       setMessageBn('')
@@ -130,18 +129,6 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
       setError(null)
     }
   }, [open])
-
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !submitting) onClose()
-    }
-    document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
-  }, [open, submitting, onClose])
-
-  if (!open) return null
 
   const bulkLineCount = bulkText
     .split('\n')
@@ -192,22 +179,15 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
   const isScheduled = Boolean(scheduledFor)
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="create-broadcast-title"
-      style={{ overscrollBehavior: 'contain' }}
+    <Modal
+      open={open}
+      onClose={onClose}
+      titleId="create-broadcast-title"
+      dismissible={!submitting}
+      panelClassName="max-w-lg"
+      initialFocusRef={textareaRef}
     >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={() => !submitting && onClose()}
-        aria-hidden="true"
-      />
-
-      {/* Card */}
-      <div className="relative z-10 w-full max-w-lg rounded-2xl glass border border-[var(--color-border)] shadow-soft focus:outline-none max-h-[90vh] overflow-y-auto">
+      <div>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <div className="flex items-center gap-2.5">
@@ -287,7 +267,7 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
                 />
                 <div className="flex justify-between text-xs text-[var(--color-text-muted)]">
                   <span>{Math.ceil(charCount / 160)} SMS credit{Math.ceil(charCount / 160) !== 1 ? 's' : ''}</span>
-                  <span className={charCount > 440 ? 'text-amber-600' : ''}>{charCount}/480</span>
+                  <span className={charCount > 440 ? 'text-[var(--color-warning)]' : ''}>{charCount}/480</span>
                 </div>
               </div>
 
@@ -395,7 +375,7 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
 
           {/* Error */}
           {error && (
-            <p className="text-sm text-red-500" role="alert" aria-live="polite">
+            <p className="text-sm text-[var(--color-danger)]" role="alert" aria-live="polite">
               {error}
             </p>
           )}
@@ -426,7 +406,7 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
           </div>
         </form>
       </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -568,7 +548,7 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
       key: 'deliveredCount',
       header: 'Delivered',
       render: (row) => (
-        <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">
+        <span className="text-sm text-[var(--color-success)] font-medium tabular-nums">
           {row.deliveredCount?.toLocaleString() ?? '—'}
         </span>
       ),
@@ -577,7 +557,7 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
       key: 'failedCount',
       header: 'Failed',
       render: (row) => (
-        <span className="text-sm text-red-500 dark:text-red-400 font-medium tabular-nums">
+        <span className="text-sm text-[var(--color-danger)] font-medium tabular-nums">
           {row.failedCount?.toLocaleString() ?? '—'}
         </span>
       ),
@@ -616,7 +596,7 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
                 e.stopPropagation()
                 setDeleteTarget(row)
               }}
-              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)] transition-colors"
               aria-label="Delete broadcast"
               title="Delete"
             >

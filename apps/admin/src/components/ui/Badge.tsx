@@ -14,16 +14,16 @@ export function Badge({ variant, children, size = 'md', className }: BadgeProps)
         'inline-flex items-center font-medium rounded-full',
         {
           // success — active, published, delivered
-          'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400':
+          'bg-[var(--color-success-bg)] text-[var(--color-success)]':
             variant === 'success',
           // warning — pending, scheduled, grace period
-          'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400':
+          'bg-[var(--color-warning-bg)] text-[var(--color-warning)]':
             variant === 'warning',
           // danger — suspended, failed, lapsed
-          'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400':
+          'bg-[var(--color-danger-bg)] text-[var(--color-danger)]':
             variant === 'danger',
           // info — draft, informational
-          'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400':
+          'bg-[var(--color-info-bg)] text-[var(--color-info)]':
             variant === 'info',
           // neutral — free, archived
           'bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)]':

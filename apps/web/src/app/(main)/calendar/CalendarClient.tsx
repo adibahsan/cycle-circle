@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, memo } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
@@ -18,7 +18,7 @@ import {
   parseISO,
 } from 'date-fns'
 import { bn } from 'date-fns/locale/bn'
-import { ChevronLeft, ChevronRight, X, Pencil, Baby } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Pencil, Baby, Plus } from 'lucide-react'
 
 import { Card } from '@/components/ui/Card'
 import { useAppStore } from '@/lib/store'
@@ -30,6 +30,7 @@ import type { FlowIntensity } from '@vesta/shared/types'
 import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
 import { selectFertileWindow } from '@vesta/shared/utils/fertile-window'
 import '@vesta/shared/utils/i18n'
+import { DAY_STYLES, dayStyleKind, type DayStyleKind } from '@/lib/calendar-day-style'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
 
@@ -100,27 +101,29 @@ interface Props {
 
 function Legend({ pregnancy }: { pregnancy: boolean }) {
   const { t } = useTranslation()
-  const allItems = [
-    { color: 'var(--color-menstrual)', label: t('calendar.period'), ring: false, predictive: false },
-    { color: 'var(--color-fertile)', label: t('calendar.fertile'), ring: false, predictive: true },
-    { color: 'var(--color-ovulation)', label: t('calendar.ovulationDay'), ring: false, predictive: true },
-    { color: 'var(--color-text-primary)', label: t('calendar.today'), ring: true, predictive: false },
+  const allItems: { kind: DayStyleKind | 'today'; label: string; predictive: boolean }[] = [
+    { kind: 'period', label: t('calendar.period'), predictive: false },
+    { kind: 'predictedPeriod', label: t('calendar.predictedPeriod'), predictive: true },
+    { kind: 'fertile', label: t('calendar.fertile'), predictive: true },
+    { kind: 'ovulation', label: t('calendar.ovulationDay'), predictive: true },
+    { kind: 'today', label: t('calendar.today'), predictive: false },
   ]
 
   const items = pregnancy ? allItems.filter((i) => !i.predictive) : allItems
 
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center">
-      {items.map(({ color, label, ring }) => (
-        <div key={label} className="flex items-center gap-1.5">
-          {ring ? (
-            <div
-              className="w-4 h-4 rounded-md border-2"
-              style={{ borderColor: 'var(--color-text-primary)' }}
-            />
-          ) : (
-            <div className="w-4 h-4 rounded-md" style={{ backgroundColor: color }} />
-          )}
+      {items.map(({ kind, label }) => (
+        <div key={kind} className="flex items-center gap-1.5">
+          <div
+            className="w-4 h-4 rounded-md"
+            aria-hidden="true"
+            style={
+              kind === 'today'
+                ? { border: '2px solid var(--color-text-primary)' }
+                : { background: DAY_STYLES[kind].background, border: DAY_STYLES[kind].border }
+            }
+          />
           <span className="text-[11px] font-medium text-[var(--color-text-secondary)]">{label}</span>
         </div>
       ))}
@@ -140,105 +143,62 @@ interface DayCellProps {
 }
 
 const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSelect, isGhostDay = false, onGhostTap }: DayCellProps) {
-  const { date, isPeriod, isFertile, isOvulation, isFuturePredicted } = meta
-  const today = new Date()
-  const isToday = isSameDay(date, today)
-  const prefersReducedMotion = useReducedMotion()
-
-  let bgColor = 'transparent'
-  let textColor = isCurrentMonth ? 'var(--color-text-primary)' : 'var(--color-text-muted)'
-  const opacity = isFuturePredicted ? 0.5 : 1
-
-  if (isPeriod && isCurrentMonth) {
-    bgColor = isFuturePredicted ? 'color-mix(in srgb, var(--color-menstrual) 24%, transparent)' : 'color-mix(in srgb, var(--color-menstrual) 16%, transparent)'
-    // Menstrual-on-tint is below AA (3.8:1 light); the tint carries the meaning, text stays primary.
-    textColor = 'var(--color-text-primary)'
-  } else if (isOvulation && isCurrentMonth) {
-    bgColor = 'var(--color-ovulation)'
-    textColor = 'var(--color-on-ovulation)'
-  } else if (isFertile && isCurrentMonth) {
-    bgColor = 'color-mix(in srgb, var(--color-fertile) 35%, transparent)'
-    textColor = 'var(--color-text-primary)'
-  }
+  const { t } = useTranslation()
+  const { date } = meta
+  const isToday = isSameDay(date, new Date())
+  const kind = isCurrentMonth ? dayStyleKind(meta) : 'plain'
+  const style = DAY_STYLES[kind]
+  const showAdd = isGhostDay && isCurrentMonth
 
   return (
-    <div className="relative aspect-square w-full">
-    <button
+    <div className="group relative aspect-square w-full">
+      <button
       onClick={() => onSelect(date)}
-      className={`absolute inset-0 flex flex-col items-center justify-center w-full h-full rounded-xl transition-[color,background-color,transform] duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40 focus-visible:ring-offset-1${(isPeriod || isFertile || isOvulation) && isCurrentMonth ? ' hover:scale-105' : ''}`}
-      style={{
-        backgroundColor: isSelected
-          ? isPeriod
-            ? 'color-mix(in srgb, var(--color-menstrual) 28%, transparent)'
-            : isFertile
-              ? 'color-mix(in srgb, var(--color-fertile) 50%, transparent)'
-              : isOvulation
-                ? 'var(--color-ovulation)'
-                : 'var(--color-bg-secondary)'
-          : bgColor,
-        opacity,
-      }}
-    >
-      {/* Today ring */}
-      {isToday && (
-        <motion.div
-          className="absolute inset-0.5 rounded-[10px] border-2 pointer-events-none"
-          style={{ borderColor: 'var(--color-text-primary)' }}
-          animate={prefersReducedMotion ? {} : { opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      )}
-
-      {/* Ovulation accent dot */}
-      {isOvulation && isCurrentMonth && (
-        <div
-          className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
-          style={{ backgroundColor: 'var(--color-on-ovulation)' }}
-        />
-      )}
-
-      {/* Date number */}
-      <span
-        className="text-sm md:text-base font-semibold leading-none"
-        style={{ color: isCurrentMonth ? textColor : 'var(--color-text-muted)', fontWeight: isToday ? 800 : 600 }}
+        aria-pressed={isSelected}
+        className="absolute inset-0 flex flex-col items-center justify-center w-full h-full rounded-xl transition-colors duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/60"
+        style={{
+          background: isSelected && kind === 'plain' ? 'var(--color-bg-secondary)' : style.background,
+          border: style.border,
+        }}
       >
-        {format(date, 'd')}
-      </span>
-
-      {/* Future dashed border */}
-      {isFuturePredicted && isCurrentMonth && (isPeriod || isFertile || isOvulation) && (
-        <div
-          className="absolute inset-0.5 rounded-[10px] border border-dashed pointer-events-none"
+        <span
+          className={`text-sm md:text-base leading-none tabular-nums${showAdd ? ' group-hover:opacity-0 group-focus-within:opacity-0 transition-opacity' : ''}`}
           style={{
-            borderColor: isPeriod
-              ? 'var(--color-menstrual)'
-              : isOvulation
-                ? 'var(--color-ovulation)'
-                : 'var(--color-fertile)',
+            color: isCurrentMonth ? style.color : 'var(--color-text-muted)',
+            fontWeight: isToday ? 800 : 600,
           }}
-        />
-      )}
+        >
+          {format(date, 'd')}
+        </span>
 
-      {/* Selected ring */}
-      {isSelected && (
-        <div
-          className="absolute inset-0 rounded-xl border-2 pointer-events-none"
-          style={{ borderColor: 'var(--goal-accent)' }}
-        />
-      )}
-    </button>
-      {/* Ghost ring — unlogged past day within the 30-day window */}
-      {isGhostDay && isCurrentMonth && (
+        {/* Today ring */}
+        {isToday && (
+          <div
+            className="absolute inset-0.5 rounded-[10px] border-2 pointer-events-none"
+            style={{ borderColor: 'var(--color-text-primary)' }}
+          />
+        )}
+
+        {/* Selected ring */}
+        {isSelected && (
+          <div
+            className="absolute inset-0 rounded-xl border-2 pointer-events-none"
+            style={{ borderColor: 'var(--goal-accent)' }}
+          />
+        )}
+      </button>
+
+      {/* Unlogged past day: "+" appears on hover or focus and taps through to add a log */}
+      {showAdd && (
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onGhostTap?.(format(date, 'yyyy-MM-dd')); }}
-          aria-label={`Add log for ${format(date, 'MMMM d')}`}
-          className="absolute inset-0.5 z-10 rounded-[10px] border border-dashed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/50 focus-visible:ring-offset-1"
-          style={{ borderColor: 'var(--color-text-muted)', opacity: 0.35 }}
-          tabIndex={0}
-        />
+          onClick={(e) => { e.stopPropagation(); onGhostTap?.(format(date, 'yyyy-MM-dd')) }}
+          aria-label={t('calendar.addLogFor', { date: format(date, 'MMMM d') })}
+          className="absolute inset-0 z-10 flex items-center justify-center rounded-xl text-[var(--color-text-secondary)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/60"
+        >
+          <Plus size={16} aria-hidden="true" />
+        </button>
       )}
-
     </div>
   )
 })
@@ -258,9 +218,19 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
   const dateLocale = language === 'bn' ? bn : undefined
   const today = new Date()
   const isFuture = date > today
+  const ref = useRef<HTMLDivElement>(null)
+  const reduce = useReducedMotion()
+
+  // Below the two-column breakpoint the detail card sits under the grid: bring it into view.
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 1279px)').matches) return
+    ref.current?.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' })
+  }, [reduce])
 
   return (
     <motion.div
+      ref={ref}
+      className="scroll-mb-24"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
