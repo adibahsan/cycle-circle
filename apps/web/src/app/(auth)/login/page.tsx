@@ -89,12 +89,11 @@ export default function LoginPage() {
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           className="mb-4"
         >
-          <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary)] flex items-center justify-center shadow-soft">
-            <span className="text-white text-2xl font-bold">V</span>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/cycle-circle-logo.svg" alt="" width={64} height={64} className="w-16 h-16" />
         </motion.div>
 
-        <h1 className="text-3xl font-bold mb-1 text-[var(--color-primary)]">
+        <h1 className="text-3xl font-extrabold mb-1 text-[var(--color-text-primary)]">
           Cycle Circle
         </h1>
         <p className="text-sm text-[var(--color-text-muted)] text-center leading-relaxed px-4">
@@ -143,7 +142,7 @@ export default function LoginPage() {
               onChange={handlePhoneChange}
               maxLength={11}
               className={`w-full pl-20 pr-4 py-3.5 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors duration-200 text-base tracking-widest font-medium ${
-                error ? 'border-red-400 focus:ring-red-300' : 'border-[var(--color-border)]'
+                error ? 'border-[var(--color-error)] focus:ring-[var(--color-error)]/30' : 'border-[var(--color-border)]'
               }`}
             />
             {phone.length === 11 && !error && (
@@ -152,7 +151,7 @@ export default function LoginPage() {
               </span>
             )}
           </div>
-          {error && <p aria-live="polite" className="mt-1.5 text-sm text-red-500 flex items-center gap-1"><span>⚠</span>{error}</p>}
+          {error && <p aria-live="polite" className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1"><span>⚠</span>{error}</p>}
         </div>
 
         <Button
