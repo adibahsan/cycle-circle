@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
-import { placePopover } from '@vesta/shared/utils/popup-core';
+import { placePopover, Z_CLASS } from '@vesta/shared/utils/popup-core';
 import { popupStack } from '@vesta/shared/utils/popup-runtime';
 import { CalendarClock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Select } from './Select';
@@ -269,7 +269,7 @@ export function DateTimePicker({
           aria-label="Choose date and time"
           style={{ left: pos?.left ?? 0, top: pos?.top ?? 0, visibility: pos ? 'visible' : 'hidden', overscrollBehavior: 'contain' }}
           className={clsx(
-            'fixed z-[55] w-[20rem] max-w-[calc(100vw-1rem)] overscroll-contain',
+            `fixed ${Z_CLASS.popover} w-[20rem] max-w-[calc(100vw-1rem)] overscroll-contain`,
             'rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3 shadow-lg'
           )}
         >

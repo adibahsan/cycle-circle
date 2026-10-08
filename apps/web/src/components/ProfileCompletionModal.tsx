@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Phone, User, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
-import type { PopupLayer } from '@/components/ui/popup-core';
+import type { PopupLayer } from '@vesta/shared/utils/popup-core';
 import { completeProfile, updateContactInfo, updateUserName } from '@/app/actions/user-actions';
 
 interface ProfileCompletionModalProps {

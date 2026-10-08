@@ -9,6 +9,8 @@
 export const Z_LAYER = {
   chrome: 40,
   popup: 50,
+  /** Anchored pickers (date/time) inside a pop-up: above the panel, below auto-prompts. */
+  popover: 55,
   prompt: 60,
   lock: 70,
   toast: 80,
@@ -19,10 +21,14 @@ export type PopupLayer = 'popup' | 'prompt' | 'lock';
 export const Z_CLASS: Record<keyof typeof Z_LAYER, string> = {
   chrome: 'z-[40]',
   popup: 'z-[50]',
+  popover: 'z-[55]',
   prompt: 'z-[60]',
   lock: 'z-[70]',
   toast: 'z-[80]',
 };
+
+/** The one pop-up backdrop (web and admin): theme-aware scrim plus a light blur. */
+export const POPUP_BACKDROP_CLASS = 'bg-black/50 dark:bg-black/70 backdrop-blur-sm';
 
 // ─── Open pop-up stack (ESC closes the topmost only) ─────────────────────────
 

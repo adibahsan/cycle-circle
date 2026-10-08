@@ -5,7 +5,7 @@ import {
   createScrollLock,
   createInertManager,
   nextTrapIndex,
-} from '@/components/ui/popup-core';
+} from '@vesta/shared/utils/popup-core';
 
 function fakeTargets(sb = 15) {
   return {
@@ -16,8 +16,8 @@ function fakeTargets(sb = 15) {
 }
 
 describe('Z_LAYER', () => {
-  it('orders chrome < popup < prompt < lock < toast with the spec values', () => {
-    expect(Z_LAYER).toEqual({ chrome: 40, popup: 50, prompt: 60, lock: 70, toast: 80 });
+  it('orders chrome < popup < popover < prompt < lock < toast with the spec values', () => {
+    expect(Z_LAYER).toEqual({ chrome: 40, popup: 50, popover: 55, prompt: 60, lock: 70, toast: 80 });
   });
 });
 

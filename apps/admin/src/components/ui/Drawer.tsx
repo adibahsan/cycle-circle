@@ -3,9 +3,8 @@
 import { useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { Z_CLASS } from '@vesta/shared/utils/popup-core';
-import { usePopupBehavior } from './usePopupBehavior';
-import { usePopupRoot } from './Modal';
+import { Z_CLASS, POPUP_BACKDROP_CLASS } from '@vesta/shared/utils/popup-core';
+import { usePopupBehavior, usePopupRoot } from '@vesta/shared/utils/use-popup-behavior';
 
 interface DrawerProps {
   open: boolean;
@@ -20,14 +19,14 @@ interface DrawerProps {
 /** Left-side drawer on the pop-up shell (mobile navigation). */
 export function Drawer({ open, onClose, label, title, children }: DrawerProps) {
   const panelRef = useRef<HTMLElement>(null);
-  const container = usePopupRoot(open);
+  const { container } = usePopupRoot(open);
   usePopupBehavior({ open, container, panelRef, onClose });
 
   if (!open || !container) return null;
 
   return createPortal(
     <div className={`fixed inset-0 ${Z_CLASS.popup} md:hidden`} style={{ overscrollBehavior: 'contain' }}>
-      <div className="absolute inset-0 bg-black/50 dark:bg-black/70" aria-hidden="true" onClick={onClose} />
+      <div className={`absolute inset-0 ${POPUP_BACKDROP_CLASS}`} aria-hidden="true" onClick={onClose} />
       <aside
         ref={panelRef}
         role="dialog"
