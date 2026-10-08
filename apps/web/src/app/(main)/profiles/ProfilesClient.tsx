@@ -133,10 +133,8 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
       exit={{ opacity: 0, y: -8, scale: 0.95 }}
       transition={{ type: 'spring', stiffness: 400, damping: 35 }}
     >
-      <button
-        onClick={onSwitch}
-        disabled={isSwitching}
-        className="w-full text-left rounded-2xl border transition-[color,background-color,border-color,box-shadow] duration-200 p-4 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+      <div
+        className="w-full rounded-2xl border transition-[color,background-color,border-color,box-shadow] duration-200 relative overflow-hidden"
         style={{
           background: isActive
             ? 'linear-gradient(135deg, color-mix(in srgb, var(--goal-accent) 7%, transparent) 0%, color-mix(in srgb, var(--color-secondary) 7%, transparent) 100%)'
@@ -146,7 +144,6 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
             ? '0 0 0 2px color-mix(in srgb, var(--goal-accent) 20%, transparent), 0 4px 16px color-mix(in srgb, var(--goal-accent) 8%, transparent)'
             : '0 2px 8px color-mix(in srgb, var(--color-brand-navy) 4%, transparent)',
         }}
-        aria-label={`${t('profiles.switchTo')} ${profile.name}`}
       >
         {/* Active glow line */}
         {isActive && (
@@ -157,7 +154,16 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
           />
         )}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
+          {/* Switch control: avatar + info */}
+          <button
+            type="button"
+            onClick={onSwitch}
+            disabled={isSwitching}
+            aria-label={`${t('profiles.switchTo')} ${profile.name}`}
+            aria-current={isActive ? 'true' : undefined}
+            className="flex flex-1 min-w-0 items-center gap-3 text-left p-4 pr-2 min-h-11 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--goal-accent)]"
+          >
           {/* Avatar */}
           <div
             className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl flex-shrink-0"
@@ -199,31 +205,34 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
             </div>
           </div>
 
-          {/* Right: active checkmark or chevron */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Active checkmark or chevron */}
+          <div className="flex items-center flex-shrink-0">
             {isActive ? (
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center"
                 style={{ background: 'var(--goal-accent)' }}
               >
-                <Check size={14} color="var(--color-on-accent)" strokeWidth={2.5} />
+                <Check size={14} color="var(--color-on-accent)" strokeWidth={2.5} aria-hidden="true" />
               </div>
             ) : (
-              <ChevronRight size={16} className="text-[var(--color-text-muted)]" />
+              <ChevronRight size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
             )}
+          </div>
+          </button>
+
+          {/* Edit / delete controls: siblings of the switch button */}
+          <div className="flex items-center gap-1 flex-shrink-0 pr-3">
 
             {/* Edit button — always visible */}
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-              className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+              type="button"
+              onClick={onEdit}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
               style={{
                 background: 'color-mix(in srgb, var(--color-secondary) 10%, transparent)',
                 border: '1px solid color-mix(in srgb, var(--color-secondary) 25%, transparent)',
               }}
-              aria-label={`Edit ${profile.name}`}
+              aria-label={`${t('profiles.editProfile')} ${profile.name}`}
             >
               <Pencil size={13} color="var(--color-secondary)" aria-hidden="true" />
             </button>
@@ -231,11 +240,9 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
             {/* Delete — only for non-active profiles */}
             {!isActive && (
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-                className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                type="button"
+                onClick={onDelete}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                 style={{
                   background: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
                   border: '1px solid color-mix(in srgb, var(--color-error) 25%, transparent)',
@@ -247,7 +254,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
             )}
           </div>
         </div>
-      </button>
+      </div>
     </motion.div>
   );
 }

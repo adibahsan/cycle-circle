@@ -28,6 +28,7 @@ import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import type { FlowIntensity } from '@vesta/shared/types'
 import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
+import { selectFertileWindow } from '@vesta/shared/utils/fertile-window'
 import '@vesta/shared/utils/i18n'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -85,6 +86,8 @@ interface Props {
   activeProfileId: string
   month: string
   days: CalendarDay[] | null
+  /** prev + visible + next month days, so a window straddling a month edge isn't truncated */
+  windowDays?: CalendarDay[]
   symptomLogs: SymptomLog[]
   periodLogs: PeriodLog[]
   goal: string | null
@@ -477,7 +480,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
 
 // ─── Calendar Client ───────────────────────────────────────────────────────────
 
-export function CalendarClient({ profiles: _profiles, activeProfileId, month, days, symptomLogs, periodLogs, goal, last30 = [] }: Props) {
+export function CalendarClient({ profiles: _profiles, activeProfileId, month, days, windowDays, symptomLogs, periodLogs, goal, last30 = [] }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const { language } = useAppStore()
@@ -630,8 +633,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
   // client-side so no forward-looking data is ever derived or shown.
   const firstPredictedPeriod = !pregnancy ? days?.find((d) => d.predicted && d.period) : undefined
   const ovulationDay = !pregnancy ? days?.find((d) => d.ovulation) : undefined
-  const fertileStart = !pregnancy ? days?.find((d) => d.fertile && !d.ovulation) : undefined
-  const fertileEnd = !pregnancy ? [...(days ?? [])].reverse().find((d) => d.fertile) : undefined
+  const fertileWindow = !pregnancy ? selectFertileWindow(windowDays ?? days ?? [], format(new Date(), 'yyyy-MM-dd')) : null
 
   const DOW = [
     t('calendar.sun'), t('calendar.mon'), t('calendar.tue'), t('calendar.wed'),
@@ -815,7 +817,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
           </AnimatePresence>
 
           {/* Monthly Summary — hidden for pregnancy profiles */}
-          {!pregnancy && (firstPredictedPeriod || ovulationDay || fertileStart) && (
+          {!pregnancy && (firstPredictedPeriod || ovulationDay || fertileWindow) && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -848,16 +850,16 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                       </span>
                     </div>
                   )}
-                  {fertileStart && fertileEnd && (
+                  {fertileWindow && (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-fertile)' }} />
                         <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.fertileWindow')}</span>
                       </div>
                       <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(fertileStart.date))}
+                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(fertileWindow.start))}
                         {' – '}
-                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(fertileEnd.date))}
+                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(fertileWindow.end))}
                       </span>
                     </div>
                   )}
