@@ -22,7 +22,7 @@ import {
  * Rewrite the user in the document payload into an email trial user: with a phone (BDApps confirm dialog), or
  * without one (phone-entry dialog).
  */
-async function useFreeSubscriber(page: Page, noPhone: boolean) {
+async function asFreeSubscriber(page: Page, noPhone: boolean) {
   const key = (k: string) => new RegExp(`(\\\\?"${k}\\\\?":)(?:\\\\?"[^"\\\\]*\\\\?"|null)`, 'g')
   const future = new Date(Date.now() + 5 * 3_600_000).toISOString()
   // Only the client-side (RSC) navigation is rewritten: a rewritten document would mismatch its server-rendered DOM.
@@ -99,7 +99,7 @@ for (const vp of [{ label: 'desktop', size: undefined }, { label: '375x667', siz
     for (const c of CASES) {
       test.describe(c.name, () => {
         async function open(page: Page, baseURL?: string) {
-          if (c.fresh) await useFreeSubscriber(page, c.fresh === 'nophone')
+          if (c.fresh) await asFreeSubscriber(page, c.fresh === 'nophone')
           await mockApi(page, c.mocks)
           if (c.fresh) await gotoSubscriptionClientSide(page)
           else await gotoQuiet(page, c.route)
@@ -149,7 +149,7 @@ test.describe('edit profile at 375x667', () => {
 
 test.describe('BDApps dialog', () => {
   test('has an accessible name; live region covers only status text', async ({ page, baseURL }) => {
-    await useFreeSubscriber(page, false)
+    await asFreeSubscriber(page, false)
     await mockApi(page, ['free-user'])
     await gotoSubscriptionClientSide(page)
     const d = await openPopup(page, page.getByRole('button', { name: /upgrade to pro|প্রো/i }).first())
