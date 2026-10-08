@@ -61,33 +61,38 @@ echo "==> Applying Prisma migrations"
 "${COMPOSE[@]}" run --rm --entrypoint sh web -c \
   "cd packages/shared && pnpm exec prisma migrate deploy --schema ./prisma/schema.prisma"
 
-# Polls a URL from inside a container until it answers 2xx (up to ~2 minutes).
-wait_healthy() {
-  local service=$1 url=$2
+WEB_URL=https://cycle-circle.com/login
+ADMIN_URL=https://admin.cycle-circle.com/login
+
+# Waits until a public site loads over HTTPS (2xx after redirects), up to ~2 minutes.
+wait_live() {
+  local name=$1 url=$2 service=$3
   for _ in $(seq 1 24); do
-    if "${COMPOSE[@]}" exec -T "$service" node -e \
-      "fetch('$url').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" 2>/dev/null; then
-      echo "    $service healthy ($url)"
+    if curl -fsSL -o /dev/null -m 10 "$url"; then
+      echo "    $name is live ($url)"
       return 0
     fi
     sleep 5
   done
-  echo "$service did not become healthy at $url" >&2
-  "${COMPOSE[@]}" logs --tail=80 "$service" >&2 || true
+  echo "$name is not live at $url" >&2
+  "${COMPOSE[@]}" logs --tail=80 "$service" nginx >&2 || true
   return 1
 }
 
 # Web first, then admin, so a broken build never takes both down (03-deployment.md §5).
 echo "==> Restarting web"
 "${COMPOSE[@]}" up -d web
-wait_healthy web http://127.0.0.1:3000/api/health/db
+wait_live web "$WEB_URL" web
 
 echo "==> Restarting admin"
 "${COMPOSE[@]}" up -d admin
-wait_healthy admin http://127.0.0.1:3001/login
+wait_live admin "$ADMIN_URL" admin
 
 echo "==> Making sure the rest of the stack is up"
 "${COMPOSE[@]}" up -d
+# `up -d` can recreate nginx, so check both sites again.
+wait_live web "$WEB_URL" web
+wait_live admin "$ADMIN_URL" admin
 
 docker image prune -f >/dev/null || true
 
