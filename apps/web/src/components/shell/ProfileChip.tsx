@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { Users } from 'lucide-react';
-import type { ProfileCompletionStatus } from '@/components/ProfileCompletionTracker';
+import type { ProfileCompletionStatus } from '@/lib/profile-completion';
 
 const SIZE = 28;
 const STROKE = 3;
@@ -60,7 +60,7 @@ export function ProfileChip({
         </button>
       ) : (
         <span className="shrink-0 pl-2.5 text-[var(--color-text-secondary)]" aria-hidden="true">
-          <Users size={14} />
+          <Users aria-hidden="true" size={14} />
         </span>
       )}
       <Link

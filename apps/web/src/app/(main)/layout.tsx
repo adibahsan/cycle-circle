@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/lib/store';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import VestaLogo from '@/components/ui/VestaLogo';
-import type { ProfileCompletionStatus } from '@/components/ProfileCompletionTracker';
+import type { ProfileCompletionStatus } from '@/lib/profile-completion';
 import type { TourStep } from '@/components/onboarding/OnboardingTour';
 import { completeOnboardingTour } from '@/app/actions/user-actions';
 import {

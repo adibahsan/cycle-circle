@@ -56,7 +56,7 @@ function useCountUp(target: number, enabled: boolean): number {
   return value;
 }
 
-// ── ProgressRing (mirrors ProfileCompletionTracker local copy) ─────────────────
+// ── ProgressRing ─────────────────
 
 interface ProgressRingProps {
   percent: number;
