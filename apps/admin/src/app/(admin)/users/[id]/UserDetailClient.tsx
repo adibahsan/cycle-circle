@@ -891,7 +891,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors transition-shadow duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] ${
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] ${
               activeTab === tab.key
                 ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-soft'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'

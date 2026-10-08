@@ -86,6 +86,7 @@ export default function EmailLoginPage() {
         </Link>
       </motion.div>
 
+      <div className="rounded-3xl surface-wash border border-[var(--color-border)] shadow-soft p-6">
       <AnimatePresence mode="wait" initial={false}>
         {!sent ? (
           /* ── Send form ── */
@@ -158,7 +159,7 @@ export default function EmailLoginPage() {
                 size="lg"
                 onClick={handleSendMagicLink}
                 disabled={loading}
-                className="rounded-2xl text-base font-bold mb-4"
+                className="text-base font-bold mb-4"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
@@ -282,6 +283,7 @@ export default function EmailLoginPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
 
       {/* Footer link */}
       {!sent && (
