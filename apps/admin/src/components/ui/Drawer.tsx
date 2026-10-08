@@ -35,7 +35,7 @@ export function Drawer({ open, onClose, label, title, children }: DrawerProps) {
         aria-label={label}
         data-popup-panel=""
         tabIndex={-1}
-        className="absolute left-0 top-0 flex h-full w-72 flex-col border-r border-[var(--color-border)] bg-[var(--color-bg-card)] focus:outline-none"
+        className="absolute left-0 top-0 flex h-full w-72 flex-col border-r border-[var(--color-border)] bg-[var(--color-bg-card)] focus-visible:outline-none"
         style={{ overscrollBehavior: 'contain' }}
       >
         <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-4">

@@ -78,7 +78,7 @@ export function Modal({
         data-popup-panel=""
         tabIndex={-1}
         className={[
-          'relative flex w-full max-w-md flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-xl focus:outline-none',
+          'relative flex w-full max-w-md flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-xl focus-visible:outline-none',
           panelClassName,
         ]
           .filter(Boolean)
