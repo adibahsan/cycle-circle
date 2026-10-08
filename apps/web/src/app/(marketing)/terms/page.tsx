@@ -11,6 +11,7 @@ import {
   AlertCircle,
   RefreshCw,
   CheckCircle,
+  Mail,
 } from 'lucide-react';
 import { LegalPageShell } from '@/components/legal/LegalPageShell';
 import { ContactBlock } from '@/components/legal/ContactBlock';
