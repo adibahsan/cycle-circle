@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   Crown,
+  AlertCircle,
   Check,
   X,
   Zap,
@@ -17,7 +18,6 @@ import {
   Phone,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { SubscriptionStatus } from '@vesta/shared/types'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
@@ -80,7 +80,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
       >
         {/* Backdrop */}
         <motion.div
-          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          className="absolute inset-0 bg-[color-mix(in_srgb,var(--color-brand-navy)_50%,transparent)] backdrop-blur-sm"
           onClick={step === 'confirm' ? onCancel : undefined}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (step === 'confirm') onCancel(); } }}
           role="button"
@@ -106,7 +106,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
               <div className="space-y-5">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-                    <Zap size={16} className="text-white" />
+                    <Zap size={16} className="text-[var(--color-on-accent)]" />
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
@@ -155,7 +155,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                 >
-                  <Zap size={24} className="text-white" />
+                  <Zap size={24} className="text-[var(--color-on-accent)]" />
                 </motion.div>
                 <p className="text-sm font-medium text-[var(--color-text-secondary)]">
                   {t('subscription.processing')}
@@ -176,7 +176,7 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.1, type: 'spring', damping: 14 }}
                 >
-                  <Crown size={30} className="text-white" />
+                  <Crown size={30} className="text-[var(--color-on-accent)]" />
                 </motion.div>
                 <div className="text-center space-y-1">
                   <h3 className="text-xl font-bold text-[var(--color-text-primary)]">
@@ -199,8 +199,8 @@ function BDAppsModal({ phone, step, onConfirm, onCancel }: BDAppsModalProps) {
 
             {step === 'error' && (
               <div className="flex flex-col items-center gap-4 py-4 text-center">
-                <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                  <X size={28} className="text-red-500 dark:text-red-400" />
+                <div className="w-14 h-14 rounded-full bg-[color-mix(in_srgb,var(--color-error)_15%,var(--color-bg-card))] flex items-center justify-center">
+                  <X size={28} className="text-[var(--color-error)]" aria-hidden="true" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-[var(--color-text-primary)] mb-1">
@@ -327,14 +327,14 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
       </motion.div>
 
       {/* ── Current Plan + Upgrade Cards ── */}
-      <div className="md:grid md:grid-cols-2 md:gap-6 space-y-6 md:space-y-0">
+      <div className="flex flex-col gap-6 md:grid md:grid-cols-2">
         {/* ── Current Plan Card ── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.38, delay: 0.05 }}
         >
-          <Card padding="md">
+          <div className="surface-wash rounded-3xl border border-[var(--color-border)] shadow-soft p-6">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
                 <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
@@ -344,12 +344,13 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                   {tier === 'FREE' ? t('subscription.vestaFree') : t('subscription.vestaPro')}
                 </p>
                 {trial === 'active' && hoursLeft !== null && (
-                  <p className="text-xs text-[var(--color-accent)] font-medium">
+                  <p className="text-xs text-[var(--color-gold-ink)] font-medium">
                     {t('subscription.trialHoursLeft', { hours: hoursLeft })}
                   </p>
                 )}
                 {trial === 'expired' && (
-                  <p className="text-xs text-red-500 dark:text-red-400 font-semibold">
+                  <p className="flex items-center gap-1 text-xs text-[var(--color-error)] font-semibold">
+                    <AlertCircle size={12} aria-hidden="true" />
                     {t('subscription.trialExpiredNote')}
                   </p>
                 )}
@@ -361,8 +362,8 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               </div>
 
               {tier === 'PRO' ? (
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full gradient-primary text-white text-xs font-bold shadow-soft">
-                  <Crown size={12} /> PRO
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-bg-card))] text-[var(--color-text-primary)] text-xs font-bold">
+                  <Crown size={12} aria-hidden="true" /> PRO
                 </span>
               ) : tier === 'LAPSED' ? (
                 <span className="px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 text-xs font-semibold">
@@ -398,33 +399,32 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                 ))
               )}
             </div>
-          </Card>
+          </div>
         </motion.div>
 
         {/* ── Pro Plan Upgrade Card ── */}
         {!isProUser && (
           <motion.div
+            className="order-first md:order-none"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
           >
-            <div className="relative rounded-2xl overflow-hidden shadow-glow h-full">
-              <div className="absolute inset-0 gradient-primary opacity-90" />
-              <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
-              <div className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full bg-black/10 blur-2xl" />
-
+            <div className="relative rounded-3xl overflow-hidden shadow-soft h-full surface-wash border border-[color-mix(in_srgb,var(--color-accent)_45%,var(--color-border))]">
               <div className="relative p-6 space-y-5">
-                <div className="flex items-center gap-2">
-                  <Crown size={24} className="text-white" />
-                  <h2 className="text-xl font-bold text-white">Go Pro</h2>
+                <div className="flex items-center gap-2.5">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-bg-card))] text-[var(--color-text-primary)] text-xs font-bold">
+                    <Crown size={12} aria-hidden="true" /> PRO
+                  </span>
+                  <h2 className="text-xl font-bold text-[var(--color-text-primary)]">Go Pro</h2>
                 </div>
 
                 <div>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl font-extrabold text-white">৳5</span>
-                    <span className="text-white/70 text-sm">/day</span>
+                    <span className="text-3xl font-extrabold text-[var(--color-text-primary)]">৳5</span>
+                    <span className="text-[var(--color-text-secondary)] text-sm">/day</span>
                   </div>
-                  <p className="text-white/60 text-xs mt-0.5">
+                  <p className="text-[var(--color-text-muted)] text-xs mt-0.5">
                     Charged to your mobile balance via BDApps
                   </p>
                 </div>
@@ -433,10 +433,10 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                   {PRO_FEATURE_KEYS.map(({ icon: Icon, labelKey }) => (
                     <div
                       key={labelKey}
-                      className="flex items-center gap-2.5 text-white/90 text-sm"
+                      className="flex items-center gap-2.5 text-[var(--color-text-secondary)] text-sm"
                     >
-                      <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                        <Check size={12} className="text-white" />
+                      <div className="w-5 h-5 rounded-full bg-[var(--color-accent)]/25 flex items-center justify-center shrink-0">
+                        <Check size={12} className="text-[var(--color-gold-ink)]" aria-hidden="true" />
                       </div>
                       {t(labelKey)}
                     </div>
@@ -445,7 +445,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
 
                 <button
                   onClick={handleUpgradeClick}
-                  className={`w-full bg-white text-[var(--goal-accent)] font-bold rounded-xl text-base hover:bg-white/90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] ${
+                  className={`w-full bg-[var(--color-action)] text-[var(--color-on-action)] font-bold rounded-full text-base hover:opacity-90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-action)] ${
                     trial === 'expired' ? 'py-4 text-lg animate-pulse' : 'py-3.5'
                   }`}
                 >
@@ -467,8 +467,8 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
           {t('subscription.freeVsPro')}
         </h2>
 
-        <div className="rounded-2xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-card)]">
-          <div className="grid grid-cols-3 bg-[var(--color-bg-secondary)]">
+        <div className="rounded-3xl overflow-hidden bg-[var(--color-bg-card)] shadow-soft divide-y divide-[var(--color-border)]">
+          <div className="grid grid-cols-3 surface-peach">
             <div className="px-4 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide col-span-1">
               {t('subscription.featureHeader')}
             </div>
@@ -478,18 +478,16 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               </span>
             </div>
             <div className="px-2 py-3 text-center">
-              <span className="inline-flex items-center gap-1 text-xs font-bold text-white px-2.5 py-0.5 rounded-full gradient-primary">
-                <Crown size={10} /> Pro
+              <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-bg-card))] text-[var(--color-text-primary)]">
+                <Crown size={10} aria-hidden="true" /> Pro
               </span>
             </div>
           </div>
 
-          {COMPARISON_FEATURE_KEYS.map(({ key, labelKey, free, pro }, i) => (
+          {COMPARISON_FEATURE_KEYS.map(({ key, labelKey, free, pro }) => (
             <div
               key={key}
-              className={`grid grid-cols-3 border-t border-[var(--color-border)] ${
-                i % 2 === 0 ? '' : 'bg-[var(--color-bg-secondary)]/40'
-              }`}
+              className="grid grid-cols-3"
             >
               <div className="px-4 py-3 text-sm md:text-base text-[var(--color-text-secondary)] col-span-1">
                 {t(labelKey)}
@@ -503,7 +501,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               </div>
               <div className="px-2 py-3 flex justify-center items-center">
                 {pro ? (
-                  <Check size={16} className="text-[var(--goal-accent)]" aria-hidden="true" />
+                  <Check size={16} strokeWidth={2.5} className="text-[var(--color-primary)]" aria-hidden="true" />
                 ) : (
                   <X size={16} className="text-[var(--color-border)]" aria-hidden="true" />
                 )}
@@ -532,7 +530,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
           >
             {/* Backdrop */}
             <motion.div
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              className="absolute inset-0 bg-[color-mix(in_srgb,var(--color-brand-navy)_50%,transparent)] backdrop-blur-sm"
               onClick={handleClose}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClose() }}
               role="button"
@@ -556,7 +554,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               <div className="p-6 space-y-5">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-                    <Phone size={16} className="text-white" aria-hidden="true" />
+                    <Phone size={16} className="text-[var(--color-on-accent)]" aria-hidden="true" />
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
@@ -595,7 +593,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                     className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:ring-offset-1 disabled:opacity-50 transition-colors duration-200 font-mono"
                   />
                   {phoneError && (
-                    <p role="alert" aria-live="polite" className="text-xs text-red-500 dark:text-red-400 pt-0.5">
+                    <p role="alert" aria-live="polite" className="text-xs text-[var(--color-error)] pt-0.5">
                       {phoneError}
                     </p>
                   )}

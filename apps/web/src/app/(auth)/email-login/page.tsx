@@ -99,7 +99,7 @@ export default function EmailLoginPage() {
             {/* Header */}
             <motion.div custom={1} variants={FADE_UP} initial="hidden" animate="show" className="mb-7">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-soft bg-[var(--color-primary)]">
-                <Mail size={28} color="white" strokeWidth={1.8} aria-hidden="true" />
+                <Mail size={28} color="var(--color-on-accent)" strokeWidth={1.8} aria-hidden="true" />
               </div>
               <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-1">
                 Email Login
@@ -117,7 +117,7 @@ export default function EmailLoginPage() {
               animate="show"
               className="mb-5 px-4 py-3 rounded-2xl border flex items-start gap-3"
               style={{
-                background: 'linear-gradient(135deg, rgba(155,127,212,0.08) 0%, rgba(232,71,108,0.06) 100%)',
+                background: 'linear-gradient(135deg, color-mix(in srgb, var(--color-secondary) 8%, transparent) 0%, color-mix(in srgb, var(--color-primary) 6%, transparent) 100%)',
                 borderColor: 'var(--color-secondary)',
                 borderStyle: 'dashed',
               }}
@@ -195,7 +195,7 @@ export default function EmailLoginPage() {
               className="relative mb-6"
             >
               <div className="w-24 h-24 rounded-3xl flex items-center justify-center shadow-glow bg-[var(--color-primary)]">
-                <Mail size={44} color="white" strokeWidth={1.5} />
+                <Mail size={44} color="var(--color-on-accent)" strokeWidth={1.5} aria-hidden="true" />
               </div>
               {/* Sparkles orbiting */}
               {[0, 1, 2].map((i) => (
@@ -250,7 +250,7 @@ export default function EmailLoginPage() {
               transition={{ delay: 0.38, duration: 0.4 }}
               className="w-full rounded-2xl p-4 text-left mb-6 border"
               style={{
-                background: 'rgba(155,127,212,0.06)',
+                background: 'color-mix(in srgb, var(--color-secondary) 6%, transparent)',
                 borderColor: 'var(--color-border)',
               }}
             >
@@ -262,8 +262,8 @@ export default function EmailLoginPage() {
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-2.5 text-sm text-[var(--color-text-secondary)]">
                     <span
-                      className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold"
-                      style={{ background: 'var(--color-secondary)' }}
+                      className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[var(--color-text-primary)] text-xs font-bold"
+                      style={{ background: 'color-mix(in srgb, var(--color-secondary) 25%, var(--color-bg-card))' }}
                     >
                       {i + 1}
                     </span>
@@ -275,7 +275,7 @@ export default function EmailLoginPage() {
 
             <button
               onClick={() => { setSent(false); setEmail(''); }}
-              className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors w-full text-center focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+              className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors w-full text-center focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
             >
               Use a different email
             </button>

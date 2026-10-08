@@ -16,13 +16,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <LanguageToggle />
         <button
           onClick={toggleTheme}
-          className="p-2.5 rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft hover:border-[var(--color-primary)] transition-colors duration-200 active:scale-95"
+          className="p-2.5 rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft hover:border-[var(--color-primary)] transition-colors duration-200 active:scale-95 focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
           aria-label="Toggle theme"
         >
           {theme === 'dark' ? (
-            <Sun size={18} className="text-[var(--color-text-primary)]" />
+            <Sun size={18} className="text-[var(--color-text-primary)]" aria-hidden="true" />
           ) : (
-            <Moon size={18} className="text-[var(--color-text-primary)]" />
+            <Moon size={18} className="text-[var(--color-text-primary)]" aria-hidden="true" />
           )}
         </button>
       </div>
@@ -68,9 +68,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="relative z-10 px-12 lg:px-16 max-w-lg"
         >
-          <h1 className="text-5xl lg:text-6xl font-bold mb-4 text-[var(--color-primary)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/cycle-circle-logo.svg"
+            alt="Cycle Circle"
+            width={160}
+            height={160}
+            className="w-32 h-32 lg:w-40 lg:h-40 mb-4"
+          />
+          <p className="text-4xl lg:text-5xl font-extrabold mb-4 text-[var(--color-text-primary)]" aria-hidden="true">
             Cycle Circle
-          </h1>
+          </p>
           <p className="text-lg lg:text-xl text-[var(--color-text-secondary)] leading-relaxed mb-6">
             Smart cycle tracking with predictive insights. Understand your body, plan your life.
           </p>
