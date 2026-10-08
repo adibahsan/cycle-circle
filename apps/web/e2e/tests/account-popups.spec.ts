@@ -209,11 +209,17 @@ test.describe('trial lock', () => {
 
   test('toast layer is above the lock', async ({ page }) => {
     await gotoLocked(page)
-    const z = await page.evaluate(() => {
+    const layers = await page.evaluate(() => {
       const root = document.querySelector('[data-popup-layer="lock"]')!.parentElement!
-      return Number(getComputedStyle(root).zIndex)
+      const toast = document.querySelector<HTMLElement>('[data-toast-region]')!
+      return {
+        lock: Number(getComputedStyle(root).zIndex),
+        toast: Number(getComputedStyle(toast).zIndex),
+        // Above the lock but inert: never focusable, clicks pass through to the lock.
+        toastInert: toast.inert,
+      }
     })
-    expect(z).toBe(70)
+    expect(layers).toEqual({ lock: 70, toast: 80, toastInert: true })
   })
 })
 

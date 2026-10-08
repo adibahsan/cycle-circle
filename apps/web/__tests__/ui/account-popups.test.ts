@@ -60,7 +60,9 @@ describe('#40 account pop-ups are on the shell', () => {
     }
   })
 
-  it('the main layout toast sits on the toast layer', () => {
-    expect(read('app/(main)/layout.tsx')).toMatch(/Z_CLASS\.toast/)
+  it('the main layout mounts the one shared toast, on the toast layer', () => {
+    const layout = read('app/(main)/layout.tsx')
+    expect(layout.match(/<ToastProvider>/g)).toHaveLength(1)
+    expect(read('components/ui/Toast.tsx')).toMatch(/Z_CLASS\.toast/)
   })
 })
