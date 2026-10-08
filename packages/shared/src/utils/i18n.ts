@@ -11,7 +11,7 @@ const resources = {
         phoneLabel: 'Phone', phone: '+880 18102 04718',
         addressLabel: 'Address', address: 'AWR U Tower, Plot 35, Road 133, Gulshan 1, Dhaka 1212',
       },
-      nav: { dashboard: 'Dashboard', calendar: 'Calendar', insights: 'Insights', symptoms: 'Symptoms', content: 'Learn', settings: 'Settings', feedback: 'Feedback', profiles: 'Profiles', subscription: 'Subscription', menu: 'Menu', more: 'More', notLoggedToday: 'Nothing logged today' },
+      nav: { dashboard: 'Dashboard', calendar: 'Calendar', insights: 'Insights', symptoms: 'Symptoms', content: 'Learn', settings: 'Settings', feedback: 'Feedback', profiles: 'Profiles', subscription: 'Subscription', menu: 'Menu', more: 'More', notLoggedToday: 'Nothing logged today', theme: 'Theme', language: 'Language', switchToLight: 'Switch to light mode', switchToDark: 'Switch to dark mode', switchLanguage: 'Switch language', profileSwitcher: 'Profiles — {{name}}' },
       auth: {
         login: 'Log In', signup: 'Sign Up', phone: 'Phone Number', otp: 'Enter OTP',
         sendOtp: 'Send OTP', verifyOtp: 'Verify', resendIn: 'Resend in {{seconds}}s',
@@ -662,7 +662,7 @@ const resources = {
         phoneLabel: 'ফোন', phone: '+880 18102 04718',
         addressLabel: 'ঠিকানা', address: 'AWR U Tower, Plot 35, Road 133, Gulshan 1, Dhaka 1212',
       },
-      nav: { dashboard: 'ড্যাশবোর্ড', calendar: 'ক্যালেন্ডার', insights: 'ইনসাইটস', symptoms: 'লক্ষণ', content: 'শিখুন', settings: 'সেটিংস', feedback: 'মতামত', profiles: 'প্রোফাইল', subscription: 'সাবস্ক্রিপশন', menu: 'মেনু', more: 'আরও', notLoggedToday: 'আজ কিছু লগ করা হয়নি' },
+      nav: { dashboard: 'ড্যাশবোর্ড', calendar: 'ক্যালেন্ডার', insights: 'ইনসাইটস', symptoms: 'লক্ষণ', content: 'শিখুন', settings: 'সেটিংস', feedback: 'মতামত', profiles: 'প্রোফাইল', subscription: 'সাবস্ক্রিপশন', menu: 'মেনু', more: 'আরও', notLoggedToday: 'আজ কিছু লগ করা হয়নি', theme: 'থিম', language: 'ভাষা', switchToLight: 'লাইট মোডে যান', switchToDark: 'ডার্ক মোডে যান', switchLanguage: 'ভাষা পরিবর্তন করুন', profileSwitcher: 'প্রোফাইল — {{name}}' },
       auth: {
         login: 'লগ ইন', signup: 'সাইন আপ', phone: 'ফোন নম্বর', otp: 'ওটিপি দিন',
         sendOtp: 'ওটিপি পাঠান', verifyOtp: 'যাচাই করুন', resendIn: '{{seconds}} সেকেন্ডে পুনরায় পাঠান',
