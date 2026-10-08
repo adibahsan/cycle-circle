@@ -34,6 +34,13 @@ describe('loggingNudgeVariant', () => {
     expect(loggingNudgeVariant({ hasAnyLogs: true, daysSinceLastLog: 3 })).toBe('stale')
     expect(loggingNudgeVariant({ hasAnyLogs: true, daysSinceLastLog: 9 })).toBe('stale')
   })
+  it('treats never-logged as more than 3 days without a log (nudge, never silence)', () => {
+    const neverLogged = loggingNudgeVariant({ hasAnyLogs: false, daysSinceLastLog: null })
+    expect(neverLogged).not.toBeNull()
+    expect(neverLogged).toBe('empty')
+    // even a bogus recent value cannot suppress it
+    expect(loggingNudgeVariant({ hasAnyLogs: false, daysSinceLastLog: 0 })).toBe('empty')
+  })
   it('shows the empty variant when nothing was ever logged', () => {
     expect(loggingNudgeVariant({ hasAnyLogs: false, daysSinceLastLog: null })).toBe('empty')
   })
@@ -46,8 +53,8 @@ describe('one home per prompt (source scan)', () => {
     expect(layout).not.toMatch(/variant="pill"/)
     expect(layout).toContain('<ProfileChip')
   })
-  it('the tracker has no pill variant left', () => {
-    expect(src('components/ProfileCompletionTracker.tsx')).not.toMatch(/'pill'/)
+  it('the unused ProfileCompletionTracker component is gone', () => {
+    expect(existsSync(resolve(__dirname, '../../src/components/ProfileCompletionTracker.tsx'))).toBe(false)
   })
   it('the dashboard renders the compact completion row', () => {
     expect(existsSync(resolve(__dirname, '../../src/components/prompts/CompletionRow.tsx'))).toBe(true)

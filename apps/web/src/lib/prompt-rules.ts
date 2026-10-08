@@ -22,6 +22,11 @@ export function daysSinceLastLog(dates: Date[], today: Date = new Date()): numbe
   return Math.round((a.getTime() - b.getTime()) / 86_400_000)
 }
 
+/**
+ * A user who never logged anything is, by definition, more than NUDGE_STALE_DAYS days
+ * without a log, so they get the nudge (the 'empty' wording) rather than silence. This is
+ * intentional: do not gate 'empty' on daysSinceLastLog, which is null for them.
+ */
 export function loggingNudgeVariant(input: {
   hasAnyLogs: boolean
   daysSinceLastLog: number | null
