@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { LANDING_CONTAINER, LANDING_FOOTER } from './layout';
+import { LANDING_CONTAINER, LANDING_FOOTER } from './landing-layout';
 import { VestaLogoSVG } from '@/components/ui/VestaLogo';
 import { ContactBlock } from '@/components/legal/ContactBlock';
 

@@ -2,7 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { Languages, Lock, MapPin } from 'lucide-react';
-import { LANDING_CONTAINER, LANDING_SECTION } from './layout';
+import { LANDING_CONTAINER, LANDING_SECTION } from './landing-layout';
 import { RevealOnScroll } from '@/components/motion/RevealOnScroll';
 
 const PROOF_ITEMS = [

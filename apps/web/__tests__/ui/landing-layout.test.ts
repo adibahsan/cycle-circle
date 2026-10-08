@@ -25,7 +25,7 @@ describe('landing content is visible by default', () => {
 })
 
 describe('landing sections share one container and spacing', () => {
-  const layout = read(sectionsDir + 'layout.ts')
+  const layout = read(sectionsDir + 'landing-layout.ts')
 
   it.each(SECTIONS)('%s uses the shared constants', (name) => {
     const file = read(sectionsDir + name + '.tsx')

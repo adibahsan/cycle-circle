@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { LANDING_CONTAINER, LANDING_SECTION } from './layout';
+import { LANDING_CONTAINER, LANDING_SECTION } from './landing-layout';
 import { RevealOnScroll } from '@/components/motion/RevealOnScroll';
 import { Button } from '@/components/ui/Button';
 
