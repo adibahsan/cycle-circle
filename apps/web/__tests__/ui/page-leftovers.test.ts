@@ -35,6 +35,8 @@ describe('primary surfaces have no 10px text', () => {
     'app/(main)/symptoms/SymptomsClient.tsx',
     'components/engagement/ConsistencyGrid.tsx',
     'components/engagement/TodayCheckInModal.tsx',
+    'app/(main)/dashboard/DashboardClient.tsx',
+    'components/engagement/StreakBadge.tsx',
   ]
   for (const f of FILES)
     it(`${f} has no text-[10px]`, () => {
