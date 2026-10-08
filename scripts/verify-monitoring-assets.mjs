@@ -32,7 +32,6 @@ const REQUIRED_MONITORING_PATHS = [
   'ops/monitoring/stub/.env.web.production',
   'ops/monitoring/stub/.env.admin.production',
   'ops/monitoring/stub/.env.postgres.production',
-  'ops/deploy/nginx/cycle-circle.selfsigned.conf',
 ];
 
 /** Scrape jobs required in v1 (spec: host, containers, nginx, postgres, redis). */

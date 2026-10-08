@@ -61,7 +61,7 @@ review/screenshots/
 # Local DB backups / dumps (contain real data — never commit)
 ops/backups/
 
-# TLS private keys and certificates (VPS: /opt/vesta/ssl; never commit PEM material)
+# TLS private keys and certificates (never commit PEM material)
 ops/deploy/ssl/*.pem
 ops/deploy/ssl/**/*.pem
 **/privkey.pem

@@ -1,6 +1,6 @@
 # Archived public certificate chains
 
-` *-fullchain.pem` files are **public** PEM chains (no private keys). They document which LE cert was live when archived; nginx on the VPS always uses the certbot volume or `/opt/vesta/ssl`, not this copy.
+` *-fullchain.pem` files are **public** PEM chains (no private keys). They document which LE cert was live when archived; nginx on the VPS always uses the certbot volume, not this copy.
 
 Refresh after re-issuance:
 

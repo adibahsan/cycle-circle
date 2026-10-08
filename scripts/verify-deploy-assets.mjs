@@ -26,7 +26,6 @@ const REQUIRED_DEPLOY_PATHS = [
   'ops/deploy/nginx/cycle-circle.bootstrap.conf',
   'ops/deploy/scripts/backup-db.sh',
   'ops/deploy/scripts/apply-letsencrypt-nginx.sh',
-  'ops/deploy/scripts/sync-letsencrypt-to-ssl.sh',
   'ops/deploy/scripts/dump-le-metadata.sh',
   'ops/deploy/scripts/install-vesta-crontab.sh',
   'ops/deploy/ssl/README.md',
@@ -66,41 +65,6 @@ function pathsFromCompose(composeText) {
   return [...found];
 }
 
-/**
- * Every FQDN in server_name of the self-signed nginx conf must be a DNS: SAN in generate-selfsigned-cert.sh.
- * @param {string} nginxText
- * @param {string} certScriptText
- * @returns {string[]} hostnames missing from the SAN
- */
-export function missingSelfSignedSans(nginxText, certScriptText) {
-  const stripComments = (t) => t.replace(/#.*$/gm, '');
-  const hosts = new Set();
-  const re = /\bserver_name\s+([^;]+);/g;
-  let m;
-  const nginx = stripComments(nginxText);
-  while ((m = re.exec(nginx)) !== null) {
-    for (const h of m[1].trim().split(/\s+/)) {
-      if (h.startsWith('~') || h.startsWith('$') || h === '_' || h === 'localhost') continue;
-      if (h.includes('.')) hosts.add(h);
-    }
-  }
-  const sanLine =
-    stripComments(certScriptText).match(/-addext\s+"subjectAltName=([^"]+)"/)?.[1] ?? '';
-  const sans = sanLine
-    .split(',')
-    .map((e) => e.trim())
-    .filter((e) => e.startsWith('DNS:'))
-    .map((e) => e.slice(4));
-  const covered = (h) =>
-    sans.some((s) => {
-      if (s === h) return true;
-      if (!s.startsWith('*.')) return false;
-      const rest = h.slice(h.indexOf('.') + 1);
-      return h.indexOf('.') > 0 && rest === s.slice(2);
-    });
-  return [...hosts].filter((h) => !covered(h)).sort();
-}
-
 async function main() {
   const missing = [];
   for (const rel of REQUIRED_DEPLOY_PATHS) {
@@ -132,20 +96,6 @@ async function main() {
     console.error('Deploy asset verification failed. Missing paths:');
     for (const p of [...new Set(missing)].sort()) {
       console.error(`  - ${p}`);
-    }
-    process.exit(1);
-  }
-
-  const sanMissing = missingSelfSignedSans(
-    await readFile(path.join(deployDir, 'nginx/cycle-circle.selfsigned.conf'), 'utf8'),
-    await readFile(path.join(deployDir, 'scripts/generate-selfsigned-cert.sh'), 'utf8'),
-  );
-  if (sanMissing.length > 0) {
-    console.error(
-      'Self-signed cert SAN mismatch: generate-selfsigned-cert.sh subjectAltName is missing hosts served by cycle-circle.selfsigned.conf:',
-    );
-    for (const h of sanMissing) {
-      console.error(`  - ${h}`);
     }
     process.exit(1);
   }

@@ -11,8 +11,7 @@
   "notAfter": "2026-12-27T17:33:15+00:00",
   "keyType": "ECDSA",
   "vpsStorage": {
-    "certbotVolume": "vesta_certbot_conf (Compose) → /etc/letsencrypt/live/cycle-circle.com/",
-    "optionalMirror": "/opt/vesta/ssl/fullchain.pem and privkey.pem"
+    "certbotVolume": "vesta_certbot_conf (Compose) → /etc/letsencrypt/live/cycle-circle.com/"
   },
   "nginxProductionConfig": "ops/deploy/nginx/cycle-circle.conf",
   "pendingIdentifiers": ["monitoring.cycle-circle.com"]

@@ -1,6 +1,6 @@
 # Production deploy artifacts — verification checklist
 
-Use this before merging deploy work to `main` and before the first VPS `docker compose build`. Automated check: `pnpm deploy:verify` from repo root. It also fails if any `server_name` host in `nginx/cycle-circle.selfsigned.conf` is missing from the `subjectAltName` in `scripts/generate-selfsigned-cert.sh`.
+Use this before merging deploy work to `main` and before the first VPS `docker compose build`. Automated check: `pnpm deploy:verify` from repo root.
 
 **Last verified (agent, ticket 01):** on branch lineage containing commit `397031a` (`first-testing/bug-fixing` / `feat/vps-prod-rollout`). **`main` does not yet contain `ops/deploy/`** until the merge PR lands — re-run after merge on `main`.
 
@@ -20,7 +20,6 @@ Use this before merging deploy work to `main` and before the first VPS `docker c
 | `ops/deploy/nginx/cycle-circle.bootstrap.conf` | Pre-cert bootstrap vhost |
 | `ops/deploy/scripts/backup-db.sh` | DB backup helper |
 | `ops/deploy/scripts/apply-letsencrypt-nginx.sh` | Switch nginx to LE (`cycle-circle.conf`) |
-| `ops/deploy/scripts/sync-letsencrypt-to-ssl.sh` | Mirror LE PEMs to `/opt/vesta/ssl` (interim config only) |
 | `ops/deploy/scripts/dump-le-metadata.sh` | Export cert metadata JSON (no private key) |
 | `ops/deploy/tls/production-inventory.json` | Committed LE inventory (metadata only) |
 | `ops/deploy/vesta-crontab` | Host cron template |
