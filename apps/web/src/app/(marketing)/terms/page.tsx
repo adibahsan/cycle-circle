@@ -11,8 +11,10 @@ import {
   AlertCircle,
   RefreshCw,
   CheckCircle,
+  Mail,
 } from 'lucide-react';
 import { LegalPageShell } from '@/components/legal/LegalPageShell';
+import { ContactBlock } from '@/components/legal/ContactBlock';
 import { LegalSection } from '@/components/legal/LegalSection';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -142,6 +144,13 @@ export default function TermsPage() {
       <LegalSection key="changes" icon={RefreshCw} title={t('terms.sections.changes.title')}>
         <p>{t('terms.sections.changes.body1')}</p>
         <p>{t('terms.sections.changes.body2')}</p>
+      </LegalSection>
+
+      {/* 8. Contact */}
+      <LegalSection key="contact" icon={Mail} title={t('contactInfo.heading')}>
+        <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-4 py-3">
+          <ContactBlock />
+        </div>
       </LegalSection>
     </LegalPageShell>
   );

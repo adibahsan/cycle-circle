@@ -5,7 +5,6 @@ import { motion, useReducedMotion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { SplitWords } from '@/components/motion/SplitWords';
 import { useHasMounted } from '@/components/motion/useHasMounted';
-import { VestaLogoAnimated } from '@/components/ui/VestaLogo';
 import { Button } from '@/components/ui/Button';
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -36,24 +35,21 @@ export function HeroSection() {
       />
 
       <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center gap-6">
-        {/* Animated logo */}
+        {/* Full circular logo */}
         <motion.div
           initial={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.8 }}
           animate={prefersReducedMotion ? undefined : { opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, ease: EASE }}
         >
-          <VestaLogoAnimated size={64} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/cycle-circle-logo.svg"
+            alt="Cycle Circle"
+            width={160}
+            height={160}
+            className="h-32 w-32 sm:h-40 sm:w-40"
+          />
         </motion.div>
-
-        {/* App name wordmark */}
-        <motion.p
-          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 12 }}
-          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1, ease: EASE }}
-          className="text-fluid-md font-bold tracking-widest uppercase text-[var(--color-primary)] letter-spacing-widest"
-        >
-          {t('app.name')}
-        </motion.p>
 
         {/* Hero headline — split-word staggered animation */}
         {/* Solid high-contrast headline. Note: a gradient bg-clip-text fill cannot be
@@ -86,13 +82,13 @@ export function HeroSection() {
           className="flex flex-col sm:flex-row items-center gap-3 mt-2"
         >
           <Link href="/get-started">
-            <Button variant="primary" size="lg" className="rounded-2xl font-bold min-w-[160px]">
+            <Button variant="primary" size="lg" className="font-bold min-w-[160px]">
               {t('landing.ctaPrimary')}
             </Button>
           </Link>
           <Link
             href="/login"
-            className="inline-flex items-center justify-center px-7 py-3.5 text-lg font-semibold rounded-2xl text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 min-w-[160px]"
+            className="inline-flex items-center justify-center px-7 py-3.5 text-lg font-semibold rounded-full text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] min-w-[160px]"
           >
             {t('landing.ctaSecondary')}
           </Link>
@@ -112,7 +108,7 @@ export function HeroSection() {
           transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
           className="w-5 h-8 rounded-full border-2 border-[var(--color-border)] flex items-start justify-center pt-1.5"
         >
-          <div className="w-1 h-2 rounded-full bg-[var(--color-primary)] opacity-70" />
+          <div className="w-1 h-2 rounded-full bg-[var(--goal-accent)] opacity-70" />
         </motion.div>
       </motion.div>
     </section>
