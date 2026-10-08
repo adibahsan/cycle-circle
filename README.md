@@ -1,6 +1,8 @@
-# Vesta
+# Cycle Circle
 
-Vesta is a bilingual reproductive health and cycle intelligence platform for Bangladesh. The project is structured as a pnpm monorepo with a customer-facing app, an admin panel, and a shared code package.
+Cycle Circle (code name Vesta) is a bilingual reproductive health and cycle intelligence platform for Bangladesh. The project is structured as a pnpm monorepo with a customer-facing app, an admin panel, and a shared code package.
+
+The product was renamed from Vesta to Cycle Circle in v2.0.0. The rename is user-facing only: package scope, env vars, cookies, storage keys, file names and infra names stay `vesta` on purpose. See [ADR 0001](docs/adr/0001-cycle-circle-rename-is-user-facing-only.md) before "fixing" any remaining `vesta` identifier.
 
 The full v1 requirements are documented in [docs/vesta/source/SRS.md](docs/vesta/source/SRS.md). Implementation progress is tracked in [DEV_SRS.md](DEV_SRS.md).
 
