@@ -88,7 +88,7 @@ function SidebarContent({
           className="hidden md:flex p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
           aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          {sidebarCollapsed ? <PanelLeftOpen aria-hidden="true" size={16} /> : <PanelLeftClose aria-hidden="true" size={16} />}
         </button>
       </div>
 
@@ -142,7 +142,7 @@ function SidebarContent({
             sidebarCollapsed ? 'w-10 h-10 justify-center px-0' : 'w-full'
           }`}
         >
-          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          {theme === 'dark' ? <Sun aria-hidden="true" size={15} /> : <Moon aria-hidden="true" size={15} />}
           {!sidebarCollapsed && (
             <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
           )}
@@ -156,7 +156,7 @@ function SidebarContent({
             sidebarCollapsed ? 'w-10 h-10 justify-center px-0' : 'w-full'
           }`}
         >
-          <LogOut size={15} />
+          <LogOut aria-hidden="true" size={15} />
           {!sidebarCollapsed && <span>Sign out</span>}
         </button>
       </div>
@@ -241,14 +241,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             onClick={toggleTheme}
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
           >
-            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            {theme === 'dark' ? <Sun aria-hidden="true" size={15} /> : <Moon aria-hidden="true" size={15} />}
             <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
           </button>
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/8 transition-colors w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
           >
-            <LogOut size={15} />
+            <LogOut aria-hidden="true" size={15} />
             <span>Sign out</span>
           </button>
         </div>
@@ -264,7 +264,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               className="p-2 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
               aria-label="Open menu"
             >
-              <Menu size={18} />
+              <Menu aria-hidden="true" size={18} />
             </button>
             <div className="flex items-center gap-2">
               <VestaLogo size={22} animate={false} />
@@ -278,7 +278,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="p-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-primary)] hover:border-[var(--color-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            {theme === 'dark' ? <Sun aria-hidden="true" size={16} /> : <Moon aria-hidden="true" size={16} />}
           </button>
         </header>
 

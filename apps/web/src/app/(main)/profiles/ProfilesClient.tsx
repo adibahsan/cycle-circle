@@ -93,7 +93,7 @@ function Stepper({ label, value, min, max, onChange, unit }: StepperProps) {
           }}
           aria-label={t('profiles.decreaseField', { label })}
         >
-          <Minus size={13} className="text-[var(--color-text-primary)]" />
+          <Minus aria-hidden="true" size={13} className="text-[var(--color-text-primary)]" />
         </button>
         <div className="min-w-[52px] text-center">
           <span className="text-base font-bold text-[var(--color-text-primary)]">{value}</span>
@@ -109,7 +109,7 @@ function Stepper({ label, value, min, max, onChange, unit }: StepperProps) {
           }}
           aria-label={t('profiles.increaseField', { label })}
         >
-          <Plus size={13} className="text-[var(--color-text-primary)]" />
+          <Plus aria-hidden="true" size={13} className="text-[var(--color-text-primary)]" />
         </button>
       </div>
     </div>
@@ -348,7 +348,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
             className="w-8 h-8 rounded-xl flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
           >
-            <UserPlus size={15} color="var(--color-on-accent)" />
+            <UserPlus aria-hidden="true" size={15} color="var(--color-on-accent)" />
           </div>
           <h3 className="font-bold text-[var(--color-text-primary)] text-base">
             {t('profiles.add')}
@@ -360,7 +360,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
           style={{ background: 'var(--color-bg-secondary)' }}
           aria-label={t('common.cancel')}
         >
-          <X size={14} className="text-[var(--color-text-muted)]" />
+          <X aria-hidden="true" size={14} className="text-[var(--color-text-muted)]" />
         </button>
       </div>
 
@@ -1060,7 +1060,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                           background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
                         }}
                       >
-                        <Plus size={18} color="var(--color-on-accent)" strokeWidth={2.5} />
+                        <Plus aria-hidden="true" size={18} color="var(--color-on-accent)" strokeWidth={2.5} />
                       </div>
                       <div className="text-left">
                         <p
@@ -1116,7 +1116,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                 background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
               }}
             >
-              <Check size={14} color="var(--color-on-accent)" />
+              <Check aria-hidden="true" size={14} color="var(--color-on-accent)" />
               <span className="text-[var(--color-on-accent)] text-sm font-semibold">
                 {t('profiles.switchedTo', { name: profiles.find((p) => p.id === justSwitched)?.name })}
               </span>

@@ -338,7 +338,7 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
             loading={exporting}
             disabled={exporting}
           >
-            <Download size={15} />
+            <Download aria-hidden="true" size={15} />
             {exporting ? 'Exporting…' : 'Export CSV'}
           </Button>
         }

@@ -620,7 +620,7 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
             size="sm"
             onClick={() => setCreateOpen(true)}
           >
-            <Plus size={15} />
+            <Plus aria-hidden="true" size={15} />
             New Broadcast
           </Button>
         }

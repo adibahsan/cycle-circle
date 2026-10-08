@@ -240,7 +240,7 @@ function AccountRow({
           {badge}
         </span>
       )}
-      <ChevronRight
+      <ChevronRight aria-hidden="true"
         size={15}
         className="text-[var(--color-border)] group-hover:text-[var(--color-text-muted)] transition-colors"
       />
@@ -832,7 +832,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                     onClick={() => setShowLogoutConfirm(true)}
                     className="border-[var(--color-error)] text-[var(--color-error)] hover:bg-[var(--color-error)] hover:text-[var(--color-on-action)] hover:border-[var(--color-error)]"
                   >
-                    <LogOut size={15} className="mr-2" />
+                    <LogOut aria-hidden="true" size={15} className="mr-2" />
                     {t('settings.logout')}
                   </Button>
                 </div>
@@ -854,7 +854,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                 </div>
 
                 <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-3 py-2.5 flex items-start gap-2">
-                  <Lock size={14} className="text-[var(--color-secondary)] mt-0.5 shrink-0" />
+                  <Lock aria-hidden="true" size={14} className="text-[var(--color-secondary)] mt-0.5 shrink-0" />
                   <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
                     {t('settings.encryptionNote')}
                   </p>

@@ -113,7 +113,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
             aria-label={t('feedback.starCount', { count: star })}
             className="p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
           >
-            <Star
+            <Star aria-hidden="true"
               size={28}
               className="transition-colors duration-150"
               fill={filled ? 'var(--goal-accent)' : 'transparent'}
