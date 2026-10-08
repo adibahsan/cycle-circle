@@ -138,7 +138,20 @@ Stop: `pnpm docker:monitoring:down`. Verify config in CI/review: `pnpm monitorin
 | `just typecheck-all` | Type-check entire monorepo |
 | `just logs bdapps-simulator` | Follow simulator logs |
 
-Run `just health` after the web app is running to probe API health routes.
+Run `just health` after the web app is running
+
+### Browser e2e and screenshots (local only, orchestrator-run)
+
+Playwright lives in `apps/web/e2e/`. These commands need Postgres (port 5431) and `DEV_MODE=true` in `apps/web/.env.local`. They start their own `next dev` on a free port, so they do not collide with port 3000. They are **not run in CI and not by ticket implementers**: run one at a time, from one machine.
+
+| Command | What |
+|---------|------|
+| `pnpm --filter @vesta/web e2e` | Smoke + guard specs in `e2e/tests/`. Logs in once via `/api/auth/dev-login` (no OTP, so no rate limit) and reuses the saved session. First time: `pnpm --filter @vesta/web exec playwright install chromium` |
+| `pnpm --filter @vesta/web e2e:shots --route /dashboard [--popup period-log] [--mock trial-expired]` | Light/dark x desktop 1366x900 / 375x667 / 390x844 PNGs in `review/screenshots/e2e/<label>/` (gitignored). Flags and the named pop-up and mock registries are documented in `e2e/screenshots/shoot.ts`. |
+
+Guards for new UI go in `e2e/tests/*.spec.ts` using the helpers in `e2e/guards/helpers.ts`.
+
+ to probe API health routes.
 
 ---
 
