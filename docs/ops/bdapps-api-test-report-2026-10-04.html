@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BDApps API Test Report: CycleCircle (4 Oct 2026)</title>
+<style>
+  :root {
+    --ink: #1c1b22;
+    --muted: #615e6e;
+    --line: #e6e3ec;
+    --bg: #faf9fc;
+    --card: #ffffff;
+    --ok: #157f4f;
+    --ok-bg: #e6f6ee;
+    --warn: #9a5b00;
+    --warn-bg: #fdf3e2;
+    --bad: #b42335;
+    --bad-bg: #fdebee;
+    --accent: #c2417a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  main { max-width: 880px; margin: 0 auto; padding: 48px 24px 64px; }
+  header { border-bottom: 3px solid var(--accent); padding-bottom: 20px; margin-bottom: 28px; }
+  .eyebrow { color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 6px; }
+  h1 { font-size: 28px; line-height: 1.25; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0; }
+  h2 { font-size: 19px; margin: 36px 0 12px; }
+  p { margin: 0 0 12px; }
+  code { font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #f1eff5; padding: 1px 6px; border-radius: 4px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; }
+  .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px 24px; }
+  .meta dt { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  .meta dd { margin: 2px 0 0; font-weight: 500; }
+  .verdict { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { border-radius: 12px; padding: 16px 18px; border: 1px solid var(--line); background: var(--card); }
+  .stat b { display: block; font-size: 28px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .stat span { color: var(--muted); font-size: 13px; }
+  .stat.ok b { color: var(--ok); }
+  .stat.warn b { color: var(--warn); }
+  .stat.bad b { color: var(--bad); }
+  ol.blockers { margin: 0; padding-left: 20px; }
+  ol.blockers li { margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #f5f3f8; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  tr:last-child td { border-bottom: 0; }
+  td.num { font-variant-numeric: tabular-nums; color: var(--muted); width: 36px; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
+  .pill.ok { color: var(--ok); background: var(--ok-bg); }
+  .pill.warn { color: var(--warn); background: var(--warn-bg); }
+  .pill.bad { color: var(--bad); background: var(--bad-bg); }
+  .flow { display: grid; gap: 14px; }
+  .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .node { border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 7px 12px; font-size: 14px; }
+  .node.root { border-color: var(--bad); background: var(--bad-bg); color: var(--bad); font-weight: 600; }
+  .arrow { color: var(--muted); }
+  .note { color: var(--muted); font-size: 14px; margin-top: 12px; }
+  ul.criteria { margin: 0; padding-left: 20px; }
+  ul.criteria li { margin-bottom: 6px; }
+  footer { margin-top: 40px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 16px; }
+  @media print {
+    body { background: #fff; }
+    main { padding: 0; }
+    .card, table, .stat { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">CycleCircle x BDApps</p>
+    <h1>BDApps API Integration Test Report</h1>
+    <p class="sub">Re-test on 4 October 2026. Results are unchanged from the 2 October test.</p>
+  </header>
+
+  <section class="card">
+    <dl class="meta">
+      <div><dt>Test date</dt><dd>4 Oct 2026, 04:18 (UTC+6)</dd></div>
+      <div><dt>Application ID</dt><dd><code>APP_140389</code></dd></div>
+      <div><dt>API base URL</dt><dd><code>https://developer.bdapps.com</code></dd></div>
+      <div><dt>Calling server</dt><dd><code>62.171.155.231</code> (production)</dd></div>
+      <div><dt>Test number</dt><dd><code>tel:8801805718862</code> (Robi)</dd></div>
+      <div><dt>Scope</dt><dd>Non-charging endpoints only. No direct debit attempted.</dd></div>
+    </dl>
+  </section>
+
+  <h2>Summary</h2>
+  <div class="verdict">
+    <div class="stat ok"><b>1</b><span>endpoint working</span></div>
+    <div class="stat warn"><b>4</b><span>reachable, waiting on subscription</span></div>
+    <div class="stat bad"><b>3</b><span>blocked or not available</span></div>
+  </div>
+  <p>Our credentials work and our production server IP is accepted. Two settings on the BDApps side are still blocking every user flow:</p>
+  <ol class="blockers">
+    <li><strong>Subscription via HTTP is disabled</strong> for <code>APP_140389</code> (error <code>E1324</code>). Users can't subscribe through OTP, so there are no subscribers. Because of that, SMS, USSD and status checks all fail with <code>E1951</code>.</li>
+    <li><strong>CaaS endpoints return HTTP 404</strong> for our application, so we can't check balance or charge for the Pro plan.</li>
+  </ol>
+
+  <h2>Results</h2>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Endpoint</th><th>Response</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="num">1</td><td><code>/subscription/query-base</code></td><td><code>S1000</code> Success, base size 0</td><td><span class="pill ok">Working</span></td></tr>
+      <tr><td class="num">2</td><td><code>/subscription/otp/request</code></td><td><code>E1324</code> Subscription via HTTP is not allowed</td><td><span class="pill bad">Blocked</span></td></tr>
+      <tr><td class="num">3</td><td><code>/subscription/otp/verify</code></td><td><code>E1854</code> Could not find OTP</td><td><span class="pill warn">Waiting on #2</span></td></tr>
+      <tr><td class="num">4</td><td><code>/subscription/getStatus</code></td><td><code>E1951</code> User Already UnRegistered</td><td><span class="pill warn">Waiting on #2</span></td></tr>
+      <tr><td class="num">5</td><td><code>/sms/send</code></td><td><code>E1951</code> User Already UnRegistered</td><td><span class="pill warn">Waiting on #2</span></td></tr>
+      <tr><td class="num">6</td><td><code>/ussd/send</code></td><td><code>E1951</code> User Already UnRegistered</td><td><span class="pill warn">Waiting on #2</span></td></tr>
+      <tr><td class="num">7</td><td><code>/caas/get/balance</code></td><td>HTTP 404 Not Found</td><td><span class="pill bad">Not available</span></td></tr>
+      <tr><td class="num">8</td><td><code>/caas/balance/query</code></td><td>HTTP 404 Not Found</td><td><span class="pill bad">Not available</span></td></tr>
+    </tbody>
+  </table>
+  <p class="note">Control check: the same call from a non-whitelisted IP returned <code>E1303</code> (IP not in the allowed-host list). The whitelist is active and our server is on it.</p>
+
+  <h2>What's blocked</h2>
+  <div class="card flow">
+    <div class="chain">
+      <span class="node root">Subscription via HTTP disabled</span><span class="arrow" aria-hidden="true">&rarr;</span>
+      <span class="node">OTP request / verify</span><span class="arrow" aria-hidden="true">&rarr;</span>
+      <span class="node">Subscriber registered</span><span class="arrow" aria-hidden="true">&rarr;</span>
+      <span class="node">SMS alerts, USSD, status check</span>
+    </div>
+    <div class="chain">
+      <span class="node root">CaaS not enabled (404)</span><span class="arrow" aria-hidden="true">&rarr;</span>
+      <span class="node">Balance check</span><span class="arrow" aria-hidden="true">&rarr;</span>
+      <span class="node">Pro plan charging</span>
+    </div>
+  </div>
+
+  <h2>What we need from BDApps</h2>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Request</th><th>Unblocks</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="num">1</td><td>Enable <strong>Subscription via HTTP (OTP subscription)</strong> for <code>APP_140389</code>.</td><td>User sign-up, SMS, USSD, status check</td></tr>
+      <tr><td class="num">2</td><td>Enable <strong>CaaS</strong> for <code>APP_140389</code> and confirm the correct endpoint paths for balance query and direct debit.</td><td>Pro plan billing</td></tr>
+      <tr><td class="num">3</td><td>Confirm the charging setup for the app (amount and frequency).</td><td>Correct billing</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Once 1 and 2 are done, let us know and we'll re-run the full flow the same day.</p>
+
+  <h2>Pass criteria for the next test</h2>
+  <div class="card">
+    <ul class="criteria">
+      <li>OTP request returns <code>S1000</code> with a reference number, and the OTP SMS arrives on the test phone.</li>
+      <li>OTP verify returns <code>S1000</code> with status <code>REGISTERED</code>.</li>
+      <li>Status check returns <code>REGISTERED</code> for the test number.</li>
+      <li>SMS send returns <code>S1000</code> and the message is delivered.</li>
+      <li>CaaS balance returns <code>S1000</code> with the chargeable balance.</li>
+    </ul>
+  </div>
+
+  <footer>CycleCircle engineering &middot; Report generated 4 October 2026</footer>
+</main>
+</body>
+</html>

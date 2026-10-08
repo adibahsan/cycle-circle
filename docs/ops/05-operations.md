@@ -34,7 +34,7 @@ free -h                                               # memory
 docker system df                                      # image/container/volume disk usage
 ```
 
-**Monitoring (Prometheus + Grafana):** bundled in prod Compose ([ops/monitoring/README.md](../../ops/monitoring/README.md)). Grafana is served at `https://monitoring.cycle-circle.com` (nginx only — Prometheus has **no** public vhost). Enable the monitoring hostname only after [host hardening](../../.scratch/vps-prod-rollout/issues/07-host-hardening.md). TSDB retention is **30 days** — watch root disk (`df -h /`) as metrics grow. Rotate `GRAFANA_ADMIN_PASSWORD` via `/opt/vesta/.env.monitoring.production`. Verify scrape targets in Grafana or Prometheus (internal network / SSH port-forward to `:9090` for emergencies).
+**Monitoring (Prometheus + Grafana):** bundled in prod Compose ([ops/monitoring/README.md](../../ops/monitoring/README.md)). Grafana is served at `https://monitoring.cycle-circle.com` (nginx only — Prometheus has **no** public vhost). Enable the monitoring hostname only after [host hardening](https://github.com/adibahsan/cycle-circle/issues/12). TSDB retention is **30 days** — watch root disk (`df -h /`) as metrics grow. Rotate `GRAFANA_ADMIN_PASSWORD` via `/opt/vesta/.env.monitoring.production`. Verify scrape targets in Grafana or Prometheus (internal network / SSH port-forward to `:9090` for emergencies).
 
 **Complementary (not replaced by Grafana):** **Sentry** for application errors and **UptimeRobot** (or similar) for external HTTP uptime on public health URLs — align with [DEPLOYMENT-PLAN.md](../../DEPLOYMENT-PLAN.md) post-launch monitoring.
 

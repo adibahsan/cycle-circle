@@ -5,7 +5,7 @@ VPS production v1 expects a **single canonical branch**: clone `/opt/vesta` from
 **Source branches (same deploy commits as of 2026-09-28):**
 
 - `origin/first-testing/bug-fixing` — includes deploy stack commit **`397031a`** (`Add VPS production deploy stack…`)
-- `feat/vps-prod-rollout` — rollout tickets + same deploy lineage (may be ahead with `.scratch/` only)
+- `feat/vps-prod-rollout` — rollout tickets + same deploy lineage (may be ahead with docs only)
 
 ### Which branch to merge (read this first)
 
@@ -108,7 +108,7 @@ Agree in writing (Slack/issue comment):
 - **Default:** VPS `git pull` on **`main`** for routine releases ([03-deployment.md](./03-deployment.md) § routine release).
 - **Alternative:** tag `vps-v1.0.0` (or similar) at the merge commit and pin clone/checkout to that tag until process matures.
 
-Document the choice in the rollout map (`.scratch/vps-prod-rollout/` or team channel). Ticket 01 acceptance item stays human-checked until confirmed.
+Document the choice in the rollout spec ([#5](https://github.com/adibahsan/cycle-circle/issues/5) or team channel). Ticket 01 acceptance item stays human-checked until confirmed.
 
 ---
 

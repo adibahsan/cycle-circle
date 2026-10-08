@@ -95,11 +95,15 @@ Full file-by-file audits with line numbers are in `review/`:
 
 ### Issue tracker
 
-Work is tracked as markdown under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+GitHub Issues on `adibahsan/cycle-circle` via the `gh` CLI; specs are parent issues, tickets are sub-issues with native blocking links. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-role vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Single-context: `CONTEXT.md` at repo root and ADRs in `docs/adr/`. See `docs/agents/domain.md`.
+Single-context: `GLOSSARY.md` at repo root and ADRs in `docs/adr/`. See `docs/agents/domain.md`.
 
 ---
 
@@ -160,7 +164,7 @@ Optional before VPS-facing tickets: `pnpm docker:prod:build` (orchestrator only;
 
 ### VPS rollout tickets
 
-`.scratch/vps-prod-rollout/` mixes **human** steps (SSH, DNS, merge to `main`, UFW) with **agent** runbook/doc/script work. Coders must not pretend server steps are done—update checklists, ops docs, and repo scripts only unless the ticket explicitly includes verifiable local automation.
+The VPS rollout spec (#5) and its sub-issues mix **human** steps (SSH, DNS, merge to `main`, UFW) with **agent** runbook/doc/script work. Coders must not pretend server steps are done—update checklists, ops docs, and repo scripts only unless the ticket explicitly includes verifiable local automation.
 
 ---
 

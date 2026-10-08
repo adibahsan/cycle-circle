@@ -2,7 +2,7 @@
 
 Checklist for **public DNS** and **server-side env files** before the first VPS stack bring-up (ticket 04). No secrets belong in git — copy values from Vercel staging locally onto the server.
 
-**Related:** [03-deployment.md §3–§4](./03-deployment.md), [04-env-reference.md](./04-env-reference.md), [ops/deploy/README.md](../../ops/deploy/README.md), rollout [spec](../../.scratch/vps-prod-rollout/spec.md) (staging parity).
+**Related:** [03-deployment.md §3–§4](./03-deployment.md), [04-env-reference.md](./04-env-reference.md), [ops/deploy/README.md](../../ops/deploy/README.md), rollout [spec](https://github.com/adibahsan/cycle-circle/issues/5) (staging parity).
 
 ---
 
@@ -13,7 +13,7 @@ Checklist for **public DNS** and **server-side env files** before the first VPS 
 | `cycle-circle.com` | A | `62.171.155.231` | Web + ACME |
 | `www.cycle-circle.com` | A | `62.171.155.231` | Web (nginx redirects to apex) |
 | `admin.cycle-circle.com` | A | `62.171.155.231` | Admin app + ACME for admin vhost |
-| `monitoring.cycle-circle.com` | A | `62.171.155.231` | Grafana (HTTPS via nginx; enable after [host hardening](../../.scratch/vps-prod-rollout/issues/07-host-hardening.md)) |
+| `monitoring.cycle-circle.com` | A | `62.171.155.231` | Grafana (HTTPS via nginx; enable after [host hardening](https://github.com/adibahsan/cycle-circle/issues/12)) |
 | `cycle-circle.com` | AAAA (optional) | `2a02:c207:2361:2692::1` | IPv6 clients |
 
 DNS is **client-owned** (registrar / Namecheap, etc.). The **admin** subdomain is easy to miss — nginx and certbot expect `admin.cycle-circle.com` to resolve to the VPS (see [03-deployment.md §1](./03-deployment.md)).

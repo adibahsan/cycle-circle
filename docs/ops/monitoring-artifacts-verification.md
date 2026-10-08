@@ -15,7 +15,7 @@ Production env files on a laptop are **not** required; the verify script sets `V
 ## Manual checklist (first VPS enable)
 
 - [ ] `.env.monitoring.production` on server (from [ops/monitoring/env/monitoring.production.example](../../ops/monitoring/env/monitoring.production.example))
-- [ ] Host hardening complete ([rollout ticket 07](../../.scratch/vps-prod-rollout/issues/07-host-hardening.md))
+- [ ] Host hardening complete ([rollout ticket 07](https://github.com/adibahsan/cycle-circle/issues/12))
 - [ ] Certbot certificate includes `monitoring.cycle-circle.com` (see [03-deployment.md §TLS](./03-deployment.md))
 - [ ] Runtime smoke: Prometheus `/-/ready`, Grafana `/api/health`, targets **UP** in Prometheus UI
 
