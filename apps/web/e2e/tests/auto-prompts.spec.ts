@@ -11,16 +11,16 @@ const visibleDialogs = (page: import('@playwright/test').Page) =>
 test('late alert, check-in and profile prompt all eligible: exactly one auto-prompt is visible', async ({ page }) => {
   await mockApi(page, ['free-user', 'late-period', 'incomplete-profile'])
   await page.goto('/dashboard')
-  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 20_000 })
+  await expect(page.locator('[aria-labelledby="late-alert-title"]')).toBeVisible({ timeout: 20_000 })
   await settle(page, 2500)
   await expect(visibleDialogs(page)).toHaveCount(1)
-  await expect(page.getByRole('alertdialog')).toBeVisible()
+  await expect(page.locator('[aria-labelledby="late-alert-title"]')).toBeVisible()
 })
 
 test('closing the late alert does not let a lower-priority prompt open in the same visit', async ({ page }) => {
   await mockApi(page, ['free-user', 'late-period', 'incomplete-profile'])
   await page.goto('/dashboard')
-  await expect(page.getByRole('alertdialog')).toBeVisible({ timeout: 20_000 })
+  await expect(page.locator('[aria-labelledby="late-alert-title"]')).toBeVisible({ timeout: 20_000 })
   await page.keyboard.press('Escape')
   await expect(visibleDialogs(page)).toHaveCount(0)
   await settle(page, 2500)

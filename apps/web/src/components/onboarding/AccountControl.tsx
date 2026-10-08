@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { LogOut, UserCircle } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { LogoutConfirmModal } from '@/components/LogoutConfirmModal';
 
 interface AccountControlProps {
   user: { phone: string | null; email: string | null };
@@ -37,16 +37,6 @@ export function AccountControl({ user, className }: AccountControlProps) {
     router.push('/login');
   }, [loggingOut, router]);
 
-  // ESC-to-close
-  useEffect(() => {
-    if (!showConfirm) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowConfirm(false);
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [showConfirm]);
-
   return (
     <>
       {/* Compact chip: icon + truncated identity + logout icon-button */}
@@ -74,51 +64,15 @@ export function AccountControl({ user, className }: AccountControlProps) {
         </button>
       </div>
 
-      {/* Logout confirmation modal */}
-      {showConfirm && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={t('settings.logout')}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-          onClick={() => setShowConfirm(false)}
-        >
-          <div
-            className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-6 mx-4 max-w-sm w-full shadow-lg"
-            style={{ overscrollBehavior: 'contain' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">
-              {t('settings.logout')}
-            </h3>
-            <p className="text-sm text-[var(--color-text-muted)] mb-5">
-              {t('settings.logoutConfirmMsg')}
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                fullWidth
-                onClick={() => setShowConfirm(false)}
-                className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button
-                variant="primary"
-                fullWidth
-                onClick={() => {
-                  setShowConfirm(false);
-                  handleLogout();
-                }}
-                disabled={loggingOut}
-                className="bg-[var(--color-error)] hover:opacity-90 text-[var(--color-on-action)] border-0 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
-              >
-                {loggingOut ? t('settings.loggingOut') : t('settings.logout')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <LogoutConfirmModal
+        open={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        loggingOut={loggingOut}
+        onConfirm={() => {
+          setShowConfirm(false);
+          handleLogout();
+        }}
+      />
     </>
   );
 }
