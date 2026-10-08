@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { parseISO } from 'date-fns'
 import Link from 'next/link'
 import { CalendarDays, Activity, ChevronRight, Droplets, Baby } from 'lucide-react'
@@ -28,7 +28,7 @@ import { setActiveProfileCookie } from '@/app/actions/profile-actions'
 import type { ProfileCompletionStatus } from '@/components/ProfileCompletionTracker'
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
-import { CelebrationModal } from '@/components/modals/CelebrationModal'
+import { useToast } from '@/components/ui/Toast'
 import { useAutoPrompt, useAutoPromptCandidate } from '@/components/prompts/AutoPromptProvider'
 import { TodayCheckInStrip } from '@/components/engagement/TodayCheckInStrip'
 import { ProgressToUnlockMeter } from '@/components/engagement/ProgressToUnlockMeter'
@@ -273,15 +273,14 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   const [showQuickSymptom, setShowQuickSymptom] = useState(false)
   const openQuickSymptom = useCallback(() => setShowQuickSymptom(true), [])
 
-  // ── Part D: Celebration modal ────────────────────────────────────────────
-  const [celebration, setCelebration] = useState<{ kind: 'period' | 'symptom'; count?: number } | null>(null)
+  // ── Part D: Celebration toast (shown after the source pop-up closes) ──────
+  const toast = useToast()
 
   const handleSaved = useCallback(() => {
     // Trigger a server re-render to pick up updated data
     router.refresh()
-    // Part D: fire celebration after a period log
-    setCelebration({ kind: 'period' })
-  }, [router])
+    toast.celebrate('period')
+  }, [router, toast])
 
   // ── App-wide alert integration: open period-log modal on request ──────────
   useEffect(() => {
@@ -916,18 +915,14 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
       </PageContainer>
 
       {/* ── Period Log Modal ──────────────────────────────────── */}
-      <AnimatePresence>
-        {showModal && (
-          <PeriodLogModal
-            key="log-modal"
-            profileId={profile.id}
-            existingLogId={editLogId}
-            initialFlow="medium"
-            onClose={closeModal}
-            onSaved={handleSaved}
-          />
-        )}
-      </AnimatePresence>
+      <PeriodLogModal
+        open={showModal}
+        profileId={profile.id}
+        existingLogId={editLogId}
+        initialFlow="medium"
+        onClose={closeModal}
+        onSaved={handleSaved}
+      />
 
       {/* ── Part C: Quick Symptom Modal ───────────────────────── */}
       <QuickSymptomModal
@@ -937,23 +932,15 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         goal={goal}
         onSaved={(count) => {
           setShowQuickSymptom(false)
-          setCelebration({ kind: 'symptom', count })
+          if (count > 0) toast.celebrate('symptom', count)
         }}
-      />
-
-      {/* ── Part D: Celebration Modal ─────────────────────────── */}
-      <CelebrationModal
-        open={celebration != null}
-        onClose={() => setCelebration(null)}
-        goal={goal}
-        kind={celebration?.kind ?? 'period'}
-        count={celebration?.count}
       />
 
       {/* ── Check-In Modal ───────────────────────────────────── */}
       {engagement && (
         <TodayCheckInModal
           open={checkInIsOpen}
+          layer={!checkInOpen && prompt.isActive('check-in') ? 'prompt' : 'popup'}
           onClose={() => {
             setCheckInOpen(false)
             prompt.close('check-in')

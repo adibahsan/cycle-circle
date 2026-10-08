@@ -24,7 +24,7 @@ import { useAppStore } from '@/lib/store';
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data';
 import { ALL_GOOD_SYMPTOM_ID } from '@vesta/shared/utils/symptoms';
 import { toggleSymptom, markAllGoodToday, saveSymptoms } from '@/app/actions/tracking-actions';
-import { CelebrationModal } from '@/components/modals/CelebrationModal';
+import { useToast } from '@/components/ui/Toast';
 import type { Profile, PrismaSymptomLog, SymptomCategory } from '@vesta/shared/types';
 import '@vesta/shared/utils/i18n';
 import { PageContainer } from '@/components/ui/PageContainer'
@@ -250,7 +250,7 @@ export function SymptomsClient({
   const dateLocale = language === 'bn' ? bn : undefined;
   const [activeCategory, setActiveCategory] = useState<SymptomCategory>('physical');
   const [saving, setSaving] = useState(false);
-  const [celebrationCount, setCelebrationCount] = useState<number | null>(null);
+  const toast = useToast();
 
   const selectedDate = useMemo(() => parseISO(date), [date]);
 
@@ -385,7 +385,7 @@ export function SymptomsClient({
       }
       // Celebrate only when new symptoms were added.
       if (savedCount > 0) {
-        setCelebrationCount(savedCount);
+        toast.celebrate('symptom', savedCount);
       }
     } finally {
       setSaving(false);
@@ -669,13 +669,6 @@ export function SymptomsClient({
         </AnimatePresence>
       </div>
 
-      <CelebrationModal
-        open={celebrationCount != null}
-        onClose={() => setCelebrationCount(null)}
-        goal={goal}
-        kind="symptom"
-        count={celebrationCount ?? 0}
-      />
     </PageContainer>
   );
 }

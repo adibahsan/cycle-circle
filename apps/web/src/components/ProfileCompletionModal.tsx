@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Phone, User, CheckCircle, Mail } from 'lucide-react';
+import { Phone, User, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
+import type { PopupLayer } from '@/components/ui/popup-core';
 import { completeProfile, updateContactInfo, updateUserName } from '@/app/actions/user-actions';
 
 interface ProfileCompletionModalProps {
@@ -15,6 +17,8 @@ interface ProfileCompletionModalProps {
   percent?: number;
   /** Completion items from the profile checker. Used to determine which fields are missing. */
   items?: { key: string; done: boolean }[];
+  /** 'prompt' when the arbiter opened it, 'popup' when the user did. */
+  layer?: PopupLayer;
 }
 
 function validatePhone(value: string) {
@@ -37,9 +41,8 @@ function validateEmail(value: string) {
   return '';
 }
 
-export function ProfileCompletionModal({ open, onClose, onCompleted, percent, items }: ProfileCompletionModalProps) {
+export function ProfileCompletionModal({ open, onClose, onCompleted, percent, items, layer = 'popup' }: ProfileCompletionModalProps) {
   const { t } = useTranslation();
-  const dialogRef = useRef<HTMLDivElement>(null);
   const firstFocusableRef = useRef<HTMLInputElement>(null);
 
   const CONTACT_KEYS = ['fullName', 'phone', 'email'];
@@ -58,41 +61,6 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
   const [emailError, setEmailError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const [success, setSuccess] = useState(false);
-
-  // Focus first input when modal opens
-  useEffect(() => {
-    if (open) {
-      const raf = requestAnimationFrame(() => {
-        firstFocusableRef.current?.focus();
-      });
-      return () => cancelAnimationFrame(raf);
-    }
-  }, [open]);
-
-  // ESC to close
-  useEffect(() => {
-    if (!open) return;
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
-
-  // Prevent body scroll while open
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open]);
 
   function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value.replace(/[^\d]/g, '').slice(0, 11);
@@ -151,10 +119,9 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
           }
         }
       }
-      setSuccess(true);
       onCompleted?.();
       if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
-      setTimeout(() => { onClose(); }, 1500);
+      onClose();
     } catch {
       setSubmitError('Something went wrong. Please try again.');
     } finally {
@@ -162,105 +129,73 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
     }
   }
 
-  if (!open) return null;
+  const header = (
+    <div className="px-6 pt-5 pb-2 pr-14">
+      <h2 id="profile-completion-title" className="text-lg font-bold text-[var(--color-text-primary)]">
+        {t('profile.completeTitle')}
+      </h2>
+      {typeof percent === 'number' && (
+        <span
+          aria-label={t('profileCompletion.percentComplete', { percent })}
+          className="inline-block mt-1.5 mb-0.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tabular-nums"
+          style={{
+            background: 'color-mix(in srgb, var(--goal-accent) 12%, transparent)',
+            color: 'var(--goal-accent)',
+          }}
+        >
+          {t('profileCompletion.percentComplete', { percent })}
+        </span>
+      )}
+      <p id="profile-completion-desc" className="mt-1 text-sm text-[var(--color-text-muted)] leading-relaxed">
+        {needPhone ? t('profile.completeDesc') : needEmail ? t('profile.completeDescEmail') : t('profile.completeDesc')}
+      </p>
+    </div>
+  );
+
+  const footer = missing.length === 0 ? null : (
+    <div className="flex flex-col-reverse sm:flex-row gap-3 px-6 pt-3 pb-5">
+      <Button type="button" variant="ghost" size="md" onClick={onClose} className="flex-1 rounded-xl">
+        {t('common.later')}
+      </Button>
+      <Button type="submit" form="profile-completion-form" variant="primary" size="md" disabled={submitting} className="flex-1 rounded-xl">
+        {submitting ? (
+          <span className="flex items-center gap-2">
+            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+            {t('common.saving')}
+          </span>
+        ) : (
+          t('profile.completeAction')
+        )}
+      </Button>
+    </div>
+  );
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      aria-modal="true"
-      role="dialog"
-      aria-labelledby="profile-completion-title"
-      aria-describedby="profile-completion-desc"
+    <Modal
+      open={open}
+      onClose={onClose}
+      layer={layer}
+      titleId="profile-completion-title"
+      descId="profile-completion-desc"
+      header={header}
+      footer={footer}
+      initialFocusRef={firstFocusableRef}
     >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      {/* Modal panel */}
-      <div
-        ref={dialogRef}
-        className="relative z-10 w-full sm:max-w-md mx-4 sm:mx-auto rounded-t-3xl sm:rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-xl overscroll-contain"
-        style={{ overscrollBehavior: 'contain' }}
-      >
-        {/* Handle bar (mobile) */}
-        <div className="flex justify-center pt-3 sm:hidden" aria-hidden="true">
-          <div className="w-10 h-1 rounded-full bg-[var(--color-border)]" />
+      {missing.length === 0 ? (
+        <div className="flex flex-col items-center gap-4 px-6 pt-4 pb-8">
+          <p className="text-sm text-[var(--color-text-muted)] text-center">
+            You&apos;re all set on contact info.
+          </p>
+          <Button type="button" variant="ghost" size="md" onClick={onClose} className="rounded-xl">
+            {t('common.later')}
+          </Button>
         </div>
-
-        {/* Header */}
-        <div className="flex items-start justify-between px-6 pt-5 pb-2">
-          <div>
-            <h2
-              id="profile-completion-title"
-              className="text-lg font-bold text-[var(--color-text-primary)]"
-            >
-              {t('profile.completeTitle')}
-            </h2>
-            {typeof percent === 'number' && (
-              <span
-                aria-label={t('profileCompletion.percentComplete', { percent })}
-                className="inline-block mt-1.5 mb-0.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tabular-nums"
-                style={{
-                  background: 'color-mix(in srgb, var(--goal-accent) 12%, transparent)',
-                  color: 'var(--goal-accent)',
-                }}
-              >
-                {t('profileCompletion.percentComplete', { percent })}
-              </span>
-            )}
-            <p
-              id="profile-completion-desc"
-              className="mt-1 text-sm text-[var(--color-text-muted)] leading-relaxed"
-            >
-              {needPhone ? t('profile.completeDesc') : needEmail ? t('profile.completeDescEmail') : t('profile.completeDesc')}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Dismiss"
-            className="ml-3 mt-0.5 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/50 shrink-0"
-          >
-            <X size={18} aria-hidden="true" />
-          </button>
-        </div>
-
-        {/* Success state */}
-        {success ? (
-          <div
-            className="flex flex-col items-center gap-3 px-6 pt-6 pb-8"
-            aria-live="polite"
-          >
-            <CheckCircle
-              size={48}
-              className="text-[var(--goal-accent)]"
-              aria-hidden="true"
-            />
-            <p className="text-base font-semibold text-[var(--color-text-primary)]">
-              {t('profile.completeSuccess')}
-            </p>
-          </div>
-        ) : missing.length === 0 ? (
-          /* All contact info already complete */
-          <div className="flex flex-col items-center gap-4 px-6 pt-4 pb-8">
-            <p className="text-sm text-[var(--color-text-muted)] text-center">
-              You&apos;re all set on contact info.
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="md"
-              onClick={onClose}
-              className="rounded-xl"
-            >
-              {t('common.later')}
-            </Button>
-          </div>
-        ) : (
-          /* Form */
-          <form onSubmit={handleSubmit} noValidate className="px-6 pt-3 pb-6 space-y-4">
+      ) : (
+        <div className="px-6 pt-3 pb-4">
+          <form id="profile-completion-form" onSubmit={handleSubmit} noValidate className="space-y-4">
             {/* Full Name */}
             {needName && (
               <div>
@@ -447,56 +382,9 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex flex-col-reverse sm:flex-row gap-3 pt-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="md"
-                onClick={onClose}
-                className="flex-1 rounded-xl"
-              >
-                {t('common.later')}
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                disabled={submitting}
-                className="flex-1 rounded-xl"
-              >
-                {submitting ? (
-                  <span className="flex items-center gap-2">
-                    <svg
-                      className="animate-spin w-4 h-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v8H4z"
-                      />
-                    </svg>
-                    {t('common.saving')}
-                  </span>
-                ) : (
-                  t('profile.completeAction')
-                )}
-              </Button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
+</form>
+        </div>
+      )}
+    </Modal>
   );
 }

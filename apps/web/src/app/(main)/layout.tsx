@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'motion/react';
 import { useAppStore } from '@/lib/store';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import VestaLogo from '@/components/ui/VestaLogo';
@@ -35,11 +34,11 @@ import {
   isNavActive,
   type NavIconKey,
 } from '@/components/shell/nav-config';
-import { Z_CLASS } from '@/components/ui/popup-core';
 import { LatePeriodFullScreenAlert } from '@/components/modals/LatePeriodFullScreenAlert';
 import { GOAL_ICON_COMPONENTS, GOAL_I18N_KEYS } from '@/lib/goal-display';
 import { goalAccentVar, normalizeGoal } from '@vesta/shared/utils/goal';
 import { isTrialExpired } from '@vesta/shared/utils/trial';
+import { ToastProvider, useToast } from '@/components/ui/Toast';
 import {
   AutoPromptProvider,
   useAutoPrompt,
@@ -65,64 +64,6 @@ const TrialCountdownPill = dynamic(
   () => import('@/components/TrialCountdownPill').then((m) => m.TrialCountdownPill),
   { ssr: false },
 )
-
-// ── Toast (single-slot, same pattern as SettingsClient) ───────────────────────
-
-interface ToastState {
-  text: string;
-  seq: number;
-}
-
-function useToast() {
-  const [toast, setToast] = useState<ToastState | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const show = useCallback((text: string) => {
-    setToast((prev) => ({ text, seq: (prev?.seq ?? 0) + 1 }));
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setToast(null), 2500);
-  }, []);
-
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-
-  return { toast, show };
-}
-
-function Toast({ toast }: { toast: ToastState | null }) {
-  return (
-    <div
-      aria-live="polite"
-      aria-atomic="true"
-      className={`fixed top-4 left-1/2 -translate-x-1/2 ${Z_CLASS.toast} w-full max-w-xs px-4 pointer-events-none`}
-    >
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            key="layout-toast-bar"
-            initial={{ opacity: 0, y: -16, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.94 }}
-            transition={{ type: 'spring', damping: 24, stiffness: 320 }}
-            className="grid rounded-xl bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] text-sm font-medium px-4 py-3 shadow-glow text-center"
-          >
-            <AnimatePresence>
-              <motion.span
-                key={toast.seq}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
-                className="col-start-1 row-start-1"
-              >
-                {toast.text}
-              </motion.span>
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
 
 // SRS FR-AUTH: the profile-completion popup appears ~1 minute after login.
 const PROFILE_COMPLETION_PROMPT_DELAY_MS = 60_000;
@@ -150,9 +91,11 @@ const SIDEBAR_ICONS: Record<NavIconKey, LucideIcon> = {
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AutoPromptProvider>
-      <MainLayoutInner>{children}</MainLayoutInner>
-    </AutoPromptProvider>
+    <ToastProvider>
+      <AutoPromptProvider>
+        <MainLayoutInner>{children}</MainLayoutInner>
+      </AutoPromptProvider>
+    </ToastProvider>
   );
 }
 
@@ -164,7 +107,7 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
   const prompt = useAutoPrompt();
   const setAccount = prompt.setAccount;
   const claimPrompt = prompt.claim;
-  const { toast, show: showToast } = useToast();
+  const { show: showToast } = useToast();
 
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionStatus, setCompletionStatus] = useState<ProfileCompletionStatus | null>(null);
@@ -586,15 +529,14 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
       />
 
       {/* ── Profile Completion Modal ── */}
-      {profileModalOpen && (
-        <ProfileCompletionModal
-          open={profileModalOpen}
-          onClose={handleModalClose}
-          percent={completionStatus?.percent}
-          items={completionStatus?.items}
-          onCompleted={() => showToast(t('toast.completionDone'))}
-        />
-      )}
+      <ProfileCompletionModal
+        open={profileModalOpen}
+        onClose={handleModalClose}
+        layer={prompt.isActive('profile') ? 'prompt' : 'popup'}
+        percent={completionStatus?.percent}
+        items={completionStatus?.items}
+        onCompleted={() => showToast(t('toast.completionDone'))}
+      />
 
       {/* ── Onboarding spotlight tour ── */}
       {tourIsOpen && (
@@ -614,8 +556,6 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
         onLogPeriod={handleLateLogPeriod}
       />
 
-      {/* ── Layout-level toast ── */}
-      <Toast toast={toast} />
     </div>
   );
 }
