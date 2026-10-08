@@ -25,6 +25,8 @@ const REQUIRED_DEPLOY_PATHS = [
   'ops/deploy/nginx/cycle-circle.conf',
   'ops/deploy/nginx/cycle-circle.bootstrap.conf',
   'ops/deploy/scripts/backup-db.sh',
+  'ops/deploy/scripts/deploy.sh',
+  '.github/workflows/production.yml',
   'ops/deploy/scripts/apply-letsencrypt-nginx.sh',
   'ops/deploy/scripts/dump-le-metadata.sh',
   'ops/deploy/scripts/install-vesta-crontab.sh',

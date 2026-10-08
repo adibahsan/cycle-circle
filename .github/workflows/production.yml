@@ -1,0 +1,85 @@
+name: Production
+
+# Release flow: feature branches → main (PR) → production (fast-forward or PR).
+# Every PR into main or production runs the checks. A push to production runs the
+# checks again and, if they pass, deploys to the VPS with ops/deploy/scripts/deploy.sh.
+on:
+  pull_request:
+    branches: [main, production]
+  push:
+    branches: [production]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Typecheck, lint, docs, tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17.10-alpine
+        env:
+          POSTGRES_USER: vesta_ci
+          POSTGRES_PASSWORD: vesta_ci
+          POSTGRES_DB: vesta_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U vesta_ci -d vesta_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://vesta_ci:vesta_ci@localhost:5432/vesta_ci
+      DIRECT_URL: postgresql://vesta_ci:vesta_ci@localhost:5432/vesta_ci
+      JWT_SECRET: ci-only-jwt-secret-not-used-anywhere-else-000
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - name: Apply migrations to the CI database
+        run: pnpm --filter @vesta/shared exec prisma migrate deploy --schema ./prisma/schema.prisma
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm docs:check
+      - run: pnpm deploy:verify
+      - run: pnpm --filter @vesta/web backend:test
+
+  deploy:
+    name: Deploy to VPS
+    needs: checks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: production
+      url: https://cycle-circle.com
+    # One deploy at a time; a newer push waits rather than cancelling a deploy mid-migration.
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    steps:
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Run deploy script on the VPS
+        env:
+          HOST: ${{ secrets.PROD_SSH_HOST }}
+          USER: ${{ secrets.PROD_SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "$USER@$HOST" \
+            "cd /opt/vesta && git fetch --prune origin production && git checkout -B production origin/production && bash ops/deploy/scripts/deploy.sh ${{ github.sha }}"
+      - name: Public health check
+        run: curl -fsS --retry 5 --retry-delay 5 https://cycle-circle.com/api/health/db

@@ -436,9 +436,50 @@ Run these as the `vesta` user (sudo where noted). Assumes §2's artifacts exist 
 
 ## 5. Routine deploy
 
+Production runs the **`production`** branch. Work merges to `main` through PRs as usual, and a release is `main` → `production`:
+
+```bash
+git fetch origin
+git push origin origin/main:production   # fast-forward production to main
+# or open a PR main → production if you want a review gate
+```
+
+The push triggers [`.github/workflows/production.yml`](../../.github/workflows/production.yml):
+
+1. **Checks:** typecheck, lint, `docs:check`, `deploy:verify`, and the web vitest suite against a throwaway Postgres. The same checks run on every PR into `main` or `production`.
+2. **Deploy:** if the checks pass, it SSHes to the VPS as `vesta` and runs [`ops/deploy/scripts/deploy.sh`](../../ops/deploy/scripts/deploy.sh) with the pushed SHA. The script:
+   - checks out `production`
+   - backs up the DB (`backup-db.sh`)
+   - builds the images and runs `prisma migrate deploy`
+   - restarts web, then admin, health-checking each one from inside its container
+   - finishes with a public `/api/health/db` check
+3. One deploy runs at a time; a second push waits.
+
+**Required repo secrets** (GitHub → Settings → Secrets and variables → Actions, attached to a `production` environment):
+
+| Secret | Value |
+|---|---|
+| `PROD_SSH_HOST` | `62.171.155.231` |
+| `PROD_SSH_USER` | `vesta` |
+| `PROD_SSH_KEY` | Private key of a **dedicated** CI deploy key (not a personal key); its public half is in `vesta`'s `~/.ssh/authorized_keys` |
+| `PROD_SSH_KNOWN_HOSTS` | Output of `ssh-keyscan -t ed25519 62.171.155.231`, checked against the fingerprint from `ssh vesta 'ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub'` |
+
+Create the CI key once, locally: `ssh-keygen -t ed25519 -f ~/.ssh/vesta_ci_deploy -C "github-actions-deploy" -N ""`. Add the `.pub` to the VPS as in [01-access.md §2](./01-access.md), and paste the private key into `PROD_SSH_KEY`.
+
+**Manual deploy** (CI down or a hotfix by hand): run the same script on the VPS.
+
+```bash
+ssh vesta
+cd /opt/vesta && git fetch origin production && git checkout -B production origin/production
+bash ops/deploy/scripts/deploy.sh
+```
+
+The script performs the following steps, kept here for reference:
+
 ```bash
 cd /opt/vesta
-git pull origin main
+git checkout -B production origin/production
+bash ops/deploy/scripts/backup-db.sh
 docker compose -f ops/deploy/compose.prod.yml build web admin
 docker compose -f ops/deploy/compose.prod.yml run --rm \
   --entrypoint sh web -c \

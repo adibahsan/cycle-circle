@@ -8,7 +8,7 @@ Before the first VPS deploy, **`main` must include this directory** (especially 
 
 | Check | Action |
 |---|---|
-| Canonical clone branch | VPS v1 clones and tracks **`main`** (or a release tag cut from it after merge) |
+| Canonical clone branch | The VPS tracks **`production`**, and a push to it deploys through `.github/workflows/production.yml` → `scripts/deploy.sh` (see `docs/ops/03-deployment.md` §5) |
 | Prod compose file on `main` | Confirm `test -f ops/deploy/compose.prod.yml` after merge |
 | Local prod image build | From repo root: `pnpm docker:prod:build` (runs `docker compose -f ops/deploy/compose.prod.yml build web admin`) |
 
