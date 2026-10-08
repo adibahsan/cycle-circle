@@ -17,7 +17,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { parseShotArgs } from '../support/args'
 import { saveLoginState } from '../support/auth'
-import { applyLoggingMock, applyStatusMock } from '../support/mocks'
+import { applyCompletionMock, applyLoggingMock, applyStatusMock } from '../support/mocks'
 import { POPUPS } from '../support/popups'
 import { startDevServer } from '../support/server'
 import { planShots, VIEWPORTS } from '../support/shot-plan'
@@ -48,12 +48,16 @@ async function main() {
       const page = await ctx.newPage()
       if (!args.popup) {
         // A named pop-up is the subject; otherwise keep auto prompts out of the base page.
-        await page.addInitScript(`try{sessionStorage.setItem('vesta_profile_modal_dismissed','1');localStorage.setItem('vesta_late_alert_seen_'+new Date().toISOString().slice(0,10),'1')}catch(e){}`)
+        await page.addInitScript(`try{const o=Storage.prototype.getItem;Storage.prototype.getItem=function(k){if(this===window.localStorage&&typeof k==='string'&&k.indexOf('vesta_prompt_last:')===0)return String(Date.now());return o.call(this,k)}}catch(e){}`)
       }
       if (args.mocks.length) {
         await page.route('**/api/auth/status', async (route) => {
           const res = await route.fetch()
           await route.fulfill({ response: res, json: applyStatusMock(await res.json(), args.mocks) })
+        })
+        await page.route('**/api/profile/completion', async (route) => {
+          const res = await route.fetch()
+          await route.fulfill({ response: res, json: applyCompletionMock(await res.json(), args.mocks) })
         })
         await page.route('**/api/tracking/logging-status', async (route) => {
           const res = await route.fetch()

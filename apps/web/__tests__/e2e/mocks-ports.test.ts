@@ -23,7 +23,7 @@ describe('mocks', () => {
     expect(applyStatusMock({ user: { x: 1 } }, ['late-period'], NOW)).toEqual({ user: { x: 1 } })
   })
   it('combines several mocks and registry names are stable', () => {
-    expect(Object.keys(MOCKS).sort()).toEqual(['email-trial', 'free-user', 'late-period', 'trial-expired'])
+    expect(Object.keys(MOCKS).sort()).toEqual(['email-trial', 'free-user', 'incomplete-profile', 'late-period', 'trial-expired'])
   })
 })
 

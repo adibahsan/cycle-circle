@@ -29,6 +29,7 @@ import type { ProfileCompletionStatus } from '@/components/ProfileCompletionTrac
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
 import { CelebrationModal } from '@/components/modals/CelebrationModal'
+import { useAutoPrompt, useAutoPromptCandidate } from '@/components/prompts/AutoPromptProvider'
 import { TodayCheckInStrip } from '@/components/engagement/TodayCheckInStrip'
 import { ProgressToUnlockMeter } from '@/components/engagement/ProgressToUnlockMeter'
 import dynamic from 'next/dynamic'
@@ -235,7 +236,8 @@ function CycleRing({
 export function DashboardClient({ profiles, user: _user, activeProfileId, dashboardData, completion, lastSymptomLogDate, goal, engagement }: Props) {
   const { t } = useTranslation()
   const router = useRouter()
-  const { setActiveProfile, language, tourState } = useAppStore()
+  const { setActiveProfile, language } = useAppStore()
+  const prompt = useAutoPrompt()
   const prefersReducedMotion = useReducedMotion()
 
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
@@ -260,17 +262,12 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   // ── Check-in modal ───────────────────────────────────────────────────────
   const [checkInOpen, setCheckInOpen] = useState(false)
 
-  // Auto-open once per session per day when not yet logged.
-  // Guard: wait until the onboarding tour has resolved so the two don't overlap.
-  useEffect(() => {
-    if (tourState !== 'done') return
-    if (!engagement || engagement.loggedToday) return
-    const todayKey = `vesta_checkin_shown_${activeProfileId}_${new Date().toISOString().slice(0, 10)}`
-    if (typeof window !== 'undefined' && !sessionStorage.getItem(todayKey)) {
-      setCheckInOpen(true)
-      sessionStorage.setItem(todayKey, '1')
-    }
-  }, [activeProfileId, engagement, tourState])
+  // The arbiter decides whether the check-in auto-opens (once per local day per profile).
+  useAutoPromptCandidate('check-in', !engagement || engagement.loggedToday ? 'no' : 'yes', { scope: activeProfileId })
+  const trialLocked = prompt.locked
+  const closeAutoCheckIn = prompt.close
+  useEffect(() => () => closeAutoCheckIn('check-in'), [closeAutoCheckIn])
+  const checkInIsOpen = !prompt.locked && (checkInOpen || prompt.isActive('check-in'))
 
   // ── Part C: Quick symptom modal ──────────────────────────────────────────
   const [showQuickSymptom, setShowQuickSymptom] = useState(false)
@@ -289,6 +286,8 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   // ── App-wide alert integration: open period-log modal on request ──────────
   useEffect(() => {
     if (typeof window === 'undefined') return
+    // Nothing opens over the trial lock.
+    if (trialLocked) return
     if (sessionStorage.getItem('vesta_open_period_log') === '1') {
       sessionStorage.removeItem('vesta_open_period_log')
       openNewLog()
@@ -296,7 +295,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
     const handler = () => openNewLog()
     window.addEventListener('vesta:open-period-log', handler)
     return () => window.removeEventListener('vesta:open-period-log', handler)
-  }, [openNewLog])
+  }, [openNewLog, trialLocked])
 
   // Guard: no profile found
   if (!profile) {
@@ -954,8 +953,11 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
       {/* ── Check-In Modal ───────────────────────────────────── */}
       {engagement && (
         <TodayCheckInModal
-          open={checkInOpen}
-          onClose={() => setCheckInOpen(false)}
+          open={checkInIsOpen}
+          onClose={() => {
+            setCheckInOpen(false)
+            prompt.close('check-in')
+          }}
           profileId={activeProfileId}
           goal={goal}
           engagement={engagement}
