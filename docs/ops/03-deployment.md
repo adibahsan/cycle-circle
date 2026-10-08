@@ -71,13 +71,13 @@ The sections below retain the **reference sketches** aligned with the checked-in
 
 ### Dockerfile.web (proposed)
 
-Node 22, pnpm 10.33.0 (matching `packageManager` in the root `package.json` and the dev Dockerfile). Neither `apps/web/next.config.ts` nor `apps/admin/next.config.ts` currently sets `output: 'standalone'`, so this sketch ships the full `node_modules` into the runtime stage — simplest correct option. Switching both `next.config.ts` files to `output: 'standalone'` later would let the runtime stage copy only `.next/standalone` + `.next/static` and drop the `node_modules` copy — worth doing as a follow-up, but out of scope for these two doc files.
+Node 24, pnpm 10.33.0 (matching `packageManager` in the root `package.json` and the dev Dockerfile). Neither `apps/web/next.config.ts` nor `apps/admin/next.config.ts` currently sets `output: 'standalone'`, so this sketch ships the full `node_modules` into the runtime stage — simplest correct option. Switching both `next.config.ts` files to `output: 'standalone'` later would let the runtime stage copy only `.next/standalone` + `.next/static` and drop the `node_modules` copy — worth doing as a follow-up, but out of scope for these two doc files.
 
 **Critical gotcha:** `NEXT_PUBLIC_DEV_MODE` (and any future `NEXT_PUBLIC_*` var) is inlined into the client JS bundle **at `next build` time**, not read at container start. It must be passed as a build `ARG`, not just set in the container's runtime env — setting it in `.env.web.production` alone has no effect on the built bundle.
 
 ```dockerfile
 # ops/deploy/Dockerfile.web  (proposed)
-FROM node:22-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /workspace
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
@@ -85,7 +85,7 @@ COPY packages/shared/package.json ./packages/shared/
 COPY apps/web/package.json ./apps/web/
 RUN pnpm install --frozen-lockfile
 
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /workspace
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 COPY --from=deps /workspace/node_modules ./node_modules
@@ -98,7 +98,7 @@ ENV NEXT_PUBLIC_USE_DUMMY_DATA=$NEXT_PUBLIC_USE_DUMMY_DATA
 RUN pnpm --filter @vesta/shared db:generate
 RUN pnpm --filter @vesta/web build
 
-FROM node:22-alpine AS runtime
+FROM node:24-alpine AS runtime
 WORKDIR /workspace
 ENV NODE_ENV=production
 COPY --from=build /workspace ./
