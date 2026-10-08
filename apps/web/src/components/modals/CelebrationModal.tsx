@@ -171,7 +171,6 @@ export function CelebrationModal({
             {
               background: 'var(--goal-accent)',
               '--tw-ring-color': 'color-mix(in srgb, var(--goal-accent) 50%, transparent)',
-              '--tw-ring-offset-color': 'var(--color-bg-card)',
             } as React.CSSProperties
           }
         >

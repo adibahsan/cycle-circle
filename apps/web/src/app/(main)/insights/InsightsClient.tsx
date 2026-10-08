@@ -237,6 +237,11 @@ function CycleLengthTrendChart({
 
   const tooltip = (
     <Tooltip
+      cursor={
+        chartType === 'bar'
+          ? { fill: 'color-mix(in srgb, var(--color-text-primary) 8%, transparent)' }
+          : { stroke: 'var(--color-border-strong)' }
+      }
       contentStyle={{
         background: 'var(--color-bg-card)',
         border: '1px solid var(--color-border)',
@@ -345,6 +350,7 @@ function SymptomFrequencyChart({
           width={28}
         />
         <Tooltip
+          cursor={{ fill: 'color-mix(in srgb, var(--color-text-primary) 8%, transparent)' }}
           contentStyle={{
             background: 'var(--color-bg-card)',
             border: '1px solid var(--color-border)',

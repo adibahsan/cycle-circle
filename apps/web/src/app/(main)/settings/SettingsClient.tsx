@@ -128,7 +128,7 @@ function Toggle({
       aria-label={label ?? id}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
-        checked ? 'gradient-primary' : 'bg-[var(--color-border)]'
+        checked ? 'gradient-primary' : 'bg-[var(--color-border-strong)]'
       }`}
     >
       <motion.span

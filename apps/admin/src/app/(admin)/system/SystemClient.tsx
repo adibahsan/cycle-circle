@@ -83,7 +83,7 @@ function JobCard({
                 'transition-colors focus-visible:outline-none focus-visible:ring-2',
                 'focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2',
                 'disabled:cursor-not-allowed disabled:opacity-50',
-                enabled ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-border)]',
+                enabled ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-border-strong)]',
               ].join(' ')}
             >
               <span
