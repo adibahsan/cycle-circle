@@ -94,12 +94,17 @@ test.describe('phone shell (375px)', () => {
   test('symptoms save bar sits above the bottom nav', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 })
     await gotoQuiet(page, '/symptoms')
-    const tile = page.locator('main button[aria-pressed]').first()
+    const tile = page.locator('main .grid button[aria-pressed="false"]').first()
     await tile.click()
     const bar = page.getByRole('button', { name: /^Save \d+ changes/ })
     await expect(bar).toBeVisible()
-    const barBox = (await bar.boundingBox())!
     const navBox = (await page.locator('nav[data-bottom-nav]').boundingBox())!
-    expect(barBox.y + barBox.height).toBeLessThanOrEqual(navBox.y)
+    // The bar springs in, so poll until it settles.
+    await expect
+      .poll(async () => {
+        const box = (await bar.boundingBox())!
+        return Math.round(navBox.y - (box.y + box.height))
+      })
+      .toBeGreaterThanOrEqual(0)
   })
 })
