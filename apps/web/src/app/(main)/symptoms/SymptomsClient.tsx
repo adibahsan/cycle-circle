@@ -110,7 +110,7 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => setViewMonth((m) => subMonths(m, 1))}
-          aria-label="Previous month"
+          aria-label={t('calendar.previousMonth')}
           className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
         >
           <ChevronLeft size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
@@ -120,7 +120,7 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
         </h2>
         <button
           onClick={() => setViewMonth((m) => addMonths(m, 1))}
-          aria-label="Next month"
+          aria-label={t('calendar.nextMonth')}
           className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
         >
           <ChevronRight size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
@@ -559,7 +559,7 @@ export function SymptomsClient({
                 transition={{ duration: 0.2 }}
                 onClick={handleSave}
                 disabled={saving}
-                aria-label={`Save ${changeCount} changes`}
+                aria-label={t('symptoms.saveChanges', { count: changeCount })}
                 className="hidden xl:flex w-full rounded-2xl px-5 py-3.5 items-center justify-center gap-3 shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-70 transition-colors duration-200"
                 style={{
                   background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
@@ -601,7 +601,7 @@ export function SymptomsClient({
               transition={{ type: 'spring', stiffness: 400, damping: 35 }}
               onClick={handleSave}
               disabled={saving}
-              aria-label={`Save ${changeCount} changes`}
+              aria-label={t('symptoms.saveChanges', { count: changeCount })}
               className="w-full rounded-2xl px-5 py-3.5 flex items-center justify-center gap-3 shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-70 transition-colors duration-200"
               style={{
                 background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',

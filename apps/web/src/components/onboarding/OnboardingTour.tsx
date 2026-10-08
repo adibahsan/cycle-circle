@@ -391,7 +391,6 @@ export function OnboardingTour({
           {t('tour.stepLabel', {
             current: current + 1,
             total: steps.length,
-            defaultValue: `Step {{current}} of {{total}}`,
           })}
         </p>
 
@@ -415,7 +414,7 @@ export function OnboardingTour({
         <div
           className="flex items-center gap-1.5 mb-4"
           role="tablist"
-          aria-label={t('tour.progressLabel', { defaultValue: 'Tour progress' })}
+          aria-label={t('tour.progressLabel')}
         >
           {steps.map((_, i) => (
             <div
@@ -424,7 +423,6 @@ export function OnboardingTour({
               aria-selected={i === current}
               aria-label={t('tour.stepDot', {
                 step: i + 1,
-                defaultValue: `Step {{step}}`,
               })}
               className="h-1.5 rounded-full transition-[width,background-color] duration-200"
               style={{
@@ -448,7 +446,7 @@ export function OnboardingTour({
               onClick={handleBack}
               className="mr-auto"
             >
-              {t('tour.back', { defaultValue: 'Back' })}
+              {t('tour.back')}
             </Button>
           )}
 
@@ -462,7 +460,7 @@ export function OnboardingTour({
               size="sm"
               onClick={handleSkip}
             >
-              {t('tour.skip', { defaultValue: 'Skip' })}
+              {t('tour.skip')}
             </Button>
           )}
 
@@ -474,8 +472,8 @@ export function OnboardingTour({
             className="inline-flex items-center justify-center font-semibold rounded-xl transition-[color,background-color,border-color,box-shadow,transform] duration-200 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] bg-[var(--color-action)] text-[var(--color-on-action)] hover:bg-[var(--color-primary-dark)] shadow-soft px-3 py-1.5 text-sm"
           >
             {isLast
-              ? t('tour.done', { defaultValue: 'Done' })
-              : t('tour.next', { defaultValue: 'Next' })}
+              ? t('tour.done')
+              : t('tour.next')}
           </button>
         </div>
       </motion.div>

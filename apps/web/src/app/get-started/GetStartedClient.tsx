@@ -58,10 +58,11 @@ function ProgressDots({
   step: number;
   prefersReducedMotion: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       className="flex items-center gap-1.5 justify-center"
-      aria-label={`Step ${step} of ${TOTAL_STEPS}`}
+      aria-label={t('onboarding.stepOf', { step, total: TOTAL_STEPS })}
     >
       {Array.from({ length: TOTAL_STEPS }, (_, i) => {
         const isActive = i + 1 === step;

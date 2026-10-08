@@ -606,7 +606,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     onClick={openNewLog}
                     className="self-start flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-menstrual)] cursor-pointer"
                     style={{ backgroundColor: 'var(--color-menstrual)', color: 'var(--color-on-menstrual)' }}
-                    aria-label={t('dashboard.periodLateOpenPrompt', { defaultValue: 'Period late — tap for support' })}
+                    aria-label={t('dashboard.periodLateOpenPrompt')}
                   >
                     <span aria-hidden="true">🩸</span>
                     <span>{t('dashboard.periodLate')} · {t('dashboard.daysOverdue', { count: daysLate })}</span>
@@ -860,7 +860,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                             <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                             {t(labelKey)}
                           </span>
-                          <span className="text-[11px] md:text-xs text-[var(--color-text-secondary)] tabular-nums">{days}d</span>
+                          <span className="text-[11px] md:text-xs text-[var(--color-text-secondary)] tabular-nums">{t('common.daysShort', { count: days })}</span>
                         </div>
                       )
                     })}

@@ -238,7 +238,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                   <span
                     className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
                     style={{ backgroundColor: isActive ? onAccent : accent }}
-                    aria-label="your current phase"
+                    aria-label={t('content.currentPhase')}
                   />
                 )}
                 <span aria-hidden="true">{tab.emoji}</span>

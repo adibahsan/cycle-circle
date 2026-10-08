@@ -143,6 +143,7 @@ interface DayCellProps {
 
 const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSelect, isGhostDay = false, onGhostTap }: DayCellProps) {
   const { t } = useTranslation()
+  const language = useAppStore((s) => s.language)
   const { date } = meta
   const isToday = isSameDay(date, new Date())
   const kind = isCurrentMonth ? dayStyleKind(meta) : 'plain'
@@ -192,7 +193,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onGhostTap?.(format(date, 'yyyy-MM-dd')) }}
-          aria-label={t('calendar.addLogFor', { date: format(date, 'MMMM d') })}
+          aria-label={t('calendar.addLogFor', { date: format(date, 'MMMM d', { locale: language === 'bn' ? bn : undefined }) })}
           className="absolute inset-0 z-10 flex items-center justify-center rounded-xl text-[var(--color-text-secondary)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/60"
         >
           <Plus size={16} aria-hidden="true" />
@@ -248,7 +249,7 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
           </h3>
           <button
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t('common.close')}
             className="p-1.5 rounded-full hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
           >
             <X size={14} className="text-[var(--color-text-muted)]" aria-hidden="true" />
@@ -390,7 +391,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.2 }}
                     onClick={() => onEditLog(log)}
-                    aria-label={`Edit period log starting ${fmt.format(start)}`}
+                    aria-label={t('calendar.editLogStarting', { date: fmt.format(start) })}
                     className="w-full flex items-center justify-between gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0 cursor-pointer hover:bg-[var(--color-bg-secondary)] rounded-lg px-1 -mx-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
                   >
                     <div className="flex flex-col gap-0.5 min-w-0 text-left">
@@ -422,7 +423,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                 <button
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  aria-label="Previous page of period logs"
+                  aria-label={t('calendar.prevPage')}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
                 >
                   <ChevronLeft size={12} aria-hidden="true" />
@@ -434,7 +435,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page === totalPages - 1}
-                  aria-label="Next page of period logs"
+                  aria-label={t('calendar.nextPage')}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
                 >
                   {t('calendar.next')}
@@ -633,7 +634,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
             <div className="flex items-center justify-between mb-4">
               <button
                 onClick={prevMonth}
-                aria-label="Previous month"
+                aria-label={t('calendar.previousMonth')}
                 className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors"
               >
                 <ChevronLeft size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
@@ -651,7 +652,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
 
               <button
                 onClick={nextMonth}
-                aria-label="Next month"
+                aria-label={t('calendar.nextMonth')}
                 className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors"
               >
                 <ChevronRight size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />

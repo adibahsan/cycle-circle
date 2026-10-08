@@ -101,8 +101,9 @@ const FADE_UP = {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function ProgressBar({ step, prefersReducedMotion }: { step: number; prefersReducedMotion: boolean }) {
+  const { t } = useTranslation();
   return (
-    <div className="flex items-center gap-1.5 justify-center" aria-label={`Step ${step} of ${TOTAL_STEPS}`}>
+    <div className="flex items-center gap-1.5 justify-center" aria-label={t('onboarding.stepOf', { step, total: TOTAL_STEPS })}>
       {Array.from({ length: TOTAL_STEPS }, (_, i) => {
         const isActive = i + 1 === step;
         return (
@@ -154,13 +155,14 @@ function NumberStepper({
   onChange: (v: number) => void;
   unit?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-4">
       <button
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
         className="w-10 h-10 rounded-full border-2 border-[var(--color-primary)] text-[var(--color-primary)] flex items-center justify-center font-bold text-lg transition-colors active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[var(--color-primary)] hover:text-[var(--color-on-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
-        aria-label="Decrease"
+        aria-label={t('common.decrease')}
       >
         −
       </button>
@@ -174,7 +176,7 @@ function NumberStepper({
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
         className="w-10 h-10 rounded-full border-2 border-[var(--color-primary)] text-[var(--color-primary)] flex items-center justify-center font-bold text-lg transition-colors active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[var(--color-primary)] hover:text-[var(--color-on-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
-        aria-label="Increase"
+        aria-label={t('common.increase')}
       >
         +
       </button>
@@ -433,7 +435,7 @@ function StepCycleHistory({
         <Card padding="md" className="glass space-y-3">
           <div>
             <p className="font-semibold text-[var(--color-text-primary)]">{t('onboarding.cycleLength')}</p>
-            <p className="text-xs text-[var(--color-text-muted)]">Usually 21–35 days</p>
+            <p className="text-xs text-[var(--color-text-muted)]">{t('onboarding.cycleLengthHint')}</p>
           </div>
           <div className="flex justify-center">
             <NumberStepper
@@ -441,7 +443,7 @@ function StepCycleHistory({
               min={21}
               max={45}
               onChange={onCycleLength}
-              unit="days"
+              unit={t('common.days')}
             />
           </div>
           {/* Visual track */}
@@ -457,7 +459,7 @@ function StepCycleHistory({
         <Card padding="md" className="glass space-y-3">
           <div>
             <p className="font-semibold text-[var(--color-text-primary)]">{t('onboarding.periodLength')}</p>
-            <p className="text-xs text-[var(--color-text-muted)]">Usually 3–7 days</p>
+            <p className="text-xs text-[var(--color-text-muted)]">{t('onboarding.periodLengthHint')}</p>
           </div>
           <div className="flex justify-center">
             <NumberStepper
@@ -465,7 +467,7 @@ function StepCycleHistory({
               min={1}
               max={10}
               onChange={onPeriodLength}
-              unit="days"
+              unit={t('common.days')}
             />
           </div>
           <div className="h-1.5 rounded-full bg-[var(--color-bg-secondary)] overflow-hidden">
@@ -493,10 +495,10 @@ function StepCycleHistory({
         {/* Flow intensity */}
         <Card padding="md" className="glass space-y-3">
           <div>
-            <p className="font-semibold text-[var(--color-text-primary)]">{t('dashboard.flowIntensity', 'Flow intensity')}</p>
-            <p className="text-xs text-[var(--color-text-muted)]">How heavy is your usual flow?</p>
+            <p className="font-semibold text-[var(--color-text-primary)]">{t('dashboard.flowIntensity')}</p>
+            <p className="text-xs text-[var(--color-text-muted)]">{t('onboarding.flowHint')}</p>
           </div>
-          <div className="flex gap-2" role="group" aria-label="Flow intensity">
+          <div className="flex gap-2" role="group" aria-label={t('dashboard.flowIntensity')}>
             {(['light', 'medium', 'heavy'] as FlowIntensity[]).map((f) => (
               <button
                 key={f}
@@ -588,8 +590,8 @@ function StepProfile({
         <div>
           <Input
             id="onboarding-user-name"
-            label={`${t('onboarding.yourNameLabel', 'Your name')} *`}
-            placeholder="Your name"
+            label={`${t('onboarding.yourNameLabel')} *`}
+            placeholder={t('onboarding.yourNamePlaceholder')}
             value={userName}
             error={userNameError}
             onChange={(e) => onUserName(e.target.value)}
@@ -603,7 +605,7 @@ function StepProfile({
         <Input
           id="onboarding-profile-name"
           label={`${t('onboarding.nameLabel')} *`}
-          placeholder={relation === 'self' ? t('onboarding.namePlaceholder') : `${t(`profiles.${relation}`)}\'s name`}
+          placeholder={relation === 'self' ? t('onboarding.namePlaceholder') : t('onboarding.relativeNamePlaceholder', { relation: t(`profiles.${relation}`) })}
           value={name}
           error={nameError}
           onChange={(e) => onName(e.target.value)}
@@ -679,7 +681,7 @@ function StepDone({
       ? [{ label: t('onboarding.lastPeriodLabel'), value: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(state.lastPeriodDate + 'T00:00:00')) }]
       : []),
     {
-      label: t('dashboard.flowIntensity', 'Flow intensity'),
+      label: t('dashboard.flowIntensity'),
       value: `${state.flowIntensity === 'light' ? '💧' : state.flowIntensity === 'medium' ? '🩸' : '🌊'} ${state.flowIntensity.charAt(0).toUpperCase() + state.flowIntensity.slice(1)}`,
     },
   ];

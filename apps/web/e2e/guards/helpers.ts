@@ -190,3 +190,35 @@ export async function sampleTransforms(page: Page, action: () => Promise<void>):
     return w.__tx
   })
 }
+
+/**
+ * /subscription is server-rendered from the DB user, so /api mocks cannot change it, and dev-login users are Pro.
+ * Rewrite the user in the document payload into an email trial user: with a phone (BDApps confirm dialog), or
+ * without one (phone-entry dialog).
+ */
+export async function asFreeSubscriber(page: Page, noPhone: boolean) {
+  const key = (k: string) => new RegExp(`(\\\\?"${k}\\\\?":)(?:\\\\?"[^"\\\\]*\\\\?"|null)`, 'g')
+  const future = new Date(Date.now() + 5 * 3_600_000).toISOString()
+  // Only the client-side (RSC) navigation is rewritten: a rewritten document would mismatch its server-rendered DOM.
+  await page.route(/\/subscription(\?.*)?$/, async (route) => {
+    const res = await route.fetch()
+    const type = res.headers()['content-type'] ?? ''
+    if (!/text\/x-component/.test(type)) return route.fulfill({ response: res })
+    let html = await res.text()
+    const q = html.includes('\\"subscriptionStatus') ? '\\"' : '"'
+    const val = (v: string) => `$1${q}${v}${q}`
+    html = html.replace(key('subscriptionStatus'), val('FREE'))
+    // Phone (OTP) users are Pro by design (getSubscriptionTier), so the page needs an EMAIL user.
+    html = html.replace(key('authMethod'), val('EMAIL')).replace(key('emailTrialExpiresAt'), val(future))
+    if (noPhone) html = html.replace(key('phone'), '$1null')
+    await route.fulfill({ response: res, body: html })
+  })
+}
+
+/** Load a quiet page, then navigate to /subscription on the client so the rewritten RSC payload is what renders. */
+export async function gotoSubscriptionClientSide(page: Page) {
+  await gotoQuiet(page, '/dashboard')
+  await page.evaluate(() => (window as unknown as { next: { router: { push: (u: string) => void } } }).next.router.push('/subscription'))
+  await page.waitForURL('**/subscription')
+  await settle(page)
+}

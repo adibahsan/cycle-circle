@@ -41,7 +41,7 @@ export function BottomNav({
   return (
     <nav
       data-bottom-nav
-      aria-label="Mobile navigation"
+      aria-label={t('nav.mobileNav')}
       className="fixed bottom-0 left-0 right-0 bg-[var(--color-bg-card)] border-t border-[var(--color-border)] z-40 md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >

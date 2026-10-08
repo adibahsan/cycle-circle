@@ -97,9 +97,9 @@ export default function LoginPage() {
           Cycle Circle
         </h1>
         <p className="text-sm text-[var(--color-text-muted)] text-center leading-relaxed px-4">
-          আপনার স্বাস্থ্য, আপনার নিয়ন্ত্রণে
+          {t('auth.loginHeadline')}
           <br />
-          <span className="text-[var(--color-text-secondary)]">Your cycle, your way</span>
+          <span className="text-[var(--color-text-secondary)]">{t('app.tagline')}</span>
         </p>
       </motion.div>
 
@@ -115,9 +115,7 @@ export default function LoginPage() {
           {t('auth.login')}
         </h2>
         <p className="text-sm text-[var(--color-text-muted)] mb-5">
-          {devMode
-            ? 'Dev mode: OTP verification with test codes'
-            : 'Enter your phone number to receive a one-time code'}
+          {devMode ? t('auth.devModeHint') : t('auth.phoneHint')}
         </p>
 
         {/* Phone input */}
@@ -137,7 +135,7 @@ export default function LoginPage() {
               name="phone"
               autoComplete="tel"
               spellCheck={false}
-              placeholder="01XXXXXXXXX…"
+              placeholder={t('auth.phonePlaceholder')}
               value={phone}
               onChange={handlePhoneChange}
               maxLength={11}
@@ -172,7 +170,7 @@ export default function LoginPage() {
           ) : (
             <span className="flex items-center gap-2">
               <Phone size={18} aria-hidden="true" />
-              {devMode ? `${t('auth.sendOtp')} (dev)` : t('auth.sendOtp')}
+              {devMode ? `${t('auth.sendOtp')} ${t('auth.devSuffix')}` : t('auth.sendOtp')}
             </span>
           )}
         </Button>
@@ -210,10 +208,10 @@ export default function LoginPage() {
           </span>
         </div>
         <p className="text-[11px] text-[var(--color-text-muted)] text-center leading-relaxed px-6">
-          By continuing you agree to Cycle Circle&apos;s{' '}
-          <Link href="/privacy" className="text-[var(--color-secondary)] font-medium hover:underline underline-offset-2">Privacy Policy</Link>{' '}
-          &amp;{' '}
-          <Link href="/terms" className="text-[var(--color-secondary)] font-medium hover:underline underline-offset-2">Terms of Service</Link>
+          {t('auth.agreePrefix')}{' '}
+          <Link href="/privacy" className="text-[var(--color-secondary)] font-medium hover:underline underline-offset-2">{t('auth.privacyPolicy')}</Link>{' '}
+          {t('auth.and')}{' '}
+          <Link href="/terms" className="text-[var(--color-secondary)] font-medium hover:underline underline-offset-2">{t('auth.termsOfService')}</Link>
         </p>
       </motion.div>
     </div>

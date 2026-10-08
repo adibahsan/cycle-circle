@@ -380,7 +380,7 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ── Desktop Sidebar (md+) ── */}
-      <aside className="hidden md:flex md:flex-col md:w-64 md:sticky md:top-0 md:h-screen md:shrink-0 glass border-r border-[var(--color-border)] z-40" aria-label="Sidebar navigation">
+      <aside className="hidden md:flex md:flex-col md:w-64 md:sticky md:top-0 md:h-screen md:shrink-0 glass border-r border-[var(--color-border)] z-40" aria-label={t('nav.sidebarNav')}>
         {/* Sidebar header / branding */}
         <div className="px-5 py-5 flex items-center gap-3">
           <VestaLogo size={28} animate={false} />
@@ -403,7 +403,7 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Main navigation */}
-        <nav className="flex-1 px-3 space-y-1 overflow-y-auto" aria-label="Main navigation">
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto" aria-label={t('nav.mainNav')}>
           <p className="px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
             {t('nav.menu')}
           </p>
@@ -475,7 +475,7 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
           )}
           <button
             onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={theme === 'dark' ? t('nav.switchToLight') : t('nav.switchToDark')}
             className="flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--color-bg-secondary)] text-sm font-medium hover:bg-[var(--color-bg-primary)] transition-colors w-full"
           >
             {theme === 'dark' ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}

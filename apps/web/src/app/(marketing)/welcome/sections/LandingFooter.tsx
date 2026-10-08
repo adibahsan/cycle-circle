@@ -21,7 +21,7 @@ export function LandingFooter() {
         </div>
 
         {/* Nav links */}
-        <nav aria-label="Footer navigation">
+        <nav aria-label={t('nav.footerNav')}>
           <ul className="flex items-center gap-6 list-none p-0 m-0">
             <li>
               <Link
