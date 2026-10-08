@@ -247,7 +247,7 @@ export function OnboardingTour({
         width: targetRect.width + SPOTLIGHT_PADDING * 2,
         height: targetRect.height + SPOTLIGHT_PADDING * 2,
         borderRadius: 16,
-        boxShadow: '0 0 0 9999px rgba(0,0,0,0.6)',
+        boxShadow: '0 0 0 9999px color-mix(in srgb, var(--color-brand-navy) 60%, transparent)',
         pointerEvents: 'none',
         transition: prefersReducedMotion
           ? 'none'
@@ -469,7 +469,7 @@ export function OnboardingTour({
             ref={nextBtnRef}
             type="button"
             onClick={handleNext}
-            className="inline-flex items-center justify-center font-semibold rounded-xl transition-[color,background-color,border-color,box-shadow,transform] duration-200 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)] shadow-soft px-3 py-1.5 text-sm"
+            className="inline-flex items-center justify-center font-semibold rounded-xl transition-[color,background-color,border-color,box-shadow,transform] duration-200 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] bg-[var(--color-action)] text-[var(--color-on-action)] hover:bg-[var(--color-primary-dark)] shadow-soft px-3 py-1.5 text-sm"
           >
             {isLast
               ? t('tour.done', { defaultValue: 'Done' })

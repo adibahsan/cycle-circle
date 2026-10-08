@@ -235,7 +235,7 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
           >
             <CheckCircle
               size={48}
-              className="text-emerald-500"
+              className="text-[var(--goal-accent)]"
               aria-hidden="true"
             />
             <p className="text-base font-semibold text-[var(--color-text-primary)]">
@@ -287,7 +287,7 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
                     maxLength={200}
                     className={`w-full pl-10 pr-4 py-3 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/30 focus-visible:border-[var(--goal-accent)] transition-colors duration-200 text-base ${
                       nameError
-                        ? 'border-red-400 focus-visible:ring-red-300'
+                        ? 'border-[var(--color-error)] focus-visible:ring-[var(--color-error)]/30'
                         : 'border-[var(--color-border)]'
                     }`}
                     aria-describedby={nameError ? 'completion-name-error' : undefined}
@@ -298,7 +298,7 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
                     id="completion-name-error"
                     role="alert"
                     aria-live="polite"
-                    className="mt-1.5 text-sm text-red-500 flex items-center gap-1"
+                    className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1"
                   >
                     <span aria-hidden="true">⚠</span>
                     {nameError}
@@ -335,14 +335,14 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
                     maxLength={11}
                     className={`w-full pl-20 pr-10 py-3 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/30 focus-visible:border-[var(--goal-accent)] transition-colors duration-200 text-base tracking-widest font-medium ${
                       phoneError
-                        ? 'border-red-400 focus-visible:ring-red-300'
+                        ? 'border-[var(--color-error)] focus-visible:ring-[var(--color-error)]/30'
                         : 'border-[var(--color-border)]'
                     }`}
                     aria-describedby={phoneError ? 'completion-phone-error' : undefined}
                   />
                   {phone.length === 11 && !phoneError && (
                     <span
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--goal-accent)]"
                       aria-hidden="true"
                     >
                       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -363,7 +363,7 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
                     id="completion-phone-error"
                     role="alert"
                     aria-live="polite"
-                    className="mt-1.5 text-sm text-red-500 flex items-center gap-1"
+                    className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1"
                   >
                     <span aria-hidden="true">⚠</span>
                     {phoneError}
@@ -398,7 +398,7 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
                     onChange={handleEmailChange}
                     className={`w-full pl-10 pr-4 py-3 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/30 focus-visible:border-[var(--goal-accent)] transition-colors duration-200 text-base ${
                       emailError
-                        ? 'border-red-400 focus-visible:ring-red-300'
+                        ? 'border-[var(--color-error)] focus-visible:ring-[var(--color-error)]/30'
                         : 'border-[var(--color-border)]'
                     }`}
                     aria-describedby={emailError ? 'completion-email-error' : undefined}
@@ -409,7 +409,7 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
                     id="completion-email-error"
                     role="alert"
                     aria-live="polite"
-                    className="mt-1.5 text-sm text-red-500 flex items-center gap-1"
+                    className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1"
                   >
                     <span aria-hidden="true">⚠</span>
                     {emailError}
@@ -423,7 +423,7 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
               <p
                 role="alert"
                 aria-live="polite"
-                className="text-sm text-red-500 flex items-center gap-1"
+                className="text-sm text-[var(--color-error)] flex items-center gap-1"
               >
                 <span aria-hidden="true">⚠</span>
                 {submitError}

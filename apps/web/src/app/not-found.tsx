@@ -8,7 +8,7 @@ export default function NotFound() {
         <p className="text-sm text-[var(--color-text-muted)]">The page you&apos;re looking for doesn&apos;t exist.</p>
         <Link
           href="/dashboard"
-          className="inline-block px-4 py-2 rounded-xl bg-[var(--color-primary)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+          className="inline-block px-4 py-2 rounded-xl bg-[var(--color-action)] text-[var(--color-on-action)] text-sm font-medium hover:opacity-90 transition-opacity"
         >
           Go to Dashboard
         </Link>

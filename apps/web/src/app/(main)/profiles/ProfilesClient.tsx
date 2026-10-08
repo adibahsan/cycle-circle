@@ -19,9 +19,15 @@ import '@vesta/shared/utils/i18n';
 const MAX_PROFILES = 6;
 
 const FLOW_COLORS: Record<'light' | 'medium' | 'heavy', string> = {
-  light: '#F2728E',
-  medium: '#E8476C',
-  heavy: '#C93558',
+  light: 'var(--color-follicular)',
+  medium: 'var(--color-primary)',
+  heavy: 'var(--color-menstrual)',
+};
+
+const FLOW_TEXT: Record<'light' | 'medium' | 'heavy', string> = {
+  light: 'var(--color-on-follicular)',
+  medium: 'var(--color-on-accent)',
+  heavy: 'var(--color-on-menstrual)',
 };
 
 const RELATIONS: ProfileRelation[] = ['self', 'wife', 'sister', 'mother', 'daughter', 'girlfriend'];
@@ -36,12 +42,12 @@ const RELATION_ICONS: Record<ProfileRelation, string> = {
 };
 
 const RELATION_COLORS: Record<ProfileRelation, { bg: string; text: string; border: string }> = {
-  self: { bg: 'rgba(232,71,108,0.1)', text: '#E8476C', border: 'rgba(232,71,108,0.3)' },
-  wife: { bg: 'rgba(155,127,212,0.1)', text: '#9B7FD4', border: 'rgba(155,127,212,0.3)' },
-  sister: { bg: 'rgba(123,197,174,0.1)', text: '#4DAA8D', border: 'rgba(123,197,174,0.3)' },
-  mother: { bg: 'rgba(255,140,107,0.1)', text: '#E06B3C', border: 'rgba(255,140,107,0.3)' },
-  daughter: { bg: 'rgba(255,193,7,0.1)', text: '#D4A017', border: 'rgba(255,193,7,0.3)' },
-  girlfriend: { bg: 'rgba(232,71,108,0.08)', text: '#E8476C', border: 'rgba(232,71,108,0.25)' },
+  self: { bg: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', text: 'var(--color-text-primary)', border: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' },
+  wife: { bg: 'color-mix(in srgb, var(--color-secondary) 10%, transparent)', text: 'var(--color-text-primary)', border: 'color-mix(in srgb, var(--color-secondary) 30%, transparent)' },
+  sister: { bg: 'color-mix(in srgb, var(--color-coral) 10%, transparent)', text: 'var(--color-text-primary)', border: 'color-mix(in srgb, var(--color-coral) 30%, transparent)' },
+  mother: { bg: 'color-mix(in srgb, var(--color-follicular) 16%, transparent)', text: 'var(--color-text-primary)', border: 'color-mix(in srgb, var(--color-follicular) 40%, transparent)' },
+  daughter: { bg: 'color-mix(in srgb, var(--color-accent) 10%, transparent)', text: 'var(--color-text-primary)', border: 'color-mix(in srgb, var(--color-accent) 30%, transparent)' },
+  girlfriend: { bg: 'color-mix(in srgb, var(--color-primary) 8%, transparent)', text: 'var(--color-text-primary)', border: 'color-mix(in srgb, var(--color-primary) 25%, transparent)' },
 };
 
 // Map Prisma uppercase enum to lowercase ProfileRelation
@@ -133,12 +139,12 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
         className="w-full text-left rounded-2xl border transition-[color,background-color,border-color,box-shadow] duration-200 p-4 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
         style={{
           background: isActive
-            ? 'linear-gradient(135deg, rgba(232,71,108,0.07) 0%, rgba(155,127,212,0.07) 100%)'
+            ? 'linear-gradient(135deg, color-mix(in srgb, var(--goal-accent) 7%, transparent) 0%, color-mix(in srgb, var(--color-secondary) 7%, transparent) 100%)'
             : 'var(--color-bg-card)',
           borderColor: isActive ? 'var(--goal-accent)' : 'var(--color-border)',
           boxShadow: isActive
             ? '0 0 0 2px color-mix(in srgb, var(--goal-accent) 20%, transparent), 0 4px 16px color-mix(in srgb, var(--goal-accent) 8%, transparent)'
-            : '0 2px 8px rgba(0,0,0,0.03)',
+            : '0 2px 8px color-mix(in srgb, var(--color-brand-navy) 4%, transparent)',
         }}
         aria-label={`${t('profiles.switchTo')} ${profile.name}`}
       >
@@ -171,7 +177,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
                   className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                   style={{
                     background: 'var(--goal-accent)',
-                    color: '#fff',
+                    color: 'var(--color-on-accent)',
                   }}
                 >
                   ACTIVE
@@ -200,7 +206,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
                 className="w-7 h-7 rounded-full flex items-center justify-center"
                 style={{ background: 'var(--goal-accent)' }}
               >
-                <Check size={14} color="#fff" strokeWidth={2.5} />
+                <Check size={14} color="var(--color-on-accent)" strokeWidth={2.5} />
               </div>
             ) : (
               <ChevronRight size={16} className="text-[var(--color-text-muted)]" />
@@ -214,12 +220,12 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
               }}
               className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
               style={{
-                background: 'rgba(155,127,212,0.1)',
-                border: '1px solid rgba(155,127,212,0.25)',
+                background: 'color-mix(in srgb, var(--color-secondary) 10%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--color-secondary) 25%, transparent)',
               }}
               aria-label={`Edit ${profile.name}`}
             >
-              <Pencil size={13} color="#9B7FD4" aria-hidden="true" />
+              <Pencil size={13} color="var(--color-secondary)" aria-hidden="true" />
             </button>
 
             {/* Delete — only for non-active profiles */}
@@ -231,12 +237,12 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
                 }}
                 className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                 style={{
-                  background: 'rgba(232,71,108,0.08)',
-                  border: '1px solid rgba(232,71,108,0.2)',
+                  background: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--color-error) 25%, transparent)',
                 }}
                 aria-label={`${t('common.delete')} ${profile.name}`}
               >
-                <Trash2 size={13} color="#E8476C" aria-hidden="true" />
+                <Trash2 size={13} color="var(--color-error)" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -328,7 +334,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
             className="w-8 h-8 rounded-xl flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
           >
-            <UserPlus size={15} color="#fff" />
+            <UserPlus size={15} color="var(--color-on-accent)" />
           </div>
           <h3 className="font-bold text-[var(--color-text-primary)] text-base">
             {t('profiles.add')}
@@ -481,7 +487,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
             aria-invalid={!!lastPeriodError}
             aria-describedby={lastPeriodError ? 'last-period-date-error' : undefined}
             className={`w-full rounded-xl border px-3 py-2.5 text-sm font-medium text-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] transition-colors duration-150 ${
-              lastPeriodError ? 'border-red-400 focus-visible:ring-red-300' : ''
+              lastPeriodError ? 'border-[var(--color-error)] focus-visible:ring-[var(--color-error)]/30' : ''
             }`}
             style={{ borderColor: lastPeriodError ? undefined : 'var(--color-border)' }}
           />
@@ -489,7 +495,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
             id="last-period-date-error"
             role="alert"
             aria-hidden={!lastPeriodError}
-            className={`mt-1 text-sm text-red-500 min-h-[20px] transition-opacity duration-150 ${
+            className={`mt-1 text-sm text-[var(--color-error)] min-h-[20px] transition-opacity duration-150 ${
               lastPeriodError ? 'opacity-100' : 'opacity-0'
             }`}
           >
@@ -507,12 +513,12 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
                 onClick={() => setFlowIntensity(f)}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] ${
                   flowIntensity === f
-                    ? 'text-white shadow-soft'
+                    ? 'shadow-soft'
                     : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]'
                 }`}
                 style={
                   flowIntensity === f
-                    ? { backgroundColor: FLOW_COLORS[f], borderColor: FLOW_COLORS[f] }
+                    ? { backgroundColor: FLOW_COLORS[f], borderColor: FLOW_COLORS[f], color: FLOW_TEXT[f] }
                     : {}
                 }
                 aria-pressed={flowIntensity === f}
@@ -531,7 +537,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
           role="alert"
           aria-live="polite"
           aria-hidden={!serverError}
-          className={`text-sm text-red-500 text-center min-h-[20px] transition-opacity duration-150 ${
+          className={`text-sm text-[var(--color-error)] text-center min-h-[20px] transition-opacity duration-150 ${
             serverError ? 'opacity-100' : 'opacity-0'
           }`}
         >
@@ -598,7 +604,7 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-8"
-      style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+      style={{ background: 'color-mix(in srgb, var(--color-brand-navy) 55%, transparent)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}
       onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
     >
@@ -628,7 +634,7 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
               className="w-8 h-8 rounded-xl flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
             >
-              <Pencil size={15} color="#fff" />
+              <Pencil size={15} color="var(--color-on-accent)" />
             </div>
             <h3 id="edit-profile-dialog-title" className="font-bold text-[var(--color-text-primary)] text-base">
               {t('profiles.editProfile')}
@@ -764,7 +770,7 @@ function EditProfileForm({ profile, onClose, onSubmit, serverError, disabled }: 
             role="alert"
             aria-live="polite"
             aria-hidden={!serverError}
-            className={`text-sm text-red-500 text-center min-h-[20px] transition-opacity duration-150 ${
+            className={`text-sm text-[var(--color-error)] text-center min-h-[20px] transition-opacity duration-150 ${
               serverError ? 'opacity-100' : 'opacity-0'
             }`}
           >
@@ -802,7 +808,7 @@ function DeleteDialog({ profileName, error, onConfirm, onCancel, disabled }: Del
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-8"
-      style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+      style={{ background: 'color-mix(in srgb, var(--color-brand-navy) 55%, transparent)', backdropFilter: 'blur(4px)' }}
       onClick={onCancel}
       onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
     >
@@ -819,8 +825,8 @@ function DeleteDialog({ profileName, error, onConfirm, onCancel, disabled }: Del
         onClick={(e: MouseEvent) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(232,71,108,0.1)' }}>
-            <Trash2 size={18} color="#E8476C" />
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--color-error) 10%, transparent)' }}>
+            <Trash2 size={18} color="var(--color-error)" />
           </div>
           <div>
             <h3 id="delete-dialog-title" className="font-bold text-[var(--color-text-primary)]">Remove Profile</h3>
@@ -836,7 +842,7 @@ function DeleteDialog({ profileName, error, onConfirm, onCancel, disabled }: Del
           role="alert"
           aria-live="polite"
           aria-hidden={!error}
-          className={`text-sm text-red-500 text-center mb-4 min-h-[20px] transition-opacity duration-150 ${
+          className={`text-sm text-[var(--color-error)] text-center mb-4 min-h-[20px] transition-opacity duration-150 ${
             error ? 'opacity-100' : 'opacity-0'
           }`}
         >
@@ -849,8 +855,8 @@ function DeleteDialog({ profileName, error, onConfirm, onCancel, disabled }: Del
           <button
             onClick={onConfirm}
             disabled={disabled}
-            className="flex-1 py-2 rounded-xl text-sm font-bold text-white transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
-            style={{ background: 'var(--color-primary)' }}
+            className="flex-1 py-2 rounded-xl text-sm font-bold text-[var(--color-on-action)] transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+            style={{ background: 'var(--color-error)' }}
           >
             {t('common.delete')}
           </button>
@@ -1058,8 +1064,8 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                 background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
               }}
             >
-              <Check size={14} color="#fff" />
-              <span className="text-white text-sm font-semibold">
+              <Check size={14} color="var(--color-on-accent)" />
+              <span className="text-[var(--color-on-accent)] text-sm font-semibold">
                 {t('profiles.switchedTo', { name: profiles.find((p) => p.id === justSwitched)?.name })}
               </span>
             </motion.div>
@@ -1116,7 +1122,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                         background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
                       }}
                     >
-                      <Plus size={18} color="#fff" strokeWidth={2.5} />
+                      <Plus size={18} color="var(--color-on-accent)" strokeWidth={2.5} />
                     </div>
                     <div className="text-left">
                       <p
@@ -1142,7 +1148,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.4 }}
           className="mt-5 rounded-2xl p-4 flex items-start gap-3"
-          style={{ background: 'rgba(155,127,212,0.07)', border: '1px solid rgba(155,127,212,0.2)' }}
+          style={{ background: 'color-mix(in srgb, var(--color-secondary) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--color-secondary) 20%, transparent)' }}
         >
           <span className="text-xl flex-shrink-0 mt-0.5">🔐</span>
           <div>

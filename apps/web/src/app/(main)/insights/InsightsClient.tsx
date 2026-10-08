@@ -87,11 +87,11 @@ function filterSymptomByDate(
 const SYMPTOM_COLORS: Record<string, string> = {
   PHYSICAL: 'var(--goal-accent)',
   MOOD: 'var(--color-secondary)',
-  DISCHARGE: 'var(--color-fertile)',
-  LIFESTYLE: 'var(--color-ovulation)',
+  DISCHARGE: 'var(--color-coral)',
+  LIFESTYLE: 'var(--color-accent)',
 }
 
-const SYMPTOM_FALLBACK = '#a78bfa'
+const SYMPTOM_FALLBACK = 'var(--color-primary-light)'
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -139,7 +139,7 @@ function DateRangeControl({
           aria-pressed={value === key}
           className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--goal-accent)] ${
             value === key
-              ? 'bg-[var(--goal-accent)] text-white'
+              ? 'bg-[var(--goal-accent)] text-[var(--color-on-accent)]'
               : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-[var(--color-border)]'
           }`}
         >
@@ -391,6 +391,7 @@ function PeriodRegularityCard({
   if (data.sampleSize === 0) return <NoDataMessage label={noDataLabel} />
 
   const badgeColor = data.regular ? 'var(--color-fertile)' : 'var(--color-menstrual)'
+  const badgeTextColor = data.regular ? 'var(--color-on-fertile)' : 'var(--color-on-menstrual)'
   const badgeLabel = data.regular ? stableLabel : variableLabel
 
   return (
@@ -425,8 +426,8 @@ function PeriodRegularityCard({
 
       {/* Badge */}
       <div
-        className="inline-flex items-center px-3 py-1.5 rounded-full text-white text-xs font-bold self-start sm:self-center"
-        style={{ backgroundColor: badgeColor }}
+        className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold self-start sm:self-center"
+        style={{ backgroundColor: badgeColor, color: badgeTextColor }}
         aria-label={badgeLabel}
       >
         {badgeLabel}
@@ -485,7 +486,7 @@ function FertileWindowHistoryList({
                 </span>
                 <span
                   className="text-xs font-bold tabular-nums"
-                  style={{ color: 'var(--color-fertile)' }}
+                  style={{ color: 'var(--color-text-primary)' }}
                 >
                   {fertileSpan}d
                 </span>
@@ -502,7 +503,7 @@ function FertileWindowHistoryList({
             {/* Ovulation day */}
             <span
               className="text-xs font-bold tabular-nums shrink-0 hidden sm:block"
-              style={{ color: 'var(--color-ovulation)' }}
+              style={{ color: 'var(--color-text-primary)' }}
             >
               ⊕ {fmt(entry.ovulationDay)}
             </span>

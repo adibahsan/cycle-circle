@@ -88,7 +88,7 @@ export function StreakBadge({ streak, streakAtRisk, className }: StreakBadgeProp
           size={18}
           aria-hidden="true"
           className="shrink-0"
-          style={{ color: streakAtRisk ? 'var(--color-accent)' : 'var(--goal-accent, var(--color-primary))' }}
+          style={{ color: streakAtRisk ? 'var(--color-gold-ink)' : 'var(--goal-accent, var(--color-primary))' }}
         />
       ) : (
         <motion.div
@@ -103,7 +103,7 @@ export function StreakBadge({ streak, streakAtRisk, className }: StreakBadgeProp
           <Flame
             size={18}
             aria-hidden="true"
-            style={{ color: streakAtRisk ? 'var(--color-accent)' : 'var(--goal-accent, var(--color-primary))' }}
+            style={{ color: streakAtRisk ? 'var(--color-gold-ink)' : 'var(--goal-accent, var(--color-primary))' }}
           />
         </motion.div>
       )}
@@ -114,7 +114,7 @@ export function StreakBadge({ streak, streakAtRisk, className }: StreakBadgeProp
           <>
             <span
               className="text-base font-extrabold tabular-nums leading-none"
-              style={{ color: streakAtRisk ? 'var(--color-accent)' : 'var(--goal-accent, var(--color-primary))' }}
+              style={{ color: streakAtRisk ? 'var(--color-gold-ink)' : 'var(--goal-accent, var(--color-primary))' }}
             >
               {displayCount}
             </span>
@@ -134,7 +134,7 @@ export function StreakBadge({ streak, streakAtRisk, className }: StreakBadgeProp
         <span
           className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
           style={{
-            color: 'var(--color-accent)',
+            color: 'var(--color-gold-ink)',
             backgroundColor: 'color-mix(in srgb, var(--color-accent) 12%, transparent)',
           }}
         >

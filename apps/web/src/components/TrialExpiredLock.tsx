@@ -65,8 +65,8 @@ export function TrialExpiredLock() {
         <Card padding="lg" className="text-center space-y-5">
           {/* Lock icon */}
           <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center shadow-glow">
-              <Lock size={28} className="text-white" aria-hidden="true" />
+            <div className="w-16 h-16 rounded-full bg-[var(--goal-accent)] flex items-center justify-center shadow-glow">
+              <Lock size={28} className="text-[var(--color-on-accent)]" aria-hidden="true" />
             </div>
           </div>
 
@@ -89,7 +89,7 @@ export function TrialExpiredLock() {
               <Button
                 variant="primary"
                 fullWidth
-                className="gradient-primary border-0"
+                className="border-0"
               >
                 {t('trialExpired.upgradeCta')}
               </Button>

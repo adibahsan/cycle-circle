@@ -271,7 +271,7 @@ export function DatePicker({
                         ? 'color-mix(in srgb, var(--goal-accent) 10%, transparent)'
                         : 'transparent',
                     color: isSelected
-                      ? '#fff'
+                      ? 'var(--color-on-accent)'
                       : isToday
                         ? 'var(--goal-accent)'
                         : inMonth

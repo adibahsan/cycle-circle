@@ -126,11 +126,11 @@ export function CelebrationModal({
             }
             className="relative z-10 w-20 h-20 rounded-full flex items-center justify-center"
             style={{
-              background: 'color-mix(in srgb, var(--goal-accent) 90%, white)',
+              background: 'var(--goal-accent)',
               boxShadow: '0 8px 40px color-mix(in srgb, var(--goal-accent) 35%, transparent)',
             }}
           >
-            <CheckCircle size={40} className="text-white" strokeWidth={2.5} aria-hidden="true" />
+            <CheckCircle size={40} className="text-[var(--color-on-accent)]" strokeWidth={2.5} aria-hidden="true" />
           </motion.div>
         </div>
 
@@ -166,7 +166,7 @@ export function CelebrationModal({
         {/* Done button */}
         <button
           onClick={onClose}
-          className="mt-1 px-8 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          className="mt-1 px-8 py-2.5 rounded-xl text-sm font-semibold text-[var(--color-on-accent)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
           style={
             {
               background: 'var(--goal-accent)',

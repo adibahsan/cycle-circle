@@ -88,14 +88,14 @@ function SegmentedControl<T extends string>({
             onClick={() => onChange(opt.value)}
             className={`relative flex-1 py-1.5 px-4 rounded-[10px] text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] ${
               active
-                ? 'text-white shadow-soft'
+                ? 'text-[var(--color-on-accent)] shadow-soft'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
             }`}
           >
             {active && (
               <motion.span
                 layoutId={`seg-${options.map(o => o.value).join('-')}`}
-                className="absolute inset-0 rounded-[10px] gradient-primary"
+                className="absolute inset-0 rounded-[10px] bg-[var(--goal-accent)]"
                 transition={{ type: 'spring', damping: 22, stiffness: 300 }}
               />
             )}
@@ -132,7 +132,7 @@ function Toggle({
       <motion.span
         layout
         transition={{ type: 'spring', damping: 22, stiffness: 400 }}
-        className="inline-block rounded-full bg-white shadow-soft"
+        className="inline-block rounded-full bg-[var(--color-bg-card)] shadow-soft"
         style={{ width: 18, height: 18, translateX: checked ? 20 : 4 }}
       />
     </button>
@@ -176,7 +176,7 @@ function Toast({ toast }: { toast: ToastState | null }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.94 }}
             transition={{ type: 'spring', damping: 24, stiffness: 320 }}
-            className="grid rounded-xl bg-[var(--color-text-primary)] text-white text-sm font-medium px-4 py-3 shadow-glow text-center"
+            className="grid rounded-xl bg-[var(--color-text-primary)] text-[var(--color-bg-card)] text-sm font-medium px-4 py-3 shadow-glow text-center"
           >
             {/* Spans share one grid cell, so swapping text crossfades without
                 shifting the bar's position or height. */}
@@ -202,8 +202,8 @@ function Toast({ toast }: { toast: ToastState | null }) {
 function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
   return (
     <div className="flex items-center gap-2 mb-3">
-      <div className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center shrink-0">
-        <Icon size={14} className="text-white" aria-hidden="true" />
+      <div className="w-7 h-7 rounded-lg bg-[var(--goal-accent)] flex items-center justify-center shrink-0">
+        <Icon size={14} className="text-[var(--color-on-accent)]" aria-hidden="true" />
       </div>
       <h2 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-wide">
         {title}
@@ -233,7 +233,7 @@ function AccountRow({
         {label}
       </span>
       {badge && (
-        <span className="flex items-center gap-1 text-xs font-bold text-white px-2 py-0.5 rounded-full gradient-primary">
+        <span className="flex items-center gap-1 text-xs font-bold text-[var(--color-on-accent)] px-2 py-0.5 rounded-full bg-[var(--goal-accent)]">
           {badge}
         </span>
       )}
@@ -694,7 +694,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                             <button
                               onClick={handleAddEmail}
                               disabled={!contactEmail || contactSaving}
-                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white gradient-primary disabled:opacity-50 transition-opacity"
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[var(--color-on-accent)] bg-[var(--goal-accent)] disabled:opacity-50 transition-opacity"
                             >
                               {contactSaving ? '...' : t('common.save')}
                             </button>
@@ -706,7 +706,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                             </button>
                           </div>
                           {emailError && (
-                            <p role="alert" aria-live="polite" className="text-xs text-red-500 dark:text-red-400 mt-1">
+                            <p role="alert" aria-live="polite" className="text-xs text-[var(--color-error)] mt-1">
                               {emailError}
                             </p>
                           )}
@@ -742,7 +742,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                             <button
                               onClick={handleAddPhone}
                               disabled={!contactPhone || contactSaving}
-                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white gradient-primary disabled:opacity-50 transition-opacity"
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[var(--color-on-accent)] bg-[var(--goal-accent)] disabled:opacity-50 transition-opacity"
                             >
                               {contactSaving ? '...' : t('common.save')}
                             </button>
@@ -754,7 +754,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                             </button>
                           </div>
                           {phoneError && (
-                            <p role="alert" aria-live="polite" className="text-xs text-red-500 dark:text-red-400 mt-1">
+                            <p role="alert" aria-live="polite" className="text-xs text-[var(--color-error)] mt-1">
                               {phoneError}
                             </p>
                           )}
@@ -779,9 +779,9 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                         <span
                           className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                             planTier === 'PRO'
-                              ? 'gradient-primary text-white'
+                              ? 'bg-[var(--goal-accent)] text-[var(--color-on-accent)]'
                               : planTier === 'LAPSED'
-                              ? 'bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400'
+                              ? 'bg-[color-mix(in_srgb,var(--color-accent)_16%,var(--color-bg-card))] border border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] text-[var(--color-text-primary)]'
                               : 'bg-[var(--color-border)] text-[var(--color-text-muted)]'
                           }`}
                         >
@@ -836,7 +836,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                     variant="outline"
                     fullWidth
                     onClick={() => setShowLogoutConfirm(true)}
-                    className="border-red-300 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900 dark:hover:text-red-100 dark:hover:border-red-700"
+                    className="border-[var(--color-error)] text-[var(--color-error)] hover:bg-[var(--color-error)] hover:text-[var(--color-on-action)] hover:border-[var(--color-error)]"
                   >
                     <LogOut size={15} className="mr-2" />
                     {t('settings.logout')}
@@ -922,7 +922,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                 fullWidth
                 onClick={() => { setShowLogoutConfirm(false); handleLogout() }}
                 disabled={loggingOut}
-                className="bg-red-500 hover:bg-red-600 border-0"
+                className="bg-[var(--color-error)] hover:opacity-90 text-[var(--color-on-action)] border-0"
               >
                 {loggingOut ? t('settings.loggingOut') : t('settings.logout')}
               </Button>

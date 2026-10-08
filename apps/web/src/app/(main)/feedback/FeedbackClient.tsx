@@ -63,24 +63,27 @@ interface CategoryConfig {
   labelKey: string
   Icon: React.ElementType
   color: string
+  on: string
   bg: string
 }
 
 const CATEGORIES: CategoryConfig[] = [
-  { id: 'bug', labelKey: 'feedback.bug', Icon: Bug, color: '#EF4444', bg: 'rgba(239,68,68,0.08)' },
+  { id: 'bug', labelKey: 'feedback.bug', Icon: Bug, color: 'var(--color-error)', on: 'var(--color-on-action)', bg: 'color-mix(in srgb, var(--color-error) 8%, transparent)' },
   {
     id: 'feature',
     labelKey: 'feedback.feature',
     Icon: Lightbulb,
     color: 'var(--color-secondary)',
-    bg: 'rgba(155,127,212,0.08)',
+    on: 'var(--color-on-luteal)',
+    bg: 'color-mix(in srgb, var(--color-secondary) 8%, transparent)',
   },
-  { id: 'general', labelKey: 'feedback.general', Icon: MessageSquare, color: '#3B82F6', bg: 'rgba(59,130,246,0.08)' },
+  { id: 'general', labelKey: 'feedback.general', Icon: MessageSquare, color: 'var(--color-coral)', on: 'var(--color-on-fertile)', bg: 'color-mix(in srgb, var(--color-coral) 10%, transparent)' },
   {
     id: 'satisfaction',
     labelKey: 'feedback.satisfaction',
     Icon: Heart,
     color: 'var(--goal-accent)',
+    on: 'var(--color-on-accent)',
     bg: 'var(--color-bg-secondary)',
   },
 ]
@@ -275,7 +278,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                         'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
                     }}
                   >
-                    <CheckCircle2 size={32} className="text-white" aria-hidden="true" />
+                    <CheckCircle2 size={32} className="text-[var(--color-on-accent)]" aria-hidden="true" />
                   </motion.div>
                   <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-1">
                     {t('feedback.success')}
@@ -317,12 +320,12 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                               backgroundColor: isSelected ? cat.color : 'var(--color-bg-secondary)',
                             }}
                           >
-                            <Icon size={18} style={{ color: isSelected ? '#fff' : cat.color }} />
+                            <Icon size={18} style={{ color: isSelected ? cat.on : cat.color }} />
                           </div>
                           <span
                             className="text-xs font-semibold leading-tight"
                             style={{
-                              color: isSelected ? cat.color : 'var(--color-text-secondary)',
+                              color: isSelected ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                             }}
                           >
                             {t(cat.labelKey)}
@@ -336,7 +339,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                               <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
                                 <path
                                   d="M1.5 4l2 2 3-3"
-                                  stroke="white"
+                                  stroke={cat.on}
                                   strokeWidth="1.4"
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
@@ -394,7 +397,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
 
                   {/* Error */}
                   {error && (
-                    <p className="mb-3 text-xs text-red-500 text-center">{error}</p>
+                    <p className="mb-3 text-xs text-[var(--color-error)] text-center">{error}</p>
                   )}
 
                   {/* Submit */}

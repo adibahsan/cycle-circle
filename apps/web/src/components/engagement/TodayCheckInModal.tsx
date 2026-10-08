@@ -175,7 +175,7 @@ export function TodayCheckInModal({
 
   // Vignette backdrop: darker at edges, slightly transparent center — focuses on panel
   const vignetteStyle: React.CSSProperties = {
-    background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.40) 0%, rgba(0,0,0,0.82) 100%)',
+    background: 'radial-gradient(ellipse at center, color-mix(in srgb, var(--color-brand-navy) 40%, transparent) 0%, color-mix(in srgb, var(--color-brand-navy) 82%, transparent) 100%)',
   };
 
   return (
@@ -275,7 +275,7 @@ export function TodayCheckInModal({
               whileTap={prm ? undefined : { scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               aria-label={t('checkIn.allGood')}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold text-white transition-opacity disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold text-[var(--color-on-accent)] transition-opacity disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               style={{
                 background: 'linear-gradient(135deg, var(--goal-accent, var(--color-primary)) 0%, color-mix(in srgb, var(--goal-accent, var(--color-primary)) 70%, var(--color-secondary)) 100%)',
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -284,7 +284,7 @@ export function TodayCheckInModal({
             >
               {saving ? (
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="animate-spin">
-                  <circle cx="7" cy="7" r="5" stroke="white" strokeWidth="2" strokeDasharray="24" strokeDashoffset="8" strokeLinecap="round" />
+                  <circle cx="7" cy="7" r="5" stroke="var(--color-on-accent)" strokeWidth="2" strokeDasharray="24" strokeDashoffset="8" strokeLinecap="round" />
                 </svg>
               ) : (
                 <CheckCircle2 size={14} aria-hidden="true" />
@@ -308,7 +308,7 @@ export function TodayCheckInModal({
                   type="button"
                   onClick={handleSave}
                   disabled={saving}
-                  className="w-full py-3 rounded-xl font-bold text-sm text-white transition-opacity disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  className="w-full py-3 rounded-xl font-bold text-sm text-[var(--color-on-accent)] transition-opacity disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                   style={{
                     background: 'linear-gradient(135deg, var(--goal-accent, var(--color-primary)) 0%, color-mix(in srgb, var(--goal-accent, var(--color-primary)) 65%, var(--color-secondary)) 100%)',
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any

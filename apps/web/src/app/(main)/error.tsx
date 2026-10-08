@@ -30,7 +30,7 @@ export default function MainError({
           </button>
           <button
             onClick={() => router.push('/login')}
-            className="px-4 py-2 rounded-xl bg-[var(--color-primary)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+            className="px-4 py-2 rounded-xl bg-[var(--color-action)] text-[var(--color-on-action)] text-sm font-medium hover:opacity-90 transition-opacity"
           >
             Go to Login
           </button>
