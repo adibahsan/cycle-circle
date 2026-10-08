@@ -531,7 +531,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       {/* ── Main content column ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top header — mobile only; sidebar handles desktop navigation */}
-        <header className="sticky top-0 z-40 glass px-4 py-2.5 flex items-center justify-between gap-3 md:hidden">
+        {/* Opaque, not .glass: Tailwind v4 (Lightning CSS) compiles .glass to only -webkit-backdrop-filter, so Chromium gets no blur and content shows through. */}
+        <header className="sticky top-0 z-40 bg-[var(--color-bg-card)] border-b border-[var(--color-border)] px-4 py-2.5 flex items-center justify-between gap-3 md:hidden">
           <div className="flex min-w-0 items-center gap-2.5">
             <VestaLogo size={26} animate={false} />
             <ProfileChip

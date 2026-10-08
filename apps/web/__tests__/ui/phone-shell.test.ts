@@ -125,3 +125,22 @@ describe('phone shell source rules', () => {
     expect(tour).toContain('tourCardPlacement')
   })
 })
+
+describe('phone bars are opaque', () => {
+  // .glass compiles (Tailwind v4 / Lightning CSS) to only -webkit-backdrop-filter, so Chromium shows
+  // page content through it. The phone header and bottom nav use the opaque card surface instead.
+  it('bottom nav uses --color-bg-card, not .glass', () => {
+    const nav = read('components/shell/BottomNav.tsx')
+    const tag = nav.match(/<nav[\s\S]*?>/)![0]
+    expect(tag).toContain('bg-[var(--color-bg-card)]')
+    expect(tag).not.toMatch(/\bglass\b/)
+  })
+
+  it('phone header uses --color-bg-card, not .glass', () => {
+    const layout = read('app/(main)/layout.tsx')
+    const tag = layout.match(/<header[\s\S]*?>/)![0]
+    expect(tag).toContain('md:hidden')
+    expect(tag).toContain('bg-[var(--color-bg-card)]')
+    expect(tag).not.toMatch(/\bglass\b/)
+  })
+})
