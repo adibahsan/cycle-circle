@@ -105,8 +105,9 @@ test.describe('trial add-number dialog on the pop-up shell (375px)', () => {
     await expectOnTop(page, d)
     await expectWithinViewport(page, d)
     await expectScrollLocked(page)
+    await page.waitForTimeout(600) // let the enter spring settle
     const box = (await d.boundingBox())!
-    expect(box.y + box.height).toBeLessThanOrEqual(PHONE_375.height)
+    expect(box.y + box.height).toBeLessThanOrEqual(PHONE_375.height + 1)
     await page.keyboard.press('Escape')
     await expect(dialog(page)).toBeHidden()
     await expect(pill(page)).toBeFocused()

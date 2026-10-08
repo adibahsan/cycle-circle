@@ -17,16 +17,25 @@ export const PHONE_375 = { width: 375, height: 667 }
 export const PHONE_390 = { width: 390, height: 844 }
 export const DESKTOP = { width: 1366, height: 900 }
 
-/** Suppress auto pop-ups (profile modal, late alert, check-in) so guards start from a clean page. */
+/**
+ * Suppress auto pop-ups (profile modal, late alert, check-in) so guards start from a clean page.
+ * Mirrors the app's gates (UTC day, `.toISOString().slice(0, 10)`):
+ *  - layout.tsx:   sessionStorage `vesta_profile_modal_dismissed`, localStorage `vesta_late_alert_seen_<day>`
+ *  - Dashboard:    sessionStorage `vesta_checkin_shown_<activeProfileId>_<day>`
+ * The profile id is unknown before the first load (empty store), so sessionStorage.getItem is
+ * shimmed to report any `vesta_checkin_shown_*` key as already shown.
+ */
 export async function suppressAutoPrompts(page: Page) {
   await page.addInitScript(() => {
     try {
       const day = new Date().toISOString().slice(0, 10)
       sessionStorage.setItem('vesta_profile_modal_dismissed', '1')
       localStorage.setItem('vesta_late_alert_seen_' + day, '1')
-      const st = JSON.parse(localStorage.getItem('vesta-store') || '{}')
-      const id = st.state && st.state.activeProfileId
-      if (id) sessionStorage.setItem('vesta_checkin_shown_' + id + '_' + day, '1')
+      const orig = Storage.prototype.getItem
+      Storage.prototype.getItem = function (key: string) {
+        if (this === window.sessionStorage && typeof key === 'string' && key.startsWith('vesta_checkin_shown_')) return '1'
+        return orig.call(this, key)
+      }
     } catch {}
   })
 }
