@@ -1,6 +1,6 @@
 /**
  * Idempotent setup for the `fresh` e2e persona (+8801700000777 only): onboarding done, one SELF
- * profile with a period 10 days ago, nothing logged today, so the dashboard check-in is available.
+ * profile with a period 10 days ago (re-dated on every run so it never goes late), nothing logged today, so the dashboard check-in is available.
  * Never touches the seed user or +8801700000099. Check-ins must not be saved by tests.
  */
 import fs from 'node:fs'
@@ -37,10 +37,13 @@ export async function ensureFreshPersona(): Promise<void> {
       data: { userId: user.id, name: 'E2E Fresh', relation: 'SELF', goal: 'tracking', cycleLength: 28, periodLength: 5, lastPeriodStart },
     })
   }
-  const logs = await prisma.periodLog.count({ where: { profileId: profile.id } })
-  if (logs === 0) {
-    await prisma.periodLog.create({
-      data: { profileId: profile.id, startDate: lastPeriodStart, endDate: new Date(lastPeriodStart.getTime() + 4 * DAY), flowIntensity: 'MEDIUM' },
-    })
+  // Keep the log recent on EVERY run (this persona only): otherwise a long-lived DB makes the persona "late".
+  const recent = await prisma.periodLog.findFirst({ where: { profileId: profile.id }, orderBy: { startDate: 'desc' } })
+  const endDate = new Date(lastPeriodStart.getTime() + 4 * DAY)
+  if (!recent) {
+    await prisma.periodLog.create({ data: { profileId: profile.id, startDate: lastPeriodStart, endDate, flowIntensity: 'MEDIUM' } })
+  } else {
+    await prisma.periodLog.update({ where: { id: recent.id }, data: { startDate: lastPeriodStart, endDate } })
   }
+  await prisma.profile.update({ where: { id: profile.id }, data: { lastPeriodStart } })
 }

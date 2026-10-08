@@ -230,7 +230,7 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
   return (
     <motion.div
       ref={ref}
-      className="scroll-mb-24"
+      className="scroll-mb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+1.5rem)]"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
