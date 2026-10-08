@@ -291,7 +291,7 @@ export function TrialCountdownPill({ trialUser, onPhoneAdded }: TrialCountdownPi
         type="button"
         onClick={handleOpen}
         aria-label={ariaLabel}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[color-mix(in_srgb,var(--color-accent)_16%,var(--color-bg-card))] text-[var(--color-text-primary)] border border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] hover:bg-[color-mix(in_srgb,var(--color-accent)_26%,var(--color-bg-card))] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold surface-peach text-[var(--color-text-primary)] border border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] hover:border-[var(--color-accent)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
       >
         {/* Hourglass icon — inline SVG so no extra import needed */}
         <svg

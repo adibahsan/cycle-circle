@@ -432,7 +432,7 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
 
             {/* Trial info banner — only when phone is missing */}
             {needPhone && (
-              <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-[var(--goal-accent)]/8 border border-[var(--goal-accent)]/20">
+              <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl surface-peach border border-[var(--goal-accent)]/20">
                 <Phone
                   size={15}
                   className="text-[var(--goal-accent)] mt-0.5 shrink-0"
