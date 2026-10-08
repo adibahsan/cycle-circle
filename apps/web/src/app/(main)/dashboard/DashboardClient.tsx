@@ -26,6 +26,7 @@ import { Card } from '@/components/ui/Card'
 import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
 import { setActiveProfileCookie } from '@/app/actions/profile-actions'
 import type { ProfileCompletionStatus } from '@/components/ProfileCompletionTracker'
+import { CompletionRow } from '@/components/prompts/CompletionRow'
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
 import { useToast } from '@/components/ui/Toast'
@@ -429,6 +430,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         style={{ ['--goal-accent' as string]: goalAccentVar(goal) } as React.CSSProperties}
       >
         <PageHeader title={t('nav.dashboard')} subtitle={profile.name} />
+        <CompletionRow status={completion} />
         {pregnancy ? (
           <>
             {/* ── Pregnancy: Coming Soon Panel ───────────────────── */}
@@ -512,9 +514,6 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               daysSinceLastLog={daysSinceLastLog}
               goal={goal}
               onLogPeriod={openNewLog}
-              onLogSymptoms={() => setCheckInOpen(true)}
-              streak={engagement?.streak}
-              streakAtRisk={engagement?.streakAtRisk}
               phase={dashboardData?.currentPhase ?? null}
             />
 
@@ -636,9 +635,6 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               daysSinceLastLog={daysSinceLastLog}
               goal={goal}
               onLogPeriod={openNewLog}
-              onLogSymptoms={() => setCheckInOpen(true)}
-              streak={engagement?.streak}
-              streakAtRisk={engagement?.streakAtRisk}
               phase={dashboardData?.currentPhase ?? null}
             />
 
