@@ -37,30 +37,34 @@ export const CATEGORIES: { key: SymptomCategory; labelKey: string }[] = [
   { key: 'lifestyle', labelKey: 'symptoms.lifestyle' },
 ];
 
-export const CATEGORY_COLORS: Record<SymptomCategory, { bg: string; border: string; text: string; ring: string }> = {
+export const CATEGORY_COLORS: Record<SymptomCategory, { bg: string; border: string; text: string; ring: string; on: string }> = {
   physical: {
-    bg: 'rgba(232,71,108,0.12)',
-    border: 'rgba(232,71,108,0.35)',
-    text: '#E8476C',
-    ring: 'rgba(232,71,108,0.4)',
+    bg: 'color-mix(in srgb, var(--color-primary) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--color-primary) 35%, transparent)',
+    text: 'var(--color-primary)',
+    ring: 'color-mix(in srgb, var(--color-primary) 40%, transparent)',
+    on: 'var(--color-on-accent)',
   },
   mood: {
-    bg: 'rgba(155,127,212,0.12)',
-    border: 'rgba(155,127,212,0.35)',
-    text: '#9B7FD4',
-    ring: 'rgba(155,127,212,0.4)',
+    bg: 'color-mix(in srgb, var(--color-secondary) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--color-secondary) 35%, transparent)',
+    text: 'var(--color-secondary)',
+    ring: 'color-mix(in srgb, var(--color-secondary) 40%, transparent)',
+    on: 'var(--color-on-luteal)',
   },
   discharge: {
-    bg: 'rgba(123,197,174,0.12)',
-    border: 'rgba(123,197,174,0.35)',
-    text: '#4DAA8D',
-    ring: 'rgba(123,197,174,0.4)',
+    bg: 'color-mix(in srgb, var(--color-coral) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--color-coral) 35%, transparent)',
+    text: 'var(--color-coral)',
+    ring: 'color-mix(in srgb, var(--color-coral) 40%, transparent)',
+    on: 'var(--color-on-fertile)',
   },
   lifestyle: {
-    bg: 'rgba(255,140,107,0.12)',
-    border: 'rgba(255,140,107,0.35)',
-    text: '#E06B3C',
-    ring: 'rgba(255,140,107,0.4)',
+    bg: 'color-mix(in srgb, var(--color-accent) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--color-accent) 35%, transparent)',
+    text: 'var(--color-accent)',
+    ring: 'color-mix(in srgb, var(--color-accent) 40%, transparent)',
+    on: 'var(--color-on-ovulation)',
   },
 };
 
@@ -150,10 +154,10 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
                 backgroundColor: isSelected
                   ? 'var(--color-primary)'
                   : isToday
-                    ? 'rgba(232,71,108,0.1)'
+                    ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)'
                     : 'transparent',
                 color: isSelected
-                  ? '#fff'
+                  ? 'var(--color-on-accent)'
                   : isToday
                     ? 'var(--color-primary)'
                     : inMonth
@@ -213,7 +217,7 @@ export const SymptomChip = memo(function SymptomChip({ id, icon, name, selected,
           style={{ background: 'var(--goal-accent)' }}
         >
           <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
-            <path d="M1.5 4l2 2 3-3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M1.5 4l2 2 3-3" stroke="var(--color-on-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </motion.span>
       )}
@@ -425,8 +429,8 @@ export function SymptomsClient({
                     return (
                       <span
                         key={key}
-                        className="min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center leading-none text-white"
-                        style={{ background: CATEGORY_COLORS[key].text }}
+                        className="min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center leading-none"
+                        style={{ background: CATEGORY_COLORS[key].text, color: CATEGORY_COLORS[key].on }}
                       >
                         {count}
                       </span>
@@ -452,7 +456,7 @@ export function SymptomsClient({
               'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2',
               'focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-60',
               isAllGood
-                ? 'text-white'
+                ? 'text-[var(--color-on-accent)]'
                 : 'border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:border-[var(--goal-accent)] hover:text-[var(--color-text-primary)]',
             ].join(' ')}
             style={
@@ -477,7 +481,7 @@ export function SymptomsClient({
             >
               <motion.div
                 className="absolute top-1 bottom-1 rounded-xl"
-                style={{ background: 'var(--color-bg-card)', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+                style={{ background: 'var(--color-bg-card)', boxShadow: '0 2px 8px color-mix(in srgb, var(--color-brand-navy) 8%, transparent)' }}
                 animate={{
                   left: `calc(${activeTabIndex} * 25% + 4px)`,
                   width: 'calc(25% - 8px)',
@@ -503,7 +507,7 @@ export function SymptomsClient({
                     {count > 0 && (
                       <span
                         className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center leading-none"
-                        style={{ background: CATEGORY_COLORS[key].text, color: '#fff' }}
+                        style={{ background: CATEGORY_COLORS[key].text, color: CATEGORY_COLORS[key].on }}
                       >
                         {count}
                       </span>
@@ -567,14 +571,14 @@ export function SymptomsClient({
               >
                 {saving ? (
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="animate-spin">
-                    <circle cx="8" cy="8" r="6" stroke="white" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" strokeLinecap="round" />
+                    <circle cx="8" cy="8" r="6" stroke="var(--color-on-accent)" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" strokeLinecap="round" />
                   </svg>
                 ) : (
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M3 8.5l3.5 3.5L13 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M3 8.5l3.5 3.5L13 4" stroke="var(--color-on-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
-                <span className="text-white font-bold text-sm">
+                <span className="text-[var(--color-on-accent)] font-bold text-sm">
                   {saving
                     ? t('symptoms.saving')
                     : t('symptoms.saveChanges', { count: changeCount })}
@@ -609,14 +613,14 @@ export function SymptomsClient({
             >
               {saving ? (
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="animate-spin">
-                  <circle cx="8" cy="8" r="6" stroke="white" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" strokeLinecap="round" />
+                  <circle cx="8" cy="8" r="6" stroke="var(--color-on-accent)" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" strokeLinecap="round" />
                 </svg>
               ) : (
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M3 8.5l3.5 3.5L13 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M3 8.5l3.5 3.5L13 4" stroke="var(--color-on-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               )}
-              <span className="text-white font-bold text-sm">
+              <span className="text-[var(--color-on-accent)] font-bold text-sm">
                 {saving
                   ? t('symptoms.saving')
                   : t('symptoms.saveChanges', { count: changeCount })}

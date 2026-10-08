@@ -68,7 +68,7 @@ export function AccountControl({ user, className }: AccountControlProps) {
           type="button"
           aria-label={t('settings.logout')}
           onClick={() => setShowConfirm(true)}
-          className="shrink-0 rounded-md p-1 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+          className="shrink-0 rounded-md p-1 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
         >
           <LogOut size={16} aria-hidden="true" />
         </button>
@@ -99,7 +99,7 @@ export function AccountControl({ user, className }: AccountControlProps) {
                 variant="outline"
                 fullWidth
                 onClick={() => setShowConfirm(false)}
-                className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
               >
                 {t('common.cancel')}
               </Button>
@@ -111,7 +111,7 @@ export function AccountControl({ user, className }: AccountControlProps) {
                   handleLogout();
                 }}
                 disabled={loggingOut}
-                className="bg-red-500 hover:bg-red-600 border-0 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+                className="bg-[var(--color-error)] hover:opacity-90 text-[var(--color-on-action)] border-0 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
               >
                 {loggingOut ? t('settings.loggingOut') : t('settings.logout')}
               </Button>

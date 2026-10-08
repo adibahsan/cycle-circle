@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { goalAccentVar } from '@vesta/shared/utils/goal';
 import { Button } from '@/components/ui/Button';
+import { VestaLogoSVG } from '@/components/ui/VestaLogo';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
@@ -50,9 +51,15 @@ const FLOW_LABELS: Record<FlowIntensity, string> = {
 };
 
 const FLOW_COLORS: Record<FlowIntensity, string> = {
-  light: '#F2728E',
-  medium: '#E8476C',
-  heavy: '#C93558',
+  light: 'var(--color-follicular)',
+  medium: 'var(--color-primary)',
+  heavy: 'var(--color-menstrual)',
+};
+
+const FLOW_TEXT: Record<FlowIntensity, string> = {
+  light: 'var(--color-on-follicular)',
+  medium: 'var(--color-on-accent)',
+  heavy: 'var(--color-on-menstrual)',
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -152,7 +159,7 @@ function NumberStepper({
       <button
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
-        className="w-10 h-10 rounded-full border-2 border-[var(--color-primary)] text-[var(--color-primary)] flex items-center justify-center font-bold text-lg transition-colors active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[var(--color-primary)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+        className="w-10 h-10 rounded-full border-2 border-[var(--color-primary)] text-[var(--color-primary)] flex items-center justify-center font-bold text-lg transition-colors active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[var(--color-primary)] hover:text-[var(--color-on-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
         aria-label="Decrease"
       >
         −
@@ -166,7 +173,7 @@ function NumberStepper({
       <button
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
-        className="w-10 h-10 rounded-full border-2 border-[var(--color-primary)] text-[var(--color-primary)] flex items-center justify-center font-bold text-lg transition-colors active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[var(--color-primary)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+        className="w-10 h-10 rounded-full border-2 border-[var(--color-primary)] text-[var(--color-primary)] flex items-center justify-center font-bold text-lg transition-colors active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[var(--color-primary)] hover:text-[var(--color-on-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
         aria-label="Increase"
       >
         +
@@ -202,8 +209,8 @@ function StepWelcome({ onNext, prefersReducedMotion }: { onNext: () => void; pre
         <div className="absolute top-10 left-4 w-3 h-3 rounded-full bg-[var(--color-primary)]/50 animate-float" style={{ animationDelay: '1.1s' }} aria-hidden="true" />
         <div className="absolute bottom-10 right-3 w-3 h-3 rounded-full bg-[var(--color-primary)]/40 animate-float" style={{ animationDelay: '1.7s' }} aria-hidden="true" />
         {/* Center logo mark */}
-        <div className="relative z-10 w-20 h-20 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center shadow-[0_8px_32px_rgba(232,71,108,0.35)]">
-          <span className="text-white text-3xl font-bold">V</span>
+        <div className="relative z-10 w-20 h-20 rounded-full flex items-center justify-center shadow-glow">
+          <VestaLogoSVG size={80} />
         </div>
       </motion.div>
 
@@ -284,32 +291,32 @@ function StepGoal({
       icon: <CalendarDays size={28} />,
       label: t('onboarding.goalTracking'),
       description: 'Track your cycle, log symptoms and get accurate predictions.',
-      accent: 'var(--color-primary)',
-      bg: 'rgba(232,71,108,0.08)',
+      accent: 'var(--color-goal-tracking)',
+      bg: 'color-mix(in srgb, var(--color-goal-tracking) 8%, transparent)',
     },
     {
       value: 'conceive',
       icon: <Heart size={28} />,
       label: t('onboarding.goalConceive'),
       description: 'Identify fertile windows and maximise conception chances.',
-      accent: 'var(--color-secondary)',
-      bg: 'rgba(155,127,212,0.08)',
+      accent: 'var(--color-goal-conceive)',
+      bg: 'color-mix(in srgb, var(--color-goal-conceive) 8%, transparent)',
     },
     {
       value: 'pregnancy',
       icon: <Baby size={28} />,
       label: t('onboarding.goalPregnancy'),
       description: 'Track your pregnancy week by week and monitor your wellbeing.',
-      accent: 'var(--color-secondary)',
-      bg: 'rgba(155,127,212,0.08)',
+      accent: 'var(--color-goal-pregnancy)',
+      bg: 'color-mix(in srgb, var(--color-goal-pregnancy) 8%, transparent)',
     },
     {
       value: 'perimenopause',
       icon: <Moon size={28} />,
       label: t('onboarding.goalPerimenopause'),
       description: 'Monitor irregular cycles and track perimenopause symptoms.',
-      accent: 'var(--color-accent)',
-      bg: 'rgba(255,140,107,0.08)',
+      accent: 'var(--color-goal-perimenopause)',
+      bg: 'color-mix(in srgb, var(--color-goal-perimenopause) 8%, transparent)',
     },
   ];
 
@@ -323,7 +330,7 @@ function StepGoal({
         <p
           role="alert"
           aria-hidden={!goalError}
-          className={`mt-2 text-sm text-red-500 min-h-[20px] transition-opacity duration-150 ${
+          className={`mt-2 text-sm text-[var(--color-error)] min-h-[20px] transition-opacity duration-150 ${
             goalError ? 'opacity-100' : 'opacity-0'
           }`}
         >
@@ -338,7 +345,7 @@ function StepGoal({
             <button
               key={g.value}
               onClick={() => onSelect(g.value)}
-              className={`w-full rounded-2xl p-4 border-2 text-left transition-colors duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
+              className={`w-full rounded-2xl p-4 border-2 text-left transition-colors duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] ${
                 isActive
                   ? 'border-[var(--goal-accent)] shadow-[0_0_0_4px_color-mix(in_srgb,var(--goal-accent)_12%,transparent)]'
                   : 'border-[var(--color-border)] hover:border-[var(--goal-accent)]/40'
@@ -368,7 +375,7 @@ function StepGoal({
                     className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
                     style={{ background: 'var(--goal-accent)' }}
                   >
-                    <Check size={14} className="text-white" strokeWidth={3} />
+                    <Check size={14} className="text-[var(--color-on-accent)]" strokeWidth={3} />
                   </div>
                 )}
               </div>
@@ -496,12 +503,12 @@ function StepCycleHistory({
                 onClick={() => onFlowIntensity(f)}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
                   flowIntensity === f
-                    ? 'text-white shadow-soft'
+                    ? 'shadow-soft'
                     : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]'
                 }`}
                 style={
                   flowIntensity === f
-                    ? { backgroundColor: FLOW_COLORS[f], borderColor: FLOW_COLORS[f] }
+                    ? { backgroundColor: FLOW_COLORS[f], borderColor: FLOW_COLORS[f], color: FLOW_TEXT[f] }
                     : {}
                 }
               >
@@ -563,9 +570,9 @@ function StepProfile({
               <button
                 key={value}
                 onClick={() => onRelation(value)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold border-2 transition-colors duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
+                className={`px-4 py-2 rounded-full text-sm font-semibold border-2 transition-colors duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] ${
                   isActive
-                    ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-[0_0_0_3px_rgba(232,71,108,0.18)]'
+                    ? 'bg-[var(--color-primary)] text-[var(--color-on-accent)] border-[var(--color-primary)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-primary)_18%,transparent)]'
                     : 'bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-primary)]/50'
                 }`}
               >
@@ -611,7 +618,7 @@ function StepProfile({
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-[var(--color-primary)]/8 to-[var(--color-secondary)]/8 border border-[var(--color-primary)]/20"
         >
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center text-white font-bold text-sm">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center text-[var(--color-on-accent)] font-bold text-sm">
             {name ? name[0].toUpperCase() : <User size={16} />}
           </div>
           <div>
@@ -736,9 +743,9 @@ function StepDone({
           initial={prefersReducedMotion ? false : { scale: 0, rotate: -15 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={prefersReducedMotion ? undefined : { type: 'spring', stiffness: 260, damping: 18 }}
-          className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center shadow-[0_8px_40px_rgba(232,71,108,0.35)] z-10"
+          className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center shadow-glow z-10"
         >
-          <Check size={40} className="text-white" strokeWidth={3} />
+          <Check size={40} className="text-[var(--color-on-accent)]" strokeWidth={3} />
         </motion.div>
       </div>
 
@@ -1000,7 +1007,7 @@ export default function OnboardingClient({ user }: OnboardingClientProps) {
               <p
                 role="alert"
                 aria-hidden={!stepErrors.submit}
-                className={`mb-4 text-sm text-red-500 text-center min-h-[20px] transition-opacity duration-150 ${
+                className={`mb-4 text-sm text-[var(--color-error)] text-center min-h-[20px] transition-opacity duration-150 ${
                   stepErrors.submit ? 'opacity-100' : 'opacity-0'
                 }`}
               >
@@ -1021,7 +1028,7 @@ export default function OnboardingClient({ user }: OnboardingClientProps) {
       <div className="shrink-0 px-5 pt-5 pb-3 md:px-7">
         <div className="flex items-center justify-between">
           {/* Cycle Circle wordmark — always visible now that the brand panel is gone */}
-          <span className="text-lg font-bold text-[var(--color-primary)]">Cycle Circle</span>
+          <span className="text-lg font-extrabold text-[var(--color-text-primary)]">Cycle Circle</span>
           {/* Right cluster: identity chip + language toggle + step counter */}
           <div className="flex items-center gap-2 min-w-0">
             <AccountControl user={user} />

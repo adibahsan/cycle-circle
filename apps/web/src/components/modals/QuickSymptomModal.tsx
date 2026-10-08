@@ -167,7 +167,7 @@ export function QuickSymptomModal({
                 className="absolute top-1 bottom-1 rounded-xl"
                 style={{
                   background: 'var(--color-bg-card)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  boxShadow: '0 2px 8px color-mix(in srgb, var(--color-brand-navy) 8%, transparent)',
                 }}
                 animate={{
                   left: `calc(${activeTabIndex} * 25% + 4px)`,
@@ -204,7 +204,7 @@ export function QuickSymptomModal({
                       className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center leading-none"
                       style={{
                         background: CATEGORY_COLORS[key].text,
-                        color: '#fff',
+                        color: CATEGORY_COLORS[key].on,
                       }}
                     >
                       {count}
@@ -295,7 +295,7 @@ export function QuickSymptomModal({
           aria-label={
             saving ? t('quickSymptom.saving') : t('quickSymptom.save')
           }
-          className="w-full rounded-2xl px-5 py-3.5 flex items-center justify-center gap-2.5 font-bold text-sm text-white transition-opacity duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
+          className="w-full rounded-2xl px-5 py-3.5 flex items-center justify-center gap-2.5 font-bold text-sm text-[var(--color-on-accent)] transition-opacity duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
           style={{
             background: `linear-gradient(135deg, var(--goal-accent, var(--color-primary)) 0%, color-mix(in srgb, var(--goal-accent, var(--color-primary)) 70%, var(--color-secondary)) 100%)`,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -316,7 +316,7 @@ export function QuickSymptomModal({
                   cx="8"
                   cy="8"
                   r="6"
-                  stroke="white"
+                  stroke="var(--color-on-accent)"
                   strokeWidth="2"
                   strokeDasharray="28"
                   strokeDashoffset="10"
@@ -336,7 +336,7 @@ export function QuickSymptomModal({
               >
                 <path
                   d="M3 8.5l3.5 3.5L13 4"
-                  stroke="white"
+                  stroke="var(--color-on-accent)"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
