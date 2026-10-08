@@ -80,3 +80,17 @@ describe('admin pop-ups use the shell', () => {
     expect(read('app/(admin)/content/ContentClient.tsx')).toMatch(/Escape'\) \{\s*e\.stopPropagation\(\)/)
   })
 })
+
+describe('admin layer classes reach the stylesheet', () => {
+  it('globals.css scans the shared popup-core so z-[50] etc. are generated', () => {
+    const css = read('app/globals.css')
+    expect(css).toMatch(/@source\s+"[^"]*packages\/shared\/src\/utils\/popup-core\.ts"/)
+    const core = fs.readFileSync(path.resolve(__dirname, '../../../../packages/shared/src/utils/popup-core.ts'), 'utf8')
+    expect(core).toContain("popup: 'z-[50]'")
+  })
+
+  it('the mobile header sits below the popup layer', () => {
+    const layout = read('app/(admin)/layout.tsx')
+    expect(layout).toMatch(/<header[^>]*z-30/)
+  })
+})
