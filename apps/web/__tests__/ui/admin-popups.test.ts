@@ -89,6 +89,11 @@ describe('admin layer classes reach the stylesheet', () => {
     expect(core).toContain("popup: 'z-[50]'")
   })
 
+  it('web globals.css scans the shared popup-core too (web Modal uses Z_CLASS)', () => {
+    const webCss = fs.readFileSync(path.resolve(__dirname, '../../src/app/globals.css'), 'utf8')
+    expect(webCss).toMatch(/@source\s+"[^"]*packages\/shared\/src\/utils\/popup-core\.ts"/)
+  })
+
   it('the mobile header sits below the popup layer', () => {
     const layout = read('app/(admin)/layout.tsx')
     expect(layout).toMatch(/<header[^>]*z-30/)
