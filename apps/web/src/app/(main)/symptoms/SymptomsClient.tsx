@@ -131,7 +131,7 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
       <div className="grid grid-cols-7 mb-2">
         {DOW.map((d) => (
           <div key={d} className="flex items-center justify-center">
-            <span className="text-[10px] md:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+            <span className="text-[11px] md:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
               {d}
             </span>
           </div>
@@ -425,7 +425,7 @@ export function SymptomsClient({
                     return (
                       <span
                         key={key}
-                        className="min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center leading-none"
+                        className="min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center leading-none"
                         style={{ background: CATEGORY_COLORS[key].text, color: CATEGORY_COLORS[key].on }}
                       >
                         {count}

@@ -1028,9 +1028,9 @@ export default function OnboardingClient({ user }: OnboardingClientProps) {
       <div className="shrink-0 px-5 pt-5 pb-3 md:px-7">
         <div className="flex items-center justify-between">
           {/* Cycle Circle wordmark — always visible now that the brand panel is gone */}
-          <span className="text-lg font-extrabold text-[var(--color-text-primary)]">Cycle Circle</span>
+          <span className="shrink-0 text-lg font-extrabold text-[var(--color-text-primary)]">Cycle Circle</span>
           {/* Right cluster: identity chip + language toggle + step counter */}
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <AccountControl user={user} />
             <LanguageToggle />
             <span className="text-xs font-medium tabular-nums text-[var(--color-text-muted)] shrink-0">

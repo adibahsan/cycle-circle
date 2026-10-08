@@ -241,7 +241,7 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
           <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
             {format(date, 'EEEE, MMMM d', { locale: dateLocale })}
             {isFuture && (
-              <span className="ml-2 text-[10px] font-medium text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)] px-2 py-0.5 rounded-full">
+              <span className="ml-2 text-[11px] font-medium text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)] px-2 py-0.5 rounded-full">
                 {t('calendar.predicted')}
               </span>
             )}
@@ -687,7 +687,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
             <div className="grid grid-cols-7 mb-1 md:mb-2">
               {DOW.map((d) => (
                 <div key={d} className="flex items-center justify-center">
-                  <span className="text-[10px] md:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                  <span className="text-[11px] md:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
                     {d}
                   </span>
                 </div>
