@@ -23,7 +23,7 @@ import { ChevronLeft, ChevronRight, X, Pencil, Baby } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { useAppStore } from '@/lib/store'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
-import { PeriodLogModal } from '@/components/PeriodLogModal'
+import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import type { FlowIntensity } from '@vesta/shared/types'
@@ -145,14 +145,15 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
   const opacity = isFuturePredicted ? 0.5 : 1
 
   if (isPeriod && isCurrentMonth) {
-    bgColor = isFuturePredicted ? '#F2728E40' : '#E8476C22'
-    textColor = 'var(--color-menstrual)'
+    bgColor = isFuturePredicted ? 'color-mix(in srgb, var(--color-menstrual) 24%, transparent)' : 'color-mix(in srgb, var(--color-menstrual) 16%, transparent)'
+    // Menstrual-on-tint is below AA (3.8:1 light); the tint carries the meaning, text stays primary.
+    textColor = 'var(--color-text-primary)'
   } else if (isOvulation && isCurrentMonth) {
-    bgColor = '#FF8C6B22'
-    textColor = 'var(--color-ovulation)'
+    bgColor = 'var(--color-ovulation)'
+    textColor = 'var(--color-on-ovulation)'
   } else if (isFertile && isCurrentMonth) {
-    bgColor = '#7BC5AE22'
-    textColor = 'var(--color-fertile)'
+    bgColor = 'color-mix(in srgb, var(--color-fertile) 35%, transparent)'
+    textColor = 'var(--color-text-primary)'
   }
 
   return (
@@ -162,11 +163,11 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
       style={{
         backgroundColor: isSelected
           ? isPeriod
-            ? '#E8476C33'
+            ? 'color-mix(in srgb, var(--color-menstrual) 28%, transparent)'
             : isFertile
-              ? '#7BC5AE33'
+              ? 'color-mix(in srgb, var(--color-fertile) 50%, transparent)'
               : isOvulation
-                ? '#FF8C6B33'
+                ? 'var(--color-ovulation)'
                 : 'var(--color-bg-secondary)'
           : bgColor,
         opacity,
@@ -186,7 +187,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
       {isOvulation && isCurrentMonth && (
         <div
           className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
-          style={{ backgroundColor: 'var(--color-ovulation)' }}
+          style={{ backgroundColor: 'var(--color-on-ovulation)' }}
         />
       )}
 
@@ -282,24 +283,24 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
         <div className="flex flex-wrap gap-2 mb-3">
           {meta.isPeriod && (
             <div
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-white"
-              style={{ backgroundColor: 'var(--color-menstrual)' }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+              style={{ backgroundColor: 'var(--color-menstrual)', color: 'var(--color-on-menstrual)' }}
             >
               🩸 {t('calendar.periodDay')}
             </div>
           )}
           {meta.isOvulation && (
             <div
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-white"
-              style={{ backgroundColor: 'var(--color-ovulation)' }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+              style={{ backgroundColor: 'var(--color-ovulation)', color: 'var(--color-on-ovulation)' }}
             >
               🌸 {t('calendar.ovulationLabel')}
             </div>
           )}
           {meta.isFertile && !meta.isOvulation && (
             <div
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-white"
-              style={{ backgroundColor: 'var(--color-fertile)' }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+              style={{ backgroundColor: 'var(--color-fertile)', color: 'var(--color-on-fertile)' }}
             >
               🌱 {t('calendar.fertileWindowLabel')}
             </div>
@@ -345,9 +346,9 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
 // ─── Recent Periods ────────────────────────────────────────────────────────────
 
 const FLOW_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  LIGHT: { bg: 'var(--color-fertile)', text: '#fff', label: 'Light' },
-  MEDIUM: { bg: '#F59E0B', text: '#fff', label: 'Medium' },
-  HEAVY: { bg: 'var(--color-menstrual)', text: '#fff', label: 'Heavy' },
+  LIGHT: { bg: FLOW_COLORS.light, text: FLOW_TEXT.light, label: 'Light' },
+  MEDIUM: { bg: FLOW_COLORS.medium, text: FLOW_TEXT.medium, label: 'Medium' },
+  HEAVY: { bg: FLOW_COLORS.heavy, text: FLOW_TEXT.heavy, label: 'Heavy' },
 }
 
 const PAGE_SIZE = 6

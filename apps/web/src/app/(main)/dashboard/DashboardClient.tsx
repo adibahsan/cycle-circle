@@ -23,7 +23,7 @@ import type { FlowIntensity, ProfileRelation } from '@vesta/shared/types'
 import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { PeriodLogModal, FLOW_COLORS } from '@/components/PeriodLogModal'
+import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
 import { setActiveProfileCookie } from '@/app/actions/profile-actions'
 import type { ProfileCompletionStatus } from '@/components/ProfileCompletionTracker'
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
@@ -165,23 +165,13 @@ function CycleRing({
         width={SIZE}
         height={SIZE}
         className="absolute rotate-[-90deg]"
-        style={{ filter: 'drop-shadow(0 4px 24px rgba(232,71,108,0.12))' }}
       >
-        <defs>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
         <circle
           cx={SIZE / 2}
           cy={SIZE / 2}
           r={RADIUS}
           fill="none"
-          stroke="var(--color-border)"
+          stroke="color-mix(in srgb, var(--goal-accent) 14%, transparent)"
           strokeWidth={STROKE}
         />
         <motion.circle
@@ -207,7 +197,6 @@ function CycleRing({
                 }
               : { duration: 1.2, ease: 'easeOut' }
           }
-          filter="url(#glow)"
         />
       </svg>
 
@@ -531,7 +520,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, type: 'spring', stiffness: 100, damping: 20 }}
             >
-              <Card padding="md">
+              <Card padding="md" className="!border-0 shadow-soft">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-1.5">
                     <Droplets size={14} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
@@ -548,8 +537,8 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                         {t('dashboard.durationDays', { count: lastPeriodDisplay.duration })}
                       </p>
                       <div
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-white self-start"
-                        style={{ backgroundColor: FLOW_COLORS[lastPeriodDisplay.flowIntensity] }}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold self-start"
+                        style={{ backgroundColor: FLOW_COLORS[lastPeriodDisplay.flowIntensity], color: FLOW_TEXT[lastPeriodDisplay.flowIntensity] }}
                       >
                         🩸 {t(`dashboard.flow${capitalize(lastPeriodDisplay.flowIntensity)}`)}
                       </div>
@@ -567,7 +556,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, type: 'spring', stiffness: 100, damping: 20 }}
             >
-              <Card padding="md">
+              <Card padding="md" className="!border-0 shadow-soft">
                 <div className="flex flex-col gap-2.5">
                   <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                     {t('dashboard.quickActions')}
@@ -593,7 +582,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="flex flex-col items-center md:flex-row md:items-start md:gap-8 pt-4 pb-2"
+              className="surface-wash rounded-3xl flex flex-col items-center md:flex-row md:items-start md:gap-8 p-5 md:p-6"
             >
               <CycleRing
                 cycleDay={cycleDay}
@@ -620,8 +609,8 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                   <button
                     type="button"
                     onClick={openNewLog}
-                    className="self-start flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-sm font-semibold shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-menstrual)] cursor-pointer"
-                    style={{ backgroundColor: 'var(--color-menstrual)' }}
+                    className="self-start flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-menstrual)] cursor-pointer"
+                    style={{ backgroundColor: 'var(--color-menstrual)', color: 'var(--color-on-menstrual)' }}
                     aria-label={t('dashboard.periodLateOpenPrompt', { defaultValue: 'Period late — tap for support' })}
                   >
                     <span aria-hidden="true">🩸</span>
@@ -658,7 +647,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}
               >
-                <Card padding="md" className="h-full">
+                <Card padding="md" className="h-full !border-0 shadow-soft" style={{ backgroundColor: 'color-mix(in srgb, var(--color-menstrual) 7%, var(--color-bg-card))' }}>
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-1.5">
                       <CalendarDays
@@ -708,7 +697,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.18, type: 'spring', stiffness: 100, damping: 20 }}
               >
-                <Card padding="md" className="h-full">
+                <Card padding="md" className="h-full !border-0 shadow-soft">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-1.5">
                       <Droplets size={14} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
@@ -725,8 +714,8 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                           {t('dashboard.durationDays', { count: lastPeriodDisplay.duration })}
                         </p>
                         <div
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-white self-start"
-                          style={{ backgroundColor: FLOW_COLORS[lastPeriodDisplay.flowIntensity] }}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold self-start"
+                          style={{ backgroundColor: FLOW_COLORS[lastPeriodDisplay.flowIntensity], color: FLOW_TEXT[lastPeriodDisplay.flowIntensity] }}
                         >
                           🩸 {t(`dashboard.flow${capitalize(lastPeriodDisplay.flowIntensity)}`)}
                         </div>
@@ -744,7 +733,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.26, type: 'spring', stiffness: 100, damping: 20 }}
               >
-                <Card padding="md" className="h-full">
+                <Card padding="md" className="h-full !border-0 shadow-soft">
                   <div className="flex flex-col gap-2">
                     <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                       {t('dashboard.confidence')}
@@ -787,7 +776,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.34, type: 'spring', stiffness: 100, damping: 20 }}
               >
-                <Card padding="md" className="h-full">
+                <Card padding="md" className="h-full !border-0 shadow-soft">
                   <div className="flex flex-col gap-2.5 h-full">
                     <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
                       {t('dashboard.quickActions')}
@@ -805,7 +794,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     <button
                       type="button"
                       onClick={openQuickSymptom}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--goal-accent)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:outline-none"
+                      className="w-full flex items-center justify-between px-4 py-2 rounded-full bg-[var(--color-bg-secondary)] hover:bg-[color-mix(in_srgb,var(--goal-accent)_12%,var(--color-bg-card))] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:outline-none"
                     >
                       <div className="flex items-center gap-1.5">
                         <Activity size={12} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
@@ -838,7 +827,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.45, duration: 0.45 }}
               >
-                <Card padding="md" className="h-full">
+                <Card padding="md" className="h-full !border-0 shadow-soft">
                   <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
                     {t('dashboard.cycleOverview')}
                   </h3>
@@ -887,7 +876,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.52, duration: 0.45 }}
                 >
-                  <Card padding="md" className="h-full">
+                  <Card padding="md" className="h-full !border-0 shadow-soft">
                     <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
                       {t('dashboard.predictedWindows')}
                     </h3>
