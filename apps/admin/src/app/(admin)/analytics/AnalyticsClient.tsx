@@ -76,19 +76,12 @@ interface AnalyticsClientProps {
   symptomsByPhase: SymptomPhasePoint[]
 }
 
-// ── Color constants ────────────────────────────────────────────────────────
-
-const GREEN = CHART_VAR.good
-const AMBER = CHART_VAR.mid
-const PRIMARY = CHART_VAR.low
-const INDIGO = CHART_VAR.secondary
-
 // ── Tier summary badges (KPI) ──────────────────────────────────────────────
 
 const TIER_COLORS: Record<string, string> = {
-  HIGH: GREEN,
-  MEDIUM: AMBER,
-  LOW: PRIMARY,
+  HIGH: CHART_VAR.good,
+  MEDIUM: CHART_VAR.mid,
+  LOW: CHART_VAR.low,
 }
 
 function TierBadges({ data }: { data: PredictionAccuracy[] }) {
@@ -102,7 +95,7 @@ function TierBadges({ data }: { data: PredictionAccuracy[] }) {
         >
           <span
             className="h-2 w-2 rounded-full shrink-0"
-            style={{ background: TIER_COLORS[entry.tier] ?? INDIGO }}
+            style={{ background: TIER_COLORS[entry.tier] ?? CHART_VAR.secondary }}
           />
           <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
             {entry.tier}
@@ -138,7 +131,7 @@ function RetentionRates({ data }: { data: UserRetention[] }) {
           </p>
           <p
             className="text-lg font-bold tabular-nums"
-            style={{ color: d.rate >= 50 ? GREEN : d.rate >= 25 ? AMBER : PRIMARY }}
+            style={{ color: d.rate >= 50 ? CHART_VAR.good : d.rate >= 25 ? CHART_VAR.mid : CHART_VAR.low }}
           >
             {d.rate}%
           </p>
@@ -211,7 +204,7 @@ export function AnalyticsClient({
           title="Cycle Length Distribution"
           data={cycleLengthData}
           xKey="cycleLength"
-          series={[{ key: 'count', label: 'Users', color: PRIMARY }]}
+          series={[{ key: 'count', label: 'Users', color: CHART_VAR.low }]}
           kinds={['bar']}
           defaultKind="bar"
           height={240}
@@ -236,7 +229,7 @@ export function AnalyticsClient({
             title="Symptom Logs by Cycle Phase"
             data={symptomsByPhase.map((d) => ({ ...d } as Record<string, string | number | null>))}
             xKey="phase"
-            series={[{ key: 'count', label: 'Logs', color: PRIMARY }]}
+            series={[{ key: 'count', label: 'Logs', color: CHART_VAR.low }]}
             kinds={['bar', 'pie']}
             defaultKind="bar"
             height={240}
@@ -271,7 +264,7 @@ export function AnalyticsClient({
               maeDays: d.maeDays ?? 0,
             }))}
             xKey="tier"
-            series={[{ key: 'maeDays', label: 'MAE (days)', color: INDIGO }]}
+            series={[{ key: 'maeDays', label: 'MAE (days)', color: CHART_VAR.secondary }]}
             kinds={['bar']}
             defaultKind="bar"
             height={240}
@@ -285,7 +278,7 @@ export function AnalyticsClient({
               >
                 <span
                   className="h-2 w-2 rounded-full shrink-0"
-                  style={{ background: INDIGO }}
+                  style={{ background: CHART_VAR.secondary }}
                 />
                 <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
                   {d.tier}
@@ -309,7 +302,7 @@ export function AnalyticsClient({
             xKey="week"
             series={[
               { key: 'created', label: 'Created', color: CHART_VAR.slate },
-              { key: 'retained', label: 'Retained', color: GREEN },
+              { key: 'retained', label: 'Retained', color: CHART_VAR.good },
             ]}
             kinds={['line', 'area', 'bar']}
             defaultKind="line"
@@ -325,7 +318,7 @@ export function AnalyticsClient({
         title="New User Sign-ups"
         data={trend.map((d) => ({ ...d } as Record<string, string | number | null>))}
         xKey="date"
-        series={[{ key: 'count', label: 'Sign-ups', color: INDIGO }]}
+        series={[{ key: 'count', label: 'Sign-ups', color: CHART_VAR.secondary }]}
         kinds={['area', 'line', 'bar']}
         defaultKind="area"
         height={240}

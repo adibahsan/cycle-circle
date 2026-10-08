@@ -159,7 +159,7 @@ function BarRenderer({
   xKey: string
   series: ChartSeries[]
 }) {
-  const rc = useChartColors()
+  const toColor = useChartColors()
   return (
     <BarChart data={data} margin={CARTESIAN_MARGIN}>
       <CartesianGrid
@@ -196,7 +196,7 @@ function BarRenderer({
           key={s.key}
           dataKey={s.key}
           name={s.label}
-          fill={rc(resolveColor(s, i))}
+          fill={toColor(resolveColor(s, i))}
           radius={[4, 4, 0, 0]}
           maxBarSize={40}
         />
@@ -216,7 +216,7 @@ function LineRenderer({
   xKey: string
   series: ChartSeries[]
 }) {
-  const rc = useChartColors()
+  const toColor = useChartColors()
   return (
     <LineChart data={data} margin={CARTESIAN_MARGIN}>
       <CartesianGrid
@@ -249,7 +249,7 @@ function LineRenderer({
         />
       )}
       {series.map((s, i) => {
-        const color = rc(resolveColor(s, i))
+        const color = toColor(resolveColor(s, i))
         return (
           <Line
             key={s.key}
@@ -259,7 +259,7 @@ function LineRenderer({
             stroke={color}
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: rc(CHART_VAR.surface) }}
+            activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: toColor(CHART_VAR.surface) }}
           />
         )
       })}
@@ -278,12 +278,12 @@ function AreaRenderer({
   xKey: string
   series: ChartSeries[]
 }) {
-  const rc = useChartColors()
+  const toColor = useChartColors()
   return (
     <AreaChart data={data} margin={CARTESIAN_MARGIN}>
       <defs>
         {series.map((s, i) => {
-          const color = rc(resolveColor(s, i))
+          const color = toColor(resolveColor(s, i))
           return (
             <linearGradient key={s.key} id={`areaGrad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor={color} stopOpacity={0.25} />
@@ -322,7 +322,7 @@ function AreaRenderer({
         />
       )}
       {series.map((s, i) => {
-        const color = rc(resolveColor(s, i))
+        const color = toColor(resolveColor(s, i))
         return (
           <Area
             key={s.key}
@@ -333,7 +333,7 @@ function AreaRenderer({
             strokeWidth={2}
             fill={`url(#areaGrad-${s.key})`}
             dot={false}
-            activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: rc(CHART_VAR.surface) }}
+            activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: toColor(CHART_VAR.surface) }}
           />
         )
       })}
@@ -352,7 +352,7 @@ function PieRenderer({
   xKey: string
   series: ChartSeries[]
 }) {
-  const rc = useChartColors()
+  const toColor = useChartColors()
   // First series key is the value, xKey is the name
   const valueKey = series[0].key
   return (
@@ -371,7 +371,7 @@ function PieRenderer({
         {data.map((_, index) => (
           <Cell
             key={index}
-            fill={rc(CHART_PALETTE[index % CHART_PALETTE.length])}
+            fill={toColor(CHART_PALETTE[index % CHART_PALETTE.length])}
           />
         ))}
       </Pie>

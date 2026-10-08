@@ -38,8 +38,8 @@ function ChartTooltip({
 }
 
 export function SignupTrendChart({ data }: { data: { date: string; count: number }[] }) {
-  const rc = useChartColors()
-  const color = rc(CHART_VAR.primary)
+  const toColor = useChartColors()
+  const color = toColor(CHART_VAR.primary)
   return (
     <Card padding="lg">
       <div className="mb-6 flex items-center justify-between">
@@ -99,7 +99,7 @@ export function SignupTrendChart({ data }: { data: { date: string; count: number
               strokeWidth={2}
               fill="url(#signupGradient)"
               dot={false}
-              activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: rc(CHART_VAR.surface) }}
+              activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: toColor(CHART_VAR.surface) }}
             />
           </AreaChart>
         </ResponsiveContainer>

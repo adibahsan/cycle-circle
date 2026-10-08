@@ -4,9 +4,10 @@ import path from 'node:path'
 import {
   CHART_TOKENS,
   CHART_VAR,
-  chartPalette,
   resolveChartColor,
 } from '../../../admin/src/lib/chart-palette'
+
+const palette = () => CHART_TOKENS.map((t) => resolveChartColor(`var(${t.cssVar})`))
 
 const ADMIN_SRC = path.resolve(__dirname, '../../../admin/src')
 
@@ -30,11 +31,11 @@ describe('admin chart palette', () => {
       ['slate', '#565266'],
       ['follicular', '#FF8FA8'],
     ])
-    expect(chartPalette()).toEqual(CHART_TOKENS.map((t) => t.fallback))
+    expect(palette()).toEqual(CHART_TOKENS.map((t) => t.fallback))
   })
 
   it('has distinguishable series colours', () => {
-    const p = chartPalette()
+    const p = palette()
     for (let i = 0; i < p.length; i++)
       for (let j = i + 1; j < p.length; j++) expect(dist(p[i], p[j])).toBeGreaterThan(50)
   })
