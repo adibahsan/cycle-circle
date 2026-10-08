@@ -153,7 +153,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
   return (
     <div className="group relative aspect-square w-full">
       <button
-        onClick={() => onSelect(date)}
+      onClick={() => onSelect(date)}
         aria-pressed={isSelected}
         className="absolute inset-0 flex flex-col items-center justify-center w-full h-full rounded-xl transition-colors duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/60"
         style={{
