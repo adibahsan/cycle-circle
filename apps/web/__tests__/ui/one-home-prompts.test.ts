@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { daysSinceLastLog, loggingNudgeVariant, showCompletionRow } from '@/lib/prompt-rules'
+import { checkInCandidateState, daysSinceLastLog, loggingNudgeVariant, showCompletionRow } from '@/lib/prompt-rules'
 
 const src = (p: string) => readFileSync(resolve(__dirname, '../../src', p), 'utf8')
 
@@ -26,6 +26,19 @@ describe('daysSinceLastLog', () => {
   })
 })
 
+describe('checkInCandidateState', () => {
+  it('is pending until the engagement data arrives', () => {
+    expect(checkInCandidateState(undefined)).toBe('pending')
+  })
+  it('is no once the load settled without data', () => {
+    expect(checkInCandidateState(null)).toBe('no')
+  })
+  it('is no when something was already logged today, yes otherwise', () => {
+    expect(checkInCandidateState({ loggedToday: true })).toBe('no')
+    expect(checkInCandidateState({ loggedToday: false })).toBe('yes')
+  })
+})
+
 describe('loggingNudgeVariant', () => {
   it('stays quiet under 3 days', () => {
     expect(loggingNudgeVariant({ hasAnyLogs: true, daysSinceLastLog: 2 })).toBeNull()
@@ -33,6 +46,13 @@ describe('loggingNudgeVariant', () => {
   it('shows the stale variant from 3 days', () => {
     expect(loggingNudgeVariant({ hasAnyLogs: true, daysSinceLastLog: 3 })).toBe('stale')
     expect(loggingNudgeVariant({ hasAnyLogs: true, daysSinceLastLog: 9 })).toBe('stale')
+  })
+  it('treats never-logged as more than 3 days without a log (nudge, never silence)', () => {
+    const neverLogged = loggingNudgeVariant({ hasAnyLogs: false, daysSinceLastLog: null })
+    expect(neverLogged).not.toBeNull()
+    expect(neverLogged).toBe('empty')
+    // even a bogus recent value cannot suppress it
+    expect(loggingNudgeVariant({ hasAnyLogs: false, daysSinceLastLog: 0 })).toBe('empty')
   })
   it('shows the empty variant when nothing was ever logged', () => {
     expect(loggingNudgeVariant({ hasAnyLogs: false, daysSinceLastLog: null })).toBe('empty')
@@ -46,8 +66,8 @@ describe('one home per prompt (source scan)', () => {
     expect(layout).not.toMatch(/variant="pill"/)
     expect(layout).toContain('<ProfileChip')
   })
-  it('the tracker has no pill variant left', () => {
-    expect(src('components/ProfileCompletionTracker.tsx')).not.toMatch(/'pill'/)
+  it('the unused ProfileCompletionTracker component is gone', () => {
+    expect(existsSync(resolve(__dirname, '../../src/components/ProfileCompletionTracker.tsx'))).toBe(false)
   })
   it('the dashboard renders the compact completion row', () => {
     expect(existsSync(resolve(__dirname, '../../src/components/prompts/CompletionRow.tsx'))).toBe(true)

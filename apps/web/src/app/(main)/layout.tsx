@@ -8,23 +8,11 @@ import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/lib/store';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import VestaLogo from '@/components/ui/VestaLogo';
-import type { ProfileCompletionStatus } from '@/components/ProfileCompletionTracker';
+import type { ProfileCompletionStatus } from '@/lib/profile-completion';
 import type { TourStep } from '@/components/onboarding/OnboardingTour';
 import { completeOnboardingTour } from '@/app/actions/user-actions';
-import {
-  Home,
-  CalendarDays,
-  Activity,
-  BookOpen,
-  Settings,
-  MessageSquare,
-  Users,
-  CreditCard,
-  Sun,
-  Moon,
-  TrendingUp,
-  type LucideIcon,
-} from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
+import { NAV_ICONS } from '@/components/shell/nav-icons';
 import { BottomNav } from '@/components/shell/BottomNav';
 import { MoreSheet } from '@/components/shell/MoreSheet';
 import { ProfileChip } from '@/components/shell/ProfileChip';
@@ -32,7 +20,6 @@ import {
   SIDEBAR_MENU_ITEMS,
   SIDEBAR_MORE_ITEMS,
   isNavActive,
-  type NavIconKey,
 } from '@/components/shell/nav-config';
 import { LatePeriodFullScreenAlert } from '@/components/modals/LatePeriodFullScreenAlert';
 import { GOAL_ICON_COMPONENTS, GOAL_I18N_KEYS } from '@/lib/goal-display';
@@ -77,18 +64,6 @@ const tourSteps: TourStep[] = [
   { targetSelector: '[data-tour="nav-insights"]', titleKey: 'tour.insightsTitle', descKey: 'tour.insightsDesc' },
   { targetSelector: '[data-tour="profile-ring"]', titleKey: 'tour.profileTitle', descKey: 'tour.profileDesc' },
 ];
-
-const SIDEBAR_ICONS: Record<NavIconKey, LucideIcon> = {
-  home: Home,
-  calendar: CalendarDays,
-  symptoms: Activity,
-  insights: TrendingUp,
-  content: BookOpen,
-  settings: Settings,
-  profiles: Users,
-  feedback: MessageSquare,
-  subscription: CreditCard,
-};
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -408,7 +383,7 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
             {t('nav.menu')}
           </p>
           {SIDEBAR_MENU_ITEMS.map(({ href, icon, labelKey, tourKey }) => {
-            const Icon = SIDEBAR_ICONS[icon];
+            const Icon = NAV_ICONS[icon];
             const isActive = isNavActive(href, pathname);
             const showDot = href === '/symptoms' && logging?.loggedToday === false;
             return (
@@ -447,7 +422,7 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
             {t('nav.more')}
           </p>
           {SIDEBAR_MORE_ITEMS.map(({ href, icon, labelKey }) => {
-            const Icon = SIDEBAR_ICONS[icon];
+            const Icon = NAV_ICONS[icon];
             const isActive = isNavActive(href, pathname);
             return (
               <Link

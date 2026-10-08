@@ -290,7 +290,7 @@ function StepGoal({
   }[] = [
     {
       value: 'tracking',
-      icon: <CalendarDays size={28} />,
+      icon: <CalendarDays aria-hidden="true" size={28} />,
       label: t('onboarding.goalTracking'),
       description: 'Track your cycle, log symptoms and get accurate predictions.',
       accent: 'var(--color-goal-tracking)',
@@ -298,7 +298,7 @@ function StepGoal({
     },
     {
       value: 'conceive',
-      icon: <Heart size={28} />,
+      icon: <Heart aria-hidden="true" size={28} />,
       label: t('onboarding.goalConceive'),
       description: 'Identify fertile windows and maximise conception chances.',
       accent: 'var(--color-goal-conceive)',
@@ -306,7 +306,7 @@ function StepGoal({
     },
     {
       value: 'pregnancy',
-      icon: <Baby size={28} />,
+      icon: <Baby aria-hidden="true" size={28} />,
       label: t('onboarding.goalPregnancy'),
       description: 'Track your pregnancy week by week and monitor your wellbeing.',
       accent: 'var(--color-goal-pregnancy)',
@@ -314,7 +314,7 @@ function StepGoal({
     },
     {
       value: 'perimenopause',
-      icon: <Moon size={28} />,
+      icon: <Moon aria-hidden="true" size={28} />,
       label: t('onboarding.goalPerimenopause'),
       description: 'Monitor irregular cycles and track perimenopause symptoms.',
       accent: 'var(--color-goal-perimenopause)',
@@ -377,7 +377,7 @@ function StepGoal({
                     className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
                     style={{ background: 'var(--goal-accent)' }}
                   >
-                    <Check size={14} className="text-[var(--color-on-accent)]" strokeWidth={3} />
+                    <Check aria-hidden="true" size={14} className="text-[var(--color-on-accent)]" strokeWidth={3} />
                   </div>
                 )}
               </div>
@@ -621,7 +621,7 @@ function StepProfile({
           className="flex items-center gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-[var(--color-primary)]/8 to-[var(--color-secondary)]/8 border border-[var(--color-primary)]/20"
         >
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center text-[var(--color-on-accent)] font-bold text-sm">
-            {name ? name[0].toUpperCase() : <User size={16} />}
+            {name ? name[0].toUpperCase() : <User aria-hidden="true" size={16} />}
           </div>
           <div>
             <p className="font-semibold text-[var(--color-text-primary)] text-sm">
@@ -747,7 +747,7 @@ function StepDone({
           transition={prefersReducedMotion ? undefined : { type: 'spring', stiffness: 260, damping: 18 }}
           className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center shadow-glow z-10"
         >
-          <Check size={40} className="text-[var(--color-on-accent)]" strokeWidth={3} />
+          <Check aria-hidden="true" size={40} className="text-[var(--color-on-accent)]" strokeWidth={3} />
         </motion.div>
       </div>
 

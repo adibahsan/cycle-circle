@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, useReducedMotion } from 'motion/react';
 import { Button } from '@/components/ui/Button';
 import { useHasMounted } from '@/components/motion/useHasMounted';
-import { Z_CLASS, FOCUSABLE_SELECTOR, nextTrapIndex } from '@/components/ui/popup-core';
+import { Z_CLASS, FOCUSABLE_SELECTOR, nextTrapIndex } from '@vesta/shared/utils/popup-core';
 import { tourCardPlacement } from '@/components/shell/tour-placement';
 import '@vesta/shared/utils/i18n';
 

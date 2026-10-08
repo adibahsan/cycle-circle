@@ -49,7 +49,7 @@ describe('admin pop-ups use the shell', () => {
     const modal = read('components/ui/Modal.tsx')
     for (const s of ['createPortal', 'aria-modal', 'overscroll', 'Z_CLASS', 'usePopupBehavior'])
       expect(modal).toContain(s)
-    const hook = read('components/ui/usePopupBehavior.ts')
+    const hook = fs.readFileSync(path.resolve(__dirname, '../../../../packages/shared/src/utils/use-popup-behavior.ts'), 'utf8')
     for (const s of ['inert', 'lock()', 'Escape', 'nextTrapIndex', 'focus()'])
       expect(hook).toContain(s)
   })
@@ -97,5 +97,39 @@ describe('admin layer classes reach the stylesheet', () => {
   it('the mobile header sits below the popup layer', () => {
     const layout = read('app/(admin)/layout.tsx')
     expect(layout).toMatch(/<header[^>]*z-30/)
+  })
+})
+
+describe('one shell, one backdrop (review fixes)', () => {
+  const webSrc = (p: string) => fs.readFileSync(path.resolve(__dirname, '../../src', p), 'utf8')
+  const SHARED = path.resolve(__dirname, '../../../../packages/shared/src/utils')
+
+  it('web has no popup-core middle-man and both shells use the shared hook', () => {
+    expect(fs.existsSync(path.resolve(__dirname, '../../src/components/ui/popup-core.ts'))).toBe(false)
+    expect(webSrc('components/ui/Modal.tsx')).toContain('@vesta/shared/utils/use-popup-behavior')
+    expect(read('components/ui/Modal.tsx')).toContain('@vesta/shared/utils/use-popup-behavior')
+    expect(fs.existsSync(path.resolve(__dirname, '../../../admin/src/components/ui/usePopupBehavior.ts'))).toBe(false)
+  })
+
+  it('both shells use the single shared backdrop and no one overrides it', () => {
+    expect(fs.readFileSync(path.join(SHARED, 'popup-core.ts'), 'utf8')).toContain('POPUP_BACKDROP_CLASS')
+    for (const f of ['components/ui/Modal.tsx', 'components/ui/Drawer.tsx'])
+      expect(read(f)).toContain('POPUP_BACKDROP_CLASS')
+    expect(webSrc('components/ui/Modal.tsx')).toContain('POPUP_BACKDROP_CLASS')
+    expect(webSrc('components/ui/Modal.tsx')).not.toMatch(/backdropClassName|backdropStyle/)
+    expect(webSrc('components/engagement/TodayCheckInModal.tsx')).not.toMatch(/backdrop(ClassName|Style)/)
+  })
+
+  it('the admin Modal is a bottom sheet below sm with safe-area padding and exit motion', () => {
+    const m = read('components/ui/Modal.tsx')
+    expect(m).toContain('items-end')
+    expect(m).toContain('env(safe-area-inset-bottom)')
+    expect(m).toContain('100dvh')
+    expect(m).toContain('data-state')
+    expect(read('app/globals.css')).toMatch(/prefers-reduced-motion: reduce[\s\S]*data-popup-sheet/)
+  })
+
+  it('the date picker uses a named layer, not a magic z-index', () => {
+    expect(read('components/ui/DateTimePicker.tsx')).not.toMatch(/z-\[\d+\]/)
   })
 })

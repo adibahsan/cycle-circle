@@ -21,6 +21,7 @@ import { bn } from 'date-fns/locale/bn'
 import { ChevronLeft, ChevronRight, X, Pencil, Baby, Plus } from 'lucide-react'
 
 import { Card } from '@/components/ui/Card'
+import { formatShortDate } from '@/lib/format-date'
 import { useAppStore } from '@/lib/store'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
 import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
@@ -774,7 +775,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                         <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.nextPeriod')}</span>
                       </div>
                       <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(firstPredictedPeriod.date))}
+                        {formatShortDate(language, parseISO(firstPredictedPeriod.date))}
                       </span>
                     </div>
                   )}
@@ -785,7 +786,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                         <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.ovulationDayLabel')}</span>
                       </div>
                       <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(ovulationDay.date))}
+                        {formatShortDate(language, parseISO(ovulationDay.date))}
                       </span>
                     </div>
                   )}
@@ -796,9 +797,9 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                         <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.fertileWindow')}</span>
                       </div>
                       <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(fertileWindow.start))}
+                        {formatShortDate(language, parseISO(fertileWindow.start))}
                         {' – '}
-                        {new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : undefined, { month: 'short', day: 'numeric' }).format(parseISO(fertileWindow.end))}
+                        {formatShortDate(language, parseISO(fertileWindow.end))}
                       </span>
                     </div>
                   )}

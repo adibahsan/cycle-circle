@@ -285,7 +285,7 @@ export default function VerifyOtpPage() {
                 animate={{ scale: 1, opacity: 1 }}
                 className="flex items-center gap-2"
               >
-                <CheckCircle2 size={20} />
+                <CheckCircle2 aria-hidden="true" size={20} />
                 {t('auth.verified')}
               </motion.span>
             ) : loading ? (

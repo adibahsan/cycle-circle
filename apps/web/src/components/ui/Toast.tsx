@@ -20,7 +20,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { CheckCircle2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useHasMounted } from '@/components/motion/useHasMounted';
-import { Z_CLASS } from '@/components/ui/popup-core';
+import { Z_CLASS } from '@vesta/shared/utils/popup-core';
 import {
   celebrationCopy,
   shouldShowConfetti,

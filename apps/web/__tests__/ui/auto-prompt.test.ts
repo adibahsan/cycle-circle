@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { decideAutoPrompt, localDayKey, type Candidates } from '@/lib/auto-prompt'
+import { decideAutoPrompt, bdDayKey, type Candidates } from '@/lib/auto-prompt'
 
 const H = 3_600_000
 const DAY = 24 * H
@@ -66,8 +66,8 @@ describe('daily cadence (late alert, tour, check-in)', () => {
 
 describe('local day boundaries at UTC+6', () => {
   it('18:00 UTC is already the next local day', () => {
-    expect(localDayKey(Date.UTC(2026, 9, 8, 17, 59))).toBe('2026-10-08')
-    expect(localDayKey(Date.UTC(2026, 9, 8, 18, 0))).toBe('2026-10-09')
+    expect(bdDayKey(Date.UTC(2026, 9, 8, 17, 59))).toBe('2026-10-08')
+    expect(bdDayKey(Date.UTC(2026, 9, 8, 18, 0))).toBe('2026-10-09')
   })
   it('shown 17:59 UTC and now 18:01 UTC are different local days', () => {
     const now = Date.UTC(2026, 9, 8, 18, 1)

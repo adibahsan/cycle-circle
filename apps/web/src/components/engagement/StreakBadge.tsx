@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useHasMounted } from '@/components/motion/useHasMounted';
 import '@vesta/shared/utils/i18n';
 
-// ── useCountUp (local copy — small, avoids touching ProfileCompletionTracker) ──
+// ── useCountUp (local copy) ──
 
 function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3);

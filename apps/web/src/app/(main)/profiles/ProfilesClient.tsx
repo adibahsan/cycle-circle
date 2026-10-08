@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
+import { useToast } from '@/components/ui/Toast';
 import { useTranslation, Trans } from 'react-i18next';
 import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight, Pencil } from 'lucide-react';
 import { GOAL_ICON_COMPONENTS, GOAL_I18N_KEYS } from '@/lib/goal-display';
@@ -14,7 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { useHeld } from '@/lib/use-held';
-import { localDayString } from '@/lib/local-date';
+import { deviceDayString } from '@/lib/local-date';
 import '@vesta/shared/utils/i18n';
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -93,7 +94,7 @@ function Stepper({ label, value, min, max, onChange, unit }: StepperProps) {
           }}
           aria-label={t('profiles.decreaseField', { label })}
         >
-          <Minus size={13} className="text-[var(--color-text-primary)]" />
+          <Minus aria-hidden="true" size={13} className="text-[var(--color-text-primary)]" />
         </button>
         <div className="min-w-[52px] text-center">
           <span className="text-base font-bold text-[var(--color-text-primary)]">{value}</span>
@@ -109,7 +110,7 @@ function Stepper({ label, value, min, max, onChange, unit }: StepperProps) {
           }}
           aria-label={t('profiles.increaseField', { label })}
         >
-          <Plus size={13} className="text-[var(--color-text-primary)]" />
+          <Plus aria-hidden="true" size={13} className="text-[var(--color-text-primary)]" />
         </button>
       </div>
     </div>
@@ -348,7 +349,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
             className="w-8 h-8 rounded-xl flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
           >
-            <UserPlus size={15} color="var(--color-on-accent)" />
+            <UserPlus aria-hidden="true" size={15} color="var(--color-on-accent)" />
           </div>
           <h3 className="font-bold text-[var(--color-text-primary)] text-base">
             {t('profiles.add')}
@@ -360,7 +361,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
           style={{ background: 'var(--color-bg-secondary)' }}
           aria-label={t('common.cancel')}
         >
-          <X size={14} className="text-[var(--color-text-muted)]" />
+          <X aria-hidden="true" size={14} className="text-[var(--color-text-muted)]" />
         </button>
       </div>
 
@@ -495,8 +496,8 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
               setLastPeriodDate(e.target.value);
               if (lastPeriodError) setLastPeriodError('');
             }}
-            max={localDayString()}
-            min={localDayString(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))}
+            max={deviceDayString()}
+            min={deviceDayString(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))}
             required
             aria-invalid={!!lastPeriodError}
             aria-describedby={lastPeriodError ? 'last-period-date-error' : undefined}
@@ -853,7 +854,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
   const [editKey, setEditKey] = useState(0);
   const heldEdit = useHeld(editTarget);
   const heldDelete = useHeld(deleteTarget);
-  const [justSwitched, setJustSwitched] = useState<string | null>(null);
+  const toast = useToast();
   const [isPending, setIsPending] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
   const [addError, setAddError] = useState('');
@@ -881,10 +882,9 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
     if (id === activeProfileId || isSwitching) return;
     setIsSwitching(true);
     setActiveProfile(id, name);
-    setJustSwitched(id);
+    toast.show(t('profiles.switchedTo', { name }));
     await setActiveProfileCookie(id);
     router.push('/dashboard');
-    setTimeout(() => setJustSwitched(null), 1500);
   }
 
   async function handleAddProfile(data: {
@@ -1060,7 +1060,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                           background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
                         }}
                       >
-                        <Plus size={18} color="var(--color-on-accent)" strokeWidth={2.5} />
+                        <Plus aria-hidden="true" size={18} color="var(--color-on-accent)" strokeWidth={2.5} />
                       </div>
                       <div className="text-left">
                         <p
@@ -1099,31 +1099,6 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             </div>
           </motion.div>
         </div>
-
-        {/* Switch confirmation toast */}
-        <div aria-live="polite" aria-atomic="true" className="sr-only">
-          {justSwitched ? t('profiles.switchedTo', { name: profiles.find((p) => p.id === justSwitched)?.name }) : ''}
-        </div>
-        <AnimatePresence>
-          {justSwitched && (
-            <motion.div
-              initial={{ opacity: 0, y: -16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-              className="fixed top-20 left-1/2 -translate-x-1/2 z-50 rounded-full px-4 py-2 flex items-center gap-2 shadow-glow"
-              style={{
-                background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
-              }}
-            >
-              <Check size={14} color="var(--color-on-accent)" />
-              <span className="text-[var(--color-on-accent)] text-sm font-semibold">
-                {t('profiles.switchedTo', { name: profiles.find((p) => p.id === justSwitched)?.name })}
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
       </PageContainer>
 
       {/* Delete confirmation dialog: stays mounted so the exit animation plays */}

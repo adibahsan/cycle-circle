@@ -17,8 +17,8 @@ import {
 import { saveSymptoms, markAllGoodToday } from '@/app/actions/tracking-actions';
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal';
 import { useToast } from '@/components/ui/Toast';
-import { localDayString } from '@/lib/local-date';
-import type { PopupLayer } from '@/components/ui/popup-core';
+import { deviceDayString } from '@/lib/local-date';
+import type { PopupLayer } from '@vesta/shared/utils/popup-core';
 import '@vesta/shared/utils/i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -151,7 +151,7 @@ export function TodayCheckInModal({
       if (addedPayload.length) {
         await saveSymptoms({
           profileId,
-          date: localDayString(),
+          date: deviceDayString(),
           added: addedPayload,
           removed: [],
         });
@@ -194,11 +194,6 @@ export function TodayCheckInModal({
     }
   }
 
-  // Vignette backdrop: darker at edges, slightly transparent center — focuses on panel
-  const vignetteStyle: React.CSSProperties = {
-    background: 'radial-gradient(ellipse at center, color-mix(in srgb, var(--color-brand-navy) 40%, transparent) 0%, color-mix(in srgb, var(--color-brand-navy) 82%, transparent) 100%)',
-  };
-
   return (
     <>
       <Modal
@@ -209,8 +204,6 @@ export function TodayCheckInModal({
         accentVar="var(--goal-accent, var(--color-primary))"
         closeOnBackdrop={true}
         hideClose={false}
-        backdropClassName="backdrop-blur-sm"
-        backdropStyle={vignetteStyle}
         panelClassName="max-w-sm"
       >
         <div className="px-5 pt-4 pb-6 flex flex-col gap-4">

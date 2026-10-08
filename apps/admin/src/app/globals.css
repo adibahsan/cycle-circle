@@ -287,3 +287,22 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
 }
+
+/* Admin pop-up shell motion (bottom sheet below sm, card from sm up). Reduced motion: no animation,
+   and the exiting layer is hidden at once. Keep EXIT_MS in components/ui/Modal.tsx in sync. */
+@keyframes popup-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popup-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes popup-sheet-in { from { opacity: 0; transform: translateY(8%); } to { opacity: 1; transform: none; } }
+@keyframes popup-sheet-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(6%); } }
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-popup-backdrop][data-state='open'] { animation: popup-fade-in 200ms ease-out both; }
+  [data-popup-backdrop][data-state='closed'] { animation: popup-fade-out 200ms ease-in both; }
+  [data-popup-sheet][data-state='open'] { animation: popup-sheet-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  [data-popup-sheet][data-state='closed'] { animation: popup-sheet-out 200ms ease-in both; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-popup-backdrop][data-state='closed'],
+  [data-popup-sheet][data-state='closed'] { display: none; }
+}

@@ -2,7 +2,7 @@
 
 import { ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { ProfileCompletionStatus } from '@/components/ProfileCompletionTracker'
+import type { ProfileCompletionStatus } from '@/lib/profile-completion'
 import { showCompletionRow } from '@/lib/prompt-rules'
 import '@vesta/shared/utils/i18n'
 

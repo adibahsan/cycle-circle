@@ -6,6 +6,16 @@ export function resolveTheme(stored: unknown, prefersDark: boolean): Theme {
   return prefersDark ? 'dark' : 'light'
 }
 
+/** Store patch for an explicit user choice. */
+export function chooseTheme(theme: Theme): { theme: Theme; themeChosen: true } {
+  return { theme, themeChosen: true }
+}
+
+/** Store patch when rehydrating: a valid stored choice wins, otherwise the system preference applies. */
+export function restoreTheme(stored: unknown, prefersDark: boolean = systemPrefersDark()): { theme: Theme; themeChosen: boolean } {
+  return { theme: resolveTheme(stored, prefersDark), themeChosen: stored === 'light' || stored === 'dark' }
+}
+
 /** True when the OS prefers dark. Safe on the server and in old browsers. */
 export function systemPrefersDark(): boolean {
   try {

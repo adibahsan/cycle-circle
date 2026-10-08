@@ -4,28 +4,21 @@
  * Pop-up shell. The one custom dialog every pop-up in the app is built on.
  *
  *   import { Modal } from '@/components/ui/Modal';
- *   import { Z_LAYER, Z_CLASS } from '@/components/ui/popup-core';
+ *   import { Z_LAYER, Z_CLASS } from '@vesta/shared/utils/popup-core';
  *
  * Owns: portal into <body>, topmost-only ESC, focus trap + restore, inert background,
  * ref-counted scroll lock, bottom-sheet (< sm) / centred card (>= sm) geometry with a
  * pinned header/footer and scrolling body, enter+exit motion, one theme-aware backdrop.
  */
 
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useRef, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useHasMounted } from '@/components/motion/useHasMounted';
-import {
-  Z_CLASS,
-  FOCUSABLE_SELECTOR,
-  nextTrapIndex,
-  type PopupLayer,
-} from '@/components/ui/popup-core';
-import { popupStack, inertManager, getScrollLock, backgroundElements } from '@vesta/shared/utils/popup-runtime';
-
-const stack = popupStack;
+import { Z_CLASS, POPUP_BACKDROP_CLASS, type PopupLayer } from '@vesta/shared/utils/popup-core';
+import { usePopupBehavior, usePopupRoot } from '@vesta/shared/utils/use-popup-behavior';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -51,8 +44,6 @@ export interface ModalProps {
   /** Pinned below the scrolling body. */
   footer?: React.ReactNode;
   panelClassName?: string;
-  backdropClassName?: string;
-  backdropStyle?: React.CSSProperties;
   /** Else: first `[data-autofocus]`, else first focusable in the body, else the panel. */
   initialFocusRef?: RefObject<HTMLElement | null>;
   /** Children render in the scrolling body. */
@@ -75,100 +66,19 @@ export function Modal({
   header,
   footer,
   panelClassName,
-  backdropClassName,
-  backdropStyle,
   initialFocusRef,
   children,
 }: ModalProps) {
   const { t } = useTranslation();
   const panelRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const idRef = useRef<symbol>(Symbol('popup'));
-  const openRef = useRef(open);
-  openRef.current = open;
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-
   const mounted = useHasMounted();
   const reduce = useReducedMotion() ?? false;
   const prefersReduced = mounted && reduce;
 
-  // Portal container, created at open time so later-opened pop-ups are later in the DOM.
-  const [container, setContainer] = useState<HTMLElement | null>(null);
-  useEffect(() => {
-    if (open && !container) {
-      const el = document.createElement('div');
-      el.setAttribute('data-popup-root', '');
-      document.body.appendChild(el);
-      setContainer(el);
-    }
-  }, [open, container]);
-  useEffect(() => {
-    return () => {
-      container?.remove();
-    };
-  }, [container]);
-
-  const handleExitComplete = () => {
-    if (!openRef.current) setContainer(null);
-  };
-
-  // Stack, inert, scroll lock, focus restore, ESC — all keyed on open + container.
-  useEffect(() => {
-    if (!open || !container) return;
-    const id = idRef.current;
-    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-
-    stack.push(id);
-    const releaseInert = inertManager.apply(backgroundElements(container));
-    const releaseScroll = getScrollLock().lock();
-
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        if (stack.isTop(id) && dismissible) {
-          e.stopPropagation();
-          onCloseRef.current();
-        }
-        return;
-      }
-      if (e.key !== 'Tab' || !stack.isTop(id)) return;
-      const panel = panelRef.current;
-      if (!panel) return;
-      const items = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-        (el) => !el.hasAttribute('disabled') && el.getClientRects().length > 0,
-      );
-      const current = items.indexOf(document.activeElement as HTMLElement);
-      const next = nextTrapIndex(items.length, current, e.shiftKey);
-      if (next === null) return;
-      e.preventDefault();
-      (next === -1 ? panel : items[next]).focus();
-    }
-    document.addEventListener('keydown', onKeyDown);
-
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      stack.remove(id);
-      releaseScroll();
-      releaseInert();
-      if (trigger && trigger.isConnected) trigger.focus();
-    };
-  }, [open, container, dismissible]);
-
-  // Initial focus
-  useEffect(() => {
-    if (!open || !container) return;
-    const raf = requestAnimationFrame(() => {
-      const panel = panelRef.current;
-      if (!panel) return;
-      const target =
-        initialFocusRef?.current ??
-        panel.querySelector<HTMLElement>('[data-autofocus]') ??
-        bodyRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR) ??
-        panel;
-      target.focus();
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [open, container, initialFocusRef]);
+  // Portal container stays mounted through the exit animation.
+  const { container, onExitComplete } = usePopupRoot(open, { animateExit: true });
+  usePopupBehavior({ open, container, panelRef, onClose, dismissible, initialFocusRef, bodyRef });
 
   if (!container) return null;
 
@@ -187,7 +97,7 @@ export function Modal({
   const showClose = dismissible && !hideClose;
 
   return createPortal(
-    <AnimatePresence onExitComplete={handleExitComplete}>
+    <AnimatePresence onExitComplete={onExitComplete}>
       {open && (
         <div
           className={`fixed inset-0 ${Z_CLASS[layer]} flex items-end sm:items-center justify-center overscroll-contain`}
@@ -195,8 +105,7 @@ export function Modal({
         >
           {/* Backdrop (theme-aware) */}
           <motion.div
-            className={['absolute inset-0 bg-black/50 dark:bg-black/70', backdropClassName].filter(Boolean).join(' ')}
-            style={backdropStyle}
+            className={['absolute inset-0', POPUP_BACKDROP_CLASS].filter(Boolean).join(' ')}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

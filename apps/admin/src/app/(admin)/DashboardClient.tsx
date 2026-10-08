@@ -83,22 +83,22 @@ export function DashboardClient({ stats, userTrend, signupTrend, subscriptionTre
           title="Total Users"
           value={formatNumber(stats.totalUsers)}
           change={{ value: stats.userGrowth, label: growthLabel }}
-          icon={<Users size={18} />}
+          icon={<Users aria-hidden="true" size={18} />}
         />
         <StatCard
           title="Active Users (30d)"
           value={formatNumber(stats.activeUsers)}
-          icon={<UserCheck size={18} />}
+          icon={<UserCheck aria-hidden="true" size={18} />}
         />
         <StatCard
           title="Pro Subscribers"
           value={formatNumber(stats.proSubscribers)}
-          icon={<Crown size={18} />}
+          icon={<Crown aria-hidden="true" size={18} />}
         />
         <StatCard
           title="Logs Today"
           value={formatNumber(stats.dailyLogs)}
-          icon={<Activity size={18} />}
+          icon={<Activity aria-hidden="true" size={18} />}
         />
       </div>
 

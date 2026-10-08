@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { motion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import {
   Crown,
   AlertCircle,
@@ -74,6 +74,7 @@ interface BDAppsModalProps {
 
 function BDAppsModal({ open, phone, step, onConfirm, onCancel }: BDAppsModalProps) {
   const { t } = useTranslation()
+  const reduceMotion = useReducedMotion()
   const statusText =
     step === 'loading'
       ? t('subscription.processing')
@@ -103,7 +104,7 @@ function BDAppsModal({ open, phone, step, onConfirm, onCancel }: BDAppsModalProp
           <div className="space-y-5">
             <div className="flex items-center gap-2 pr-10">
               <div className="w-8 h-8 rounded-lg bg-[var(--goal-accent)] flex items-center justify-center">
-                <Zap size={16} className="text-[var(--color-on-accent)]" />
+                <Zap aria-hidden="true" size={16} className="text-[var(--color-on-accent)]" />
               </div>
               <div>
                 <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
@@ -148,10 +149,10 @@ function BDAppsModal({ open, phone, step, onConfirm, onCancel }: BDAppsModalProp
           <div className="flex flex-col items-center gap-4 py-6">
             <motion.div
               className="w-14 h-14 rounded-full bg-[var(--goal-accent)] flex items-center justify-center"
-              animate={{ rotate: 360 }}
+              animate={reduceMotion ? undefined : { rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             >
-              <Zap size={24} className="text-[var(--color-on-accent)]" />
+              <Zap aria-hidden="true" size={24} className="text-[var(--color-on-accent)]" />
             </motion.div>
             <p className="text-sm font-medium text-[var(--color-text-secondary)]">
               {t('subscription.processing')}
@@ -172,7 +173,7 @@ function BDAppsModal({ open, phone, step, onConfirm, onCancel }: BDAppsModalProp
               animate={{ scale: 1 }}
               transition={{ delay: 0.1, type: 'spring', damping: 14 }}
             >
-              <Crown size={30} className="text-[var(--color-on-accent)]" />
+              <Crown aria-hidden="true" size={30} className="text-[var(--color-on-accent)]" />
             </motion.div>
             <div className="text-center space-y-1">
               <h3 className="text-xl font-bold text-[var(--color-text-primary)]">
@@ -369,7 +370,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                     key={labelKey}
                     className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
                   >
-                    <Check size={14} className="text-[var(--goal-accent)] shrink-0" />
+                    <Check aria-hidden="true" size={14} className="text-[var(--goal-accent)] shrink-0" />
                     {t(labelKey)}
                   </div>
                 ))
@@ -379,7 +380,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                     key={key}
                     className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
                   >
-                    <Check size={14} className="text-[var(--color-text-muted)] shrink-0" />
+                    <Check aria-hidden="true" size={14} className="text-[var(--color-text-muted)] shrink-0" />
                     {t(key)}
                   </div>
                 ))
