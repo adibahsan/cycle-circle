@@ -132,13 +132,12 @@ export function LoggingNudge({
   const content = (
     <Card
       className={[
-        'relative overflow-hidden',
+        'relative overflow-hidden surface-peach !border-0 shadow-none',
         className ?? '',
       ].join(' ').trim()}
       padding="md"
       style={{
         ['--goal-accent']: accentVar,
-        boxShadow: '0 0 0 1.5px color-mix(in srgb, var(--goal-accent) 30%, transparent), 0 4px 20px color-mix(in srgb, var(--goal-accent) 12%, transparent)',
       } as React.CSSProperties}
     >
       {/* One-shot accent sheen sweep — absolutely-positioned overlay, gated */}
@@ -177,14 +176,14 @@ export function LoggingNudge({
           aria-hidden="true"
         >
           {prefersReducedMotion ? (
-            <Icon size={18} className="text-white" aria-hidden="true" />
+            <Icon size={18} className="text-[var(--color-on-accent)]" aria-hidden="true" />
           ) : (
             <motion.span
               animate={{ scale: [1, 1.06, 1] }}
               transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
               className="flex items-center justify-center"
             >
-              <Icon size={18} className="text-white" aria-hidden="true" />
+              <Icon size={18} className="text-[var(--color-on-accent)]" aria-hidden="true" />
             </motion.span>
           )}
         </div>
@@ -194,7 +193,7 @@ export function LoggingNudge({
           <p className="text-sm font-bold text-[var(--color-text-primary)] leading-snug">
             {title}
           </p>
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5 leading-relaxed">
+          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 leading-relaxed">
             {description}
           </p>
 

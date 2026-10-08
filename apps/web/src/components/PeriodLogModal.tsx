@@ -18,9 +18,16 @@ function toActionFlow(f: FlowIntensity): 'LIGHT' | 'MEDIUM' | 'HEAVY' {
 }
 
 export const FLOW_COLORS: Record<FlowIntensity, string> = {
-  light: '#F2728E',
-  medium: '#E8476C',
-  heavy: '#C93558',
+  light: 'var(--color-follicular)',
+  medium: 'var(--color-primary)',
+  heavy: 'var(--color-menstrual)',
+}
+
+/** Text colour for content rendered on a FLOW_COLORS fill. */
+export const FLOW_TEXT: Record<FlowIntensity, string> = {
+  light: 'var(--color-on-follicular)',
+  medium: 'var(--color-on-accent)',
+  heavy: 'var(--color-on-menstrual)',
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -180,14 +187,14 @@ export function PeriodLogModal({
               <button
                 key={f}
                 onClick={() => setFlow(f)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
                   flow === f
-                    ? 'text-white shadow-soft'
+                    ? 'shadow-soft'
                     : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]'
                 }`}
                 style={
                   flow === f
-                    ? { backgroundColor: FLOW_COLORS[f], borderColor: FLOW_COLORS[f] }
+                    ? { backgroundColor: FLOW_COLORS[f], borderColor: FLOW_COLORS[f], color: FLOW_TEXT[f] }
                     : {}
                 }
               >
