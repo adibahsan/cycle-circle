@@ -60,6 +60,8 @@ interface Ctx {
   isActive: (id: PromptId) => boolean
   /** Dismiss an auto-prompt. Does not let another prompt open this page load. */
   close: (id: PromptId) => void
+  /** A user-opened prompt (e.g. tour replay) takes this page load's slot so no auto-prompt stacks on it. */
+  claim: (id: PromptId) => void
   report: (id: PromptId, entry: Entry | null) => void
   expect: (id: PromptId, expected: boolean) => void
   setAccount: (a: { id: string; createdAt: number } | null) => void
@@ -131,6 +133,10 @@ export function AutoPromptProvider({ children }: { children: React.ReactNode }) 
     setActive((cur) => (cur === id ? null : cur))
   }, [])
 
+  const claim = useCallback((id: PromptId) => {
+    setShown((cur) => cur ?? id)
+  }, [])
+
   const value = useMemo<Ctx>(() => {
     const act: PromptId | null = locked ? 'trial-lock' : active
     return {
@@ -138,11 +144,12 @@ export function AutoPromptProvider({ children }: { children: React.ReactNode }) 
       locked,
       isActive: (id) => act === id,
       close,
+      claim,
       report,
       expect,
       setAccount,
     }
-  }, [locked, active, close, report, expect, setAccount])
+  }, [locked, active, close, claim, report, expect, setAccount])
 
   return <AutoPromptContext.Provider value={value}>{children}</AutoPromptContext.Provider>
 }

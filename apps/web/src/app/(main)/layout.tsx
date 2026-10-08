@@ -163,12 +163,13 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
   const { theme, setTheme, activeProfileName } = useAppStore();
   const prompt = useAutoPrompt();
   const setAccount = prompt.setAccount;
+  const claimPrompt = prompt.claim;
   const { toast, show: showToast } = useToast();
 
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionStatus, setCompletionStatus] = useState<ProfileCompletionStatus | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
-  const [logging, setLogging] = useState<{ goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null>(null);
+  const [logging, setLogging] = useState<{ profileId?: string | null; goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null>(null);
   const [loggingLoaded, setLoggingLoaded] = useState(false);
   const [completionLoaded, setCompletionLoaded] = useState(false);
   const [profileDelayDone, setProfileDelayDone] = useState(false);
@@ -251,8 +252,10 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
     if (!authStatusLoaded || pathname !== '/dashboard') return;
     if (sessionStorage.getItem(TOUR_REPLAY_KEY) !== '1') return;
     sessionStorage.removeItem(TOUR_REPLAY_KEY);
-    if (!prompt.locked) setTourOpen(true);
-  }, [pathname, authStatusLoaded, prompt.locked]);
+    if (prompt.locked) return;
+    claimPrompt('tour'); // no auto-prompt may open over (or after) the replay this page load
+    setTourOpen(true);
+  }, [pathname, authStatusLoaded, prompt.locked, claimPrompt]);
 
   // ── Logging status fetch ─────────────────────────────────────────────────
   const refreshLogging = useCallback(() => {
@@ -260,7 +263,7 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
 
     fetch('/api/tracking/logging-status', { cache: 'no-store', signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null) => {
+      .then((data: { profileId?: string | null; goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null) => {
         if (!data) return;
         setLogging(data);
       })
@@ -363,7 +366,8 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
         ? 'yes'
         : 'pending';
   useAutoPromptCandidate('trial-lock', trialLockState);
-  useAutoPromptCandidate('late-alert', lateState);
+  // A late period belongs to the active profile, so its daily cadence is per profile.
+  useAutoPromptCandidate('late-alert', lateState, { scope: logging?.profileId ?? null });
   useAutoPromptCandidate('tour', tourState);
   useAutoPromptCandidate('profile', profileState);
   // The check-in is reported by the dashboard, which owns its data; hold lower prompts until it does.
