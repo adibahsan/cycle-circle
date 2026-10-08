@@ -133,7 +133,7 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={state === 'loading' || !email.trim() || !password}
-              className="w-full py-3 rounded-xl gradient-primary text-white text-sm font-semibold shadow-soft hover:opacity-90 active:scale-[0.98] transition-[opacity,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+              className="w-full py-3 rounded-xl bg-[var(--color-action)] text-[var(--color-on-action)] text-sm font-semibold shadow-soft hover:opacity-90 active:scale-[0.98] transition-[opacity,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               {state === 'loading' ? (
                 <span className="inline-flex items-center justify-center gap-2">

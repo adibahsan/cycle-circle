@@ -25,8 +25,8 @@ describe('paywall + auth rebrand', () => {
 
   it('auth layout uses the full logo with alt "Cycle Circle"', () => {
     const src = readFileSync(join(app, '(auth)/layout.tsx'), 'utf8');
-    expect(src).toContain('src="/brand/cycle-circle-logo.svg"');
-    expect(src).toContain('alt="Cycle Circle"');
+    expect(src).toContain('<BrandLogo');
+    expect(readFileSync(join(app, '../components/ui/BrandLogo.tsx'), 'utf8')).toContain('src="/brand/cycle-circle-logo.svg"');
   });
 });
 

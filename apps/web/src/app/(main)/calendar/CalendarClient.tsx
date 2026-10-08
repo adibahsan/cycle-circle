@@ -157,9 +157,10 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
   }
 
   return (
+    <div className="relative aspect-square w-full">
     <button
       onClick={() => onSelect(date)}
-      className={`relative flex flex-col items-center justify-center aspect-square w-full rounded-xl transition-[color,background-color,transform] duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40 focus-visible:ring-offset-1${(isPeriod || isFertile || isOvulation) && isCurrentMonth ? ' hover:scale-105' : ''}`}
+      className={`absolute inset-0 flex flex-col items-center justify-center w-full h-full rounded-xl transition-[color,background-color,transform] duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40 focus-visible:ring-offset-1${(isPeriod || isFertile || isOvulation) && isCurrentMonth ? ' hover:scale-105' : ''}`}
       style={{
         backgroundColor: isSelected
           ? isPeriod
@@ -213,18 +214,6 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
         />
       )}
 
-      {/* Ghost ring — unlogged past day within the 30-day window */}
-      {isGhostDay && isCurrentMonth && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onGhostTap?.(format(date, 'yyyy-MM-dd')); }}
-          aria-label={`Add log for ${format(date, 'MMMM d')}`}
-          className="absolute inset-0.5 rounded-[10px] border border-dashed pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/50 focus-visible:ring-offset-1"
-          style={{ borderColor: 'var(--color-text-muted)', opacity: 0.35 }}
-          tabIndex={0}
-        />
-      )}
-
       {/* Selected ring */}
       {isSelected && (
         <div
@@ -233,6 +222,19 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
         />
       )}
     </button>
+      {/* Ghost ring — unlogged past day within the 30-day window */}
+      {isGhostDay && isCurrentMonth && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onGhostTap?.(format(date, 'yyyy-MM-dd')); }}
+          aria-label={`Add log for ${format(date, 'MMMM d')}`}
+          className="absolute inset-0.5 z-10 rounded-[10px] border border-dashed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/50 focus-visible:ring-offset-1"
+          style={{ borderColor: 'var(--color-text-muted)', opacity: 0.35 }}
+          tabIndex={0}
+        />
+      )}
+
+    </div>
   )
 })
 

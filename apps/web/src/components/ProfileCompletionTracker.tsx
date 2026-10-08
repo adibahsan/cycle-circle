@@ -404,7 +404,7 @@ export function ProfileCompletionTracker({
         })}
         className={[
           'inline-flex items-center gap-1.5 px-2 py-1 rounded-lg',
-          'bg-[var(--color-bg-secondary)] border border-[var(--color-border)]',
+          'surface-peach border border-[var(--color-border)]',
           'hover:border-[var(--goal-accent)] transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]',
           className ?? '',
@@ -466,7 +466,7 @@ export function ProfileCompletionTracker({
           onClick={handleToggle}
           className={[
             'w-full flex items-center gap-3 px-4 rounded-xl',
-            'bg-[var(--color-bg-card)] border border-[var(--color-border)]',
+            'surface-peach border border-[var(--color-border)]',
             'hover:border-[var(--goal-accent)] transition-colors',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]',
             'min-h-[56px]',

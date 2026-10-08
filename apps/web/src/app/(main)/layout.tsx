@@ -459,7 +459,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   <span
                     aria-hidden="true"
                     className="animate-attn-glow pointer-events-none absolute inset-0 rounded-full"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--goal-accent) 28%, transparent)' }}
+                    style={{ boxShadow: 'inset 0 0 0 1.5px var(--goal-accent)' }}
                   />
                 )}
                 <span className="relative z-10 flex items-center gap-3">
@@ -601,7 +601,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   <span
                     aria-hidden="true"
                     className="animate-attn-glow pointer-events-none absolute inset-0 rounded-full"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--goal-accent) 28%, transparent)' }}
+                    style={{ boxShadow: 'inset 0 0 0 1.5px var(--goal-accent)' }}
                   />
                 )}
                 <span className="relative z-10 flex flex-col items-center gap-0.5">

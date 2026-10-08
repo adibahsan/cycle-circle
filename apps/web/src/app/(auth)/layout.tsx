@@ -3,6 +3,7 @@
 import { motion } from 'motion/react';
 import { Sun, Moon } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -68,14 +69,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="relative z-10 px-12 lg:px-16 max-w-lg"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/brand/cycle-circle-logo.svg"
-            alt="Cycle Circle"
-            width={160}
-            height={160}
-            className="w-32 h-32 lg:w-40 lg:h-40 mb-4"
-          />
+          <BrandLogo size={160} className="w-32 h-32 lg:w-40 lg:h-40 mb-4" />
           <p className="text-4xl lg:text-5xl font-extrabold mb-4 text-[var(--color-text-primary)]" aria-hidden="true">
             Cycle Circle
           </p>

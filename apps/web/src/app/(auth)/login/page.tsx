@@ -7,6 +7,7 @@ import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { Phone, Shield, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { devMode, DEV_DEFAULT_PHONE } from '@vesta/shared/utils/config';
 import '@vesta/shared/utils/i18n';
 
@@ -89,8 +90,7 @@ export default function LoginPage() {
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           className="mb-4"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/cycle-circle-logo.svg" alt="" width={64} height={64} className="w-16 h-16" />
+          <BrandLogo size={64} alt="" className="w-16 h-16" />
         </motion.div>
 
         <h1 className="text-3xl font-extrabold mb-1 text-[var(--color-text-primary)]">
@@ -109,7 +109,7 @@ export default function LoginPage() {
         variants={FADE_UP}
         initial="hidden"
         animate="show"
-        className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft p-6 mx-0"
+        className="rounded-3xl surface-wash border border-[var(--color-border)] shadow-soft p-6 mx-0"
       >
         <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">
           {t('auth.login')}
@@ -141,8 +141,8 @@ export default function LoginPage() {
               value={phone}
               onChange={handlePhoneChange}
               maxLength={11}
-              className={`w-full pl-20 pr-4 py-3.5 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-colors duration-200 text-base tracking-widest font-medium ${
-                error ? 'border-[var(--color-error)] focus:ring-[var(--color-error)]/30' : 'border-[var(--color-border)]'
+              className={`w-full pl-20 pr-4 py-3.5 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200 text-base tracking-widest font-medium ${
+                error ? 'border-[var(--color-error)] focus-visible:ring-[var(--color-error)]/30' : 'border-[var(--color-border)]'
               }`}
             />
             {phone.length === 11 && !error && (
@@ -159,7 +159,7 @@ export default function LoginPage() {
           size="lg"
           onClick={handleSendOtp}
           disabled={loading}
-          className="rounded-2xl text-base font-bold tracking-wide"
+          className="text-base font-bold tracking-wide"
         >
           {loading ? (
             <span className="flex items-center gap-2">

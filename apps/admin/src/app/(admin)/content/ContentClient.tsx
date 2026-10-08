@@ -309,7 +309,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
               e.stopPropagation()
               setDeleteTarget(row)
             }}
-            className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
+            className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-error)] hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
             aria-label="Delete article"
             title="Delete article"
           >
@@ -550,7 +550,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                 spellCheck={false}
                                 autoComplete="off"
                                 aria-label={`Rename category ${cat.name}`}
-                                className="w-full px-2 py-1 text-sm font-medium rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] focus:outline-none disabled:opacity-60"
+                                className="w-full px-2 py-1 text-sm font-medium rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] focus-visible:outline-none disabled:opacity-60"
                               />
                               {renameError && (
                                 <span className="text-xs text-red-600" aria-live="polite">
@@ -613,7 +613,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                   type="button"
                                   onClick={() => setCategoryToDelete(cat)}
                                   disabled={hasArticles || isBusy}
-                                  className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[var(--color-text-muted)] disabled:hover:bg-transparent"
+                                  className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-error)] hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[var(--color-text-muted)] disabled:hover:bg-transparent"
                                   aria-label={`Delete category ${cat.name}`}
                                 >
                                   <Trash2 size={13} aria-hidden="true" />

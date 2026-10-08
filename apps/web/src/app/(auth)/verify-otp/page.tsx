@@ -172,6 +172,7 @@ export default function VerifyOtpPage() {
         {t('common.back')}
       </motion.button>
 
+      <div className="rounded-3xl surface-wash border border-[var(--color-border)] shadow-soft p-6">
       {/* Header */}
       <motion.div
         custom={1}
@@ -232,11 +233,11 @@ export default function VerifyOtpPage() {
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onFocus={(e) => { e.target.select(); setFocusedIndex(index); }}
                 onBlur={() => setFocusedIndex(null)}
-                className={`w-full aspect-square text-center text-xl font-bold rounded-xl border-2 bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none transition-colors duration-200 ${
+                className={`w-full aspect-square text-center text-xl font-bold rounded-xl border-2 bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus-visible:outline-none transition-colors duration-200 ${
                   digit
                     ? 'border-[var(--color-primary)] bg-[var(--color-bg-card)]'
                     : 'border-[var(--color-border)]'
-                } ${error ? 'border-[var(--color-error)]' : ''} focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/25`}
+                } ${error ? 'border-[var(--color-error)]' : ''} focus-visible:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/25`}
                 aria-label={`Digit ${index + 1}`}
               />
             </motion.div>
@@ -274,7 +275,7 @@ export default function VerifyOtpPage() {
           size="lg"
           onClick={handleVerify}
           disabled={loading || success || !allFilled}
-          className="rounded-2xl text-base font-bold"
+          className="text-base font-bold"
         >
           <AnimatePresence mode="wait" initial={false}>
             {success ? (
@@ -388,6 +389,7 @@ export default function VerifyOtpPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }

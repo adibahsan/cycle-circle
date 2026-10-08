@@ -405,7 +405,7 @@ function ProfilesTab({ profiles, userId }: { profiles: Profile[]; userId: string
         >
           {/* Profile header */}
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-primary text-white font-bold text-sm shadow-soft">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-action)] text-[var(--color-on-action)] font-bold text-sm shadow-soft">
               {(profile.name ?? 'P').charAt(0).toUpperCase()}
             </div>
             <div>
@@ -730,7 +730,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           {/* Avatar + info */}
           <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full gradient-primary text-white text-xl font-bold shadow-glow">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--color-action)] text-[var(--color-on-action)] text-xl font-bold shadow-glow">
               {initials}
             </div>
             <div className="space-y-1.5">
@@ -891,7 +891,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors transition-shadow duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] ${
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] ${
               activeTab === tab.key
                 ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-soft'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'

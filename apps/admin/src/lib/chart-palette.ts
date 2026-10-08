@@ -37,7 +37,7 @@ export const CHART_VAR = {
   /** Semantic status, matching admin's emerald/amber/red badges. Always shown next to a number or label. */
   good: '#059669',
   mid: '#D97706',
-  low: 'var(--color-error, #B4441C)',
+  low: 'var(--color-error)',
 } as const
 
 const FALLBACKS: Record<string, string> = {
@@ -58,11 +58,6 @@ export function resolveChartColor(value: string, root?: Element | null): string 
     if (live) return live
   }
   return FALLBACKS[name] ?? inline?.trim() ?? value
-}
-
-/** Resolved ordered palette (fallback hexes when no root is given). */
-export function chartPalette(root?: Element | null): string[] {
-  return CHART_TOKENS.map((t) => resolveChartColor(`var(${t.cssVar})`, root))
 }
 
 /**

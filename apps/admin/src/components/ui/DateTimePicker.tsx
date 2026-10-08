@@ -286,7 +286,7 @@ export function DateTimePicker({
                     'flex h-8 w-full items-center justify-center rounded-lg text-sm tabular-nums',
                     'transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30',
                     isSelected
-                      ? 'bg-[var(--color-primary)] text-white font-medium'
+                      ? 'bg-[var(--color-action)] text-[var(--color-on-action)] font-medium'
                       : inMonth
                         ? 'text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]'
                         : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-secondary)]',
