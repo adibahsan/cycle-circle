@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 import time
@@ -11,6 +12,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import docker
 from prometheus_client import CONTENT_TYPE_LATEST, Gauge, generate_latest
+
+LOG = logging.getLogger("container-metrics")
 
 REFRESH_SECONDS = float(os.environ.get("REFRESH_SECONDS", "15"))
 
@@ -101,12 +104,16 @@ def collect() -> None:
             NET_TX.labels(name, service).set(tx)
 
 
+def _refresh_once() -> None:
+    try:
+        collect()
+    except Exception:
+        LOG.exception("metrics refresh failed")
+
+
 def _refresh_loop() -> None:
     while True:
-        try:
-            collect()
-        except Exception:
-            pass
+        _refresh_once()
         time.sleep(REFRESH_SECONDS)
 
 
@@ -127,7 +134,15 @@ class _MetricsHandler(BaseHTTPRequestHandler):
         return
 
 
+def _log_level() -> str:
+    return os.environ.get("LOG_LEVEL", "INFO").upper()
+
+
 def main() -> None:
+    logging.basicConfig(
+        level=_log_level(),
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
     port = int(os.environ.get("METRICS_PORT", "9487"))
     threading.Thread(target=_refresh_loop, daemon=True).start()
     time.sleep(1)

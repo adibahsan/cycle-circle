@@ -26,7 +26,8 @@ trap 'rm -f "$TMP"' EXIT
 # Substitute secret only on schedule lines (never in comments).
 while IFS= read -r line || [[ -n "$line" ]]; do
   if [[ "$line" =~ ^[0-9] ]]; then
-    line=${line//CRON_SECRET_PLACEHOLDER/$CRON_SECRET}
+    # Quote the replacement: bash >=5.2 patsub_replacement treats unquoted & as the match.
+    line=${line//CRON_SECRET_PLACEHOLDER/"$CRON_SECRET"}
   fi
   printf '%s\n' "$line"
 done < "$CRONTAB_SRC" > "$TMP"

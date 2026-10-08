@@ -19,7 +19,7 @@ openssl req -x509 -nodes -newkey rsa:2048 -days "$DAYS" \
   -keyout "$SSL_DIR/privkey.pem" \
   -out "$SSL_DIR/fullchain.pem" \
   -subj "/CN=${CN}" \
-  -addext "subjectAltName=DNS:cycle-circle.com,DNS:www.cycle-circle.com,DNS:admin.cycle-circle.com"
+  -addext "subjectAltName=DNS:cycle-circle.com,DNS:www.cycle-circle.com,DNS:admin.cycle-circle.com,DNS:monitoring.cycle-circle.com"
 
 chmod 600 "$SSL_DIR/privkey.pem" "$SSL_DIR/fullchain.pem"
-echo "Wrote ${SSL_DIR}/fullchain.pem and privkey.pem (${DAYS}d, SAN: apex/www/admin)"
+echo "Wrote ${SSL_DIR}/fullchain.pem and privkey.pem (${DAYS}d, SAN: apex/www/admin/monitoring)"
