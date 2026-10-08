@@ -482,6 +482,7 @@ const resources = {
       common: {
         save: 'Save', cancel: 'Cancel', delete: 'Delete', edit: 'Edit', back: 'Back', next: 'Next',
         loading: 'Loading...', error: 'Something went wrong',
+        close: 'Close',
         later: 'Later', saving: 'Saving…', profile: 'Profile', confirm: 'Confirm',
       },
       landing: {
@@ -1130,6 +1131,7 @@ const resources = {
       common: {
         save: 'সংরক্ষণ', cancel: 'বাতিল', delete: 'মুছুন', edit: 'সম্পাদনা', back: 'ফিরে যান', next: 'পরবর্তী',
         loading: 'লোড হচ্ছে...', error: 'কিছু একটা ভুল হয়েছে',
+        close: 'বন্ধ করুন',
         later: 'পরে', saving: 'সংরক্ষণ হচ্ছে…', profile: 'প্রোফাইল', confirm: 'নিশ্চিত করুন',
       },
       landing: {
