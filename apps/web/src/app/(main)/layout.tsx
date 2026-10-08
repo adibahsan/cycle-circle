@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/lib/store';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import VestaLogo from '@/components/ui/VestaLogo';
-import { ProfileCompletionTracker, type ProfileCompletionStatus } from '@/components/ProfileCompletionTracker';
+import type { ProfileCompletionStatus } from '@/components/ProfileCompletionTracker';
 import type { TourStep } from '@/components/onboarding/OnboardingTour';
 import { completeOnboardingTour } from '@/app/actions/user-actions';
 import {
@@ -316,6 +316,13 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
   // The check-in is reported by the dashboard, which owns its data; hold lower prompts until it does.
   useAutoPromptExpect('check-in', pathname === '/dashboard');
 
+  // The dashboard completion row asks the layout (which owns the pop-up) to open it.
+  useEffect(() => {
+    const open = () => setShowCompletionModal(true);
+    window.addEventListener('vesta:open-completion', open);
+    return () => window.removeEventListener('vesta:open-completion', open);
+  }, []);
+
   const handleLateClose = useCallback(() => prompt.close('late-alert'), [prompt]);
   const handleLateLogPeriod = useCallback(() => {
     prompt.close('late-alert');
@@ -499,16 +506,6 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
 
         {/* Page content */}
         <main className="flex-1 pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+1.5rem)] md:pb-8">
-          {/* Profile completion pill — shown on all main pages */}
-          {completionStatus && (
-            <div className="w-full max-w-4xl px-4 md:px-8 pt-4">
-              <ProfileCompletionTracker
-                variant="pill"
-                status={completionStatus}
-                onComplete={() => setShowCompletionModal(true)}
-              />
-            </div>
-          )}
           {children}
         </main>
       </div>
