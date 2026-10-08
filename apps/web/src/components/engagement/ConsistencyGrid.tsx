@@ -1,5 +1,6 @@
 'use client';
 
+import { localDayString } from '@/lib/local-date';
 import { motion } from 'motion/react';
 import { useReducedMotion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -24,7 +25,7 @@ interface ConsistencyGridProps {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getTodayStr(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localDayString();
 }
 
 function isFuture(dateStr: string): boolean {

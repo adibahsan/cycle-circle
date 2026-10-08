@@ -864,23 +864,19 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
       </div>
 
       {/* ── Edit Period Log Modal ── */}
-      <AnimatePresence>
-        {editingLog && (
-          <PeriodLogModal
-            key="edit-period-modal"
-            profileId={editingLog.profileId}
-            existingLogId={editingLog.id}
-            initialStart={toDateStr(editingLog.startDate)}
-            initialEnd={toDateStr(editingLog.endDate)}
-            initialFlow={editingLog.flowIntensity.toLowerCase() as FlowIntensity}
-            onClose={() => setEditingLog(null)}
-            onSaved={() => {
-              router.refresh()
-              window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
-            }}
-          />
-        )}
-      </AnimatePresence>
+      <PeriodLogModal
+        open={editingLog !== null}
+        profileId={editingLog?.profileId ?? activeProfileId}
+        existingLogId={editingLog?.id}
+        initialStart={editingLog ? toDateStr(editingLog.startDate) : undefined}
+        initialEnd={editingLog ? toDateStr(editingLog.endDate) : undefined}
+        initialFlow={editingLog ? (editingLog.flowIntensity.toLowerCase() as FlowIntensity) : undefined}
+        onClose={() => setEditingLog(null)}
+        onSaved={() => {
+          router.refresh()
+          window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
+        }}
+      />
 
       {/* ── Ghost-day backfill modal ── */}
       <QuickSymptomModal

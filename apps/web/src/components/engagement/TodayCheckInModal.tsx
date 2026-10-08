@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useId } from 'react';
+import { useState, useCallback, useEffect, useId, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useReducedMotion } from 'motion/react';
@@ -16,7 +16,9 @@ import {
 } from '@/app/(main)/symptoms/SymptomsClient';
 import { saveSymptoms, markAllGoodToday } from '@/app/actions/tracking-actions';
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal';
-import { CelebrationModal } from '@/components/modals/CelebrationModal';
+import { useToast } from '@/components/ui/Toast';
+import { localDayString } from '@/lib/local-date';
+import type { PopupLayer } from '@/components/ui/popup-core';
 import '@vesta/shared/utils/i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -42,7 +44,12 @@ interface TodayCheckInModalProps {
   engagement: EngagementSummary;
   cycleDay?: number | null;
   phase?: string | null;
+  /** 'prompt' when the arbiter opened it, 'popup' when the user did. */
+  layer?: PopupLayer;
 }
+
+/** Let the check-in finish its exit animation before the next pop-up opens (never two at once). */
+const HANDOFF_MS = 260;
 
 // ── Quick chip IDs ────────────────────────────────────────────────────────────
 
@@ -80,6 +87,7 @@ export function TodayCheckInModal({
   engagement,
   cycleDay,
   phase,
+  layer = 'popup',
 }: TodayCheckInModalProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -92,10 +100,24 @@ export function TodayCheckInModal({
 
   const [localSelected, setLocalSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
-  const [showQuick, setShowQuick] = useState(false);
-  const [backfillDate, setBackfillDate] = useState<string | null>(null);
-  const [celebration, setCelebration] = useState<{ kind: 'streak' | 'milestone' | 'symptom'; count?: number } | null>(null);
-  const [celebrationOpen, setCelebrationOpen] = useState(false);
+  const toast = useToast();
+  // Hand-over to the full symptom list: check-in hides first, then quick symptom opens
+  // (and the reverse on close), so the two never overlap.
+  const [handoff, setHandoff] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
+  const handoffTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (handoffTimer.current) clearTimeout(handoffTimer.current); }, []);
+
+  function openQuick() {
+    setHandoff(true);
+    if (handoffTimer.current) clearTimeout(handoffTimer.current);
+    handoffTimer.current = setTimeout(() => setQuickOpen(true), HANDOFF_MS);
+  }
+  function closeQuick() {
+    setQuickOpen(false);
+    if (handoffTimer.current) clearTimeout(handoffTimer.current);
+    handoffTimer.current = setTimeout(() => setHandoff(false), HANDOFF_MS);
+  }
 
   const quickSymptoms = SYMPTOMS_DATA.filter((s) => QUICK_CHIP_IDS.includes(s.id));
 
@@ -113,8 +135,7 @@ export function TodayCheckInModal({
   }, []);
 
   function fireCelebration(kind: 'streak' | 'milestone', count: number) {
-    setCelebration({ kind, count });
-    setCelebrationOpen(true);
+    toast.celebrate(kind, count);
   }
 
   async function handleSave() {
@@ -130,7 +151,7 @@ export function TodayCheckInModal({
       if (addedPayload.length) {
         await saveSymptoms({
           profileId,
-          date: new Date().toISOString().slice(0, 10),
+          date: localDayString(),
           added: addedPayload,
           removed: [],
         });
@@ -181,8 +202,9 @@ export function TodayCheckInModal({
   return (
     <>
       <Modal
-        open={open}
+        open={open && !handoff}
         onClose={onClose}
+        layer={layer}
         titleId={titleId}
         accentVar="var(--goal-accent, var(--color-primary))"
         closeOnBackdrop={true}
@@ -260,7 +282,7 @@ export function TodayCheckInModal({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setShowQuick(true)}
+              onClick={openQuick}
               aria-label={t('checkIn.more')}
               className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-xs font-semibold text-[var(--color-text-secondary)] transition-colors hover:border-[var(--goal-accent,var(--color-primary))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent,var(--color-primary))]/40"
             >
@@ -325,39 +347,22 @@ export function TodayCheckInModal({
         </div>
       </Modal>
 
-      {/* ── Full symptom modal (More / backfill) ── */}
+      {/* ── Full symptom modal (More) ── */}
       <QuickSymptomModal
-        open={showQuick || backfillDate !== null}
-        onClose={() => {
-          setShowQuick(false);
-          setBackfillDate(null);
-        }}
+        open={open && quickOpen}
+        onClose={closeQuick}
         profileId={profileId}
         goal={goal}
-        initialDate={backfillDate ?? undefined}
         onSaved={(count) => {
-          setShowQuick(false);
-          setBackfillDate(null);
+          setQuickOpen(false);
+          setHandoff(false);
           router.refresh();
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
           }
-          setCelebration({ kind: 'symptom', count });
-          setCelebrationOpen(true);
+          if (count > 0) toast.celebrate('symptom', count);
           onClose();
         }}
-      />
-
-      {/* ── Celebration modal — stays mounted briefly after popup closes ── */}
-      <CelebrationModal
-        open={celebrationOpen}
-        onClose={() => {
-          setCelebrationOpen(false);
-          setCelebration(null);
-        }}
-        goal={goal}
-        kind={celebration?.kind ?? 'streak'}
-        count={celebration?.count}
       />
     </>
   );
