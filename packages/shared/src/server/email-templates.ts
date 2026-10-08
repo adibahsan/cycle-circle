@@ -33,6 +33,51 @@ export interface EmailResult {
   html: string
 }
 
+// ─── Brand palette (inline hex only: email clients do not support CSS vars) ───
+// Mirrors the Cycle Circle light-theme tokens in apps/web/src/app/globals.css.
+
+export const EMAIL_PALETTE = {
+  cta: '#D02F58', // --color-action / --color-primary
+  onCta: '#FFFFFF', // --color-on-action
+  bg: '#FFF7F8', // --color-bg-primary
+  card: '#FFFFFF', // --color-bg-card
+  peach: '#FDF0E6', // --color-bg-peach
+  ink: '#1A232C', // --color-text-primary
+  muted: '#565266', // --color-text-secondary
+  border: '#F6DDE3', // --color-border
+  goldInk: '#8C6A1F', // --color-gold-ink
+} as const
+
+const P = EMAIL_PALETTE
+
+export const EMAIL_CONTACT = 'info@cycle-circle.com'
+
+export const EMAIL_LOGO_WIDTH = 160
+
+function appBaseUrl(): string {
+  return (process.env.APP_URL || 'http://localhost:3000').replace(/\/+$/, '')
+}
+
+export function emailLogoUrl(): string {
+  return `${appBaseUrl()}/brand/cycle-circle-logo.png`
+}
+
+/** Shared header block: centred circular logo on a white card. */
+export function emailHeaderHtml(lang: 'en' | 'bn', tagline?: string): string {
+  const alt = 'Cycle Circle'
+  const sub = tagline ?? (lang === 'bn' ? 'আপনার স্বাস্থ্য সঙ্গী' : 'Your cycle companion')
+  return `<td align="center" style="background:${P.card};padding:28px 32px 20px;border-bottom:1px solid ${P.border};">
+              <img src="${emailLogoUrl()}" width="${EMAIL_LOGO_WIDTH}" alt="${alt}" style="display:block;margin:0 auto;border:0;outline:none;height:auto;max-width:${EMAIL_LOGO_WIDTH}px;" />
+              <p style="margin:12px 0 0;color:${P.muted};font-size:13px;">${sub}</p>
+            </td>`
+}
+
+/** Shared footer contact line. */
+export function emailContactHtml(lang: 'en' | 'bn'): string {
+  const label = lang === 'bn' ? 'যোগাযোগ' : 'Contact'
+  return `<p style="margin:8px 0 0;color:${P.muted};font-size:12px;line-height:1.6;">${label}: <a href="mailto:${EMAIL_CONTACT}" style="color:${P.cta};text-decoration:underline;">${EMAIL_CONTACT}</a></p>`
+}
+
 // ─── Shared layout wrapper ────────────────────────────────────────────────────
 
 function wrapLayout(lang: Language, bodyContent: string): string {
@@ -44,22 +89,17 @@ function wrapLayout(lang: Language, bodyContent: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 </head>
-<body style="margin:0;padding:0;background:#FFF5F7;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+<body style="margin:0;padding:0;background:${P.bg};font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-    style="background:#FFF5F7;padding:32px 16px;">
+    style="background:${P.bg};padding:32px 16px;">
     <tr>
       <td align="center">
         <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-          style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(232,71,108,0.12);">
+          style="max-width:600px;background:${P.card};border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(26,35,44,0.08);">
 
           <!-- Header -->
           <tr>
-            <td style="background:linear-gradient(135deg,#E8476C 0%,#9B7FD4 100%);padding:28px 32px;">
-              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">Cycle Circle</h1>
-              <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">
-                ${lang === 'BN' ? 'আপনার স্বাস্থ্য সঙ্গী' : 'Your cycle companion'}
-              </p>
-            </td>
+            ${emailHeaderHtml(lang === 'BN' ? 'bn' : 'en')}
           </tr>
 
           <!-- Body -->
@@ -71,12 +111,13 @@ function wrapLayout(lang: Language, bodyContent: string): string {
 
           <!-- Footer -->
           <tr>
-            <td style="padding:20px 32px 28px;border-top:1px solid #F3E8EC;">
-              <p style="margin:0;color:#B0849A;font-size:12px;line-height:1.6;">
+            <td style="padding:20px 32px 28px;border-top:1px solid ${P.border};">
+              <p style="margin:0;color:${P.muted};font-size:12px;line-height:1.6;">
                 ${lang === 'BN'
     ? 'এই ইমেইল পাচ্ছেন কারণ আপনি সাইকেল সার্কেলে নোটিফিকেশন চালু রেখেছেন। নোটিফিকেশন বন্ধ করতে অ্যাপের সেটিংসে যান।'
     : 'You received this email because you have notifications enabled in Cycle Circle. To unsubscribe, visit Settings in the app.'}
               </p>
+              ${emailContactHtml(lang === 'BN' ? 'bn' : 'en')}
             </td>
           </tr>
 
@@ -125,32 +166,32 @@ export function periodAlertEmail(data: PeriodAlertData): EmailResult {
   const tipLabel = isBn ? 'টিপস' : 'Helpful tip'
 
   const body = `
-    <p style="margin:0 0 4px;color:#6B4458;font-size:16px;font-weight:500;">${greeting}</p>
-    <p style="margin:0 0 28px;color:#6B4458;font-size:15px;">${profileLine}</p>
+    <p style="margin:0 0 4px;color:${P.muted};font-size:16px;font-weight:500;">${greeting}</p>
+    <p style="margin:0 0 28px;color:${P.muted};font-size:15px;">${profileLine}</p>
 
     <!-- Alert card -->
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-      style="background:#FFF5F7;border-left:4px solid #E8476C;border-radius:8px;margin-bottom:24px;">
+      style="background:${P.bg};border-left:4px solid ${P.cta};border-radius:8px;margin-bottom:24px;">
       <tr>
         <td style="padding:20px 24px;">
-          <p style="margin:0 0 6px;color:#E8476C;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
+          <p style="margin:0 0 6px;color:${P.cta};font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
             ${headingText}
           </p>
-          <p style="margin:0 0 4px;color:#2D1A24;font-size:22px;font-weight:700;">${daysLabel}</p>
-          <p style="margin:0;color:#8C5E74;font-size:14px;">${dateLabel}</p>
+          <p style="margin:0 0 4px;color:${P.ink};font-size:22px;font-weight:700;">${daysLabel}</p>
+          <p style="margin:0;color:${P.muted};font-size:14px;">${dateLabel}</p>
         </td>
       </tr>
     </table>
 
     <!-- Tip card -->
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-      style="background:#F8F4FF;border-radius:8px;margin-bottom:8px;">
+      style="background:${P.peach};border-radius:8px;margin-bottom:8px;">
       <tr>
         <td style="padding:16px 20px;">
-          <p style="margin:0 0 6px;color:#9B7FD4;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
+          <p style="margin:0 0 6px;color:${P.ink};font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
             ${tipLabel}
           </p>
-          <p style="margin:0;color:#4A3568;font-size:14px;line-height:1.6;">${tipText}</p>
+          <p style="margin:0;color:${P.ink};font-size:14px;line-height:1.6;">${tipText}</p>
         </td>
       </tr>
     </table>
@@ -198,32 +239,32 @@ export function fertileWindowEmail(data: FertileWindowData): EmailResult {
   const windowSubLabel = isBn ? 'উর্বর সময়কাল' : 'Fertile window'
 
   const body = `
-    <p style="margin:0 0 4px;color:#6B4458;font-size:16px;font-weight:500;">${greeting}</p>
-    <p style="margin:0 0 28px;color:#6B4458;font-size:15px;">${profileLine}</p>
+    <p style="margin:0 0 4px;color:${P.muted};font-size:16px;font-weight:500;">${greeting}</p>
+    <p style="margin:0 0 28px;color:${P.muted};font-size:15px;">${profileLine}</p>
 
     <!-- Alert card -->
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-      style="background:#FFF5F7;border-left:4px solid #9B7FD4;border-radius:8px;margin-bottom:24px;">
+      style="background:${P.bg};border-left:4px solid ${P.goldInk};border-radius:8px;margin-bottom:24px;">
       <tr>
         <td style="padding:20px 24px;">
-          <p style="margin:0 0 6px;color:#9B7FD4;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
+          <p style="margin:0 0 6px;color:${P.ink};font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
             ${headingText}
           </p>
-          <p style="margin:0 0 4px;color:#2D1A24;font-size:20px;font-weight:700;">${windowSubLabel}: ${windowLabel}</p>
-          <p style="margin:0;color:#8C5E74;font-size:14px;">${ovulationLabel}</p>
+          <p style="margin:0 0 4px;color:${P.ink};font-size:20px;font-weight:700;">${windowSubLabel}: ${windowLabel}</p>
+          <p style="margin:0;color:${P.muted};font-size:14px;">${ovulationLabel}</p>
         </td>
       </tr>
     </table>
 
     <!-- Tip card -->
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-      style="background:#F8F4FF;border-radius:8px;margin-bottom:8px;">
+      style="background:${P.peach};border-radius:8px;margin-bottom:8px;">
       <tr>
         <td style="padding:16px 20px;">
-          <p style="margin:0 0 6px;color:#9B7FD4;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
+          <p style="margin:0 0 6px;color:${P.ink};font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
             ${tipLabel}
           </p>
-          <p style="margin:0;color:#4A3568;font-size:14px;line-height:1.6;">${tipText}</p>
+          <p style="margin:0;color:${P.ink};font-size:14px;line-height:1.6;">${tipText}</p>
         </td>
       </tr>
     </table>
@@ -274,32 +315,32 @@ export function loggingReminderEmail(data: LoggingReminderData): EmailResult {
   const tipLabel = isBn ? 'কীভাবে করবেন' : 'Quick tip'
 
   const body = `
-    <p style="margin:0 0 4px;color:#6B4458;font-size:16px;font-weight:500;">${greeting}</p>
-    <p style="margin:0 0 28px;color:#6B4458;font-size:15px;">${profileLine}</p>
+    <p style="margin:0 0 4px;color:${P.muted};font-size:16px;font-weight:500;">${greeting}</p>
+    <p style="margin:0 0 28px;color:${P.muted};font-size:15px;">${profileLine}</p>
 
     <!-- Alert card -->
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-      style="background:#FFF5F7;border-left:4px solid #E8476C;border-radius:8px;margin-bottom:24px;">
+      style="background:${P.bg};border-left:4px solid ${P.cta};border-radius:8px;margin-bottom:24px;">
       <tr>
         <td style="padding:20px 24px;">
-          <p style="margin:0 0 6px;color:#E8476C;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
+          <p style="margin:0 0 6px;color:${P.cta};font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
             ${headingText}
           </p>
-          <p style="margin:0 0 6px;color:#2D1A24;font-size:18px;font-weight:600;">${daysText}</p>
-          <p style="margin:0;color:#8C5E74;font-size:14px;">${ctaText}</p>
+          <p style="margin:0 0 6px;color:${P.ink};font-size:18px;font-weight:600;">${daysText}</p>
+          <p style="margin:0;color:${P.muted};font-size:14px;">${ctaText}</p>
         </td>
       </tr>
     </table>
 
     <!-- Tip card -->
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-      style="background:#F8F4FF;border-radius:8px;margin-bottom:8px;">
+      style="background:${P.peach};border-radius:8px;margin-bottom:8px;">
       <tr>
         <td style="padding:16px 20px;">
-          <p style="margin:0 0 6px;color:#9B7FD4;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
+          <p style="margin:0 0 6px;color:${P.ink};font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
             ${tipLabel}
           </p>
-          <p style="margin:0;color:#4A3568;font-size:14px;line-height:1.6;">${tipText}</p>
+          <p style="margin:0;color:${P.ink};font-size:14px;line-height:1.6;">${tipText}</p>
         </td>
       </tr>
     </table>
@@ -341,20 +382,20 @@ export function profileCompletionReminderEmail(data: ProfileCompletionReminderDa
   const tipLabel = isBn ? 'একটু সময় নিন' : 'Quick to finish'
 
   const body = `
-    <p style="margin:0 0 4px;color:#6B4458;font-size:16px;font-weight:500;">${greeting}</p>
-    <p style="margin:0 0 28px;color:#6B4458;font-size:15px;">&nbsp;</p>
+    <p style="margin:0 0 4px;color:${P.muted};font-size:16px;font-weight:500;">${greeting}</p>
+    <p style="margin:0 0 28px;color:${P.muted};font-size:15px;">&nbsp;</p>
 
     <!-- Main card -->
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-      style="background:#FFF5F7;border-left:4px solid #E8476C;border-radius:8px;margin-bottom:24px;">
+      style="background:${P.bg};border-left:4px solid ${P.cta};border-radius:8px;margin-bottom:24px;">
       <tr>
         <td style="padding:20px 24px;">
-          <p style="margin:0 0 6px;color:#E8476C;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
+          <p style="margin:0 0 6px;color:${P.cta};font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
             ${headingText}
           </p>
-          <p style="margin:0 0 20px;color:#2D1A24;font-size:15px;line-height:1.6;">${mainText}</p>
-          <a href="https://vesta.health/setup"
-            style="display:inline-block;background:linear-gradient(135deg,#E8476C 0%,#9B7FD4 100%);color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:12px 28px;border-radius:8px;">
+          <p style="margin:0 0 20px;color:${P.ink};font-size:15px;line-height:1.6;">${mainText}</p>
+          <a href="${appBaseUrl()}/profiles"
+            style="display:inline-block;background:${P.cta};color:${P.onCta};text-decoration:none;font-size:15px;font-weight:600;padding:12px 28px;border-radius:999px;">
             ${ctaText}
           </a>
         </td>
@@ -363,13 +404,13 @@ export function profileCompletionReminderEmail(data: ProfileCompletionReminderDa
 
     <!-- Tip card -->
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
-      style="background:#F8F4FF;border-radius:8px;margin-bottom:8px;">
+      style="background:${P.peach};border-radius:8px;margin-bottom:8px;">
       <tr>
         <td style="padding:16px 20px;">
-          <p style="margin:0 0 6px;color:#9B7FD4;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
+          <p style="margin:0 0 6px;color:${P.ink};font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">
             ${tipLabel}
           </p>
-          <p style="margin:0;color:#4A3568;font-size:14px;line-height:1.6;">${tipText}</p>
+          <p style="margin:0;color:${P.ink};font-size:14px;line-height:1.6;">${tipText}</p>
         </td>
       </tr>
     </table>

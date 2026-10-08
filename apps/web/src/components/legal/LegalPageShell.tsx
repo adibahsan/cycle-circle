@@ -31,10 +31,10 @@ export function LegalPageShell({ title, dateLabel, intro, children }: LegalPageS
           <Link
             href="/"
             aria-label={t('app.name')}
-            className="inline-flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded-xl"
+            className="inline-flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded-xl"
           >
             <VestaLogoSVG size={28} />
-            <span className="font-bold text-[var(--color-primary)] text-lg tracking-wide">
+            <span className="font-extrabold text-[var(--color-text-primary)] text-lg">
               {t('app.name')}
             </span>
           </Link>

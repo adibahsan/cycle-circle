@@ -11,6 +11,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { LegalPageShell } from '@/components/legal/LegalPageShell';
+import { ContactBlock } from '@/components/legal/ContactBlock';
 import { LegalSection } from '@/components/legal/LegalSection';
 
 // ─── Bullet list helper ───────────────────────────────────────────────────────
@@ -75,8 +76,6 @@ export default function PrivacyPage() {
   const rightsItems = t('privacy.sections.rights.items', {
     returnObjects: true,
   }) as BulletItem[];
-
-  const email = t('privacy.sections.contact.email');
 
   return (
     <LegalPageShell
@@ -144,13 +143,7 @@ export default function PrivacyPage() {
       <LegalSection icon={Mail} title={t('privacy.sections.contact.title')} key="contact">
         <p>{t('privacy.sections.contact.intro')}</p>
         <div className="mt-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-4 py-3">
-          <a
-            href={`mailto:${email}`}
-            className="text-[var(--color-secondary)] font-semibold hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
-            spellCheck={false}
-          >
-            {email}
-          </a>
+          <ContactBlock />
         </div>
         <p className="text-xs text-[var(--color-text-muted)] mt-2">
           {t('privacy.sections.contact.response')}

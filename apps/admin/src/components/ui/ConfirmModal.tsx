@@ -66,7 +66,7 @@ export function ConfirmModal({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="relative z-10 w-full max-w-md rounded-2xl glass border border-[var(--color-border)] p-6 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+        className="relative z-10 w-full max-w-md rounded-2xl glass border border-[var(--color-border)] p-6 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
       >
         {/* Icon */}
         <div

@@ -102,7 +102,7 @@ function MetadataCell({ metadata }: { metadata: unknown }) {
         }}
         aria-expanded={expanded}
         aria-label={expanded ? 'Collapse metadata' : 'Expand metadata'}
-        className="text-left text-xs font-mono text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded"
+        className="text-left text-xs font-mono text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] rounded"
       >
         {expanded ? preview : truncated}
       </button>

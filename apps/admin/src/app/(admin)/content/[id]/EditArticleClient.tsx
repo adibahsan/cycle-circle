@@ -119,7 +119,7 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
       <div className="flex items-center gap-4">
         <Link
           href="/content"
-          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] rounded"
         >
           <ArrowLeft size={15} aria-hidden="true" />
           Back to Content
@@ -237,7 +237,7 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
                     key={opt.value}
                     type="button"
                     onClick={() => { setStatus(opt.value); setIsDirty(true) }}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-colors transition-shadow duration-150 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-colors transition-shadow duration-150 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] ${
                       isSelected
                         ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/8'
                         : 'border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)]'
@@ -352,7 +352,7 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
             onClick={handleSave}
             loading={isPending}
             disabled={isPending}
-            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500"
+            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
           >
             <Save size={16} aria-hidden="true" />
             Save Changes

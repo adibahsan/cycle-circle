@@ -85,7 +85,7 @@ function Toast({ toast }: { toast: ToastState | null }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.94 }}
             transition={{ type: 'spring', damping: 24, stiffness: 320 }}
-            className="grid rounded-xl bg-[var(--color-text-primary)] text-white text-sm font-medium px-4 py-3 shadow-glow text-center"
+            className="grid rounded-xl bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] text-sm font-medium px-4 py-3 shadow-glow text-center"
           >
             <AnimatePresence>
               <motion.span
@@ -413,14 +413,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {/* Sidebar header / branding */}
         <div className="px-5 py-5 flex items-center gap-3">
           <VestaLogo size={28} animate={false} />
-          <h1 className="text-xl font-bold text-[var(--goal-accent)]">Vesta</h1>
+          <h1 className="text-xl font-extrabold text-[var(--color-text-primary)]">Cycle Circle</h1>
         </div>
 
         {/* Profile switcher */}
         <div className="px-4 mb-4">
           <Link
             href="/profiles"
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:border-[var(--goal-accent)] transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--color-bg-secondary)] text-sm font-medium hover:bg-[var(--color-bg-primary)] transition-colors"
           >
             <Users size={14} aria-hidden="true" />
             <span className="truncate">{activeProfileName || 'Profile'}</span>
@@ -448,17 +448,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 href={href}
                 {...(tourKey ? { 'data-tour': tourKey } : {})}
                 {...(showDot ? { 'aria-label': `${t(labelKey)} — ${t('nav.notLoggedToday')}` } : {})}
-                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors ${
                   isActive
                     ? ''
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
                 }`}
-                style={isActive ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 10%, transparent)' } : undefined}
+                style={isActive ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 12%, transparent)' } : undefined}
               >
                 {showDot && (
                   <span
                     aria-hidden="true"
-                    className="animate-attn-glow pointer-events-none absolute inset-0 rounded-xl"
+                    className="animate-attn-glow pointer-events-none absolute inset-0 rounded-full"
                     style={{ backgroundColor: 'color-mix(in srgb, var(--goal-accent) 28%, transparent)' }}
                   />
                 )}
@@ -482,12 +482,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors ${
                   isActive
                     ? ''
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
                 }`}
-                style={isActive ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 10%, transparent)' } : undefined}
+                style={isActive ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 12%, transparent)' } : undefined}
               >
                 <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
                 <span className="text-sm font-semibold">{t(labelKey)}</span>
@@ -514,7 +514,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <button
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-bg-primary)] hover:border-[var(--goal-accent)] transition-colors w-full"
+            className="flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--color-bg-secondary)] text-sm font-medium hover:bg-[var(--color-bg-primary)] transition-colors w-full"
           >
             {theme === 'dark' ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
             <span>{theme === 'dark' ? t('settings.lightMode') : t('settings.darkMode')}</span>
@@ -529,10 +529,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <header className="sticky top-0 z-40 glass px-4 py-3 flex items-center justify-between md:hidden">
           <div className="flex items-center gap-3">
             <VestaLogo size={24} animate={false} />
-            <h1 className="text-xl font-bold text-[var(--goal-accent)]">Vesta</h1>
+            <h1 className="text-xl font-extrabold text-[var(--color-text-primary)]">Cycle Circle</h1>
             <Link
               href="/profiles"
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-xs font-medium hover:border-[var(--goal-accent)] transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-secondary)] text-xs font-medium hover:bg-[var(--color-bg-primary)] transition-colors"
             >
               <Users size={12} aria-hidden="true" />
               <span className="truncate">{activeProfileName || 'Profile'}</span>
@@ -590,17 +590,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 href={href}
                 {...(tourKey ? { 'data-tour': tourKey } : {})}
                 {...(showDot ? { 'aria-label': `${t(labelKey)} — ${t('nav.notLoggedToday')}` } : {})}
-                className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${
+                className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
                   isActive
                     ? ''
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
                 }`}
-                style={isActive ? { color: 'var(--goal-accent)' } : undefined}
+                style={isActive ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 12%, transparent)' } : undefined}
               >
                 {showDot && (
                   <span
                     aria-hidden="true"
-                    className="animate-attn-glow pointer-events-none absolute inset-0 rounded-xl"
+                    className="animate-attn-glow pointer-events-none absolute inset-0 rounded-full"
                     style={{ backgroundColor: 'color-mix(in srgb, var(--goal-accent) 28%, transparent)' }}
                   />
                 )}
