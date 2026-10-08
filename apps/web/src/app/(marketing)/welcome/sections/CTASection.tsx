@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { LANDING_CONTAINER, LANDING_SECTION } from './layout';
 import { RevealOnScroll } from '@/components/motion/RevealOnScroll';
 import { Button } from '@/components/ui/Button';
 
@@ -9,8 +10,8 @@ export function CTASection() {
   const { t } = useTranslation();
 
   return (
-    <section className="relative py-20 px-4">
-      <div className="max-w-3xl mx-auto">
+    <section className={LANDING_SECTION}>
+      <div className={LANDING_CONTAINER}>
         <RevealOnScroll y={32}>
           <div className="bg-[var(--color-action)] rounded-[var(--radius-xl)] shadow-glow p-10 md:p-14 flex flex-col items-center text-center gap-6">
             <h2 className="text-fluid-lg font-bold text-[var(--color-on-action)]">
