@@ -10,7 +10,13 @@ set -euo pipefail
 
 REPO_DIR=/opt/vesta
 BRANCH=production
+MONITORING_ENV=/opt/vesta/.env.monitoring.production
+# compose.prod.yml `include:`s the monitoring stack, which needs this env file for interpolation
+# (POSTGRES_EXPORTER_DSN, GRAFANA_ADMIN_*). Without it, `up -d` recreates postgres-exporter with an empty DSN.
 COMPOSE=(docker compose -f ops/deploy/compose.prod.yml)
+if [[ -f "$MONITORING_ENV" ]]; then
+  COMPOSE=(docker compose --env-file "$MONITORING_ENV" -f ops/deploy/compose.prod.yml)
+fi
 EXPECTED_SHA="${1:-}"
 
 cd "$REPO_DIR"

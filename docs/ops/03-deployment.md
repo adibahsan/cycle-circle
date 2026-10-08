@@ -474,6 +474,8 @@ cd /opt/vesta && git fetch origin production && git checkout -B production origi
 bash ops/deploy/scripts/deploy.sh
 ```
 
+> **Monitoring env file:** `compose.prod.yml` `include:`s the monitoring stack. Any manual `up` or `run` must pass `--env-file /opt/vesta/.env.monitoring.production` before `-f`. Without it, Compose recreates `postgres-exporter` with an empty `POSTGRES_EXPORTER_DSN`, and `pg_up` drops to 0. `deploy.sh` adds the flag itself.
+
 The script performs the following steps, kept here for reference:
 
 ```bash
