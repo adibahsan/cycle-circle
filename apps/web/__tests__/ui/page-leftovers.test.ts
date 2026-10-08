@@ -11,7 +11,7 @@ describe('profiles page', () => {
   it('the add-profile control sits in the same grid as the profile cards', () => {
     const start = src.indexOf('lg:grid lg:grid-cols-2')
     const add = src.indexOf('<AddProfileForm')
-    const end = src.indexOf('Switch confirmation toast')
+    const end = src.indexOf('</PageContainer>', add)
     expect(start).toBeGreaterThan(-1)
     expect(add).toBeGreaterThan(start)
     expect(add).toBeLessThan(end)
@@ -62,4 +62,15 @@ describe('no sub-11px text anywhere in the web app', () => {
     const offenders = walk(SRC).filter((f) => /text-\[(9|10)px\]/.test(fs.readFileSync(f, 'utf8')))
     expect(offenders.map((f) => path.relative(SRC, f))).toEqual([])
   })
+})
+
+describe('toasts live on the shared toast layer', () => {
+  for (const f of ['app/(main)/profiles/ProfilesClient.tsx', 'app/(main)/settings/SettingsClient.tsx']) {
+    it(`${f} uses the shared useToast and no local fixed toast`, () => {
+      const src = read(f)
+      expect(src).toContain("from '@/components/ui/Toast'")
+      expect(src).not.toMatch(/fixed[^"'`]*z-(50|\[60\])/)
+      expect(src).not.toMatch(/function useToast/)
+    })
+  }
 })

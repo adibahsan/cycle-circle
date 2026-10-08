@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
+import { useToast } from '@/components/ui/Toast'
 import {
   Globe,
   Moon,
@@ -142,66 +143,6 @@ function Toggle({
   )
 }
 
-interface ToastState {
-  text: string
-  seq: number // bumped on every message so the inner text crossfades
-}
-
-// Single-slot toast: only ever one on screen. New messages swap the text in
-// place (and reset the auto-dismiss timer) rather than stacking a new toast.
-function useToast() {
-  const [toast, setToast] = useState<ToastState | null>(null)
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const show = useCallback((text: string) => {
-    setToast(prev => ({ text, seq: (prev?.seq ?? 0) + 1 }))
-    if (timer.current) clearTimeout(timer.current)
-    timer.current = setTimeout(() => setToast(null), 2500)
-  }, [])
-
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
-
-  return { toast, show }
-}
-
-function Toast({ toast }: { toast: ToastState | null }) {
-  return (
-    <div
-      aria-live="polite"
-      aria-atomic="true"
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] w-full max-w-xs px-4 pointer-events-none"
-    >
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            key="toast-bar"
-            initial={{ opacity: 0, y: -16, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.94 }}
-            transition={{ type: 'spring', damping: 24, stiffness: 320 }}
-            className="grid rounded-xl bg-[var(--color-text-primary)] text-[var(--color-bg-card)] text-sm font-medium px-4 py-3 shadow-glow text-center"
-          >
-            {/* Spans share one grid cell, so swapping text crossfades without
-                shifting the bar's position or height. */}
-            <AnimatePresence>
-              <motion.span
-                key={toast.seq}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
-                className="col-start-1 row-start-1"
-              >
-                {toast.text}
-              </motion.span>
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
 function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
   return (
     <div className="flex items-center gap-2 mb-3">
@@ -254,7 +195,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
   const router = useRouter()
   const { language, setLanguage, theme, setTheme, activeProfileId, setActiveProfile } = useAppStore()
 
-  const { toast, show: showToast } = useToast()
+  const { show: showToast } = useToast()
 
   // Find the active profile's notification prefs, defaulting to all-on
   const activeProfile = profiles.find(p => p.id === activeProfileId) ?? profiles[0]
@@ -468,7 +409,6 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
 
   return (
     <>
-      <Toast toast={toast} />
 
       <PageContainer>
         <PageHeader title={t('settings.title')} />

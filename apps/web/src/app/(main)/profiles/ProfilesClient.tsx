@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
+import { useToast } from '@/components/ui/Toast';
 import { useTranslation, Trans } from 'react-i18next';
 import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight, Pencil } from 'lucide-react';
 import { GOAL_ICON_COMPONENTS, GOAL_I18N_KEYS } from '@/lib/goal-display';
@@ -853,7 +854,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
   const [editKey, setEditKey] = useState(0);
   const heldEdit = useHeld(editTarget);
   const heldDelete = useHeld(deleteTarget);
-  const [justSwitched, setJustSwitched] = useState<string | null>(null);
+  const toast = useToast();
   const [isPending, setIsPending] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
   const [addError, setAddError] = useState('');
@@ -881,10 +882,9 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
     if (id === activeProfileId || isSwitching) return;
     setIsSwitching(true);
     setActiveProfile(id, name);
-    setJustSwitched(id);
+    toast.show(t('profiles.switchedTo', { name }));
     await setActiveProfileCookie(id);
     router.push('/dashboard');
-    setTimeout(() => setJustSwitched(null), 1500);
   }
 
   async function handleAddProfile(data: {
@@ -1099,31 +1099,6 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             </div>
           </motion.div>
         </div>
-
-        {/* Switch confirmation toast */}
-        <div aria-live="polite" aria-atomic="true" className="sr-only">
-          {justSwitched ? t('profiles.switchedTo', { name: profiles.find((p) => p.id === justSwitched)?.name }) : ''}
-        </div>
-        <AnimatePresence>
-          {justSwitched && (
-            <motion.div
-              initial={{ opacity: 0, y: -16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-              className="fixed top-20 left-1/2 -translate-x-1/2 z-50 rounded-full px-4 py-2 flex items-center gap-2 shadow-glow"
-              style={{
-                background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
-              }}
-            >
-              <Check aria-hidden="true" size={14} color="var(--color-on-accent)" />
-              <span className="text-[var(--color-on-accent)] text-sm font-semibold">
-                {t('profiles.switchedTo', { name: profiles.find((p) => p.id === justSwitched)?.name })}
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
       </PageContainer>
 
       {/* Delete confirmation dialog: stays mounted so the exit animation plays */}
