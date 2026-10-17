@@ -1,5 +1,6 @@
 import { differenceInDays } from 'date-fns'
 import { prisma } from '../db'
+import { logger } from '../log'
 import { getProfilesForReminders } from './tracking-service'
 import { wasEmailSentToday, wasEmailSentTodayForUser } from './email-service'
 import {
@@ -139,10 +140,7 @@ export async function runDailyReminders(
         }
       }
     } catch (err) {
-      console.error(
-        `[daily-reminders] Notification error for profile ${profile.id}:`,
-        err,
-      )
+      logger.cron('reminders.notification.failed', { profileId: profile.id, error: String(err) }, { level: 'error' })
       errors++
     }
   }
@@ -194,10 +192,7 @@ export async function runDailyReminders(
       })
       completionReminders++
     } catch (err) {
-      console.error(
-        `[daily-reminders] Completion reminder error for user ${user.id}:`,
-        err,
-      )
+      logger.cron('reminders.completion.failed', { userId: user.id, error: String(err) }, { level: 'error' })
       errors++
     }
   }

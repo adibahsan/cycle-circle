@@ -5,8 +5,10 @@ import { env } from '@vesta/shared/utils/env'
 import { revalidateTag } from 'next/cache'
 import { cacheTags } from '@/lib/cache-tags'
 import { mapNotifyStatus } from '@/lib/subscription-notify'
+import { withRequestContext, logger } from '@vesta/shared/server/log'
 
 export async function POST(request: Request): Promise<Response> {
+  return withRequestContext(async () => {
   try {
     if (!validateWebhookSource(request)) {
       throw new ApiError(401, 'Unauthorized: unknown webhook source', 'UNAUTHORIZED')
@@ -27,24 +29,37 @@ export async function POST(request: Request): Promise<Response> {
 
     const idempotencyKey = `${payload.subscriberId}:${payload.timeStamp}`
     const { duplicate } = await persistWebhookEvent('SUBSCRIPTION_NOTIFY', payload, idempotencyKey)
-    if (duplicate) return ok()
-
-    const change = mapNotifyStatus(payload.status)
-    if (!change) {
-      console.warn('[bdapps-notify] ignoring unhandled status', payload.status)
+    if (duplicate) {
+      logger.webhook('subscription.notify', { payload, action: 'ignored', reason: 'duplicate' })
       return ok()
     }
 
-    console.info('[bdapps-notify]', JSON.stringify(payload))
-    if (!payload.subscriberId) return ok()
+    const change = mapNotifyStatus(payload.status)
+    if (!change) {
+      logger.webhook('subscription.notify', { payload, action: 'ignored', reason: 'unhandled-status' })
+      return ok()
+    }
+
+    if (!payload.subscriberId) {
+      logger.webhook('subscription.notify', { payload, action: 'ignored', reason: 'no-subscriber-id' })
+      return ok()
+    }
 
     // Masked ids (our app) match the id stored at OTP verify; unmasked ones the phone.
     const updated = await syncBdappsSubscriptionBySubscriberId(payload.subscriberId, change === 'registered')
-    if (!updated) console.warn('[bdapps-notify] no user for subscriberId', payload.subscriberId)
-    if (updated) revalidateTag(cacheTags.user(updated.userId), { expire: 0 })
+    if (updated) {
+      revalidateTag(cacheTags.user(updated.userId), { expire: 0 })
+      logger.webhook('subscription.notify', { payload, action: 'synced', change, matchedUserId: updated.userId }, { userId: updated.userId })
+    } else {
+      logger.webhook('subscription.notify', { payload, action: 'ignored', reason: 'no-matching-user' }, { level: 'warn' })
+    }
 
     return ok()
   } catch (error) {
+    if (error instanceof ApiError && error.statusCode < 500) {
+      logger.webhook('subscription.notify', { ok: false, status: error.statusCode, code: error.code, message: error.message }, { level: 'warn' })
+    }
     return handleApiError(error)
   }
+  }, { requestId: request.headers.get('x-request-id') ?? undefined })
 }

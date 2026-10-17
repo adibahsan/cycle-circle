@@ -9,6 +9,7 @@ import {
 } from '@vesta/shared/server/services'
 import { getSubscriptionStatus, isPhoneSubscriberId } from '@vesta/shared/server/adapters/bdapps'
 import { prisma } from '@vesta/shared'
+import { logger } from '@vesta/shared/server/log'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -54,7 +55,7 @@ const handler = withCronAuth(async (request) => {
       } catch (err) {
         // Never downgrade on errors.
         errors++
-        console.error(`BDApps subscription check failed for user ${sub.userId}:`, err)
+        logger.cron('caas-check.failed', { userId: sub.userId, subscriberId, error: String(err) }, { level: 'error' })
       }
     }
 

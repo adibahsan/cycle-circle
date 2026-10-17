@@ -1,3 +1,5 @@
+import { logger } from '@vesta/shared/server/log'
+
 // Fire-and-forget bust of the WEB app's Next cache tags (admin & web are
 // separate processes with separate caches). No-op if env is unset.
 export async function revalidateWebTags(tags: string[]): Promise<void> {
@@ -12,6 +14,6 @@ export async function revalidateWebTags(tags: string[]): Promise<void> {
       cache: 'no-store',
     })
   } catch (err) {
-    console.error('[revalidate-web] failed:', err)
+    logger.error('revalidate-web.failed', err, { tags })
   }
 }

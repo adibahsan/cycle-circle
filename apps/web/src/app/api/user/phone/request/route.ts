@@ -8,6 +8,8 @@ import { createOtpChallenge, getOtpResendCooldownRemaining } from '@vesta/shared
 import { isDevModeEnabled } from '@vesta/shared/server/dev'
 import { withAuth } from '@vesta/shared/server/middleware'
 import { prisma } from '@vesta/shared'
+import { logger } from '@vesta/shared/server/log'
+import { logCustomerRefusal } from '@/app/api/auth/log-failure'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -17,10 +19,12 @@ const bodySchema = z.object({
 })
 
 export const POST = withAuth(async (request, { user }) => {
+  let phone: string | undefined
   try {
     const body = await parseBody(request, bodySchema)
 
     const normalized = validateMsisdn(body.phone)
+    phone = normalized
 
     // Uniqueness pre-check: phone must not belong to a different account
     const existing = await prisma.user.findUnique({
@@ -59,8 +63,10 @@ export const POST = withAuth(async (request, { user }) => {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
     await createOtpChallenge(normalized, referenceNo, expiresAt)
 
+    logger.customer('user.phone.request', { phone: normalized, referenceNo, ok: true, dev: isDevModeEnabled() })
     return Response.json({ referenceNo, message: 'OTP sent' })
   } catch (error) {
+    logCustomerRefusal('user.phone.request', error, { phone })
     return handleApiError(error)
   }
 }, { allowExpiredTrial: true })

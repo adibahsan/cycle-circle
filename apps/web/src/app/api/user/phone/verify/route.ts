@@ -9,6 +9,8 @@ import { isDevModeEnabled } from '@vesta/shared/server/dev'
 import { DEV_OTP_CODES } from '@vesta/shared/utils/config'
 import { withAuth } from '@vesta/shared/server/middleware'
 import { prisma } from '@vesta/shared'
+import { logger } from '@vesta/shared/server/log'
+import { logCustomerRefusal } from '@/app/api/auth/log-failure'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -19,8 +21,11 @@ const bodySchema = z.object({
 })
 
 export const POST = withAuth(async (request, { user }) => {
+  let referenceNo: string | undefined
+  let phone: string | undefined
   try {
     const body = await parseBody(request, bodySchema)
+    referenceNo = body.referenceNo
 
     const rl = await checkRateLimit(`otp:verify:${body.referenceNo}`, 5, 300)
     if (!rl.allowed) {
@@ -38,6 +43,8 @@ export const POST = withAuth(async (request, { user }) => {
     if (new Date() > challenge.expiresAt) {
       throw new ApiError(400, 'OTP challenge has expired', 'CHALLENGE_EXPIRED')
     }
+
+    phone = challenge.phone
 
     // DEV_MODE fake codes behave like a successful BDApps registration.
     let registered = true
@@ -75,8 +82,17 @@ export const POST = withAuth(async (request, { user }) => {
     revalidateTag(`user:${user.id}`, { expire: 0 })
     revalidateTag(`profiles:${user.id}`, { expire: 0 })
 
+    logger.customer('user.phone.verify', {
+      phone: challenge.phone,
+      referenceNo: body.referenceNo,
+      ok: true,
+      registered,
+      subscriberId,
+      subscriptionStatus: result.subscriptionStatus,
+    })
     return Response.json({ ok: true, subscriptionStatus: result.subscriptionStatus })
   } catch (error) {
+    logCustomerRefusal('user.phone.verify', error, { phone, referenceNo })
     return handleApiError(error)
   }
 }, { allowExpiredTrial: true })

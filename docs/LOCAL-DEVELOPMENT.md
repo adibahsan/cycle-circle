@@ -112,6 +112,10 @@ Stop: `pnpm docker:monitoring:down`. Verify config in CI/review: `pnpm monitorin
 
 ---
 
+## Logs
+
+Server logs are written as dated files per channel under `apps/web/logs/<channel>/YYYY-MM-DD.log` (Asia/Dhaka date; gitignored) and mirrored to stdout. Tail one with `just logs-local error`. Set `LOG_DIR` / `LOG_STDOUT=false` in `.env.local` to change this. See [docs/ops/08-logging.md](ops/08-logging.md).
+
 ## Default test credentials
 
 | Context | Value |

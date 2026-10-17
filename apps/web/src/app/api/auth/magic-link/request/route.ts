@@ -5,6 +5,8 @@ import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
 import { sendMagicLinkEmail } from '@vesta/shared/server/adapters/mail'
 import { createMagicLink } from '@vesta/shared/server/services'
 import { env } from '@vesta/shared/utils/env'
+import { withRequestContext, logger } from '@vesta/shared/server/log'
+import { logCustomerRefusal } from '@/app/api/auth/log-failure'
 
 const bodySchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -12,9 +14,11 @@ const bodySchema = z.object({
 })
 
 export async function POST(request: Request): Promise<Response> {
+  return withRequestContext(async () => {
+  let email: string | undefined
   try {
     const body = await parseBody(request, bodySchema)
-    const email = body.email.toLowerCase().trim()
+    email = body.email.toLowerCase().trim()
 
     const rl = await checkRateLimit(`magic-link:${email}`, 3, 3600)
     if (!rl.allowed) {
@@ -30,8 +34,11 @@ export async function POST(request: Request): Promise<Response> {
 
     await sendMagicLinkEmail(email, magicLinkUrl, body.language)
 
+    logger.customer('auth.magic-link.request', { email, ok: true })
     return Response.json({ message: 'Magic link sent' })
   } catch (error) {
+    logCustomerRefusal('auth.magic-link.request', error, { email })
     return handleApiError(error)
   }
+  }, { requestId: request.headers.get('x-request-id') ?? undefined })
 }

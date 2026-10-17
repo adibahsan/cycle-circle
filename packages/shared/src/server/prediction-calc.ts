@@ -1,4 +1,5 @@
 import { prisma } from './db'
+import { logger } from './log'
 
 export const TIER2_MIN_CYCLES = 6
 
@@ -54,5 +55,5 @@ export async function recalculatePrediction(profileId: string) {
     create: { profileId, tier, nextPeriodStart, ovulationDay, fertileStart, fertileEnd, confidence }
   })
 
-  console.log(`[prediction] Updated for profile ${profileId}: tier=${tier}, confidence=${confidence}`)
+  logger.customer('prediction.updated', { profileId, tier, confidence })
 }

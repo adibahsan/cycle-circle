@@ -1,4 +1,5 @@
 import { prisma } from '../db'
+import { logger } from '../log'
 import { smsSend } from '../adapters/bdapps'
 import { createAuditLog } from './audit-service'
 import { env } from '../../utils/env'
@@ -316,7 +317,7 @@ export async function dispatchScheduledBroadcast(now: Date = new Date()) {
     return { dispatched: true as const, broadcastId: sent.id }
   } catch (err) {
     await prisma.smsBroadcast.update({ where: { id: due.id }, data: { status: 'SCHEDULED' } })
-    console.error('[daily-reminders] SMS broadcast dispatch failed:', err)
+    logger.cron('sms.broadcast.dispatch.failed', { broadcastId: due.id, error: String(err) }, { level: 'error' })
     return { dispatched: false as const, error: String(err) }
   }
 }

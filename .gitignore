@@ -68,3 +68,6 @@ ops/deploy/ssl/**/*.pem
 **/fullchain.pem
 !ops/deploy/tls/archives/*-fullchain.pem
 !ops/deploy/tls/production-inventory.json
+
+# App log files (ADR 0004; contain phones/OTPs — never commit)
+logs/

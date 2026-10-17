@@ -4,6 +4,8 @@ import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { issueJwt, setAuthCookie, validateMsisdn } from '@vesta/shared/server/auth'
 import { upsertUserByPhone } from '@vesta/shared/server/services'
 import { isDevModeEnabled } from '@vesta/shared/server/dev'
+import { withRequestContext, setRequestUser, logger } from '@vesta/shared/server/log'
+import { logCustomerRefusal } from '@/app/api/auth/log-failure'
 
 function mapPartialAuthUser(raw: {
   id: string
@@ -28,6 +30,7 @@ const bodySchema = z.object({
 })
 
 export async function POST(request: Request): Promise<Response> {
+  return withRequestContext(async () => {
   try {
     if (!isDevModeEnabled()) {
       throw new ApiError(403, 'Dev login is not available', 'DEV_MODE_DISABLED')
@@ -37,6 +40,7 @@ export async function POST(request: Request): Promise<Response> {
     const normalizedPhone = validateMsisdn(body.phone)
 
     const user = await upsertUserByPhone(normalizedPhone)
+    setRequestUser(user.id)
 
     const token = await issueJwt({
       sub: user.id,
@@ -52,8 +56,11 @@ export async function POST(request: Request): Promise<Response> {
       subscriptionStatus: user.subscriptionStatus,
     })
 
+    logger.customer('auth.dev-login', { phone: normalizedPhone, ok: true })
     return Response.json({ user: mapped, token })
   } catch (error) {
+    logCustomerRefusal('auth.dev-login', error)
     return handleApiError(error)
   }
+  }, { requestId: request.headers.get('x-request-id') ?? undefined })
 }

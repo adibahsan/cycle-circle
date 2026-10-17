@@ -9,6 +9,8 @@ import { isDevModeEnabled } from '@vesta/shared/server/dev'
 import { DEV_OTP_CODES } from '@vesta/shared/utils/config'
 import { revalidateTag } from 'next/cache'
 import { cacheTags } from '@/lib/cache-tags'
+import { withRequestContext, setRequestUser, logger } from '@vesta/shared/server/log'
+import { logCustomerRefusal } from '@/app/api/auth/log-failure'
 
 const bodySchema = z.object({
   referenceNo: z.string().min(1, 'referenceNo is required'),
@@ -16,9 +18,13 @@ const bodySchema = z.object({
 })
 
 export async function POST(request: Request): Promise<Response> {
+  return withRequestContext(async () => {
+  let referenceNo: string | undefined
+  let phone: string | undefined
   try {
     const body = await parseBody(request, bodySchema)
 
+    referenceNo = body.referenceNo
     const rl = await checkRateLimit(`otp:verify:${body.referenceNo}`, 5, 300)
     if (!rl.allowed) {
       throw new ApiError(429, 'Too many verification attempts. Try again later.', 'RATE_LIMITED')
@@ -36,6 +42,8 @@ export async function POST(request: Request): Promise<Response> {
       throw new ApiError(400, 'OTP challenge has expired', 'CHALLENGE_EXPIRED')
     }
 
+    phone = challenge.phone
+
     // DEV_MODE fake codes behave like a successful BDApps registration.
     let registered = true
     let subscriberId = challenge.phone
@@ -52,6 +60,7 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const user = await completeOtpAuth(challenge.id, challenge.phone, registered, subscriberId)
+    setRequestUser(user.id)
     revalidateTag(cacheTags.user(user.id), { expire: 0 })
 
     const token = await issueJwt({
@@ -61,6 +70,14 @@ export async function POST(request: Request): Promise<Response> {
     })
     await setAuthCookie(token)
 
+    logger.customer('auth.otp.verify', {
+      phone: challenge.phone,
+      referenceNo: body.referenceNo,
+      ok: true,
+      registered,
+      subscriberId,
+      subscriptionStatus: user.subscriptionStatus,
+    })
     return Response.json({
       user: {
         id: user.id,
@@ -70,6 +87,8 @@ export async function POST(request: Request): Promise<Response> {
       token,
     })
   } catch (error) {
+    logCustomerRefusal('auth.otp.verify', error, { phone, referenceNo })
     return handleApiError(error)
   }
+  }, { requestId: request.headers.get('x-request-id') ?? undefined })
 }
