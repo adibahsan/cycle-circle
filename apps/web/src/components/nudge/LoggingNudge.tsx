@@ -172,7 +172,7 @@ export function LoggingNudge({
           {/* Phase-aware enrichment (only when phase provided) */}
           {phase && (
             <p className="text-xs text-[var(--color-text-muted)] mt-0.5 opacity-80 leading-relaxed">
-              {t('nudge.phaseAwareBody', { phase })}
+              {t('nudge.phaseAwareBody', { phase: t(`dashboard.${phase.toLowerCase()}`) })}
             </p>
           )}
 

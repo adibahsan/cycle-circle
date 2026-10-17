@@ -2,6 +2,9 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // The floating dev-tools button sits on the phone bottom nav's "More" tab and
+  // swallows taps (and e2e clicks) at 375px. Error overlays still show.
+  devIndicators: false,
   transpilePackages: ['@vesta/shared'],
   experimental: {
     // Tree-shake heavy barrel imports into per-symbol imports. Next already

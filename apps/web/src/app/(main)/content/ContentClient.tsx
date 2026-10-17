@@ -163,7 +163,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                   className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
                   style={{ backgroundColor: phaseColorFor(phase), color: `var(--color-on-${phase.toLowerCase()})` }}
                 >
-                  {phase}
+                  {t(`dashboard.${phase.toLowerCase()}`)}
                 </span>
               ))}
             </div>
@@ -340,7 +340,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                             }}
                           >
                             {parseCyclePhase(phase) && <PhaseIcon phase={parseCyclePhase(phase)!} size={11} />}
-                            {phase}
+                            {t(`dashboard.${phase.toLowerCase()}`)}
                           </span>
                         ))}
                       </div>

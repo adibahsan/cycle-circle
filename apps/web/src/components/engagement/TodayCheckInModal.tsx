@@ -223,7 +223,7 @@ export function TodayCheckInModal({
             </p>
             {cycleDay && phase && (
               <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                {t('dashboard.day')} {cycleDay} · {phase}
+                {t('dashboard.day')} {cycleDay} · {t(`dashboard.${phase.toLowerCase()}`)}
               </p>
             )}
           </div>

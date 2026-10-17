@@ -258,6 +258,11 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
     descId="trial-dialog-desc"
   >
     <div className="px-6 pb-6 pt-2 space-y-5">
+      {/* One persistent live region, status text only: mounted from the start so step
+          changes are announced (a region that mounts with its content often isn't). */}
+      <p aria-live="polite" className="sr-only">
+        {step === 'code' ? t('trial.enterCodeBody', { phone }) : step === 'success' ? t('trial.success') : ''}
+      </p>
       {/* Header */}
       <div className="space-y-1 pt-3">
         <h2
@@ -448,10 +453,7 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
 
       {/* ── Step: success ── */}
       {step === 'success' && (
-        <div
-          aria-live="polite"
-          className="flex flex-col items-center gap-4 py-6"
-        >
+        <div className="flex flex-col items-center gap-4 py-6">
           <motion.div
             initial={prm ? { opacity: 0 } : { scale: 0.6, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}

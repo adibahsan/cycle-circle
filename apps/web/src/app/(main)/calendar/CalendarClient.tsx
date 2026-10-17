@@ -22,6 +22,7 @@ import { bn } from 'date-fns/locale/bn'
 import { ChevronLeft, ChevronRight, X, Pencil, Baby, Plus, Droplets, Flower2, Sprout, ArrowRight } from 'lucide-react'
 
 import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
 import { formatShortDate } from '@/lib/format-date'
 import { useAppStore } from '@/lib/store'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
@@ -190,13 +191,14 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
         )}
       </button>
 
-      {/* Unlogged past day: "+" appears on hover or focus and taps through to add a log */}
+      {/* Unlogged past day: "+" appears on hover or focus (hover devices only). On touch, a tap
+          selects the day and the detail card offers the same "Add log" action. */}
       {showAdd && (
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onGhostTap?.(format(date, 'yyyy-MM-dd')) }}
           aria-label={t('calendar.addLogFor', { date: format(date, 'MMMM d', { locale: language === 'bn' ? bn : undefined }) })}
-          className="absolute inset-0 z-10 flex items-center justify-center rounded-xl text-[var(--color-text-secondary)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/60"
+          className="absolute inset-0 z-10 hidden [@media(hover:hover)]:flex items-center justify-center rounded-xl text-[var(--color-text-secondary)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/60"
         >
           <Plus size={16} aria-hidden="true" />
         </button>
@@ -212,9 +214,11 @@ interface DayDetailProps {
   meta: DayMeta
   symptoms: SymptomLog[]
   onClose: () => void
+  /** Set for unlogged past days in the backfill window. */
+  onAddLog?: () => void
 }
 
-function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
+function DayDetail({ date, meta, symptoms, onClose, onAddLog }: DayDetailProps) {
   const { t } = useTranslation()
   const { language } = useAppStore()
   const dateLocale = language === 'bn' ? bn : undefined
@@ -293,7 +297,15 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
 
         {/* Symptoms */}
         {symptoms.length === 0 ? (
-          <p className="text-xs text-[var(--color-text-muted)]">{t('calendar.noSymptomsLogged')}</p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-[var(--color-text-muted)]">{t('calendar.noSymptomsLogged')}</p>
+            {onAddLog && (
+              <Button variant="secondary" size="sm" onClick={onAddLog} className="min-h-11">
+                <Plus size={14} aria-hidden="true" />
+                {t('calendar.addLogFor', { date: format(date, 'MMMM d', { locale: dateLocale }) })}
+              </Button>
+            )}
+          </div>
         ) : (
           <div className="flex flex-wrap gap-1.5">
             {symptoms.map((log) => {
@@ -584,6 +596,9 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
   }, [])
 
   const handleGhostTap = useCallback((d: string) => setBackfillDate(d), [])
+  /** Unlogged past day inside the 30-day backfill window. */
+  const isGhostDate = (dateStr: string) =>
+    last30WindowSet.has(dateStr) && !loggedDatesSet.has(dateStr) && dateStr < format(today, 'yyyy-MM-dd')
 
   // Extract prediction summary from calendar data for the monthly summary card.
   // For pregnancy profiles the service returns empty sets, but we also guard
@@ -707,13 +722,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                       isCurrentMonth={inMonth}
                       isSelected={isSelected}
                       onSelect={handleDayClick}
-                      isGhostDay={
-                        inMonth &&
-                        last30WindowSet.has(dateStr) &&
-                        !loggedDatesSet.has(dateStr) &&
-                        dateStr < format(today, 'yyyy-MM-dd') &&
-                        dateStr !== format(today, 'yyyy-MM-dd')
-                      }
+                      isGhostDay={inMonth && isGhostDate(dateStr)}
                       onGhostTap={handleGhostTap}
                     />
                   )
@@ -740,6 +749,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                 meta={selectedMeta}
                 symptoms={selectedSymptoms}
                 onClose={() => setSelectedDate(null)}
+                onAddLog={isGhostDate(format(selectedDate, 'yyyy-MM-dd')) ? () => handleGhostTap(format(selectedDate, 'yyyy-MM-dd')) : undefined}
               />
             )}
           </AnimatePresence>

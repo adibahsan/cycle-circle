@@ -123,7 +123,8 @@ test.describe('BDApps dialog', () => {
     await mockApi(page, ['free-user'])
     await gotoSubscriptionClientSide(page)
     const d = await openPopup(page, page.getByRole('button', { name: /upgrade to pro|প্রো/i }).first())
-    await expect(d).toHaveAttribute('aria-label', /.+/)
+    // Named by aria-label or aria-labelledby: assert the computed name, not one attribute.
+    await expect(d).toHaveAccessibleName(/\S/)
     const live = d.locator('[aria-live]')
     await expect(live).toHaveCount(1)
     expect(await live.evaluate((el) => el.querySelectorAll('button, a, input').length)).toBe(0)
