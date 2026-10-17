@@ -112,6 +112,10 @@ Stop: `pnpm docker:monitoring:down`. Verify config in CI/review: `pnpm monitorin
 
 ---
 
+## Logs
+
+Server logs are written as dated files per channel under `apps/web/logs/<channel>/YYYY-MM-DD.log` (Asia/Dhaka date; gitignored) and mirrored to stdout. Tail one with `just logs-local error`. Set `LOG_DIR` / `LOG_STDOUT=false` in `.env.local` to change this. See [docs/ops/08-logging.md](ops/08-logging.md).
+
 ## Default test credentials
 
 | Context | Value |
@@ -186,6 +190,12 @@ First start can take up to ~90 seconds (healthcheck `start_period`). Check logs:
 ```bash
 just logs bdapps-simulator
 ```
+
+### Testing the BDApps subscription flow locally
+
+The official simulator does not implement `/subscription/*`. Use the zero-dependency mock instead:
+`pnpm bdapps:mock` (or `docker compose -f ops/docker/compose.yml up -d bdapps-mock`), then set
+`BDAPPS_SIMULATOR_BASE_URL=http://localhost:7003`. See `ops/mock/bdapps/README.md`.
 
 ### Admin login fails
 

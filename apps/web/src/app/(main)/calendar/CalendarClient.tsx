@@ -16,13 +16,15 @@ import {
   addMonths,
   subMonths,
   parseISO,
+  differenceInCalendarDays,
 } from 'date-fns'
 import { bn } from 'date-fns/locale/bn'
-import { ChevronLeft, ChevronRight, X, Pencil, Baby, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Pencil, Baby, Plus, Droplets, Flower2, Sprout, ArrowRight } from 'lucide-react'
 
 import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
 import { formatShortDate } from '@/lib/format-date'
-import { useAppStore } from '@/lib/store'
+import { useLanguage } from '@/lib/use-language'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
 import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
@@ -144,7 +146,7 @@ interface DayCellProps {
 
 const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSelect, isGhostDay = false, onGhostTap }: DayCellProps) {
   const { t } = useTranslation()
-  const language = useAppStore((s) => s.language)
+  const language = useLanguage()
   const { date } = meta
   const isToday = isSameDay(date, new Date())
   const kind = isCurrentMonth ? dayStyleKind(meta) : 'plain'
@@ -189,13 +191,14 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
         )}
       </button>
 
-      {/* Unlogged past day: "+" appears on hover or focus and taps through to add a log */}
+      {/* Unlogged past day: "+" appears on hover or focus (hover devices only). On touch, a tap
+          selects the day and the detail card offers the same "Add log" action. */}
       {showAdd && (
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onGhostTap?.(format(date, 'yyyy-MM-dd')) }}
           aria-label={t('calendar.addLogFor', { date: format(date, 'MMMM d', { locale: language === 'bn' ? bn : undefined }) })}
-          className="absolute inset-0 z-10 flex items-center justify-center rounded-xl text-[var(--color-text-secondary)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/60"
+          className="absolute inset-0 z-10 hidden [@media(hover:hover)]:flex items-center justify-center rounded-xl text-[var(--color-text-secondary)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/60"
         >
           <Plus size={16} aria-hidden="true" />
         </button>
@@ -211,11 +214,13 @@ interface DayDetailProps {
   meta: DayMeta
   symptoms: SymptomLog[]
   onClose: () => void
+  /** Set for unlogged past days in the backfill window. */
+  onAddLog?: () => void
 }
 
-function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
+function DayDetail({ date, meta, symptoms, onClose, onAddLog }: DayDetailProps) {
   const { t } = useTranslation()
-  const { language } = useAppStore()
+  const language = useLanguage()
   const dateLocale = language === 'bn' ? bn : undefined
   const today = new Date()
   const isFuture = date > today
@@ -251,7 +256,7 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
           <button
             onClick={onClose}
             aria-label={t('common.close')}
-            className="p-1.5 rounded-full hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
+            className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-full hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
           >
             <X size={14} className="text-[var(--color-text-muted)]" aria-hidden="true" />
           </button>
@@ -264,7 +269,7 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
               className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
               style={{ backgroundColor: 'var(--color-menstrual)', color: 'var(--color-on-menstrual)' }}
             >
-              🩸 {t('calendar.periodDay')}
+              <Droplets size={12} aria-hidden="true" /> {t('calendar.periodDay')}
             </div>
           )}
           {meta.isOvulation && (
@@ -272,7 +277,7 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
               className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
               style={{ backgroundColor: 'var(--color-ovulation)', color: 'var(--color-on-ovulation)' }}
             >
-              🌸 {t('calendar.ovulationLabel')}
+              <Flower2 size={12} aria-hidden="true" /> {t('calendar.ovulationLabel')}
             </div>
           )}
           {meta.isFertile && !meta.isOvulation && (
@@ -280,7 +285,7 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
               className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
               style={{ backgroundColor: 'var(--color-fertile)', color: 'var(--color-on-fertile)' }}
             >
-              🌱 {t('calendar.fertileWindowLabel')}
+              <Sprout size={12} aria-hidden="true" /> {t('calendar.fertileWindowLabel')}
             </div>
           )}
           {!meta.isPeriod && !meta.isFertile && !meta.isOvulation && (
@@ -292,7 +297,15 @@ function DayDetail({ date, meta, symptoms, onClose }: DayDetailProps) {
 
         {/* Symptoms */}
         {symptoms.length === 0 ? (
-          <p className="text-xs text-[var(--color-text-muted)]">{t('calendar.noSymptomsLogged')}</p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-[var(--color-text-muted)]">{t('calendar.noSymptomsLogged')}</p>
+            {onAddLog && (
+              <Button variant="secondary" size="sm" onClick={onAddLog} className="min-h-11">
+                <Plus size={14} aria-hidden="true" />
+                {t('calendar.addLogFor', { date: format(date, 'MMMM d', { locale: dateLocale }) })}
+              </Button>
+            )}
+          </div>
         ) : (
           <div className="flex flex-wrap gap-1.5">
             {symptoms.map((log) => {
@@ -398,7 +411,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                     <div className="flex flex-col gap-0.5 min-w-0 text-left">
                       <span className="text-xs font-semibold text-[var(--color-text-primary)] tabular-nums">
                         {fmt.format(start)}
-                        <span className="mx-1 text-[var(--color-text-muted)]">→</span>
+                        <ArrowRight size={12} className="inline mx-1 text-[var(--color-text-muted)]" aria-hidden="true" />
                         {fmt.format(end)}
                       </span>
                       <span className="text-[11px] text-[var(--color-text-muted)]">
@@ -425,7 +438,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
                   aria-label={t('calendar.prevPage')}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
+                  className="flex items-center gap-1 px-3 min-h-11 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
                 >
                   <ChevronLeft size={12} aria-hidden="true" />
                   {t('calendar.prev')}
@@ -437,7 +450,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page === totalPages - 1}
                   aria-label={t('calendar.nextPage')}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
+                  className="flex items-center gap-1 px-3 min-h-11 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
                 >
                   {t('calendar.next')}
                   <ChevronRight size={12} aria-hidden="true" />
@@ -467,7 +480,7 @@ function lastPeriodStartIso(logs: PeriodLog[]): string | null {
 export function CalendarClient({ profiles: _profiles, activeProfileId, month, days, windowDays, symptomLogs, periodLogs, goal, last30 = [] }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
-  const { language } = useAppStore()
+  const language = useLanguage()
   const dateLocale = language === 'bn' ? bn : undefined
   const prefersReducedMotion = useReducedMotion()
 
@@ -583,11 +596,17 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
   }, [])
 
   const handleGhostTap = useCallback((d: string) => setBackfillDate(d), [])
+  /** Unlogged past day inside the 30-day backfill window. */
+  const isGhostDate = (dateStr: string) =>
+    last30WindowSet.has(dateStr) && !loggedDatesSet.has(dateStr) && dateStr < format(today, 'yyyy-MM-dd')
 
   // Extract prediction summary from calendar data for the monthly summary card.
   // For pregnancy profiles the service returns empty sets, but we also guard
   // client-side so no forward-looking data is ever derived or shown.
   const firstPredictedPeriod = !pregnancy ? days?.find((d) => d.predicted && d.period) : undefined
+  const nextPeriodDaysLate = firstPredictedPeriod
+    ? differenceInCalendarDays(new Date(), parseISO(firstPredictedPeriod.date))
+    : 0
   const ovulationDay = !pregnancy ? days?.find((d) => d.ovulation) : undefined
   const fertileWindow = !pregnancy ? selectFertileWindow(windowDays ?? days ?? [], format(new Date(), 'yyyy-MM-dd'), lastPeriodStartIso(periodLogs)) : null
 
@@ -605,22 +624,6 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
         subtitle={format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}
       />
 
-      {/* ── Decorative blobs ── */}
-      <motion.div
-        className="absolute -top-8 -right-8 w-40 h-40 rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(232,71,108,0.07) 0%, transparent 70%)' }}
-        animate={prefersReducedMotion ? {} : { y: [0, -10, 0], x: [0, 6, 0] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        aria-hidden="true"
-      />
-      <motion.div
-        className="absolute bottom-24 -left-10 w-32 h-32 rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(123,197,174,0.06) 0%, transparent 70%)' }}
-        animate={prefersReducedMotion ? {} : { y: [0, 10, 0], x: [0, -5, 0] }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        aria-hidden="true"
-      />
-
       {/* ── Desktop: side-by-side layout (calendar + detail panel) ── */}
       <div className="flex flex-col xl:flex-row gap-5">
 
@@ -636,7 +639,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
               <button
                 onClick={prevMonth}
                 aria-label={t('calendar.previousMonth')}
-                className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors"
+                className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
               >
                 <ChevronLeft size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
               </button>
@@ -654,7 +657,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
               <button
                 onClick={nextMonth}
                 aria-label={t('calendar.nextMonth')}
-                className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors"
+                className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
               >
                 <ChevronRight size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
               </button>
@@ -689,7 +692,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
             <div className="grid grid-cols-7 mb-1 md:mb-2">
               {DOW.map((d) => (
                 <div key={d} className="flex items-center justify-center">
-                  <span className="text-[11px] md:text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                  <span className="text-[11px] md:text-xs font-bold text-[var(--color-text-muted)]">
                     {d}
                   </span>
                 </div>
@@ -719,13 +722,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                       isCurrentMonth={inMonth}
                       isSelected={isSelected}
                       onSelect={handleDayClick}
-                      isGhostDay={
-                        inMonth &&
-                        last30WindowSet.has(dateStr) &&
-                        !loggedDatesSet.has(dateStr) &&
-                        dateStr < format(today, 'yyyy-MM-dd') &&
-                        dateStr !== format(today, 'yyyy-MM-dd')
-                      }
+                      isGhostDay={inMonth && isGhostDate(dateStr)}
                       onGhostTap={handleGhostTap}
                     />
                   )
@@ -752,6 +749,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                 meta={selectedMeta}
                 symptoms={selectedSymptoms}
                 onClose={() => setSelectedDate(null)}
+                onAddLog={isGhostDate(format(selectedDate, 'yyyy-MM-dd')) ? () => handleGhostTap(format(selectedDate, 'yyyy-MM-dd')) : undefined}
               />
             )}
           </AnimatePresence>
@@ -774,9 +772,15 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                         <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-menstrual)' }} />
                         <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.nextPeriod')}</span>
                       </div>
-                      <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                        {formatShortDate(language, parseISO(firstPredictedPeriod.date))}
-                      </span>
+                      {nextPeriodDaysLate > 0 ? (
+                        <span className="text-xs font-bold text-[var(--color-menstrual)]">
+                          {t('dashboard.periodLate')} · {t('dashboard.daysOverdue', { count: nextPeriodDaysLate })}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-[var(--color-text-primary)]">
+                          {formatShortDate(language, parseISO(firstPredictedPeriod.date))}
+                        </span>
+                      )}
                     </div>
                   )}
                   {ovulationDay && (

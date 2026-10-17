@@ -28,6 +28,7 @@ import {
   Compass,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
+import { useLanguage } from '@/lib/use-language'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { updateNotificationPrefs, exportUserDataCsv, exportUserDataRows, updateProfileReminderOptOut } from '@/app/actions/settings-actions'
@@ -76,7 +77,7 @@ function SegmentedControl<T extends string>({
   value,
   onChange,
 }: {
-  options: { label: string; value: T }[]
+  options: { label: React.ReactNode; value: T }[]
   value: T
   onChange: (v: T) => void
 }) {
@@ -103,7 +104,7 @@ function SegmentedControl<T extends string>({
                 transition={{ type: 'spring', damping: 22, stiffness: 300 }}
               />
             )}
-            <span className="relative">{opt.label}</span>
+            <span className="relative inline-flex items-center gap-1.5">{opt.label}</span>
           </button>
         )
       })}
@@ -149,7 +150,7 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: 
       <div className="w-7 h-7 rounded-lg bg-[var(--goal-accent)] flex items-center justify-center shrink-0">
         <Icon size={14} className="text-[var(--color-on-accent)]" aria-hidden="true" />
       </div>
-      <h2 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-wide">
+      <h2 className="text-base font-bold text-[var(--color-text-primary)]">
         {title}
       </h2>
     </div>
@@ -193,7 +194,12 @@ function AccountRow({
 export function SettingsClient({ user, profiles, notifPrefs, completionRemindersOptOut }: SettingsClientProps) {
   const { t, i18n } = useTranslation()
   const router = useRouter()
-  const { language, setLanguage, theme, setTheme, activeProfileId, setActiveProfile } = useAppStore()
+  const language = useLanguage()
+  const setLanguage = useAppStore((s) => s.setLanguage)
+  const theme = useAppStore((s) => s.theme)
+  const setTheme = useAppStore((s) => s.setTheme)
+  const activeProfileId = useAppStore((s) => s.activeProfileId)
+  const setActiveProfile = useAppStore((s) => s.setActiveProfile)
 
   const { show: showToast } = useToast()
 
@@ -201,10 +207,13 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
   const activeProfile = profiles.find(p => p.id === activeProfileId) ?? profiles[0]
   const activePrefs = notifPrefs.find(p => p.profileId === activeProfile?.id)
 
+  const [loggingOut, setLoggingOut] = useState(false)
+
   useEffect(() => {
-    if (activeProfile) {
+    if (activeProfile && !loggingOut) {
       setActiveProfile(activeProfile.id, activeProfile.name)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProfile?.id, activeProfile?.name, setActiveProfile])
 
   const [localPrefs, setLocalPrefs] = useState({
@@ -223,7 +232,6 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
   const [phoneError, setPhoneError] = useState('')
   const [exporting, setExporting] = useState(false)
   const exportingRef = useRef(false)
-  const [loggingOut, setLoggingOut] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   // ── Language handler ──
@@ -395,7 +403,11 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
     } catch {
       // Proceed anyway
     }
-    router.push('/login')
+    // Clear persisted active profile so the next login does not flash stale data
+    setActiveProfile('', '')
+    // Hard navigation drops any stale RSC/router cache
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.assign('/login')
   }
 
   const sectionVariants = {
@@ -455,8 +467,8 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   </div>
                   <SegmentedControl<Theme>
                     options={[
-                      { label: `☀️ ${t('settings.lightMode')}`, value: 'light' },
-                      { label: `🌙 ${t('settings.darkMode')}`, value: 'dark' },
+                      { label: <><Sun size={14} aria-hidden="true" />{t('settings.lightMode')}</>, value: 'light' },
+                      { label: <><Moon size={14} aria-hidden="true" />{t('settings.darkMode')}</>, value: 'dark' },
                     ]}
                     value={theme}
                     onChange={handleThemeChange}

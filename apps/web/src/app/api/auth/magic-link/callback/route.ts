@@ -3,8 +3,11 @@ import { issueJwt, setAuthCookie } from '@vesta/shared/server/auth'
 import { findMagicLink, completeMagicLinkAuth } from '@vesta/shared/server/services'
 import { revalidateTag } from 'next/cache'
 import { cacheTags } from '@/lib/cache-tags'
+import { withRequestContext, setRequestUser, logger } from '@vesta/shared/server/log'
+import { logCustomerRefusal } from '@/app/api/auth/log-failure'
 
 export async function GET(request: Request): Promise<Response> {
+  return withRequestContext(async () => {
   try {
     const url = new URL(request.url)
     const token = url.searchParams.get('token')
@@ -26,6 +29,7 @@ export async function GET(request: Request): Promise<Response> {
     }
 
     const user = await completeMagicLinkAuth(magicLink.id, magicLink.email)
+    setRequestUser(user.id)
     revalidateTag(cacheTags.user(user.id), { expire: 0 })
 
     const jwtToken = await issueJwt({
@@ -35,8 +39,11 @@ export async function GET(request: Request): Promise<Response> {
     })
     await setAuthCookie(jwtToken)
 
+    logger.customer('auth.magic-link.verify', { email: magicLink.email, ok: true })
     return Response.redirect(new URL('/?auth=success', request.url), 302)
   } catch (error) {
+    logCustomerRefusal('auth.magic-link.verify', error)
     return handleApiError(error)
   }
+  }, { requestId: request.headers.get('x-request-id') ?? undefined })
 }

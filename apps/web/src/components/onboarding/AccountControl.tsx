@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { LogOut, UserCircle } from 'lucide-react';
+import { useAppStore } from '@/lib/store';
 import { LogoutConfirmModal } from '@/components/LogoutConfirmModal';
 
 interface AccountControlProps {
@@ -13,7 +13,6 @@ interface AccountControlProps {
 
 export function AccountControl({ user, className }: AccountControlProps) {
   const { t } = useTranslation();
-  const router = useRouter();
 
   const [loggingOut, setLoggingOut] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -34,8 +33,9 @@ export function AccountControl({ user, className }: AccountControlProps) {
     } catch {
       // proceed anyway
     }
-    router.push('/login');
-  }, [loggingOut, router]);
+    useAppStore.getState().setActiveProfile('');
+    window.location.assign('/login');
+  }, [loggingOut]);
 
   return (
     <>
@@ -58,7 +58,7 @@ export function AccountControl({ user, className }: AccountControlProps) {
           type="button"
           aria-label={t('settings.logout')}
           onClick={() => setShowConfirm(true)}
-          className="shrink-0 rounded-md p-1 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
         >
           <LogOut size={16} aria-hidden="true" />
         </button>

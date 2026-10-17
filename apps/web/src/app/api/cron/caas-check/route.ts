@@ -2,9 +2,14 @@ import { withCronAuth } from '@vesta/shared/server/middleware'
 import { revalidateTag } from 'next/cache'
 import { cacheTags } from '@/lib/cache-tags'
 import { handleApiError } from '@vesta/shared/server/api-error'
-import { listProSubscriptions, recordSubscriptionCheckResult, isCronEnabled } from '@vesta/shared/server/services'
-import { caasGetBalance } from '@vesta/shared/server/adapters/bdapps'
+import {
+  listBdappsSubscribers,
+  applyBdappsSubscription,
+  isCronEnabled,
+} from '@vesta/shared/server/services'
+import { getSubscriptionStatus, isPhoneSubscriberId } from '@vesta/shared/server/adapters/bdapps'
 import { prisma } from '@vesta/shared'
+import { logger } from '@vesta/shared/server/log'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -25,46 +30,36 @@ const handler = withCronAuth(async (request) => {
     // Keep Supabase Free tier alive (auto-pauses after 7 days of inactivity)
     await prisma.$queryRaw`SELECT 1`
 
-    const proSubscriptions = await listProSubscriptions()
+    // CaaS balance checks return here when BDApps enables CaaS.
+    const subscribers = await listBdappsSubscribers()
 
     let checked = 0
-    let healthy = 0
-    let failures = 0
+    let downgraded = 0
+    let errors = 0
+    let skipped = 0
 
-    await Promise.allSettled(
-      proSubscriptions.map(async (sub) => {
-        const phone = sub.user?.phone ?? sub.bdappsSubscriberId
-        if (!phone) return
-
-        checked++
-        try {
-          const result = await caasGetBalance(phone)
-          const isHealthy = result.statusCode === 'S1000'
-
-          if (isHealthy) healthy++
-          else failures++
-
-          const checkResult = await recordSubscriptionCheckResult(
-            sub.id,
-            sub.userId,
-            isHealthy,
-            sub.consecutiveFailures,
-          )
-          if (checkResult.lapsed) revalidateTag(cacheTags.user(sub.userId), { expire: 0 })
-        } catch (err) {
-          failures++
-          console.error(`CAAS balance check failed for sub ${sub.id}:`, err)
-          await recordSubscriptionCheckResult(
-            sub.id,
-            sub.userId,
-            false,
-            sub.consecutiveFailures,
-          )
+    for (const sub of subscribers) {
+      const { subscriberId } = sub
+      checked++
+      try {
+        const status = await getSubscriptionStatus(subscriberId)
+        if (status === 'UNREGISTERED' && isPhoneSubscriberId(subscriberId)) {
+          // Masked-number apps reject raw phone ids with E1951, which reads as
+          // UNREGISTERED: ambiguous, so never downgrade a legacy phone-id row.
+          skipped++
+        } else if (status === 'UNREGISTERED') {
+          await applyBdappsSubscription(sub.userId, subscriberId, false, 'nightly-check')
+          revalidateTag(cacheTags.user(sub.userId), { expire: 0 })
+          downgraded++
         }
-      }),
-    )
+      } catch (err) {
+        // Never downgrade on errors.
+        errors++
+        logger.cron('caas-check.failed', { userId: sub.userId, subscriberId, error: String(err) }, { level: 'error' })
+      }
+    }
 
-    return Response.json({ checked, healthy, failures })
+    return Response.json({ checked, downgraded, skipped, errors })
   } catch (error) {
     return handleApiError(error)
   }

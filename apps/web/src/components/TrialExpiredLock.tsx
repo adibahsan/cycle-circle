@@ -2,17 +2,16 @@
 
 import { useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Lock } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import { useAppStore } from '@/lib/store';
 
 const noop = () => {};
 
 export function TrialExpiredLock() {
   const { t } = useTranslation();
-  const router = useRouter();
 
   const handleLogout = useCallback(async () => {
     try {
@@ -20,8 +19,9 @@ export function TrialExpiredLock() {
     } catch {
       // Proceed anyway
     }
-    router.push('/login');
-  }, [router]);
+    useAppStore.getState().setActiveProfile('');
+    window.location.assign('/login');
+  }, []);
 
   return (
     <Modal

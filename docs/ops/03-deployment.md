@@ -533,6 +533,8 @@ Staging/first deploy runs with `DEV_MODE=true` and placeholder BDApps creds (OTP
    ```
    A real BDApps subscription notify should update the user's `Pro`/`Lapsed` status — verify via the admin Subscriptions page after a real event.
 8. Confirm `420420`/`840840` no longer log anyone in on `https://cycle-circle.com/login`.
+9. Create the app log directory and the retention cron (once): see [08-logging.md](./08-logging.md).
+10. Masked subscriber ids, manual status checks and the real-number test: see [09-bdapps-subscriptions.md](./09-bdapps-subscriptions.md).
 
 ---
 

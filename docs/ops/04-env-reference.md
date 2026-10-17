@@ -125,6 +125,17 @@ Prometheus retention on VPS is **30 days** (`PROMETHEUS_RETENTION=30d` in prod o
 
 ---
 
+## Logging
+
+Optional on both apps (see [08-logging.md](./08-logging.md)). Prod Compose sets `LOG_DIR` for `web` and `admin`; no env-file entry is required.
+
+| Variable | Required? | Notes |
+|---|---|---|
+| `LOG_DIR` | No | Root for `<channel>/YYYY-MM-DD.log` files. Default `<cwd>/logs`; prod `/var/log/vesta/app` (bind-mounted from the host). |
+| `LOG_STDOUT` | No | Set `false` to stop mirroring log lines to stdout. Default mirrors. |
+
+---
+
 ## Related docs
 
 - [03-deployment.md](./03-deployment.md) — how these files are created, permissioned, and loaded; the Dockerfile build-arg mechanics for `NEXT_PUBLIC_*`

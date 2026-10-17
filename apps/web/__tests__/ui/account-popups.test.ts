@@ -40,11 +40,29 @@ describe('#40 account pop-ups are on the shell', () => {
     expect(read('components/modals/LatePeriodFullScreenAlert.tsx')).toMatch(/layer="prompt"/)
   })
 
-  it('the BDApps dialog has a name on every step and a status-only live region', () => {
+  it('the unsubscribe dialog is named and described, and results sit in a polite live region', () => {
     const src = read('app/(main)/subscription/SubscriptionClient.tsx')
-    expect(src).toMatch(/ariaLabel=\{t\('subscription\.mobileBilling'\)\}/)
-    expect(src).not.toMatch(/className="p-6" aria-live/)
-    expect(src).toMatch(/role="status" aria-live="polite"/)
+    expect(src).toMatch(/titleId="unsubscribe-title"/)
+    expect(src).toMatch(/descId="unsubscribe-desc"/)
+    expect(src).toMatch(/aria-live="polite"/)
+    expect(src).not.toMatch(/\/api\/billing\/subscribe/)
+  })
+
+  it('the upgrade CTA opens the add-phone dialog in place instead of navigating to /login', () => {
+    const src = read('app/(main)/subscription/SubscriptionClient.tsx')
+    expect(src).toMatch(/<AddPhoneDialog/)
+    expect(src).toMatch(/initialPhone=\{user\.phone\}/)
+    expect(src).not.toMatch(/router\.push\('\/login'\)/)
+    expect(src).not.toMatch(/always PRO/)
+    expect(src).toMatch(/vesta:profile-updated/)
+  })
+
+  it('the trial pill reuses the shared add-phone dialog', () => {
+    expect(read('components/TrialCountdownPill.tsx')).toMatch(/<AddPhoneDialog/)
+    const dlg = read('components/AddPhoneDialog.tsx')
+    expect(dlg).toMatch(/\/api\/user\/phone\/request/)
+    expect(dlg).toMatch(/\/api\/user\/phone\/verify/)
+    expect(dlg).toMatch(/auth\.loginNotice/)
   })
 
   it('the unused date picker and late-period prompt are gone and nothing imports them', () => {

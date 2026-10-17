@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Plus } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { useHasMounted } from '@/components/motion/useHasMounted';
-import { useAppStore } from '@/lib/store';
+import { useLanguage } from '@/lib/use-language';
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data';
 import {
   SymptomChip,
@@ -91,7 +91,7 @@ export function TodayCheckInModal({
 }: TodayCheckInModalProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  const { language } = useAppStore();
+  const language = useLanguage();
   const titleId = useId();
 
   const mounted = useHasMounted();
@@ -209,7 +209,7 @@ export function TodayCheckInModal({
         <div className="px-5 pt-4 pb-6 flex flex-col gap-4">
           {/* ── Header ── */}
           <div className="flex flex-col gap-0.5 pr-8">
-            <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
+            <p className="text-sm font-medium text-[var(--color-text-muted)]">
               {t(getGreetingKey())}
             </p>
             <h2
@@ -223,7 +223,7 @@ export function TodayCheckInModal({
             </p>
             {cycleDay && phase && (
               <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                {t('dashboard.day')} {cycleDay} · {phase}
+                {t('dashboard.day')} {cycleDay} · {t(`dashboard.${phase.toLowerCase()}`)}
               </p>
             )}
           </div>

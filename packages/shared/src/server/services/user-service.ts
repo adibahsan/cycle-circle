@@ -1,5 +1,6 @@
 import { AuthMethod } from '@prisma/client'
 import { prisma } from '../db'
+import { applyBdappsSubscription } from './subscription-service'
 import { ApiError } from '../api-error'
 
 /**
@@ -310,11 +311,19 @@ export async function updateUserContact(
  * flow. Assumes `phone` is already validated/normalized and OTP-verified, and
  * that uniqueness was pre-checked (a racing duplicate still surfaces as P2002).
  */
-export async function keepAccountWithVerifiedPhone(userId: string, phone: string) {
-  return prisma.user.update({
+export async function keepAccountWithVerifiedPhone(
+  userId: string,
+  phone: string,
+  registered: boolean,
+  /** BDApps subscriberId from otp/verify (masked `tel:<id>`); defaults to the phone. */
+  subscriberId: string = phone,
+) {
+  await prisma.user.update({
     where: { id: userId },
-    data: { phone, emailTrialExpiresAt: null, subscriptionStatus: 'PRO' },
+    data: registered ? { phone, emailTrialExpiresAt: null } : { phone },
   })
+  const subscriptionStatus = await applyBdappsSubscription(userId, subscriberId, registered, 'phone-verify')
+  return { subscriptionStatus }
 }
 
 export async function getUserByPhone(phone: string) {

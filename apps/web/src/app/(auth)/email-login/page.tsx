@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Mail, Clock, Sparkles } from 'lucide-react';
+import { ArrowLeft, Mail, Clock, MailCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import '@vesta/shared/utils/i18n';
@@ -37,7 +37,9 @@ export default function EmailLoginPage() {
     if (error) setError('');
   }
 
-  async function handleSendMagicLink() {
+  async function handleSendMagicLink(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (loading) return;
     if (!email.trim()) {
       setError(t('auth.emailRequired'));
       return;
@@ -54,9 +56,10 @@ export default function EmailLoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() }),
       });
-      const body = await res.json().catch(() => ({})) as { error?: string };
+      const body = await res.json().catch(() => ({})) as { error?: string | { message?: string } };
       if (!res.ok) {
-        setError(body.error ?? t('auth.sendMagicLinkFailed'));
+        const msg = typeof body.error === 'object' ? body.error?.message : body.error;
+        setError(msg || t('auth.sendMagicLinkFailed'));
         return;
       }
       setSent(true);
@@ -90,8 +93,10 @@ export default function EmailLoginPage() {
       <AnimatePresence mode="wait" initial={false}>
         {!sent ? (
           /* ── Send form ── */
-          <motion.div
+          <motion.form
             key="form"
+            noValidate
+            onSubmit={handleSendMagicLink}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
@@ -103,10 +108,10 @@ export default function EmailLoginPage() {
                 <Mail size={28} color="var(--color-on-accent)" strokeWidth={1.8} aria-hidden="true" />
               </div>
               <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-1">
-                Email Login
+                {t('auth.emailLoginTitle')}
               </h2>
               <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">
-                We&apos;ll email you a magic link — no password needed.
+                {t('auth.emailLoginSub')}
               </p>
             </motion.div>
 
@@ -126,11 +131,10 @@ export default function EmailLoginPage() {
               <Clock size={16} className="mt-0.5 flex-shrink-0 text-[var(--color-secondary)]" aria-hidden="true" />
               <div>
                 <p className="text-sm font-semibold text-[var(--color-text-primary)] mb-0.5">
-                  24-hour trial window
+                  {t('auth.trialWindowTitle')}
                 </p>
                 <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-                  Email login is available as a 24-hour trial. For full access, verify your phone
-                  number.
+                  {t('auth.trialWindowBody')}
                 </p>
               </div>
             </motion.div>
@@ -139,7 +143,7 @@ export default function EmailLoginPage() {
             <motion.div custom={3} variants={FADE_UP} initial="hidden" animate="show" className="mb-5">
               <Input
                 id="email"
-                label={t('auth.emailFallback').replace('Login with Email instead', 'Email address')}
+                label={t('auth.emailAddress')}
                 type="email"
                 placeholder={t('auth.emailPlaceholder')}
                 value={email}
@@ -157,8 +161,9 @@ export default function EmailLoginPage() {
               <Button
                 fullWidth
                 size="lg"
-                onClick={handleSendMagicLink}
+                type="submit"
                 disabled={loading}
+                aria-busy={loading}
                 className="text-base font-bold mb-4"
               >
                 {loading ? (
@@ -167,17 +172,17 @@ export default function EmailLoginPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                     </svg>
-                    Sending…
+                    {t('auth.sending')}
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    <Sparkles size={18} aria-hidden="true" />
+                    <Mail size={18} aria-hidden="true" />
                     {t('auth.sendMagicLink')}
                   </span>
                 )}
               </Button>
             </motion.div>
-          </motion.div>
+          </motion.form>
         ) : (
           /* ── Success state ── */
           <motion.div
@@ -196,26 +201,8 @@ export default function EmailLoginPage() {
               className="relative mb-6"
             >
               <div className="w-24 h-24 rounded-3xl flex items-center justify-center shadow-glow bg-[var(--color-primary)]">
-                <Mail size={44} color="var(--color-on-accent)" strokeWidth={1.5} aria-hidden="true" />
+                <MailCheck size={44} color="var(--color-on-accent)" strokeWidth={1.5} aria-hidden="true" />
               </div>
-              {/* Sparkles orbiting */}
-              {[0, 1, 2].map((i) => (
-                <motion.span
-                  key={i}
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.3 + i * 0.1, type: 'spring', stiffness: 260, damping: 14 }}
-                  className="absolute text-base"
-                  style={{
-                    top: i === 0 ? '-6px' : i === 1 ? '8px' : 'auto',
-                    bottom: i === 2 ? '-4px' : 'auto',
-                    left: i === 1 ? '-12px' : 'auto',
-                    right: i === 0 ? '-8px' : i === 2 ? '2px' : 'auto',
-                  }}
-                >
-                  ✨
-                </motion.span>
-              ))}
             </motion.div>
 
             <motion.h2
@@ -233,7 +220,7 @@ export default function EmailLoginPage() {
               transition={{ delay: 0.28, duration: 0.4 }}
               className="text-sm text-[var(--color-text-muted)] leading-relaxed mb-1 px-4"
             >
-              We sent a magic link to
+              {t('auth.magicLinkSentTo')}
             </motion.p>
             <motion.p
               initial={{ opacity: 0, y: 10 }}
@@ -257,9 +244,9 @@ export default function EmailLoginPage() {
             >
               <ul className="space-y-2.5">
                 {[
-                  'Check your inbox (and spam folder)',
-                  'The link is valid for 15 minutes',
-                  '24-hour trial access after first login',
+                  t('auth.magicStepInbox'),
+                  t('auth.magicStepValid'),
+                  t('auth.magicStepTrial'),
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-2.5 text-sm text-[var(--color-text-secondary)]">
                     <span
@@ -275,10 +262,11 @@ export default function EmailLoginPage() {
             </motion.div>
 
             <button
+              type="button"
               onClick={() => { setSent(false); setEmail(''); }}
               className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors w-full text-center focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
             >
-              Use a different email
+              {t('auth.useDifferentEmail')}
             </button>
           </motion.div>
         )}
@@ -295,12 +283,12 @@ export default function EmailLoginPage() {
           className="mt-auto pt-6 text-center"
         >
           <p className="text-sm text-[var(--color-text-muted)]">
-            Have a phone number?{' '}
+            {t('auth.havePhone')}{' '}
             <Link
               href="/login"
               className="text-[var(--color-primary)] font-semibold hover:underline underline-offset-2"
             >
-              Login with OTP
+              {t('auth.loginWithOtp')}
             </Link>
           </p>
         </motion.div>

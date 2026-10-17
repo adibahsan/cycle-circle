@@ -1,4 +1,5 @@
 import { prisma } from '../db'
+import { applyBdappsSubscription } from './subscription-service'
 
 export async function createMagicLink(email: string, token: string, expiresAt: Date) {
   return prisma.magicLink.create({
@@ -80,7 +81,13 @@ export async function findOtpChallenge(referenceNo: string) {
   })
 }
 
-export async function completeOtpAuth(challengeId: string, phone: string) {
+export async function completeOtpAuth(
+  challengeId: string,
+  phone: string,
+  registered: boolean,
+  /** BDApps subscriberId from otp/verify (masked `tel:<id>`); defaults to the phone. */
+  subscriberId: string = phone,
+) {
   await prisma.otpChallenge.update({
     where: { id: challengeId },
     data: { verified: true },
@@ -96,17 +103,8 @@ export async function completeOtpAuth(challengeId: string, phone: string) {
     update: { lastLoginAt: new Date() },
   })
 
-  // OTP/phone users are Pro by default — unless an admin explicitly set their status.
-  if (user.subscriptionStatus !== 'PRO') {
-    const override = await prisma.subscription.findFirst({
-      where: { userId: user.id, adminOverride: true },
-      select: { id: true },
-    })
-    if (!override) {
-      await prisma.user.update({ where: { id: user.id }, data: { subscriptionStatus: 'PRO' } })
-      user.subscriptionStatus = 'PRO'
-    }
-  }
+  // A BDApps-verified phone login is the subscription (ADR 0002). Admin overrides win.
+  user.subscriptionStatus = await applyBdappsSubscription(user.id, subscriberId, registered, 'otp-verify')
 
   await prisma.otpChallenge.update({
     where: { id: challengeId },
@@ -127,17 +125,9 @@ export async function upsertUserByPhone(phone: string) {
     update: { lastLoginAt: new Date() },
   })
 
-  // OTP/phone users are Pro by default — unless an admin explicitly set their status.
-  if (user.subscriptionStatus !== 'PRO') {
-    const override = await prisma.subscription.findFirst({
-      where: { userId: user.id, adminOverride: true },
-      select: { id: true },
-    })
-    if (!override) {
-      await prisma.user.update({ where: { id: user.id }, data: { subscriptionStatus: 'PRO' } })
-      user.subscriptionStatus = 'PRO'
-    }
-  }
+  // Dev login stands in for a registered BDApps subscriber (ADR 0002): create the
+  // Subscription row like a real login, unless an admin override wins.
+  user.subscriptionStatus = await applyBdappsSubscription(user.id, phone, true, 'dev-login')
 
   return user
 }

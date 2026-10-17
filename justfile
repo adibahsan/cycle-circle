@@ -195,6 +195,16 @@ test:
 test-watch:
     {{web}} backend:test:watch
 
+# ─── APP LOGS (dated files per channel, ADR 0004) ───────
+
+# Tail a prod log channel over ssh (merchant|customer|webhook|translog|cron|error); date = YYYY-MM-DD, default today (Asia/Dhaka)
+logs-prod channel="error" date="":
+    ssh vesta "tail -n 200 -f /var/log/vesta/app/{{channel}}/{{ if date == "" { `TZ=Asia/Dhaka date +%F` } else { date } }}.log"
+
+# Tail a local log channel from apps/web/logs (today, Asia/Dhaka)
+logs-local channel="error":
+    tail -n 200 -f apps/web/logs/{{channel}}/$(TZ=Asia/Dhaka date +%F).log
+
 # ─── BUILD ──────────────────────────────────────────────
 
 # Build web app for production

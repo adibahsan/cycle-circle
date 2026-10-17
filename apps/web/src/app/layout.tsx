@@ -3,7 +3,9 @@ import { Manrope, Noto_Sans_Bengali } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Providers } from '@/components/Providers';
+import { cookies } from 'next/headers';
 import { themeBootScript } from '@vesta/shared/utils/theme';
+import { LANG_COOKIE, langBootScript, parseLang } from '@/lib/language';
 import './globals.css';
 
 const manrope = Manrope({
@@ -16,7 +18,7 @@ const notoBengali = Noto_Sans_Bengali({
   subsets: ['bengali'],
   variable: '--font-bengali',
   display: 'swap',
-  weight: ['300', '400', '500', '600', '700', '800'],
+  weight: ['400', '500', '600', '700', '800'],
 });
 
 const siteUrl = 'https://test-vesta.velirasolutions.com';
@@ -74,14 +76,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const lang = parseLang((await cookies()).get(LANG_COOKIE)?.value);
   return (
-    <html lang="en" className={`${manrope.variable} ${notoBengali.variable}`} suppressHydrationWarning>
+    <html lang={lang} className={`${manrope.variable} ${notoBengali.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootScript('vesta-store') }} />
+        <script dangerouslySetInnerHTML={{ __html: langBootScript('vesta-store') }} />
       </head>
       <body className="min-h-screen antialiased" suppressHydrationWarning>
-        <Providers>{children}</Providers>
+        <Providers initialLanguage={lang}>{children}</Providers>
         <Analytics />
         <SpeedInsights />
       </body>

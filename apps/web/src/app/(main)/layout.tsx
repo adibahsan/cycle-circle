@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import VestaLogo from '@/components/ui/VestaLogo';
 import type { ProfileCompletionStatus } from '@/lib/profile-completion';
@@ -79,7 +80,7 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslation();
-  const { theme, setTheme, activeProfileName } = useAppStore();
+  const { theme, setTheme, activeProfileName } = useAppStore(useShallow((s) => ({ theme: s.theme, setTheme: s.setTheme, activeProfileName: s.activeProfileName })));
   const prompt = useAutoPrompt();
   const setAccount = prompt.setAccount;
   const claimPrompt = prompt.claim;
@@ -310,9 +311,9 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, router, prompt]);
 
-  const handlePhoneAdded = useCallback(() => {
+  const handlePhoneAdded = useCallback((status?: string) => {
     setTrialUser((prev) =>
-      prev ? { ...prev, emailTrialExpiresAt: null, subscriptionStatus: 'PRO' } : prev,
+      prev ? { ...prev, emailTrialExpiresAt: null, subscriptionStatus: status ?? 'PRO' } : prev,
     );
     // Refresh RSC (account page, etc.) and re-fetch the client-side completion /
     // logging status so the ring updates from 83% → 100% without a reload.

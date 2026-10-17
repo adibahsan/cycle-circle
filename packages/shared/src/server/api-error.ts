@@ -1,3 +1,5 @@
+import { logger } from './log'
+
 export class ApiError extends Error {
   constructor(
     public statusCode: number,
@@ -19,8 +21,10 @@ export function apiError(
 
 export function handleApiError(error: unknown): Response {
   if (error instanceof ApiError) {
+    // 4xx are expected outcomes (bad input, wrong OTP); 5xx/502s are worth an error line.
+    if (error.statusCode >= 500) logger.error('api.error', error)
     return apiError(error.statusCode, error.message, error.code)
   }
-  console.error('Unhandled error:', error)
+  logger.error('api.unhandled', error)
   return apiError(500, 'Internal server error')
 }

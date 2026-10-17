@@ -41,6 +41,10 @@ services:
         NEXT_PUBLIC_DEV_MODE: ${NEXT_PUBLIC_DEV_MODE:-false}
         NEXT_PUBLIC_USE_DUMMY_DATA: ${NEXT_PUBLIC_USE_DUMMY_DATA:-false}
     env_file: ${VESTA_WEB_ENV_FILE:-/opt/vesta/.env.web.production}
+    environment:
+      LOG_DIR: /var/log/vesta/app
+    volumes:
+      - /var/log/vesta/app:/var/log/vesta/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,6 +59,9 @@ services:
     env_file: ${VESTA_ADMIN_ENV_FILE:-/opt/vesta/.env.admin.production}
     environment:
       PORT: "3001"
+      LOG_DIR: /var/log/vesta/app
+    volumes:
+      - /var/log/vesta/app:/var/log/vesta/app
     depends_on:
       postgres:
         condition: service_healthy

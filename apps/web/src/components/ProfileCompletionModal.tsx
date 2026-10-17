@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Phone, User, Mail } from 'lucide-react';
+import { Phone, User, Mail, CircleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import type { PopupLayer } from '@vesta/shared/utils/popup-core';
@@ -233,9 +233,9 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
                     id="completion-name-error"
                     role="alert"
                     aria-live="polite"
-                    className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1"
+                    className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1.5"
                   >
-                    <span aria-hidden="true">⚠</span>
+                    <CircleAlert size={15} aria-hidden="true" className="shrink-0" />
                     {nameError}
                   </p>
                 )}
@@ -298,9 +298,9 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
                     id="completion-phone-error"
                     role="alert"
                     aria-live="polite"
-                    className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1"
+                    className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1.5"
                   >
-                    <span aria-hidden="true">⚠</span>
+                    <CircleAlert size={15} aria-hidden="true" className="shrink-0" />
                     {phoneError}
                   </p>
                 )}
@@ -344,9 +344,9 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
                     id="completion-email-error"
                     role="alert"
                     aria-live="polite"
-                    className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1"
+                    className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1.5"
                   >
-                    <span aria-hidden="true">⚠</span>
+                    <CircleAlert size={15} aria-hidden="true" className="shrink-0" />
                     {emailError}
                   </p>
                 )}
@@ -358,9 +358,9 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
               <p
                 role="alert"
                 aria-live="polite"
-                className="text-sm text-[var(--color-error)] flex items-center gap-1"
+                className="text-sm text-[var(--color-error)] flex items-center gap-1.5"
               >
-                <span aria-hidden="true">⚠</span>
+                <CircleAlert size={15} aria-hidden="true" className="shrink-0" />
                 {submitError}
               </p>
             )}

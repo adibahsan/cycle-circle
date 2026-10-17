@@ -6,16 +6,21 @@ import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
 import { requestOtp } from '@vesta/shared/server/adapters/bdapps'
 import { createOtpChallenge, getOtpResendCooldownRemaining } from '@vesta/shared/server/services'
 import { isDevModeEnabled } from '@vesta/shared/server/dev'
+import { withRequestContext, logger } from '@vesta/shared/server/log'
+import { logCustomerRefusal } from '@/app/api/auth/log-failure'
 
 const bodySchema = z.object({
   phone: z.string().min(1, 'Phone is required'),
 })
 
 export async function POST(request: Request): Promise<Response> {
+  return withRequestContext(async () => {
+  let phone: string | undefined
   try {
     const body = await parseBody(request, bodySchema)
 
     const normalizedPhone = validateMsisdn(body.phone)
+    phone = normalizedPhone
 
     // SRS FR-AUTH: OTP resend only after a 60s cooldown. Checked before the
     // abuse limiter so a blocked resend doesn't consume the per-minute budget.
@@ -45,8 +50,11 @@ export async function POST(request: Request): Promise<Response> {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
     await createOtpChallenge(normalizedPhone, referenceNo, expiresAt)
 
+    logger.customer('auth.otp.request', { phone: normalizedPhone, referenceNo, ok: true, dev: isDevModeEnabled() })
     return Response.json({ referenceNo, message: 'OTP sent' })
   } catch (error) {
+    logCustomerRefusal('auth.otp.request', error, { phone })
     return handleApiError(error)
   }
+  }, { requestId: request.headers.get('x-request-id') ?? undefined })
 }

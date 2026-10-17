@@ -15,6 +15,7 @@ import type { Page } from '@playwright/test'
  */
 export const LATIN_ALLOW: { pattern: RegExp; reason: string }[] = [
   { pattern: /Cycle Circle/g, reason: 'brand name' },
+  { pattern: /\bPro\b/g, reason: 'plan name, quoted verbatim in the BDApps subscription copy (ADR 0002)' },
   { pattern: /\b(?:BDApps|CAAS|Grameenphone|Supabase|PostgreSQL|AWS|Resend|ARIMA)\b/g, reason: 'third-party product and algorithm names' },
   { pattern: /\b(?:AES-256-GCM|TLS 1\.3|SOC 2)\b/g, reason: 'security standard identifiers' },
   { pattern: /(?<=[\d\u09E6-\u09EF]\s?)(?:kg|cm|mm|ml|mg|°C|°F|bpm)\b/g, reason: 'SI units after a number' },

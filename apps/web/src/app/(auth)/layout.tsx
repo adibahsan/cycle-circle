@@ -2,7 +2,7 @@
 
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Droplet, Flower2, ChartLine } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
@@ -19,7 +19,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <LanguageToggle />
         <button
           onClick={toggleTheme}
-          className="p-2.5 rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft hover:border-[var(--color-primary)] transition-colors duration-200 active:scale-95 focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+          className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft hover:border-[var(--color-primary)] transition-colors duration-200 active:scale-95 focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
           aria-label={theme === 'dark' ? t('nav.switchToLight') : t('nav.switchToDark')}
         >
           {theme === 'dark' ? (
@@ -78,17 +78,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <p className="text-lg lg:text-xl text-[var(--color-text-secondary)] leading-relaxed mb-6">
             {t('auth.brandBlurb')}
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
-              <span className="text-sm">🩸</span>
+              <Droplet size={14} className="text-[var(--color-primary)]" aria-hidden="true" />
               <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('auth.pillTracking')}</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
-              <span className="text-sm">🌸</span>
+              <Flower2 size={14} className="text-[var(--color-primary)]" aria-hidden="true" />
               <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('auth.pillPredictions')}</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
-              <span className="text-sm">📊</span>
+              <ChartLine size={14} className="text-[var(--color-primary)]" aria-hidden="true" />
               <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('auth.pillInsights')}</span>
             </div>
           </div>

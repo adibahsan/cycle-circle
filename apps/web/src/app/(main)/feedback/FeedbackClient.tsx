@@ -210,7 +210,7 @@ interface FeedbackClientProps {
 // ── Main Client Component ──────────────────────────────────────────────────────
 export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
   const { t } = useTranslation()
-  const { activeProfileId } = useAppStore()
+  const activeProfileId = useAppStore((s) => s.activeProfileId)
 
   const [selectedCategory, setSelectedCategory] = useState<UiCategory | null>(null)
   const [rating, setRating] = useState(0)
@@ -288,7 +288,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                 /* ── Form state ── */
                 <motion.div key="form" initial={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   {/* Category selector */}
-                  <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">
+                  <p className="text-sm font-semibold text-[var(--color-text-secondary)] mb-3">
                     {t('feedback.category')}
                   </p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
@@ -351,9 +351,9 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
 
                   {/* Star rating */}
                   <div className="mb-5">
-                    <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-2">
+                    <p className="text-sm font-semibold text-[var(--color-text-secondary)] mb-2">
                       {t('feedback.rating')}{' '}
-                      <span className="text-[var(--color-text-muted)] normal-case font-normal tracking-normal">
+                      <span className="text-[var(--color-text-muted)] font-normal">
                         ({t('feedback.optional')})
                       </span>
                     </p>
@@ -362,9 +362,9 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
 
                   {/* Message textarea */}
                   <div className="mb-5">
-                    <label htmlFor="feedback-message" className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-2 block">
+                    <label htmlFor="feedback-message" className="text-sm font-semibold text-[var(--color-text-secondary)] mb-2 block">
                       {t('feedback.messageLabel')}{' '}
-                      <span className="text-[var(--color-text-muted)] normal-case font-normal tracking-normal">
+                      <span className="text-[var(--color-text-muted)] font-normal">
                         ({t('feedback.optional')})
                       </span>
                     </label>
@@ -446,7 +446,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
         {/* ── Feedback History ── */}
         <motion.div custom={2} variants={FADE_UP} initial="hidden" animate="show">
           <Card padding="md">
-            <h2 className="text-sm font-bold text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">
+            <h2 className="text-base font-bold text-[var(--color-text-primary)] mb-3">
               {t('feedback.previousFeedback')}
             </h2>
             {feedbackHistory.length > 0 ? (

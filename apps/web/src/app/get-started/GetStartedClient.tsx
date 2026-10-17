@@ -86,7 +86,7 @@ function ProgressDots({
                       i + 1 <= step
                         ? 'var(--color-primary)'
                         : 'var(--color-border)',
-                    scale: isActive ? [1, 1.2, 1] : 1,
+                    scale: 1,
                   }
             }
             transition={
@@ -96,7 +96,6 @@ function ProgressDots({
                   ? {
                       width: { duration: 0.3 },
                       backgroundColor: { duration: 0.3 },
-                      scale: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
                     }
                   : { duration: 0.3 }
             }
@@ -132,7 +131,7 @@ function FeatureIllustration({
       {/* Outermost ring */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 rounded-full animate-breathe"
+        className="absolute inset-0 rounded-full"
         style={{
           background: `radial-gradient(circle, color-mix(in srgb, ${accentVar} 10%, transparent), color-mix(in srgb, ${accentVar} 5%, transparent))`,
           boxShadow: `0 0 0 1px color-mix(in srgb, ${accentVar} 15%, transparent)`,
@@ -141,10 +140,9 @@ function FeatureIllustration({
       {/* Middle ring */}
       <div
         aria-hidden="true"
-        className="absolute inset-6 rounded-full animate-breathe"
+        className="absolute inset-6 rounded-full"
         style={{
           background: `radial-gradient(circle, color-mix(in srgb, ${accentVar} 15%, transparent), color-mix(in srgb, ${accentVar} 8%, transparent))`,
-          animationDelay: '0.4s',
         }}
       />
       {/* Inner ring */}
@@ -158,31 +156,28 @@ function FeatureIllustration({
       {/* Floating accent dots */}
       <div
         aria-hidden="true"
-        className="absolute top-3 right-8 w-5 h-5 rounded-full animate-float"
+        className="absolute top-3 right-8 w-5 h-5 rounded-full"
         style={{ backgroundColor: `color-mix(in srgb, ${accentVar} 60%, transparent)` }}
       />
       <div
         aria-hidden="true"
-        className="absolute bottom-6 left-5 w-4 h-4 rounded-full animate-float"
+        className="absolute bottom-6 left-5 w-4 h-4 rounded-full"
         style={{
           backgroundColor: `color-mix(in srgb, ${accentVar} 50%, transparent)`,
-          animationDelay: '0.6s',
         }}
       />
       <div
         aria-hidden="true"
-        className="absolute top-10 left-4 w-3 h-3 rounded-full animate-float"
+        className="absolute top-10 left-4 w-3 h-3 rounded-full"
         style={{
           backgroundColor: `color-mix(in srgb, ${accentVar} 40%, transparent)`,
-          animationDelay: '1.1s',
         }}
       />
       <div
         aria-hidden="true"
-        className="absolute bottom-10 right-3 w-3 h-3 rounded-full animate-float"
+        className="absolute bottom-10 right-3 w-3 h-3 rounded-full"
         style={{
           backgroundColor: `color-mix(in srgb, ${accentVar} 35%, transparent)`,
-          animationDelay: '1.7s',
         }}
       />
       {/* Center icon circle */}

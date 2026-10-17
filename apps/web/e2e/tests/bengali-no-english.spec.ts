@@ -83,7 +83,8 @@ interface Popup {
 
 const POPUPS: Popup[] = [
   { id: 'period-log', route: '/dashboard', open: (p) => p.getByRole('button', { name: bn('dashboard.logPeriod') }).first() },
-  { id: 'quick-symptom', route: '/dashboard', open: (p) => p.getByRole('button', { name: bn('dashboard.logSymptoms') }).first() },
+  // The logging nudge has a same-named button that navigates to /symptoms; the dialog trigger declares aria-haspopup.
+  { id: 'quick-symptom', route: '/dashboard', open: (p) => p.locator('button[aria-haspopup="dialog"]', { hasText: bn('dashboard.logSymptoms') }).first() },
   { id: 'calendar-day', route: '/calendar', inline: true, open: (p) => p.locator('button[aria-pressed]:visible').first() },
   { id: 'period-log-edit', route: '/calendar', open: (p) => p.locator(`button[aria-label$="${bn('calendar.editLogStarting', { date: '@@' }).split('@@')[1]}"]:visible`).first() },
   { id: 'logout', route: '/settings', open: (p) => p.getByRole('button', { name: bn('settings.logout') }).first() },

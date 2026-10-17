@@ -9,6 +9,7 @@
 // 30 s), and falls through to the in-memory path so the app keeps working.
 
 import type { Redis as RedisType } from 'ioredis'
+import { logger } from '../log'
 
 // ─── Client singleton ─────────────────────────────────────────────────────────
 
@@ -24,7 +25,7 @@ function logRedisError(context: string, err: unknown): void {
   if (now - lastRedisErrorLoggedAt > 30_000) {
     lastRedisErrorLoggedAt = now
     const msg = err instanceof Error ? err.message : String(err)
-    console.error(`[redis] ${context} failed; using in-memory fallback: ${msg}`)
+    logger.error('redis.fallback', err, { context, message: `${context} failed; using in-memory fallback: ${msg}` })
   }
 }
 

@@ -7,7 +7,7 @@ import { useReducedMotion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { useHasMounted } from '@/components/motion/useHasMounted';
-import { useAppStore } from '@/lib/store';
+import { useLanguage } from '@/lib/use-language';
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data';
 import { saveSymptoms } from '@/app/actions/tracking-actions';
 import {
@@ -47,7 +47,7 @@ export function QuickSymptomModal({
 }: QuickSymptomModalProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  const { language } = useAppStore();
+  const language = useLanguage();
 
   const mounted = useHasMounted();
   const reduce = useReducedMotion() ?? false;

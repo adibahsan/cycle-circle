@@ -24,16 +24,16 @@ export function SocialProofSection() {
           <h2 id="proof-heading" className="sr-only">
             {t('app.tagline')}
           </h2>
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-y border-[var(--color-border)] py-5">
             {PROOF_ITEMS.map(({ key, icon: Icon }) => (
               <RevealOnScroll key={key}>
-                <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft">
+                <div className="flex items-center gap-2">
                   <Icon
-                    size={15}
+                    size={16}
                     className="text-[var(--color-primary)] shrink-0"
                     aria-hidden="true"
                   />
-                  <span className="text-sm font-semibold text-[var(--color-text-primary)] whitespace-nowrap">
+                  <span className="text-sm font-semibold text-[var(--color-text-secondary)] whitespace-nowrap">
                     {t(`landing.proof.${key}`)}
                   </span>
                 </div>

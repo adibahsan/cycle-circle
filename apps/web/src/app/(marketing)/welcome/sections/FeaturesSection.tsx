@@ -4,33 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { CalendarHeart, Sparkles, ShieldCheck, Users } from 'lucide-react';
 import { LANDING_CONTAINER, LANDING_SECTION } from './landing-layout';
 import { RevealOnScroll } from '@/components/motion/RevealOnScroll';
-import { Card } from '@/components/ui/Card';
 
 const FEATURES = [
-  {
-    key: 'tracking' as const,
-    icon: CalendarHeart,
-    accentVar: '--color-menstrual',
-    fallbackColor: 'var(--color-primary)',
-  },
-  {
-    key: 'predictions' as const,
-    icon: Sparkles,
-    accentVar: '--color-ovulation',
-    fallbackColor: 'var(--color-secondary)',
-  },
-  {
-    key: 'privacy' as const,
-    icon: ShieldCheck,
-    accentVar: '--color-follicular',
-    fallbackColor: 'var(--color-accent)',
-  },
-  {
-    key: 'profiles' as const,
-    icon: Users,
-    accentVar: '--color-luteal',
-    fallbackColor: 'var(--color-secondary)',
-  },
+  { key: 'tracking' as const, icon: CalendarHeart, color: 'var(--color-menstrual)' },
+  { key: 'predictions' as const, icon: Sparkles, color: 'var(--color-gold-ink)' },
+  { key: 'privacy' as const, icon: ShieldCheck, color: 'var(--color-primary)' },
+  { key: 'profiles' as const, icon: Users, color: 'var(--color-luteal)' },
 ] as const;
 
 export function FeaturesSection() {
@@ -42,49 +21,31 @@ export function FeaturesSection() {
       aria-labelledby="features-heading"
     >
       <div className={LANDING_CONTAINER}>
-        <RevealOnScroll className="text-center mb-12">
+        <RevealOnScroll className="mb-10 md:mb-12">
           <h2
             id="features-heading"
-            className="text-fluid-lg font-bold text-[var(--color-text-primary)]"
+            className="text-fluid-lg font-bold text-[var(--color-text-primary)] max-w-xl text-balance"
           >
             {t('landing.featuresTitle')}
           </h2>
         </RevealOnScroll>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {FEATURES.map(({ key, icon: Icon, accentVar, fallbackColor }) => (
-            <RevealOnScroll key={key}>
-              <Card hover padding="lg" className="h-full">
-                <div className="flex flex-col gap-4">
-                  {/* Icon with phase-color accent */}
-                  <div
-                    className="relative w-11 h-11 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
-                  >
-                    <div
-                      aria-hidden="true"
-                      className="absolute inset-0 rounded-xl opacity-15"
-                      style={{ background: `var(${accentVar}, ${fallbackColor})` }}
-                    />
-                    <Icon
-                      size={22}
-                      aria-hidden="true"
-                      style={{ color: `var(${accentVar}, ${fallbackColor})` }}
-                    />
-                  </div>
-
-                  <div>
-                    <h3 className="text-fluid-md font-bold text-[var(--color-text-primary)] mb-1.5">
-                      {t(`landing.features.${key}.title`)}
-                    </h3>
-                    <p className="text-[var(--color-text-secondary)] leading-relaxed">
-                      {t(`landing.features.${key}.body`)}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            </RevealOnScroll>
+        {/* Ruled two-column list: the content carries the section, not a card grid. */}
+        <ul className="grid grid-cols-1 md:grid-cols-2 md:gap-x-12">
+          {FEATURES.map(({ key, icon: Icon, color }) => (
+            <li key={key} className="border-t border-[var(--color-border)] py-6">
+              <RevealOnScroll>
+                <h3 className="flex items-center gap-2.5 text-fluid-md font-bold text-[var(--color-text-primary)] mb-2">
+                  <Icon size={20} strokeWidth={2} aria-hidden="true" style={{ color }} className="shrink-0" />
+                  {t(`landing.features.${key}.title`)}
+                </h3>
+                <p className="text-[var(--color-text-secondary)] leading-relaxed max-w-[48ch]">
+                  {t(`landing.features.${key}.body`)}
+                </p>
+              </RevealOnScroll>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   );

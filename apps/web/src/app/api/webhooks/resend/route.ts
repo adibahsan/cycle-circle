@@ -1,5 +1,6 @@
 import { updateEmailDeliveryStatus } from '@vesta/shared/server/services'
 import type { DeliveryStatus } from '@prisma/client'
+import { withRequestContext, logger } from '@vesta/shared/server/log'
 
 type ResendEventType =
   | 'email.delivered'
@@ -69,6 +70,7 @@ async function verifySignature(
 }
 
 export async function POST(request: Request) {
+  return withRequestContext(async () => {
   try {
     const rawBody = await request.text()
 
@@ -77,6 +79,7 @@ export async function POST(request: Request) {
     if (secret) {
       const valid = await verifySignature(request, rawBody, secret)
       if (!valid) {
+        logger.webhook('resend.event', { action: 'rejected', reason: 'invalid-signature', body: rawBody }, { level: 'warn' })
         return new Response('Unauthorized: invalid signature', { status: 401 })
       }
     } else {
@@ -86,6 +89,7 @@ export async function POST(request: Request) {
         request.headers.get('svix-timestamp') &&
         request.headers.get('svix-signature')
       if (!hasHeaders) {
+        logger.webhook('resend.event', { action: 'rejected', reason: 'missing-svix-headers', body: rawBody }, { level: 'warn' })
         return new Response('Bad Request: missing svix headers', {
           status: 400,
         })
@@ -96,6 +100,7 @@ export async function POST(request: Request) {
     try {
       payload = JSON.parse(rawBody) as ResendWebhookPayload
     } catch {
+      logger.webhook('resend.event', { action: 'rejected', reason: 'invalid-json', body: rawBody }, { level: 'warn' })
       return new Response('Bad Request: invalid JSON', { status: 400 })
     }
 
@@ -104,21 +109,25 @@ export async function POST(request: Request) {
     const deliveryStatus = EVENT_TO_DELIVERY_STATUS[type]
     if (!deliveryStatus) {
       // Unknown event type — acknowledge without processing
+      logger.webhook('resend.event', { payload, action: 'ignored', reason: 'unhandled-type' })
       return new Response('OK', { status: 200 })
     }
 
     const emailId = data?.email_id
     if (!emailId) {
+      logger.webhook('resend.event', { payload, action: 'rejected', reason: 'missing-email-id' }, { level: 'warn' })
       return new Response('Bad Request: missing email_id', { status: 400 })
     }
 
     // updateEmailDeliveryStatus uses updateMany so it's a no-op when the
     // emailLog doesn't exist — Resend still gets a 2xx and won't retry.
     await updateEmailDeliveryStatus(emailId, deliveryStatus)
+    logger.webhook('resend.event', { payload, action: 'updated', deliveryStatus })
 
     return new Response('OK', { status: 200 })
   } catch (error) {
-    console.error('[resend-webhook] Unexpected error:', error)
+    logger.error('resend.webhook', error)
     return new Response('Internal Server Error', { status: 500 })
   }
+  }, { requestId: request.headers.get('x-request-id') ?? undefined })
 }

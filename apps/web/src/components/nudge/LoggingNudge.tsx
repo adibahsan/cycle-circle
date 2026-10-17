@@ -143,12 +143,12 @@ export function LoggingNudge({
         type="button"
         aria-label={t('nudge.dismiss')}
         onClick={handleDismiss}
-        className="absolute top-3 right-3 z-20 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+        className="absolute top-1 right-1 z-20 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
       >
-        <X size={14} aria-hidden="true" />
+        <X size={16} aria-hidden="true" />
       </button>
 
-      <div className="flex items-start gap-3 pr-6">
+      <div className="flex items-start gap-3 pr-10">
         {/* Accent icon */}
         <div
           className="relative shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
@@ -157,17 +157,7 @@ export function LoggingNudge({
           }}
           aria-hidden="true"
         >
-          {prefersReducedMotion ? (
-            <Icon size={18} className="text-[var(--color-on-accent)]" aria-hidden="true" />
-          ) : (
-            <motion.span
-              animate={{ scale: [1, 1.06, 1] }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-              className="flex items-center justify-center"
-            >
-              <Icon size={18} className="text-[var(--color-on-accent)]" aria-hidden="true" />
-            </motion.span>
-          )}
+          <Icon size={18} className="text-[var(--color-on-accent)]" aria-hidden="true" />
         </div>
 
         {/* Text */}
@@ -182,7 +172,7 @@ export function LoggingNudge({
           {/* Phase-aware enrichment (only when phase provided) */}
           {phase && (
             <p className="text-xs text-[var(--color-text-muted)] mt-0.5 opacity-80 leading-relaxed">
-              {t('nudge.phaseAwareBody', { phase })}
+              {t('nudge.phaseAwareBody', { phase: t(`dashboard.${phase.toLowerCase()}`) })}
             </p>
           )}
 

@@ -218,7 +218,6 @@ export function ProgressToUnlockMeter({
             prefersReducedMotion={prm}
             mounted={mounted}
             incomplete={!isUnlocked}
-            centerLabel
           />
         </div>
 
