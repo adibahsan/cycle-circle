@@ -47,7 +47,7 @@ const handler = withCronAuth(async (request) => {
           // UNREGISTERED: ambiguous, so never downgrade a legacy phone-id row.
           skipped++
         } else if (status === 'UNREGISTERED') {
-          await applyBdappsSubscription(sub.userId, subscriberId, false)
+          await applyBdappsSubscription(sub.userId, subscriberId, false, 'nightly-check')
           revalidateTag(cacheTags.user(sub.userId), { expire: 0 })
           downgraded++
         }

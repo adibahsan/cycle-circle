@@ -1,11 +1,35 @@
 import { prisma } from '../db'
 import { Prisma } from '@prisma/client'
+import { logger } from '../log'
+
+/** What caused a plan change; recorded on every translog line. */
+export type PlanChangeCause =
+  | 'otp-verify'
+  | 'phone-verify'
+  | 'dev-login'
+  | 'webhook'
+  | 'nightly-check'
+  | 'unsubscribe'
+  | 'admin'
+  | 'unknown'
+
+/** One translog line per plan change (GLOSSARY: Translog). */
+function logPlanChange(
+  userId: string,
+  from: string | null,
+  to: string,
+  cause: PlanChangeCause,
+  extra: Record<string, unknown> = {},
+) {
+  logger.translog('plan.change', { from, to, cause, changed: from !== to, ...extra }, { userId })
+}
 
 /**
  * Grant PRO access to a user. Finds an existing subscription and updates it,
  * or creates a new one. Syncs user.subscriptionStatus to PRO.
  */
 export async function grantPro(userId: string, adminId: string) {
+  const before = await prisma.user.findUnique({ where: { id: userId }, select: { subscriptionStatus: true } })
   const sub = await prisma.subscription.findFirst({ where: { userId } })
 
   if (sub) {
@@ -40,6 +64,7 @@ export async function grantPro(userId: string, adminId: string) {
       targetId: userId,
     },
   })
+  logPlanChange(userId, before?.subscriptionStatus ?? null, 'PRO', 'admin', { adminId, adminOverride: true })
 
   return { success: true }
 }
@@ -49,6 +74,7 @@ export async function grantPro(userId: string, adminId: string) {
  * and syncs user.subscriptionStatus.
  */
 export async function revokePro(userId: string, adminId: string) {
+  const before = await prisma.user.findUnique({ where: { id: userId }, select: { subscriptionStatus: true } })
   await prisma.subscription.updateMany({
     where: { userId, status: 'PRO' },
     data: {
@@ -69,6 +95,7 @@ export async function revokePro(userId: string, adminId: string) {
       targetId: userId,
     },
   })
+  logPlanChange(userId, before?.subscriptionStatus ?? null, 'LAPSED', 'admin', { adminId, adminOverride: true })
 
   return { success: true }
 }
@@ -111,6 +138,7 @@ export async function setSubscriptionStatus(
       metadata: { previous } as Prisma.InputJsonValue,
     },
   })
+  logPlanChange(userId, previous, status, 'admin', { adminId, adminOverride: true })
 
   return { success: true }
 }
@@ -200,13 +228,15 @@ export async function applyBdappsSubscription(
   userId: string,
   subscriberId: string,
   registered: boolean,
+  cause: PlanChangeCause = 'unknown',
 ): Promise<'FREE' | 'PRO' | 'LAPSED'> {
+  const before = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { subscriptionStatus: true },
+  })
   if (await hasAdminOverride(userId)) {
-    const user = await prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { subscriptionStatus: true },
-    })
-    return user.subscriptionStatus
+    logger.translog('plan.override-kept', { status: before.subscriptionStatus, cause, registered, subscriberId }, { userId })
+    return before.subscriptionStatus
   }
 
   const existing = await prisma.subscription.findFirst({
@@ -228,6 +258,7 @@ export async function applyBdappsSubscription(
     await prisma.subscription.create({ data: { userId, ...data } })
   }
   await prisma.user.update({ where: { id: userId }, data: { subscriptionStatus: status } })
+  logPlanChange(userId, before.subscriptionStatus, status, cause, { subscriberId })
   return status
 }
 
@@ -235,12 +266,16 @@ export async function applyBdappsSubscription(
  * Sync a BDApps status change (webhook or nightly check) onto the user who owns
  * `phone` (`+8801…`). Returns null when no user has that number.
  */
-export async function syncBdappsSubscriptionByPhone(phone: string, registered: boolean) {
+export async function syncBdappsSubscriptionByPhone(
+  phone: string,
+  registered: boolean,
+  cause: PlanChangeCause = 'webhook',
+) {
   const user = await prisma.user.findFirst({ where: { phone }, select: { id: true } })
   if (!user) return null
   // Keep a stored (masked) subscriber id; the phone is only a fallback for legacy rows.
   const subscriberId = (await getBdappsSubscriberId(user.id)) ?? phone
-  const status = await applyBdappsSubscription(user.id, subscriberId, registered)
+  const status = await applyBdappsSubscription(user.id, subscriberId, registered, cause)
   return { userId: user.id, status }
 }
 
@@ -249,7 +284,11 @@ export async function syncBdappsSubscriptionByPhone(phone: string, registered: b
  * id stored at OTP verify, with or without `tel:`; unmasked `tel:8801…` ids fall back
  * to the user's phone. Returns null when nobody matches.
  */
-export async function syncBdappsSubscriptionBySubscriberId(subscriberId: string, registered: boolean) {
+export async function syncBdappsSubscriptionBySubscriberId(
+  subscriberId: string,
+  registered: boolean,
+  cause: PlanChangeCause = 'webhook',
+) {
   const bare = subscriberId.replace(/^tel:/, '')
   const sub = await prisma.subscription.findFirst({
     where: { bdappsSubscriberId: { in: [`tel:${bare}`, bare] } },
@@ -257,10 +296,10 @@ export async function syncBdappsSubscriptionBySubscriberId(subscriberId: string,
     select: { userId: true, bdappsSubscriberId: true },
   })
   if (sub?.bdappsSubscriberId) {
-    const status = await applyBdappsSubscription(sub.userId, sub.bdappsSubscriberId, registered)
+    const status = await applyBdappsSubscription(sub.userId, sub.bdappsSubscriberId, registered, cause)
     return { userId: sub.userId, status }
   }
-  return /^8801\d{9}$/.test(bare) ? syncBdappsSubscriptionByPhone(`+${bare}`, registered) : null
+  return /^8801\d{9}$/.test(bare) ? syncBdappsSubscriptionByPhone(`+${bare}`, registered, cause) : null
 }
 
 /** The subscriber id stored for a user's latest BDApps subscription, if any. */

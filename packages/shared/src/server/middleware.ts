@@ -3,6 +3,10 @@ import { requireAuth, requireAdminAuth, getAuthUser, AuthUser } from './auth'
 import { handleApiError, ApiError } from './api-error'
 import { env } from '../utils/env'
 import { isTrialExpired } from '../utils/trial'
+import { logger, setRequestUser, withRequestContext } from './log'
+
+/** Reuse an upstream request id (e.g. from nginx) so one request is traceable end to end. */
+const requestIdOf = (request: Request) => request.headers.get('x-request-id') ?? undefined
 
 function safeEqual(a: string, b: string): boolean {
   const ab = Buffer.from(a)
@@ -26,20 +30,22 @@ type AuthedHandler = (
  * Also enforces email trial expiry for EMAIL auth users.
  */
 export function withAuth(handler: AuthedHandler, opts?: { allowExpiredTrial?: boolean }) {
-  return async (request: Request, context: RouteContext): Promise<Response> => {
-    try {
-      const jwt = await requireAuth()
-      const user = await getAuthUser(jwt.sub)
+  return (request: Request, context: RouteContext): Promise<Response> =>
+    withRequestContext(async () => {
+      try {
+        const jwt = await requireAuth()
+        const user = await getAuthUser(jwt.sub)
+        setRequestUser(user.id)
 
-      if (!opts?.allowExpiredTrial && isTrialExpired(user)) {
-        throw new ApiError(402, 'Email trial has expired. Please upgrade to PRO.', 'TRIAL_EXPIRED')
+        if (!opts?.allowExpiredTrial && isTrialExpired(user)) {
+          throw new ApiError(402, 'Email trial has expired. Please upgrade to PRO.', 'TRIAL_EXPIRED')
+        }
+
+        return await handler(request, { ...context, user })
+      } catch (error) {
+        return handleApiError(error)
       }
-
-      return handler(request, { ...context, user })
-    } catch (error) {
-      return handleApiError(error)
-    }
-  }
+    }, { requestId: requestIdOf(request) })
 }
 
 /**
@@ -47,18 +53,29 @@ export function withAuth(handler: AuthedHandler, opts?: { allowExpiredTrial?: bo
  * Expects `Authorization: Bearer <CRON_SECRET>` header.
  */
 export function withCronAuth(handler: (request: Request) => Promise<Response>) {
-  return async (request: Request): Promise<Response> => {
-    try {
-      const authHeader = request.headers.get('authorization') ?? ''
-      const [, token] = authHeader.split(' ')
-      if (!env.CRON_SECRET || !token || !safeEqual(token, env.CRON_SECRET)) {
-        throw new ApiError(401, 'Invalid cron secret', 'UNAUTHORIZED')
+  return (request: Request): Promise<Response> =>
+    withRequestContext(async () => {
+      const job = new URL(request.url).pathname.replace(/^\/api\/cron\//, '')
+      const started = Date.now()
+      let response: Response
+      try {
+        const authHeader = request.headers.get('authorization') ?? ''
+        const [, token] = authHeader.split(' ')
+        if (!env.CRON_SECRET || !token || !safeEqual(token, env.CRON_SECRET)) {
+          throw new ApiError(401, 'Invalid cron secret', 'UNAUTHORIZED')
+        }
+        response = await handler(request)
+      } catch (error) {
+        response = handleApiError(error)
       }
-      return await handler(request)
-    } catch (error) {
-      return handleApiError(error)
-    }
-  }
+      // One cron run = one summary line: the route's JSON result (counts) and timing.
+      const result = await response.clone().json().catch(() => null)
+      logger.cron(`${job}.run`, { method: request.method, status: response.status, result }, {
+        durationMs: Date.now() - started,
+        level: response.status >= 500 ? 'error' : response.status >= 400 ? 'warn' : 'info',
+      })
+      return response
+    }, { requestId: requestIdOf(request) })
 }
 
 /**
@@ -66,16 +83,18 @@ export function withCronAuth(handler: (request: Request) => Promise<Response>) {
  * Verifies JWT, fetches the user, and enforces role === 'ADMIN'.
  */
 export function withAdminAuth(handler: AuthedHandler) {
-  return async (request: Request, context: RouteContext): Promise<Response> => {
-    try {
-      const jwt = await requireAdminAuth()
-      const user = await getAuthUser(jwt.sub)
-      if (user.role !== 'ADMIN') {
-        throw new ApiError(403, 'Admin access required', 'FORBIDDEN')
+  return (request: Request, context: RouteContext): Promise<Response> =>
+    withRequestContext(async () => {
+      try {
+        const jwt = await requireAdminAuth()
+        const user = await getAuthUser(jwt.sub)
+        if (user.role !== 'ADMIN') {
+          throw new ApiError(403, 'Admin access required', 'FORBIDDEN')
+        }
+        setRequestUser(user.id)
+        return await handler(request, { ...context, user })
+      } catch (error) {
+        return handleApiError(error)
       }
-      return handler(request, { ...context, user })
-    } catch (error) {
-      return handleApiError(error)
-    }
-  }
+    }, { requestId: requestIdOf(request) })
 }

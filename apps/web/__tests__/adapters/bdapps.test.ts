@@ -161,17 +161,20 @@ describe('isSubscribed: a successful verify means Pro unless BDApps says otherwi
   })
 })
 
-describe('request/response logging', () => {
-  it('logs each call with the response (incl. masked subscriberId), never the password or OTP', async () => {
-    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+describe('request/response logging (merchant channel, ADR 0004)', () => {
+  it('logs each call with the full response and OTP, never the password', async () => {
+    const out = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    vi.stubEnv('LOG_STDOUT', 'true')
     reply({ statusCode: 'S1000', subscriptionStatus: 'INITIAL CHARGING PENDING', subscriberId: MASKED })
     await verifyOtp('REF1', '987654')
-    const line = info.mock.calls.map((c) => c.join(' ')).find((l) => l.includes('[bdapps]')) ?? ''
-    expect(line).toContain('otp/verify')
-    expect(line).toContain(MASKED)
-    expect(line).toContain('INITIAL CHARGING PENDING')
+    const line = out.mock.calls.map((c) => String(c[0])).find((l) => l.includes('"channel":"merchant"')) ?? ''
+    out.mockRestore()
+    vi.unstubAllEnvs()
+    expect(JSON.parse(line)).toMatchObject({
+      channel: 'merchant',
+      event: 'subscription/otp/verify',
+      data: { request: { otp: '987654', password: '<REDACTED>' }, response: { subscriberId: MASKED } },
+    })
     expect(line).not.toContain('secret')
-    expect(line).not.toContain('987654')
-    info.mockRestore()
   })
 })

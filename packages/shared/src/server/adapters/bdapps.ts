@@ -1,5 +1,6 @@
 import { env } from '../../utils/env'
 import { ApiError } from '../api-error'
+import { logger } from '../log'
 
 // ─── Base URL resolution ──────────────────────────────────────────────────────
 
@@ -19,19 +20,21 @@ class NonRetryable {
   constructor(readonly error: ApiError) {}
 }
 
-const REDACTED_FIELDS = new Set(['password', 'otp'])
+const REDACTED_FIELDS = new Set(['password'])
 
 /**
- * One `[bdapps]` log line per HTTP response, so masked subscriber ids and the exact
- * statuses BDApps returns can be read from server logs (`docker logs … | grep '\[bdapps\]'`).
- * The password and OTP are never logged.
+ * One merchant-channel line per BDApps response (ADR 0004), so masked subscriber ids and
+ * the exact statuses BDApps returns can be read from `logs/merchant/<date>.log`.
+ * Everything is logged in full except the password.
  */
 function logBdappsCall(url: string, body: Record<string, unknown>, status: number, response: unknown) {
   const request = Object.fromEntries(
     Object.entries(body).map(([k, v]) => [k, REDACTED_FIELDS.has(k) ? '<REDACTED>' : v]),
   )
   const op = url.replace(/^https?:\/\/[^/]+\//, '')
-  console.info('[bdapps]', JSON.stringify({ op, request, httpStatus: status, response }))
+  const code = (response as { statusCode?: string } | null)?.statusCode
+  const level = status >= 400 || (code !== undefined && code !== 'S1000') ? 'warn' : 'info'
+  logger.merchant(op, { request, httpStatus: status, response }, { level })
 }
 
 async function fetchWithRetry(

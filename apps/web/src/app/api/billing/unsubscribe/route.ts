@@ -23,7 +23,7 @@ export const POST = withAuth(async (_request, { user }: { user: AuthUser }) => {
     // The masked id stored at OTP verify; legacy rows only have the phone.
     const subscriberId = (await getBdappsSubscriberId(user.id)) ?? user.phone
     await setSubscription(subscriberId, 'unsubscribe')
-    const status = await applyBdappsSubscription(user.id, subscriberId, false)
+    const status = await applyBdappsSubscription(user.id, subscriberId, false, 'unsubscribe')
     revalidateTag(cacheTags.user(user.id), { expire: 0 })
 
     return Response.json({ status })

@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs'
-import { resolve } from 'path'
+import { resolve, join } from 'path'
+import { tmpdir } from 'os'
 
 process.env.TZ = 'UTC'
 
@@ -20,3 +21,7 @@ try {
 } catch {
   // .env.local not found — rely on environment variables
 }
+
+// Server logs (ADR 0004): keep test runs out of ./logs and off stdout.
+process.env.LOG_DIR ??= join(tmpdir(), 'vesta-test-logs')
+process.env.LOG_STDOUT ??= 'false'

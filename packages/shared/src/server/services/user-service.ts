@@ -322,7 +322,7 @@ export async function keepAccountWithVerifiedPhone(
     where: { id: userId },
     data: registered ? { phone, emailTrialExpiresAt: null } : { phone },
   })
-  const subscriptionStatus = await applyBdappsSubscription(userId, subscriberId, registered)
+  const subscriptionStatus = await applyBdappsSubscription(userId, subscriberId, registered, 'phone-verify')
   return { subscriptionStatus }
 }
 
