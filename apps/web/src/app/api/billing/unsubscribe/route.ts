@@ -1,6 +1,6 @@
 import { withAuth } from '@vesta/shared/server/middleware'
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
-import { applyBdappsSubscription } from '@vesta/shared/server/services'
+import { applyBdappsSubscription, hasAdminOverride } from '@vesta/shared/server/services'
 import { setSubscription } from '@vesta/shared/server/adapters/bdapps'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import { revalidateTag } from 'next/cache'
@@ -10,6 +10,14 @@ export const POST = withAuth(async (_request, { user }: { user: AuthUser }) => {
   try {
     if (!user.phone) {
       throw new ApiError(400, 'A phone number is required to unsubscribe.', 'NO_PHONE')
+    }
+
+    if (await hasAdminOverride(user.id)) {
+      throw new ApiError(
+        409,
+        'Your plan was set by an admin and cannot be cancelled here.',
+        'ADMIN_OVERRIDE',
+      )
     }
 
     await setSubscription(user.phone, 'unsubscribe')

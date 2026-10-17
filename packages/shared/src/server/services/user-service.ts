@@ -318,7 +318,7 @@ export async function keepAccountWithVerifiedPhone(
 ) {
   await prisma.user.update({
     where: { id: userId },
-    data: { phone, emailTrialExpiresAt: null },
+    data: registered ? { phone, emailTrialExpiresAt: null } : { phone },
   })
   const subscriptionStatus = await applyBdappsSubscription(userId, phone, registered)
   return { subscriptionStatus }

@@ -281,6 +281,7 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
             inputMode="numeric"
             autoComplete="tel"
             name="phone"
+            aria-describedby={phoneError ? 'trial-phone-error trial-phone-notice' : 'trial-phone-notice'}
             placeholder={t('trial.phonePlaceholder')}
             spellCheck={false}
             value={phone}
@@ -294,7 +295,7 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
             error={phoneError}
           />
 
-          <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+          <p id="trial-phone-notice" className="text-xs text-[var(--color-text-muted)] leading-relaxed">
             {t('auth.loginNotice')}
           </p>
 

@@ -37,8 +37,7 @@ const handler = withCronAuth(async (request) => {
     let errors = 0
 
     for (const sub of subscribers) {
-      const phone = sub.bdappsSubscriberId
-      if (!phone) continue
+      const { phone } = sub
       checked++
       try {
         const status = await getSubscriptionStatus(phone)
@@ -50,7 +49,7 @@ const handler = withCronAuth(async (request) => {
       } catch (err) {
         // Never downgrade on errors.
         errors++
-        console.error(`BDApps subscription check failed for sub ${sub.id}:`, err)
+        console.error(`BDApps subscription check failed for user ${sub.userId}:`, err)
       }
     }
 

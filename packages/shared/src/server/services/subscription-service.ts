@@ -183,23 +183,31 @@ export async function markUserPro(userId: string) {
  * the user PRO; anything else makes them FREE. An admin override always wins.
  * Returns the user's resulting status.
  */
+export async function hasAdminOverride(userId: string): Promise<boolean> {
+  const row = await prisma.subscription.findFirst({
+    where: { userId, adminOverride: true },
+    select: { id: true },
+  })
+  return row !== null
+}
+
 export async function applyBdappsSubscription(
   userId: string,
   phone: string,
   registered: boolean,
 ): Promise<'FREE' | 'PRO' | 'LAPSED'> {
-  const existing = await prisma.subscription.findFirst({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-  })
-
-  if (existing?.adminOverride) {
+  if (await hasAdminOverride(userId)) {
     const user = await prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: { subscriptionStatus: true },
     })
     return user.subscriptionStatus
   }
+
+  const existing = await prisma.subscription.findFirst({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+  })
 
   const status = registered ? 'PRO' : 'FREE'
   const data = {
@@ -230,11 +238,40 @@ export async function syncBdappsSubscriptionByPhone(phone: string, registered: b
 }
 
 /** Users whose BDApps subscription we believe is active (for the nightly check). */
-export async function listBdappsSubscribers() {
-  return prisma.subscription.findMany({
-    where: { status: 'PRO', adminOverride: false, bdappsSubscriberId: { not: null } },
-    select: { id: true, userId: true, bdappsSubscriberId: true },
-  })
+export async function listBdappsSubscribers(): Promise<{ userId: string; phone: string }[]> {
+  const [rows, legacy] = await Promise.all([
+    prisma.subscription.findMany({
+      where: { status: 'PRO', adminOverride: false, bdappsSubscriberId: { not: null } },
+      select: { userId: true, bdappsSubscriberId: true },
+    }),
+    // Legacy phone users who are PRO but never got a Subscription row.
+    prisma.user.findMany({
+      where: {
+        subscriptionStatus: 'PRO',
+        phone: { not: null },
+        subscriptions: { none: {} },
+      },
+      select: { id: true, phone: true },
+    }),
+  ])
+
+  const overridden = new Set(
+    (
+      await prisma.subscription.findMany({
+        where: { adminOverride: true, userId: { in: rows.map((r) => r.userId) } },
+        select: { userId: true },
+      })
+    ).map((r) => r.userId),
+  )
+
+  const byUser = new Map<string, string>()
+  for (const r of rows) {
+    if (r.bdappsSubscriberId && !overridden.has(r.userId)) byUser.set(r.userId, r.bdappsSubscriberId)
+  }
+  for (const u of legacy) {
+    if (u.phone && !byUser.has(u.id)) byUser.set(u.id, u.phone)
+  }
+  return [...byUser].map(([userId, phone]) => ({ userId, phone }))
 }
 
 export async function listProSubscriptions() {

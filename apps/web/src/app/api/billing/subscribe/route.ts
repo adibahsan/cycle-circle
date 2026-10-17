@@ -1,66 +1,12 @@
 import { withAuth } from '@vesta/shared/server/middleware'
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
-import {
-  createCaasTransaction,
-  updateCaasTransaction,
-  upsertProSubscription,
-  markUserPro,
-} from '@vesta/shared/server/services'
-import { caasDirectDebit } from '@vesta/shared/server/adapters/bdapps'
-import type { AuthUser } from '@vesta/shared/server/auth'
-import { revalidateTag } from 'next/cache'
-import { cacheTags } from '@/lib/cache-tags'
 
-const SUBSCRIPTION_AMOUNT_BDT = 5
-
-export const POST = withAuth(async (request, { user }: { user: AuthUser }) => {
+// CaaS direct-debit billing is parked: the phone login is the BDApps subscription
+// (docs/adr/0002-phone-login-is-the-bdapps-subscription.md). The old charge flow
+// lives in git history; this route refuses before any DB or BDApps call.
+export const POST = withAuth(async () => {
   try {
-    if (!user.phone) {
-      throw new ApiError(
-        400,
-        'A phone number is required for CAAS billing. Please add your phone number.',
-        'PHONE_REQUIRED',
-      )
-    }
-
-    const externalTrxId = crypto.randomUUID()
-
-    const pendingTransaction = await createCaasTransaction(externalTrxId, SUBSCRIPTION_AMOUNT_BDT)
-
-    let debitResult: Awaited<ReturnType<typeof caasDirectDebit>>
-    try {
-      debitResult = await caasDirectDebit(user.phone, externalTrxId, SUBSCRIPTION_AMOUNT_BDT)
-    } catch (chargeError) {
-      await updateCaasTransaction(pendingTransaction.id, { status: 'FAILED' })
-      throw chargeError
-    }
-
-    try {
-      const subscription = await upsertProSubscription(
-        user.id,
-        user.phone,
-        SUBSCRIPTION_AMOUNT_BDT,
-      )
-
-      const transaction = await updateCaasTransaction(pendingTransaction.id, {
-        status: 'SUCCESS',
-        subscriptionId: subscription.id,
-        internalTrxId: debitResult.internalTrxId ?? null,
-        referenceId: debitResult.referenceId ?? null,
-      })
-
-      await markUserPro(user.id)
-      revalidateTag(cacheTags.user(user.id), { expire: 0 })
-
-      return Response.json({ subscription, transaction }, { status: 201 })
-    } catch (dbError) {
-      await updateCaasTransaction(pendingTransaction.id, {
-        status: 'SUCCESS',
-        internalTrxId: debitResult.internalTrxId ?? null,
-        referenceId: debitResult.referenceId ?? null,
-      }).catch(() => {})
-      throw dbError
-    }
+    throw new ApiError(503, 'CaaS billing is not available.', 'CAAS_DISABLED')
   } catch (error) {
     return handleApiError(error)
   }

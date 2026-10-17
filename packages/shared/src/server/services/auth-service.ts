@@ -119,17 +119,9 @@ export async function upsertUserByPhone(phone: string) {
     update: { lastLoginAt: new Date() },
   })
 
-  // OTP/phone users are Pro by default — unless an admin explicitly set their status.
-  if (user.subscriptionStatus !== 'PRO') {
-    const override = await prisma.subscription.findFirst({
-      where: { userId: user.id, adminOverride: true },
-      select: { id: true },
-    })
-    if (!override) {
-      await prisma.user.update({ where: { id: user.id }, data: { subscriptionStatus: 'PRO' } })
-      user.subscriptionStatus = 'PRO'
-    }
-  }
+  // Dev login stands in for a registered BDApps subscriber (ADR 0002): create the
+  // Subscription row like a real login, unless an admin override wins.
+  user.subscriptionStatus = await applyBdappsSubscription(user.id, phone, true)
 
   return user
 }

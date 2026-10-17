@@ -30,6 +30,8 @@ interface SubscriptionClientProps {
   user: AuthUser
 }
 
+const toLocalStatus = (status: string) => status.toLowerCase() as SubscriptionStatus
+
 // ── Feature rows ───────────────────────────────────────────────────────────────
 const COMPARISON_FEATURE_KEYS = [
   { key: 'cycleTracking', labelKey: 'subscription.cycleTracking', free: true, pro: true },
@@ -85,12 +87,8 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
   // Phone verification through BDApps OTP is the subscription (ADR 0002), so the
   // CTA opens the add-phone dialog in place instead of CaaS billing or /login
   // (which would create a separate phone account for a logged-in email user).
-  const handleUpgradeClick = () => {
-    setAddPhoneOpen(true)
-  }
-
   const handlePhoneVerified = (newStatus: string | undefined) => {
-    setLocalStatus(((newStatus ?? 'PRO').toLowerCase()) as SubscriptionStatus)
+    setLocalStatus(toLocalStatus(newStatus ?? 'PRO'))
     router.refresh()
     window.dispatchEvent(new Event('vesta:profile-updated'))
   }
@@ -105,7 +103,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
       const res = await fetch('/api/billing/unsubscribe', { method: 'POST' })
       if (!res.ok) throw new Error(`Unsubscribe failed (${res.status})`)
       const body = (await res.json().catch(() => null)) as { status?: string } | null
-      setLocalStatus(((body?.status ?? 'FREE').toLowerCase()) as SubscriptionStatus)
+      setLocalStatus(toLocalStatus(body?.status ?? 'FREE'))
       setUnsubResult('success')
       router.refresh()
       window.dispatchEvent(new Event('vesta:profile-updated'))
@@ -265,7 +263,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                 </div>
 
                 <button
-                  onClick={handleUpgradeClick}
+                  onClick={() => setAddPhoneOpen(true)}
                   className={`w-full bg-[var(--color-action)] text-[var(--color-on-action)] font-bold rounded-full text-base hover:opacity-90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-action)] ${
                     trial === 'expired' ? 'py-4 text-lg animate-pulse' : 'py-3.5'
                   }`}
