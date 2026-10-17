@@ -53,7 +53,9 @@ Run from the VPS (its IP is allowlisted by BDApps; elsewhere you get `E1303`). C
 
 ```bash
 ssh vesta
-set -a; . /opt/vesta/.env.web.production; set +a
+# Don't `source` the env file: unquoted values like `RESEND_FROM_EMAIL=Name <a@b>` break bash.
+envv() { grep -E "^$1=" /opt/vesta/.env.web.production | cut -d= -f2- | tr -d '\r'; }
+BDAPPS_APP_ID=$(envv BDAPPS_APP_ID); BDAPPS_PASSWORD=$(envv BDAPPS_PASSWORD)
 SID='tel:<masked-id>'
 # status
 curl -4 -s -X POST https://developer.bdapps.com/subscription/getStatus -H 'content-type: application/json' \

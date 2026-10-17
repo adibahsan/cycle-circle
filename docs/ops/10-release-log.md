@@ -23,4 +23,29 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 **Deploy:** `git push origin origin/main:production` → GitHub Actions *Production* workflow.
 
-**Verification:** _filled in after the deploy._
+**Deploys**
+
+1. `a89becb` via GitHub Actions *Production* (run 39074479252): checks + deploy green. The VPS was still on **staging flags** (`DEV_MODE=true`, `NEXT_PUBLIC_DEV_MODE=true`, `BDAPPS_APP_ID=APP_DEV_PLACEHOLDER`), so the live site showed "Dev mode" and accepted `420420`.
+2. **Go-live (same commit):** env switched to real BDApps, then `bash ops/deploy/scripts/deploy.sh` on the VPS to rebuild web (the `NEXT_PUBLIC_` flag is baked at build time).
+   - `.env.web.production`: `BDAPPS_APP_ID=APP_140389`, real `BDAPPS_PASSWORD`, `DEV_MODE=false`, `NEXT_PUBLIC_DEV_MODE=false`, no `BDAPPS_SIMULATOR_BASE_URL`.
+   - `.env.admin.production`: real `BDAPPS_APP_ID` / `BDAPPS_PASSWORD` (SMS broadcasts).
+   - `ops/deploy/.env`: `NEXT_PUBLIC_DEV_MODE=false`.
+   - Backups on the VPS: `/opt/vesta/.env.web.production.bak-20261017-223519`, `ops/deploy/.env.bak-20261017-223519`, `.env.admin.production.bak-20261017-223547`.
+   - `BDAPPS_WEBHOOK_IPS` stays empty (allow-all, still guarded by the `applicationId` check) until BDApps confirms its egress IPs; seen so far: `202.134.12.117`.
+
+**Verification (2026-10-18 04:46 Dhaka)**
+
+| Check | Result |
+|---|---|
+| `cycle-circle.com/login`, `admin.cycle-circle.com/login`, `/api/health/db` | 200 |
+| Login page | no "Dev mode" text |
+| `POST /api/auth/dev-login` | 403 (dev bypass off) |
+| `/api/auth/status` unauthenticated | 401; authenticated response is an 11-field allowlist |
+| `vesta_lang=bn` | server renders `<html lang="bn">` |
+| Containers | web + admin mount `/var/log/vesta/app`, `LOG_DIR` set |
+| Manual `caas-check` | `{"checked":2,"downgraded":0,"skipped":2,"errors":0}`: real `getStatus` calls, E1951 on the two legacy raw-phone ids, skipped as designed |
+| Logs | `merchant/`, `cron/` lines written with a shared `requestId`; password redacted |
+
+**Known, harmless:** one `redis.fallback` (connect `ETIMEDOUT`, 1 s timeout) at container start; ioredis reconnects and `redis:6379` is reachable.
+
+**Still to do:** real-number login on production (see [09 §5](./09-bdapps-subscriptions.md#5-real-number-end-to-end-test)) to record the first masked id in the merchant log.
