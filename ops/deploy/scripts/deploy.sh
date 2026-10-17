@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Production deploy, run on the VPS from /opt/vesta (GitHub Actions calls it over SSH;
 # you can also run it by hand). Deploys the `production` branch:
-#   fetch → checkout → backup DB → build → migrate → restart web, check → restart admin, check.
+#   fetch → checkout → prod-env guard → backup DB → build → migrate → restart web, check →
+#   restart admin, check → confirm the live site is not in dev mode.
 #
 # Usage: bash ops/deploy/scripts/deploy.sh [expected-commit-sha]
 # If a SHA is given, the deploy aborts unless origin/production points at it, so a run never
@@ -51,6 +52,10 @@ if grep -qE "DATA_SOURCE_NAME: \"?\"?$" <<<"$RESOLVED"; then
   exit 1
 fi
 
+echo "==> Pre-flight: production env (real BDApps creds, dev mode off)"
+# Aborts before any backup, build or restart (ALLOW_DEV_MODE=1 overrides on a staging box).
+bash ops/deploy/scripts/check-prod-env.sh "$REPO_DIR"
+
 echo "==> Backing up the database before migrating"
 bash ops/deploy/scripts/backup-db.sh
 
@@ -93,6 +98,26 @@ echo "==> Making sure the rest of the stack is up"
 # `up -d` can recreate nginx, so check both sites again.
 wait_live web "$WEB_URL" web
 wait_live admin "$ADMIN_URL" admin
+
+# The env files can be right while the running app is not (e.g. a stale image):
+# check what users actually get.
+assert_prod_mode() {
+  [[ ${ALLOW_DEV_MODE:-} == 1 ]] && { echo "    skipping live dev-mode check (ALLOW_DEV_MODE=1)"; return 0; }
+  local code
+  if curl -fsSL -m 15 "$WEB_URL" | grep -q 'Dev mode'; then
+    echo "The live login page shows \"Dev mode\": the web image was built with NEXT_PUBLIC_DEV_MODE=true." >&2
+    return 1
+  fi
+  code=$(curl -s -o /dev/null -w '%{http_code}' -m 15 -X POST https://cycle-circle.com/api/auth/dev-login \
+    -H 'content-type: application/json' -d '{"phone":"01700000001"}')
+  if [[ $code != 403 ]]; then
+    echo "POST /api/auth/dev-login returned $code (expected 403): DEV_MODE is on in the running web container." >&2
+    return 1
+  fi
+  echo "    live site is in production mode (no dev banner, dev login 403)"
+}
+echo "==> Checking the live site is not in dev mode"
+assert_prod_mode
 
 docker image prune -f >/dev/null || true
 

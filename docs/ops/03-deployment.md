@@ -449,10 +449,12 @@ The push triggers [`.github/workflows/production.yml`](../../.github/workflows/p
 1. **Checks:** typecheck, lint, `docs:check`, `deploy:verify`, and the web vitest suite against a throwaway Postgres. The same checks run on every PR into `main` or `production`.
 2. **Deploy:** if the checks pass, it SSHes to the VPS as `vesta` and runs [`ops/deploy/scripts/deploy.sh`](../../ops/deploy/scripts/deploy.sh) with the pushed SHA. The script:
    - checks out `production`
+   - **refuses to deploy a dev-mode or fake-BDApps config** ([`check-prod-env.sh`](../../ops/deploy/scripts/check-prod-env.sh)): `DEV_MODE` / `NEXT_PUBLIC_DEV_MODE` must be off, `BDAPPS_APP_ID` / `BDAPPS_PASSWORD` real (no `PLACEHOLDER` / `SIMULATOR` / `DEV` / `TEST` ids) in `.env.web.production` and `.env.admin.production`, `NEXT_PUBLIC_DEV_MODE` off in `ops/deploy/.env`, no `BDAPPS_SIMULATOR_BASE_URL`. It runs before the backup, so nothing is touched. A staging box can override with `ALLOW_DEV_MODE=1 bash ops/deploy/scripts/deploy.sh`
    - backs up the DB (`backup-db.sh`)
    - builds the images and runs `prisma migrate deploy`
    - restarts web, then admin, checking after each that the site loads over HTTPS (`cycle-circle.com/login`, `admin.cycle-circle.com/login`)
    - brings up the rest of the stack, then checks both sites again (an `up -d` can recreate nginx)
+   - **checks the live site is in production mode**: the login page has no "Dev mode" text and `POST /api/auth/dev-login` returns 403; otherwise the run fails
 3. One deploy runs at a time; a second push waits.
 
 **Required repo secrets** (GitHub → Settings → Secrets and variables → Actions, attached to a `production` environment):
@@ -510,7 +512,7 @@ docker compose -f ops/deploy/compose.prod.yml up -d web admin
 
 ## 6. BDApps go-live checklist
 
-Staging/first deploy runs with `DEV_MODE=true` and placeholder BDApps creds (OTP bypass `420420`/`840840`). Before accepting real users:
+Since 2026-10-18 `deploy.sh` refuses dev mode and placeholder BDApps creds (§5), so production can no longer be deployed in the staging state described here by accident. The steps below are how a box gets its real config:
 
 1. Set real `BDAPPS_APP_ID` / `BDAPPS_PASSWORD` in `.env.web.production` (from the BDApps developer portal).
 2. Leave `BDAPPS_BASE_URL` **unset** — the Zod schema default (`https://developer.bdapps.com`) is the correct production value (`packages/shared/src/utils/env.ts`).
