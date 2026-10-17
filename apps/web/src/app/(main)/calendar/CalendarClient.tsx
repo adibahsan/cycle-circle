@@ -24,7 +24,7 @@ import { ChevronLeft, ChevronRight, X, Pencil, Baby, Plus, Droplets, Flower2, Sp
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { formatShortDate } from '@/lib/format-date'
-import { useAppStore } from '@/lib/store'
+import { useLanguage } from '@/lib/use-language'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
 import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
@@ -146,7 +146,7 @@ interface DayCellProps {
 
 const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSelect, isGhostDay = false, onGhostTap }: DayCellProps) {
   const { t } = useTranslation()
-  const language = useAppStore((s) => s.language)
+  const language = useLanguage()
   const { date } = meta
   const isToday = isSameDay(date, new Date())
   const kind = isCurrentMonth ? dayStyleKind(meta) : 'plain'
@@ -220,7 +220,7 @@ interface DayDetailProps {
 
 function DayDetail({ date, meta, symptoms, onClose, onAddLog }: DayDetailProps) {
   const { t } = useTranslation()
-  const { language } = useAppStore()
+  const language = useLanguage()
   const dateLocale = language === 'bn' ? bn : undefined
   const today = new Date()
   const isFuture = date > today
@@ -480,7 +480,7 @@ function lastPeriodStartIso(logs: PeriodLog[]): string | null {
 export function CalendarClient({ profiles: _profiles, activeProfileId, month, days, windowDays, symptomLogs, periodLogs, goal, last30 = [] }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
-  const { language } = useAppStore()
+  const language = useLanguage()
   const dateLocale = language === 'bn' ? bn : undefined
   const prefersReducedMotion = useReducedMotion()
 

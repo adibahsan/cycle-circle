@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { CalendarDays, Activity, Droplets, Baby } from 'lucide-react'
 
 import { useAppStore } from '@/lib/store'
+import { useLanguage } from '@/lib/use-language'
 import '@vesta/shared/utils/i18n'
 import {
   getCurrentCycleDay,
@@ -238,7 +239,8 @@ function CycleRing({
 export function DashboardClient({ profiles, user: _user, activeProfileId, dashboardData, completion, lastSymptomLogDate, goal, engagement }: Props) {
   const { t } = useTranslation()
   const router = useRouter()
-  const { setActiveProfile, language } = useAppStore()
+  const setActiveProfile = useAppStore((s) => s.setActiveProfile)
+  const language = useLanguage()
   const prompt = useAutoPrompt()
   const prefersReducedMotion = useReducedMotion()
 
@@ -788,6 +790,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                       size="sm"
                       fullWidth
                       onClick={openQuickSymptom}
+                      aria-haspopup="dialog"
                       className="text-xs gap-1.5 whitespace-nowrap px-2"
                     >
                       <Activity size={12} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />

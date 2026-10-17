@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import i18n from '@vesta/shared/utils/i18n'
 import { chooseTheme, restoreTheme, type Theme } from '@vesta/shared/utils/theme'
+import { writeLangCookie } from './language'
 
 interface AppStore {
   // Language
@@ -29,6 +30,7 @@ export const useAppStore = create<AppStore>()(
     (set) => ({
       language: 'en',
       setLanguage: (language) => {
+        writeLangCookie(language)
         i18n.changeLanguage(language)
         set({ language })
       },
@@ -49,9 +51,6 @@ export const useAppStore = create<AppStore>()(
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppStore>
         return { ...current, ...p, ...restoreTheme(p.theme) }
-      },
-      onRehydrateStorage: () => (state) => {
-        if (state?.language) i18n.changeLanguage(state.language)
       },
       partialize: (state) => ({
         language: state.language,

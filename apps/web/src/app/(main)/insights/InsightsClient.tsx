@@ -19,7 +19,7 @@ import {
   Cell,
 } from 'recharts'
 import '@vesta/shared/utils/i18n'
-import { useAppStore } from '@/lib/store'
+import { useLanguage } from '@/lib/use-language'
 import { useHasMounted } from '@/components/motion/useHasMounted'
 import { Card } from '@/components/ui/Card'
 import type {
@@ -536,7 +536,7 @@ export function InsightsClient({
   fertileWindowHistory,
 }: InsightsClientProps) {
   const { t } = useTranslation()
-  const language = useAppStore((s) => s.language)
+  const language = useLanguage()
   const hasMounted = useHasMounted()
   const prefersReducedMotion = useReducedMotion()
 

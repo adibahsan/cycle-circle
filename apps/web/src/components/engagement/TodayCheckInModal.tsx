@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Plus } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { useHasMounted } from '@/components/motion/useHasMounted';
-import { useAppStore } from '@/lib/store';
+import { useLanguage } from '@/lib/use-language';
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data';
 import {
   SymptomChip,
@@ -91,7 +91,7 @@ export function TodayCheckInModal({
 }: TodayCheckInModalProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  const language = useAppStore((s) => s.language);
+  const language = useLanguage();
   const titleId = useId();
 
   const mounted = useHasMounted();

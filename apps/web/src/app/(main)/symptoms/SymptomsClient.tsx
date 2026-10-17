@@ -20,7 +20,7 @@ import {
 import { bn } from 'date-fns/locale/bn';
 import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { useAppStore } from '@/lib/store';
+import { useLanguage } from '@/lib/use-language';
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data';
 import { ALL_GOOD_SYMPTOM_ID } from '@vesta/shared/utils/symptoms';
 import { toggleSymptom, markAllGoodToday, saveSymptoms } from '@/app/actions/tracking-actions';
@@ -85,7 +85,7 @@ interface MiniCalendarProps {
 
 const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: MiniCalendarProps) {
   const { t } = useTranslation();
-  const language = useAppStore((s) => s.language);
+  const language = useLanguage();
   const dateLocale = language === 'bn' ? bn : undefined;
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(selectedDate));
 
@@ -246,7 +246,7 @@ export function SymptomsClient({
 }: SymptomsClientProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  const language = useAppStore((s) => s.language);
+  const language = useLanguage();
   const dateLocale = language === 'bn' ? bn : undefined;
   const [activeCategory, setActiveCategory] = useState<SymptomCategory>('physical');
   const [saving, setSaving] = useState(false);

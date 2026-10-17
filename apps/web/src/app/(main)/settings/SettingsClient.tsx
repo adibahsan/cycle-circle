@@ -28,6 +28,7 @@ import {
   Compass,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
+import { useLanguage } from '@/lib/use-language'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { updateNotificationPrefs, exportUserDataCsv, exportUserDataRows, updateProfileReminderOptOut } from '@/app/actions/settings-actions'
@@ -193,7 +194,7 @@ function AccountRow({
 export function SettingsClient({ user, profiles, notifPrefs, completionRemindersOptOut }: SettingsClientProps) {
   const { t, i18n } = useTranslation()
   const router = useRouter()
-  const language = useAppStore((s) => s.language)
+  const language = useLanguage()
   const setLanguage = useAppStore((s) => s.setLanguage)
   const theme = useAppStore((s) => s.theme)
   const setTheme = useAppStore((s) => s.setTheme)

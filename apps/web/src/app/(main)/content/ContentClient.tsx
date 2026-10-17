@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, BookOpen, ChevronRight, Droplets, Flower2, Info, Loader2, Moon, Sprout, type LucideIcon } from 'lucide-react'
-import { useAppStore } from '@/lib/store'
+import { useLanguage } from '@/lib/use-language'
 import { getPhaseColor, parseCyclePhase } from '@vesta/shared/utils/cycle-utils'
 
 /** Phase accent colour for a phase name (article tag / tab id); neutral accent when unknown. */
@@ -51,7 +51,7 @@ const PHASE_TABS: { id: FilterTab; labelKey: string; Icon: LucideIcon }[] = [
 
 export function ContentClient({ articles, activePhase, currentPhase }: ContentClientProps) {
   const { t } = useTranslation()
-  const { language } = useAppStore()
+  const language = useLanguage()
   const router = useRouter()
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null)
 
