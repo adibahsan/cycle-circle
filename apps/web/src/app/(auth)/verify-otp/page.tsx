@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, RefreshCw, CheckCircle2, CircleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { OtpCodeField } from '@/components/auth/OtpCodeField';
 import '@vesta/shared/utils/i18n';
 
 const OTP_LENGTH = 6;
@@ -34,7 +35,6 @@ export default function VerifyOtpPage() {
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
   const [endsAt, setEndsAt] = useState<number>(() => Date.now() + RESEND_SECONDS * 1000);
   const [resending, setResending] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
   // phone and referenceNo come from the query (set by the login page) with sessionStorage as fallback.
   // referenceNo lives in state so a resend (which issues a new challenge) replaces the stale one.
@@ -58,7 +58,6 @@ export default function VerifyOtpPage() {
     setPhone(ph);
   }, [referenceNoFromQuery, phoneFromQuery, router]);
 
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Countdown derived from a deadline so background-tab timer throttling cannot make it drift.
   useEffect(() => {
@@ -82,56 +81,6 @@ export default function VerifyOtpPage() {
     };
     if (code && known[code]) return t(known[code]);
     return t(fallbackKey);
-  }
-
-  // Focus first box on mount
-  useEffect(() => {
-    inputRefs.current[0]?.focus();
-  }, []);
-
-  const updateDigit = useCallback((index: number, value: string) => {
-    setError('');
-    const cleaned = value.replace(/\D/g, '');
-    if (!cleaned) return;
-
-    const newDigits = [...digits];
-
-    // Handle paste of multiple digits
-    if (cleaned.length > 1) {
-      const chars = cleaned.slice(0, OTP_LENGTH - index).split('');
-      chars.forEach((ch, i) => {
-        if (index + i < OTP_LENGTH) newDigits[index + i] = ch;
-      });
-      setDigits(newDigits);
-      const nextFocus = Math.min(index + chars.length, OTP_LENGTH - 1);
-      inputRefs.current[nextFocus]?.focus();
-      return;
-    }
-
-    newDigits[index] = cleaned[0];
-    setDigits(newDigits);
-    if (index < OTP_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  }, [digits]);
-
-  function handleKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Backspace') {
-      e.preventDefault();
-      const newDigits = [...digits];
-      if (newDigits[index]) {
-        newDigits[index] = '';
-        setDigits(newDigits);
-      } else if (index > 0) {
-        newDigits[index - 1] = '';
-        setDigits(newDigits);
-        inputRefs.current[index - 1]?.focus();
-      }
-    } else if (e.key === 'ArrowLeft' && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    } else if (e.key === 'ArrowRight' && index < OTP_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
   }
 
   // Auto-submit once per completed code (typed, pasted or SMS-autofilled). Editing a
@@ -196,7 +145,6 @@ export default function VerifyOtpPage() {
       try { sessionStorage.setItem('vesta-otp-ref', body.referenceNo); } catch { /* ignore */ }
       setDigits(Array(OTP_LENGTH).fill(''));
       setEndsAt(Date.now() + RESEND_SECONDS * 1000);
-      inputRefs.current[0]?.focus();
     } catch {
       setError(t('auth.resendFailed'));
     } finally {
@@ -260,49 +208,7 @@ export default function VerifyOtpPage() {
         animate="show"
         className="mb-3"
       >
-        <div className="flex gap-2.5 justify-between">
-          {digits.map((digit, index) => (
-            <motion.div
-              key={index}
-              animate={
-                error
-                  ? { x: [0, -5, 5, -5, 5, 0], scale: 1, transition: { duration: 0.35 } }
-                  : { scale: focusedIndex === index ? 1.05 : 1 }
-              }
-              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-              className="flex-1"
-            >
-              <input
-                ref={(el) => { inputRefs.current[index] = el; }}
-                type="text"
-                inputMode="numeric"
-                name="otp"
-                autoComplete="one-time-code"
-                maxLength={6}
-                value={digit}
-                onChange={(e) => updateDigit(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                onFocus={(e) => { e.target.select(); setFocusedIndex(index); }}
-                onBlur={() => setFocusedIndex(null)}
-                className={`w-full aspect-square text-center text-xl font-bold rounded-xl border-2 bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus-visible:outline-none transition-colors duration-200 ${
-                  digit
-                    ? 'border-[var(--color-primary)] bg-[var(--color-bg-card)]'
-                    : 'border-[var(--color-border)]'
-                } ${error ? 'border-[var(--color-error)]' : ''} focus-visible:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/25`}
-                aria-label={t('auth.otpDigit', { n: index + 1 })}
-              />
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Progress bar */}
-        <div className="mt-3 h-1 rounded-full bg-[var(--color-border)] overflow-hidden">
-          <motion.div
-            className="h-full rounded-full bg-[var(--color-primary)]"
-            animate={{ width: `${(filled / OTP_LENGTH) * 100}%` }}
-            transition={{ duration: 0.2 }}
-          />
-        </div>
+        <OtpCodeField digits={digits} onChange={(d) => { setDigits(d); if (error) setError(''); }} error={!!error} autoFocus />
       </motion.div>
 
       {/* Error message */}

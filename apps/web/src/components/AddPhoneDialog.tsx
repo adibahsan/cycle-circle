@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
-import { CheckCircle2, CircleAlert } from 'lucide-react';
+import { CheckCircle2, CircleAlert, Phone } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { PhoneField } from '@/components/auth/PhoneField';
+import { OtpCodeField } from '@/components/auth/OtpCodeField';
+import { toLocalPhone } from '@/lib/phone';
 import { useHasMounted } from '@/components/motion/useHasMounted';
 
 const OTP_LENGTH = 6;
@@ -23,6 +25,9 @@ const ERROR_CODE_MAP: Record<string, string> = {
   CHALLENGE_NOT_FOUND: 'trial.err.invalidCode',
   ALREADY_VERIFIED: 'trial.err.invalidCode',
   INVALID_PHONE: 'trial.err.invalidPhone',
+  // BDApps verify errors: wrong or expired code
+  BDAPPS_E1850: 'trial.err.invalidCode',
+  BDAPPS_E1854: 'trial.err.invalidCode',
 };
 
 function mapErrorCode(code: string | undefined): string {
@@ -36,9 +41,11 @@ interface AddPhoneDialogProps {
   /** Called after the success flash with the status returned by the verify route (e.g. 'PRO'). */
   onVerified: (status: string | undefined) => void;
   initialPhone?: string | null;
+  /** `upgrade`: a Free user subscribing from the Subscription page; `keep-account`: an email-trial user. */
+  purpose?: 'keep-account' | 'upgrade';
 }
 
-export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddPhoneDialogProps) {
+export function AddPhoneDialog({ open, onClose, onVerified, initialPhone, purpose = 'keep-account' }: AddPhoneDialogProps) {
   const { t } = useTranslation();
   const hasMounted = useHasMounted();
   const prefersReduced = useReducedMotion();
@@ -57,8 +64,6 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
   const [verifying, setVerifying] = useState(false);
   const [countdown, setCountdown] = useState(RESEND_SECONDS);
   const [resending, setResending] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Tracks whether the dialog is still open/mounted so async work never fires callbacks after close.
   const openRef = useRef(open);
@@ -76,19 +81,11 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
     return () => clearTimeout(id);
   }, [step, countdown]);
 
-  // Focus first OTP box when the code step mounts
-  useEffect(() => {
-    if (step === 'code') {
-      requestAnimationFrame(() => {
-        inputRefs.current[0]?.focus();
-      });
-    }
-  }, [step]);
   // Reset to a fresh phone step every time the dialog opens
   useEffect(() => {
     if (!open) return;
     setStep('phone');
-    setPhone((initialPhone ?? '').replace(/\D/g, '').slice(0, 11));
+    setPhone(toLocalPhone(initialPhone));
     setPhoneError('');
     setDigits(Array(OTP_LENGTH).fill(''));
     setCodeError('');
@@ -98,7 +95,9 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
 
 
   // Step: phone
-  const handleSendCode = async () => {
+  const handleSendCode = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (sending) return;
     const stripped = phone.replace(/\D/g, '');
     if (stripped.length !== 11 || !stripped.startsWith('01')) {
       setPhoneError(t('trial.err.invalidPhone'));
@@ -132,52 +131,6 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
       setSending(false);
     }
   };
-
-  // ── Step: code — digit management ─────────────────────────────────────────
-  const updateDigit = useCallback(
-    (index: number, value: string) => {
-      setCodeError('');
-      const cleaned = value.replace(/\D/g, '');
-      if (!cleaned) return;
-
-      const newDigits = [...digits];
-      if (cleaned.length > 1) {
-        // paste of multiple digits
-        const chars = cleaned.slice(0, OTP_LENGTH - index).split('');
-        chars.forEach((ch, i) => {
-          if (index + i < OTP_LENGTH) newDigits[index + i] = ch;
-        });
-        setDigits(newDigits);
-        const nextFocus = Math.min(index + chars.length, OTP_LENGTH - 1);
-        inputRefs.current[nextFocus]?.focus();
-        return;
-      }
-
-      newDigits[index] = cleaned[0];
-      setDigits(newDigits);
-      if (index < OTP_LENGTH - 1) inputRefs.current[index + 1]?.focus();
-    },
-    [digits],
-  );
-
-  function handleKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Backspace') {
-      e.preventDefault();
-      const newDigits = [...digits];
-      if (newDigits[index]) {
-        newDigits[index] = '';
-        setDigits(newDigits);
-      } else if (index > 0) {
-        newDigits[index - 1] = '';
-        setDigits(newDigits);
-        inputRefs.current[index - 1]?.focus();
-      }
-    } else if (e.key === 'ArrowLeft' && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    } else if (e.key === 'ArrowRight' && index < OTP_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  }
 
   // ── Step: code — verify ───────────────────────────────────────────────────
   const handleVerify = async () => {
@@ -240,7 +193,6 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
       setReferenceNo(body.referenceNo);
       setDigits(Array(OTP_LENGTH).fill(''));
       setCountdown(RESEND_SECONDS);
-      requestAnimationFrame(() => inputRefs.current[0]?.focus());
     } catch {
       setCodeError(t('trial.err.generic'));
     } finally {
@@ -249,6 +201,18 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
   };
 
   const allFilled = digits.filter(Boolean).length === OTP_LENGTH;
+
+  // Auto-submit once per completed code, like the verify page.
+  const verifyRef = useRef(handleVerify);
+  verifyRef.current = handleVerify;
+  const lastAutoCode = useRef('');
+  useEffect(() => {
+    const code = digits.join('');
+    if (step === 'code' && code.length === OTP_LENGTH && code !== lastAutoCode.current) {
+      lastAutoCode.current = code;
+      void verifyRef.current();
+    }
+  }, [digits, step]);
 
   return (
   <Modal
@@ -273,14 +237,14 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
             ? t('trial.enterCodeTitle')
             : step === 'success'
               ? t('trial.success')
-              : t('trial.dialogTitle')}
+              : t(purpose === 'upgrade' ? 'trial.upgradeTitle' : 'trial.dialogTitle')}
         </h2>
         {step === 'phone' && (
           <p
             id="trial-dialog-desc"
             className="text-sm text-[var(--color-text-muted)] leading-relaxed"
           >
-            {t('trial.dialogBody')}
+            {t(purpose === 'upgrade' ? 'trial.upgradeBody' : 'trial.dialogBody')}
           </p>
         )}
         {step === 'code' && (
@@ -293,33 +257,22 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
         )}
       </div>
 
-      {/* ── Step: phone ── */}
+      {/* ── Step: phone (same field and button as the login page) ── */}
       {step === 'phone' && (
-        <div className="space-y-4">
-          <Input
-            id="trial-phone"
-            label={t('trial.phoneLabel')}
-            type="tel"
-            inputMode="numeric"
-            autoComplete="tel"
-            name="phone"
-            aria-describedby={phoneError ? 'trial-phone-error trial-phone-notice' : 'trial-phone-notice'}
-            placeholder={t('trial.phonePlaceholder')}
-            spellCheck={false}
-            value={phone}
-            onChange={(e) => {
-              setPhoneError('');
-              setPhone(e.target.value.replace(/\D/g, '').slice(0, 11));
-            }}
-            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-              if (e.key === 'Enter') void handleSendCode();
-            }}
-            error={phoneError}
-          />
-
-          <p id="trial-phone-notice" className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-            {t('auth.loginNotice')}
-          </p>
+        <form noValidate onSubmit={handleSendCode} className="space-y-4">
+          <div>
+            <PhoneField
+              id="trial-phone"
+              label={t('trial.phoneLabel')}
+              value={phone}
+              onChange={(v) => { setPhone(v); setPhoneError(''); }}
+              error={phoneError}
+              describedBy="trial-phone-notice"
+            />
+            <p id="trial-phone-notice" className="mt-2 text-xs text-[var(--color-text-muted)] leading-relaxed">
+              {t('auth.loginNotice')}
+            </p>
+          </div>
 
           {process.env.NEXT_PUBLIC_DEV_MODE === 'true' && (
             <p className="text-xs text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)] rounded-lg px-3 py-2">
@@ -327,69 +280,18 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
             </p>
           )}
 
-          <Button fullWidth onClick={() => void handleSendCode()} disabled={sending}>
+          <Button type="submit" fullWidth size="lg" disabled={sending} aria-busy={sending} className="text-base font-bold tracking-wide">
+            <Phone size={18} aria-hidden="true" />
             {sending ? t('trial.sending') : t('trial.sendCode')}
           </Button>
-        </div>
+        </form>
       )}
 
       {/* ── Step: code ── */}
       {step === 'code' && (
         <div className="space-y-4">
-          {/* 6-box OTP entry — mirrors verify-otp/page.tsx */}
-          <div
-            role="group"
-            aria-label={t('trial.enterCodeTitle')}
-            className="flex gap-2 justify-between"
-          >
-            {digits.map((digit, index) => (
-              <motion.div
-                key={index}
-                animate={
-                  codeError
-                    ? {
-                        x: [0, -4, 4, -4, 4, 0],
-                        transition: { duration: 0.3 },
-                      }
-                    : { scale: focusedIndex === index ? 1.05 : 1 }
-                }
-                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                className="flex-1"
-              >
-                <input
-                  ref={(el) => {
-                    inputRefs.current[index] = el;
-                  }}
-                  type="text"
-                  inputMode="numeric"
-                  name="otp"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  value={digit}
-                  onChange={(e) => updateDigit(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  onFocus={(e) => {
-                    e.target.select();
-                    setFocusedIndex(index);
-                  }}
-                  onBlur={() => setFocusedIndex(null)}
-                  aria-label={t('auth.otpDigit', { n: index + 1 })}
-                  className={[
-                    'w-full aspect-square text-center text-lg font-bold rounded-xl border-2',
-                    'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]',
-                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30',
-                    'transition-colors duration-200',
-                    digit
-                      ? 'border-[var(--color-primary)] bg-[var(--color-bg-card)]'
-                      : 'border-[var(--color-border)]',
-                    codeError ? 'border-[var(--color-error)]' : '',
-                    'focus:border-[var(--color-primary)]',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                />
-              </motion.div>
-            ))}
+          <div role="group" aria-label={t('trial.enterCodeTitle')}>
+            <OtpCodeField digits={digits} onChange={(d) => { setDigits(d); setCodeError(''); }} error={!!codeError} autoFocus />
           </div>
 
           {/* Code error */}
@@ -409,6 +311,8 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
 
           <Button
             fullWidth
+            size="lg"
+            className="text-base font-bold tracking-wide"
             onClick={() => void handleVerify()}
             disabled={verifying || !allFilled}
           >

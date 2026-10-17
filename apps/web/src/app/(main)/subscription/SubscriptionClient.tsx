@@ -353,6 +353,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
         onClose={() => setAddPhoneOpen(false)}
         onVerified={handlePhoneVerified}
         initialPhone={user.phone}
+        purpose="upgrade"
       />
 
       {/* ── Unsubscribe confirm (Pro users with a phone) ── */}
