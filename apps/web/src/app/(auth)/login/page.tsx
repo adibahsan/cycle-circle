@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { Phone, Shield, ChevronRight, CircleAlert, CircleCheck } from 'lucide-react';
+import { Phone, Shield, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BrandLogo } from '@/components/ui/BrandLogo';
+import { PhoneField } from '@/components/auth/PhoneField';
 import { devMode, DEV_DEFAULT_PHONE } from '@vesta/shared/utils/config';
 import '@vesta/shared/utils/i18n';
 
@@ -38,11 +39,6 @@ export default function LoginPage() {
     return '';
   }
 
-  function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value.replace(/[^\d]/g, '').slice(0, 11);
-    setPhone(raw);
-    if (error) setError('');
-  }
 
   async function handleSendOtp(e?: React.FormEvent) {
     e?.preventDefault();
@@ -119,38 +115,14 @@ export default function LoginPage() {
 
         {/* Phone input */}
         <div className="mb-5">
-          <label htmlFor="phone-input" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
-            {t('auth.phone')}
-          </label>
-          <div className="relative">
-            {/* Country prefix */}
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-secondary)] select-none">
-              +88
-            </span>
-            <input
-              id="phone-input"
-              aria-describedby={error ? 'phone-error login-notice' : 'login-notice'}
-              aria-invalid={error ? true : undefined}
-              type="tel"
-              inputMode="numeric"
-              name="phone"
-              autoComplete="tel"
-              spellCheck={false}
-              placeholder={t('auth.phonePlaceholder')}
-              value={phone}
-              onChange={handlePhoneChange}
-              maxLength={11}
-              className={`w-full pl-14 pr-10 py-3.5 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200 text-base tracking-widest font-medium ${
-                error ? 'border-[var(--color-error)] focus-visible:ring-[var(--color-error)]/30' : 'border-[var(--color-border)]'
-              }`}
-            />
-            {phone.length === 11 && !error && (
-              <CircleCheck size={18} aria-hidden="true" className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--color-primary)]" />
-            )}
-          </div>
-          <p id="phone-error" role="alert" aria-live="polite" className="empty:hidden mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1.5">
-            {error && <><CircleAlert size={15} aria-hidden="true" className="shrink-0" />{error}</>}
-          </p>
+          <PhoneField
+            id="phone-input"
+            label={t('auth.phone')}
+            value={phone}
+            onChange={(v) => { setPhone(v); if (error) setError(''); }}
+            error={error}
+            describedBy="login-notice"
+          />
           <p id="login-notice" className="mt-2 text-xs text-[var(--color-text-muted)] leading-relaxed">
             {t('auth.loginNotice')}
           </p>
