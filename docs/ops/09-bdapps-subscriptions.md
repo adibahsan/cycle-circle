@@ -53,7 +53,9 @@ Run from the VPS (its IP is allowlisted by BDApps; elsewhere you get `E1303`). C
 
 ```bash
 ssh vesta
-set -a; . /opt/vesta/.env.web.production; set +a
+# Don't `source` the env file: unquoted values like `RESEND_FROM_EMAIL=Name <a@b>` break bash.
+envv() { grep -E "^$1=" /opt/vesta/.env.web.production | cut -d= -f2- | tr -d '\r'; }
+BDAPPS_APP_ID=$(envv BDAPPS_APP_ID); BDAPPS_PASSWORD=$(envv BDAPPS_PASSWORD)
 SID='tel:<masked-id>'
 # status
 curl -4 -s -X POST https://developer.bdapps.com/subscription/getStatus -H 'content-type: application/json' \
@@ -65,6 +67,19 @@ curl -4 -s -X POST https://developer.bdapps.com/subscription/query-base -H 'cont
 curl -4 -s -X POST https://developer.bdapps.com/subscription/send -H 'content-type: application/json' \
   -d "{\"applicationId\":\"$BDAPPS_APP_ID\",\"password\":\"$BDAPPS_PASSWORD\",\"subscriberId\":\"$SID\",\"action\":\"0\"}"
 ```
+
+### Subscribing without OTP does not work (tested 2026-10-18)
+
+`/subscription/send` with `action:"1"` (direct subscribe) was tried from the VPS for a number that had just unsubscribed. Every form was rejected with `E1951` and nothing was charged (`query-base` stayed `0`):
+
+| subscriberId sent | Result |
+|---|---|
+| `tel:8801805718862` (raw number) | E1951 |
+| `tel:<masked id of the last subscription>` | E1951 |
+| `tel:<masked id of an older subscription>` | E1951 |
+| `<masked id>` without `tel:` | E1951 |
+
+A masked id is only valid while that subscription is active and changes with every new subscription, and raw numbers are never valid addresses for this app. So **OTP verify is the only way to (re)subscribe** — in the app: Subscription → *Upgrade to Pro* (re-verifies the user's own number) or log in again by phone. SMS-keyword or USSD subscriptions made on the handset would arrive as a webhook with a new masked id that no account can be matched to.
 
 ## 5. Real-number end-to-end test
 
