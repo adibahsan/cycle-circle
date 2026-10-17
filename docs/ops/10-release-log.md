@@ -48,4 +48,14 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 **Known, harmless:** one `redis.fallback` (connect `ETIMEDOUT`, 1 s timeout) at container start; ioredis reconnects and `redis:6379` is reachable.
 
-**Still to do:** real-number login on production (see [09 §5](./09-bdapps-subscriptions.md#5-real-number-end-to-end-test)) to record the first masked id in the merchant log.
+**Real-number end-to-end test on production (2026-10-18, Robi `01805718862`)**
+
+| Step (Dhaka time) | Result |
+|---|---|
+| 04:48:21 OTP verify | `S1000`, `subscriptionStatus: INITIAL CHARGING PENDING`, masked `subscriberId` stored; user shown Pro (`cause=otp-verify`) |
+| 04:49:06 webhook `subscription.notify` from `202.134.12.117` | `REGISTERED`, `frequency: daily`; matched by masked id, synced |
+| `getStatus` with the masked id | `REGISTERED` |
+| 04:58:43 Unsubscribe button | `subscription/send action 0` → `UNREGISTERED`; user FREE (`cause=unsubscribe`); webhook `UNREGISTERED` synced in the same second; `query-base` 0 |
+| Direct subscribe without OTP | rejected (`E1951`) for raw and masked ids; see [09](./09-bdapps-subscriptions.md) |
+
+Found: a wrong OTP (`E1850`) reaches the browser as 502 and is logged as an error (should be 400 / warn); unsubscribe and its webhook both write a `PRO→FREE` translog line. Masked ids change per subscription. One `subscription.notify` at 04:37 was rejected (401, placeholder app id still running) during the switchover.

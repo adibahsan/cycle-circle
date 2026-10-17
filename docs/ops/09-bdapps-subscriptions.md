@@ -68,6 +68,19 @@ curl -4 -s -X POST https://developer.bdapps.com/subscription/send -H 'content-ty
   -d "{\"applicationId\":\"$BDAPPS_APP_ID\",\"password\":\"$BDAPPS_PASSWORD\",\"subscriberId\":\"$SID\",\"action\":\"0\"}"
 ```
 
+### Subscribing without OTP does not work (tested 2026-10-18)
+
+`/subscription/send` with `action:"1"` (direct subscribe) was tried from the VPS for a number that had just unsubscribed. Every form was rejected with `E1951` and nothing was charged (`query-base` stayed `0`):
+
+| subscriberId sent | Result |
+|---|---|
+| `tel:8801805718862` (raw number) | E1951 |
+| `tel:<masked id of the last subscription>` | E1951 |
+| `tel:<masked id of an older subscription>` | E1951 |
+| `<masked id>` without `tel:` | E1951 |
+
+A masked id is only valid while that subscription is active and changes with every new subscription, and raw numbers are never valid addresses for this app. So **OTP verify is the only way to (re)subscribe** — in the app: Subscription → *Upgrade to Pro* (re-verifies the user's own number) or log in again by phone. SMS-keyword or USSD subscriptions made on the handset would arrive as a webhook with a new masked id that no account can be matched to.
+
 ## 5. Real-number end-to-end test
 
 1. Optional reset: if the number is already subscribed, unsubscribe it (§4) and confirm `getStatus` → `UNREGISTERED`.
