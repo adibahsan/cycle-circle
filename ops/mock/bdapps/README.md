@@ -19,7 +19,7 @@ node --test ops/mock/bdapps/                              # tests
 | Var | Default |
 |---|---|
 | `PORT` | `7003` |
-| `BDAPPS_APP_ID` / `BDAPPS_PASSWORD` | `APP_000000` / `password` (must match the app's `.env`) |
+| `BDAPPS_APP_ID` / `BDAPPS_PASSWORD` | `APP_SIMULATOR` / `simulator_password` (must match the app's `.env`) |
 | `MOCK_OTP` | `123456` (the generated code is also accepted; OTPs expire after 5 min) |
 | `WEBHOOK_URL` | `http://localhost:3000/api/webhooks/subscription/notify` |
 | `MOCK_CAAS` | unset: `/caas/*` returns 404 like prod. `enabled`: S1000 responses |

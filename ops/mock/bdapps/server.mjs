@@ -19,8 +19,8 @@ function tel(v) {
 
 export function createMock(opts = {}) {
   const cfg = {
-    appId: opts.appId ?? process.env.BDAPPS_APP_ID ?? 'APP_000000',
-    password: opts.password ?? process.env.BDAPPS_PASSWORD ?? 'password',
+    appId: opts.appId ?? process.env.BDAPPS_APP_ID ?? 'APP_SIMULATOR',
+    password: opts.password ?? process.env.BDAPPS_PASSWORD ?? 'simulator_password',
     fixedOtp: opts.fixedOtp ?? process.env.MOCK_OTP ?? '123456',
     webhookUrl:
       opts.webhookUrl ??
