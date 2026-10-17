@@ -178,35 +178,63 @@ export async function markUserPro(userId: string) {
   })
 }
 
-export async function handleSubscriptionWebhook(
+/**
+ * Apply a BDApps subscription status to a user. A REGISTERED phone number makes
+ * the user PRO; anything else makes them FREE. An admin override always wins.
+ * Returns the user's resulting status.
+ */
+export async function applyBdappsSubscription(
+  userId: string,
   phone: string,
-  newStatus: 'PRO' | 'LAPSED' | 'FREE',
-) {
-  const user = await prisma.user.findFirst({
-    where: { phone },
-    include: {
-      subscriptions: { orderBy: { createdAt: 'desc' }, take: 1 },
-    },
+  registered: boolean,
+): Promise<'FREE' | 'PRO' | 'LAPSED'> {
+  const existing = await prisma.subscription.findFirst({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
   })
 
-  if (!user) return null
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { subscriptionStatus: newStatus },
-  })
-
-  if (user.subscriptions.length > 0) {
-    await prisma.subscription.update({
-      where: { id: user.subscriptions[0].id },
-      data: {
-        status: newStatus,
-        ...(newStatus === 'PRO' && { consecutiveFailures: 0, gracePeriodEndsAt: null }),
-      },
+  if (existing?.adminOverride) {
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { subscriptionStatus: true },
     })
+    return user.subscriptionStatus
   }
 
-  return user
+  const status = registered ? 'PRO' : 'FREE'
+  const data = {
+    status,
+    bdappsSubscriberId: phone,
+    consecutiveFailures: 0,
+    gracePeriodEndsAt: null,
+  } as const
+
+  if (existing) {
+    await prisma.subscription.update({ where: { id: existing.id }, data })
+  } else {
+    await prisma.subscription.create({ data: { userId, ...data } })
+  }
+  await prisma.user.update({ where: { id: userId }, data: { subscriptionStatus: status } })
+  return status
+}
+
+/**
+ * Sync a BDApps status change (webhook or nightly check) onto the user who owns
+ * `phone` (`+8801…`). Returns null when no user has that number.
+ */
+export async function syncBdappsSubscriptionByPhone(phone: string, registered: boolean) {
+  const user = await prisma.user.findFirst({ where: { phone }, select: { id: true } })
+  if (!user) return null
+  const status = await applyBdappsSubscription(user.id, phone, registered)
+  return { userId: user.id, status }
+}
+
+/** Users whose BDApps subscription we believe is active (for the nightly check). */
+export async function listBdappsSubscribers() {
+  return prisma.subscription.findMany({
+    where: { status: 'PRO', adminOverride: false, bdappsSubscriberId: { not: null } },
+    select: { id: true, userId: true, bdappsSubscriberId: true },
+  })
 }
 
 export async function listProSubscriptions() {
@@ -214,40 +242,6 @@ export async function listProSubscriptions() {
     where: { status: 'PRO' },
     include: { user: { select: { phone: true } } },
   })
-}
-
-export async function recordSubscriptionCheckResult(
-  subscriptionId: string,
-  userId: string,
-  healthy: boolean,
-  currentFailures: number,
-) {
-  if (healthy) {
-    await prisma.subscription.update({
-      where: { id: subscriptionId },
-      data: { consecutiveFailures: 0 },
-    })
-    return { lapsed: false }
-  }
-
-  const newFailures = currentFailures + 1
-  await prisma.subscription.update({
-    where: { id: subscriptionId },
-    data: {
-      consecutiveFailures: newFailures,
-      status: newFailures >= 3 ? 'LAPSED' : 'PRO',
-    },
-  })
-
-  if (newFailures >= 3) {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { subscriptionStatus: 'LAPSED' },
-    })
-    return { lapsed: true }
-  }
-
-  return { lapsed: false }
 }
 
 // ---------------------------------------------------------------------------

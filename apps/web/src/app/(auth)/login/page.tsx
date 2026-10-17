@@ -130,6 +130,7 @@ export default function LoginPage() {
             </span>
             <input
               id="phone-input"
+              aria-describedby="login-notice"
               type="tel"
               inputMode="numeric"
               name="phone"
@@ -150,6 +151,9 @@ export default function LoginPage() {
             )}
           </div>
           {error && <p aria-live="polite" className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1"><span>⚠</span>{error}</p>}
+          <p id="login-notice" className="mt-2 text-xs text-[var(--color-text-muted)] leading-relaxed">
+            {t('auth.loginNotice')}
+          </p>
         </div>
 
         <Button

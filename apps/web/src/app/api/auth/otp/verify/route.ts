@@ -36,15 +36,18 @@ export async function POST(request: Request): Promise<Response> {
       throw new ApiError(400, 'OTP challenge has expired', 'CHALLENGE_EXPIRED')
     }
 
+    // DEV_MODE fake codes behave like a successful BDApps registration.
+    let registered = true
     if (isDevModeEnabled()) {
       if (!DEV_OTP_CODES.includes(body.otp)) {
         throw new ApiError(400, 'Invalid OTP code', 'INVALID_OTP')
       }
     } else {
-      await verifyOtp(body.referenceNo, body.otp)
+      const result = await verifyOtp(body.referenceNo, body.otp)
+      registered = result.subscriptionStatus === 'REGISTERED'
     }
 
-    const user = await completeOtpAuth(challenge.id, challenge.phone)
+    const user = await completeOtpAuth(challenge.id, challenge.phone, registered)
     revalidateTag(cacheTags.user(user.id), { expire: 0 })
 
     const token = await issueJwt({

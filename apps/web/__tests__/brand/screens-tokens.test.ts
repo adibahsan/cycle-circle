@@ -30,6 +30,7 @@ const OWNED = [
   'components/engagement/StreakBadge.tsx',
   'components/modals',
   'components/ProfileCompletionModal.tsx',
+  'components/AddPhoneDialog.tsx',
   'components/TrialCountdownPill.tsx',
   'components/TrialExpiredLock.tsx',
   'components/onboarding',

@@ -2,8 +2,12 @@ import { withCronAuth } from '@vesta/shared/server/middleware'
 import { revalidateTag } from 'next/cache'
 import { cacheTags } from '@/lib/cache-tags'
 import { handleApiError } from '@vesta/shared/server/api-error'
-import { listProSubscriptions, recordSubscriptionCheckResult, isCronEnabled } from '@vesta/shared/server/services'
-import { caasGetBalance } from '@vesta/shared/server/adapters/bdapps'
+import {
+  listBdappsSubscribers,
+  applyBdappsSubscription,
+  isCronEnabled,
+} from '@vesta/shared/server/services'
+import { getSubscriptionStatus } from '@vesta/shared/server/adapters/bdapps'
 import { prisma } from '@vesta/shared'
 
 export const runtime = 'nodejs'
@@ -25,46 +29,32 @@ const handler = withCronAuth(async (request) => {
     // Keep Supabase Free tier alive (auto-pauses after 7 days of inactivity)
     await prisma.$queryRaw`SELECT 1`
 
-    const proSubscriptions = await listProSubscriptions()
+    // CaaS balance checks return here when BDApps enables CaaS.
+    const subscribers = await listBdappsSubscribers()
 
     let checked = 0
-    let healthy = 0
-    let failures = 0
+    let downgraded = 0
+    let errors = 0
 
-    await Promise.allSettled(
-      proSubscriptions.map(async (sub) => {
-        const phone = sub.user?.phone ?? sub.bdappsSubscriberId
-        if (!phone) return
-
-        checked++
-        try {
-          const result = await caasGetBalance(phone)
-          const isHealthy = result.statusCode === 'S1000'
-
-          if (isHealthy) healthy++
-          else failures++
-
-          const checkResult = await recordSubscriptionCheckResult(
-            sub.id,
-            sub.userId,
-            isHealthy,
-            sub.consecutiveFailures,
-          )
-          if (checkResult.lapsed) revalidateTag(cacheTags.user(sub.userId), { expire: 0 })
-        } catch (err) {
-          failures++
-          console.error(`CAAS balance check failed for sub ${sub.id}:`, err)
-          await recordSubscriptionCheckResult(
-            sub.id,
-            sub.userId,
-            false,
-            sub.consecutiveFailures,
-          )
+    for (const sub of subscribers) {
+      const phone = sub.bdappsSubscriberId
+      if (!phone) continue
+      checked++
+      try {
+        const status = await getSubscriptionStatus(phone)
+        if (status === 'UNREGISTERED') {
+          await applyBdappsSubscription(sub.userId, phone, false)
+          revalidateTag(cacheTags.user(sub.userId), { expire: 0 })
+          downgraded++
         }
-      }),
-    )
+      } catch (err) {
+        // Never downgrade on errors.
+        errors++
+        console.error(`BDApps subscription check failed for sub ${sub.id}:`, err)
+      }
+    }
 
-    return Response.json({ checked, healthy, failures })
+    return Response.json({ checked, downgraded, errors })
   } catch (error) {
     return handleApiError(error)
   }

@@ -1,23 +1,11 @@
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { validateWebhookSource, persistWebhookEvent } from '@vesta/shared/server/adapters/webhooks'
-import { handleSubscriptionWebhook } from '@vesta/shared/server/services'
+import { phoneFromSubscriberId } from '@vesta/shared/server/adapters/bdapps'
+import { syncBdappsSubscriptionByPhone } from '@vesta/shared/server/services'
+import { env } from '@vesta/shared/utils/env'
 import { revalidateTag } from 'next/cache'
 import { cacheTags } from '@/lib/cache-tags'
-
-type SubscriptionStatus = 'PRO' | 'LAPSED' | 'FREE'
-
-function mapBdappsStatus(status: string): SubscriptionStatus {
-  switch (status.toUpperCase()) {
-    case 'ACTIVE':
-      return 'PRO'
-    case 'INACTIVE':
-    case 'SUSPENDED':
-    case 'EXPIRED':
-      return 'LAPSED'
-    default:
-      return 'LAPSED'
-  }
-}
+import { mapNotifyStatus } from '@/lib/subscription-notify'
 
 export async function POST(request: Request): Promise<Response> {
   try {
@@ -26,25 +14,38 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const payload = await request.json() as {
-      subscriberId: string
-      status: string
-      reason?: string
-      timeStamp: string
+      applicationId?: string
+      subscriberId?: string
+      status?: string
+      timeStamp?: string
     }
 
+    if (payload.applicationId && payload.applicationId !== env.BDAPPS_APP_ID) {
+      throw new ApiError(401, 'Unauthorized: unknown application', 'UNAUTHORIZED')
+    }
+
+    const ok = () => Response.json({ statusCode: 'S1000', statusDetail: 'Received' })
+
     const idempotencyKey = `${payload.subscriberId}:${payload.timeStamp}`
-    await persistWebhookEvent('SUBSCRIPTION_NOTIFY', payload, idempotencyKey)
+    const { duplicate } = await persistWebhookEvent('SUBSCRIPTION_NOTIFY', payload, idempotencyKey)
+    if (duplicate) return ok()
 
-    const newStatus = mapBdappsStatus(payload.status)
+    const change = mapNotifyStatus(payload.status)
+    if (!change) {
+      console.warn('[bdapps-notify] ignoring unhandled status', payload.status)
+      return ok()
+    }
 
-    const phone = payload.subscriberId.startsWith('tel:')
-      ? payload.subscriberId
-      : `tel:${payload.subscriberId}`
+    const phone = payload.subscriberId ? phoneFromSubscriberId(payload.subscriberId) : null
+    if (!phone) {
+      console.warn('[bdapps-notify] subscriberId is masked or missing; cannot match a user')
+      return ok()
+    }
 
-    const updated = await handleSubscriptionWebhook(phone, newStatus)
-    if (updated) revalidateTag(cacheTags.user(updated.id), { expire: 0 })
+    const updated = await syncBdappsSubscriptionByPhone(phone, change === 'registered')
+    if (updated) revalidateTag(cacheTags.user(updated.userId), { expire: 0 })
 
-    return Response.json({ statusCode: 'S1000', statusDetail: 'Received' })
+    return ok()
   } catch (error) {
     return handleApiError(error)
   }

@@ -310,9 +310,9 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, router, prompt]);
 
-  const handlePhoneAdded = useCallback(() => {
+  const handlePhoneAdded = useCallback((status?: string) => {
     setTrialUser((prev) =>
-      prev ? { ...prev, emailTrialExpiresAt: null, subscriptionStatus: 'PRO' } : prev,
+      prev ? { ...prev, emailTrialExpiresAt: null, subscriptionStatus: status ?? 'PRO' } : prev,
     );
     // Refresh RSC (account page, etc.) and re-fetch the client-side completion /
     // logging status so the ring updates from 83% → 100% without a reload.

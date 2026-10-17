@@ -3,28 +3,25 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { motion, useReducedMotion } from 'motion/react'
+import { motion } from 'motion/react'
 import {
   Crown,
   AlertCircle,
   Check,
   X,
-  Zap,
   Shield,
   Download,
   MessageSquare,
   BarChart2,
   Star,
-  Phone,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
-import { useHeld } from '@/lib/use-held'
+import { AddPhoneDialog } from '@/components/AddPhoneDialog'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { SubscriptionStatus } from '@vesta/shared/types'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
-import { updateContactInfo } from '@/app/actions/user-actions'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
 
@@ -32,9 +29,6 @@ import { PageHeader } from '@/components/ui/PageHeader'
 interface SubscriptionClientProps {
   user: AuthUser
 }
-
-// ── Types ──────────────────────────────────────────────────────────────────────
-type UpgradeStep = 'idle' | 'phone' | 'confirm' | 'loading' | 'success' | 'error'
 
 // ── Feature rows ───────────────────────────────────────────────────────────────
 const COMPARISON_FEATURE_KEYS = [
@@ -63,171 +57,17 @@ const FREE_FEATURE_KEYS = [
   'subscription.healthArticles',
 ]
 
-// ── BDApps Modal ───────────────────────────────────────────────────────────────
-interface BDAppsModalProps {
-  open: boolean
-  phone: string
-  step: UpgradeStep
-  onConfirm: () => void
-  onCancel: () => void
-}
-
-function BDAppsModal({ open, phone, step, onConfirm, onCancel }: BDAppsModalProps) {
-  const { t } = useTranslation()
-  const reduceMotion = useReducedMotion()
-  const statusText =
-    step === 'loading'
-      ? t('subscription.processing')
-      : step === 'success'
-        ? `${t('subscription.welcomePro')}. ${t('subscription.upgradedMsg')}`
-        : step === 'error'
-          ? `${t('subscription.paymentFailed')}. ${t('subscription.paymentFailedMsg')}`
-          : ''
-  return (
-    <Modal
-      open={open}
-      onClose={onCancel}
-      ariaLabel={t('subscription.mobileBilling')}
-      titleId="bdapps-modal-title"
-      dismissible={step !== 'loading'}
-      closeOnBackdrop={step === 'confirm'}
-      panelClassName="overflow-hidden"
-    >
-      {/* Live region covers only the status text, not the whole dialog */}
-      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
-        {statusText}
-      </p>
-      {/* Header stripe */}
-      <div className="h-1.5 w-full gradient-primary" />
-      <div className="p-6">
-        {step === 'confirm' && (
-          <div className="space-y-5">
-            <div className="flex items-center gap-2 pr-10">
-              <div className="w-8 h-8 rounded-lg bg-[var(--goal-accent)] flex items-center justify-center">
-                <Zap aria-hidden="true" size={16} className="text-[var(--color-on-accent)]" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
-                  BDApps CAAS
-                </p>
-                <p className="text-sm font-bold text-[var(--color-text-primary)]">{t('subscription.mobileBilling')}</p>
-              </div>
-            </div>
-
-            <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-4 space-y-2">
-              <p className="text-sm text-[var(--color-text-muted)]">{t('subscription.chargeMobile')}</p>
-              <p className="text-2xl font-bold text-[var(--color-text-primary)]">৳5</p>
-              <p className="text-xs text-[var(--color-text-muted)]">{t('subscription.perDay')}</p>
-              <div className="pt-2 border-t border-[var(--color-border)]">
-                <p className="text-xs text-[var(--color-text-secondary)]">{t('subscription.billingNumber')}</p>
-                <p className="text-sm font-semibold text-[var(--color-text-primary)] font-mono">
-                  +{phone}
-                </p>
-              </div>
-            </div>
-
-            <p className="text-xs text-[var(--color-text-muted)] text-center leading-relaxed">
-              {t('subscription.confirmDeduction')}
-            </p>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" onClick={onCancel} fullWidth>
-                {t('common.cancel')}
-              </Button>
-              <Button
-                variant="primary"
-                onClick={onConfirm}
-                fullWidth
-              >
-                {t('subscription.confirm')}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {step === 'loading' && (
-          <div className="flex flex-col items-center gap-4 py-6">
-            <motion.div
-              className="w-14 h-14 rounded-full bg-[var(--goal-accent)] flex items-center justify-center"
-              animate={reduceMotion ? undefined : { rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            >
-              <Zap aria-hidden="true" size={24} className="text-[var(--color-on-accent)]" />
-            </motion.div>
-            <p className="text-sm font-medium text-[var(--color-text-secondary)]">
-              {t('subscription.processing')}
-            </p>
-          </div>
-        )}
-
-        {step === 'success' && (
-          <motion.div
-            className="flex flex-col items-center gap-4 py-4"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', damping: 18, stiffness: 260 }}
-          >
-            <motion.div
-              className="w-16 h-16 rounded-full bg-[var(--goal-accent)] flex items-center justify-center shadow-glow"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.1, type: 'spring', damping: 14 }}
-            >
-              <Crown aria-hidden="true" size={30} className="text-[var(--color-on-accent)]" />
-            </motion.div>
-            <div className="text-center space-y-1">
-              <h3 className="text-xl font-bold text-[var(--color-text-primary)]">
-                {t('subscription.welcomePro')}
-              </h3>
-              <p className="text-sm text-[var(--color-text-muted)]">
-                {t('subscription.upgradedMsg')}
-              </p>
-            </div>
-            <Button
-              variant="primary"
-              onClick={onCancel}
-              fullWidth
-            >
-              {t('subscription.getStarted')}
-            </Button>
-          </motion.div>
-        )}
-
-        {step === 'error' && (
-          <div className="flex flex-col items-center gap-4 py-4 text-center">
-            <div className="w-14 h-14 rounded-full bg-[color-mix(in_srgb,var(--color-error)_15%,var(--color-bg-card))] flex items-center justify-center">
-              <X size={28} className="text-[var(--color-error)]" aria-hidden="true" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-[var(--color-text-primary)] mb-1">
-                {t('subscription.paymentFailed')}
-              </h3>
-              <p className="text-sm text-[var(--color-text-muted)]">
-                {t('subscription.paymentFailedMsg')}
-              </p>
-            </div>
-            <Button variant="outline" onClick={onCancel} fullWidth>
-              {t('subscription.close')}
-            </Button>
-          </div>
-        )}
-      </div>
-    </Modal>
-  )
-}
-
 // ── Page ───────────────────────────────────────────────────────────────────────
 export function SubscriptionClient({ user }: SubscriptionClientProps) {
   const { t } = useTranslation()
   const router = useRouter()
 
-  const [upgradeStep, setUpgradeStep] = useState<UpgradeStep>('idle')
   // Local override so the UI reflects success without a full page reload
   const [localStatus, setLocalStatus] = useState<SubscriptionStatus | null>(null)
-  // Phone captured in the 'phone' step (falls back to the user's existing phone)
-  const [enteredPhone, setEnteredPhone] = useState(user.phone ?? '')
-  const [phoneError, setPhoneError] = useState('')
-  const [phonePending, setPhonePending] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [unsubPending, setUnsubPending] = useState(false)
+  const [addPhoneOpen, setAddPhoneOpen] = useState(false)
+  const [unsubResult, setUnsubResult] = useState<'success' | 'error' | null>(null)
 
   const status: SubscriptionStatus =
     (localStatus ?? (user.subscriptionStatus as SubscriptionStatus)) ?? 'free'
@@ -242,69 +82,46 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
   const trial = getTrialStatus(trialStatusUser)
   const hoursLeft = trial === 'active' ? getTrialHoursLeft(user.emailTrialExpiresAt) : null
 
+  // Phone verification through BDApps OTP is the subscription (ADR 0002), so the
+  // CTA opens the add-phone dialog in place instead of CaaS billing or /login
+  // (which would create a separate phone account for a logged-in email user).
   const handleUpgradeClick = () => {
-    if (!user.phone && !enteredPhone) {
-      setUpgradeStep('phone')
-    } else {
-      setUpgradeStep('confirm')
-    }
+    setAddPhoneOpen(true)
   }
 
-  const handlePhoneSubmit = async () => {
-    setPhoneError('')
-    setPhonePending(true)
-    try {
-      const res = await updateContactInfo({ phone: enteredPhone })
-      if (!res.ok) {
-        setPhoneError(res.code === 'PHONE_TAKEN' ? t('subscription.phoneInUse') : t('subscription.phoneAddFailed'))
-        return
-      }
-      // Phone saved — proceed to billing confirmation. Refresh RSC and client
-      // completion/logging state so the sidebar reflects the added phone number.
-      router.refresh()
-      window.dispatchEvent(new Event('vesta:profile-updated'))
-      setUpgradeStep('confirm')
-    } catch {
-      setPhoneError(t('subscription.phoneAddFailed'))
-    } finally {
-      setPhonePending(false)
-    }
+  const handlePhoneVerified = (newStatus: string | undefined) => {
+    setLocalStatus(((newStatus ?? 'PRO').toLowerCase()) as SubscriptionStatus)
+    router.refresh()
+    window.dispatchEvent(new Event('vesta:profile-updated'))
   }
 
-  const handleConfirm = async () => {
-    setUpgradeStep('loading')
+  const closeConfirm = () => {
+    if (!unsubPending) setConfirmOpen(false)
+  }
+
+  const handleUnsubscribe = async () => {
+    setUnsubPending(true)
     try {
-      const res = await fetch('/api/billing/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: 5 }),
-      })
-      if (!res.ok) {
-        const body = await res.json().catch(() => null)
-        throw new Error(body?.error?.message ?? `Subscribe request failed (${res.status})`)
-      }
-      // Upgrade succeeded — refresh RSC and re-fetch auth/trial state so the
-      // TrialExpiredLock and TrialCountdownPill clear without a full reload.
+      const res = await fetch('/api/billing/unsubscribe', { method: 'POST' })
+      if (!res.ok) throw new Error(`Unsubscribe failed (${res.status})`)
+      const body = (await res.json().catch(() => null)) as { status?: string } | null
+      setLocalStatus(((body?.status ?? 'FREE').toLowerCase()) as SubscriptionStatus)
+      setUnsubResult('success')
       router.refresh()
       window.dispatchEvent(new Event('vesta:profile-updated'))
-      setUpgradeStep('success')
     } catch (err) {
       console.error(err)
-      setUpgradeStep('error')
+      setUnsubResult('error')
+    } finally {
+      setUnsubPending(false)
+      setConfirmOpen(false)
     }
   }
 
-  const handleClose = () => {
-    if (upgradeStep === 'success') setLocalStatus('pro')
-    setUpgradeStep('idle')
-    setPhoneError('')
-  }
-
-  // Use shared helper: phone (OTP) users are always PRO, LAPSED is distinct from FREE.
+  // Use shared helper: LAPSED is distinct from FREE.
   const tier = getSubscriptionTier({ authMethod: user.authMethod, subscriptionStatus: status })
   const isProUser = tier === 'PRO'
-  const bdStep = upgradeStep !== 'idle' && upgradeStep !== 'phone' ? upgradeStep : null
-  const heldBdStep = useHeld(bdStep)
+  const canUnsubscribe = isProUser && Boolean(user.phone)
 
   return (
     <PageContainer>
@@ -384,6 +201,23 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                     {t(key)}
                   </div>
                 ))
+              )}
+            </div>
+
+            {canUnsubscribe && (
+              <div className="mt-5">
+                <Button variant="outline" fullWidth onClick={() => { setUnsubResult(null); setConfirmOpen(true) }}>
+                  {t('subscription.unsubscribeButton')}
+                </Button>
+              </div>
+            )}
+            <div aria-live="polite" aria-atomic="true">
+              {unsubResult && (
+                <p
+                  className={`mt-3 text-sm font-medium ${unsubResult === 'success' ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-error)]'}`}
+                >
+                  {unsubResult === 'success' ? t('subscription.unsubscribeSuccess') : t('subscription.unsubscribeError')}
+                </p>
               )}
             </div>
           </div>
@@ -505,92 +339,40 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
         </p>
       )}
 
-      {/* ── Phone-entry step (email-auth users with no phone) ── */}
-      {/* Always mounted so the shell can play the exit animation */}
+      <AddPhoneDialog
+        open={addPhoneOpen}
+        onClose={() => setAddPhoneOpen(false)}
+        onVerified={handlePhoneVerified}
+        initialPhone={user.phone}
+      />
+
+      {/* ── Unsubscribe confirm (Pro users with a phone) ── */}
       <Modal
-          open={upgradeStep === 'phone'}
-          onClose={handleClose}
-          titleId="phone-step-title"
-          panelClassName="overflow-hidden"
-        >
-      {/* Header stripe */}
-      <div className="h-1.5 w-full gradient-primary" />
-
-      <div className="p-6 space-y-5">
-        <div className="flex items-center gap-2 pr-10">
-          <div className="w-8 h-8 rounded-lg bg-[var(--goal-accent)] flex items-center justify-center">
-            <Phone size={16} className="text-[var(--color-on-accent)]" aria-hidden="true" />
+        open={confirmOpen}
+        onClose={closeConfirm}
+        titleId="unsubscribe-title"
+        descId="unsubscribe-desc"
+        dismissible={!unsubPending}
+        panelClassName="overflow-hidden"
+      >
+        <div className="h-1.5 w-full gradient-primary" />
+        <div className="p-6 space-y-5">
+          <h2 id="unsubscribe-title" className="text-lg font-bold text-[var(--color-text-primary)] pr-10">
+            {t('subscription.unsubscribeConfirmTitle')}
+          </h2>
+          <p id="unsubscribe-desc" className="text-sm text-[var(--color-text-muted)] leading-relaxed">
+            {t('subscription.unsubscribeConfirmBody')}
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <Button variant="primary" onClick={closeConfirm} fullWidth disabled={unsubPending} data-autofocus>
+              {t('subscription.unsubscribeCancel')}
+            </Button>
+            <Button variant="outline" onClick={handleUnsubscribe} fullWidth disabled={unsubPending}>
+              {t('subscription.unsubscribeConfirm')}
+            </Button>
           </div>
-          <div>
-            <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
-              BDApps CAAS
-            </p>
-            <p id="phone-step-title" className="text-sm font-bold text-[var(--color-text-primary)]">
-              {t('subscription.addPhoneTitle')}
-            </p>
-          </div>
         </div>
-
-        <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">
-          {t('subscription.addPhoneBody')}
-        </p>
-
-        <div className="space-y-1.5">
-          <label
-            htmlFor="subscription-phone-input"
-            className="block text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide"
-          >
-            {t('auth.phone')}
-          </label>
-          <input
-            id="subscription-phone-input"
-                data-autofocus
-            type="tel"
-            inputMode="numeric"
-            autoComplete="tel"
-            spellCheck={false}
-            placeholder={t('subscription.addPhonePlaceholder')}
-            value={enteredPhone}
-            onChange={(e) => {
-              setEnteredPhone(e.target.value)
-              if (phoneError) setPhoneError('')
-            }}
-            disabled={phonePending}
-            className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:ring-offset-1 disabled:opacity-50 transition-colors duration-200 font-mono"
-          />
-          {phoneError && (
-            <p role="alert" aria-live="polite" className="text-xs text-[var(--color-error)] pt-0.5">
-              {phoneError}
-            </p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <Button variant="outline" onClick={handleClose} fullWidth disabled={phonePending}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handlePhoneSubmit}
-            fullWidth
-            disabled={phonePending || !enteredPhone.trim()}
-          >
-            {phonePending ? t('common.saving') : t('subscription.addPhoneCta')}
-          </Button>
-        </div>
-      </div>
-        </Modal>
-
-      {/* ── BDApps Modal (held through the exit animation) ── */}
-      {heldBdStep && (
-        <BDAppsModal
-          open={bdStep !== null}
-          phone={enteredPhone || (user.phone ?? '')}
-          step={heldBdStep}
-          onConfirm={handleConfirm}
-          onCancel={handleClose}
-        />
-      )}
+      </Modal>
     </PageContainer>
   )
 }

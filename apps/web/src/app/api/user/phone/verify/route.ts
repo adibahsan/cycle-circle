@@ -39,12 +39,15 @@ export const POST = withAuth(async (request, { user }) => {
       throw new ApiError(400, 'OTP challenge has expired', 'CHALLENGE_EXPIRED')
     }
 
+    // DEV_MODE fake codes behave like a successful BDApps registration.
+    let registered = true
     if (isDevModeEnabled()) {
       if (!DEV_OTP_CODES.includes(body.otp)) {
         throw new ApiError(400, 'Invalid or expired code', 'INVALID_OTP')
       }
     } else {
-      await verifyOtp(body.referenceNo, body.otp)
+      const result = await verifyOtp(body.referenceNo, body.otp)
+      registered = result.subscriptionStatus === 'REGISTERED'
     }
 
     await prisma.otpChallenge.update({
@@ -52,8 +55,9 @@ export const POST = withAuth(async (request, { user }) => {
       data: { verified: true, userId: user.id },
     })
 
+    let result: Awaited<ReturnType<typeof keepAccountWithVerifiedPhone>>
     try {
-      await keepAccountWithVerifiedPhone(user.id, challenge.phone)
+      result = await keepAccountWithVerifiedPhone(user.id, challenge.phone, registered)
     } catch (e) {
       if ((e as { code?: string }).code === 'P2002') {
         throw new ApiError(409, 'Phone already registered to another account', 'PHONE_TAKEN')
@@ -67,7 +71,7 @@ export const POST = withAuth(async (request, { user }) => {
     revalidateTag(`user:${user.id}`, { expire: 0 })
     revalidateTag(`profiles:${user.id}`, { expire: 0 })
 
-    return Response.json({ ok: true })
+    return Response.json({ ok: true, subscriptionStatus: result.subscriptionStatus })
   } catch (error) {
     return handleApiError(error)
   }
