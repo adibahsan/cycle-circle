@@ -33,3 +33,29 @@ _Avoid_: popup, interstitial, nag
 **Trial lock**:
 The blocking screen shown to an email-trial account whose 24-hour trial has ended; only upgrading or logging out gets past it.
 _Avoid_: paywall, trial expired modal
+
+### Operations logs
+
+**Log channel**:
+One of six named streams that every server log line belongs to: merchant, customer, webhook, translog, cron, error.
+_Avoid_: log file, logger, category
+
+**Merchant call**:
+A call Cycle Circle makes out to BDApps as the merchant app (OTP, subscription status, subscribe/unsubscribe, SMS, CaaS), recorded with its request and BDApps' response.
+_Avoid_: API log, BDApps log, outbound request
+
+**Customer action**:
+Something an end user did in Cycle Circle that matters operationally: logging in, requesting or verifying an OTP, adding a phone, unsubscribing, logging out.
+_Avoid_: user event, activity, audit entry
+
+**Webhook event**:
+A call BDApps makes into Cycle Circle (subscription notification, incoming SMS or USSD, delivery report), recorded with its payload and what we did with it.
+_Avoid_: callback, notification, inbound request
+
+**Translog**:
+The record of one plan change: a user moving between Free and Pro, an admin override, or a charge, with who, from what, to what, and the cause.
+_Avoid_: transaction log, billing log, subscription history
+
+**Cron run**:
+One execution of a scheduled job, recorded as a single summary of what it checked and changed, plus any per-item failures.
+_Avoid_: job log, scheduler log
