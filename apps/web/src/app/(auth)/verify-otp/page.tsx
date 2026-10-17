@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, RefreshCw, CheckCircle2, CircleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import '@vesta/shared/utils/i18n';
 
@@ -31,24 +31,58 @@ export default function VerifyOtpPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [countdown, setCountdown] = useState(RESEND_SECONDS);
+  const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
+  const [endsAt, setEndsAt] = useState<number>(() => Date.now() + RESEND_SECONDS * 1000);
   const [resending, setResending] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
-  // phone and referenceNo from query params (set by login page) or sessionStorage fallback
-  // sessionStorage is only available on the client, so use lazy initializer
+  // phone and referenceNo come from the query (set by the login page) with sessionStorage as fallback.
+  // referenceNo lives in state so a resend (which issues a new challenge) replaces the stale one.
   const phoneFromQuery = searchParams.get('phone');
   const referenceNoFromQuery = searchParams.get('referenceNo') ?? '';
-  const phone = phoneFromQuery ?? (typeof window !== 'undefined' ? sessionStorage.getItem('vesta-otp-phone') : null) ?? '01XXXXXXXXX';
+  const [referenceNo, setReferenceNo] = useState(referenceNoFromQuery);
+  const [phone, setPhone] = useState(phoneFromQuery ?? '');
+
+  useEffect(() => {
+    let ref = referenceNoFromQuery;
+    let ph = phoneFromQuery ?? '';
+    try {
+      if (!ref) ref = sessionStorage.getItem('vesta-otp-ref') ?? '';
+      if (!ph) ph = sessionStorage.getItem('vesta-otp-phone') ?? '';
+    } catch { /* storage unavailable */ }
+    if (!ref) {
+      router.replace('/login');
+      return;
+    }
+    setReferenceNo(ref);
+    setPhone(ph);
+  }, [referenceNoFromQuery, phoneFromQuery, router]);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Countdown timer
+  // Countdown derived from a deadline so background-tab timer throttling cannot make it drift.
   useEffect(() => {
-    if (countdown <= 0) return;
-    const id = setTimeout(() => setCountdown((c) => c - 1), 1000);
-    return () => clearTimeout(id);
-  }, [countdown]);
+    const tick = () => setSecondsLeft(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
+    tick();
+    const id = setInterval(tick, 500);
+    return () => clearInterval(id);
+  }, [endsAt]);
+  const countdown = secondsLeft;
+
+  function errorMessage(body: { error?: string | { message?: string; code?: string } }, fallbackKey: string) {
+    const err = body.error;
+    const code = typeof err === 'object' ? err?.code : undefined;
+    const known: Record<string, string> = {
+      INVALID_OTP: 'trial.err.invalidCode',
+      CHALLENGE_EXPIRED: 'trial.err.invalidCode',
+      CHALLENGE_NOT_FOUND: 'trial.err.invalidCode',
+      ALREADY_VERIFIED: 'trial.err.invalidCode',
+      RATE_LIMITED: 'trial.err.rateLimited',
+      OTP_COOLDOWN: 'trial.err.cooldown',
+    };
+    if (code && known[code]) return t(known[code]);
+    return t(fallbackKey);
+  }
 
   // Focus first box on mount
   useEffect(() => {
@@ -100,7 +134,21 @@ export default function VerifyOtpPage() {
     }
   }
 
-  async function handleVerify() {
+  // Auto-submit once per completed code (typed, pasted or SMS-autofilled). Editing a
+  // digit after a failed attempt produces a new code, which submits again.
+  const formRef = useRef<HTMLFormElement>(null);
+  const lastAutoCode = useRef('');
+  useEffect(() => {
+    const code = digits.join('');
+    if (code.length === OTP_LENGTH && code !== lastAutoCode.current) {
+      lastAutoCode.current = code;
+      formRef.current?.requestSubmit();
+    }
+  }, [digits]);
+
+  async function handleVerify(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (loading || success) return;
     const code = digits.join('');
     if (code.length < OTP_LENGTH) {
       setError(t('auth.otpAllDigits', { count: OTP_LENGTH }));
@@ -109,16 +157,14 @@ export default function VerifyOtpPage() {
 
     setLoading(true);
     try {
-      const referenceNo = referenceNoFromQuery || sessionStorage.getItem('vesta-otp-ref') || '';
       const res = await fetch('/api/auth/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ referenceNo, otp: code }),
       });
-      const body = await res.json().catch(() => ({})) as { error?: string | { message: string }; user?: { profileCompleted?: boolean } };
+      const body = await res.json().catch(() => ({})) as { error?: string | { message?: string; code?: string }; user?: { profileCompleted?: boolean } };
       if (!res.ok) {
-        const msg = typeof body.error === 'object' ? body.error?.message : body.error;
-        setError(msg ?? t('auth.verificationFailed'));
+        setError(errorMessage(body, 'auth.verificationFailed'));
         return;
       }
       setSuccess(true);
@@ -132,9 +178,8 @@ export default function VerifyOtpPage() {
   }
 
   async function handleResend() {
-    if (countdown > 0) return;
+    if (countdown > 0 || resending) return;
     setResending(true);
-    setDigits(Array(OTP_LENGTH).fill(''));
     setError('');
     try {
       const res = await fetch('/api/auth/otp/request', {
@@ -142,16 +187,21 @@ export default function VerifyOtpPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
       });
-      if (res.ok) {
-        const body = await res.json().catch(() => ({})) as { referenceNo?: string };
-        if (body.referenceNo) {
-          sessionStorage.setItem('vesta-otp-ref', body.referenceNo);
-        }
+      const body = await res.json().catch(() => ({})) as { referenceNo?: string; error?: string | { message?: string; code?: string } };
+      if (!res.ok || !body.referenceNo) {
+        setError(errorMessage(body, 'auth.resendFailed'));
+        return;
       }
-    } catch { /* still reset UI even if resend fails */ }
-    setResending(false);
-    setCountdown(RESEND_SECONDS);
-    inputRefs.current[0]?.focus();
+      setReferenceNo(body.referenceNo);
+      try { sessionStorage.setItem('vesta-otp-ref', body.referenceNo); } catch { /* ignore */ }
+      setDigits(Array(OTP_LENGTH).fill(''));
+      setEndsAt(Date.now() + RESEND_SECONDS * 1000);
+      inputRefs.current[0]?.focus();
+    } catch {
+      setError(t('auth.resendFailed'));
+    } finally {
+      setResending(false);
+    }
   }
 
   const filled = digits.filter(Boolean).length;
@@ -165,6 +215,7 @@ export default function VerifyOtpPage() {
         variants={FADE_UP}
         initial="hidden"
         animate="show"
+        type="button"
         onClick={() => router.back()}
         className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] font-medium mb-6 hover:text-[var(--color-primary)] transition-colors self-start focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
       >
@@ -172,7 +223,7 @@ export default function VerifyOtpPage() {
         {t('common.back')}
       </motion.button>
 
-      <div className="rounded-3xl surface-wash border border-[var(--color-border)] shadow-soft p-6">
+      <form ref={formRef} noValidate onSubmit={handleVerify} className="rounded-3xl surface-wash border border-[var(--color-border)] shadow-soft p-6">
       {/* Header */}
       <motion.div
         custom={1}
@@ -194,7 +245,7 @@ export default function VerifyOtpPage() {
           {t('auth.otp')}
         </h2>
         <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">
-          We sent a {OTP_LENGTH}-digit code to{' '}
+          {t('auth.codeSentTo', { count: OTP_LENGTH })}{' '}
           <span className="font-semibold text-[var(--color-text-secondary)]">
             +88 {phone}
           </span>
@@ -258,12 +309,14 @@ export default function VerifyOtpPage() {
       <AnimatePresence>
         {error && (
           <motion.p
+            role="alert"
+            aria-live="polite"
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="text-sm text-[var(--color-error)] mb-3 flex items-center gap-1"
+            className="text-sm text-[var(--color-error)] mb-3 flex items-center gap-1.5"
           >
-            <span>⚠</span> {error}
+            <CircleAlert size={15} aria-hidden="true" className="shrink-0" /> {error}
           </motion.p>
         )}
       </AnimatePresence>
@@ -273,7 +326,7 @@ export default function VerifyOtpPage() {
         <Button
           fullWidth
           size="lg"
-          onClick={handleVerify}
+          type="submit"
           disabled={loading || success || !allFilled}
           className="text-base font-bold"
         >
@@ -320,6 +373,7 @@ export default function VerifyOtpPage() {
       >
         <p className="text-sm text-[var(--color-text-muted)]">{t('auth.didNotReceive')}</p>
         <button
+          type="button"
           onClick={handleResend}
           disabled={countdown > 0 || resending}
           className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${
@@ -389,7 +443,7 @@ export default function VerifyOtpPage() {
           </motion.div>
         )}
       </AnimatePresence>
-      </div>
+      </form>
     </div>
   );
 }

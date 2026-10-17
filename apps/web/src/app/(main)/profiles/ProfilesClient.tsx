@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '@/components/ui/Toast';
 import { useTranslation, Trans } from 'react-i18next';
-import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight, Pencil } from 'lucide-react';
+import { Check, Trash2, Plus, Minus, UserPlus, X, ChevronRight, Pencil, User, Heart, Baby, UserRound, Users, Lock, LockKeyhole, type LucideIcon } from 'lucide-react';
+import { FlowIcon } from '@/components/ui/PhaseIcon';
 import { GOAL_ICON_COMPONENTS, GOAL_I18N_KEYS } from '@/lib/goal-display';
 import { GOAL_VALUES, normalizeGoal, goalAccentVar, type GoalValue } from '@vesta/shared/utils/goal';
 import { useAppStore } from '@/lib/store';
@@ -38,13 +39,13 @@ const FLOW_TEXT: Record<'light' | 'medium' | 'heavy', string> = {
 
 const RELATIONS: ProfileRelation[] = ['self', 'wife', 'sister', 'mother', 'daughter', 'girlfriend'];
 
-const RELATION_ICONS: Record<ProfileRelation, string> = {
-  self: '👤',
-  wife: '💑',
-  sister: '👧',
-  mother: '👩',
-  daughter: '🧒',
-  girlfriend: '💕',
+const RELATION_ICONS: Record<ProfileRelation, LucideIcon> = {
+  self: User,
+  wife: Heart,
+  sister: Users,
+  mother: UserRound,
+  daughter: Baby,
+  girlfriend: Heart,
 };
 
 const RELATION_COLORS: Record<ProfileRelation, { bg: string; text: string; border: string }> = {
@@ -83,18 +84,14 @@ function Stepper({ label, value, min, max, onChange, unit }: StepperProps) {
   return (
     <div className="flex items-center justify-between py-0.5">
       <span className="text-sm font-medium text-[var(--color-text-secondary)]">{label}</span>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1">
         <button
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
-          className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
-          style={{
-            background: 'var(--color-bg-secondary)',
-            borderColor: 'var(--color-border)',
-          }}
+          className="group min-w-11 min-h-11 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
           aria-label={t('profiles.decreaseField', { label })}
         >
-          <Minus aria-hidden="true" size={13} className="text-[var(--color-text-primary)]" />
+          <span className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-150 bg-[var(--color-bg-secondary)] border-[var(--color-border)]"><Minus aria-hidden="true" size={13} className="text-[var(--color-text-primary)]" /></span>
         </button>
         <div className="min-w-[52px] text-center">
           <span className="text-base font-bold text-[var(--color-text-primary)]">{value}</span>
@@ -103,14 +100,10 @@ function Stepper({ label, value, min, max, onChange, unit }: StepperProps) {
         <button
           onClick={() => onChange(Math.min(max, value + 1))}
           disabled={value >= max}
-          className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
-          style={{
-            background: 'var(--color-bg-secondary)',
-            borderColor: 'var(--color-border)',
-          }}
+          className="group min-w-11 min-h-11 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
           aria-label={t('profiles.increaseField', { label })}
         >
-          <Plus aria-hidden="true" size={13} className="text-[var(--color-text-primary)]" />
+          <span className="w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-150 bg-[var(--color-bg-secondary)] border-[var(--color-border)]"><Plus aria-hidden="true" size={13} className="text-[var(--color-text-primary)]" /></span>
         </button>
       </div>
     </div>
@@ -174,10 +167,10 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
           >
           {/* Avatar */}
           <div
-            className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl flex-shrink-0"
+            className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
             style={{ background: colors.bg, border: `1.5px solid ${colors.border}` }}
           >
-            {RELATION_ICONS[relation]}
+            {React.createElement(RELATION_ICONS[relation], { size: 20, 'aria-hidden': true, style: { color: colors.text } })}
           </div>
 
           {/* Info */}
@@ -235,7 +228,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
             <button
               type="button"
               onClick={onEdit}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+              className="min-w-11 min-h-11 rounded-full flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
               style={{
                 background: 'color-mix(in srgb, var(--color-secondary) 10%, transparent)',
                 border: '1px solid color-mix(in srgb, var(--color-secondary) 25%, transparent)',
@@ -250,7 +243,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
               <button
                 type="button"
                 onClick={onDelete}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                className="min-w-11 min-h-11 rounded-full flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                 style={{
                   background: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
                   border: '1px solid color-mix(in srgb, var(--color-error) 25%, transparent)',
@@ -402,7 +395,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
                   }}
                   aria-pressed={isSelected}
                 >
-                  <span className="text-lg leading-none">{RELATION_ICONS[rel]}</span>
+                  {React.createElement(RELATION_ICONS[rel], { size: 18, 'aria-hidden': true })}
                   <span
                     className="text-[11px] font-semibold"
                     style={{ color: isSelected ? colors.text : 'var(--color-text-muted)' }}
@@ -538,9 +531,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
                 }
                 aria-pressed={flowIntensity === f}
               >
-                <span className="mr-1" aria-hidden="true">
-                  {f === 'light' ? '💧' : f === 'medium' ? '🩸' : '🌊'}
-                </span>
+                <FlowIcon flow={f} className="mr-1.5 align-middle" />
                 {f === 'light' ? t('profiles.flowLight') : f === 'medium' ? t('profiles.flowMedium') : t('profiles.flowHeavy')}
               </button>
             ))}
@@ -696,7 +687,7 @@ function EditProfileForm({ open, profile, onClose, onSubmit, serverError, disabl
                     }}
                     aria-pressed={isSelected}
                   >
-                    <span className="text-lg leading-none">{RELATION_ICONS[rel]}</span>
+                    {React.createElement(RELATION_ICONS[rel], { size: 18, 'aria-hidden': true })}
                     <span
                       className="text-[11px] font-semibold"
                       style={{ color: isSelected ? colors.text : 'var(--color-text-muted)' }}
@@ -846,7 +837,8 @@ interface ProfilesClientProps {
 export function ProfilesClient({ profiles }: ProfilesClientProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  const { activeProfileId, setActiveProfile } = useAppStore();
+  const activeProfileId = useAppStore((s) => s.activeProfileId);
+  const setActiveProfile = useAppStore((s) => s.setActiveProfile);
 
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -884,6 +876,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
     setActiveProfile(id, name);
     toast.show(t('profiles.switchedTo', { name }));
     await setActiveProfileCookie(id);
+    window.dispatchEvent(new Event('vesta:profile-updated'));
     router.push('/dashboard');
   }
 
@@ -1034,7 +1027,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                       className="rounded-2xl border border-dashed p-4 flex flex-col items-center gap-1.5 text-center"
                       style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-secondary)' }}
                     >
-                      <span className="text-2xl">🔒</span>
+                      <Lock size={24} className="text-[var(--color-text-muted)]" aria-hidden="true" />
                       <p className="text-sm font-semibold text-[var(--color-text-secondary)]">
                         {t('profiles.maxReached')}
                       </p>
@@ -1088,7 +1081,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             className="lg:col-span-2 rounded-2xl p-4 flex items-start gap-3"
             style={{ background: 'color-mix(in srgb, var(--color-secondary) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--color-secondary) 20%, transparent)' }}
           >
-            <span className="text-xl flex-shrink-0 mt-0.5">🔐</span>
+            <LockKeyhole size={20} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--color-secondary)' }} aria-hidden="true" />
             <div>
               <p className="text-sm font-semibold" style={{ color: 'var(--color-secondary)' }}>
                 {t('profiles.isolationTitle')}

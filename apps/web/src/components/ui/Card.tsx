@@ -19,7 +19,7 @@ export function Card({ children, className, padding = 'md', hover, style }: Card
           'p-3': padding === 'sm',
           'p-5': padding === 'md',
           'p-7': padding === 'lg',
-          'glass-hover hover:shadow-glow hover:-translate-y-0.5 transition-shadow transition-transform duration-300 cursor-pointer': hover,
+          'hover:-translate-y-0.5 hover:border-[var(--color-border-strong)]/40 transition-[transform,border-color] duration-300 cursor-pointer': hover,
         },
         className
       ))}

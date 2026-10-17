@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import type { FlowIntensity } from '@vesta/shared/types'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
+import { FlowIcon } from '@/components/ui/PhaseIcon'
 import { deviceDayString } from '@/lib/local-date'
 import { createPeriodLog, updatePeriodLog } from '@/app/actions/tracking-actions'
 import '@vesta/shared/utils/i18n'
@@ -160,7 +161,7 @@ function PeriodLogModalBody({
       <div className="px-5 pt-1 pb-3">
         {/* Start date */}
         <div className="mb-4">
-          <label htmlFor="period-start-date" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
+          <label htmlFor="period-start-date" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
             {t('dashboard.startDate')}
           </label>
           <input
@@ -177,7 +178,7 @@ function PeriodLogModalBody({
 
         {/* End date */}
         <div className="mb-5">
-          <label htmlFor="period-end-date" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
+          <label htmlFor="period-end-date" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
             {t('dashboard.endDate')}
           </label>
           <input
@@ -195,13 +196,15 @@ function PeriodLogModalBody({
 
         {/* Flow intensity */}
         <div role="group" aria-labelledby="flow-intensity-label">
-          <span id="flow-intensity-label" className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-2.5 uppercase tracking-wider">
+          <span id="flow-intensity-label" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2.5">
             {t('dashboard.flowIntensity')}
           </span>
           <div className="flex gap-2">
             {(['light', 'medium', 'heavy'] as FlowIntensity[]).map((f) => (
               <button
                 key={f}
+                type="button"
+                aria-pressed={flow === f}
                 onClick={() => setFlow(f)}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
                   flow === f
@@ -214,10 +217,10 @@ function PeriodLogModalBody({
                     : {}
                 }
               >
-                <span className="mr-1">
-                  {f === 'light' ? '💧' : f === 'medium' ? '🩸' : '🌊'}
+                <span className="inline-flex items-center justify-center gap-1.5">
+                  <FlowIcon flow={f} />
+                  {t(`dashboard.flow${f.charAt(0).toUpperCase() + f.slice(1)}`)}
                 </span>
-                {t(`dashboard.flow${f.charAt(0).toUpperCase() + f.slice(1)}`)}
               </button>
             ))}
           </div>

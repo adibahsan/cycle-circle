@@ -17,12 +17,12 @@ import {
   computePrediction,
   normalizeCyclePhase,
   getPhaseColor,
-  getPhaseEmoji,
 } from '@vesta/shared/utils/cycle-utils'
 import type { FlowIntensity, ProfileRelation } from '@vesta/shared/types'
 import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { PhaseIcon, FlowIcon } from '@/components/ui/PhaseIcon'
 import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
 import { setActiveProfileCookie } from '@/app/actions/profile-actions'
 import type { ProfileCompletionStatus } from '@/lib/profile-completion'
@@ -210,8 +210,6 @@ function CycleRing({
       {/* Center content */}
       <motion.div
         className="flex flex-col items-center gap-1"
-        animate={{ scale: [1, 1.03, 1] }}
-        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
@@ -226,7 +224,7 @@ function CycleRing({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="text-sm font-medium text-[var(--color-text-muted)] tracking-widest uppercase"
+          className="text-sm font-medium text-[var(--color-text-muted)]"
         >
           {centerLabel}
         </motion.div>
@@ -341,7 +339,6 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
 
   const phase = normalizeCyclePhase(String(rawPhase ?? 'menstrual'))
   const phaseColor = getPhaseColor(phase)
-  const phaseEmoji = getPhaseEmoji(phase)
 
   const daysUntilNext =
     dashboardData?.countdownToNextPeriod ??
@@ -403,22 +400,6 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
 
   return (
     <>
-      {/* Background blobs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10" aria-hidden="true">
-        <motion.div
-          className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-[0.07]"
-          style={{ background: 'radial-gradient(circle, var(--goal-accent) 0%, transparent 70%)' }}
-          animate={prefersReducedMotion ? {} : { x: [0, 15, 0], y: [0, -10, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="absolute -bottom-32 -left-20 w-80 h-80 rounded-full opacity-[0.05]"
-          style={{ background: 'radial-gradient(circle, var(--color-secondary) 0%, transparent 70%)' }}
-          animate={prefersReducedMotion ? {} : { x: [0, -10, 0], y: [0, 12, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      </div>
-
       <PageContainer
         width="wide"
         style={{ ['--goal-accent' as string]: goalAccentVar(goal) } as React.CSSProperties}
@@ -521,7 +502,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-1.5">
                     <Droplets size={14} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
-                    <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <span className="text-sm font-medium text-[var(--color-text-secondary)]">
                       {t('dashboard.lastPeriod')}
                     </span>
                   </div>
@@ -537,7 +518,8 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold self-start"
                         style={{ backgroundColor: FLOW_COLORS[lastPeriodDisplay.flowIntensity], color: FLOW_TEXT[lastPeriodDisplay.flowIntensity] }}
                       >
-                        🩸 {t(`dashboard.flow${capitalize(lastPeriodDisplay.flowIntensity)}`)}
+                        <FlowIcon flow={lastPeriodDisplay.flowIntensity} size={12} />
+                        {t(`dashboard.flow${capitalize(lastPeriodDisplay.flowIntensity)}`)}
                       </div>
                     </>
                   ) : (
@@ -555,7 +537,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
             >
               <Card padding="md" className="!border-0 shadow-soft">
                 <div className="flex flex-col gap-2.5">
-                  <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                  <span className="text-sm font-medium text-[var(--color-text-secondary)]">
                     {t('dashboard.quickActions')}
                   </span>
                   <Button
@@ -566,7 +548,8 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     className="text-xs"
                     data-tour="log-button"
                   >
-                    🩸 {t('dashboard.logPeriod')}
+                    <Droplets size={14} aria-hidden="true" />
+                    {t('dashboard.logPeriod')}
                   </Button>
                 </div>
               </Card>
@@ -610,7 +593,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     style={{ backgroundColor: 'var(--color-menstrual)', color: 'var(--color-on-menstrual)' }}
                     aria-label={t('dashboard.periodLateOpenPrompt')}
                   >
-                    <span aria-hidden="true">🩸</span>
+                    <Droplets size={14} aria-hidden="true" />
                     <span>{t('dashboard.periodLate')} · {t('dashboard.daysOverdue', { count: daysLate })}</span>
                   </button>
                 ) : (
@@ -623,7 +606,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                       <span>{t('dashboard.dayOf', { day: cycleDay, total: profile.cycleLength })}</span>
                     </div>
                     <p className="text-2xl font-bold text-[var(--color-text-primary)]">
-                      <span aria-hidden="true">{phaseEmoji}</span> {phaseLabel}
+                      <span className="inline-flex items-center gap-2"><PhaseIcon phase={phase} size={22} /> {phaseLabel}</span>
                     </p>
                     {daysUntilNext != null && (
                       <p className="text-sm text-[var(--color-text-secondary)] tabular-nums">
@@ -662,7 +645,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                         style={{ color: isPeriodLate ? 'var(--color-menstrual)' : 'var(--goal-accent)' }}
                         aria-hidden="true"
                       />
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                      <span className="text-sm font-medium text-[var(--color-text-secondary)]">
                         {(daysUntilNext ?? 0) < 0 ? t('dashboard.periodLate') : t('dashboard.nextPeriodCard')}
                       </span>
                     </div>
@@ -708,7 +691,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-1.5">
                       <Droplets size={14} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
-                      <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                      <span className="text-sm font-medium text-[var(--color-text-secondary)]">
                         {t('dashboard.lastPeriod')}
                       </span>
                     </div>
@@ -724,7 +707,8 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold self-start"
                           style={{ backgroundColor: FLOW_COLORS[lastPeriodDisplay.flowIntensity], color: FLOW_TEXT[lastPeriodDisplay.flowIntensity] }}
                         >
-                          🩸 {t(`dashboard.flow${capitalize(lastPeriodDisplay.flowIntensity)}`)}
+                          <FlowIcon flow={lastPeriodDisplay.flowIntensity} size={12} />
+                        {t(`dashboard.flow${capitalize(lastPeriodDisplay.flowIntensity)}`)}
                         </div>
                       </>
                     ) : (
@@ -742,7 +726,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               >
                 <Card padding="md" className="h-full !border-0 shadow-soft">
                   <div className="flex flex-col gap-2">
-                    <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <span className="text-sm font-medium text-[var(--color-text-secondary)]">
                       {t('dashboard.confidence')}
                     </span>
                     <div className="flex items-end gap-1">
@@ -785,7 +769,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               >
                 <Card padding="md" className="h-full !border-0 shadow-soft">
                   <div className="flex flex-col gap-2.5 h-full">
-                    <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <span className="text-sm font-medium text-[var(--color-text-secondary)]">
                       {t('dashboard.quickActions')}
                     </span>
                     <Button
@@ -796,7 +780,8 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                       className={`text-xs ${isPeriodLate ? 'animate-attn-blink-danger' : ''}`}
                       data-tour="log-button"
                     >
-                      🩸 {t('dashboard.logPeriod')}
+                      <Droplets size={14} aria-hidden="true" />
+                    {t('dashboard.logPeriod')}
                     </Button>
                     <Button
                       variant="secondary"
@@ -856,7 +841,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                           }}
                         >
                           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          <span className="text-base md:text-lg">{getPhaseEmoji(ph as any)}</span>
+                          <PhaseIcon phase={ph as any} size={18} />
                           <span className="text-[11px] md:text-xs font-bold text-center leading-tight text-[var(--color-text-primary)] inline-flex items-center gap-1">
                             <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                             {t(labelKey)}

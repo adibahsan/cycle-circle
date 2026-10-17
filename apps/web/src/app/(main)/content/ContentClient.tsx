@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { BookOpen, ChevronRight, Info, Loader2 } from 'lucide-react'
+import { ArrowLeft, BookOpen, ChevronRight, Droplets, Flower2, Info, Loader2, Moon, Sprout, type LucideIcon } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { getPhaseColor, getPhaseEmoji, parseCyclePhase } from '@vesta/shared/utils/cycle-utils'
+import { getPhaseColor, parseCyclePhase } from '@vesta/shared/utils/cycle-utils'
 
 /** Phase accent colour for a phase name (article tag / tab id); neutral accent when unknown. */
 function phaseColorFor(name: string): string {
@@ -13,14 +13,11 @@ function phaseColorFor(name: string): string {
   return phase ? getPhaseColor(phase) : 'var(--goal-accent)'
 }
 
-function phaseEmojiFor(name: string): string {
-  const phase = parseCyclePhase(name)
-  return phase ? getPhaseEmoji(phase) : ''
-}
 import '@vesta/shared/utils/i18n'
 import { getArticleBody } from '@/app/actions/content-actions'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { PhaseIcon } from '@/components/ui/PhaseIcon'
 
 type FilterTab = 'all' | 'MENSTRUAL' | 'FOLLICULAR' | 'OVULATION' | 'LUTEAL'
 
@@ -44,12 +41,12 @@ interface ContentClientProps {
   currentPhase?: string | null
 }
 
-const PHASE_TABS: { id: FilterTab; labelKey: string; emoji: string }[] = [
-  { id: 'all', labelKey: 'content.allArticles', emoji: '📚' },
-  { id: 'MENSTRUAL', labelKey: 'dashboard.menstrual', emoji: '🩸' },
-  { id: 'FOLLICULAR', labelKey: 'dashboard.follicular', emoji: '🌱' },
-  { id: 'OVULATION', labelKey: 'dashboard.ovulation', emoji: '🌸' },
-  { id: 'LUTEAL', labelKey: 'dashboard.luteal', emoji: '🌙' },
+const PHASE_TABS: { id: FilterTab; labelKey: string; Icon: LucideIcon }[] = [
+  { id: 'all', labelKey: 'content.allArticles', Icon: BookOpen },
+  { id: 'MENSTRUAL', labelKey: 'dashboard.menstrual', Icon: Droplets },
+  { id: 'FOLLICULAR', labelKey: 'dashboard.follicular', Icon: Sprout },
+  { id: 'OVULATION', labelKey: 'dashboard.ovulation', Icon: Flower2 },
+  { id: 'LUTEAL', labelKey: 'dashboard.luteal', Icon: Moon },
 ]
 
 export function ContentClient({ articles, activePhase, currentPhase }: ContentClientProps) {
@@ -147,12 +144,13 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
           onClick={() => setSelectedArticle(null)}
           className="flex items-center gap-1 text-sm text-[var(--goal-accent)] font-medium mb-4 hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
         >
-          ← {t('content.backToArticles')}
+          <ArrowLeft size={16} aria-hidden="true" />
+          {t('content.backToArticles')}
         </button>
 
         <article className="glass rounded-2xl p-6">
           {selectedArticle.category && (
-            <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)] mb-3">
+            <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)] mb-3">
               {selectedArticle.category.name}
             </span>
           )}
@@ -165,7 +163,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                   className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
                   style={{ backgroundColor: phaseColorFor(phase), color: `var(--color-on-${phase.toLowerCase()})` }}
                 >
-                  {phaseEmojiFor(phase)} {phase}
+                  {phase}
                 </span>
               ))}
             </div>
@@ -252,7 +250,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                     aria-label={t('content.currentPhase')}
                   />
                 )}
-                <span aria-hidden="true">{tab.emoji}</span>
+                <tab.Icon size={14} aria-hidden="true" />
                 {t(tab.labelKey)}
               </button>
             )
@@ -303,7 +301,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
                       {article.category && (
-                        <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)]">
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)]">
                           {article.category.name}
                         </span>
                       )}
@@ -317,7 +315,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                       )}
                       {/* EN locale chip */}
                       {showEnChip && (
-                        <span className="inline-block px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] border border-[var(--color-border)]">
+                        <span className="inline-block px-1.5 py-0.5 rounded text-[11px] font-semibold text-[var(--color-text-muted)] border border-[var(--color-border)]">
                           EN
                         </span>
                       )}
@@ -335,13 +333,14 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                         {article.cyclePhases.map(phase => (
                           <span
                             key={phase}
-                            className="px-1.5 py-0.5 rounded text-[11px] font-semibold"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold"
                             style={{
                               backgroundColor: `color-mix(in srgb, ${phaseColorFor(phase)} 13%, transparent)`,
                               color: phaseColorFor(phase),
                             }}
                           >
-                            {phaseEmojiFor(phase)} {phase}
+                            {parseCyclePhase(phase) && <PhaseIcon phase={parseCyclePhase(phase)!} size={11} />}
+                            {phase}
                           </span>
                         ))}
                       </div>

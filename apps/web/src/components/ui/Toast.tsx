@@ -148,7 +148,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                     type="button"
                     onClick={() => setItem(null)}
                     aria-label={t('common.close')}
-                    className="shrink-0 rounded-lg p-1.5 text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                    className="-my-1 -mr-1 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                   >
                     <X size={16} aria-hidden="true" />
                   </button>

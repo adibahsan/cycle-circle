@@ -34,7 +34,7 @@ const OWNED = [
   'components/TrialCountdownPill.tsx',
   'components/TrialExpiredLock.tsx',
   'components/onboarding',
-  'components/motion/ParallaxBlobs.tsx',
+  'components/ui/PhaseIcon.tsx',
   'components/GoalBadge.tsx',
 ].flatMap(walk).filter((f) => /\.(tsx?|css)$/.test(f));
 

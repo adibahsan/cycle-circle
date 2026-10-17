@@ -36,7 +36,7 @@ function isFuture(dateStr: string): boolean {
 
 export function ConsistencyGrid({ last30, onBackfill, variant = 'inline', className }: ConsistencyGridProps) {
   const { t } = useTranslation();
-  const { language } = useAppStore();
+  const language = useAppStore((s) => s.language);
   const mounted = useHasMounted();
   const reduceRaw = useReducedMotion() ?? false;
   const prm = mounted && reduceRaw;
@@ -148,7 +148,7 @@ export function ConsistencyGrid({ last30, onBackfill, variant = 'inline', classN
 
   return (
     <div className={`flex flex-col gap-2 ${className ?? ''}`}>
-      <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
+      <p className="text-sm font-medium text-[var(--color-text-secondary)]">
         {t('consistency.last30')}
       </p>
       {/* DOW headers */}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, CircleAlert } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -59,6 +59,15 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
   const [resending, setResending] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Tracks whether the dialog is still open/mounted so async work never fires callbacks after close.
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+    return () => {
+      openRef.current = false;
+    };
+  }, [open]);
 
   // Resend countdown ticks while on the code step
   useEffect(() => {
@@ -197,6 +206,7 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
       setStep('success');
       // brief success flash before closing
       await new Promise<void>((resolve) => setTimeout(resolve, 1800));
+      if (!openRef.current) return;
       onVerified(body.subscriptionStatus);
       onClose();
     } catch {
@@ -210,7 +220,6 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
   const handleResend = async () => {
     if (countdown > 0 || resending) return;
     setResending(true);
-    setDigits(Array(OTP_LENGTH).fill(''));
     setCodeError('');
     try {
       const stripped = phone.replace(/\D/g, '');
@@ -219,16 +228,24 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: stripped }),
       });
-      if (res.ok) {
-        const body = await res.json().catch(() => ({})) as { referenceNo?: string };
-        if (body.referenceNo) setReferenceNo(body.referenceNo);
+      const body = await res.json().catch(() => ({})) as {
+        referenceNo?: string;
+        error?: { message?: string; code?: string } | string;
+      };
+      if (!res.ok || !body.referenceNo) {
+        const err = typeof body.error === 'object' ? body.error : undefined;
+        setCodeError(t(mapErrorCode(err?.code)));
+        return;
       }
+      setReferenceNo(body.referenceNo);
+      setDigits(Array(OTP_LENGTH).fill(''));
+      setCountdown(RESEND_SECONDS);
+      requestAnimationFrame(() => inputRefs.current[0]?.focus());
     } catch {
-      /* still reset UI even if resend fails */
+      setCodeError(t('trial.err.generic'));
+    } finally {
+      setResending(false);
     }
-    setResending(false);
-    setCountdown(RESEND_SECONDS);
-    requestAnimationFrame(() => inputRefs.current[0]?.focus());
   };
 
   const allFilled = digits.filter(Boolean).length === OTP_LENGTH;
@@ -380,7 +397,7 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone }: AddP
                 exit={{ opacity: 0 }}
                 className="text-sm text-[var(--color-error)] flex items-center gap-1"
               >
-                <span aria-hidden="true">⚠</span> {codeError}
+                <CircleAlert size={15} aria-hidden="true" className="shrink-0" /> {codeError}
               </motion.p>
             )}
           </AnimatePresence>

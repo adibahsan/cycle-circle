@@ -3,11 +3,12 @@
 import { Sun, Moon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
-  const { theme, setTheme } = useAppStore();
+  const { theme, setTheme } = useAppStore(useShallow((s) => ({ theme: s.theme, setTheme: s.setTheme })));
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
   return (

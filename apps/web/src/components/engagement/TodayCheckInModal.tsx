@@ -91,7 +91,7 @@ export function TodayCheckInModal({
 }: TodayCheckInModalProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  const { language } = useAppStore();
+  const language = useAppStore((s) => s.language);
   const titleId = useId();
 
   const mounted = useHasMounted();
@@ -209,7 +209,7 @@ export function TodayCheckInModal({
         <div className="px-5 pt-4 pb-6 flex flex-col gap-4">
           {/* ── Header ── */}
           <div className="flex flex-col gap-0.5 pr-8">
-            <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
+            <p className="text-sm font-medium text-[var(--color-text-muted)]">
               {t(getGreetingKey())}
             </p>
             <h2

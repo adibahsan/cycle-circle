@@ -156,6 +156,15 @@
   ::selection {
     background: color-mix(in srgb, var(--color-primary) 22%, transparent);
   }
+  input, textarea {
+    caret-color: var(--color-primary);
+  }
+  :focus-visible {
+    outline-color: var(--goal-accent);
+  }
+  .tabular-nums, time {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 @layer utilities {
@@ -176,8 +185,12 @@
   .dark .shadow-soft {
     box-shadow: 0 0 0 1px rgb(255 255 255 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.6);
   }
+  /* Raised accent surface: offset, soft-blurred and tinted from the accent (no zero-offset halo). */
   .shadow-glow {
-    box-shadow: 0 0 40px 8px color-mix(in srgb, var(--goal-accent) 12%, transparent), 0 8px 24px -8px color-mix(in srgb, var(--goal-accent) 16%, transparent);
+    box-shadow: 0 14px 28px -14px color-mix(in srgb, var(--goal-accent) 45%, transparent), 0 3px 8px -3px color-mix(in srgb, var(--color-brand-navy) 14%, transparent);
+  }
+  .dark .shadow-glow {
+    box-shadow: 0 14px 28px -14px rgb(0 0 0 / 0.7), 0 3px 8px -3px rgb(0 0 0 / 0.5);
   }
   .gradient-primary {
     background: linear-gradient(135deg, var(--goal-accent) 0%, color-mix(in srgb, var(--goal-accent) 55%, white) 100%);

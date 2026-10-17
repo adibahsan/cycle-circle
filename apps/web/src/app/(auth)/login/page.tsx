@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { Phone, Shield, ChevronRight } from 'lucide-react';
+import { Phone, Shield, ChevronRight, CircleAlert, CircleCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { devMode, DEV_DEFAULT_PHONE } from '@vesta/shared/utils/config';
@@ -44,7 +44,9 @@ export default function LoginPage() {
     if (error) setError('');
   }
 
-  async function handleSendOtp() {
+  async function handleSendOtp(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (loading) return;
     const validationError = validatePhone(phone);
     if (validationError) {
       setError(validationError);
@@ -62,13 +64,13 @@ export default function LoginPage() {
       const body = await res.json().catch(() => ({})) as { referenceNo?: string; error?: string | { message: string } };
       if (!res.ok) {
         const msg = typeof body.error === 'object' ? body.error?.message : body.error;
-        setError(msg ?? 'Failed to send OTP. Please try again.');
+        setError(msg ?? t('auth.sendOtpFailed'));
         return;
       }
       const { referenceNo } = body;
       router.push(`/verify-otp?referenceNo=${encodeURIComponent(referenceNo ?? '')}&phone=${encodeURIComponent(phone)}`);
     } catch {
-      setError('Failed to send OTP. Please try again.');
+      setError(t('auth.sendOtpFailed'));
     } finally {
       setLoading(false);
     }
@@ -84,14 +86,9 @@ export default function LoginPage() {
         animate="show"
         className="flex flex-col items-center pt-8 pb-6"
       >
-        {/* Logo mark — floating bob animation */}
-        <motion.div
-          animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          className="mb-4"
-        >
+        <div className="mb-4">
           <BrandLogo size={64} alt="" className="w-16 h-16" />
-        </motion.div>
+        </div>
 
         <h1 className="text-3xl font-extrabold mb-1 text-[var(--color-text-primary)]">
           Cycle Circle
@@ -104,7 +101,9 @@ export default function LoginPage() {
       </motion.div>
 
       {/* ── Card ── */}
-      <motion.div
+      <motion.form
+        noValidate
+        onSubmit={handleSendOtp}
         custom={1}
         variants={FADE_UP}
         initial="hidden"
@@ -126,11 +125,12 @@ export default function LoginPage() {
           <div className="relative">
             {/* Country prefix */}
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-secondary)] select-none">
-              🇧🇩 +88
+              +88
             </span>
             <input
               id="phone-input"
-              aria-describedby="login-notice"
+              aria-describedby={error ? 'phone-error login-notice' : 'login-notice'}
+              aria-invalid={error ? true : undefined}
               type="tel"
               inputMode="numeric"
               name="phone"
@@ -140,27 +140,28 @@ export default function LoginPage() {
               value={phone}
               onChange={handlePhoneChange}
               maxLength={11}
-              className={`w-full pl-20 pr-4 py-3.5 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200 text-base tracking-widest font-medium ${
+              className={`w-full pl-14 pr-10 py-3.5 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200 text-base tracking-widest font-medium ${
                 error ? 'border-[var(--color-error)] focus-visible:ring-[var(--color-error)]/30' : 'border-[var(--color-border)]'
               }`}
             />
             {phone.length === 11 && !error && (
-              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="9" fill="currentColor" fillOpacity="0.15"/><path d="M5 9l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </span>
+              <CircleCheck size={18} aria-hidden="true" className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--color-primary)]" />
             )}
           </div>
-          {error && <p aria-live="polite" className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1"><span>⚠</span>{error}</p>}
+          <p id="phone-error" role="alert" aria-live="polite" className="empty:hidden mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1.5">
+            {error && <><CircleAlert size={15} aria-hidden="true" className="shrink-0" />{error}</>}
+          </p>
           <p id="login-notice" className="mt-2 text-xs text-[var(--color-text-muted)] leading-relaxed">
             {t('auth.loginNotice')}
           </p>
         </div>
 
         <Button
+          type="submit"
           fullWidth
           size="lg"
-          onClick={handleSendOtp}
           disabled={loading}
+          aria-busy={loading}
           className="text-base font-bold tracking-wide"
         >
           {loading ? (
@@ -169,7 +170,7 @@ export default function LoginPage() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
-              {'Sending…'}
+              {t('auth.sending')}
             </span>
           ) : (
             <span className="flex items-center gap-2">
@@ -178,7 +179,7 @@ export default function LoginPage() {
             </span>
           )}
         </Button>
-      </motion.div>
+      </motion.form>
 
       {/* ── Email fallback ── */}
       <motion.div

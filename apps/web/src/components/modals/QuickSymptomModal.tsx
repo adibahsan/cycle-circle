@@ -47,7 +47,7 @@ export function QuickSymptomModal({
 }: QuickSymptomModalProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  const { language } = useAppStore();
+  const language = useAppStore((s) => s.language);
 
   const mounted = useHasMounted();
   const reduce = useReducedMotion() ?? false;

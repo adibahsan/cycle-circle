@@ -16,7 +16,7 @@ const notoBengali = Noto_Sans_Bengali({
   subsets: ['bengali'],
   variable: '--font-bengali',
   display: 'swap',
-  weight: ['300', '400', '500', '600', '700', '800'],
+  weight: ['400', '500', '600', '700', '800'],
 });
 
 const siteUrl = 'https://test-vesta.velirasolutions.com';

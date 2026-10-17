@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect } from 'react'
+import { MotionConfig } from 'motion/react'
 import { useAppStore } from '@/lib/store'
+import { useShallow } from 'zustand/react/shallow'
 import i18n from '@vesta/shared/utils/i18n'
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const { theme, language } = useAppStore()
+  const { theme, language } = useAppStore(useShallow((s) => ({ theme: s.theme, language: s.language })))
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
@@ -19,5 +21,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
     }
   }, [language])
 
-  return <>{children}</>
+  // Honour the OS reduced-motion setting for every motion component (loops, entrances, layout).
+  return <MotionConfig reducedMotion="user">{children}</MotionConfig>
 }

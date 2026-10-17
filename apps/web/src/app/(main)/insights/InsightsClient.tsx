@@ -536,7 +536,7 @@ export function InsightsClient({
   fertileWindowHistory,
 }: InsightsClientProps) {
   const { t } = useTranslation()
-  const { language } = useAppStore()
+  const language = useAppStore((s) => s.language)
   const hasMounted = useHasMounted()
   const prefersReducedMotion = useReducedMotion()
 
@@ -581,7 +581,17 @@ export function InsightsClient({
       {/* ── Page header ──────────────────────────────────────────────────── */}
       <PageHeader
         title={t('insights.title')}
-        subtitle={activeProfile ? `${t('insights.subtitle')} · ${activeProfile.name}` : t('insights.subtitle')}
+        subtitle={
+          activeProfile ? (
+            <>
+              {t('insights.subtitle').replace(/(…|\.{2,})\s*$/, '')}
+              <span aria-hidden="true"> · </span>
+              <span className="font-semibold text-[var(--color-text-secondary)]">{activeProfile.name}</span>
+            </>
+          ) : (
+            t('insights.subtitle')
+          )
+        }
       />
 
       {!hasData ? (
@@ -601,7 +611,7 @@ export function InsightsClient({
         className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
       >
         <div className="flex flex-col gap-1">
-          <span className="text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
+          <span className="text-xs font-semibold text-[var(--color-text-muted)]">
             {t('insights.dateRange')}
           </span>
           <DateRangeControl value={dateRange} onChange={setDateRange} />
@@ -620,7 +630,7 @@ export function InsightsClient({
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <SectionHeader title={t('insights.cycleLengthTrend')} />
               <div className="flex flex-col gap-1 sm:items-end">
-                <span className="text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
+                <span className="text-xs font-semibold text-[var(--color-text-muted)]">
                   {t('insights.chartType')}
                 </span>
                 <ChartTypeControl value={chartType} onChange={setChartType} />

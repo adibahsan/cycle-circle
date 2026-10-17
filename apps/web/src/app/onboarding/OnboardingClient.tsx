@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
+import { FlowIcon } from '@/components/ui/PhaseIcon';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import { CenteredShell } from '@/components/onboarding/CenteredShell';
 import { AccountControl } from '@/components/onboarding/AccountControl';
@@ -44,10 +45,10 @@ interface OnboardingState {
   profileRelation: ProfileRelation;
 }
 
-const FLOW_LABELS: Record<FlowIntensity, string> = {
-  light: 'Light',
-  medium: 'Medium',
-  heavy: 'Heavy',
+const FLOW_LABEL_KEYS: Record<FlowIntensity, string> = {
+  light: 'dashboard.flowLight',
+  medium: 'dashboard.flowMedium',
+  heavy: 'dashboard.flowHeavy',
 };
 
 const FLOW_COLORS: Record<FlowIntensity, string> = {
@@ -120,7 +121,7 @@ function ProgressBar({ step, prefersReducedMotion }: { step: number; prefersRedu
                 : {
                     width: isActive ? 24 : 8,
                     backgroundColor: i + 1 <= step ? 'var(--color-primary)' : 'var(--color-border)',
-                    scale: isActive ? [1, 1.2, 1] : 1,
+                    scale: 1,
                   }
             }
             transition={
@@ -130,7 +131,6 @@ function ProgressBar({ step, prefersReducedMotion }: { step: number; prefersRedu
                 ? {
                     width: { duration: 0.3 },
                     backgroundColor: { duration: 0.3 },
-                    scale: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
                   }
                 : { duration: 0.3 }
             }
@@ -200,16 +200,16 @@ function StepWelcome({ onNext, prefersReducedMotion }: { onNext: () => void; pre
         className="relative w-56 h-56 flex items-center justify-center mt-2"
       >
         {/* Outermost ring */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10 animate-breathe" />
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10" />
         {/* Middle ring */}
-        <div className="absolute inset-6 rounded-full bg-gradient-to-br from-[var(--color-primary)]/15 to-[var(--color-accent)]/15 animate-breathe" style={{ animationDelay: '0.4s' }} />
+        <div className="absolute inset-6 rounded-full bg-gradient-to-br from-[var(--color-primary)]/15 to-[var(--color-accent)]/15" />
         {/* Inner circle */}
         <div className="absolute inset-12 rounded-full bg-gradient-to-br from-[var(--color-primary)]/25 to-[var(--color-secondary)]/25" />
-        {/* Floating accent dots — CSS-only animation, prefers-reduced-motion safe */}
-        <div className="absolute top-3 right-8 w-5 h-5 rounded-full bg-[var(--color-accent)]/60 animate-float" aria-hidden="true" />
-        <div className="absolute bottom-6 left-5 w-4 h-4 rounded-full bg-[var(--color-secondary)]/60 animate-float" style={{ animationDelay: '0.6s' }} aria-hidden="true" />
-        <div className="absolute top-10 left-4 w-3 h-3 rounded-full bg-[var(--color-primary)]/50 animate-float" style={{ animationDelay: '1.1s' }} aria-hidden="true" />
-        <div className="absolute bottom-10 right-3 w-3 h-3 rounded-full bg-[var(--color-primary)]/40 animate-float" style={{ animationDelay: '1.7s' }} aria-hidden="true" />
+        {/* Static accent dots */}
+        <div className="absolute top-3 right-8 w-5 h-5 rounded-full bg-[var(--color-accent)]/60" aria-hidden="true" />
+        <div className="absolute bottom-6 left-5 w-4 h-4 rounded-full bg-[var(--color-secondary)]/60" aria-hidden="true" />
+        <div className="absolute top-10 left-4 w-3 h-3 rounded-full bg-[var(--color-primary)]/50" aria-hidden="true" />
+        <div className="absolute bottom-10 right-3 w-3 h-3 rounded-full bg-[var(--color-primary)]/40" aria-hidden="true" />
         {/* Center logo mark */}
         <div className="relative z-10 w-20 h-20 rounded-full flex items-center justify-center shadow-glow">
           <BrandLogo size={80} className="h-20 w-20" />
@@ -292,7 +292,7 @@ function StepGoal({
       value: 'tracking',
       icon: <CalendarDays aria-hidden="true" size={28} />,
       label: t('onboarding.goalTracking'),
-      description: 'Track your cycle, log symptoms and get accurate predictions.',
+      description: t('onboarding.goalDescTracking'),
       accent: 'var(--color-goal-tracking)',
       bg: 'color-mix(in srgb, var(--color-goal-tracking) 8%, transparent)',
     },
@@ -300,7 +300,7 @@ function StepGoal({
       value: 'conceive',
       icon: <Heart aria-hidden="true" size={28} />,
       label: t('onboarding.goalConceive'),
-      description: 'Identify fertile windows and maximise conception chances.',
+      description: t('onboarding.goalDescConceive'),
       accent: 'var(--color-goal-conceive)',
       bg: 'color-mix(in srgb, var(--color-goal-conceive) 8%, transparent)',
     },
@@ -308,7 +308,7 @@ function StepGoal({
       value: 'pregnancy',
       icon: <Baby aria-hidden="true" size={28} />,
       label: t('onboarding.goalPregnancy'),
-      description: 'Track your pregnancy week by week and monitor your wellbeing.',
+      description: t('onboarding.goalDescPregnancy'),
       accent: 'var(--color-goal-pregnancy)',
       bg: 'color-mix(in srgb, var(--color-goal-pregnancy) 8%, transparent)',
     },
@@ -316,7 +316,7 @@ function StepGoal({
       value: 'perimenopause',
       icon: <Moon aria-hidden="true" size={28} />,
       label: t('onboarding.goalPerimenopause'),
-      description: 'Monitor irregular cycles and track perimenopause symptoms.',
+      description: t('onboarding.goalDescPerimenopause'),
       accent: 'var(--color-goal-perimenopause)',
       bg: 'color-mix(in srgb, var(--color-goal-perimenopause) 8%, transparent)',
     },
@@ -514,10 +514,10 @@ function StepCycleHistory({
                     : {}
                 }
               >
-                <span className="mr-1" aria-hidden="true">
-                  {f === 'light' ? '💧' : f === 'medium' ? '🩸' : '🌊'}
+                <span className="inline-flex items-center justify-center gap-1.5">
+                  <FlowIcon flow={f} />
+                  {t(FLOW_LABEL_KEYS[f])}
                 </span>
-                {FLOW_LABELS[f]}
               </button>
             ))}
           </div>
@@ -658,7 +658,7 @@ function StepDone({
       ? t('onboarding.goalPerimenopause')
       : 'Not set';
 
-  const summaryItems = [
+  const summaryItems: { label: string; value: React.ReactNode }[] = [
     {
       label: t('onboarding.goalLabel'),
       value: goalLabel,
@@ -682,11 +682,16 @@ function StepDone({
       : []),
     {
       label: t('dashboard.flowIntensity'),
-      value: `${state.flowIntensity === 'light' ? '💧' : state.flowIntensity === 'medium' ? '🩸' : '🌊'} ${state.flowIntensity.charAt(0).toUpperCase() + state.flowIntensity.slice(1)}`,
+      value: (
+        <span className="inline-flex items-center gap-1.5">
+          <FlowIcon flow={state.flowIntensity} />
+          {t(FLOW_LABEL_KEYS[state.flowIntensity])}
+        </span>
+      ),
     },
   ];
 
-  // Confetti dots — looping JS animation guarded by prefersReducedMotion
+  // Confetti dots — one-shot entrance, static under prefersReducedMotion
   const confettiDots = [
     { top: '8%', left: '10%', color: 'var(--color-primary)', size: 10, delay: '0s' },
     { top: '5%', left: '80%', color: 'var(--color-secondary)', size: 8, delay: '0.1s' },
@@ -721,13 +726,12 @@ function StepDone({
             <motion.div
               key={i}
               initial={{ opacity: 0, y: -20, scale: 0 }}
-              animate={{ opacity: [0, 1, 0.6, 1], y: [-20, 0, -18, 0], scale: [0, 1, 1, 1] }}
+              animate={{ opacity: 0.8, y: 0, scale: 1 }}
               transition={{
                 delay: parseFloat(dot.delay),
-                duration: 3 + i * 0.4,
-                repeat: Infinity,
-                ease: 'easeInOut',
-                times: [0, 0.15, 0.57, 1],
+                type: 'spring',
+                stiffness: 220,
+                damping: 14,
               }}
               className="absolute rounded-full"
               style={{
@@ -760,7 +764,7 @@ function StepDone({
 
       {/* Summary card */}
       <Card padding="md" className="glass w-full text-left">
-        <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
+        <p className="text-sm font-semibold text-[var(--color-text-secondary)] mb-3">
           {t('onboarding.yourSetup')}
         </p>
         <div className="divide-y divide-[var(--color-border)]">
@@ -887,6 +891,7 @@ export default function OnboardingClient({ user }: OnboardingClientProps) {
   // ── Final submission ──
 
   async function handleFinish() {
+    if (submitting) return;
     if (!validateStep(2)) {
       setStep(2);
       return;

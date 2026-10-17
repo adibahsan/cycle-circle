@@ -69,7 +69,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [unsubPending, setUnsubPending] = useState(false)
   const [addPhoneOpen, setAddPhoneOpen] = useState(false)
-  const [unsubResult, setUnsubResult] = useState<'success' | 'error' | null>(null)
+  const [unsubResult, setUnsubResult] = useState<'success' | 'error' | 'adminOverride' | 'noPhone' | null>(null)
 
   const status: SubscriptionStatus =
     (localStatus ?? (user.subscriptionStatus as SubscriptionStatus)) ?? 'free'
@@ -101,7 +101,12 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
     setUnsubPending(true)
     try {
       const res = await fetch('/api/billing/unsubscribe', { method: 'POST' })
-      if (!res.ok) throw new Error(`Unsubscribe failed (${res.status})`)
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => null)) as { error?: { code?: string } } | null
+        const code = errBody?.error?.code
+        setUnsubResult(code === 'ADMIN_OVERRIDE' ? 'adminOverride' : code === 'NO_PHONE' ? 'noPhone' : 'error')
+        return
+      }
       const body = (await res.json().catch(() => null)) as { status?: string } | null
       setLocalStatus(toLocalStatus(body?.status ?? 'FREE'))
       setUnsubResult('success')
@@ -124,8 +129,8 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
   return (
     <PageContainer>
       <PageHeader
-        title={t('subscription.title')}
-        subtitle={t('subscription.unlockTagline')}
+        title={isProUser ? t('subscription.titlePro') : t('subscription.title')}
+        subtitle={isProUser ? t('subscription.subtitlePro') : t('subscription.unlockTagline')}
       />
 
       {/* ── Current Plan + Upgrade Cards ── */}
@@ -139,7 +144,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
           <div className="surface-wash rounded-3xl border border-[var(--color-border)] shadow-soft p-6">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
-                <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
+                <p className="text-sm font-semibold text-[var(--color-text-muted)]">
                   {t('subscription.currentPlan')}
                 </p>
                 <p className="text-lg font-bold text-[var(--color-text-primary)]">
@@ -157,7 +162,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                   </p>
                 )}
                 {tier === 'LAPSED' && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">
+                  <p className="text-xs text-[var(--color-gold-ink)] font-semibold">
                     {t('subscription.planLapsedNote')}
                   </p>
                 )}
@@ -168,7 +173,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                   <Crown size={12} aria-hidden="true" /> <span className="uppercase">{t('subscription.pro')}</span>
                 </span>
               ) : tier === 'LAPSED' ? (
-                <span className="px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 text-xs font-semibold">
+                <span className="px-3 py-1.5 rounded-full bg-[var(--color-bg-peach)] border border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] text-[var(--color-gold-ink)] text-xs font-semibold">
                   {t('subscription.planLapsed')}
                 </span>
               ) : (
@@ -214,7 +219,13 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                 <p
                   className={`mt-3 text-sm font-medium ${unsubResult === 'success' ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-error)]'}`}
                 >
-                  {unsubResult === 'success' ? t('subscription.unsubscribeSuccess') : t('subscription.unsubscribeError')}
+                  {unsubResult === 'success'
+                    ? t('subscription.unsubscribeSuccess')
+                    : unsubResult === 'adminOverride'
+                    ? t('subscription.unsubscribeAdminOverride')
+                    : unsubResult === 'noPhone'
+                    ? t('subscription.unsubscribeNoPhone')
+                    : t('subscription.unsubscribeError')}
                 </p>
               )}
             </div>
@@ -265,7 +276,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                 <button
                   onClick={() => setAddPhoneOpen(true)}
                   className={`w-full bg-[var(--color-action)] text-[var(--color-on-action)] font-bold rounded-full text-base hover:opacity-90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-action)] ${
-                    trial === 'expired' ? 'py-4 text-lg animate-pulse' : 'py-3.5'
+                    trial === 'expired' ? 'py-4 text-lg motion-safe:animate-pulse' : 'py-3.5'
                   }`}
                 >
                   {t('subscription.upgradeButton')}
@@ -287,16 +298,16 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
         </h2>
 
         <div className="rounded-3xl overflow-hidden bg-[var(--color-bg-card)] shadow-soft divide-y divide-[var(--color-border)]">
-          <div className="grid grid-cols-3 surface-peach">
-            <div className="px-4 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide col-span-1">
+          <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3 surface-peach">
+            <div className="px-3 sm:px-4 py-3 text-xs font-semibold text-[var(--color-text-muted)] col-span-1">
               {t('subscription.featureHeader')}
             </div>
-            <div className="px-2 py-3 text-center">
-              <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">
+            <div className="px-1 sm:px-2 py-3 text-center">
+              <span className="text-xs font-semibold text-[var(--color-text-muted)]">
                 {t('subscription.free')}
               </span>
             </div>
-            <div className="px-2 py-3 text-center">
+            <div className="px-1 sm:px-2 py-3 text-center">
               <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-bg-card))] text-[var(--color-text-primary)]">
                 <Crown size={10} aria-hidden="true" /> {t('subscription.pro')}
               </span>
@@ -306,19 +317,19 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
           {COMPARISON_FEATURE_KEYS.map(({ key, labelKey, free, pro }) => (
             <div
               key={key}
-              className="grid grid-cols-3"
+              className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3"
             >
-              <div className="px-4 py-3 text-sm md:text-base text-[var(--color-text-secondary)] col-span-1">
+              <div className="px-3 sm:px-4 py-3 text-sm md:text-base text-[var(--color-text-secondary)] col-span-1">
                 {t(labelKey)}
               </div>
-              <div className="px-2 py-3 flex justify-center items-center">
+              <div className="px-1 sm:px-2 py-3 flex justify-center items-center">
                 {free ? (
                   <Check size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
                 ) : (
                   <X size={16} className="text-[var(--color-border)]" aria-hidden="true" />
                 )}
               </div>
-              <div className="px-2 py-3 flex justify-center items-center">
+              <div className="px-1 sm:px-2 py-3 flex justify-center items-center">
                 {pro ? (
                   <Check size={16} strokeWidth={2.5} className="text-[var(--color-primary)]" aria-hidden="true" />
                 ) : (

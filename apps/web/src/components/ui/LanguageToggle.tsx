@@ -1,10 +1,11 @@
 'use client';
 
 import { useAppStore } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { useTranslation } from 'react-i18next';
 
 export function LanguageToggle() {
-  const { language, setLanguage } = useAppStore();
+  const { language, setLanguage } = useAppStore(useShallow((s) => ({ language: s.language, setLanguage: s.setLanguage })));
   const { i18n, t } = useTranslation();
 
   const toggle = () => {
