@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { parseBody } from '@vesta/shared/server/validation'
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { issueJwt, setAuthCookie } from '@vesta/shared/server/auth'
-import { verifyOtp } from '@vesta/shared/server/adapters/bdapps'
+import { verifyOtp, isSubscribed, storedSubscriberId } from '@vesta/shared/server/adapters/bdapps'
 import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
 import { findOtpChallenge, completeOtpAuth } from '@vesta/shared/server/services'
 import { isDevModeEnabled } from '@vesta/shared/server/dev'
@@ -38,16 +38,20 @@ export async function POST(request: Request): Promise<Response> {
 
     // DEV_MODE fake codes behave like a successful BDApps registration.
     let registered = true
+    let subscriberId = challenge.phone
     if (isDevModeEnabled()) {
       if (!DEV_OTP_CODES.includes(body.otp)) {
         throw new ApiError(400, 'Invalid OTP code', 'INVALID_OTP')
       }
     } else {
       const result = await verifyOtp(body.referenceNo, body.otp)
-      registered = result.subscriptionStatus === 'REGISTERED'
+      // A charging-pending status still counts as Pro (ADR 0002); BDApps addresses
+      // the number by a masked id from now on, so keep it for getStatus / unsubscribe.
+      registered = isSubscribed(result.subscriptionStatus)
+      subscriberId = storedSubscriberId(result, challenge.phone)
     }
 
-    const user = await completeOtpAuth(challenge.id, challenge.phone, registered)
+    const user = await completeOtpAuth(challenge.id, challenge.phone, registered, subscriberId)
     revalidateTag(cacheTags.user(user.id), { expire: 0 })
 
     const token = await issueJwt({

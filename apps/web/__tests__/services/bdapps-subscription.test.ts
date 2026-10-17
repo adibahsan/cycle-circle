@@ -4,6 +4,7 @@ import {
   applyBdappsSubscription,
   hasAdminOverride,
   listBdappsSubscribers,
+  syncBdappsSubscriptionBySubscriberId,
 } from '@vesta/shared/server/services/subscription-service'
 import { keepAccountWithVerifiedPhone } from '@vesta/shared/server/services/user-service'
 
@@ -14,6 +15,7 @@ const ids = {
   legacyOverride: `${P}-legacy-override`,
   both: `${P}-both`,
   trial: `${P}-trial`,
+  masked: `${P}-masked`,
 }
 const phones = {
   overrideOld: '+8801900000001',
@@ -21,7 +23,9 @@ const phones = {
   legacyOverride: '+8801900000003',
   both: '+8801900000004',
   trial: '+8801900000005',
+  masked: '+8801900000006',
 }
+const MASKED_ID = 'tel:dGVzdC1tYXNrZWQtaWQ6cm9iaQ'
 
 async function cleanup() {
   const userIds = Object.values(ids)
@@ -40,6 +44,7 @@ beforeAll(async () => {
   await mk('legacyOverride', 'PRO')
   await mk('both', 'PRO')
   await mk('trial', 'FREE', { emailTrialExpiresAt: new Date('2030-01-01') })
+  await mk('masked', 'FREE')
 
   // admin override on an OLDER row, newer plain row
   await testPrisma.subscription.create({
@@ -81,7 +86,7 @@ describe('applyBdappsSubscription', () => {
 describe('listBdappsSubscribers', () => {
   it('includes subscription rows and legacy phone PRO users, deduped, minus overrides', async () => {
     const list = (await listBdappsSubscribers()).filter((s) => s.userId.startsWith(P))
-    const byUser = Object.fromEntries(list.map((s) => [s.userId, s.phone]))
+    const byUser = Object.fromEntries(list.map((s) => [s.userId, s.subscriberId]))
     expect(byUser[ids.both]).toBe(phones.both)
     expect(byUser[ids.legacy]).toBe(phones.legacy)
     expect(ids.legacyOverride in byUser).toBe(false)
@@ -103,5 +108,33 @@ describe('keepAccountWithVerifiedPhone', () => {
     const user = await testPrisma.user.findUniqueOrThrow({ where: { id: ids.trial } })
     expect(user.emailTrialExpiresAt).toBeNull()
     expect(user.subscriptionStatus).toBe('PRO')
+  })
+})
+
+describe('masked subscriber ids', () => {
+  it('stores the masked id it is given, not the phone', async () => {
+    await applyBdappsSubscription(ids.masked, MASKED_ID, true)
+    const sub = await testPrisma.subscription.findFirstOrThrow({ where: { userId: ids.masked } })
+    expect(sub.bdappsSubscriberId).toBe(MASKED_ID)
+    expect(sub.status).toBe('PRO')
+  })
+
+  it('webhook sync matches the masked id with or without the tel: prefix', async () => {
+    const bare = MASKED_ID.replace(/^tel:/, '')
+    expect(await syncBdappsSubscriptionBySubscriberId(bare, false)).toMatchObject({ userId: ids.masked, status: 'FREE' })
+    expect(await syncBdappsSubscriptionBySubscriberId(MASKED_ID, true)).toMatchObject({ userId: ids.masked, status: 'PRO' })
+    // the stored id survives a sync
+    const sub = await testPrisma.subscription.findFirstOrThrow({ where: { userId: ids.masked } })
+    expect(sub.bdappsSubscriberId).toBe(MASKED_ID)
+  })
+
+  it('falls back to the phone for unmasked ids, and returns null when nobody matches', async () => {
+    expect(await syncBdappsSubscriptionBySubscriberId('tel:8801900000006', true)).toMatchObject({ userId: ids.masked })
+    expect(await syncBdappsSubscriptionBySubscriberId('tel:bm9ib2R5', true)).toBeNull()
+  })
+
+  it('lists subscribers by their stored subscriber id', async () => {
+    const list = (await listBdappsSubscribers()).filter((s) => s.userId === ids.masked)
+    expect(list).toEqual([{ userId: ids.masked, subscriberId: MASKED_ID }])
   })
 })

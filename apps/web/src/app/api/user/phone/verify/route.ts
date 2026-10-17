@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { revalidateTag } from 'next/cache'
 import { parseBody } from '@vesta/shared/server/validation'
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
-import { verifyOtp } from '@vesta/shared/server/adapters/bdapps'
+import { verifyOtp, isSubscribed, storedSubscriberId } from '@vesta/shared/server/adapters/bdapps'
 import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
 import { findOtpChallenge, keepAccountWithVerifiedPhone } from '@vesta/shared/server/services'
 import { isDevModeEnabled } from '@vesta/shared/server/dev'
@@ -41,13 +41,17 @@ export const POST = withAuth(async (request, { user }) => {
 
     // DEV_MODE fake codes behave like a successful BDApps registration.
     let registered = true
+    let subscriberId = challenge.phone
     if (isDevModeEnabled()) {
       if (!DEV_OTP_CODES.includes(body.otp)) {
         throw new ApiError(400, 'Invalid or expired code', 'INVALID_OTP')
       }
     } else {
       const result = await verifyOtp(body.referenceNo, body.otp)
-      registered = result.subscriptionStatus === 'REGISTERED'
+      // A charging-pending status still counts as Pro (ADR 0002); BDApps addresses
+      // the number by a masked id from now on, so keep it for getStatus / unsubscribe.
+      registered = isSubscribed(result.subscriptionStatus)
+      subscriberId = storedSubscriberId(result, challenge.phone)
     }
 
     await prisma.otpChallenge.update({
@@ -57,7 +61,7 @@ export const POST = withAuth(async (request, { user }) => {
 
     let result: Awaited<ReturnType<typeof keepAccountWithVerifiedPhone>>
     try {
-      result = await keepAccountWithVerifiedPhone(user.id, challenge.phone, registered)
+      result = await keepAccountWithVerifiedPhone(user.id, challenge.phone, registered, subscriberId)
     } catch (e) {
       if ((e as { code?: string }).code === 'P2002') {
         throw new ApiError(409, 'Phone already registered to another account', 'PHONE_TAKEN')

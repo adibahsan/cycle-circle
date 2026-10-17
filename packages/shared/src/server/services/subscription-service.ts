@@ -191,9 +191,14 @@ export async function hasAdminOverride(userId: string): Promise<boolean> {
   return row !== null
 }
 
+/**
+ * Set a user's plan from BDApps. `subscriberId` is what later getStatus / unsubscribe
+ * calls must use: the masked `tel:<id>` from otp/verify (ADR 0002), or the phone for
+ * legacy rows and dev login.
+ */
 export async function applyBdappsSubscription(
   userId: string,
-  phone: string,
+  subscriberId: string,
   registered: boolean,
 ): Promise<'FREE' | 'PRO' | 'LAPSED'> {
   if (await hasAdminOverride(userId)) {
@@ -212,7 +217,7 @@ export async function applyBdappsSubscription(
   const status = registered ? 'PRO' : 'FREE'
   const data = {
     status,
-    bdappsSubscriberId: phone,
+    bdappsSubscriberId: subscriberId,
     consecutiveFailures: 0,
     gracePeriodEndsAt: null,
   } as const
@@ -233,12 +238,43 @@ export async function applyBdappsSubscription(
 export async function syncBdappsSubscriptionByPhone(phone: string, registered: boolean) {
   const user = await prisma.user.findFirst({ where: { phone }, select: { id: true } })
   if (!user) return null
-  const status = await applyBdappsSubscription(user.id, phone, registered)
+  // Keep a stored (masked) subscriber id; the phone is only a fallback for legacy rows.
+  const subscriberId = (await getBdappsSubscriberId(user.id)) ?? phone
+  const status = await applyBdappsSubscription(user.id, subscriberId, registered)
   return { userId: user.id, status }
 }
 
+/**
+ * Sync a webhook status change by BDApps subscriberId. Masked ids (our app) match the
+ * id stored at OTP verify, with or without `tel:`; unmasked `tel:8801…` ids fall back
+ * to the user's phone. Returns null when nobody matches.
+ */
+export async function syncBdappsSubscriptionBySubscriberId(subscriberId: string, registered: boolean) {
+  const bare = subscriberId.replace(/^tel:/, '')
+  const sub = await prisma.subscription.findFirst({
+    where: { bdappsSubscriberId: { in: [`tel:${bare}`, bare] } },
+    orderBy: { createdAt: 'desc' },
+    select: { userId: true, bdappsSubscriberId: true },
+  })
+  if (sub?.bdappsSubscriberId) {
+    const status = await applyBdappsSubscription(sub.userId, sub.bdappsSubscriberId, registered)
+    return { userId: sub.userId, status }
+  }
+  return /^8801\d{9}$/.test(bare) ? syncBdappsSubscriptionByPhone(`+${bare}`, registered) : null
+}
+
+/** The subscriber id stored for a user's latest BDApps subscription, if any. */
+export async function getBdappsSubscriberId(userId: string): Promise<string | null> {
+  const sub = await prisma.subscription.findFirst({
+    where: { userId, bdappsSubscriberId: { not: null } },
+    orderBy: { createdAt: 'desc' },
+    select: { bdappsSubscriberId: true },
+  })
+  return sub?.bdappsSubscriberId ?? null
+}
+
 /** Users whose BDApps subscription we believe is active (for the nightly check). */
-export async function listBdappsSubscribers(): Promise<{ userId: string; phone: string }[]> {
+export async function listBdappsSubscribers(): Promise<{ userId: string; subscriberId: string }[]> {
   const [rows, legacy] = await Promise.all([
     prisma.subscription.findMany({
       where: { status: 'PRO', adminOverride: false, bdappsSubscriberId: { not: null } },
@@ -271,7 +307,7 @@ export async function listBdappsSubscribers(): Promise<{ userId: string; phone: 
   for (const u of legacy) {
     if (u.phone && !byUser.has(u.id)) byUser.set(u.id, u.phone)
   }
-  return [...byUser].map(([userId, phone]) => ({ userId, phone }))
+  return [...byUser].map(([userId, subscriberId]) => ({ userId, subscriberId }))
 }
 
 export async function listProSubscriptions() {

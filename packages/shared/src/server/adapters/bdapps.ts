@@ -19,6 +19,21 @@ class NonRetryable {
   constructor(readonly error: ApiError) {}
 }
 
+const REDACTED_FIELDS = new Set(['password', 'otp'])
+
+/**
+ * One `[bdapps]` log line per HTTP response, so masked subscriber ids and the exact
+ * statuses BDApps returns can be read from server logs (`docker logs … | grep '\[bdapps\]'`).
+ * The password and OTP are never logged.
+ */
+function logBdappsCall(url: string, body: Record<string, unknown>, status: number, response: unknown) {
+  const request = Object.fromEntries(
+    Object.entries(body).map(([k, v]) => [k, REDACTED_FIELDS.has(k) ? '<REDACTED>' : v]),
+  )
+  const op = url.replace(/^https?:\/\/[^/]+\//, '')
+  console.info('[bdapps]', JSON.stringify({ op, request, httpStatus: status, response }))
+}
+
 async function fetchWithRetry(
   url: string,
   body: Record<string, unknown>,
@@ -34,6 +49,7 @@ async function fetchWithRetry(
       })
 
       if (!response.ok) {
+        logBdappsCall(url, body, response.status, await response.text().catch(() => ''))
         const err = new ApiError(
           502,
           `BDApps HTTP error: ${response.status} ${response.statusText}`,
@@ -45,6 +61,7 @@ async function fetchWithRetry(
       }
 
       const data = (await response.json()) as Record<string, unknown>
+      logBdappsCall(url, body, response.status, data)
 
       // BDApps uses "S1000" as the success status code
       const statusCode = data.statusCode as string | undefined
@@ -91,12 +108,37 @@ export function phoneFromSubscriberId(subscriberId: string): string | null {
   return /^8801\d{9}$/.test(digits) ? `+${digits}` : null
 }
 
+/**
+ * True for a raw phone id (`+8801…` / `tel:8801…`). Apps with number masking (ours)
+ * address subscribers by an opaque id instead, and reject raw numbers with E1951.
+ */
+export function isPhoneSubscriberId(subscriberId: string): boolean {
+  return phoneFromSubscriberId(subscriberId.replace(/^\+/, '')) !== null
+}
+
+/**
+ * The id to store for later getStatus / unsubscribe calls: the subscriberId from
+ * otp/verify as `tel:<id>` (masked or not), or the phone when BDApps sent none.
+ */
+export function storedSubscriberId(verify: { subscriberId?: string | null }, phone: string): string {
+  return toTelUri(verify.subscriberId || phone)
+}
+
 export type SubscriptionStatusValue = 'REGISTERED' | 'UNREGISTERED' | string
 
 /** BDApps samples send "REGISTERED." with a trailing dot; strip it and upper-case. */
 export function normalizeSubscriptionStatus(status: unknown): SubscriptionStatusValue {
   if (typeof status !== 'string') return ''
   return status.trim().replace(/\.$/, '').toUpperCase()
+}
+
+/**
+ * After a successful otp/verify the number is subscribed. BDApps may still report a
+ * charging-pending state; that counts as Pro until a webhook or the nightly check says
+ * otherwise. Only an explicit unregistered/blocked status does not.
+ */
+export function isSubscribed(status: SubscriptionStatusValue): boolean {
+  return status !== 'UNREGISTERED' && status !== 'BLOCKED'
 }
 
 /** E1951 = "Format of the address is invalid Or User Already UnRegistered". */

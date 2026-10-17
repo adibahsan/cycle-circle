@@ -81,7 +81,13 @@ export async function findOtpChallenge(referenceNo: string) {
   })
 }
 
-export async function completeOtpAuth(challengeId: string, phone: string, registered: boolean) {
+export async function completeOtpAuth(
+  challengeId: string,
+  phone: string,
+  registered: boolean,
+  /** BDApps subscriberId from otp/verify (masked `tel:<id>`); defaults to the phone. */
+  subscriberId: string = phone,
+) {
   await prisma.otpChallenge.update({
     where: { id: challengeId },
     data: { verified: true },
@@ -98,7 +104,7 @@ export async function completeOtpAuth(challengeId: string, phone: string, regist
   })
 
   // A BDApps-verified phone login is the subscription (ADR 0002). Admin overrides win.
-  user.subscriptionStatus = await applyBdappsSubscription(user.id, phone, registered)
+  user.subscriptionStatus = await applyBdappsSubscription(user.id, subscriberId, registered)
 
   await prisma.otpChallenge.update({
     where: { id: challengeId },

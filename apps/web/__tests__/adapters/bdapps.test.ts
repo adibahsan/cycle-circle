@@ -21,7 +21,12 @@ const {
   smsSend,
   normalizeSubscriptionStatus,
   phoneFromSubscriberId,
+  isSubscribed,
+  storedSubscriberId,
+  isPhoneSubscriberId,
 } = await import('@vesta/shared/server/adapters/bdapps')
+
+const MASKED = 'ZTk2ZTk1OGEwN2IzNWI2NTlkOGQ4N2I0Njg4ODgwOTVlYThlOWUyMmE4NGU4ZTEwYzE5NzVhZWMyNDI5NGI1Nzpyb2Jp'
 
 const fetchMock = vi.fn()
 
@@ -120,5 +125,53 @@ describe('BDApps helpers', () => {
     expect(phoneFromSubscriberId('tel:8801805718862')).toBe('+8801805718862')
     expect(phoneFromSubscriberId('8801805718862')).toBe('+8801805718862')
     expect(phoneFromSubscriberId('tel:ZTk2ZTk1OGEw')).toBeNull()
+  })
+})
+
+describe('masked subscriber ids (apps with number masking, e.g. APP_140389)', () => {
+  it('stores a masked verify subscriberId as tel:<id>, falling back to the phone', () => {
+    expect(storedSubscriberId({ subscriberId: MASKED }, '+8801805718862')).toBe(`tel:${MASKED}`)
+    expect(storedSubscriberId({ subscriberId: `tel:${MASKED}` }, '+8801805718862')).toBe(`tel:${MASKED}`)
+    expect(storedSubscriberId({ subscriberId: 'tel:8801805718862' }, '+8801805718862')).toBe('tel:8801805718862')
+    expect(storedSubscriberId({ subscriberId: '' }, '+8801805718862')).toBe('tel:8801805718862')
+  })
+
+  it('reads status for a masked id as tel:<id> (bare masked ids give E1325)', async () => {
+    reply({ statusCode: 'S1000', subscriptionStatus: 'REGISTERED' })
+    expect(await getSubscriptionStatus(`tel:${MASKED}`)).toBe('REGISTERED')
+    expect(sentBody().subscriberId).toBe(`tel:${MASKED}`)
+  })
+
+  it('tells raw phone ids from masked ids', () => {
+    expect(isPhoneSubscriberId('+8801805718862')).toBe(true)
+    expect(isPhoneSubscriberId('tel:8801805718862')).toBe(true)
+    expect(isPhoneSubscriberId(`tel:${MASKED}`)).toBe(false)
+  })
+})
+
+describe('isSubscribed: a successful verify means Pro unless BDApps says otherwise', () => {
+  it('counts registered and charging-pending states as subscribed', () => {
+    expect(isSubscribed('REGISTERED')).toBe(true)
+    expect(isSubscribed('INITIAL CHARGING PENDING')).toBe(true)
+    expect(isSubscribed('')).toBe(true)
+  })
+  it('does not count unregistered or blocked', () => {
+    expect(isSubscribed('UNREGISTERED')).toBe(false)
+    expect(isSubscribed('BLOCKED')).toBe(false)
+  })
+})
+
+describe('request/response logging', () => {
+  it('logs each call with the response (incl. masked subscriberId), never the password or OTP', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    reply({ statusCode: 'S1000', subscriptionStatus: 'INITIAL CHARGING PENDING', subscriberId: MASKED })
+    await verifyOtp('REF1', '987654')
+    const line = info.mock.calls.map((c) => c.join(' ')).find((l) => l.includes('[bdapps]')) ?? ''
+    expect(line).toContain('otp/verify')
+    expect(line).toContain(MASKED)
+    expect(line).toContain('INITIAL CHARGING PENDING')
+    expect(line).not.toContain('secret')
+    expect(line).not.toContain('987654')
+    info.mockRestore()
   })
 })

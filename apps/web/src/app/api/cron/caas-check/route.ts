@@ -7,7 +7,7 @@ import {
   applyBdappsSubscription,
   isCronEnabled,
 } from '@vesta/shared/server/services'
-import { getSubscriptionStatus } from '@vesta/shared/server/adapters/bdapps'
+import { getSubscriptionStatus, isPhoneSubscriberId } from '@vesta/shared/server/adapters/bdapps'
 import { prisma } from '@vesta/shared'
 
 export const runtime = 'nodejs'
@@ -35,14 +35,19 @@ const handler = withCronAuth(async (request) => {
     let checked = 0
     let downgraded = 0
     let errors = 0
+    let skipped = 0
 
     for (const sub of subscribers) {
-      const { phone } = sub
+      const { subscriberId } = sub
       checked++
       try {
-        const status = await getSubscriptionStatus(phone)
-        if (status === 'UNREGISTERED') {
-          await applyBdappsSubscription(sub.userId, phone, false)
+        const status = await getSubscriptionStatus(subscriberId)
+        if (status === 'UNREGISTERED' && isPhoneSubscriberId(subscriberId)) {
+          // Masked-number apps reject raw phone ids with E1951, which reads as
+          // UNREGISTERED: ambiguous, so never downgrade a legacy phone-id row.
+          skipped++
+        } else if (status === 'UNREGISTERED') {
+          await applyBdappsSubscription(sub.userId, subscriberId, false)
           revalidateTag(cacheTags.user(sub.userId), { expire: 0 })
           downgraded++
         }
@@ -53,7 +58,7 @@ const handler = withCronAuth(async (request) => {
       }
     }
 
-    return Response.json({ checked, downgraded, errors })
+    return Response.json({ checked, downgraded, skipped, errors })
   } catch (error) {
     return handleApiError(error)
   }

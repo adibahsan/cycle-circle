@@ -1,7 +1,6 @@
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { validateWebhookSource, persistWebhookEvent } from '@vesta/shared/server/adapters/webhooks'
-import { phoneFromSubscriberId } from '@vesta/shared/server/adapters/bdapps'
-import { syncBdappsSubscriptionByPhone } from '@vesta/shared/server/services'
+import { syncBdappsSubscriptionBySubscriberId } from '@vesta/shared/server/services'
 import { env } from '@vesta/shared/utils/env'
 import { revalidateTag } from 'next/cache'
 import { cacheTags } from '@/lib/cache-tags'
@@ -36,13 +35,12 @@ export async function POST(request: Request): Promise<Response> {
       return ok()
     }
 
-    const phone = payload.subscriberId ? phoneFromSubscriberId(payload.subscriberId) : null
-    if (!phone) {
-      console.warn('[bdapps-notify] subscriberId is masked or missing; cannot match a user')
-      return ok()
-    }
+    console.info('[bdapps-notify]', JSON.stringify(payload))
+    if (!payload.subscriberId) return ok()
 
-    const updated = await syncBdappsSubscriptionByPhone(phone, change === 'registered')
+    // Masked ids (our app) match the id stored at OTP verify; unmasked ones the phone.
+    const updated = await syncBdappsSubscriptionBySubscriberId(payload.subscriberId, change === 'registered')
+    if (!updated) console.warn('[bdapps-notify] no user for subscriberId', payload.subscriberId)
     if (updated) revalidateTag(cacheTags.user(updated.userId), { expire: 0 })
 
     return ok()
