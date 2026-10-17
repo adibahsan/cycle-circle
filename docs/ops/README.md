@@ -35,6 +35,8 @@ This is the operations handbook for Vesta's production VPS: how to reach the ser
 | [06-merge-to-main-runbook.md](./06-merge-to-main-runbook.md) | Merge deploy stack PR into `main` (human) |
 | [07-dns-and-env-runbook.md](./07-dns-and-env-runbook.md) | Public DNS checks, `/opt/vesta` env files, staging flags (`pnpm vps:preflight`) |
 | [08-logging.md](./08-logging.md) | App log channels, file layout, retention, reading logs |
+| [09-bdapps-subscriptions.md](./09-bdapps-subscriptions.md) | How Pro is decided, masked subscriber ids, manual getStatus/unsubscribe, real-number test, error codes |
+| [10-release-log.md](./10-release-log.md) | One entry per production release: what shipped, pre-steps, verification |
 | [deploy-artifacts-verification.md](./deploy-artifacts-verification.md) | `ops/deploy/` file checklist + `pnpm deploy:verify` |
 | [monitoring-artifacts-verification.md](./monitoring-artifacts-verification.md) | Prometheus/Grafana inventory + `pnpm monitoring:verify` |
 | [ops/monitoring/README.md](../../ops/monitoring/README.md) | Local overlay, VPS env, retention, runtime smoke |

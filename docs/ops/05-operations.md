@@ -52,6 +52,8 @@ A non-"ok" `/api/health/db` response or a container not `Up` → go to
 
 ## 2. Logs
 
+> **App logs** (merchant, customer, webhook, translog, cron, error) are files under `/var/log/vesta/app/<channel>/<YYYY-MM-DD>.log`, Dhaka date. See [08-logging.md](./08-logging.md); `just logs-prod <channel>` tails today's file. Container stdout (below) keeps only 3 × 10 MB.
+
 ### Container logs
 
 ```bash
