@@ -187,6 +187,12 @@ First start can take up to ~90 seconds (healthcheck `start_period`). Check logs:
 just logs bdapps-simulator
 ```
 
+### Testing the BDApps subscription flow locally
+
+The official simulator does not implement `/subscription/*`. Use the zero-dependency mock instead:
+`pnpm bdapps:mock` (or `docker compose -f ops/docker/compose.yml up -d bdapps-mock`), then set
+`BDAPPS_SIMULATOR_BASE_URL=http://localhost:7003`. See `ops/mock/bdapps/README.md`.
+
 ### Admin login fails
 
 - Confirm `JWT_SECRET` matches between `apps/web/.env.local` and `apps/admin/.env.local`

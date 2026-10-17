@@ -124,6 +124,23 @@ services:
       retries: 5
       start_period: 90s
 
+  # Zero-dependency BDApps mock incl. /subscription/* (see ops/mock/bdapps/README.md).
+  bdapps-mock:
+    image: node:24-alpine
+    command: node /mock/server.mjs
+    ports:
+      - "7003:7003"
+    volumes:
+      - ../mock/bdapps:/mock:ro
+    environment:
+      PORT: "7003"
+      BDAPPS_APP_ID: APP_SIMULATOR
+      BDAPPS_PASSWORD: simulator_password
+      WEBHOOK_URL: http://host.docker.internal:3000/api/webhooks/subscription/notify
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
   # Local stand-in for the prod VM reverse proxy (just edge-up). Proxies to the
   # host dev servers; see ops/docker/nginx/edge.conf.
   nginx:

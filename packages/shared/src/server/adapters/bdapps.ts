@@ -272,7 +272,7 @@ export async function caasGetBalance(
 ): Promise<CaasBalanceResult> {
   // Dev: skip the simulator and report a synthetic healthy balance so the
   // caas-check cron doesn't ECONNREFUSED + retry against a non-running service.
-  if (env.DEV_MODE || env.NODE_ENV === 'development') {
+  if (env.DEV_MODE || (env.NODE_ENV === 'development' && !env.BDAPPS_SIMULATOR_BASE_URL)) {
     console.log('[CAAS][dev] (not queried — simulator skipped) balance for', subscriberId)
     return {
       statusCode: 'S1000',
@@ -316,7 +316,7 @@ export async function smsSend(
 ): Promise<SmsSendResult> {
   // Dev: the BDApps simulator usually isn't running locally — log the message to
   // the console instead of POSTing to it (avoids ECONNREFUSED + retry backoff).
-  if (env.DEV_MODE || env.NODE_ENV === 'development') {
+  if (env.DEV_MODE || (env.NODE_ENV === 'development' && !env.BDAPPS_SIMULATOR_BASE_URL)) {
     console.log('[SMS][dev] (not sent — simulator skipped) →', destinationAddresses, '|', message)
     return { messageId: `dev-${Date.now()}`, status: 'DEV' }
   }
