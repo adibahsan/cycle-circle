@@ -66,7 +66,7 @@ export function ProfileChip({
       <Link
         href="/profiles"
         aria-label={t('nav.profileSwitcher', { name: label })}
-        className="min-w-0 truncate rounded-full py-1.5 pl-1.5 pr-3 text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--goal-accent)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
+        className="min-w-0 truncate rounded-full py-1.5 pl-1.5 pr-3 text-sm font-medium text-[var(--color-text-primary)] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
       >
         {label}
       </Link>

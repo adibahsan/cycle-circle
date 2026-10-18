@@ -3,19 +3,26 @@
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { Menu } from 'lucide-react';
-import { BOTTOM_NAV_ITEMS, isMoreActive, isNavActive } from '@/components/shell/nav-config';
+import { BOTTOM_NAV_ITEMS, NAV_ACTIVE, isMoreActive, isNavActive } from '@/components/shell/nav-config';
 import { NAV_ICONS } from '@/components/shell/nav-icons';
 
 const SLOT =
   'relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--goal-accent)]';
 
-function slotStyle(active: boolean): React.CSSProperties | undefined {
-  return active
-    ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 12%, transparent)' }
-    : undefined;
-}
-
 const IDLE = 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]';
+const ACTIVE = 'text-[var(--color-text-primary)]';
+
+/** Icon pill: filled with the goal accent on the active slot, tinted on hover otherwise. */
+function Pill({ active, children }: { active: boolean; children: React.ReactNode }) {
+  return (
+    <span
+      className={`relative flex h-7 w-12 items-center justify-center rounded-full transition-colors ${active ? '' : 'group-hover:bg-[var(--color-bg-secondary)]'}`}
+      style={active ? NAV_ACTIVE : undefined}
+    >
+      {children}
+    </span>
+  );
+}
 
 /** Phone bottom nav: 4 link slots + More, equal width. Height comes from --bottom-nav-h. */
 export function BottomNav({
@@ -50,20 +57,19 @@ export function BottomNav({
               href={href}
               aria-current={active ? 'page' : undefined}
               {...(tourKey ? { 'data-tour': tourKey } : {})}
-              className={`${SLOT} ${active ? '' : IDLE}`}
-              style={slotStyle(active)}
+              className={`group ${SLOT} ${active ? ACTIVE : IDLE}`}
             >
-              <span className="relative">
-                <Icon size={20} strokeWidth={active ? 2.5 : 1.5} aria-hidden="true" />
+              <Pill active={active}>
+                <Icon size={20} strokeWidth={active ? 2.25 : 1.5} aria-hidden="true" />
                 {showDot && (
                   <span
                     data-testid="symptoms-dot"
                     aria-hidden="true"
-                    className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-[var(--goal-accent)] ring-2 ring-[var(--color-bg-card)]"
+                    className="absolute right-2.5 top-0.5 h-2 w-2 rounded-full bg-[var(--color-primary)] ring-2 ring-[var(--color-bg-card)]"
                   />
                 )}
-              </span>
-              <span className="max-w-full text-[11px] font-medium leading-tight">{t(labelKey)}</span>
+              </Pill>
+              <span className={`max-w-full text-[11px] leading-tight ${active ? 'font-bold' : 'font-medium'}`}>{t(labelKey)}</span>
               {showDot && <span className="sr-only">{t('nav.notLoggedToday')}</span>}
             </Link>
           );
@@ -73,11 +79,12 @@ export function BottomNav({
           onClick={onToggleMore}
           aria-haspopup="dialog"
           aria-expanded={moreOpen}
-          className={`${SLOT} ${moreActive ? '' : IDLE}`}
-          style={slotStyle(moreActive)}
+          className={`group ${SLOT} ${moreActive ? ACTIVE : IDLE}`}
         >
-          <Menu size={20} strokeWidth={moreActive ? 2.5 : 1.5} aria-hidden="true" />
-          <span className="max-w-full text-[11px] font-medium leading-tight">{t('nav.more')}</span>
+          <Pill active={moreActive}>
+            <Menu size={20} strokeWidth={moreActive ? 2.25 : 1.5} aria-hidden="true" />
+          </Pill>
+          <span className={`max-w-full text-[11px] leading-tight ${moreActive ? 'font-bold' : 'font-medium'}`}>{t('nav.more')}</span>
         </button>
       </div>
     </nav>
