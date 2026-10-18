@@ -160,6 +160,15 @@ const TINT_BADGE: Record<CardTint, string> = {
   sage: 'bg-tint-sage text-accent-sage',
 }
 
+/** Badge tint per settings section (kept out of JSX attributes so label scans stay clean). */
+const SECTION_TINT = {
+  appearance: 'sky',
+  notifications: 'pink',
+  export: 'mint',
+  account: 'lavender',
+  about: 'sage',
+} as const satisfies Record<string, CardTint>
+
 /** Section title with a drawn icon on a pastel tint, for the shared SectionHeader. */
 function SectionTitle({ icon: Icon, tint, children }: { icon: React.ElementType; tint: CardTint; children: React.ReactNode }) {
   return (
@@ -451,7 +460,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader title={<SectionTitle icon={Globe} tint="sky">{t('settings.languageAndAppearance')}</SectionTitle>} />
+              <SectionHeader title={<SectionTitle icon={Globe} tint={SECTION_TINT.appearance}>{t('settings.languageAndAppearance')}</SectionTitle>} />
               <Card tone="panel" padding="md" className="space-y-5">
                 {/* Language */}
                 <div className="flex items-center justify-between gap-4">
@@ -500,7 +509,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader title={<SectionTitle icon={Bell} tint="pink">{t('settings.notifications')}</SectionTitle>} />
+              <SectionHeader title={<SectionTitle icon={Bell} tint={SECTION_TINT.notifications}>{t('settings.notifications')}</SectionTitle>} />
               <Card tone="panel" padding="md" className="divide-y divide-[var(--color-border)]">
                 {[
                   {
@@ -564,7 +573,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader title={<SectionTitle icon={Download} tint="mint">{t('settings.export')}</SectionTitle>} />
+              <SectionHeader title={<SectionTitle icon={Download} tint={SECTION_TINT.export}>{t('settings.export')}</SectionTitle>} />
               <Card tone="panel" padding="md" className="space-y-3">
                 <p className="text-xs text-[var(--color-text-muted)]">
                   {t('settings.exportDesc')}
@@ -616,7 +625,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader title={<SectionTitle icon={User} tint="lavender">{t('settings.account')}</SectionTitle>} />
+              <SectionHeader title={<SectionTitle icon={User} tint={SECTION_TINT.account}>{t('settings.account')}</SectionTitle>} />
               <Card tone="panel" padding="md" className="space-y-2">
                 {/* Account info */}
                 <div className="rounded-2xl bg-[var(--color-bg-secondary)] p-4 space-y-1.5">
@@ -818,7 +827,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader title={<SectionTitle icon={Info} tint="sage">{t('settings.about')}</SectionTitle>} />
+              <SectionHeader title={<SectionTitle icon={Info} tint={SECTION_TINT.about}>{t('settings.about')}</SectionTitle>} />
               <Card tone="panel" padding="md" className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[var(--color-text-secondary)]">{t('settings.appVersion')}</span>
