@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { journeySteps, currentJourneyPhase, periodStatus, fertileStatus, dashboardHeroState, dashboardBlocks, daysSince } from '@/app/(main)/dashboard/dashboard-model'
+import { journeySteps, currentJourneyPhase, periodStatus, fertileStatus, dashboardHeroState, dashboardBlocks, daysSince, calendarDay } from '@/app/(main)/dashboard/dashboard-model'
 
 const shape = (cycle: number, period: number) => journeySteps(cycle, period).map((s) => [s.phase, s.start, s.end])
 
@@ -125,5 +125,17 @@ describe('daysSince (menopause hero: days since last period)', () => {
   })
   it('never goes negative for a future start', () => {
     expect(daysSince('2026-10-18', '2026-10-20')).toBe(0)
+  })
+})
+
+describe('calendarDay (dates from the cached dashboard data)', () => {
+  it('reads a Date, an ISO timestamp string (cache round-trip) and a plain day the same way', () => {
+    expect(calendarDay(new Date('2026-09-28T00:00:00.000Z'))).toBe('2026-09-28')
+    expect(calendarDay('2026-09-28T00:00:00.000Z')).toBe('2026-09-28')
+    expect(calendarDay('2026-09-28')).toBe('2026-09-28')
+  })
+
+  it('gives daysSince a whole number for a cached timestamp', () => {
+    expect(daysSince('2026-10-18', calendarDay('2026-09-28T02:11:17.637Z'))).toBe(20)
   })
 })

@@ -8,6 +8,11 @@ import { useReducedMotion } from 'motion/react';
 import { Sparkles, CalendarPlus, X, type LucideIcon } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+
+/** A navigation CTA styled like the primary small Button (a link, never a button inside a link). */
+const CTA_LINK_CLASS =
+  'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--color-on-action)] shadow-soft transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]';
+const CTA_STYLE = { background: 'var(--goal-accent)', borderColor: 'var(--goal-accent)' } as React.CSSProperties;
 import { useHasMounted } from '@/components/motion/useHasMounted';
 import { isTTC, isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal';
 import { loggingNudgeVariant } from '@/lib/prompt-rules';
@@ -195,18 +200,12 @@ export function LoggingNudge({
                     {ctaLabel}
                   </Button>
                 ) : (
-                  <Link href="/calendar">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="text-xs focus-visible:ring-[var(--goal-accent)]"
-                      style={{
-                        background: 'var(--goal-accent)',
-                        borderColor: 'var(--goal-accent)',
-                      } as React.CSSProperties}
-                    >
-                      {ctaLabel}
-                    </Button>
+                  <Link
+                    href="/calendar"
+                    className={CTA_LINK_CLASS}
+                    style={CTA_STYLE}
+                  >
+                    {ctaLabel}
                   </Link>
                 )}
 
@@ -221,18 +220,8 @@ export function LoggingNudge({
               </>
             ) : (
               /* Stale variant: single primary CTA — Log symptoms */
-              <Link href="/symptoms">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="text-xs focus-visible:ring-[var(--goal-accent)]"
-                  style={{
-                    background: 'var(--goal-accent)',
-                    borderColor: 'var(--goal-accent)',
-                  } as React.CSSProperties}
-                >
-                  {t('nudge.logSymptomsCta')}
-                </Button>
+              <Link href="/symptoms" className={CTA_LINK_CLASS} style={CTA_STYLE}>
+                {t('nudge.logSymptomsCta')}
               </Link>
             )}
           </div>

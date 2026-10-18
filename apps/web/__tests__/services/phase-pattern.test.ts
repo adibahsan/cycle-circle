@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { rankPhasePattern } from '@vesta/shared/server/services'
+import { dashboardCycleState, rankPhasePattern } from '@vesta/shared/server/services'
 
 // Phase pattern (#75): the symptoms a profile logged most often in a phase,
 // across its completed past cycles. Pure-function tests — no DB required.
@@ -79,5 +79,45 @@ describe('rankPhasePattern', () => {
       { symptomId: 'cramps', count: 1 },
       { symptomId: 'headache', count: 1 },
     ])
+  })
+})
+
+// The card ranks the phase the dashboard shows: a log on cycle day N of a
+// completed cycle counts under the same phase the dashboard names for day N.
+describe('dashboard phase and Phase pattern agree', () => {
+  const DAY_MS = 86_400_000
+  const start = Date.UTC(2026, 0, 1)
+  const starts = [start, start + 28 * DAY_MS]
+  const phases = ['menstrual', 'follicular', 'ovulation', 'luteal'] as const
+
+  it('names each cycle day with the phase its logs are ranked under', () => {
+    for (let n = 1; n <= 28; n++) {
+      const { phase } = dashboardCycleState({
+        lastStartMs: start,
+        todayMs: start + (n - 1) * DAY_MS,
+        periodLength: 5,
+        cycleLength: 28,
+      })
+      const symptomLogs = [{ dateMs: start + (n - 1) * DAY_MS, symptomId: 'cramps' }]
+      const rankedUnder = phases.filter(
+        (p) => rankPhasePattern({ phase: p, periodStartsMsAsc: starts, periodLength: 5, symptomLogs }).length > 0,
+      )
+      expect(rankedUnder, `cycle day ${n}`).toEqual([phase])
+    }
+  })
+
+  it('a 28-day cycle reads menstrual 1-5, follicular 6-9, ovulation 10-15, luteal 16-28', () => {
+    const at = (n: number) =>
+      dashboardCycleState({ lastStartMs: start, todayMs: start + (n - 1) * DAY_MS, periodLength: 5, cycleLength: 28 })
+    expect([1, 5, 6, 9, 10, 15, 16, 28].map((n) => at(n).phase)).toEqual([
+      'menstrual', 'menstrual', 'follicular', 'follicular', 'ovulation', 'ovulation', 'luteal', 'luteal',
+    ])
+    expect(at(12).cycleDay).toBe(12)
+  })
+
+  it('caps the cycle day at the cycle length when the period is late', () => {
+    expect(
+      dashboardCycleState({ lastStartMs: start, todayMs: start + 40 * DAY_MS, periodLength: 5, cycleLength: 28 }),
+    ).toEqual({ cycleDay: 28, phase: 'luteal' })
   })
 })

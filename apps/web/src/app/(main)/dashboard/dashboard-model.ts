@@ -85,3 +85,11 @@ export const EXAMPLE_CYCLE = { cycleLength: 28, periodLength: 5, cycleDay: 8 } a
 export function daysSince(today: string, start: string): number {
   return Math.max(0, dayNumber(today) - dayNumber(start))
 }
+
+/**
+ * YYYY-MM-DD for a dashboard date. Server data arrives as a Date, or as an ISO
+ * timestamp string once it has round-tripped through the data cache.
+ */
+export function calendarDay(d: Date | string): string {
+  return (typeof d === 'string' ? d : d.toISOString()).slice(0, 10)
+}

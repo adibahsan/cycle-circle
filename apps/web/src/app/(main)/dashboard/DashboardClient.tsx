@@ -36,7 +36,7 @@ import { CycleHero, FirstPeriodHero, MenopauseHero, PregnancyHero } from './Cycl
 import { CycleJourney } from './CycleJourney'
 import { CycleProgressRing } from './CycleProgressRing'
 import { DashboardToolkit, type PhaseArticle } from './DashboardToolkit'
-import { EXAMPLE_CYCLE, dashboardBlocks, dashboardHeroState, fertileStatus, periodStatus } from './dashboard-model'
+import { EXAMPLE_CYCLE, calendarDay, dashboardBlocks, dashboardHeroState, fertileStatus, periodStatus } from './dashboard-model'
 
 const TodayCheckInModal = dynamic(
   () => import('@/components/engagement/TodayCheckInModal').then((m) => m.TodayCheckInModal),
@@ -122,11 +122,6 @@ interface Props {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function toDateString(d: Date | string): string {
-  if (typeof d === 'string') return d
-  return d.toISOString().slice(0, 10)
-}
 
 /** Prisma stores LIGHT/MEDIUM/HEAVY; our UI uses light/medium/heavy */
 function normalizeFlow(f: string): FlowIntensity {
@@ -226,10 +221,10 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
     relation: profile.relation as ProfileRelation,
     cycleLength: profile.cycleLength,
     periodLength: profile.periodLength,
-    lastPeriodStart: profile.lastPeriodStart ? toDateString(profile.lastPeriodStart) : '',
+    lastPeriodStart: profile.lastPeriodStart ? calendarDay(profile.lastPeriodStart) : '',
     cycleHistory: [] as number[],
     predictionTier: 'average' as const,
-    createdAt: toDateString(profile.createdAt),
+    createdAt: calendarDay(profile.createdAt),
   }
 
   const cycleDay =
@@ -253,14 +248,15 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
 
   // Build prediction object for display (suppressed entirely in pregnancy mode)
   const serverPrediction = dashboardData?.prediction
-  const localPrediction = pregnancy ? null : computePrediction(profileForCompute)
+  // No period on record (first run): nothing to predict from.
+  const localPrediction = pregnancy || !profileForCompute.lastPeriodStart ? null : computePrediction(profileForCompute)
 
   const prediction = serverPrediction
     ? {
-        nextPeriodStart: toDateString(serverPrediction.nextPeriodStart),
-        ovulationDay: toDateString(serverPrediction.ovulationDay),
-        fertileStart: toDateString(serverPrediction.fertileStart),
-        fertileEnd: toDateString(serverPrediction.fertileEnd),
+        nextPeriodStart: calendarDay(serverPrediction.nextPeriodStart),
+        ovulationDay: calendarDay(serverPrediction.ovulationDay),
+        fertileStart: calendarDay(serverPrediction.fertileStart),
+        fertileEnd: calendarDay(serverPrediction.fertileEnd),
         confidence: Math.round(serverPrediction.confidence * 100),
         tier: serverPrediction.tier as 'average' | 'arima',
       }
@@ -268,13 +264,13 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
 
   const lastPeriodDisplay = dashboardData?.lastPeriod
     ? {
-        startDate: toDateString(dashboardData.lastPeriod.startDate),
+        startDate: calendarDay(dashboardData.lastPeriod.startDate),
         duration: dashboardData.lastPeriod.duration,
         flowIntensity: normalizeFlow(dashboardData.lastPeriod.flowIntensity),
       }
     : profile.lastPeriodStart
       ? {
-          startDate: toDateString(profile.lastPeriodStart),
+          startDate: calendarDay(profile.lastPeriodStart),
           duration: profile.periodLength,
           flowIntensity: 'medium' as FlowIntensity,
         }

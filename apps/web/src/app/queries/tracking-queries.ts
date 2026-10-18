@@ -9,11 +9,17 @@ import {
   getEngagementSummary as svcGetEngagementSummary,
 } from '@vesta/shared/server/services'
 
+/**
+ * Bump when the dashboard data's shape or meaning changes, so the data cache never
+ * serves an entry built by older code (v2: phasePattern added, shared phase names).
+ */
+const DASHBOARD_CACHE_VERSION = 'dashboard-v2'
+
 export const getDashboardData = cache(async (profileId: string) => {
   const user = await requireCurrentUser()
   return unstable_cache(
     () => svcGetDashboardData(profileId, user.id),
-    ['dashboard', profileId],
+    [DASHBOARD_CACHE_VERSION, profileId],
     { tags: [cacheTags.tracking(profileId)], revalidate: WEB_CACHE_TTL }
   )()
 })
