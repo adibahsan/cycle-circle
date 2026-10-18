@@ -135,8 +135,8 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
         subtitle={isProUser ? t('subscription.subtitlePro') : t('subscription.unlockTagline')}
       />
 
-      {/* From 2xl the plans and the Free vs Pro table sit side by side. */}
-      <div className={`flex flex-col gap-5 2xl:grid 2xl:items-start 2xl:gap-6 ${isProUser ? '2xl:grid-cols-2' : '2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'}`}>
+      {/* From xl (Pro) / 2xl the plans and the Free vs Pro table sit side by side. */}
+      <div className={`flex flex-col gap-4 ${isProUser ? 'xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] xl:items-start xl:gap-5' : '2xl:grid 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] 2xl:items-start 2xl:gap-6'}`}>
         {/* ── Current Plan + Upgrade Cards ── */}
         <div className={`flex flex-col gap-5 ${isProUser ? "" : "lg:grid lg:grid-cols-2"}`}>
           {/* ── Current Plan Card ── */}
@@ -145,7 +145,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.38, delay: 0.05 }}
           >
-            <Card tone="panel" padding="lg" className="h-full">
+            <Card tone="panel" padding="md" className="h-full">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <p className="text-sm font-semibold text-[var(--color-text-muted)]">
@@ -187,7 +187,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                 )}
               </div>
 
-              <div className="mt-4 space-y-1.5">
+              <div className="mt-3 space-y-1.5">
                 {isProUser ? (
                   PRO_FEATURE_KEYS.map(({ icon: Icon, labelKey }) => (
                     <div
@@ -212,8 +212,8 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               </div>
 
               {canUnsubscribe && (
-                <div className="mt-5">
-                  <Button variant="outline" fullWidth onClick={() => { setUnsubResult(null); setConfirmOpen(true) }}>
+                <div className="mt-4">
+                  <Button variant="outline" fullWidth className="min-h-11" onClick={() => { setUnsubResult(null); setConfirmOpen(true) }}>
                     {t('subscription.unsubscribeButton')}
                   </Button>
                 </div>
@@ -301,15 +301,15 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
 
           <Card tone="panel" className="p-0 overflow-hidden divide-y divide-[var(--color-border)]">
             <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3 bg-tint-peach">
-              <div className="px-4 sm:px-5 py-3 text-xs font-semibold text-[var(--color-text-secondary)] col-span-1">
+              <div className="px-4 sm:px-5 py-2.5 text-xs font-semibold text-[var(--color-text-secondary)] col-span-1">
                 {t('subscription.featureHeader')}
               </div>
-              <div className="px-1 sm:px-2 py-3 text-center">
+              <div className="px-1 sm:px-2 py-2.5 text-center">
                 <span className="text-xs font-semibold text-[var(--color-text-muted)]">
                   {t('subscription.free')}
                 </span>
               </div>
-              <div className="px-1 sm:px-2 py-3 text-center">
+              <div className="px-1 sm:px-2 py-2.5 text-center">
                 <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-[var(--color-bg-card)] text-accent-peach">
                   <Crown size={10} aria-hidden="true" /> {t('subscription.pro')}
                 </span>
@@ -321,17 +321,17 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                 key={key}
                 className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3"
               >
-                <div className="px-4 sm:px-5 py-3 text-sm md:text-base text-[var(--color-text-secondary)] col-span-1">
+                <div className="px-4 sm:px-5 py-2.5 text-sm text-[var(--color-text-secondary)] col-span-1">
                   {t(labelKey)}
                 </div>
-                <div className="px-1 sm:px-2 py-3 flex justify-center items-center">
+                <div className="px-1 sm:px-2 py-2.5 flex justify-center items-center">
                   {free ? (
                     <Check size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
                   ) : (
                     <X size={16} className="text-[var(--color-border)]" aria-hidden="true" />
                   )}
                 </div>
-                <div className="px-1 sm:px-2 py-3 flex justify-center items-center">
+                <div className="px-1 sm:px-2 py-2.5 flex justify-center items-center">
                   {pro ? (
                     <Check size={16} strokeWidth={2.5} className="text-accent-mint" aria-hidden="true" />
                   ) : (

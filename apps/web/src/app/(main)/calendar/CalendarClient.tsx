@@ -128,7 +128,7 @@ function Legend({ pregnancy }: { pregnancy: boolean }) {
   const items = pregnancy ? allItems.filter((i) => !i.predictive) : allItems
 
   return (
-    <ul className="flex flex-wrap gap-x-4 gap-y-2 justify-center">
+    <ul className="flex flex-wrap gap-x-2.5 md:gap-x-4 gap-y-1 md:gap-y-2 justify-center">
       {items.map(({ kind, label }) => (
         <li key={kind} className="flex items-center gap-1.5">
           {kind === 'today' ? (
@@ -182,7 +182,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
   }, [focusNow])
 
   return (
-    <div role="gridcell" className={`group relative aspect-square xl:aspect-[4/3] w-full${isToday ? ' z-[1]' : ''}`}>
+    <div role="gridcell" className={`group relative h-11 md:h-auto md:aspect-square xl:aspect-[4/3] w-full${isToday ? ' z-[1]' : ''}`}>
       <button
         ref={buttonRef}
         type="button"
@@ -699,7 +699,7 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
       <PageHeader title={t('nav.calendar')} />
 
       {/* ── Desktop: side-by-side layout (calendar + detail panel) ── */}
-      <div className="flex flex-col gap-5 xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem] xl:items-start">
+      <div className="flex flex-col gap-3 md:gap-5 xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem] xl:items-start">
 
         {/* ── Calendar card (fills its column on desktop) ── */}
         <motion.div
@@ -709,8 +709,8 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
           className="min-w-0"
         >
           {/* Narrower side padding on phones keeps each day cell at least 44px wide at 375px. */}
-          <Card tone="panel" padding="md" className="px-2 sm:px-5">
-            <div className="flex items-center justify-between mb-4">
+          <Card tone="panel" padding="md" className="px-2 py-2 sm:px-5 md:py-5">
+            <div className="flex items-center justify-between mb-1 md:mb-4">
               <button
                 onClick={prevMonth}
                 aria-label={t('calendar.previousMonth')}
@@ -812,14 +812,14 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
             </div>
 
             {/* Legend — inside the calendar card on desktop */}
-            <div className="mt-4 pt-3 border-t border-[var(--color-border)]" aria-label={t('calendar.legend')} role="group">
+            <div className="mt-2 pt-2 md:mt-4 md:pt-3 border-t border-[var(--color-border)]" aria-label={t('calendar.legend')} role="group">
               <Legend pregnancy={pregnancy} />
             </div>
           </Card>
         </motion.div>
 
         {/* ── Right panel: Day Detail + Monthly Summary (single sticky column on desktop) ── */}
-        <div className="flex flex-col gap-4 xl:sticky xl:top-4 xl:self-start min-w-0">
+        <div className="flex flex-col gap-3 md:gap-4 xl:sticky xl:top-4 xl:self-start min-w-0">
 
           {/* Day Detail */}
           <AnimatePresence mode="wait">
@@ -842,7 +842,7 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.4 }}
             >
-              <Card tone="lavender" padding="md">
+              <Card tone="lavender" padding="md" className="p-3 md:p-5">
                 <SectionHeader as="h3" title={t('calendar.thisCycle')} />
                 <div className="flex flex-col gap-2">
                   {firstPredictedPeriod && (

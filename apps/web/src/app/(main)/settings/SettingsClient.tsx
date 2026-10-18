@@ -193,7 +193,7 @@ function AccountRow({
   badge?: string
 }) {
   return (
-    <Link href={href} className="flex items-center gap-3 py-3 px-1 min-h-11 rounded-sm group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]">
+    <Link href={href} className="flex items-center gap-3 py-1.5 px-1 min-h-11 rounded-sm group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]">
       <Icon
         size={17}
         aria-hidden="true"
@@ -450,10 +450,10 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
       <PageContainer width="canvas">
         <PageHeader title={t('settings.title')} />
 
-        {/* Two columns from lg; from 2xl an explicit three-column grid: appearance + notifications | account | export + about. */}
-        <div className="lg:grid lg:grid-cols-2 lg:gap-5 space-y-5 lg:space-y-0 2xl:grid-cols-3 2xl:grid-rows-[auto_1fr] 2xl:gap-6 2xl:items-start">
+        {/* Two columns from lg; from xl an explicit three-column grid: appearance + notifications | account | export + about. */}
+        <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-3 lg:space-y-0 xl:grid-cols-3 xl:grid-rows-[auto_1fr] xl:gap-4 xl:items-start">
           {/* ── Left column ── */}
-          <div className="space-y-6 2xl:col-start-1 2xl:row-start-1 2xl:row-span-2">
+          <div className="space-y-3 lg:space-y-4 xl:col-start-1 xl:row-start-1 xl:row-span-2">
             {/* 1. Language & Appearance */}
             <motion.div
               custom={0}
@@ -461,8 +461,8 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader title={<SectionTitle icon={Globe} tint={SECTION_TINT.appearance}>{t('settings.languageAndAppearance')}</SectionTitle>} />
-              <Card tone="panel" padding="md" className="space-y-5">
+              <SectionHeader className="mb-2!" title={<SectionTitle icon={Globe} tint={SECTION_TINT.appearance}>{t('settings.languageAndAppearance')}</SectionTitle>} />
+              <Card tone="panel" padding="sm" className="space-y-3 sm:p-4">
                 {/* Language */}
                 <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
@@ -510,8 +510,8 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader title={<SectionTitle icon={Bell} tint={SECTION_TINT.notifications}>{t('settings.notifications')}</SectionTitle>} />
-              <Card tone="panel" padding="md" className="divide-y divide-[var(--color-border)]">
+              <SectionHeader className="mb-2!" title={<SectionTitle icon={Bell} tint={SECTION_TINT.notifications}>{t('settings.notifications')}</SectionTitle>} />
+              <Card tone="panel" padding="sm" className="divide-y divide-[var(--color-border)] sm:p-4">
                 {[
                   {
                     key: 'periodAlert' as const,
@@ -529,7 +529,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                     desc: t('settings.reminderAlertDesc'),
                   },
                 ].map(({ key, label, desc }) => (
-                  <div key={key} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
+                  <div key={key} className="flex items-center gap-4 py-2 first:pt-0 last:pb-0">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-[var(--color-text-primary)]">{label}</p>
                       <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{desc}</p>
@@ -542,7 +542,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                     />
                   </div>
                 ))}
-                <div className="flex items-center gap-4 py-3">
+                <div className="flex items-center gap-4 pt-2">
                   <div className="flex-1 min-w-0">
                     <label
                       htmlFor="completionReminders"
@@ -566,17 +566,17 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
           </div>
 
           {/* ── Right column ── */}
-          <div className="space-y-6 2xl:contents">
+          <div className="space-y-3 lg:space-y-4 xl:contents">
             {/* 3. Data Export */}
             <motion.div
               custom={2}
               variants={sectionVariants}
               initial="hidden"
               animate="visible"
-              className="2xl:col-start-3 2xl:row-start-1"
+              className="xl:col-start-3 xl:row-start-1"
             >
-              <SectionHeader title={<SectionTitle icon={Download} tint={SECTION_TINT.export}>{t('settings.export')}</SectionTitle>} />
-              <Card tone="panel" padding="md" className="space-y-3">
+              <SectionHeader className="mb-2!" title={<SectionTitle icon={Download} tint={SECTION_TINT.export}>{t('settings.export')}</SectionTitle>} />
+              <Card tone="panel" padding="sm" className="space-y-2 sm:p-4">
                 <p className="text-xs text-[var(--color-text-muted)]">
                   {t('settings.exportDesc')}
                 </p>
@@ -599,7 +599,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   <button
                     onClick={handleExportCsv}
                     disabled={exporting}
-                    className="flex flex-col items-center gap-2 rounded-2xl border border-transparent bg-tint-sky p-4 hover:border-[var(--color-accent-sky)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                    className="flex flex-col items-center gap-1.5 rounded-2xl border border-transparent bg-tint-sky p-3 hover:border-[var(--color-accent-sky)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                   >
                     <FileText size={22} className="text-accent-sky" aria-hidden="true" />
                     <span className="text-xs font-semibold text-[var(--color-text-primary)]">
@@ -609,7 +609,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   <button
                     onClick={handleExportExcel}
                     disabled={exporting}
-                    className="flex flex-col items-center gap-2 rounded-2xl border border-transparent bg-tint-mint p-4 hover:border-[var(--color-accent-mint)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                    className="flex flex-col items-center gap-1.5 rounded-2xl border border-transparent bg-tint-mint p-3 hover:border-[var(--color-accent-mint)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                   >
                     <FileSpreadsheet size={22} className="text-accent-mint" aria-hidden="true" />
                     <span className="text-xs font-semibold text-[var(--color-text-primary)]">
@@ -626,12 +626,12 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               variants={sectionVariants}
               initial="hidden"
               animate="visible"
-              className="2xl:col-start-2 2xl:row-start-1 2xl:row-span-2"
+              className="xl:col-start-2 xl:row-start-1 xl:row-span-2"
             >
-              <SectionHeader title={<SectionTitle icon={User} tint={SECTION_TINT.account}>{t('settings.account')}</SectionTitle>} />
-              <Card tone="panel" padding="md" className="space-y-2">
+              <SectionHeader className="mb-2!" title={<SectionTitle icon={User} tint={SECTION_TINT.account}>{t('settings.account')}</SectionTitle>} />
+              <Card tone="panel" padding="sm" className="space-y-1.5 sm:p-4">
                 {/* Account info */}
-                <div className="rounded-2xl bg-[var(--color-bg-secondary)] p-4 space-y-1.5">
+                <div className="rounded-2xl bg-[var(--color-bg-secondary)] p-3 space-y-1">
                   {user.phone && (
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[var(--color-text-muted)]">{t('settings.phone')}</span>
@@ -785,7 +785,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                       sessionStorage.setItem('vesta_replay_tour', '1')
                       router.push('/dashboard')
                     }}
-                    className="flex items-center gap-3 py-3 px-1 w-full min-h-11 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] rounded-sm"
+                    className="flex items-center gap-3 py-1.5 px-1 w-full min-h-11 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] rounded-sm"
                   >
                     <Compass
                       size={17}
@@ -809,7 +809,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                 </div>
 
                 {/* Logout */}
-                <div className="pt-1">
+                <div>
                   <Button
                     variant="outline"
                     fullWidth
@@ -829,16 +829,16 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               variants={sectionVariants}
               initial="hidden"
               animate="visible"
-              className="2xl:col-start-3 2xl:row-start-2"
+              className="xl:col-start-3 xl:row-start-2"
             >
-              <SectionHeader title={<SectionTitle icon={Info} tint={SECTION_TINT.about}>{t('settings.about')}</SectionTitle>} />
-              <Card tone="panel" padding="md" className="space-y-3">
+              <SectionHeader className="mb-2!" title={<SectionTitle icon={Info} tint={SECTION_TINT.about}>{t('settings.about')}</SectionTitle>} />
+              <Card tone="panel" padding="sm" className="space-y-2 sm:p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[var(--color-text-secondary)]">{t('settings.appVersion')}</span>
                   <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('settings.versionName', { version: '2.0' })}</span>
                 </div>
 
-                <div className="rounded-2xl bg-tint-sage px-4 py-3 flex items-start gap-2">
+                <div className="rounded-2xl bg-tint-sage px-3 py-2 flex items-start gap-2">
                   <Lock aria-hidden="true" size={14} className="text-accent-sage mt-0.5 shrink-0" />
                   <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
                     {t('settings.encryptionNote')}

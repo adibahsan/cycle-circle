@@ -64,8 +64,8 @@ export function SymptomCategoryTabs({ active, onChange, counts, children, action
   const activeTint = CATEGORY_TINTS[active];
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-4 xl:flex-row xl:flex-wrap xl:items-center xl:justify-between xl:gap-3">
+    <div className="flex flex-col gap-2 md:gap-3">
+      <div className="flex flex-col gap-2 md:gap-4 xl:flex-row xl:flex-wrap xl:items-center xl:justify-between xl:gap-3">
       <div
         role="tablist"
         aria-label={t('symptoms.categoriesLabel')}
@@ -90,7 +90,7 @@ export function SymptomCategoryTabs({ active, onChange, counts, children, action
               tabIndex={isActive ? 0 : -1}
               onClick={() => onChange(key)}
               className={cn(
-                'relative flex-1 min-w-0 min-h-[44px] xl:flex-none xl:px-4 xl:text-sm flex items-center justify-center gap-1 px-1 py-2 rounded-full text-xs font-semibold leading-tight text-center',
+                'relative flex-1 min-w-0 min-h-[40px] md:min-h-[44px] xl:flex-none xl:px-4 xl:text-sm flex items-center justify-center gap-1 px-1 py-2 rounded-full text-xs font-semibold leading-tight text-center',
                 'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2',
                 c.ring,
                 isActive ? cn(c.surface, c.ink) : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
@@ -111,7 +111,7 @@ export function SymptomCategoryTabs({ active, onChange, counts, children, action
       {action && <div className="order-first xl:order-last xl:shrink-0">{action}</div>}
       </div>
 
-      <Card tone={activeTint} padding="sm" className="md:p-4">
+      <Card tone={activeTint} padding="sm" className="p-2 md:p-4">
         <div role="tabpanel" id={panelId(activeIndex)} aria-labelledby={tabId(activeIndex)}>
           <div role="group" aria-label={t(CATEGORIES[activeIndex].labelKey)}>
             <SymptomTintContext.Provider value={activeTint}>{children}</SymptomTintContext.Provider>

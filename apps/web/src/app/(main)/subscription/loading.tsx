@@ -11,9 +11,9 @@ export default function SubscriptionLoading() {
       </div>
 
       {/* Current Plan + Upgrade card split row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] xl:items-start xl:gap-5">
         {/* Current Plan Card */}
-        <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 space-y-4">
+        <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-5 space-y-4">
           <div className="flex justify-between items-start">
             <div className="space-y-2">
               <Shimmer className="h-3 w-20 rounded-md" />
@@ -30,7 +30,7 @@ export default function SubscriptionLoading() {
         </div>
 
         {/* Pro Upgrade Card */}
-        <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 space-y-5">
+        <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-5 space-y-5">
           <div className="flex items-center gap-2">
             <Shimmer className="h-6 w-6 rounded-full" />
             <Shimmer className="h-6 w-20 rounded-md" />
@@ -63,7 +63,7 @@ export default function SubscriptionLoading() {
           </div>
           {/* Rows */}
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="grid grid-cols-3 border-t border-[var(--color-border)] p-4">
+            <div key={i} className="grid grid-cols-3 border-t border-[var(--color-border)] px-3 py-2.5">
               <Shimmer className="h-4 w-28 rounded-md col-span-1" />
               <div className="flex justify-center"><Shimmer className="h-4 w-4 rounded-full" /></div>
               <div className="flex justify-center"><Shimmer className="h-4 w-4 rounded-full" /></div>

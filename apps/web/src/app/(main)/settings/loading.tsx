@@ -10,16 +10,16 @@ export default function SettingsLoading() {
       </div>
 
       {/* Two Column Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         {/* Left Column */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Section 1: Language & Appearance */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Shimmer className="h-8 w-8 rounded-full" />
               <Shimmer className="h-4 w-44 rounded-md" />
             </div>
-            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 space-y-5">
+            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-4 space-y-5">
               <div className="flex justify-between items-center">
                 <div className="space-y-1.5 flex-1">
                   <Shimmer className="h-4.5 w-24 rounded-md" />
@@ -44,7 +44,7 @@ export default function SettingsLoading() {
               <Shimmer className="h-8 w-8 rounded-full" />
               <Shimmer className="h-4 w-28 rounded-md" />
             </div>
-            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 divide-y divide-[var(--color-border)]">
+            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-4 divide-y divide-[var(--color-border)]">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="flex justify-between items-center py-3.5 first:pt-0 last:pb-0">
                   <div className="space-y-1.5 flex-1 pr-4">
@@ -59,14 +59,14 @@ export default function SettingsLoading() {
         </div>
 
         {/* Right Column */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Section 3: Data Export */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Shimmer className="h-8 w-8 rounded-full" />
               <Shimmer className="h-4 w-28 rounded-md" />
             </div>
-            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 space-y-4">
+            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-4 space-y-4">
               <Shimmer className="h-3 w-48 rounded-md" />
               <div className="grid grid-cols-2 gap-3">
                 <Shimmer className="h-20 rounded-xl" />
@@ -81,7 +81,7 @@ export default function SettingsLoading() {
               <Shimmer className="h-8 w-8 rounded-full" />
               <Shimmer className="h-4 w-24 rounded-md" />
             </div>
-            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 space-y-4">
+            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-4 space-y-4">
               {/* Account info card */}
               <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-3 space-y-2">
                 <div className="flex justify-between">

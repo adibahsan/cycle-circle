@@ -65,13 +65,13 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
   const today = new Date();
 
   return (
-    <Card tone="panel" padding="md">
+    <Card tone="panel" padding="sm" className="md:p-5 xl:p-4">
       {/* Month nav */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-1 md:mb-3">
         <button
           onClick={() => setViewMonth((m) => subMonths(m, 1))}
           aria-label={t('calendar.previousMonth')}
-          className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
+          className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
         >
           <ChevronLeft size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
         </button>
@@ -81,14 +81,14 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
         <button
           onClick={() => setViewMonth((m) => addMonths(m, 1))}
           aria-label={t('calendar.nextMonth')}
-          className="p-2 rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
+          className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
         >
           <ChevronRight size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
         </button>
       </div>
 
       {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 mb-2">
+      <div className="grid grid-cols-7 mb-1 md:mb-2">
         {DOW.map((d) => (
           <div key={d} className="flex items-center justify-center">
             <span className="text-xs font-bold text-[var(--color-text-muted)]">
@@ -110,7 +110,7 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
               key={format(date, 'yyyy-MM-dd')}
               onClick={() => onDateSelect(date)}
               aria-current={isToday ? 'date' : undefined}
-              className={`aspect-square flex items-center justify-center rounded-xl text-sm md:text-base font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 ${
+              className={`h-11 md:h-auto md:aspect-square xl:aspect-auto xl:h-11 flex items-center justify-center rounded-xl text-sm md:text-base font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 ${
                 !inMonth ? 'text-[var(--color-text-muted)] opacity-40' : ''
               }${isToday ? ' relative z-[1]' : ''}`}
               style={{
@@ -316,16 +316,16 @@ export function SymptomsClient({
   }
 
   return (
-    <PageContainer width="canvas" className="pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+5rem)]">
+    <PageContainer width="canvas" className="gap-3 md:gap-5 pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+5rem)] xl:pb-4">
       <PageHeader
         title={t('symptoms.title')}
         subtitle={format(selectedDate, 'EEEE, MMMM d', { locale: dateLocale })}
       />
       {/* ── Desktop: calendar left, symptoms right ── */}
-      <div className="flex flex-col xl:flex-row gap-5">
+      <div className="flex flex-col xl:flex-row gap-3 md:gap-5">
 
         {/* ── Left: month calendar + summary ── */}
-        <div className="xl:w-[440px] 2xl:w-[480px] xl:shrink-0 xl:sticky xl:top-4 xl:self-start flex flex-col gap-3">
+        <div className="xl:w-[440px] 2xl:w-[480px] xl:shrink-0 xl:sticky xl:top-4 xl:self-start flex flex-col gap-2 md:gap-3">
           {/* Full month calendar */}
           <MiniCalendar
             selectedDate={selectedDate}
@@ -359,7 +359,7 @@ export function SymptomsClient({
         </div>
 
         {/* ── Right: category tabs + symptom grid + save ── */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
+        <div className="flex-1 min-w-0 flex flex-col gap-2 md:gap-4">
 
           {/* Category tabs + the active category's chips */}
           <SymptomCategoryTabs
@@ -370,7 +370,7 @@ export function SymptomsClient({
                 disabled={saving}
                 aria-pressed={isAllGood}
                 className={cn(
-                  'w-full xl:w-auto xl:px-6 min-h-[44px] flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold',
+                  'w-full xl:w-auto xl:px-6 min-h-[44px] flex items-center justify-center gap-2 py-2 xl:py-3 rounded-full border text-sm font-semibold',
                   'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-mint disabled:opacity-60',
                   isAllGood
                     ? 'bg-tint-mint text-accent-mint border-accent-mint'
@@ -398,7 +398,7 @@ export function SymptomsClient({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -12 }}
                 transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                className="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 auto-rows-fr gap-2"
+                className="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 auto-rows-fr gap-1.5 md:gap-2"
               >
                 {categorySymptoms.map((symptom, i) => {
                   const selected = isSymptomSelected(symptom.id);

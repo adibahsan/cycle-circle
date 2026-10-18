@@ -29,7 +29,7 @@ export const SymptomChip = memo(function SymptomChip({ id, icon: Icon, name, sel
       whileTap={{ scale: 0.95 }}
       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
       className={cn(
-        'relative flex flex-col items-center justify-center gap-2 p-2.5 w-full h-full min-h-[88px] rounded-2xl border-2 bg-[var(--color-bg-card)]',
+        'relative flex flex-col items-center justify-center gap-1 p-1.5 md:gap-2 md:p-2.5 w-full h-full min-h-[72px] md:min-h-[88px] rounded-2xl border-2 bg-[var(--color-bg-card)]',
         'transition-[border-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
         c.ring,
         selected ? c.border : 'border-transparent shadow-soft',
@@ -39,7 +39,7 @@ export const SymptomChip = memo(function SymptomChip({ id, icon: Icon, name, sel
     >
       <span
         aria-hidden="true"
-        className={cn('w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200', selected ? c.solid : cn(c.surface, c.ink))}
+        className={cn('w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-colors duration-200', selected ? c.solid : cn(c.surface, c.ink))}
       >
         <Icon size={20} strokeWidth={2} aria-hidden="true" />
       </span>
