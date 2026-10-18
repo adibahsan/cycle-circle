@@ -28,7 +28,7 @@ describe('SMS send language', () => {
   beforeAll(async () => {
     await cleanup()
     await testPrisma.user.create({
-      data: { id: ADMIN, phone: '+8801920000001', fullName: 'Admin', authMethod: 'OTP', profileCompleted: true },
+      data: { id: ADMIN, phone: '+8801940000002', fullName: 'Admin', authMethod: 'OTP', profileCompleted: true },
     })
   })
   afterAll(async () => {

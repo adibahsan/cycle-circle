@@ -34,7 +34,7 @@ describe('SMS queue management', () => {
   beforeAll(async () => {
     await cleanup()
     await testPrisma.user.create({
-      data: { id: ADMIN, phone: '+8801930000001', fullName: 'Admin', authMethod: 'OTP', profileCompleted: true },
+      data: { id: ADMIN, phone: '+8801940000001', fullName: 'Admin', authMethod: 'OTP', profileCompleted: true },
     })
   })
   afterAll(cleanup)
