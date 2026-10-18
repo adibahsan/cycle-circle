@@ -2,7 +2,7 @@ import { differenceInDays, addDays, format } from 'date-fns'
 import { prisma } from '../db'
 import { assertProfileOwnership } from './profile-service'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
-import { getCurrentPhase } from '../../utils/cycle-utils'
+import { getCurrentPhase, MS_PER_DAY } from '../../utils/cycle-utils'
 import type { CyclePhase } from '../../types/types'
 
 // ─── Return-shape interfaces ───────────────────────────────────────────────────
@@ -262,8 +262,6 @@ export interface RankPhasePatternInput {
   limit?: number
 }
 
-const MS_PER_DAY = 86_400_000
-
 /**
  * Phase pattern: the symptoms logged most often in `phase` across completed
  * past cycles, ranked by count (ties by symptom id). A completed cycle runs
@@ -322,14 +320,4 @@ export async function loadPhasePattern(
     periodLength,
     symptomLogs: symptomLogs.map((l) => ({ dateMs: l.date.getTime(), symptomId: l.symptomId })),
   })
-}
-
-/** Phase pattern for a profile the user owns. */
-export async function getPhasePattern(
-  profileId: string,
-  userId: string,
-  phase: CyclePhase,
-): Promise<PhasePatternEntry[]> {
-  const profile = await assertProfileOwnership(profileId, userId)
-  return loadPhasePattern(profileId, profile.periodLength, phase)
 }

@@ -36,7 +36,7 @@ import { CycleHero, FirstPeriodHero, MenopauseHero, PregnancyHero } from './Cycl
 import { CycleJourney } from './CycleJourney'
 import { CycleProgressRing } from './CycleProgressRing'
 import { DashboardToolkit, type PhaseArticle } from './DashboardToolkit'
-import { EXAMPLE_CYCLE, calendarDay, dashboardBlocks, dashboardHeroState, fertileStatus, periodStatus } from './dashboard-model'
+import { EXAMPLE_CYCLE, type CyclePosition, calendarDay, dashboardBlocks, dashboardHeroState, fertileStatus, periodStatus } from './dashboard-model'
 
 const TodayCheckInModal = dynamic(
   () => import('@/components/engagement/TodayCheckInModal').then((m) => m.TodayCheckInModal),
@@ -294,6 +294,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   const fertile = prediction ? fertileStatus(deviceDayString(), prediction.fertileStart, prediction.fertileEnd) : null
   const heroState = dashboardHeroState(dashboardData?.mode ?? 'standard', !!lastPeriodDisplay, pregnancy)
   const blocks = dashboardBlocks(heroState)
+  const position: CyclePosition = { cycleLength: profile.cycleLength, periodLength: profile.periodLength, cycleDay, phase }
 
   return (
     <>
@@ -360,17 +361,9 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         {/* ── Cycle journey + progress ring (a dimmed example before the first period) ── */}
         {blocks.cycle === 'live' && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <CycleJourney
-              cycleLength={profile.cycleLength}
-              periodLength={profile.periodLength}
-              phase={phase}
-              cycleDay={cycleDay}
-              language={language}
-            />
+            <CycleJourney position={position} language={language} />
             <CycleProgressRing
-              cycleDay={cycleDay}
-              cycleLength={profile.cycleLength}
-              phase={phase}
+              position={position}
               period={period}
               language={language}
             >
@@ -390,19 +383,10 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         )}
         {blocks.cycle === 'example' && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <CycleJourney
-              example
-              cycleLength={EXAMPLE_CYCLE.cycleLength}
-              periodLength={EXAMPLE_CYCLE.periodLength}
-              phase="follicular"
-              cycleDay={EXAMPLE_CYCLE.cycleDay}
-              language={language}
-            />
+            <CycleJourney example position={EXAMPLE_CYCLE} language={language} />
             <CycleProgressRing
               example
-              cycleDay={EXAMPLE_CYCLE.cycleDay}
-              cycleLength={EXAMPLE_CYCLE.cycleLength}
-              phase="follicular"
+              position={EXAMPLE_CYCLE}
               period={null}
               language={language}
             />

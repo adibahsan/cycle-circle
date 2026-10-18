@@ -4,6 +4,7 @@ import type {
   PeriodRegularity,
   FertileWindowPoint,
 } from '@vesta/shared/server/services/insights-service'
+import { appLocale, type Lang } from './language'
 
 export interface InsightsSeries {
   cycleLengthTrend: CycleLengthPoint[]
@@ -38,23 +39,16 @@ export function groupInsights(s: InsightsSeries): { present: InsightKey[]; missi
 
 // ─── Language-aware formatting (Intl, never the browser locale) ───────────────
 
-type Lang = 'en' | 'bn'
-
-/** Intl locale for the app language: Bengali digits and month names in bn. */
-export function insightsLocale(lang: Lang): string {
-  return lang === 'bn' ? 'bn-BD' : 'en-US'
-}
-
 /** 28 → "28" / "২৮"; at most one decimal place. */
 export function formatInsightNumber(n: number, lang: Lang): string {
-  return new Intl.NumberFormat(insightsLocale(lang), { maximumFractionDigits: 1 }).format(n)
+  return new Intl.NumberFormat(appLocale(lang), { maximumFractionDigits: 1 }).format(n)
 }
 
 /** "2026-01-15" → "Jan 26" / "জানু ২৬". Reads the date as UTC so the month never shifts. */
 export function formatMonthTick(ymd: string, lang: Lang): string {
   const d = new Date(`${ymd.slice(0, 10)}T00:00:00Z`)
-  const month = new Intl.DateTimeFormat(insightsLocale(lang), { month: 'short', timeZone: 'UTC' }).format(d)
-  const year = new Intl.NumberFormat(insightsLocale(lang), { minimumIntegerDigits: 2, useGrouping: false }).format(
+  const month = new Intl.DateTimeFormat(appLocale(lang), { month: 'short', timeZone: 'UTC' }).format(d)
+  const year = new Intl.NumberFormat(appLocale(lang), { minimumIntegerDigits: 2, useGrouping: false }).format(
     d.getUTCFullYear() % 100,
   )
   return `${month} ${year}`

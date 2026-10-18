@@ -6,6 +6,7 @@
 import { addDays, addMonths, startOfWeek } from 'date-fns'
 import type { CyclePhase } from '@vesta/shared/types'
 import { dayStyleKind, type DayStateFlags } from './calendar-day-style'
+import { appLocale } from './language'
 
 export interface DayNameInput {
   date: Date
@@ -17,7 +18,7 @@ export interface DayNameInput {
 }
 
 export function dayAccessibleName({ date, flags, phase, isToday, language }: DayNameInput, t: (key: string) => string): string {
-  const fullDate = new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : 'en-US', {
+  const fullDate = new Intl.DateTimeFormat(appLocale(language), {
     weekday: 'long',
     month: 'long',
     day: 'numeric',

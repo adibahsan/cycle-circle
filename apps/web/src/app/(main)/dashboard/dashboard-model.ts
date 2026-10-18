@@ -91,8 +91,16 @@ export function dashboardBlocks(state: DashboardHeroState): DashboardBlocks {
   }
 }
 
+/** Where a profile is in its cycle: what the journey stepper and progress ring draw. */
+export interface CyclePosition {
+  cycleLength: number
+  periodLength: number
+  cycleDay: number
+  phase: CyclePhase
+}
+
 /** The example cycle the no-period stepper and ring draw (not the user's data). */
-export const EXAMPLE_CYCLE = { cycleLength: 28, periodLength: 5, cycleDay: 8 } as const
+export const EXAMPLE_CYCLE: CyclePosition = { cycleLength: 28, periodLength: 5, cycleDay: 8, phase: 'follicular' }
 
 /** Whole calendar days from `start` to `today` (both YYYY-MM-DD), never negative. */
 export function daysSince(today: string, start: string): number {

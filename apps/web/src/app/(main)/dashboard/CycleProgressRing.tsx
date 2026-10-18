@@ -1,19 +1,16 @@
 'use client'
 
 import { useTranslation } from 'react-i18next'
-import type { CyclePhase } from '@vesta/shared/types'
 import { getPhaseColor } from '@vesta/shared/utils/cycle-utils'
 import { Card } from '@/components/ui/Card'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { cn } from '@/lib/cn'
 import { ExampleNote } from './CycleJourney'
-import { ringCaption, type PeriodStatus } from './dashboard-model'
+import { ringCaption, type CyclePosition, type PeriodStatus } from './dashboard-model'
 import { formatCount } from './format'
 
 interface CycleProgressRingProps {
-  cycleDay: number
-  cycleLength: number
-  phase: CyclePhase
+  position: CyclePosition
   period: PeriodStatus | null
   language: string
   /** No period logged: draw a dimmed example, labelled and announced as an example. */
@@ -31,7 +28,8 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS
  * Progress through this cycle. When the period is due or overdue the ring is full and says the period is
  * expected, without the late day count: the hero's next-period stat is that number's only home.
  */
-export function CycleProgressRing({ cycleDay, cycleLength, phase, period, language, example = false, children }: CycleProgressRingProps) {
+export function CycleProgressRing({ position, period, language, example = false, children }: CycleProgressRingProps) {
+  const { cycleDay, cycleLength, phase } = position
   const { t } = useTranslation()
   const n = (v: number) => formatCount(language, v)
   const progress = Math.min(1, Math.max(0, cycleDay / cycleLength))

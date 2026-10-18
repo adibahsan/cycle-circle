@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Sun, Moon } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
-import { MORE_ITEMS, NAV_ACTIVE, isNavActive, type NavItem } from '@/components/shell/nav-config';
+import { MORE_ITEMS, NAV_ACTIVE, isNavActive } from '@/components/shell/nav-config';
 import { NAV_ICONS } from '@/components/shell/nav-icons';
 import { TINT_CLASSES } from '@/components/ui/tints';
 import type { Theme } from '@vesta/shared/utils/theme';

@@ -1,5 +1,6 @@
 import { prisma } from './db'
 import { logger } from './log'
+import { MS_PER_DAY } from '../utils/cycle-utils'
 
 export const TIER2_MIN_CYCLES = 6
 
@@ -13,7 +14,7 @@ export async function recalculatePrediction(profileId: string) {
 
   const cycleLengths: number[] = []
   for (let i = 1; i < logs.length; i++) {
-    const diff = Math.round((logs[i].startDate.getTime() - logs[i-1].startDate.getTime()) / (1000 * 60 * 60 * 24))
+    const diff = Math.round((logs[i].startDate.getTime() - logs[i-1].startDate.getTime()) / MS_PER_DAY)
     if (diff > 0 && diff < 90) cycleLengths.push(diff)
   }
 

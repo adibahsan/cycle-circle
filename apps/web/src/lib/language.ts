@@ -7,6 +7,11 @@ export type Lang = 'en' | 'bn'
 
 export const LANG_COOKIE = 'vesta_lang'
 
+/** Intl locale for the app language: Bengali digits and month names in bn, en-US otherwise. */
+export function appLocale(lang: string): 'bn-BD' | 'en-US' {
+  return lang === 'bn' ? 'bn-BD' : 'en-US'
+}
+
 export function parseLang(value: string | null | undefined): Lang {
   return value === 'bn' ? 'bn' : 'en'
 }

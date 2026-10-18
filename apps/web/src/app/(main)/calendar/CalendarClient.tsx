@@ -37,6 +37,7 @@ import { dayAccessibleName, gridKeyTarget } from '@/lib/calendar-a11y'
 import { cyclePhaseOn, periodStarts } from '@/lib/calendar-phase'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { toDeviceDay } from '@/lib/local-date'
+import { appLocale } from '@/lib/language'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
 
@@ -408,7 +409,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
   const totalPages = Math.ceil(periodLogs.length / PAGE_SIZE)
   const slice = periodLogs.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
-  const fmt = new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : 'en-US', {
+  const fmt = new Intl.DateTimeFormat(appLocale(language), {
     month: 'short',
     day: 'numeric',
   })

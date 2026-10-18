@@ -1,6 +1,6 @@
 import { prisma } from '../db'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
-import { predictCycleLength, getPredictionTier, getCurrentPhase } from '../../utils/cycle-utils'
+import { predictCycleLength, getPredictionTier, getCurrentPhase, MS_PER_DAY } from '../../utils/cycle-utils'
 
 /**
  * Return KPI counts for the admin dashboard.
@@ -66,7 +66,6 @@ export async function getDashboardStats() {
 export async function getUserTrend(
   opts: number | { days?: number; dateFrom?: Date; dateTo?: Date } = 30,
 ): Promise<{ date: string; count: number }[]> {
-  const MS_PER_DAY = 24 * 60 * 60 * 1000
   const now = Date.now()
 
   let startDate: Date
@@ -364,7 +363,6 @@ export async function getLoggingStreakDistribution(): Promise<
   return BUCKETS.map(bucket => ({ bucket, count: bucketCounts[bucket] }))
 }
 
-const MS_PER_DAY = 86_400_000
 
 /**
  * Backtest MAE by prediction tier. Each `series` entry is one profile's period

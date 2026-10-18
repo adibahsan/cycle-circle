@@ -7,29 +7,28 @@ import { Card } from '@/components/ui/Card'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { PhaseIcon } from '@/components/ui/PhaseIcon'
 import { cn } from '@/lib/cn'
-import { journeySteps, currentJourneyPhase } from './dashboard-model'
+import { TINT_CLASSES, type CardTint } from '@/components/ui/tints'
+import { journeySteps, currentJourneyPhase, type CyclePosition } from './dashboard-model'
 import { formatCount } from './format'
 
-// Full literal classes so Tailwind sees them.
-const CURRENT_TINT: Record<CyclePhase, string> = {
-  menstrual: 'bg-tint-peach',
-  follicular: 'bg-tint-pink',
-  ovulation: 'bg-tint-mint',
-  luteal: 'bg-tint-lavender',
+/** Tint behind the current step. */
+const CURRENT_TINT: Record<CyclePhase, CardTint> = {
+  menstrual: 'peach',
+  follicular: 'pink',
+  ovulation: 'mint',
+  luteal: 'lavender',
 }
 
 interface CycleJourneyProps {
-  cycleLength: number
-  periodLength: number
-  phase: CyclePhase
-  cycleDay: number
+  position: CyclePosition
   language: string
   /** No period logged: draw a dimmed example cycle, labelled and announced as an example. */
   example?: boolean
 }
 
 /** Vertical cycle-journey stepper. Phases a short cycle crowds out to 0 days are not drawn. */
-export function CycleJourney({ cycleLength, periodLength, phase, cycleDay, language, example = false }: CycleJourneyProps) {
+export function CycleJourney({ position, language, example = false }: CycleJourneyProps) {
+  const { cycleLength, periodLength, phase, cycleDay } = position
   const { t } = useTranslation()
   const n = (v: number) => formatCount(language, v)
   const steps = journeySteps(cycleLength, periodLength)
@@ -68,7 +67,7 @@ export function CycleJourney({ cycleLength, periodLength, phase, cycleDay, langu
                 <div
                   className={cn(
                     'flex flex-1 items-center justify-between gap-3 rounded-2xl px-4 py-3',
-                    isCurrent && CURRENT_TINT[s.phase],
+                    isCurrent && TINT_CLASSES[CURRENT_TINT[s.phase]].surface,
                   )}
                 >
                   <div className="min-w-0">

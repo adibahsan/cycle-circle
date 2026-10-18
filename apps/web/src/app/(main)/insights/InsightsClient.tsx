@@ -7,7 +7,7 @@ import { useReducedMotion } from 'motion/react'
 import dynamic from 'next/dynamic'
 import '@vesta/shared/utils/i18n'
 import { useLanguage } from '@/lib/use-language'
-import type { Lang } from '@/lib/language'
+import { appLocale, type Lang } from '@/lib/language'
 import { useHasMounted } from '@/components/motion/useHasMounted'
 import { BarChart3 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
@@ -25,7 +25,6 @@ import {
   groupInsights,
   formatInsightNumber,
   formatMonthTick,
-  insightsLocale,
   summarizeCycleLengths,
   summarizeSymptoms,
   INSIGHTS_CHART_COLORS,
@@ -263,7 +262,7 @@ function PeriodRegularityCard({ data, lang }: { data: PeriodRegularity; lang: La
 
 function FertileWindowHistoryList({ data, lang }: { data: FertileWindowPoint[]; lang: Lang }) {
   const { t } = useTranslation()
-  const dateFmt = new Intl.DateTimeFormat(insightsLocale(lang), { month: 'short', day: 'numeric', timeZone: 'UTC' })
+  const dateFmt = new Intl.DateTimeFormat(appLocale(lang), { month: 'short', day: 'numeric', timeZone: 'UTC' })
   const fmt = (d: string) => dateFmt.format(new Date(`${d.slice(0, 10)}T00:00:00Z`))
   const num = (n: number) => formatInsightNumber(n, lang)
   const daysLabel = t('insights.days')

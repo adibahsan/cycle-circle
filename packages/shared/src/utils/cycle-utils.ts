@@ -1,6 +1,9 @@
 import { differenceInDays, addDays, format, startOfDay } from 'date-fns';
 import type { CyclePhase, PredictionTier, UserProfile, Prediction } from '../types/types';
 
+/** Milliseconds in a calendar day (UTC; no DST). */
+export const MS_PER_DAY = 86_400_000;
+
 export function getCurrentCycleDay(lastPeriodStart: string, cycleLength: number): number {
   const today = startOfDay(new Date());
   const lastPeriod = startOfDay(new Date(lastPeriodStart));

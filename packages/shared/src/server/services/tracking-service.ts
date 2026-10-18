@@ -9,7 +9,7 @@ import {
 import { isPregnancy, isMenopause } from '../../utils/goal'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
 import { TIER2_MIN_CYCLES } from '../prediction-calc'
-import { getCurrentPhase } from '../../utils/cycle-utils'
+import { getCurrentPhase, MS_PER_DAY } from '../../utils/cycle-utils'
 import type { CyclePhase } from '../../types/types'
 import { loadPhasePattern, type PhasePatternEntry } from './insights-service'
 
@@ -382,7 +382,7 @@ export async function getEngagementSummary(
   for (let i = 1; i < allPeriodLogs.length; i++) {
     const gap = Math.round(
       (allPeriodLogs[i].startDate.getTime() - allPeriodLogs[i - 1].startDate.getTime()) /
-        (1000 * 60 * 60 * 24),
+        MS_PER_DAY,
     )
     if (gap > 0 && gap < 90) cyclesLogged++
   }
@@ -480,7 +480,7 @@ export function dashboardCycleState({
   periodLength: number
   cycleLength: number
 }): { cycleDay: number; phase: CyclePhase } {
-  const rawCycleDay = Math.max(1, Math.round((todayMs - lastStartMs) / (1000 * 60 * 60 * 24)) + 1)
+  const rawCycleDay = Math.max(1, Math.round((todayMs - lastStartMs) / MS_PER_DAY) + 1)
   const cycleDay = Math.min(rawCycleDay, cycleLength)
   return { cycleDay, phase: getCurrentPhase(cycleDay, periodLength, cycleLength) }
 }
@@ -525,7 +525,7 @@ export async function getDashboardData(profileId: string, userId: string) {
     const nextStart = new Date(prediction.nextPeriodStart)
     nextStart.setHours(0, 0, 0, 0)
     countdownToNextPeriod = Math.ceil(
-      (nextStart.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      (nextStart.getTime() - today.getTime()) / MS_PER_DAY,
     )
   } else if (lastPeriod) {
     const lastStart = new Date(lastPeriod.startDate)
@@ -533,7 +533,7 @@ export async function getDashboardData(profileId: string, userId: string) {
     const nextEstimated = new Date(lastStart)
     nextEstimated.setDate(nextEstimated.getDate() + profile.cycleLength)
     countdownToNextPeriod = Math.ceil(
-      (nextEstimated.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      (nextEstimated.getTime() - today.getTime()) / MS_PER_DAY,
     )
   }
 
@@ -543,7 +543,7 @@ export async function getDashboardData(profileId: string, userId: string) {
         duration:
           Math.floor(
             (new Date(lastPeriod.endDate).getTime() - new Date(lastPeriod.startDate).getTime()) /
-              (1000 * 60 * 60 * 24),
+              MS_PER_DAY,
           ) + 1,
         flowIntensity: lastPeriod.flowIntensity,
       }
