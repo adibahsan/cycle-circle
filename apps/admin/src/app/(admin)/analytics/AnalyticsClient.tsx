@@ -5,6 +5,13 @@ import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { DateRangeControl } from '@/components/charts/DateRangeControl'
 import { CHART_VAR } from '@/lib/chart-palette'
+import {
+  ACCURACY_METRICS,
+  PANEL_RANGES,
+  TREND_METRICS,
+  type MetricConfig,
+  type PanelKey,
+} from '@/lib/analytics-panels'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -32,10 +39,17 @@ interface UserRetention {
 
 interface UserTrendPoint {
   date: string
-  count: number
+  value: number
 }
 
 interface PredictionMae {
+  tier: string
+  maeDays: number | null
+  sampleSize: number
+}
+
+interface PredictionMaeTrendPoint {
+  date: string
   tier: string
   maeDays: number | null
   sampleSize: number
@@ -68,12 +82,39 @@ interface AnalyticsClientProps {
   predictions: PredictionAccuracy[]
   retention: UserRetention[]
   trend: UserTrendPoint[]
-  range: string
+  accuracyMetric: 'confidence' | 'count'
+  trendMetric: 'signups' | 'active' | 'logRate'
   predictionMae: PredictionMae[]
+  predictionMaeTrend: PredictionMaeTrendPoint[]
   feedbackVolume: FeedbackVolumePoint[]
   feedbackCategories: FeedbackCategoryPoint[]
   feedbackRatings: FeedbackRatingPoint[]
   symptomsByPhase: SymptomPhasePoint[]
+}
+
+// ── Per-panel selectors ────────────────────────────────────────────────────
+
+function PanelRange({ panel }: { panel: PanelKey }) {
+  const cfg = PANEL_RANGES[panel]
+  return (
+    <DateRangeControl
+      paramKey={cfg.param}
+      options={[...cfg.options]}
+      defaultValue={cfg.defaultValue}
+      label="Date range"
+    />
+  )
+}
+
+function MetricPicker<T extends string>({ cfg, label }: { cfg: MetricConfig<T>; label: string }) {
+  return (
+    <DateRangeControl
+      paramKey={cfg.param}
+      options={cfg.options}
+      defaultValue={cfg.defaultValue}
+      label={label}
+    />
+  )
 }
 
 // ── Tier summary badges (KPI) ──────────────────────────────────────────────
@@ -157,7 +198,10 @@ export function AnalyticsClient({
   predictions,
   retention,
   trend,
+  accuracyMetric,
+  trendMetric,
   predictionMae,
+  predictionMaeTrend,
   feedbackVolume,
   feedbackCategories,
   feedbackRatings,
@@ -186,6 +230,18 @@ export function AnalyticsClient({
     },
   )
 
+  // MAE snapshot history: one row per night, one series per tier; null = tier had no data.
+  const maeTiers = [...new Set(predictionMaeTrend.map((p) => p.tier))]
+  const maeTrendData: Record<string, string | number | null>[] = [
+    ...new Set(predictionMaeTrend.map((p) => p.date)),
+  ].map((date) => {
+    const row: Record<string, string | number | null> = { date }
+    for (const tier of maeTiers) {
+      row[tier] = predictionMaeTrend.find((p) => p.date === date && p.tier === tier)?.maeDays ?? null
+    }
+    return row
+  })
+
   // Feedback chart data transformations — mirroring FeedbackClient.tsx
   const feedbackVolumeChartData = feedbackVolume.map((d) => ({
     date: d.date,
@@ -210,11 +266,7 @@ export function AnalyticsClient({
         tags={[adminCacheTags.analytics]}
       />
 
-      {/* Date range control — drives the trend panel via ?range= query param */}
-      <div className="flex justify-end">
-        <DateRangeControl />
-      </div>
-
+      {/* Every panel carries its own range (and metric) selector, each bound to its own URL param. */}
       {/* Charts grid — 2 columns on lg+, single column on mobile */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* 1 — Cycle Length Distribution */}
@@ -226,6 +278,7 @@ export function AnalyticsClient({
           kinds={['bar']}
           defaultKind="bar"
           height={240}
+          controls={<PanelRange panel="cycleLength" />}
           emptyLabel="Not enough logged periods to measure cycles yet."
         />
 
@@ -238,7 +291,8 @@ export function AnalyticsClient({
           kinds={['pie', 'bar']}
           defaultKind="pie"
           height={240}
-          emptyLabel="No symptom data yet."
+          controls={<PanelRange panel="symptoms" />}
+          emptyLabel="No symptom data in this period."
         />
 
         {/* 2b — Symptoms by Cycle Phase */}
@@ -251,7 +305,8 @@ export function AnalyticsClient({
             kinds={['bar', 'pie']}
             defaultKind="bar"
             height={240}
-            emptyLabel="No symptom data yet."
+            controls={<PanelRange panel="phase" />}
+            emptyLabel="No symptom data in this period."
           />
           <dl className="mt-3 grid grid-cols-2 gap-3 text-xs">
             {symptomsByPhase.map((d) => (
@@ -266,7 +321,7 @@ export function AnalyticsClient({
             ))}
           </dl>
           <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-            Top symptoms per cycle phase (last 90 days, anchored to each profile&apos;s period history; &quot;all good&quot; excluded).
+            Top symptoms per cycle phase (selected range, anchored to each profile&apos;s period history; &quot;all good&quot; excluded).
           </p>
         </div>
 
@@ -274,13 +329,24 @@ export function AnalyticsClient({
         <div>
           <ChartPanel
             title="Prediction Accuracy by Tier"
-            data={predictions.map((d) => ({ ...d, avgConfidence: d.avgConfidence }))}
+            data={predictions.map((d) => ({ ...d }))}
             xKey="tier"
-            series={[{ key: 'avgConfidence', label: 'Avg Confidence' }]}
-            kinds={['bar']}
+            series={
+              accuracyMetric === 'count'
+                ? [{ key: 'count', label: 'Predictions' }]
+                : [{ key: 'avgConfidence', label: 'Avg Confidence' }]
+            }
+            kinds={['bar', 'pie']}
             defaultKind="bar"
             height={240}
-            emptyLabel="No prediction data yet."
+            decimals={accuracyMetric === 'confidence'}
+            controls={
+              <>
+                <PanelRange panel="accuracy" />
+                <MetricPicker cfg={ACCURACY_METRICS} label="Metric" />
+              </>
+            }
+            emptyLabel="No prediction data in this period."
           />
           <TierBadges data={predictions} />
         </div>
@@ -291,14 +357,15 @@ export function AnalyticsClient({
             title="Prediction Accuracy (MAE · days)"
             data={predictionMae.map((d) => ({
               tier: d.tier,
-              maeDays: d.maeDays ?? 0,
+              maeDays: d.maeDays,
             }))}
             xKey="tier"
             series={[{ key: 'maeDays', label: 'MAE (days)', color: CHART_VAR.secondary }]}
             kinds={['bar']}
             defaultKind="bar"
             height={240}
-            emptyLabel="Not enough period-log history to backtest."
+            decimals
+            emptyLabel="No data: not enough period-log history to backtest."
           />
           <div className="mt-3 flex flex-wrap gap-2">
             {predictionMae.map((d) => (
@@ -320,9 +387,27 @@ export function AnalyticsClient({
             ))}
           </div>
           <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-            Lower MAE = more accurate predictions. Latest nightly snapshot, backtested from all period-log history (global, not range-bound).
+            Lower MAE = more accurate predictions. Latest nightly snapshot, backtested from all period-log history (the range below applies to the trend only).
           </p>
         </div>
+
+        {/* 3c — MAE snapshot trend */}
+        <ChartPanel
+          title="Prediction MAE Trend (days)"
+          data={maeTrendData}
+          xKey="date"
+          series={maeTiers.map((tier, i) => ({
+            key: tier,
+            label: `${tier} MAE`,
+            color: i === 0 ? CHART_VAR.secondary : CHART_VAR.low,
+          }))}
+          kinds={['line', 'bar']}
+          defaultKind="line"
+          height={240}
+          decimals
+          controls={<PanelRange panel="mae" />}
+          emptyLabel="No data: no nightly MAE snapshots in this period."
+        />
 
         {/* 4 — User Retention */}
         <div>
@@ -334,29 +419,46 @@ export function AnalyticsClient({
             kinds={['line']}
             defaultKind="line"
             height={240}
-            emptyLabel="No retention data yet."
+            controls={<PanelRange panel="retention" />}
+            emptyLabel="No retention data in this period."
           />
           <RetentionRates data={retention} />
         </div>
       </div>
 
-      {/* 5 — User Trend (date-range-driven) — full width */}
+      {/* 5 — User activity trend (range + metric) — full width */}
       <ChartPanel
-        title="New User Sign-ups"
+        title="User Activity Trend"
         data={trend.map((d) => ({ ...d } as Record<string, string | number | null>))}
         xKey="date"
-        series={[{ key: 'count', label: 'Sign-ups', color: CHART_VAR.secondary }]}
+        series={[
+          {
+            key: 'value',
+            label: TREND_METRICS.options.find((o) => o.value === trendMetric)?.label ?? 'Value',
+            color: CHART_VAR.secondary,
+          },
+        ]}
         kinds={['area', 'line', 'bar']}
         defaultKind="area"
         height={240}
-        emptyLabel="No sign-up data for this period."
+        decimals={trendMetric === 'logRate'}
+        controls={
+          <>
+            <PanelRange panel="trend" />
+            <MetricPicker cfg={TREND_METRICS} label="Metric" />
+          </>
+        }
+        emptyLabel="No activity data for this period."
       />
 
       {/* ── Feedback section ──────────────────────────────────────────────── */}
       <section aria-label="Feedback analytics">
-        <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-4">
-          Feedback
-        </h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
+            Feedback
+          </h2>
+          <PanelRange panel="feedback" />
+        </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Submission volume over time */}
           <ChartPanel

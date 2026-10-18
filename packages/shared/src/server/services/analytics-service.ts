@@ -174,24 +174,30 @@ export async function getCycleLengthDistribution({ from, to }: AnalyticsRange) {
 }
 
 /**
- * Return symptom log counts grouped by category.
+ * Return symptom log counts grouped by category. With a range, only logs dated
+ * inside [from, to] count; without one, all history.
  */
-export async function getSymptomsByCategory() {
+export async function getSymptomsByCategory(range?: AnalyticsRange) {
   const logs = await prisma.symptomLog.groupBy({
     by: ['category'],
     _count: { id: true },
-    where: { symptomId: { not: ALL_GOOD_SYMPTOM_ID } },
+    where: {
+      symptomId: { not: ALL_GOOD_SYMPTOM_ID },
+      ...(range ? { date: { gte: range.from, lte: range.to } } : {}),
+    },
   })
 
   return logs.map(l => ({ category: l.category, count: l._count.id }))
 }
 
 /**
- * Return average prediction confidence grouped by tier.
+ * Return average prediction confidence grouped by tier. With a range, only
+ * predictions (re)computed inside [from, to] count; without one, all of them.
  */
-export async function getPredictionAccuracy() {
+export async function getPredictionAccuracy(range?: AnalyticsRange) {
   const predictions = await prisma.prediction.groupBy({
     by: ['tier'],
+    ...(range ? { where: { updatedAt: { gte: range.from, lte: range.to } } } : {}),
     _count: { id: true },
     _avg: { confidence: true },
   })
