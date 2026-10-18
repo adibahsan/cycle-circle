@@ -2,12 +2,15 @@
  * Guard for ticket #74 (standard-mode dashboard in the new look).
  * Run: pnpm --filter @vesta/web e2e -- e2e/tests/dashboard-layout.spec.ts
  * Read-only: nothing here saves data (the seed database is shared with other guards).
+ * The late checks use the `late` persona (exactly 7 days late; e2e/support/ensure-persona.ts).
  * The Bengali dashboard is covered by bengali-no-english.spec.ts ("/dashboard").
  */
 import { test, expect, type Page } from '@playwright/test'
+import { statePath } from '../support/auth'
 import { DESKTOP, PHONE_375, gotoQuiet } from '../guards/helpers'
 
 const main = (page: Page) => page.locator('main')
+const LATE = /\b\d+\s+days?\s+late\b|\boverdue\b/gi
 
 async function mainText(page: Page): Promise<string> {
   return main(page).innerText()
@@ -22,13 +25,8 @@ for (const [label, viewport] of [['desktop', DESKTOP], ['375x667', PHONE_375]] a
       await expect(page.getByTestId('hero-stats')).toBeVisible({ timeout: 15_000 })
     })
 
-    test('hero shows three stats, and the late day count at most once', async ({ page }) => {
+    test('hero shows three stats', async ({ page }) => {
       await expect(page.getByTestId('hero-stats').locator('li')).toHaveCount(3)
-      const text = await mainText(page)
-      const late = text.match(/\b\d+\s+days?\s+late\b|\boverdue\b/gi) ?? []
-      expect(late.length, `late mentions: ${JSON.stringify(late)}`).toBeLessThanOrEqual(1)
-      // When the persona is late, the one mention is in the next-period stat.
-      if (late.length === 1) await expect(page.getByTestId('stat-next-period')).toContainText(/late/i)
     })
 
     test('prediction confidence appears once', async ({ page }) => {
@@ -100,6 +98,27 @@ for (const [label, viewport] of [['desktop', DESKTOP], ['375x667', PHONE_375]] a
         [root, ...root.querySelectorAll('*')].filter((e) => getComputedStyle(e).animationIterationCount === 'infinite').length,
       )
       expect(infinite).toBe(0)
+    })
+  })
+}
+
+for (const [label, viewport] of [['desktop', DESKTOP], ['375x667', PHONE_375]] as const) {
+  test.describe(`late dashboard (${label})`, () => {
+    test.use({ viewport, storageState: statePath('late') })
+
+    test('the late day count appears exactly once, in the next-period stat (#74, #66 S3)', async ({ page }) => {
+      await gotoQuiet(page, '/dashboard')
+      await expect(page.getByTestId('hero-stats')).toBeVisible({ timeout: 15_000 })
+      const late = (await mainText(page)).match(LATE) ?? []
+      expect(late, `late mentions: ${JSON.stringify(late)}`).toEqual(['7 days late'])
+      await expect(page.getByTestId('stat-next-period')).toContainText('7 days late')
+    })
+
+    test('the ring says the period is expected, without a count (#66 S7)', async ({ page }) => {
+      await gotoQuiet(page, '/dashboard')
+      const ring = page.locator('section[aria-labelledby="progress-title"]')
+      await expect(ring).toContainText('Period expected', { timeout: 15_000 })
+      await expect(ring).not.toContainText(/late|due soon/i)
     })
   })
 }

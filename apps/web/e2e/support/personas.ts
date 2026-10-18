@@ -11,6 +11,8 @@ export const PERSONAS = {
   firstRun: { phone: '01700000783' },
   /** Insights with partial data (set up by ensureInsightsPersona): two completed cycles, no symptom logs. */
   cyclesOnly: { phone: '01700000784' },
+  /** Standard goal, period 35 days ago on a 28-day cycle and no stored prediction: 7 days late (set up by ensureModePersonas). */
+  late: { phone: '01700000785' },
 } as const
 
 export type PersonaName = keyof typeof PERSONAS

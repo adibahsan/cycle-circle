@@ -8,7 +8,7 @@ export default async function globalSetup(config: FullConfig) {
   await saveLoginState(baseURL, 'seed')
   await saveLoginState(baseURL, 'fresh') // creates the user on first dev-login
   await ensureFreshPersona()
-  for (const p of ['pregnant', 'menopause', 'firstRun'] as const) await saveLoginState(baseURL, p)
+  for (const p of ['pregnant', 'menopause', 'firstRun', 'late'] as const) await saveLoginState(baseURL, p)
   await ensureModePersonas()
   await saveLoginState(baseURL, 'cyclesOnly')
   await ensureInsightsPersona()

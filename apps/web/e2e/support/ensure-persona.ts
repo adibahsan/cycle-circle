@@ -49,9 +49,11 @@ export async function ensureFreshPersona(): Promise<void> {
 }
 
 /**
- * Idempotent setup for the dashboard-mode personas (+8801700000781..783 only): onboarding done and one
+ * Idempotent setup for the dashboard-mode personas (+8801700000781..783 and 785 only): onboarding done and one
  * SELF profile each. `pregnant` and `menopause` have a period 20 days ago; `firstRun` has none, so its
- * dashboard asks for the first period. Never touches any other user.
+ * dashboard asks for the first period; `late` had one 35 days ago on a 28-day cycle with no stored
+ * prediction, so it is exactly 7 days late. `menopause` has three recent symptom logs (its symptom pattern).
+ * Never touches any other user.
  */
 export async function ensureModePersonas(): Promise<void> {
   loadEnvLocal()
@@ -60,9 +62,10 @@ export async function ensureModePersonas(): Promise<void> {
     { phone: PERSONAS.pregnant.phone, name: 'E2E Pregnant', goal: 'pregnancy', periodDaysAgo: 20 },
     { phone: PERSONAS.menopause.phone, name: 'E2E Menopause', goal: 'perimenopause', periodDaysAgo: 20 },
     { phone: PERSONAS.firstRun.phone, name: 'E2E First Run', goal: 'tracking', periodDaysAgo: null },
+    { phone: PERSONAS.late.phone, name: 'E2E Late', goal: 'tracking', periodDaysAgo: 35 },
   ] as const
   for (const p of setups) {
-    if (!/^0170000078[1-3]$/.test(p.phone)) throw new Error(`ensureModePersonas only manages 01700000781-783, not ${p.phone}`)
+    if (!/^0170000078[1235]$/.test(p.phone)) throw new Error(`ensureModePersonas only manages 01700000781-783 and 785, not ${p.phone}`)
     const user = await prisma.user.findUnique({ where: { phone: '+88' + p.phone } })
     if (!user) throw new Error(`${p.name} persona user missing: dev-login must run first`)
     await prisma.user.update({
@@ -86,6 +89,26 @@ export async function ensureModePersonas(): Promise<void> {
       const recent = await prisma.periodLog.findFirst({ where: { profileId: profile.id }, orderBy: { startDate: 'desc' } })
       if (!recent) await prisma.periodLog.create({ data: { profileId: profile.id, startDate: lastPeriodStart, endDate, flowIntensity: 'MEDIUM' } })
       else await prisma.periodLog.update({ where: { id: recent.id }, data: { startDate: lastPeriodStart, endDate } })
+    }
+    // Late: the countdown comes from the period log alone, never a stale stored prediction.
+    if (p.phone === PERSONAS.late.phone) {
+      await prisma.periodLog.deleteMany({ where: { profileId: profile.id, startDate: { not: lastPeriodStart! } } })
+      await prisma.prediction.deleteMany({ where: { profileId: profile.id } })
+    }
+    // Menopause: a fixed symptom pattern over the last 90 days (hot flashes twice, poor sleep once).
+    if (p.phone === PERSONAS.menopause.phone) {
+      await prisma.symptomLog.deleteMany({ where: { profileId: profile.id } })
+      const day = (ago: number) => {
+        const d = new Date(Date.now() - ago * DAY)
+        return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+      }
+      await prisma.symptomLog.createMany({
+        data: [
+          { profileId: profile.id, date: day(2), category: 'PHYSICAL', symptomId: 'hot-flashes', value: 'mild' },
+          { profileId: profile.id, date: day(5), category: 'PHYSICAL', symptomId: 'hot-flashes', value: 'mild' },
+          { profileId: profile.id, date: day(9), category: 'LIFESTYLE', symptomId: 'poor-sleep', value: 'mild' },
+        ],
+      })
     }
   }
 }

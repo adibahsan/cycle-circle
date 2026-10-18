@@ -51,6 +51,19 @@ for (const [label, viewport] of [['desktop', DESKTOP], ['375x667', PHONE_375]] a
         await expect(page.getByTestId('stat-days-since')).toContainText(/\d+ days? since your last period/)
         await expectNoCycleBlocks(page)
       })
+
+      test('symptom pattern: most logged over the last 90 days, no phases (story 18, #66 S1)', async ({ page }) => {
+        await gotoQuiet(page, '/dashboard')
+        const card = page.getByTestId('symptom-pattern')
+        await expect(card.getByRole('heading', { name: 'Your symptom pattern' })).toBeVisible({ timeout: 15_000 })
+        await expect(card).toContainText('Most logged in the last 90 days')
+        const items = card.getByTestId('phase-pattern-list').locator('li')
+        await expect(items).toHaveCount(2)
+        await expect(items.nth(0)).toContainText('Hot Flashes')
+        await expect(items.nth(0)).toContainText('Logged 2 times')
+        await expect(items.nth(1)).toContainText('Poor Sleep')
+        await expect(page.getByTestId('phase-pattern')).toHaveCount(0)
+      })
     })
 
     test.describe('no period logged', () => {

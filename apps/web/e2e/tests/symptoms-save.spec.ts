@@ -7,9 +7,9 @@ import { test, expect, type Locator, type Page } from '@playwright/test'
 import i18n from '@vesta/shared/utils/i18n'
 import { statePath } from '../support/auth'
 import { DESKTOP, PHONE_375, dialog, gotoQuiet, settle } from '../guards/helpers'
+import { emojiIn } from '../support/emoji'
 
 const en = i18n.getFixedT('en')
-const EMOJI = /\p{Extended_Pictographic}/u
 const CATEGORIES = ['physical', 'mood', 'discharge', 'lifestyle'] as const
 
 /** Make every Next.js server action fail at the network layer (the save never reaches the server). */
@@ -19,21 +19,6 @@ async function failServerActions(page: Page) {
     if (req.method() === 'POST' && req.headers()['next-action']) return route.abort('failed')
     return route.fallback()
   })
-}
-
-/** Visible text and accessible labels under `root` that contain an emoji. */
-async function emojiIn(page: Page, root: Locator): Promise<string[]> {
-  const texts = await root.evaluate((el) => {
-    const out: string[] = []
-    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
-    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-      const p = n.parentElement
-      if (p && p.closest('[aria-hidden="true"]') == null && p.offsetParent !== null) out.push(n.textContent ?? '')
-    }
-    el.querySelectorAll('[aria-label]').forEach((e) => out.push(e.getAttribute('aria-label') ?? ''))
-    return out
-  })
-  return texts.filter((t) => EMOJI.test(t))
 }
 
 /** First chip in `scope` that is not pressed yet. */
@@ -62,7 +47,7 @@ test.describe('symptoms page', () => {
     for (const key of CATEGORIES) {
       await page.getByRole('tab', { name: new RegExp(`^${en(`symptoms.${key}`)}`) }).click()
       await settle(page, 300)
-      expect(await emojiIn(page, page.locator('main'))).toEqual([])
+      expect(await emojiIn(page.locator('main'))).toEqual([])
     }
   })
 
@@ -128,7 +113,7 @@ test.describe('quick-log pop-up', () => {
     for (const key of CATEGORIES) {
       await d.getByRole('tab', { name: new RegExp(`^${en(`symptoms.${key}`)}`) }).click()
       await settle(page, 300)
-      expect(await emojiIn(page, d)).toEqual([])
+      expect(await emojiIn(d)).toEqual([])
     }
   })
 })
@@ -170,6 +155,6 @@ test.describe('check-in pop-up', () => {
   test('no emoji', async ({ page }) => {
     const d = await open(page)
     await settle(page, 300)
-    expect(await emojiIn(page, d)).toEqual([])
+    expect(await emojiIn(d)).toEqual([])
   })
 })
