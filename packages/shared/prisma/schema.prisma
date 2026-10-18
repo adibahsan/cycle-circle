@@ -248,8 +248,6 @@ model Subscription {
   bdappsSubscriberId    String?
   paymentInstrumentName String?
   amount                Int?
-  consecutiveFailures   Int                @default(0)
-  gracePeriodEndsAt     DateTime?
   adminOverride         Boolean            @default(false)
   adminOverrideBy       String?
   adminOverrideAt       DateTime?

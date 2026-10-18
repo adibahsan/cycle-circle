@@ -97,8 +97,6 @@ erDiagram
     string bdappsSubscriberId
     string paymentInstrumentName
     int amount
-    int consecutiveFailures
-    datetime gracePeriodEndsAt
     datetime createdAt
     datetime updatedAt
   }
