@@ -18,6 +18,7 @@ type Step = 'phone' | 'code' | 'success';
 
 const ERROR_CODE_MAP: Record<string, string> = {
   PHONE_TAKEN: 'trial.err.phoneTaken',
+  ALREADY_SUBSCRIBED: 'trial.err.alreadySubscribed',
   OTP_COOLDOWN: 'trial.err.cooldown',
   RATE_LIMITED: 'trial.err.rateLimited',
   INVALID_OTP: 'trial.err.invalidCode',
@@ -26,8 +27,6 @@ const ERROR_CODE_MAP: Record<string, string> = {
   ALREADY_VERIFIED: 'trial.err.invalidCode',
   INVALID_PHONE: 'trial.err.invalidPhone',
   // BDApps verify errors: wrong or expired code
-  BDAPPS_E1850: 'trial.err.invalidCode',
-  BDAPPS_E1854: 'trial.err.invalidCode',
 };
 
 function mapErrorCode(code: string | undefined): string {

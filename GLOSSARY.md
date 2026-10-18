@@ -34,6 +34,24 @@ _Avoid_: popup, interstitial, nag
 The blocking screen shown to an email-trial account whose 24-hour trial has ended; only upgrading or logging out gets past it.
 _Avoid_: paywall, trial expired modal
 
+### Phone login
+
+**Subscriber**:
+A phone number that BDApps reports as subscribed to Cycle Circle; the user behind it is Pro.
+_Avoid_: registered user, BDApps user
+
+**Masked subscriber id**:
+The opaque address BDApps gives a subscriber in place of their phone number; it is the only address BDApps accepts for that subscriber, and it changes with each new subscription.
+_Avoid_: subscriber id (alone), masked number, tel id
+
+**BDApps OTP**:
+A one-time code that BDApps sends to a phone number; verifying it subscribes the number, so it is how a new phone user logs in and becomes Pro.
+_Avoid_: OTP (alone), subscription OTP
+
+**App OTP**:
+A one-time code that Cycle Circle sends by SMS to an existing subscriber; verifying it proves the person holds the number and logs them in, without subscribing anything.
+_Avoid_: manual OTP, our OTP, login code
+
 ### Operations logs
 
 **Log channel**:

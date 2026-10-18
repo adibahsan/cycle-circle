@@ -4,7 +4,7 @@ import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { issueJwt, setAuthCookie } from '@vesta/shared/server/auth'
 import { verifyOtp, isSubscribed, storedSubscriberId } from '@vesta/shared/server/adapters/bdapps'
 import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
-import { findOtpChallenge, completeOtpAuth } from '@vesta/shared/server/services'
+import { findOtpChallenge, completeOtpAuth, verifyAppOtp } from '@vesta/shared/server/services'
 import { isDevModeEnabled } from '@vesta/shared/server/dev'
 import { DEV_OTP_CODES } from '@vesta/shared/utils/config'
 import { revalidateTag } from 'next/cache'
@@ -47,19 +47,24 @@ export async function POST(request: Request): Promise<Response> {
     // DEV_MODE fake codes behave like a successful BDApps registration.
     let registered = true
     let subscriberId = challenge.phone
-    if (isDevModeEnabled()) {
-      if (!DEV_OTP_CODES.includes(body.otp)) {
-        throw new ApiError(400, 'Invalid OTP code', 'INVALID_OTP')
-      }
+    let user
+    if (challenge.codeHash) {
+      // App OTP for an existing subscriber: we check the code, and the plan stays as it is.
+      user = await verifyAppOtp(body.referenceNo, body.otp)
     } else {
-      const result = await verifyOtp(body.referenceNo, body.otp)
-      // A charging-pending status still counts as Pro (ADR 0002); BDApps addresses
-      // the number by a masked id from now on, so keep it for getStatus / unsubscribe.
-      registered = isSubscribed(result.subscriptionStatus)
-      subscriberId = storedSubscriberId(result, challenge.phone)
+      if (isDevModeEnabled()) {
+        if (!DEV_OTP_CODES.includes(body.otp)) {
+          throw new ApiError(400, 'Invalid OTP code', 'INVALID_OTP')
+        }
+      } else {
+        const result = await verifyOtp(body.referenceNo, body.otp)
+        // A charging-pending status still counts as Pro (ADR 0002); BDApps addresses
+        // the number by a masked id from now on, so keep it for getStatus / unsubscribe.
+        registered = isSubscribed(result.subscriptionStatus)
+        subscriberId = storedSubscriberId(result, challenge.phone)
+      }
+      user = await completeOtpAuth(challenge.id, challenge.phone, registered, subscriberId)
     }
-
-    const user = await completeOtpAuth(challenge.id, challenge.phone, registered, subscriberId)
     setRequestUser(user.id)
     revalidateTag(cacheTags.user(user.id), { expire: 0 })
 
@@ -74,8 +79,7 @@ export async function POST(request: Request): Promise<Response> {
       phone: challenge.phone,
       referenceNo: body.referenceNo,
       ok: true,
-      registered,
-      subscriberId,
+      ...(challenge.codeHash ? { appOtp: true } : { registered, subscriberId }),
       subscriptionStatus: user.subscriptionStatus,
     })
     return Response.json({

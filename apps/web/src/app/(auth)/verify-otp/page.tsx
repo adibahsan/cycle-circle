@@ -78,6 +78,7 @@ export default function VerifyOtpPage() {
       ALREADY_VERIFIED: 'trial.err.invalidCode',
       RATE_LIMITED: 'trial.err.rateLimited',
       OTP_COOLDOWN: 'trial.err.cooldown',
+      ALREADY_SUBSCRIBED: 'auth.alreadySubscribedNoEmail',
     };
     if (code && known[code]) return t(known[code]);
     return t(fallbackKey);

@@ -273,6 +273,10 @@ model OtpChallenge {
   referenceNo String
   verified    Boolean  @default(false)
   expiresAt   DateTime
+  /// App OTP only (GLOSSARY): HMAC of the code we sent by SMS. Null for a BDApps OTP, which BDApps checks.
+  codeHash    String?
+  /// Wrong App OTP codes entered so far.
+  attempts    Int      @default(0)
   createdAt   DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)

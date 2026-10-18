@@ -57,10 +57,17 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
       });
-      const body = await res.json().catch(() => ({})) as { referenceNo?: string; error?: string | { message: string } };
+      const body = await res.json().catch(() => ({})) as {
+        referenceNo?: string;
+        error?: string | { message: string; code?: string; hasEmail?: boolean };
+      };
       if (!res.ok) {
-        const msg = typeof body.error === 'object' ? body.error?.message : body.error;
-        setError(msg ?? t('auth.sendOtpFailed'));
+        const err = typeof body.error === 'object' ? body.error : undefined;
+        if (err?.code === 'ALREADY_SUBSCRIBED') {
+          setError(t(err.hasEmail ? 'auth.alreadySubscribedEmail' : 'auth.alreadySubscribedNoEmail'));
+          return;
+        }
+        setError(err?.message ?? (typeof body.error === 'string' ? body.error : t('auth.sendOtpFailed')));
         return;
       }
       const { referenceNo } = body;

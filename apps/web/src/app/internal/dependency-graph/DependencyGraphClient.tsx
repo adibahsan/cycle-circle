@@ -384,7 +384,7 @@ const FLOWS: FlowNode[] = [
     group: 5, type: 'notification', status: 'complete', deps: ['bdapps-client'],
     api: [], store: [],
     files: ['src/server/adapters/notifications.ts', 'src/server/adapters/bdapps.ts'],
-    steps: ['Check isProSubscriber + phone exists', 'Construct bilingual SMS text', 'smsSend(text, [phone], deliveryStatusRequest=1)', 'fetchWithRetry to BDApps /sms/send'],
+    steps: ['Check isProSubscriber + phone exists', 'Construct bilingual SMS text', 'smsSend(text, [phone], deliveryStatusRequest=0)', 'fetchWithRetry to BDApps /sms/send'],
   },
   {
     id: 'webhook-sms', name: 'Webhook: SMS', desc: 'Receives inbound SMS and delivery reports from BDApps. IP validation, dedup by messageId/requestId. Persists WebhookEvent.',
