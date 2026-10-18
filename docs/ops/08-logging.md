@@ -72,6 +72,10 @@ zcat /var/log/vesta/app/translog/2026-10-01.log.gz | jq .
 zcat /var/log/vesta/app/merchant/2026-10-0*.log.gz | jq 'select(.level=="error")'
 ```
 
+## Admin Logs page
+
+The admin app has a read-only **Logs** page (`/logs`, Super Admin only) over the same files: filter by channel, Dhaka date range, text, request id and user id, open any line's raw payload, and page back through older lines. It reads plain `.log` and past-day `.log.gz` files from `LOG_DIR`, so the `admin` container needs the same bind mount as `web` (already set in `compose.prod.yml`; the admin container only reads). OTP values are masked at read time; the files on disk are unchanged.
+
 ## Environment
 
 `LOG_DIR` and `LOG_STDOUT` are documented in [04-env-reference.md](./04-env-reference.md#logging).
