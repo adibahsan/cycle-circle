@@ -3,6 +3,7 @@
 import { useState, useRef, useTransition, type KeyboardEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useToast } from '@/components/ui/Toast'
 import {
   ArrowLeft,
   Phone,
@@ -730,6 +731,7 @@ export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [activeTab, setActiveTab] = useUrlTab(TAB_KEYS, 'profiles')
+  const toast = useToast()
   const [modalAction, setModalAction] = useState<ModalAction>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [suspendReason, setSuspendReason] = useState('')
@@ -765,7 +767,10 @@ export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
       if (modalAction === 'suspend') await suspendUser(user.id, suspendReason.trim())
       else if (modalAction === 'delete') await softDeleteUser(user.id)
       else if (modalAction === 'setStatus' && pendingStatus) {
-        await setUserSubscriptionStatus(user.id, pendingStatus)
+        const res = await setUserSubscriptionStatus(user.id, pendingStatus)
+        if (res.bdappsError) {
+          toast.error(`Plan changed, but the BDApps unsubscribe failed: ${res.bdappsError}. The user may still be charged.`)
+        }
         setPendingStatus(null)
       }
 

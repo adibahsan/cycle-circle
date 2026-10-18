@@ -22,10 +22,10 @@ function revalidateContentTags(articleId?: string) {
 
 export async function createArticle(data: {
   titleEn: string
-  titleBn?: string
+  titleBn?: string | null
   bodyEn: string
-  bodyBn?: string
-  categoryId?: string
+  bodyBn?: string | null
+  categoryId?: string | null
   cyclePhases?: string[]
   status?: string
 }) {
@@ -35,18 +35,18 @@ export async function createArticle(data: {
   const article = await svcCreateArticle(admin.id, data)
 
   revalidateContentTags()
-  await revalidateWebTags(['articles'])
-  return article
+  const webCacheRefreshed = await revalidateWebTags(['articles'])
+  return { article, webCacheRefreshed }
 }
 
 export async function updateArticle(
   id: string,
   data: {
     titleEn?: string
-    titleBn?: string
+    titleBn?: string | null
     bodyEn?: string
-    bodyBn?: string
-    categoryId?: string
+    bodyBn?: string | null
+    categoryId?: string | null
     cyclePhases?: string[]
     status?: string
   }
@@ -56,8 +56,8 @@ export async function updateArticle(
   const article = await svcUpdateArticle(id, data)
 
   revalidateContentTags(id)
-  await revalidateWebTags(['articles'])
-  return article
+  const webCacheRefreshed = await revalidateWebTags(['articles'])
+  return { article, webCacheRefreshed }
 }
 
 export async function deleteArticle(id: string) {

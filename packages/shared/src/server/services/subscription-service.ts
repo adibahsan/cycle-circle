@@ -1,6 +1,7 @@
 import { prisma } from '../db'
 import { Prisma } from '@prisma/client'
 import { logger } from '../log'
+import { isPhoneSubscriberId, setSubscription } from '../adapters/bdapps'
 
 /** What caused a plan change; recorded on every translog line. */
 export type PlanChangeCause =
@@ -24,6 +25,35 @@ function logPlanChange(
   logger.translog('plan.change', { from, to, cause, changed: from !== to, ...extra }, { userId })
 }
 
+/** Outcome of the BDApps unsubscribe step shared by Revoke, Suspend and Delete (ADR 0006). */
+export type BdappsUnsubscribeResult =
+  | { status: 'unsubscribed' }
+  | { status: 'skipped'; reason: 'no-subscriber-id' }
+  | { status: 'failed'; error: string }
+
+/**
+ * Unsubscribe a user's number on BDApps so they stop being charged. Needs the masked
+ * subscriber id stored at OTP verify; legacy phone ids are rejected by BDApps (E1951) so
+ * they are skipped. Never throws: a failure comes back as `failed` for the admin to see,
+ * and our own change still applies. Does not touch our database.
+ */
+export async function unsubscribeUserOnBdapps(userId: string, adminId?: string): Promise<BdappsUnsubscribeResult> {
+  const subscriberId = await getBdappsSubscriberId(userId)
+  if (!subscriberId || isPhoneSubscriberId(subscriberId)) {
+    logger.translog('plan.bdapps-unsubscribe', { result: 'skipped', adminId }, { userId })
+    return { status: 'skipped', reason: 'no-subscriber-id' }
+  }
+  try {
+    await setSubscription(subscriberId, 'unsubscribe')
+    logger.translog('plan.bdapps-unsubscribe', { result: 'unsubscribed', subscriberId, adminId }, { userId })
+    return { status: 'unsubscribed' }
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err)
+    logger.translog('plan.bdapps-unsubscribe', { result: 'failed', subscriberId, adminId, error }, { userId, level: 'error' })
+    return { status: 'failed', error }
+  }
+}
+
 /**
  * Grant PRO access to a user. Finds an existing subscription and updates it,
  * or creates a new one. Syncs user.subscriptionStatus to PRO.
@@ -40,6 +70,7 @@ export async function grantPro(userId: string, adminId: string) {
         adminOverride: true,
         adminOverrideBy: adminId,
         adminOverrideAt: new Date(),
+        adminOverrideUnsubFailed: false,
       },
     })
   } else {
@@ -75,6 +106,8 @@ export async function grantPro(userId: string, adminId: string) {
  */
 export async function revokePro(userId: string, adminId: string) {
   const before = await prisma.user.findUnique({ where: { id: userId }, select: { subscriptionStatus: true } })
+  // BDApps first so a failure is known when the override is stored; our side applies either way.
+  const bdapps = await unsubscribeUserOnBdapps(userId, adminId)
   await prisma.subscription.updateMany({
     where: { userId, status: 'PRO' },
     data: {
@@ -82,6 +115,7 @@ export async function revokePro(userId: string, adminId: string) {
       adminOverride: true,
       adminOverrideBy: adminId,
       adminOverrideAt: new Date(),
+      adminOverrideUnsubFailed: bdapps.status === 'failed',
     },
   })
 
@@ -95,9 +129,9 @@ export async function revokePro(userId: string, adminId: string) {
       targetId: userId,
     },
   })
-  logPlanChange(userId, before?.subscriptionStatus ?? null, 'LAPSED', 'admin', { adminId, adminOverride: true })
+  logPlanChange(userId, before?.subscriptionStatus ?? null, 'LAPSED', 'admin', { adminId, adminOverride: true, bdapps: bdapps.status })
 
-  return { success: true }
+  return { success: true, bdapps }
 }
 
 /**
@@ -113,17 +147,20 @@ export async function setSubscriptionStatus(
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { subscriptionStatus: true } })
   const previous = user?.subscriptionStatus ?? null
   const now = new Date()
+  // Taking Pro away also ends BDApps billing (ADR 0006); granting Pro leaves BDApps alone.
+  const bdapps: BdappsUnsubscribeResult | null = status === 'PRO' ? null : await unsubscribeUserOnBdapps(userId, adminId)
+  const adminOverrideUnsubFailed = bdapps?.status === 'failed'
 
   const existing = await prisma.subscription.findFirst({ where: { userId }, select: { id: true } })
   const resetOnActive = status === 'LAPSED' ? {} : { consecutiveFailures: 0, gracePeriodEndsAt: null }
   if (existing) {
     await prisma.subscription.updateMany({
       where: { userId },
-      data: { status, adminOverride: true, adminOverrideBy: adminId, adminOverrideAt: now, ...resetOnActive },
+      data: { status, adminOverride: true, adminOverrideBy: adminId, adminOverrideAt: now, adminOverrideUnsubFailed, ...resetOnActive },
     })
   } else {
     await prisma.subscription.create({
-      data: { userId, status, adminOverride: true, adminOverrideBy: adminId, adminOverrideAt: now },
+      data: { userId, status, adminOverride: true, adminOverrideBy: adminId, adminOverrideAt: now, adminOverrideUnsubFailed },
     })
   }
 
@@ -138,9 +175,9 @@ export async function setSubscriptionStatus(
       metadata: { previous } as Prisma.InputJsonValue,
     },
   })
-  logPlanChange(userId, previous, status, 'admin', { adminId, adminOverride: true })
+  logPlanChange(userId, previous, status, 'admin', { adminId, adminOverride: true, bdapps: bdapps?.status })
 
-  return { success: true }
+  return { success: true, bdapps }
 }
 
 export async function createCaasTransaction(externalTrxId: string, amount: number) {
@@ -234,9 +271,25 @@ export async function applyBdappsSubscription(
     where: { id: userId },
     select: { subscriptionStatus: true },
   })
-  if (await hasAdminOverride(userId)) {
-    logger.translog('plan.override-kept', { status: before.subscriptionStatus, cause, registered, subscriberId }, { userId })
-    return before.subscriptionStatus
+  const override = await prisma.subscription.findFirst({
+    where: { userId, adminOverride: true },
+    orderBy: { adminOverrideAt: 'desc' },
+    select: { bdappsSubscriberId: true, adminOverrideUnsubFailed: true },
+  })
+  let overrideEnded = false
+  if (override) {
+    // BDApps reporting a subscription ends the override (ADR 0006): a new masked id always
+    // does; the same id only if our unsubscribe worked, else REGISTERED is just the old status.
+    const newId = !!override.bdappsSubscriberId && override.bdappsSubscriberId !== subscriberId
+    if (!registered || !(newId || !override.adminOverrideUnsubFailed)) {
+      logger.translog('plan.override-kept', { status: before.subscriptionStatus, cause, registered, subscriberId }, { userId })
+      return before.subscriptionStatus
+    }
+    await prisma.subscription.updateMany({
+      where: { userId },
+      data: { adminOverride: false, adminOverrideBy: null, adminOverrideAt: null, adminOverrideUnsubFailed: false },
+    })
+    overrideEnded = true
   }
 
   const existing = await prisma.subscription.findFirst({
@@ -258,7 +311,7 @@ export async function applyBdappsSubscription(
     await prisma.subscription.create({ data: { userId, ...data } })
   }
   await prisma.user.update({ where: { id: userId }, data: { subscriptionStatus: status } })
-  logPlanChange(userId, before.subscriptionStatus, status, cause, { subscriberId })
+  logPlanChange(userId, before.subscriptionStatus, status, cause, { subscriberId, ...(overrideEnded && { overrideEnded }) })
   return status
 }
 
@@ -347,6 +400,20 @@ export async function listBdappsSubscribers(): Promise<{ userId: string; subscri
     if (u.phone && !byUser.has(u.id)) byUser.set(u.id, u.phone)
   }
   return [...byUser].map(([userId, subscriberId]) => ({ userId, subscriberId }))
+}
+
+/**
+ * Revoked users (admin override, not Pro) whose number we unsubscribed on BDApps. The
+ * nightly check asks BDApps about them so a new subscription ends the override.
+ */
+export async function listRevokedSubscribers(): Promise<{ userId: string; subscriberId: string }[]> {
+  const rows = await prisma.subscription.findMany({
+    where: { adminOverride: true, adminOverrideUnsubFailed: false, status: { not: 'PRO' }, bdappsSubscriberId: { not: null } },
+    select: { userId: true, bdappsSubscriberId: true },
+  })
+  return rows
+    .filter((r): r is { userId: string; bdappsSubscriberId: string } => !!r.bdappsSubscriberId && !isPhoneSubscriberId(r.bdappsSubscriberId))
+    .map((r) => ({ userId: r.userId, subscriberId: r.bdappsSubscriberId }))
 }
 
 export async function listProSubscriptions() {

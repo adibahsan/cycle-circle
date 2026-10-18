@@ -18,6 +18,9 @@ const TiptapEditor = dynamic(
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Select } from '@/components/ui/Select'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { useToast } from '@/components/ui/Toast'
+import { articlePublishWarnings } from '@vesta/shared/server/services'
 import { createArticle } from '@/app/actions/content-actions'
 
 type CategoryOption = {
@@ -46,6 +49,8 @@ const STATUS_OPTIONS = [
 export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const toast = useToast()
+  const [publishWarnings, setPublishWarnings] = useState<string[] | null>(null)
 
   const [titleEn, setTitleEn] = useState('')
   const [titleBn, setTitleBn] = useState('')
@@ -64,6 +69,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
   }, [isDirty])
 
   function togglePhase(phase: string) {
+    setIsDirty(true)
     setCyclePhases((prev) =>
       prev.includes(phase) ? prev.filter((p) => p !== phase) : [...prev, phase]
     )
@@ -80,17 +86,29 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
     }
     setError(null)
 
+    const warnings = articlePublishWarnings({ status, titleBn, bodyBn, cyclePhases })
+    if (warnings.length > 0) {
+      setPublishWarnings(warnings.map((w) => (w === 'bengali' ? 'no Bengali translation (title and body)' : 'no cycle phase tag')))
+      return
+    }
+    save()
+  }
+
+  function save() {
+    setPublishWarnings(null)
     startTransition(async () => {
       try {
-        await createArticle({
+        const result = await createArticle({
           titleEn: titleEn.trim(),
-          titleBn: titleBn.trim() || undefined,
+          titleBn: titleBn.trim() || null,
           bodyEn,
-          bodyBn: bodyBn.trim() && bodyBn !== '<p></p>' ? bodyBn : undefined,
-          categoryId: categoryId || undefined,
+          bodyBn: bodyBn.trim() && bodyBn !== '<p></p>' ? bodyBn : null,
+          categoryId: categoryId || null,
           cyclePhases,
           status,
         })
+        setIsDirty(false)
+        if (!result.webCacheRefreshed) toast.error('Saved, but the web app cache did not refresh. Public pages may be stale for a few minutes.')
         router.push('/content')
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to save article.')
@@ -190,7 +208,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
                 </div>
                 <TiptapEditor
                   content={bodyEn}
-                  onChange={setBodyEn}
+                  onChange={(v) => { setBodyEn(v); setIsDirty(true) }}
                   placeholder="Write the article content in English…"
                   minHeight="320px"
                 />
@@ -208,7 +226,8 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
                 </div>
                 <TiptapEditor
                   content={bodyBn}
-                  onChange={setBodyBn}
+                  onChange={(v) => { setBodyBn(v); setIsDirty(true) }}
+                  lang="bn"
                   placeholder="বাংলায় আর্টিকেলের বিষয়বস্তু লিখুন…"
                   minHeight="320px"
                 />
@@ -307,7 +326,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
             {cyclePhases.length > 0 && (
               <button
                 type="button"
-                onClick={() => setCyclePhases([])}
+                onClick={() => { setCyclePhases([]); setIsDirty(true) }}
                 className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
               >
                 Clear all
@@ -330,6 +349,16 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
           </Button>
         </div>
       </div>
+      <ConfirmModal
+        open={publishWarnings !== null}
+        onClose={() => setPublishWarnings(null)}
+        onConfirm={save}
+        title="Publish anyway?"
+        message={`This article has ${publishWarnings?.join(' and ') ?? ''}. Readers may see an incomplete article.`}
+        confirmLabel="Publish anyway"
+        variant="warning"
+        loading={isPending}
+      />
     </div>
   )
 }
