@@ -47,3 +47,45 @@ export async function ensureFreshPersona(): Promise<void> {
   }
   await prisma.profile.update({ where: { id: profile.id }, data: { lastPeriodStart } })
 }
+
+/**
+ * Idempotent setup for the dashboard-mode personas (+8801700000781..783 only): onboarding done and one
+ * SELF profile each. `pregnant` and `menopause` have a period 20 days ago; `firstRun` has none, so its
+ * dashboard asks for the first period. Never touches any other user.
+ */
+export async function ensureModePersonas(): Promise<void> {
+  loadEnvLocal()
+  const { prisma } = await import('@vesta/shared')
+  const setups = [
+    { phone: PERSONAS.pregnant.phone, name: 'E2E Pregnant', goal: 'pregnancy', periodDaysAgo: 20 },
+    { phone: PERSONAS.menopause.phone, name: 'E2E Menopause', goal: 'perimenopause', periodDaysAgo: 20 },
+    { phone: PERSONAS.firstRun.phone, name: 'E2E First Run', goal: 'tracking', periodDaysAgo: null },
+  ] as const
+  for (const p of setups) {
+    if (!/^0170000078[1-3]$/.test(p.phone)) throw new Error(`ensureModePersonas only manages 01700000781-783, not ${p.phone}`)
+    const user = await prisma.user.findUnique({ where: { phone: '+88' + p.phone } })
+    if (!user) throw new Error(`${p.name} persona user missing: dev-login must run first`)
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { onboardingTourCompletedAt: user.onboardingTourCompletedAt ?? new Date(), profileCompleted: true, fullName: user.fullName ?? p.name },
+    })
+    const lastPeriodStart = p.periodDaysAgo == null ? null : new Date(Date.now() - p.periodDaysAgo * DAY)
+    let profile = await prisma.profile.findFirst({ where: { userId: user.id } })
+    if (!profile) {
+      profile = await prisma.profile.create({
+        data: { userId: user.id, name: p.name, relation: 'SELF', goal: p.goal, cycleLength: 28, periodLength: 5, lastPeriodStart },
+      })
+    }
+    // Re-assert the state on every run: the goal and (for firstRun) no period at all.
+    await prisma.profile.update({ where: { id: profile.id }, data: { goal: p.goal, lastPeriodStart } })
+    if (lastPeriodStart == null) {
+      await prisma.periodLog.deleteMany({ where: { profileId: profile.id } })
+      await prisma.prediction.deleteMany({ where: { profileId: profile.id } })
+    } else {
+      const endDate = new Date(lastPeriodStart.getTime() + 4 * DAY)
+      const recent = await prisma.periodLog.findFirst({ where: { profileId: profile.id }, orderBy: { startDate: 'desc' } })
+      if (!recent) await prisma.periodLog.create({ data: { profileId: profile.id, startDate: lastPeriodStart, endDate, flowIntensity: 'MEDIUM' } })
+      else await prisma.periodLog.update({ where: { id: recent.id }, data: { startDate: lastPeriodStart, endDate } })
+    }
+  }
+}

@@ -44,7 +44,7 @@ export type DashboardHeroState = 'pregnancy' | 'menopause' | 'no-period' | 'cycl
 
 /**
  * Which hero (and which blocks) the dashboard renders. `pregnantGoal` is the client-side goal
- * fallback for the pregnancy flag. #76 fills in the menopause and no-period heroes.
+ * fallback for the pregnancy flag.
  */
 export function dashboardHeroState(
   mode: 'standard' | 'pregnancy' | 'menopause',
@@ -54,4 +54,34 @@ export function dashboardHeroState(
   if (mode === 'pregnancy' || pregnantGoal) return 'pregnancy'
   if (mode === 'menopause') return 'menopause'
   return hasPeriod ? 'cycle' : 'no-period'
+}
+
+export interface DashboardBlocks {
+  /** The cycle-journey stepper and progress ring: real data, a dimmed 28-day example, or hidden. */
+  cycle: 'live' | 'example' | null
+  /** Phase-specific copy and links (e.g. articles filtered by the current phase). */
+  phaseTools: boolean
+}
+
+/**
+ * Blocks per hero state. Pregnancy and menopause hide the stepper and ring (their heroes
+ * carry no fertile stat or predictions); with no period logged there is no real phase, so the stepper and ring show an example.
+ */
+export function dashboardBlocks(state: DashboardHeroState): DashboardBlocks {
+  switch (state) {
+    case 'cycle':
+      return { cycle: 'live', phaseTools: true }
+    case 'no-period':
+      return { cycle: 'example', phaseTools: false }
+    default:
+      return { cycle: null, phaseTools: false }
+  }
+}
+
+/** The example cycle the no-period stepper and ring draw (not the user's data). */
+export const EXAMPLE_CYCLE = { cycleLength: 28, periodLength: 5, cycleDay: 8 } as const
+
+/** Whole calendar days from `start` to `today` (both YYYY-MM-DD), never negative. */
+export function daysSince(today: string, start: string): number {
+  return Math.max(0, dayNumber(today) - dayNumber(start))
 }

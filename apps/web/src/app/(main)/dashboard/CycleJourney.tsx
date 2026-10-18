@@ -24,25 +24,29 @@ interface CycleJourneyProps {
   phase: CyclePhase
   cycleDay: number
   language: string
+  /** No period logged: draw a dimmed example cycle, labelled and announced as an example. */
+  example?: boolean
 }
 
 /** Vertical cycle-journey stepper. Phases a short cycle crowds out to 0 days are not drawn. */
-export function CycleJourney({ cycleLength, periodLength, phase, cycleDay, language }: CycleJourneyProps) {
+export function CycleJourney({ cycleLength, periodLength, phase, cycleDay, language, example = false }: CycleJourneyProps) {
   const { t } = useTranslation()
   const n = (v: number) => formatCount(language, v)
   const steps = journeySteps(cycleLength, periodLength)
-  const current = currentJourneyPhase(steps, phase, cycleDay)
+  // An example has no "you are here": there is no real cycle day yet.
+  const current = example ? null : currentJourneyPhase(steps, phase, cycleDay)
 
   return (
     <Card tone="panel" padding="md" className="h-full">
-      <section aria-labelledby="journey-title">
+      <section aria-labelledby="journey-title" aria-describedby={example ? 'journey-example-note' : undefined}>
         <SectionHeader
           id="journey-title"
           title={t('dashboard.journeyTitle')}
-          subtitle={t('dashboard.journeySub', { n: n(cycleLength) })}
+          subtitle={example ? t('dashboard.exampleJourneySub', { n: n(cycleLength) }) : t('dashboard.journeySub', { n: n(cycleLength) })}
           variant="inline"
         />
-        <ol data-testid="cycle-journey" className="flex flex-col">
+        {example && <ExampleNote id="journey-example-note" />}
+        <ol data-testid="cycle-journey" data-example={example || undefined} className="flex flex-col">
           {steps.map((s, i) => {
             const isCurrent = s.phase === current
             const last = i === steps.length - 1
@@ -54,7 +58,8 @@ export function CycleJourney({ cycleLength, periodLength, phase, cycleDay, langu
                 className="relative flex gap-3 pb-2 last:pb-0"
               >
                 {/* Rail: phase dot and the line to the next step. */}
-                <span aria-hidden="true" className="relative flex w-10 shrink-0 justify-center">
+                {/* Example: only the graphics dim, so the text keeps its contrast. */}
+                <span aria-hidden="true" className={cn('relative flex w-10 shrink-0 justify-center', example && 'opacity-40 grayscale')}>
                   <span className="z-10 mt-2 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-bg-card)] border-2" style={{ borderColor: getPhaseColor(s.phase) }}>
                     <PhaseIcon phase={s.phase} size={18} />
                   </span>
@@ -88,5 +93,18 @@ export function CycleJourney({ cycleLength, periodLength, phase, cycleDay, langu
         </ol>
       </section>
     </Card>
+  )
+}
+
+/** Visible "Example" badge plus the sentence screen readers get via aria-describedby. */
+export function ExampleNote({ id }: { id: string }) {
+  const { t } = useTranslation()
+  return (
+    <p id={id} data-testid="example-note" className="mb-3 flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+      <span className="rounded-full bg-[var(--color-bg-secondary)] px-2.5 py-0.5 font-semibold uppercase tracking-wide text-[var(--color-text-primary)]">
+        {t('dashboard.exampleBadge')}
+      </span>
+      {t('dashboard.exampleNote')}
+    </p>
   )
 }

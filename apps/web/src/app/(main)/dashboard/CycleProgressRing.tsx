@@ -5,6 +5,8 @@ import type { CyclePhase } from '@vesta/shared/types'
 import { getPhaseColor } from '@vesta/shared/utils/cycle-utils'
 import { Card } from '@/components/ui/Card'
 import { SectionHeader } from '@/components/ui/SectionHeader'
+import { cn } from '@/lib/cn'
+import { ExampleNote } from './CycleJourney'
 import type { PeriodStatus } from './dashboard-model'
 import { formatCount } from './format'
 
@@ -14,6 +16,8 @@ interface CycleProgressRingProps {
   phase: CyclePhase
   period: PeriodStatus | null
   language: string
+  /** No period logged: draw a dimmed example, labelled and announced as an example. */
+  example?: boolean
   /** Extra content under the ring (e.g. the unlock meter). */
   children?: React.ReactNode
 }
@@ -27,12 +31,15 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS
  * Progress through this cycle. When the period is overdue the ring is full and says the period is
  * due, without the late day count: the hero's next-period stat is that number's only home.
  */
-export function CycleProgressRing({ cycleDay, cycleLength, phase, period, language, children }: CycleProgressRingProps) {
+export function CycleProgressRing({ cycleDay, cycleLength, phase, period, language, example = false, children }: CycleProgressRingProps) {
   const { t } = useTranslation()
   const n = (v: number) => formatCount(language, v)
   const progress = Math.min(1, Math.max(0, cycleDay / cycleLength))
-  const caption =
-    period?.kind === 'in'
+  const ringValues = { day: n(cycleDay), length: n(cycleLength) }
+  const ringLabel = example ? t('dashboard.exampleRingLabel', ringValues) : t('dashboard.ringLabel', ringValues)
+  const caption = example
+    ? null
+    : period?.kind === 'in'
       ? t('dashboard.ringToNext', { count: period.days, n: n(period.days) })
       : period
         ? t('dashboard.ringDueSoon')
@@ -40,16 +47,19 @@ export function CycleProgressRing({ cycleDay, cycleLength, phase, period, langua
 
   return (
     <Card tone="panel" padding="md" className="h-full">
-      <section aria-labelledby="progress-title" className="flex h-full flex-col">
+      <section aria-labelledby="progress-title" aria-describedby={example ? 'progress-example-note' : undefined} className="flex h-full flex-col">
         <SectionHeader id="progress-title" title={t('dashboard.progressTitle')} />
+        {example && <ExampleNote id="progress-example-note" />}
         <div className="flex flex-1 flex-col items-center justify-center gap-3">
           <div
             role="img"
-            aria-label={t('dashboard.ringLabel', { day: n(cycleDay), length: n(cycleLength) })}
+            aria-label={ringLabel}
+            data-example={example || undefined}
             className="relative flex items-center justify-center"
             style={{ width: SIZE, height: SIZE }}
           >
-            <svg width={SIZE} height={SIZE} aria-hidden="true" className="absolute -rotate-90">
+            {/* Example: only the ring dims, so the number keeps its contrast. */}
+            <svg width={SIZE} height={SIZE} aria-hidden="true" className={cn('absolute -rotate-90', example && 'opacity-40 grayscale')}>
               <circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none" stroke="var(--color-bg-secondary)" strokeWidth={STROKE} />
               <circle
                 cx={SIZE / 2}

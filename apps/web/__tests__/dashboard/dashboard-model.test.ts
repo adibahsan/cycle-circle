@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { journeySteps, currentJourneyPhase, periodStatus, fertileStatus, dashboardHeroState } from '@/app/(main)/dashboard/dashboard-model'
+import { journeySteps, currentJourneyPhase, periodStatus, fertileStatus, dashboardHeroState, dashboardBlocks, daysSince } from '@/app/(main)/dashboard/dashboard-model'
 
 const shape = (cycle: number, period: number) => journeySteps(cycle, period).map((s) => [s.phase, s.start, s.end])
 
@@ -98,5 +98,32 @@ describe('dashboardHeroState (which hero renders)', () => {
   })
   it('standard mode with a period shows the cycle hero', () => {
     expect(dashboardHeroState('standard', true)).toBe('cycle')
+  })
+})
+
+describe('dashboardBlocks (what each mode renders, #76)', () => {
+  it('cycle: live stepper and ring, phase tools', () => {
+    expect(dashboardBlocks('cycle')).toEqual({ cycle: 'live', phaseTools: true })
+  })
+  it('pregnancy: no stepper, ring or phase tools', () => {
+    expect(dashboardBlocks('pregnancy')).toEqual({ cycle: null, phaseTools: false })
+  })
+  it('menopause: no stepper, ring or phase tools', () => {
+    expect(dashboardBlocks('menopause')).toEqual({ cycle: null, phaseTools: false })
+  })
+  it('no period: the stepper and ring show the example, with no phase tools', () => {
+    expect(dashboardBlocks('no-period')).toEqual({ cycle: 'example', phaseTools: false })
+  })
+})
+
+describe('daysSince (menopause hero: days since last period)', () => {
+  it('is 0 on the day the period started', () => {
+    expect(daysSince('2026-10-18', '2026-10-18')).toBe(0)
+  })
+  it('counts calendar days across a month boundary', () => {
+    expect(daysSince('2026-10-18', '2026-09-20')).toBe(28)
+  })
+  it('never goes negative for a future start', () => {
+    expect(daysSince('2026-10-18', '2026-10-20')).toBe(0)
   })
 })
