@@ -68,24 +68,25 @@ export async function revokeProAccess(userId: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await revokePro(userId, admin.id)
+  const { bdapps } = await revokePro(userId, admin.id)
 
   revalidateUserTags(userId)
   revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
   await revalidateWebTags([`user:${userId}`])
-  return { success: true }
+  return { success: true, bdappsError: bdapps.status === 'failed' ? bdapps.error : null }
 }
 
 export async function setUserSubscriptionStatus(userId: string, status: 'PRO' | 'FREE' | 'LAPSED') {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await setSubscriptionStatus(userId, status, admin.id)
+  const { bdapps } = await setSubscriptionStatus(userId, status, admin.id)
 
   revalidateUserTags(userId)
   revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
   await revalidateWebTags([`user:${userId}`])
-  return { success: true }
+  // Our change applied either way; the admin sees if the BDApps unsubscribe step failed.
+  return { success: true, bdappsError: bdapps?.status === 'failed' ? bdapps.error : null }
 }
 
 export async function setUserNotificationPrefs(

@@ -150,6 +150,8 @@ function ActionsCell({ row, onGrant, onRevoke, onSetFree }: ActionsCellProps) {
 // Main client component
 // ─────────────────────────────────────────────────────────────────────────────
 
+const bdappsFailedMessage = (e: string) => `Plan changed, but the BDApps unsubscribe failed: ${e}. The user may still be charged.`
+
 export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribution, range }: SubscriptionsClientProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -222,8 +224,9 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
     setRevokeTarget(null)
     startActionTransition(async () => {
       try {
-        await setUserSubscriptionStatus(userId, 'LAPSED')
+        const res = await setUserSubscriptionStatus(userId, 'LAPSED')
         toast.success('Pro access revoked')
+        if (res.bdappsError) toast.error(bdappsFailedMessage(res.bdappsError))
         router.refresh()
       } catch (err) {
         toast.error(err instanceof Error && err.message ? err.message : 'Could not update the subscription')
@@ -237,8 +240,9 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
     setFreeTarget(null)
     startActionTransition(async () => {
       try {
-        await setUserSubscriptionStatus(userId, 'FREE')
+        const res = await setUserSubscriptionStatus(userId, 'FREE')
         toast.success('Subscription set to Free')
+        if (res.bdappsError) toast.error(bdappsFailedMessage(res.bdappsError))
         router.refresh()
       } catch (err) {
         toast.error(err instanceof Error && err.message ? err.message : 'Could not update the subscription')
