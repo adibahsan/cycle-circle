@@ -3,8 +3,13 @@ import { gotoQuiet, dialog, DESKTOP, PHONE_375 } from '../guards/helpers'
 
 // #73: the shell in the pastel look. The active nav item is filled with the goal accent and its ink passes 4.5:1.
 
+/** Switch theme, then wait out the nav's colour transitions so we measure the settled pair, not a mid-fade blend. */
 async function setTheme(page: Page, theme: 'light' | 'dark') {
-  await page.evaluate((t) => document.documentElement.classList.toggle('dark', t === 'dark'), theme)
+  await page.evaluate(async (t) => {
+    document.documentElement.classList.toggle('dark', t === 'dark')
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    await Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined)))
+  }, theme)
 }
 
 /** Contrast of `ink`'s text colour against the nearest ancestor-or-self with an opaque background. */

@@ -46,6 +46,12 @@ function resolve(value: string, theme: Record<string, string>, goal: string): st
 }
 
 describe('active nav item', () => {
+  it('reads the real dark token block (dark ink on the brighter dark goal accents)', () => {
+    expect(themes.dark['--color-on-accent']).not.toBe(light['--color-on-accent'])
+    for (const goal of GOALS)
+      expect(themes.dark[`--color-goal-${goal}`]).not.toBe(light[`--color-goal-${goal}`])
+  })
+
   it('is filled with the goal accent', () => {
     expect(NAV_ACTIVE.backgroundColor).toBe('var(--goal-accent)')
   })
