@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useAdminStore } from '@/lib/store'
+import { ToastProvider } from '@/components/ui/Toast'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const { theme } = useAdminStore()
@@ -11,5 +12,5 @@ export function Providers({ children }: { children: React.ReactNode }) {
     document.documentElement.style.colorScheme = theme === 'dark' ? 'dark' : 'light'
   }, [theme])
 
-  return <>{children}</>
+  return <ToastProvider>{children}</ToastProvider>
 }

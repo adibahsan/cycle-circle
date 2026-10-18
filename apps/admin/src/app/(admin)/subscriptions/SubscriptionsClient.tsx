@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { useToast } from '@/components/ui/Toast'
 import { setUserSubscriptionStatus } from '@/app/actions/user-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
@@ -155,6 +156,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
   const [actionPending, startActionTransition] = useTransition()
+  const toast = useToast()
 
   // Modal state
   const [grantTarget, setGrantTarget] = useState<SubscriptionRow | null>(null)
@@ -204,8 +206,13 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
     const userId = grantTarget.user.id
     setGrantTarget(null)
     startActionTransition(async () => {
-      await setUserSubscriptionStatus(userId, 'PRO')
-      router.refresh()
+      try {
+        await setUserSubscriptionStatus(userId, 'PRO')
+        toast.success('Pro access granted')
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error && err.message ? err.message : 'Could not update the subscription')
+      }
     })
   }
 
@@ -214,8 +221,13 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
     const userId = revokeTarget.user.id
     setRevokeTarget(null)
     startActionTransition(async () => {
-      await setUserSubscriptionStatus(userId, 'LAPSED')
-      router.refresh()
+      try {
+        await setUserSubscriptionStatus(userId, 'LAPSED')
+        toast.success('Pro access revoked')
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error && err.message ? err.message : 'Could not update the subscription')
+      }
     })
   }
 
@@ -224,8 +236,13 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
     const userId = freeTarget.user.id
     setFreeTarget(null)
     startActionTransition(async () => {
-      await setUserSubscriptionStatus(userId, 'FREE')
-      router.refresh()
+      try {
+        await setUserSubscriptionStatus(userId, 'FREE')
+        toast.success('Subscription set to Free')
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error && err.message ? err.message : 'Could not update the subscription')
+      }
     })
   }
 
