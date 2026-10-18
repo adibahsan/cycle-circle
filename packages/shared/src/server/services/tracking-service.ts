@@ -11,7 +11,7 @@ import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
 import { TIER2_MIN_CYCLES } from '../prediction-calc'
 import { getCurrentPhase, MS_PER_DAY } from '../../utils/cycle-utils'
 import type { CyclePhase } from '../../types/types'
-import { loadPhasePattern, type PhasePatternEntry } from './insights-service'
+import { loadPhasePattern, loadRecentSymptomPattern, type PhasePatternEntry } from './insights-service'
 
 // ── Ownership helpers ──────────────────────────────────────────────────────────
 
@@ -564,6 +564,8 @@ export async function getDashboardData(profileId: string, userId: string) {
     mode === 'standard' && lastPeriod
       ? await loadPhasePattern(profileId, profile.periodLength, currentPhase)
       : []
+  // Symptom pattern (#66 S1): menopause has no phases, so it ranks a recent window instead.
+  const symptomPattern: PhasePatternEntry[] = mode === 'menopause' ? await loadRecentSymptomPattern(profileId) : []
 
   return {
     mode,
@@ -574,6 +576,7 @@ export async function getDashboardData(profileId: string, userId: string) {
     prediction: pregnant ? null : prediction,
     lastSymptomLogDate,
     phasePattern,
+    symptomPattern,
   }
 }
 

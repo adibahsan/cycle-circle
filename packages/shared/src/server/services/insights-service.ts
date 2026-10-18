@@ -321,3 +321,50 @@ export async function loadPhasePattern(
     symptomLogs: symptomLogs.map((l) => ({ dateMs: l.date.getTime(), symptomId: l.symptomId })),
   })
 }
+
+// ─── 6. Symptom pattern (perimenopause / menopause) ──────────────────────────
+
+/** Days the menopause symptom pattern looks back over, today included. */
+export const SYMPTOM_PATTERN_DAYS = 90
+
+export interface RankRecentSymptomsInput {
+  /** Today at UTC midnight (symptom logs are stored as UTC-midnight day keys). */
+  todayMs: number
+  symptomLogs: { dateMs: number; symptomId: string }[]
+  /** Max symptoms returned. Default 3. */
+  limit?: number
+}
+
+/**
+ * Symptom pattern for modes without phases: the symptoms logged most often in the last
+ * SYMPTOM_PATTERN_DAYS days, ranked by count (ties by symptom id). "All good" check-ins are ignored.
+ */
+export function rankRecentSymptoms({ todayMs, symptomLogs, limit = 3 }: RankRecentSymptomsInput): PhasePatternEntry[] {
+  const from = todayMs - (SYMPTOM_PATTERN_DAYS - 1) * MS_PER_DAY
+  const to = todayMs + MS_PER_DAY
+  const counts = new Map<string, number>()
+  for (const log of symptomLogs) {
+    if (log.symptomId === ALL_GOOD_SYMPTOM_ID || log.dateMs < from || log.dateMs >= to) continue
+    counts.set(log.symptomId, (counts.get(log.symptomId) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .map(([symptomId, count]) => ({ symptomId, count }))
+    .sort((a, b) => b.count - a.count || a.symptomId.localeCompare(b.symptomId))
+    .slice(0, limit)
+}
+
+/** Loads a profile's recent symptom logs and ranks its symptom pattern. Caller has checked ownership. */
+export async function loadRecentSymptomPattern(profileId: string, now: Date = new Date()): Promise<PhasePatternEntry[]> {
+  const todayMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  const symptomLogs = await prisma.symptomLog.findMany({
+    where: {
+      profileId,
+      date: { gte: new Date(todayMs - (SYMPTOM_PATTERN_DAYS - 1) * MS_PER_DAY), lt: new Date(todayMs + MS_PER_DAY) },
+    },
+    select: { date: true, symptomId: true },
+  })
+  return rankRecentSymptoms({
+    todayMs,
+    symptomLogs: symptomLogs.map((l) => ({ dateMs: l.date.getTime(), symptomId: l.symptomId })),
+  })
+}

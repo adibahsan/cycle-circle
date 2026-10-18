@@ -120,6 +120,10 @@ const resources = {
         patternCount_other: 'Logged {{n}} times',
         patternEmpty: 'Log your symptoms this cycle to see your pattern next time.',
         patternLogCta: 'Log symptoms',
+        // #66 S1: symptom pattern (perimenopause / menopause; no phases)
+        symptomPatternTitle: 'Your symptom pattern',
+        symptomPatternSub: 'Most logged in the last {{n}} days',
+        symptomPatternEmpty: 'Log your symptoms to see your pattern here.',
         // #71 cycle ring name
         ringLabel: 'Cycle day {{day}} of {{length}}', ringLateLabel: '{{days}} days late',
         day: 'Day', phase: 'Phase', nextPeriod: 'Next period in', days: 'days',
@@ -960,6 +964,10 @@ const resources = {
         patternCount_other: '{{n}} বার লগ করা হয়েছে',
         patternEmpty: 'এই চক্রে আপনার উপসর্গ লগ করুন, পরের বার আপনার ধরন দেখতে পাবেন।',
         patternLogCta: 'উপসর্গ লগ করুন',
+        // #66 S1
+        symptomPatternTitle: 'আপনার উপসর্গের ধরন',
+        symptomPatternSub: 'গত {{n}} দিনে সবচেয়ে বেশি লগ করা',
+        symptomPatternEmpty: 'এখানে আপনার ধরন দেখতে উপসর্গ লগ করুন।',
         // #71 cycle ring name
         ringLabel: 'চক্রের দিন {{day}} / {{length}}', ringLateLabel: '{{days}} দিন দেরি',
         day: 'দিন', phase: 'পর্যায়', nextPeriod: 'পরবর্তী পিরিয়ড', days: 'দিন',

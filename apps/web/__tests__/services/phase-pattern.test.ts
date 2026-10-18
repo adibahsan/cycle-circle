@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { dashboardCycleState, rankPhasePattern } from '@vesta/shared/server/services'
+import { dashboardCycleState, rankPhasePattern, rankRecentSymptoms, SYMPTOM_PATTERN_DAYS } from '@vesta/shared/server/services'
 
 // Phase pattern (#75): the symptoms a profile logged most often in a phase,
 // across its completed past cycles. Pure-function tests — no DB required.
@@ -119,5 +119,42 @@ describe('dashboard phase and Phase pattern agree', () => {
     expect(
       dashboardCycleState({ lastStartMs: start, todayMs: start + 40 * DAY_MS, periodLength: 5, cycleLength: 28 }),
     ).toEqual({ cycleDay: 28, phase: 'luteal' })
+  })
+})
+
+// Menopause / perimenopause (#66 S1, story 18): no phases, so the hero's symptom pattern is the
+// symptoms logged most often over a recent window.
+describe('rankRecentSymptoms', () => {
+  const today = Date.UTC(2026, 5, 30)
+  const daysAgo = (n: number) => today - n * DAY
+
+  it('looks back 90 days', () => {
+    expect(SYMPTOM_PATTERN_DAYS).toBe(90)
+  })
+
+  it('ranks symptoms logged in the window by count, ties by id, capped at three', () => {
+    const symptomLogs = [
+      log(daysAgo(1), 'hot-flashes'),
+      log(daysAgo(3), 'hot-flashes'),
+      log(daysAgo(40), 'insomnia'),
+      log(daysAgo(89), 'insomnia'),
+      log(daysAgo(10), 'hot-flashes'),
+      log(daysAgo(5), 'headache'),
+      log(daysAgo(6), 'anxiety'),
+    ]
+    expect(rankRecentSymptoms({ todayMs: today, symptomLogs })).toEqual([
+      { symptomId: 'hot-flashes', count: 3 },
+      { symptomId: 'insomnia', count: 2 },
+      { symptomId: 'anxiety', count: 1 },
+    ])
+  })
+
+  it('ignores logs older than the window, future logs and "All good" check-ins', () => {
+    const symptomLogs = [log(daysAgo(90), 'insomnia'), log(today + DAY, 'acne'), log(daysAgo(2), 'all_good'), log(today, 'fatigue')]
+    expect(rankRecentSymptoms({ todayMs: today, symptomLogs })).toEqual([{ symptomId: 'fatigue', count: 1 }])
+  })
+
+  it('is empty with nothing logged', () => {
+    expect(rankRecentSymptoms({ todayMs: today, symptomLogs: [] })).toEqual([])
   })
 })

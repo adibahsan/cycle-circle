@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/app/queries/auth-queries'
 import { getProfiles, getActiveProfileId } from '@/app/queries/profile-queries'
 import { getDashboardData, getEngagementSummary } from '@/app/queries/tracking-queries'
 import { getPublishedArticles } from '@/app/queries/content-queries'
-import { getProfileCompletionStatus } from '@vesta/shared/server/services'
+import { getProfileCompletionStatus, SYMPTOM_PATTERN_DAYS } from '@vesta/shared/server/services'
 import { normalizeCyclePhase } from '@vesta/shared/utils/cycle-utils'
 import { DashboardClient } from './DashboardClient'
 import type { PhaseArticle } from './DashboardToolkit'
@@ -42,12 +42,15 @@ export default async function DashboardPage({
 
   const activeProfile = profiles.find((p) => p.id === profileId) ?? profiles[0]
 
+  // Standard: the Phase pattern. Menopause: the symptom pattern over a recent window (story 18).
   const phasePattern =
     dashboardData?.mode === 'standard' && dashboardData.currentPhase ? (
       <PhasePatternCard
         phase={normalizeCyclePhase(dashboardData.currentPhase)}
         pattern={dashboardData.phasePattern}
       />
+    ) : dashboardData?.mode === 'menopause' ? (
+      <PhasePatternCard phase={null} pattern={dashboardData.symptomPattern} windowDays={SYMPTOM_PATTERN_DAYS} />
     ) : null
 
   return (

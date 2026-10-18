@@ -23,13 +23,22 @@ export interface PhasePatternItem {
 const TILE_TINTS: CardTint[] = ['mint', 'lavender', 'peach']
 
 interface PhasePatternCardProps {
-  phase: CyclePhase
-  /** Most-logged symptoms in this phase across completed past cycles, ranked. */
+  /**
+   * The current phase: a Phase pattern over completed past cycles. Null (perimenopause /
+   * menopause, no phases): a symptom pattern over the last `windowDays` days.
+   */
+  phase: CyclePhase | null
+  /** Most-logged symptoms, ranked. */
   pattern: PhasePatternItem[]
+  /** Look-back window of the symptom pattern (phase null only). */
+  windowDays?: number
 }
 
-/** Phase pattern (#75): what this profile has logged most often in the current phase before. */
-export function PhasePatternCard({ phase, pattern }: PhasePatternCardProps) {
+/**
+ * Phase pattern (#75): what this profile has logged most often in the current phase before.
+ * Without a phase it is the symptom pattern (#66 S1): most logged over a recent window.
+ */
+export function PhasePatternCard({ phase, pattern, windowDays = 90 }: PhasePatternCardProps) {
   const { t } = useTranslation()
   const language = useLanguage()
   const items = pattern.flatMap((p) => {
@@ -37,14 +46,24 @@ export function PhasePatternCard({ phase, pattern }: PhasePatternCardProps) {
     return symptom ? [{ ...p, symptom }] : []
   })
 
+  const copy = phase
+    ? {
+        testId: 'phase-pattern',
+        title: t('dashboard.patternTitle'),
+        sub: t('dashboard.patternSub', { phase: t(`dashboard.${phase}`) }),
+        empty: t('dashboard.patternEmpty'),
+      }
+    : {
+        testId: 'symptom-pattern',
+        title: t('dashboard.symptomPatternTitle'),
+        sub: t('dashboard.symptomPatternSub', { n: formatCount(language, windowDays) }),
+        empty: t('dashboard.symptomPatternEmpty'),
+      }
+
   return (
     <Card tone="panel" padding="md" className="h-full">
-      <section aria-labelledby="phase-pattern-title" data-testid="phase-pattern">
-        <SectionHeader
-          id="phase-pattern-title"
-          title={t('dashboard.patternTitle')}
-          subtitle={t('dashboard.patternSub', { phase: t(`dashboard.${phase}`) })}
-        />
+      <section aria-labelledby="phase-pattern-title" data-testid={copy.testId}>
+        <SectionHeader id="phase-pattern-title" title={copy.title} subtitle={copy.sub} />
         {items.length > 0 ? (
           <ul data-testid="phase-pattern-list" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {items.map(({ symptomId, count, symptom }, i) => {
@@ -81,7 +100,7 @@ export function PhasePatternCard({ phase, pattern }: PhasePatternCardProps) {
               <NotebookPen size={18} aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className="text-sm text-[var(--color-text-primary)]">{t('dashboard.patternEmpty')}</p>
+              <p className="text-sm text-[var(--color-text-primary)]">{copy.empty}</p>
               <Link
                 href="/symptoms"
                 className={cn(PILL_ACTION, 'mt-3')}

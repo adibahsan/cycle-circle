@@ -11,9 +11,10 @@ import {
 
 /**
  * Bump when the dashboard data's shape or meaning changes, so the data cache never
- * serves an entry built by older code (v2: phasePattern added, shared phase names).
+ * serves an entry built by older code (v2: phasePattern added, shared phase names;
+ * v3: symptomPattern for menopause).
  */
-const DASHBOARD_CACHE_VERSION = 'dashboard-v2'
+const DASHBOARD_CACHE_VERSION = 'dashboard-v3'
 
 export const getDashboardData = cache(async (profileId: string) => {
   const user = await requireCurrentUser()
