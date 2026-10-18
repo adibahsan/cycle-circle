@@ -4,9 +4,9 @@ import { twMerge } from 'tailwind-merge';
 interface PageContainerProps {
   children: React.ReactNode;
   /**
-   * 'default' = max-w-4xl: forms and reading (settings, profiles, subscription, feedback, an open article).
-   * 'canvas' = max-w-5xl, growing to 100rem from 2xl, for pages that recompose to fill wide screens
-   * (dashboard rail, calendar, symptoms, insights, the article list).
+   * 'default' = max-w-4xl (error and not-found pages).
+   * 'canvas' = max-w-5xl, growing to 100rem from 2xl: every signed-in page. Each page recomposes into more
+   * columns on wide screens so forms and text keep a readable width instead of stretching.
    */
   width?: 'default' | 'canvas';
   className?: string;

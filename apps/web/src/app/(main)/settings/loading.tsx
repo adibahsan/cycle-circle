@@ -3,7 +3,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function SettingsLoading() {
   return (
-    <PageContainer>
+    <PageContainer width="canvas">
       {/* Title */}
       <div>
         <Shimmer className="h-8 w-32 rounded-lg" />

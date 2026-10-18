@@ -447,10 +447,11 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
   return (
     <>
 
-      <PageContainer>
+      <PageContainer width="canvas">
         <PageHeader title={t('settings.title')} />
 
-        <div className="lg:grid lg:grid-cols-2 lg:gap-5 space-y-5 lg:space-y-0">
+        {/* Two columns from lg; from 2xl the sections flow into three balanced columns, each at form width. */}
+        <div className="lg:grid lg:grid-cols-2 lg:gap-5 space-y-5 lg:space-y-0 2xl:block 2xl:columns-3 2xl:gap-6 2xl:[&>div]:contents 2xl:[&>div>*]:mb-6 2xl:[&>div>*]:break-inside-avoid">
           {/* ── Left column ── */}
           <div className="space-y-6">
             {/* 1. Language & Appearance */}

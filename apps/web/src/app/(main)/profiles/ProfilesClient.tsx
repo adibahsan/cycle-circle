@@ -945,14 +945,14 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
 
   return (
     <>
-      <PageContainer className="min-h-[calc(100dvh-8rem)]">
+      <PageContainer width="canvas" className="min-h-[calc(100dvh-8rem)]">
         <PageHeader
           title={t('profiles.title')}
           subtitle={`${profiles.length} / ${MAX_PROFILES} ${t('nav.profiles').toLowerCase()}`}
         />
 
         {/* Profile list */}
-        <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-5">
+        <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-5 2xl:grid-cols-3">
           <AnimatePresence mode="popLayout">
             {profiles.map((profile) => (
               <ProfileCard
@@ -1038,7 +1038,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.4 }}
-            className="lg:col-span-2 rounded-panel bg-tint-sage p-5 flex items-start gap-3"
+            className="lg:col-span-2 2xl:col-span-3 rounded-panel bg-tint-sage p-5 flex items-start gap-3"
           >
             <LockKeyhole size={20} className="flex-shrink-0 mt-0.5 text-accent-sage" aria-hidden="true" />
             <div>

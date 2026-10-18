@@ -11,10 +11,10 @@ const PAGES: Record<string, 'default' | 'canvas'> = {
   'app/(main)/symptoms/SymptomsClient.tsx': 'canvas',
   'app/(main)/insights/InsightsClient.tsx': 'canvas',
   'app/(main)/content/ContentClient.tsx': 'canvas',
-  'app/(main)/profiles/ProfilesClient.tsx': 'default',
-  'app/(main)/settings/SettingsClient.tsx': 'default',
-  'app/(main)/subscription/SubscriptionClient.tsx': 'default',
-  'app/(main)/feedback/FeedbackClient.tsx': 'default',
+  'app/(main)/profiles/ProfilesClient.tsx': 'canvas',
+  'app/(main)/settings/SettingsClient.tsx': 'canvas',
+  'app/(main)/subscription/SubscriptionClient.tsx': 'canvas',
+  'app/(main)/feedback/FeedbackClient.tsx': 'canvas',
 }
 
 describe('page shell scale', () => {

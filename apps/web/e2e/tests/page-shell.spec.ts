@@ -38,28 +38,24 @@ test.describe('page shell (desktop)', () => {
   })
 
   test('container width follows the scale', async ({ page }) => {
-    const wide = new Set(['/dashboard', '/calendar', '/symptoms', '/insights', '/content'])
     for (const route of ROUTES) {
       await gotoQuiet(page, route)
       const w = await page.locator('main h1').evaluate((el) => {
         const container = el.closest('header')!.parentElement as HTMLElement
         return container.getBoundingClientRect().width
       })
-      expect(w, `${route} container width`).toBeLessThanOrEqual(wide.has(route) ? 1024 : 896)
+      expect(w, `${route} container width`).toBeLessThanOrEqual(1024)
     }
   })
 
-  test('canvas pages fill a 1920px screen; form pages stay at reading width', async ({ page }) => {
+  test('every page fills a 1920px screen (no empty band on the right)', async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 })
-    const canvas = new Set(['/dashboard', '/calendar', '/symptoms', '/insights', '/content'])
     for (const route of ROUTES) {
       await gotoQuiet(page, route)
-      const box = await page.locator('main h1').evaluate((el) => {
-        const r = (el.closest('header')!.parentElement as HTMLElement).getBoundingClientRect()
-        return { right: r.right, width: r.width }
+      const right = await page.locator('main h1').evaluate((el) => {
+        return (el.closest('header')!.parentElement as HTMLElement).getBoundingClientRect().right
       })
-      if (canvas.has(route)) expect(1920 - box.right, `${route} right gutter`).toBeLessThanOrEqual(96)
-      else expect(box.width, `${route} container width`).toBeLessThanOrEqual(896)
+      expect(1920 - right, `${route} right gutter`).toBeLessThanOrEqual(96)
     }
   })
 

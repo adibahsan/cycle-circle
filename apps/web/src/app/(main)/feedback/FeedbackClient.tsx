@@ -246,7 +246,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
   }
 
   return (
-    <PageContainer>
+    <PageContainer width="canvas">
       {/* ── Page header ── */}
       <PageHeader title={t('feedback.title')} subtitle={t('feedback.helpUs')} />
 

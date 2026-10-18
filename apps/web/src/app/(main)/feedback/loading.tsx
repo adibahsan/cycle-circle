@@ -3,7 +3,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function FeedbackLoading() {
   return (
-    <PageContainer>
+    <PageContainer width="canvas">
       {/* Page Header */}
       <div>
         <Shimmer className="h-8 w-44 rounded-lg" />
