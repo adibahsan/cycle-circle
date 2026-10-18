@@ -2,7 +2,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function LoginLoading() {
   return (
-    <div className="flex flex-col min-h-[calc(100dvh-4rem)] animate-pulse-soft">
+    <div className="flex flex-col min-h-[calc(100dvh-4rem)]">
       {/* Logo / Hero section */}
       <div className="flex flex-col items-center pt-8 pb-6 space-y-4">
         {/* Floating icon */}

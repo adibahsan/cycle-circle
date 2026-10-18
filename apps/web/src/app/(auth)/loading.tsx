@@ -2,7 +2,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function AuthLoading() {
   return (
-    <div className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft p-6 w-full max-w-md mx-auto space-y-6 animate-pulse-soft">
+    <div className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft p-6 w-full max-w-md mx-auto space-y-6">
       {/* Back button skeleton */}
       <Shimmer className="h-5 w-16 rounded-md" />
 

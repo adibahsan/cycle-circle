@@ -21,6 +21,25 @@ describe('calm shell (#71)', () => {
     })
   }
 
+  // Story 25: loading skeletons are static too (no pulse, no shimmer sweep).
+  const loadingFiles = (dir: string): string[] =>
+    fs.readdirSync(path.join(SRC, dir), { withFileTypes: true }).flatMap((e) => {
+      const rel = `${dir}/${e.name}`
+      if (e.isDirectory()) return loadingFiles(rel)
+      return e.name === 'loading.tsx' ? [rel] : []
+    })
+  const SKELETONS = [...loadingFiles('app'), 'components/ui/Shimmer.tsx']
+
+  it('finds the loading skeletons', () => {
+    expect(SKELETONS.length).toBeGreaterThan(5)
+  })
+
+  for (const file of SKELETONS) {
+    it(`${file} is a static skeleton`, () => {
+      expect(read(file)).not.toMatch(/\banimate-(?!none)[a-z-]+/)
+    })
+  }
+
   it('the stylesheet has no looping attention halos', () => {
     const css = read('app/globals.css')
     expect(css).not.toMatch(/@keyframes attn-/)

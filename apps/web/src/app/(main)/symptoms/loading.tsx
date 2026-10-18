@@ -3,7 +3,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function SymptomsLoading() {
   return (
-    <PageContainer className="animate-pulse-soft">
+    <PageContainer>
       {/* Split layout */}
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Left Column: Title + Mini Calendar */}

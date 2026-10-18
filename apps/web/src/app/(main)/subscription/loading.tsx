@@ -3,7 +3,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function SubscriptionLoading() {
   return (
-    <PageContainer className="animate-pulse-soft">
+    <PageContainer>
       {/* Page Title */}
       <div>
         <Shimmer className="h-8 w-44 rounded-lg" />

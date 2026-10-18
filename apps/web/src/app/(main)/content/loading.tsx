@@ -3,7 +3,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function ContentLoading() {
   return (
-    <PageContainer className="animate-pulse-soft">
+    <PageContainer>
       {/* Page Header */}
       <div>
         <Shimmer className="h-7 w-40 rounded-lg" />

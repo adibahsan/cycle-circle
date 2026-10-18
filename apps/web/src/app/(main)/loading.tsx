@@ -3,7 +3,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function MainFallbackLoading() {
   return (
-    <PageContainer className="animate-pulse-soft">
+    <PageContainer>
       {/* Header skeleton */}
       <div className="space-y-2">
         <Shimmer className="h-8 w-40 rounded-lg" />

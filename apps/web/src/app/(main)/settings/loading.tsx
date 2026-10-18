@@ -3,7 +3,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function SettingsLoading() {
   return (
-    <PageContainer className="animate-pulse-soft">
+    <PageContainer>
       {/* Title */}
       <div>
         <Shimmer className="h-8 w-32 rounded-lg" />
