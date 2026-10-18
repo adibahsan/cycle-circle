@@ -32,6 +32,7 @@ import { toggleSymptom, markAllGoodToday, saveSymptoms } from '@/app/actions/tra
 import { useToast } from '@/components/ui/Toast';
 import type { Profile, PrismaSymptomLog, SymptomCategory } from '@vesta/shared/types';
 import '@vesta/shared/utils/i18n';
+import { TODAY_GLOW } from '@/lib/calendar-day-style';
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
 
@@ -108,9 +109,10 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
             <button
               key={format(date, 'yyyy-MM-dd')}
               onClick={() => onDateSelect(date)}
+              aria-current={isToday ? 'date' : undefined}
               className={`aspect-square flex items-center justify-center rounded-xl text-sm md:text-base font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 ${
                 !inMonth ? 'text-[var(--color-text-muted)] opacity-40' : ''
-              }`}
+              }${isToday ? ' relative z-[1]' : ''}`}
               style={{
                 backgroundColor: isSelected
                   ? 'var(--color-primary)'
@@ -125,6 +127,7 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
                       ? 'var(--color-text-primary)'
                       : 'var(--color-text-muted)',
                 fontWeight: isToday || isSelected ? 700 : 500,
+                boxShadow: isToday ? TODAY_GLOW : undefined,
               }}
             >
               {format(date, 'd')}

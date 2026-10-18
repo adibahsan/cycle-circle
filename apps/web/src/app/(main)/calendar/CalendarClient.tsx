@@ -32,7 +32,7 @@ import type { CyclePhase, FlowIntensity } from '@vesta/shared/types'
 import { isPregnancy } from '@vesta/shared/utils/goal'
 import { selectFertileWindow } from '@vesta/shared/utils/fertile-window'
 import '@vesta/shared/utils/i18n'
-import { DAY_STYLES, dayStyleKind, type DayStyleKind } from '@/lib/calendar-day-style'
+import { DAY_STYLES, TODAY_GLOW, TODAY_GLOW_SWATCH, dayStyleKind, type DayStyleKind } from '@/lib/calendar-day-style'
 import { dayAccessibleName, gridKeyTarget } from '@/lib/calendar-a11y'
 import { cyclePhaseOn, periodStarts } from '@/lib/calendar-phase'
 import { SectionHeader } from '@/components/ui/SectionHeader'
@@ -131,15 +131,15 @@ function Legend({ pregnancy }: { pregnancy: boolean }) {
     <ul className="flex flex-wrap gap-x-4 gap-y-2 justify-center">
       {items.map(({ kind, label }) => (
         <li key={kind} className="flex items-center gap-1.5">
-          <div
-            className="w-4 h-4 rounded-md"
-            aria-hidden="true"
-            style={
-              kind === 'today'
-                ? { border: '2px solid var(--color-text-primary)' }
-                : { background: DAY_STYLES[kind].background, border: DAY_STYLES[kind].border }
-            }
-          />
+          {kind === 'today' ? (
+            <div className="w-4 h-4 rounded-md" aria-hidden="true" style={{ boxShadow: TODAY_GLOW_SWATCH }} />
+          ) : (
+            <div
+              className="w-4 h-4 rounded-md"
+              aria-hidden="true"
+              style={{ background: DAY_STYLES[kind].background, border: DAY_STYLES[kind].border }}
+            />
+          )}
           <span className="text-xs font-medium text-[var(--color-text-secondary)]">{label}</span>
         </li>
       ))}
@@ -182,7 +182,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
   }, [focusNow])
 
   return (
-    <div role="gridcell" className="group relative aspect-square w-full">
+    <div role="gridcell" className={`group relative aspect-square w-full${isToday ? ' z-[1]' : ''}`}>
       <button
         ref={buttonRef}
         type="button"
@@ -197,6 +197,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
         style={{
           background: isSelected && kind === 'plain' ? 'var(--color-bg-secondary)' : style.background,
           border: style.border,
+          boxShadow: isToday ? TODAY_GLOW : undefined,
         }}
       >
         <span
@@ -208,15 +209,6 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
         >
           {format(date, 'd')}
         </span>
-
-        {/* Today ring */}
-        {isToday && (
-          <div
-            aria-hidden="true"
-            className="absolute inset-0.5 rounded-[10px] border-2 pointer-events-none"
-            style={{ borderColor: 'var(--color-text-primary)' }}
-          />
-        )}
 
         {/* Selected ring */}
         {isSelected && (

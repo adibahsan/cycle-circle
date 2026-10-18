@@ -6,7 +6,7 @@
  *   ovulation        solid mint/teal
  *   follicular       faint pink tint (phase from the shared ranges; any state above wins)
  *   luteal           faint lavender tint
- *   today            ring (additive, drawn by the cell)
+ *   today            TODAY_GLOW: offset goal-accent ring + soft glow (additive, drawn by the cell)
  *   unlogged past    plain number, "+" on hover/focus (drawn by the cell)
  * Tints are mixed over the card surface (not transparent) so dark mode stays clean.
  */
@@ -61,3 +61,16 @@ export const DAY_STYLES: Record<DayStyleKind, DayStyle> = {
   },
   plain: { background: 'transparent', border: 'none', color: 'var(--color-text-primary)' },
 }
+
+/**
+ * Today's marker on every day grid (calendar, symptoms): a card-coloured gap, a goal-accent ring and a
+ * soft glow. It sits outside the cell so it reads on any fill and stays distinct from the inset selected ring.
+ */
+const TODAY_ACCENT = 'var(--goal-accent, var(--color-primary))'
+export const TODAY_GLOW = [
+  '0 0 0 2px var(--color-bg-card)',
+  `0 0 0 4px ${TODAY_ACCENT}`,
+  `0 6px 18px -4px color-mix(in srgb, ${TODAY_ACCENT} 55%, transparent)`,
+].join(', ')
+/** The legend swatch for today, scaled to a 16px square. */
+export const TODAY_GLOW_SWATCH = `0 0 0 1.5px var(--color-bg-card), 0 0 0 3px ${TODAY_ACCENT}`

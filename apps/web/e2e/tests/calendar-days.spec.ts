@@ -38,6 +38,8 @@ test.describe('accessible days', () => {
     const today = grid(page).locator('[aria-current="date"]')
     await expect(today).toHaveCount(1)
     await expect(today).toHaveAccessibleName(/, \d{4}\b.*\bToday$/)
+    // Today is marked by a goal-accent ring and glow, not a dark outline.
+    await expect(today).toHaveCSS('box-shadow', /,.*,/)
     await gotoQuiet(page, '/calendar?month=2026-10')
     const names = await grid(page)
       .getByRole('button')
