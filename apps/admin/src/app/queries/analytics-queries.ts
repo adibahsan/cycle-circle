@@ -11,7 +11,8 @@ import {
   getSymptomLoggingRate as svcGetSymptomLoggingRate,
   getLoggingStreakDistribution as svcGetLoggingStreakDistribution,
   getLoggingRetention as svcGetLoggingRetention,
-  getPredictionAccuracyMae as svcGetPredictionAccuracyMae,
+  getLatestPredictionMae as svcGetLatestPredictionMae,
+  getPredictionMaeTrend as svcGetPredictionMaeTrend,
   getSymptomsByPhase as svcGetSymptomsByPhase,
   type AnalyticsRange,
 } from '@vesta/shared/server/services'
@@ -104,8 +105,17 @@ export const getLoggingRetention = cache(async (weeks?: number) => {
 export const getPredictionMae = cache(async () => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetPredictionAccuracyMae(),
+    async () => (await svcGetLatestPredictionMae()).tiers,
     ['admin-prediction-mae'],
+    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getPredictionMaeTrend = cache(async (range: AnalyticsRange) => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => svcGetPredictionMaeTrend(range),
+    ['admin-prediction-mae-trend', day(range.from), day(range.to)],
     { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
   )()
 })
