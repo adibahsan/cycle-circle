@@ -6,7 +6,8 @@ import { ApiError } from './api-error'
 import { blacklistJti, isJtiBlacklisted } from './adapters/redis'
 
 const COOKIE_NAME = env.AUTH_COOKIE_NAME
-const JWT_EXPIRY_SECONDS = 60 * 60 * 24 * 30 // 30 days
+const JWT_EXPIRY_SECONDS = 60 * 60 * 24 * 30 // 30 days (web app)
+export const ADMIN_JWT_EXPIRY_SECONDS = 60 * 60 * 24 * 7 // 7 days (admin app)
 
 function secret() {
   return new TextEncoder().encode(env.JWT_SECRET)
@@ -27,7 +28,7 @@ export async function issueJwt(payload: {
   phone?: string
   email?: string
   role?: string
-}): Promise<string> {
+}, expirySeconds: number = JWT_EXPIRY_SECONDS): Promise<string> {
   const jti = crypto.randomUUID()
   const token = await new SignJWT({
     phone: payload.phone,
@@ -38,19 +39,19 @@ export async function issueJwt(payload: {
     .setSubject(payload.sub)
     .setJti(jti)
     .setIssuedAt()
-    .setExpirationTime(`${JWT_EXPIRY_SECONDS}s`)
+    .setExpirationTime(`${expirySeconds}s`)
     .sign(secret())
 
   return token
 }
 
-export async function setAuthCookie(token: string): Promise<void> {
+export async function setAuthCookie(token: string, maxAgeSeconds: number = JWT_EXPIRY_SECONDS): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: JWT_EXPIRY_SECONDS,
+    maxAge: maxAgeSeconds,
     path: '/',
   })
 }
