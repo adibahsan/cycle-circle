@@ -74,6 +74,8 @@ export interface DashboardBlocks {
   phaseTools: boolean
   /** The toolkit's Log period card. Off when the first-run hero already offers the one Log period button. */
   logPeriodTool: boolean
+  /** Last period and predicted windows (fertile dates, ovulation day): a live cycle only, like predictions. */
+  cycleDates: boolean
 }
 
 /**
@@ -83,11 +85,11 @@ export interface DashboardBlocks {
 export function dashboardBlocks(state: DashboardHeroState): DashboardBlocks {
   switch (state) {
     case 'cycle':
-      return { cycle: 'live', phaseTools: true, logPeriodTool: true }
+      return { cycle: 'live', phaseTools: true, logPeriodTool: true, cycleDates: true }
     case 'no-period':
-      return { cycle: 'example', phaseTools: false, logPeriodTool: false }
+      return { cycle: 'example', phaseTools: false, logPeriodTool: false, cycleDates: false }
     default:
-      return { cycle: null, phaseTools: false, logPeriodTool: true }
+      return { cycle: null, phaseTools: false, logPeriodTool: true, cycleDates: false }
   }
 }
 

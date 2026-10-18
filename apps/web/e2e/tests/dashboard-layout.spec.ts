@@ -50,6 +50,16 @@ for (const [label, viewport] of [['desktop', DESKTOP], ['375x667', PHONE_375]] a
       expect(days.reduce((a, b) => a + b, 0)).toBe(length)
     })
 
+    test('last period and predicted windows show real dates (#66 S6)', async ({ page }) => {
+      const last = page.getByTestId('last-period')
+      await expect(last.getByRole('heading', { name: 'Last period' })).toBeVisible()
+      await expect(last).toContainText(/[A-Z][a-z]{2} \d{1,2}/)
+      const windows = page.getByTestId('predicted-windows')
+      await expect(windows.getByRole('heading', { name: 'Predicted windows' })).toBeVisible()
+      await expect(windows.locator('dt')).toHaveText(['Fertile window', 'Ovulation day'])
+      await expect(windows.locator('dd').first()).toContainText(/\d{1,2} – [A-Z][a-z]{2} \d{1,2}/)
+    })
+
     test('progress ring has an accessible name', async ({ page }) => {
       await expect(main(page).getByRole('img', { name: /Cycle day \d+ of \d+/ })).toBeVisible()
     })

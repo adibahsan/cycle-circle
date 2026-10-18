@@ -33,6 +33,7 @@ import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { deviceDayString } from '@/lib/local-date'
 import { CycleHero, FirstPeriodHero, MenopauseHero, PregnancyHero } from './CycleHero'
+import { CycleDates, type LastPeriodFacts } from './CycleDates'
 import { CycleJourney } from './CycleJourney'
 import { CycleProgressRing } from './CycleProgressRing'
 import { DashboardToolkit, type PhaseArticle } from './DashboardToolkit'
@@ -262,18 +263,15 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
       }
     : localPrediction
 
-  const lastPeriodDisplay = dashboardData?.lastPeriod
+  // Last period from the latest log; the profile's start date alone when nothing is logged (no invented length or flow).
+  const lastPeriodDisplay: LastPeriodFacts | null = dashboardData?.lastPeriod
     ? {
         startDate: calendarDay(dashboardData.lastPeriod.startDate),
-        duration: dashboardData.lastPeriod.duration,
-        flowIntensity: normalizeFlow(dashboardData.lastPeriod.flowIntensity),
+        days: dashboardData.lastPeriod.duration,
+        flow: normalizeFlow(dashboardData.lastPeriod.flowIntensity),
       }
     : profile.lastPeriodStart
-      ? {
-          startDate: calendarDay(profile.lastPeriodStart),
-          duration: profile.periodLength,
-          flowIntensity: 'medium' as FlowIntensity,
-        }
+      ? { startDate: calendarDay(profile.lastPeriodStart), days: null, flow: null }
       : null
 
   // ── Nudge data ──────────────────────────────────────────────────────────────
@@ -391,6 +389,19 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               language={language}
             />
           </div>
+        )}
+
+        {/* ── Last period + predicted windows (live cycle only, real data only) ── */}
+        {blocks.cycleDates && (
+          <CycleDates
+            language={language}
+            lastPeriod={lastPeriodDisplay}
+            windows={
+              prediction
+                ? { fertileStart: prediction.fertileStart, fertileEnd: prediction.fertileEnd, ovulationDay: prediction.ovulationDay }
+                : null
+            }
+          />
         )}
 
         {/* ── Toolkit (check-in, symptoms and articles stay in every mode) ── */}

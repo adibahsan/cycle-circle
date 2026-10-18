@@ -103,16 +103,16 @@ describe('dashboardHeroState (which hero renders)', () => {
 
 describe('dashboardBlocks (what each mode renders, #76)', () => {
   it('cycle: live stepper and ring, phase tools', () => {
-    expect(dashboardBlocks('cycle')).toEqual({ cycle: 'live', phaseTools: true, logPeriodTool: true })
+    expect(dashboardBlocks('cycle')).toEqual({ cycle: 'live', phaseTools: true, logPeriodTool: true, cycleDates: true })
   })
   it('pregnancy: no stepper, ring or phase tools', () => {
-    expect(dashboardBlocks('pregnancy')).toEqual({ cycle: null, phaseTools: false, logPeriodTool: true })
+    expect(dashboardBlocks('pregnancy')).toEqual({ cycle: null, phaseTools: false, logPeriodTool: true, cycleDates: false })
   })
   it('menopause: no stepper, ring or phase tools', () => {
-    expect(dashboardBlocks('menopause')).toEqual({ cycle: null, phaseTools: false, logPeriodTool: true })
+    expect(dashboardBlocks('menopause')).toEqual({ cycle: null, phaseTools: false, logPeriodTool: true, cycleDates: false })
   })
   it('no period: the stepper and ring show the example, with no phase tools; the hero holds the only Log period button (story 19)', () => {
-    expect(dashboardBlocks('no-period')).toEqual({ cycle: 'example', phaseTools: false, logPeriodTool: false })
+    expect(dashboardBlocks('no-period')).toEqual({ cycle: 'example', phaseTools: false, logPeriodTool: false, cycleDates: false })
   })
 })
 
@@ -156,5 +156,16 @@ describe('ringCaption (progress ring caption, #66 S7)', () => {
     expect(i18n.getResource('en', 'translation', 'dashboard.ringExpected')).toBe('Period expected')
     expect(i18n.getResource('bn', 'translation', 'dashboard.ringExpected')).toBeTruthy()
     expect(i18n.getResource('en', 'translation', 'dashboard.ringDueSoon')).toBeUndefined()
+  })
+})
+
+describe('cycle dates card (#66 S6: last period and predicted windows, real data only)', () => {
+  it('has English and Bengali copy', async () => {
+    const { default: i18n } = await import('@vesta/shared/utils/i18n')
+    for (const lng of ['en', 'bn']) {
+      for (const key of ['datesLastTitle', 'datesWindowsTitle', 'datesFertile', 'datesOvulation', 'datesRange', 'datesLastLength_one', 'datesLastLength_other']) {
+        expect(i18n.getResource(lng, 'translation', `dashboard.${key}`), `${lng}.${key}`).toBeTruthy()
+      }
+    }
   })
 })
