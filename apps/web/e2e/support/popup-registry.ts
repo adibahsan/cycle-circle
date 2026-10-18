@@ -45,7 +45,9 @@ export const POPUPS: PopupEntry[] = [
 export const ADMIN_POPUP_SOURCES = [
   'app/(admin)/content/ContentClient.tsx',
   'app/(admin)/layout.tsx',
-  'app/(admin)/sms/SmsClient.tsx',
+  'app/(admin)/sms/CreateBroadcastModal.tsx',
+  'app/(admin)/sms/EditBroadcastModal.tsx',
+  'app/(admin)/sms/RescheduleModal.tsx',
   'components/ui/ConfirmModal.tsx',
   'components/ui/Drawer.tsx',
 ]

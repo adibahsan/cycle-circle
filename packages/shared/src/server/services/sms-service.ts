@@ -3,7 +3,15 @@ import { logger } from '../log'
 import { smsSend } from '../adapters/bdapps'
 import { createAuditLog } from './audit-service'
 import { env } from '../../utils/env'
-import { composeSms, scheduleDrafts, type SmsDraft, type SmsSendLanguage } from '../../utils/sms'
+import {
+  composeSms,
+  scheduleDrafts,
+  canEditBroadcast,
+  canDeleteBroadcast,
+  canSendBroadcast,
+  type SmsDraft,
+  type SmsSendLanguage,
+} from '../../utils/sms'
 
 // ── Pure helpers ───────────────────────────────────────────────────────────────
 
@@ -142,7 +150,7 @@ export async function createBroadcastsBulk(
  */
 export async function deleteBroadcast(id: string) {
   const broadcast = await prisma.smsBroadcast.findUnique({ where: { id } })
-  if (!broadcast || broadcast.status === 'SENT' || broadcast.status === 'SENDING') {
+  if (!broadcast || !canDeleteBroadcast(broadcast.status)) {
     throw new Error('Cannot delete a sent or in-progress broadcast')
   }
 
@@ -150,15 +158,36 @@ export async function deleteBroadcast(id: string) {
   return { success: true }
 }
 
-/** A scheduled send is retried on each cron run until it has failed this many times. */
+/** A send is tried this many times within one run (with backoff) before the broadcast is marked FAILED. */
 export const SMS_MAX_SEND_ATTEMPTS = 3
+/** Base wait between attempts; attempt n waits n x this. */
+const SMS_RETRY_BACKOFF_MS = 1000
 
-const EDITABLE_STATUSES = ['DRAFT', 'SCHEDULED', 'FAILED'] as const
+export interface SendOptions {
+  /** Base backoff between attempts in ms (tests pass 0). */
+  backoffMs?: number
+}
+
+/** Call smsSend up to SMS_MAX_SEND_ATTEMPTS times; throws the last error. */
+async function smsSendWithRetries(message: string, backoffMs: number) {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= SMS_MAX_SEND_ATTEMPTS; attempt++) {
+    try {
+      return await smsSend(message, ['tel:all'])
+    } catch (err) {
+      lastError = err
+      if (attempt < SMS_MAX_SEND_ATTEMPTS && backoffMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, backoffMs * attempt))
+      }
+    }
+  }
+  throw lastError
+}
 
 async function loadEditable(id: string) {
   const b = await prisma.smsBroadcast.findUnique({ where: { id } })
   if (!b) throw new Error('Broadcast not found')
-  if (!(EDITABLE_STATUSES as readonly string[]).includes(b.status)) {
+  if (!canEditBroadcast(b.status)) {
     throw new Error(
       b.status === 'SENT' ? 'A sent broadcast cannot be changed' : 'A broadcast that is sending cannot be changed',
     )
@@ -285,12 +314,15 @@ export async function listBroadcasts(params: SmsBroadcastListParams = {}) {
  *
  * Called by both manual sendBroadcast and the cron dispatchScheduledBroadcast.
  */
-async function performSend(broadcast: {
-  id: string
-  message: string
-  messageBn: string | null
-  sendLanguage: SmsSendLanguage
-}) {
+async function performSend(
+  broadcast: {
+    id: string
+    message: string
+    messageBn: string | null
+    sendLanguage: SmsSendLanguage
+  },
+  opts: SendOptions = {},
+) {
   const isDevMode = env.DEV_MODE || env.NODE_ENV === 'development'
   const combined = composeSms(broadcast.message, broadcast.messageBn, broadcast.sendLanguage)
   let providerMessageId: string | null = null
@@ -303,7 +335,7 @@ async function performSend(broadcast: {
     deliveredCount = 1
     targetCount = 1
   } else {
-    const res = await smsSend(combined, ['tel:all'])
+    const res = await smsSendWithRetries(combined, opts.backoffMs ?? SMS_RETRY_BACKOFF_MS)
     providerMessageId = res.messageId ?? null
     // Real per-recipient counts arrive asynchronously via /api/webhooks/sms/report.
   }
@@ -343,13 +375,13 @@ function errorText(err: unknown) {
  * In production the BDApps smsSend API is called with `destinationAddresses:
  * ["tel:all"]` to reach all subscribers.
  */
-export async function sendBroadcast(broadcastId: string, adminUserId: string) {
+export async function sendBroadcast(broadcastId: string, adminUserId: string, opts: SendOptions = {}) {
   const broadcast = await prisma.smsBroadcast.findUnique({ where: { id: broadcastId } })
 
   if (!broadcast) {
     throw new Error('Broadcast not found')
   }
-  if (broadcast.status !== 'DRAFT' && broadcast.status !== 'SCHEDULED') {
+  if (!canSendBroadcast(broadcast.status)) {
     throw new Error(`Cannot send a broadcast with status ${broadcast.status}`)
   }
 
@@ -360,7 +392,7 @@ export async function sendBroadcast(broadcastId: string, adminUserId: string) {
   })
 
   try {
-    const updated = await performSend(broadcast)
+    const updated = await performSend(broadcast, opts)
 
     await createAuditLog(adminUserId, 'SEND_SMS_BROADCAST', 'SmsBroadcast', broadcastId, {
       message: broadcast.message.slice(0, 100),
@@ -369,10 +401,10 @@ export async function sendBroadcast(broadcastId: string, adminUserId: string) {
 
     return updated
   } catch (error) {
-    // Roll back to the previous status so the admin can retry
+    // Retries already ran inside performSend: record the failure (the admin can reschedule it).
     await prisma.smsBroadcast.update({
       where: { id: broadcastId },
-      data: { status: broadcast.status, lastError: errorText(error) },
+      data: { status: 'FAILED', sendAttempts: SMS_MAX_SEND_ATTEMPTS, lastError: errorText(error) },
     })
     throw error
   }
@@ -382,7 +414,7 @@ export async function sendBroadcast(broadcastId: string, adminUserId: string) {
  * Dispatch the next due scheduled broadcast (one per run = one per day).
  * Returns what happened.
  */
-export async function dispatchScheduledBroadcast(now: Date = new Date()) {
+export async function dispatchScheduledBroadcast(now: Date = new Date(), opts: SendOptions = {}) {
   const due = await prisma.smsBroadcast.findFirst({
     where: { status: 'SCHEDULED', scheduledFor: { lte: now } },
     orderBy: { scheduledFor: 'asc' },
@@ -390,19 +422,18 @@ export async function dispatchScheduledBroadcast(now: Date = new Date()) {
   if (!due) return { dispatched: false as const }
   await prisma.smsBroadcast.update({ where: { id: due.id }, data: { status: 'SENDING' } })
   try {
-    const sent = await performSend(due)
+    const sent = await performSend(due, opts)
     await createAuditLog(due.createdBy, 'DISPATCH_SMS_BROADCAST', 'SmsBroadcast', due.id, {
       auto: true,
     })
     return { dispatched: true as const, broadcastId: sent.id }
   } catch (err) {
-    const attempts = due.sendAttempts + 1
-    const exhausted = attempts >= SMS_MAX_SEND_ATTEMPTS
+    // performSend already retried; a failing broadcast must not hold the queue across days.
     await prisma.smsBroadcast.update({
       where: { id: due.id },
-      data: { status: exhausted ? 'FAILED' : 'SCHEDULED', sendAttempts: attempts, lastError: errorText(err) },
+      data: { status: 'FAILED', sendAttempts: SMS_MAX_SEND_ATTEMPTS, lastError: errorText(err) },
     })
-    logger.cron('sms.broadcast.dispatch.failed', { broadcastId: due.id, attempts, failed: exhausted, error: String(err) }, { level: 'error' })
+    logger.cron('sms.broadcast.dispatch.failed', { broadcastId: due.id, attempts: SMS_MAX_SEND_ATTEMPTS, failed: true, error: String(err) }, { level: 'error' })
     return { dispatched: false as const, error: String(err) }
   }
 }

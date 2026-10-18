@@ -13,7 +13,7 @@ import {
 import { StatCard } from '@/components/ui/StatCard'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
-import { DateRangeControl } from '@/components/charts/DateRangeControl'
+import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { CHART_VAR } from '@/lib/chart-palette'
 
 const SignupTrendChart = dynamic(
@@ -208,7 +208,7 @@ export function DashboardClient({ stats, mae, userTrend, signupTrend, subscripti
               New users and new subscriptions over time
             </p>
           </div>
-          <DateRangeControl />
+          <UrlSegmentedControl />
         </div>
 
         {/* Two chart panels in a responsive grid */}

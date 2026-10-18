@@ -43,7 +43,7 @@ import {
   setUserNotificationPrefs,
 } from '@/app/actions/user-actions'
 import { sendUserReminders, type CronJobResult } from '@/app/actions/system-actions'
-import { isWithinRestoreWindow } from '@vesta/shared/utils/restore-window'
+import { isWithinRestoreWindow, RESTORE_WINDOW_DAYS } from '@vesta/shared/utils/restore-window'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
 
@@ -195,7 +195,7 @@ const MODAL_CONFIG: Record<
   delete: {
     title: 'Delete User',
     message:
-      'This soft-deletes the user account and unsubscribes their number on BDApps. The account can be restored for 30 days, after which it is purged. Restoring does not re-subscribe them.',
+      `This soft-deletes the user account and unsubscribes their number on BDApps. The account can be restored for ${RESTORE_WINDOW_DAYS} days, after which it is purged. Restoring does not re-subscribe them.`,
     confirmLabel: 'Delete',
     variant: 'danger',
   },
@@ -650,7 +650,14 @@ function PlanHistoryTab({ entries }: { entries: PlanHistoryEntry[] }) {
         >
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-primary)]">
-              {e.event === 'plan.override-kept' ? (
+              {e.event === 'plan.bdapps-unsubscribe' ? (
+                <>
+                  <Badge variant={e.unsubscribe?.result === 'failed' ? 'danger' : e.unsubscribe?.result === 'skipped' ? 'warning' : 'success'} size="sm">
+                    {e.unsubscribe?.result ?? 'skipped'}
+                  </Badge>
+                  <span>BDApps unsubscribe</span>
+                </>
+              ) : e.event === 'plan.override-kept' ? (
                 <>
                   <Badge variant="warning" size="sm">{e.to ?? '—'}</Badge>
                   <span>Admin override kept</span>
@@ -668,6 +675,7 @@ function PlanHistoryTab({ entries }: { entries: PlanHistoryEntry[] }) {
             <p className="text-xs text-[var(--color-text-muted)]">
               {CAUSE_LABELS[e.cause] ?? e.cause}
               {e.adminId && <> · by admin <span className="font-mono">{e.adminId}</span></>}
+              {e.unsubscribe?.error && <> · {e.unsubscribe.error}</>}
             </p>
           </div>
           <time dateTime={e.ts} className="text-xs tabular-nums text-[var(--color-text-muted)]">
@@ -960,7 +968,7 @@ export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
                 </Button>
               ) : (
                 <span className="text-xs text-[var(--color-text-muted)]">
-                  Restore window (30 days) has passed
+                  Restore window ({RESTORE_WINDOW_DAYS} days) has passed
                 </span>
               )}
             </div>

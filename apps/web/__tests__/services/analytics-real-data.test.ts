@@ -18,7 +18,7 @@ async function makeUser(n: string, createdAt: Date, cycleLength = 28) {
   const user = await testPrisma.user.create({
     data: {
       id: `${P}-u-${n}`,
-      phone: `+88019${n.padStart(8, '0')}`,
+      phone: `+88013${n.padStart(8, '0')}`,
       fullName: `an91 ${n}`,
       authMethod: 'OTP',
       createdAt,

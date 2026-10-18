@@ -1,4 +1,4 @@
-import type { DateRangeOption } from '@/components/charts/DateRangeControl'
+import type { DateRangeOption } from '@/components/charts/UrlSegmentedControl'
 
 /**
  * Per-panel range and metric config for /analytics. Each panel owns one URL

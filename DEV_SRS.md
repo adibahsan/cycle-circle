@@ -23,6 +23,8 @@
 
 **Rev 5 changes (2026-10-19):** SRS v1.4 reconciliation (admin-portal spec #84). Documentation-only: claims below were corrected to the code as of this date, and v1.4 targets that tickets under #84 have not yet landed are marked "v1.4 target". Corrected: Pro is BDApps `REGISTERED` status (ADR 0002), not CaaS direct debit; CaaS routes and `consecutiveFailures` / `gracePeriodEndsAt` remain in code but are parked and slated for removal, and the grace period is dropped, not deferred; prod scheduling is a host crontab on the VPS (not Vercel Cron); the admin edge proxy rewrites non-admins to a 403 "Not an admin" page (#86); the admin JWT is 7 days (#86); shared services layer is 19 modules.
 
+**Rev 6 changes (2026-10-19):** The #84 admin-portal tickets have landed on `feat/admin-srs-v1.4`, so the "v1.4 target" items are now built: Revoke/Suspend/Delete unsubscribe the number on BDApps (ADR 0006) with a 30-day restore and purge; an admin override ends on a new subscription; the grace period and CaaS result views are removed (schema fields dropped by migration `20261019990000_remove_grace_period`); dated prediction-accuracy snapshots and the purge run from a nightly host-crontab job; article image upload is stored on the `UPLOAD_DIR` volume and served at `/uploads/<name>`; the Logs page, plan history tab, SMS queue/retries, feedback filters and per-panel analytics ranges are live; KPI views refresh within 60 s. Shared services layer is now 22 modules.
+
 ---
 
 ## Architecture Notes
@@ -41,7 +43,7 @@ The app uses a **RSC + Server Actions** pattern throughout:
 
 ### Shared Services Layer
 
-All Prisma queries and business logic are centralised in `packages/shared/src/server/services/` (19 service modules). Both `apps/web/` and `apps/admin/` consume these modules through thin wrappers that handle auth, validation, caching, and Next.js-specific concerns.
+All Prisma queries and business logic are centralised in `packages/shared/src/server/services/` (22 service modules). Both `apps/web/` and `apps/admin/` consume these modules through thin wrappers that handle auth, validation, caching, and Next.js-specific concerns.
 
 | Service module | Responsibility |
 |---|---|
@@ -50,14 +52,19 @@ All Prisma queries and business logic are centralised in `packages/shared/src/se
 | `content-service` | Article and category CRUD, draft/publish lifecycle |
 | `feedback-service` | Feedback submission and filtered listing |
 | `notification-service` | Email/SMS dispatch and per-profile preference evaluation |
-| `user-service` | User lookup, profile-completion, suspend/reactivate/soft-delete (v1.4 target: also unsubscribe on BDApps, 30-day restore and purge) |
-| `subscription-service` | BDApps status application (REGISTERED = Pro), Pro grant/revoke, admin overrides (v1.4 target: revoke unsubscribes on BDApps; override ends on a new subscription) |
+| `user-service` | User lookup, profile-completion, suspend/reactivate/soft-delete; suspend and delete also unsubscribe on BDApps; 30-day restore window |
+| `subscription-service` | BDApps status application (REGISTERED = Pro), Pro grant/revoke (revoke unsubscribes on BDApps), admin overrides that end on a new subscription |
 | `audit-service` | Admin action audit trail (AdminAuditLog writes) |
 | `analytics-service` | Population health aggregations, prediction accuracy, retention |
 | `sms-service` | SMS broadcast CRUD, scheduling, and send history |
 | `export-service` | CSV generation for feedback and user data |
+| `app-otp-service` | App OTP: SMS code login for numbers BDApps will not OTP (already subscribed) |
+| `log-reader-service` | Read-only reader over the dated per-channel log files, OTPs masked (admin sees merchant, webhook, translog) |
+| `plan-history-service` | Per-user plan changes and BDApps unsubscribe outcomes from the translog |
+| `maintenance-service` | Nightly prediction-accuracy snapshot and purge of accounts deleted over 30 days ago |
+| `upload-service` | Article image upload to the uploads volume and the shared `/uploads/<name>` handler |
 
-A barrel file at `packages/shared/src/server/services/index.ts` re-exports all service modules. Total: 11 service modules across ~7,115 lines of source (admin app: 63 source files).
+A barrel file at `packages/shared/src/server/services/index.ts` re-exports all service modules. Total: 22 service modules (table above lists the main ones) (admin app: 63 source files).
 
 ### UI/Accessibility Review Status
 
@@ -124,8 +131,8 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 | ID | Item | File / note |
 |----|------|-------------|
 | FR-EXPORT | ✅ (rev 4) Excel button now emits real `.xlsx`; export scoped to the active profile by default with a labelled all-profiles opt-in; UI copy corrected (EN+BN). Remaining: no `/api/export` REST route (Server Action only); symptom values plaintext until FR-ENC | `settings-actions.ts`, `SettingsClient.tsx` |
-| FR-CMS | ✅ (rev 4) HTML sanitized server-side on save (`sanitizeArticleHtml`). Remaining: Tiptap image upload to Supabase not wired (needs storage creds) | `content-service.ts`, `TiptapEditor.tsx` |
-| FR-ANALYTICS | ✅ (rev 4) Per-tier prediction MAE (backtested, on-demand; v1.4 target: nightly snapshot from a third host-cron entry, since prod uses a host crontab with no job limit), feedback panel on the analytics dashboard, and symptom-logs-by-cycle-phase chart all added | `analytics-service.ts`, `analytics/AnalyticsClient.tsx` |
+| FR-CMS | ✅ (rev 4) HTML sanitized server-side on save (`sanitizeArticleHtml`). Image upload is built in v1.4 (uploads volume, not Supabase) | `content-service.ts`, `TiptapEditor.tsx` |
+| FR-ANALYTICS | ✅ (rev 4) Per-tier prediction MAE (backtested, on-demand; nightly snapshot stored by `maintenance-service` from a third host-cron entry, since prod uses a host crontab with no job limit), feedback panel on the analytics dashboard, and symptom-logs-by-cycle-phase chart all added | `analytics-service.ts`, `analytics/AnalyticsClient.tsx` |
 | FR-ADMIN | No automated admin test suite; subscription list has no detail route | `apps/admin/` |
 | UI/A11y | ~190 findings in `review/WEB-UI-REVIEW.md`, `review/ADMIN-UI-REVIEW.md` | Both apps |
 
@@ -424,10 +431,10 @@ Pro means BDApps reports the number as `REGISTERED` (ADR 0002). CaaS direct debi
 - Phone OTP verify subscribes the number and makes the user Pro; `UNREGISTERED` (webhook, nightly check, in-app Unsubscribe) makes the user Free with data kept
 - Admin grant/revoke with `adminOverride` flags on `Subscription`
 
-**v1.4 targets (not yet built):**
+**Built in v1.4:**
 - Revoke, Suspend and Delete also unsubscribe the number on BDApps (ADR 0006); Reactivate and Restore do not re-subscribe
 - Admin override ends when BDApps reports a new subscription
-- Nightly status check runs from the host crontab; CaaS route and cron entry are removed (grace-period fields and the subscriptions-page grace / CaaS-results views are already gone)
+- Nightly status check runs from the host crontab (the route is still named `caas-check` and the parked CaaS direct-debit route and `vercel.json` entries remain); grace-period fields and the subscriptions-page grace / CaaS-results views are gone
 
 **Removed from scope:**
 - Grace-period countdown, warning notifications and auto-disable (previously "deferred to v2")
@@ -843,7 +850,7 @@ Feature clients: `DashboardClient`, `UsersClient`, `UserDetailClient`, `Subscrip
 | `PeriodLog` | Done | `startDate`, `endDate`, `flowIntensity` (LIGHT/MEDIUM/HEAVY) |
 | `SymptomLog` | Partial | Schema present; `value` field **not encrypted** |
 | `Prediction` | Done | All output fields + `PredictionTier` (AVERAGE/ARIMA/LSTM) |
-| `Subscription` | Done | `consecutiveFailures`, `gracePeriodEndsAt` + new: `adminOverride` (Boolean), `adminOverrideBy`, `adminOverrideAt` |
+| `Subscription` | Done | `adminOverride` (Boolean), `adminOverrideBy`, `adminOverrideAt`, `adminOverrideUnsubFailed`, `bdappsSubscriberId` (grace fields `consecutiveFailures` / `gracePeriodEndsAt` dropped) |
 | `CaasTransaction` | Done | Idempotent `externalTrxId @unique` |
 | `OtpChallenge` | Done | `referenceNo`, `expiresAt`, `verified` |
 | `MagicLink` | Done | `token @unique`, `expiresAt`, `used` |
@@ -887,7 +894,7 @@ The following security issues were identified and resolved in the current sprint
 - `FR-EXPORT` (user-facing): CSV download works via Server Action; no `/api/export` route; Excel button is CSV-only; UI copy mismatch on profile scope.
 - `FR-SMS`: `tel:all` implemented in `sms-service`; no CSV bulk-upload or content-override logic.
 - `FR-ANALYTICS`: Nightly MAE report not scheduled; analytics computed on-demand only.
-- `FR-CMS`: Image upload from Tiptap to Supabase storage not yet wired (stub present).
+- `FR-CMS`: Image upload is built (stored on the `UPLOAD_DIR` volume, served at `/uploads/<name>`); there is no Supabase storage.
 - `FR-ADMIN` (admin test suite): Automated tests for admin app not written; typecheck only.
 - **UI/Accessibility** (both apps): ~190 findings documented in `review/WEB-UI-REVIEW.md` and `review/ADMIN-UI-REVIEW.md`. Highest-impact fixes: Button.tsx focus styles, Input.tsx label linking, globals.css reduced-motion + color-scheme, ContentClient.tsx HTML sanitization.
 - **DB migration pending**: Schema changes (passwordHash, admin models, new enums/indexes) not yet applied via `just db-migrate`. Seed not yet run.

@@ -16,7 +16,7 @@ import {
   getSymptomsByPhase as svcGetSymptomsByPhase,
   type AnalyticsRange,
 } from '@vesta/shared/server/services'
-import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
+import { adminCacheTags, KPI_CACHE_TTL } from '@/lib/admin-cache-tags'
 
 /** Stable cache key part: UTC day, so a moving `to` doesn't bust the cache every call. */
 const day = (d: Date) => d.toISOString().split('T')[0]
@@ -26,7 +26,7 @@ export const getCycleLengthDistribution = cache(async (range: AnalyticsRange) =>
   return unstable_cache(
     () => svcGetCycleLengthDistribution(range),
     ['admin-cycle-length-distribution', day(range.from), day(range.to)],
-    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -35,7 +35,7 @@ export const getSymptomsByCategory = cache(async (range: AnalyticsRange) => {
   return unstable_cache(
     () => svcGetSymptomsByCategory(range),
     ['admin-symptoms-by-category', day(range.from), day(range.to)],
-    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -44,7 +44,7 @@ export const getPredictionAccuracy = cache(async (range: AnalyticsRange) => {
   return unstable_cache(
     () => svcGetPredictionAccuracy(range),
     ['admin-prediction-accuracy', day(range.from), day(range.to)],
-    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -53,7 +53,7 @@ export const getUserRetention = cache(async (range: AnalyticsRange) => {
   return unstable_cache(
     () => svcGetUserRetention(range),
     ['admin-user-retention', day(range.from), day(range.to)],
-    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -62,7 +62,7 @@ export const getUserTrend = cache(async (days: number) => {
   return unstable_cache(
     () => svcGetUserTrend({ days }),
     ['admin-analytics-user-trend', String(days)],
-    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -82,7 +82,7 @@ export const getTrendMetric = cache(async (metric: TrendMetric, days: number) =>
       return (await svcGetUserTrend({ days })).map((r) => ({ date: r.date, value: r.count }))
     },
     ['admin-analytics-trend-metric', metric, String(days)],
-    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -91,7 +91,7 @@ export const getDailyActiveLoggers = cache(async (days: number) => {
   return unstable_cache(
     () => svcGetDailyActiveLoggers({ days }),
     ['admin-daily-active-loggers', String(days)],
-    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -100,7 +100,7 @@ export const getSymptomLoggingRate = cache(async (days: number) => {
   return unstable_cache(
     () => svcGetSymptomLoggingRate({ days }),
     ['admin-symptom-logging-rate', String(days)],
-    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -109,7 +109,7 @@ export const getLoggingStreakDistribution = cache(async () => {
   return unstable_cache(
     () => svcGetLoggingStreakDistribution(),
     ['admin-logging-streak-distribution'],
-    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -118,7 +118,7 @@ export const getLoggingRetention = cache(async (weeks?: number) => {
   return unstable_cache(
     () => svcGetLoggingRetention(weeks),
     ['admin-logging-retention', String(weeks ?? 8)],
-    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -127,7 +127,7 @@ export const getPredictionMae = cache(async () => {
   return unstable_cache(
     async () => (await svcGetLatestPredictionMae()).tiers,
     ['admin-prediction-mae'],
-    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -136,7 +136,7 @@ export const getPredictionMaeTrend = cache(async (range: AnalyticsRange) => {
   return unstable_cache(
     () => svcGetPredictionMaeTrend(range),
     ['admin-prediction-mae-trend', day(range.from), day(range.to)],
-    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -145,6 +145,6 @@ export const getSymptomsByPhase = cache(async (range: AnalyticsRange) => {
   return unstable_cache(
     () => svcGetSymptomsByPhase(range),
     ['admin-symptoms-by-phase', day(range.from), day(range.to)],
-    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
 })

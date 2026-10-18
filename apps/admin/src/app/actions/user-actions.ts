@@ -9,7 +9,7 @@ import {
   setSubscriptionStatus,
   adminSetNotificationPrefs,
 } from '@vesta/shared/server/services'
-import { grantPro, revokePro } from '@vesta/shared/server/services'
+import { grantPro, revokePro, bdappsFailureText } from '@vesta/shared/server/services'
 import { revalidateTag } from 'next/cache'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { revalidateWebTags } from '@/lib/revalidate-web'
@@ -28,7 +28,7 @@ export async function suspendUser(userId: string, reason: string) {
 
   revalidateUserTags(userId)
   await revalidateWebTags([`user:${userId}`])
-  return { success: true, bdappsError: bdapps.status === 'failed' ? bdapps.error : null }
+  return { success: true, bdappsError: bdappsFailureText(bdapps) }
 }
 
 export async function reactivateUser(userId: string) {
@@ -50,7 +50,7 @@ export async function softDeleteUser(userId: string) {
 
   revalidateUserTags(userId)
   await revalidateWebTags([`user:${userId}`])
-  return { success: true, bdappsError: bdapps.status === 'failed' ? bdapps.error : null }
+  return { success: true, bdappsError: bdappsFailureText(bdapps) }
 }
 
 export async function restoreUser(userId: string) {
@@ -85,7 +85,7 @@ export async function revokeProAccess(userId: string) {
   revalidateUserTags(userId)
   revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
   await revalidateWebTags([`user:${userId}`])
-  return { success: true, bdappsError: bdapps.status === 'failed' ? bdapps.error : null }
+  return { success: true, bdappsError: bdappsFailureText(bdapps) }
 }
 
 export async function setUserSubscriptionStatus(userId: string, status: 'PRO' | 'FREE' | 'LAPSED') {
@@ -98,7 +98,7 @@ export async function setUserSubscriptionStatus(userId: string, status: 'PRO' | 
   revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
   await revalidateWebTags([`user:${userId}`])
   // Our change applied either way; the admin sees if the BDApps unsubscribe step failed.
-  return { success: true, bdappsError: bdapps?.status === 'failed' ? bdapps.error : null }
+  return { success: true, bdappsError: bdappsFailureText(bdapps) }
 }
 
 export async function setUserNotificationPrefs(

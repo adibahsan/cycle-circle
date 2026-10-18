@@ -13,19 +13,22 @@ import {
 const P = 'test-nm'
 const DAY = 24 * 60 * 60 * 1000
 const NOW = new Date('2031-06-15T02:30:00Z') // far future: latest snapshot stays ours
+// The purge is global, so its clock is far in the PAST: only rows deleted before 2020-01-01 (ours)
+// are eligible, never other test files' freshly soft-deleted users.
+const PURGE_NOW = new Date('2020-01-31T02:30:00Z')
 const ids = (n: string) => ({ user: `${P}-u-${n}`, profile: `${P}-p-${n}` })
 
-async function makeUser(n: string, deletedAt: Date | null) {
+async function makeUser(n: string, deletedAt: Date | null, at: Date = NOW) {
   const { user, profile } = ids(n)
   await testPrisma.user.create({
-    data: { id: user, phone: `+88019${n.padStart(8, '0')}`, authMethod: 'OTP', deletedAt },
+    data: { id: user, phone: `+88012${n.padStart(8, '0')}`, authMethod: 'OTP', deletedAt },
   })
   await testPrisma.profile.create({ data: { id: profile, userId: user, name: 'P', relation: 'SELF' } })
   await testPrisma.periodLog.create({
-    data: { profileId: profile, startDate: NOW, endDate: NOW, flowIntensity: 'MEDIUM' },
+    data: { profileId: profile, startDate: at, endDate: at, flowIntensity: 'MEDIUM' },
   })
   await testPrisma.symptomLog.create({
-    data: { profileId: profile, date: NOW, category: 'PHYSICAL', symptomId: 'cramps', value: '1' },
+    data: { profileId: profile, date: at, category: 'PHYSICAL', symptomId: 'cramps', value: '1' },
   })
   await testPrisma.feedback.create({ data: { userId: user, category: 'GENERAL', message: 'hi' } })
   await testPrisma.subscription.create({ data: { userId: user } })
@@ -79,12 +82,12 @@ describe('prediction accuracy snapshot', () => {
 
 describe('purgeExpiredDeletedUsers', () => {
   it('purges only users deleted more than 30 days ago, with all their data, one translog line each', async () => {
-    await makeUser('1', new Date(NOW.getTime() - 30 * DAY - 1)) // just past the window
-    await makeUser('2', new Date(NOW.getTime() - 30 * DAY)) // exactly 30 days: still restorable
-    await makeUser('3', null) // not deleted
+    await makeUser('1', new Date(PURGE_NOW.getTime() - 30 * DAY - 1), PURGE_NOW) // just past the window
+    await makeUser('2', new Date(PURGE_NOW.getTime() - 30 * DAY), PURGE_NOW) // exactly 30 days: still restorable
+    await makeUser('3', null, PURGE_NOW) // not deleted
     const translog = vi.spyOn(logger, 'translog').mockImplementation(() => {})
 
-    const res = await purgeExpiredDeletedUsers(NOW)
+    const res = await purgeExpiredDeletedUsers(PURGE_NOW)
 
     expect(res.failed).toBe(0)
     expect(res.purgedUserIds).toContain(ids('1').user)

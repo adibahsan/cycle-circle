@@ -41,7 +41,7 @@ async function cleanup() {
 beforeAll(async () => {
   await cleanup()
   await testPrisma.user.create({ data: { id: ADMIN, email: `${ADMIN}@example.test`, authMethod: 'EMAIL', role: 'ADMIN' } })
-  await testPrisma.user.create({ data: { id: USER, phone: '+8801920000001', authMethod: 'OTP' } })
+  await testPrisma.user.create({ data: { id: USER, phone: '+8801940000003', authMethod: 'OTP' } })
 })
 afterAll(cleanup)
 

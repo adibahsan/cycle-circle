@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import zlib from 'node:zlib'
-import { queryLogs, maskOtps } from '@vesta/shared/server/services'
+import { queryLogs, maskOtps, appOtpSmsText } from '@vesta/shared/server/services'
 
 let dir: string
 
@@ -119,5 +119,17 @@ describe('maskOtps', () => {
       code2: 'x',
       n: { passcode: '<MASKED>' },
     })
+  })
+})
+
+describe('maskOtps on the real App OTP SMS', () => {
+  it.each(['en', 'bn'] as const)('masks the code in the %s template as logged by the merchant channel', (lang) => {
+    const text = appOtpSmsText('482913', lang)
+    expect(text).toContain('482913') // sanity: the builder really embeds the code
+    const masked = maskOtps({ request: { message: text, destinationAddresses: ['tel:x'] } }) as {
+      request: { message: string }
+    }
+    expect(masked.request.message).not.toContain('482913')
+    expect(masked.request.message).toContain('<MASKED>')
   })
 })

@@ -33,7 +33,8 @@ function hashCode(referenceNo: string, code: string): string {
   return createHmac('sha256', env.JWT_SECRET).update(`${referenceNo}:${code}`).digest('hex')
 }
 
-function smsText(code: string, lang: Language): string {
+/** The SMS body we send (also what the merchant log records, so log masking is tested against it). */
+export function appOtpSmsText(code: string, lang: Language): string {
   return lang === 'bn'
     ? `সাইকেল সার্কেল কোড: ${code}। ৫ মিনিট বৈধ। কাউকে জানাবেন না।`
     : `Cycle Circle code: ${code}. Valid 5 min. Don't share it.`
@@ -90,7 +91,7 @@ export async function startAppOtpLogin(phone: string, lang: Language): Promise<A
     },
   })
   try {
-    await smsSend(smsText(code, lang), [subscriberId])
+    await smsSend(appOtpSmsText(code, lang), [subscriberId])
   } catch (error) {
     // Not sent: drop the challenge so it neither blocks a resend nor counts toward the daily cap.
     await prisma.otpChallenge.delete({ where: { id: challenge.id } })
