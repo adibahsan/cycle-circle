@@ -5,7 +5,6 @@ import {
   listSubscriptions,
   getSubscriptionTrend as svcGetSubscriptionTrend,
   getSubscriptionStatusBreakdown as svcGetSubscriptionStatusBreakdown,
-  getCaasResultDistribution as svcGetCaasResultDistribution,
 } from '@vesta/shared/server/services'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
@@ -47,15 +46,6 @@ export const getSubscriptionStatusBreakdown = cache(async () => {
   return unstable_cache(
     () => svcGetSubscriptionStatusBreakdown(),
     ['admin-subscription-status-breakdown'],
-    { tags: [adminCacheTags.subscriptions], revalidate: ADMIN_CACHE_TTL }
-  )()
-})
-
-export const getCaasResultDistribution = cache(async (days: number) => {
-  await requireAdminUser()
-  return unstable_cache(
-    () => svcGetCaasResultDistribution({ days }),
-    ['admin-caas-result-distribution', String(days)],
     { tags: [adminCacheTags.subscriptions], revalidate: ADMIN_CACHE_TTL }
   )()
 })

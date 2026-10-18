@@ -152,11 +152,10 @@ export async function setSubscriptionStatus(
   const adminOverrideUnsubFailed = bdapps?.status === 'failed'
 
   const existing = await prisma.subscription.findFirst({ where: { userId }, select: { id: true } })
-  const resetOnActive = status === 'LAPSED' ? {} : { consecutiveFailures: 0, gracePeriodEndsAt: null }
   if (existing) {
     await prisma.subscription.updateMany({
       where: { userId },
-      data: { status, adminOverride: true, adminOverrideBy: adminId, adminOverrideAt: now, adminOverrideUnsubFailed, ...resetOnActive },
+      data: { status, adminOverride: true, adminOverrideBy: adminId, adminOverrideAt: now, adminOverrideUnsubFailed },
     })
   } else {
     await prisma.subscription.create({
@@ -220,8 +219,6 @@ export async function upsertProSubscription(
         status: 'PRO',
         bdappsSubscriberId: phone,
         amount,
-        consecutiveFailures: 0,
-        gracePeriodEndsAt: null,
       },
     })
   }
@@ -301,8 +298,6 @@ export async function applyBdappsSubscription(
   const data = {
     status,
     bdappsSubscriberId: subscriberId,
-    consecutiveFailures: 0,
-    gracePeriodEndsAt: null,
   } as const
 
   if (existing) {
@@ -491,35 +486,6 @@ export async function getSubscriptionStatusBreakdown(): Promise<
   return rows.map((r) => ({ status: r.status as string, count: r._count._all }))
 }
 
-/**
- * Count of CaasTransactions grouped by status (PENDING, SUCCESS, FAILED, etc.)
- * over the given date range (default: last 30 days).
- */
-export async function getCaasResultDistribution(
-  opts: SubscriptionChartDateRangeOpts = {},
-): Promise<{ result: string; count: number }[]> {
-  const { dateTo = new Date(), dateFrom, days = 30 } = opts
-  const resolvedFrom =
-    dateFrom ?? new Date(new Date(dateTo).setDate(dateTo.getDate() - days + 1))
-
-  const from = new Date(
-    Date.UTC(resolvedFrom.getFullYear(), resolvedFrom.getMonth(), resolvedFrom.getDate()),
-  )
-  const to = new Date(
-    Date.UTC(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999),
-  )
-
-  const rows = await prisma.caasTransaction.groupBy({
-    by: ['status'],
-    _count: { _all: true },
-    where: {
-      createdAt: { gte: from, lte: to },
-    },
-  })
-
-  return rows.map((r) => ({ result: r.status, count: r._count._all }))
-}
-
 export interface SubscriptionListParams {
   page?: number
   pageSize?: number
@@ -528,7 +494,7 @@ export interface SubscriptionListParams {
 
 /**
  * Return a paginated list of subscriptions with optional status filter.
- * Each subscription includes the associated user and latest CAAS transaction.
+ * Each subscription includes the associated user.
  */
 export async function listSubscriptions(params: SubscriptionListParams = {}) {
   const { page = 1, pageSize = 20, status } = params
@@ -542,7 +508,6 @@ export async function listSubscriptions(params: SubscriptionListParams = {}) {
       where,
       include: {
         user: { select: { id: true, fullName: true, phone: true, email: true } },
-        caasTransactions: { orderBy: { createdAt: 'desc' }, take: 1 },
       },
       orderBy: { updatedAt: 'desc' },
       skip: (page - 1) * pageSize,

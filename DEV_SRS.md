@@ -418,7 +418,7 @@ Pro means BDApps reports the number as `REGISTERED` (ADR 0002). CaaS direct debi
 
 **Parked, still in the code (slated for removal):**
 - `apps/web/src/app/api/billing/subscribe/route.ts` (CaaS direct debit) and `apps/web/src/app/api/cron/caas-check/route.ts` (CaaS balance check, `vercel.json` cron entry)
-- `CaasTransaction` model and `Subscription.consecutiveFailures` / `gracePeriodEndsAt`
+- `CaasTransaction` model (`Subscription.consecutiveFailures` / `gracePeriodEndsAt` dropped by migration `20261019990000_remove_grace_period`)
 
 **What's implemented:**
 - Phone OTP verify subscribes the number and makes the user Pro; `UNREGISTERED` (webhook, nightly check, in-app Unsubscribe) makes the user Free with data kept
@@ -427,7 +427,7 @@ Pro means BDApps reports the number as `REGISTERED` (ADR 0002). CaaS direct debi
 **v1.4 targets (not yet built):**
 - Revoke, Suspend and Delete also unsubscribe the number on BDApps (ADR 0006); Reactivate and Restore do not re-subscribe
 - Admin override ends when BDApps reports a new subscription
-- Nightly status check runs from the host crontab; CaaS route, cron entry and grace-period fields are removed
+- Nightly status check runs from the host crontab; CaaS route and cron entry are removed (grace-period fields and the subscriptions-page grace / CaaS-results views are already gone)
 
 **Removed from scope:**
 - Grace-period countdown, warning notifications and auto-disable (previously "deferred to v2")

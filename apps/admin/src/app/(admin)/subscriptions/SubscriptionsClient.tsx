@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useCallback, useState, useTransition } from 'react'
-import { CreditCard, Mail, Smartphone, ShieldCheck, AlertTriangle } from 'lucide-react'
+import { CreditCard, Mail, Smartphone, ShieldCheck } from 'lucide-react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
@@ -21,20 +21,11 @@ import { CHART_VAR } from '@/lib/chart-palette'
 // Types — mirror the Prisma include shape from getSubscriptions
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface CaasTransaction {
-  id: string
-  amount: number
-  status: string
-  createdAt: Date
-}
-
 interface SubscriptionRow {
   id: string
   userId: string
   status: string
   amount: number | null
-  consecutiveFailures: number
-  gracePeriodEndsAt: Date | null
   adminOverride: boolean
   adminOverrideBy: string | null
   adminOverrideAt: Date | null
@@ -46,7 +37,6 @@ interface SubscriptionRow {
     phone: string | null
     email: string | null
   }
-  caasTransactions: CaasTransaction[]
 }
 
 interface SubscriptionsClientProps {
@@ -59,7 +49,6 @@ interface SubscriptionsClientProps {
   }
   trend: { date: string; count: number }[]
   statusBreakdown: { status: string; count: number }[]
-  caasDistribution: { result: string; count: number }[]
   range: string
 }
 
@@ -152,7 +141,7 @@ function ActionsCell({ row, onGrant, onRevoke, onSetFree }: ActionsCellProps) {
 
 const bdappsFailedMessage = (e: string) => `Plan changed, but the BDApps unsubscribe failed: ${e}. The user may still be charged.`
 
-export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribution, range }: SubscriptionsClientProps) {
+export function SubscriptionsClient({ data, trend, statusBreakdown, range }: SubscriptionsClientProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -291,44 +280,6 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
       ),
     },
     {
-      key: 'consecutiveFailures',
-      header: 'Failures',
-      render: (row) => {
-        const count = row.consecutiveFailures
-        if (count === 0) {
-          return <span className="text-sm tabular-nums text-[var(--color-text-muted)]">0</span>
-        }
-        return (
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-[var(--color-warning)]">
-            <AlertTriangle size={13} aria-hidden="true" />
-            {count}
-          </span>
-        )
-      },
-    },
-    {
-      key: 'gracePeriodEndsAt',
-      header: 'Grace Period End',
-      sortable: true,
-      render: (row) => {
-        if (!row.gracePeriodEndsAt) {
-          return <span className="text-sm text-[var(--color-text-muted)]">—</span>
-        }
-        const isExpired = new Date(row.gracePeriodEndsAt) < new Date()
-        return (
-          <span
-            className={
-              isExpired
-                ? 'text-sm text-[var(--color-danger)]'
-                : 'text-sm text-[var(--color-text-secondary)]'
-            }
-          >
-            {formatDate(row.gracePeriodEndsAt)}
-          </span>
-        )
-      },
-    },
-    {
       key: 'adminOverride',
       header: 'Admin Override',
       render: (row) => {
@@ -342,23 +293,6 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
               Override
             </Badge>
           </span>
-        )
-      },
-    },
-    {
-      key: 'lastTransaction',
-      header: 'Last Transaction',
-      sortable: false,
-      render: (row) => {
-        const tx = row.caasTransactions[0]
-        if (!tx) return <span className="text-sm text-[var(--color-text-muted)]">—</span>
-        return (
-          <div className="space-y-0.5">
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              {formatDate(tx.createdAt)}
-            </p>
-            <p className="text-xs text-[var(--color-text-muted)]">{tx.status}</p>
-          </div>
         )
       },
     },
@@ -396,9 +330,9 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
           }
         />
 
-        {/* Charts — date-range controlled trend + CAAS, plus status breakdown */}
+        {/* Charts — date-range controlled trend plus status breakdown */}
         <section aria-label="Subscription charts">
-          {/* Date range control — shared by trend and CAAS panels */}
+          {/* Date range control — for the trend panel */}
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
               Overview
@@ -406,7 +340,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
             <DateRangeControl paramKey="range" />
           </div>
 
-          {/* Three-panel responsive grid */}
+          {/* Two-panel responsive grid */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             {/* Subscriptions over time — area chart */}
             <div className="lg:col-span-2">
@@ -433,20 +367,6 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, caasDistribu
               height={240}
               emptyLabel="No subscription data."
             />
-
-            {/* CAAS result distribution — bar */}
-            <div className="lg:col-span-3">
-              <ChartPanel
-                title={`CAAS Result Distribution — last ${range}`}
-                data={caasDistribution.map((d) => ({ result: d.result, count: d.count }))}
-                xKey="result"
-                series={[{ key: 'count', label: 'Transactions', color: CHART_VAR.secondary }]}
-                kinds={['bar', 'pie']}
-                defaultKind="bar"
-                height={220}
-                emptyLabel="No CAAS transactions in this period."
-              />
-            </div>
           </div>
         </section>
 

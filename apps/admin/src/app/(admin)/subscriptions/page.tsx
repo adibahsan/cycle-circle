@@ -3,7 +3,6 @@ import {
   getSubscriptions,
   getSubscriptionTrend,
   getSubscriptionStatusBreakdown,
-  getCaasResultDistribution,
 } from '@/app/queries/subscription-queries'
 import { SubscriptionsClient } from './SubscriptionsClient'
 
@@ -24,7 +23,7 @@ export default async function SubscriptionsPage({
   const range = params.range ?? '30d'
   const days = RANGE_TO_DAYS[range] ?? 30
 
-  const [data, trend, statusBreakdown, caasDistribution] = await Promise.all([
+  const [data, trend, statusBreakdown] = await Promise.all([
     getSubscriptions({
       page: Number(params.page) || 1,
       pageSize: Number(params.pageSize) || 20,
@@ -32,7 +31,6 @@ export default async function SubscriptionsPage({
     }),
     getSubscriptionTrend(days),
     getSubscriptionStatusBreakdown(),
-    getCaasResultDistribution(days),
   ])
 
   return (
@@ -40,7 +38,6 @@ export default async function SubscriptionsPage({
       data={data}
       trend={trend}
       statusBreakdown={statusBreakdown}
-      caasDistribution={caasDistribution}
       range={range}
     />
   )
