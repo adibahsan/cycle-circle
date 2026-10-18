@@ -144,6 +144,8 @@ interface DayCellProps {
   isCurrentMonth: boolean
   isSelected: boolean
   onSelect: (date: Date) => void
+  /** Keeps the roving focus in sync with wherever DOM focus lands (Tab, click, script). */
+  onFocusDay: (date: Date) => void
   isGhostDay?: boolean
   onGhostTap?: (dateStr: string) => void
   /** Roving tabindex: the one day in the tab order. */
@@ -152,7 +154,7 @@ interface DayCellProps {
   focusNow: boolean
 }
 
-const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSelect, isGhostDay = false, onGhostTap, isFocusTarget, focusNow }: DayCellProps) {
+const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSelect, onFocusDay, isGhostDay = false, onGhostTap, isFocusTarget, focusNow }: DayCellProps) {
   const { t } = useTranslation()
   const language = useLanguage()
   const { date } = meta
@@ -172,6 +174,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
         ref={buttonRef}
         type="button"
         onClick={() => onSelect(date)}
+        onFocus={() => onFocusDay(date)}
         aria-pressed={isSelected}
         aria-label={dayAccessibleName({ date, flags: isCurrentMonth ? meta : NO_STATE, isToday, language }, t)}
         aria-current={isToday ? 'date' : undefined}
@@ -641,6 +644,10 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
     return rows
   }, [gridDays])
 
+  const handleDayFocus = useCallback((date: Date) => {
+    setFocusedDate((prev) => (prev && isSameDay(prev, date) ? prev : date))
+  }, [])
+
   const handleGhostTap = useCallback((d: string) => setBackfillDate(d), [])
   /** Unlogged past day inside the 30-day backfill window. */
   const isGhostDate = (dateStr: string) =>
@@ -778,6 +785,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                             isCurrentMonth={inMonth}
                             isSelected={isSelected}
                             onSelect={handleDayClick}
+                            onFocusDay={handleDayFocus}
                             isGhostDay={inMonth && isGhostDate(dateStr)}
                             onGhostTap={handleGhostTap}
                             isFocusTarget={isFocusTarget}
