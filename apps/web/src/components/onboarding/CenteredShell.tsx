@@ -5,9 +5,11 @@ import { motion } from 'motion/react';
 interface CenteredShellProps {
   children: React.ReactNode; // flex-column: header shrink-0 / content flex-1 overflow / nav shrink-0
   prefersReducedMotion: boolean;
+  /** Off where a matching loading.tsx already stood in, so the card replaces it without a fade. */
+  animateIn?: boolean;
 }
 
-export function CenteredShell({ children, prefersReducedMotion }: CenteredShellProps) {
+export function CenteredShell({ children, prefersReducedMotion, animateIn = true }: CenteredShellProps) {
   return (
     <div className="relative min-h-dvh bg-[var(--color-bg-primary)] overflow-hidden flex items-stretch md:items-center justify-center md:p-6 lg:p-8">
       {/* Decorative ambient orbs */}
@@ -68,8 +70,8 @@ export function CenteredShell({ children, prefersReducedMotion }: CenteredShellP
           'md:rounded-[28px] md:border md:border-[var(--color-border)]',
           'md:shadow-glow md:glass md:overflow-hidden',
         ].join(' ')}
-        initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.98, y: 10 }}
-        animate={prefersReducedMotion ? undefined : { opacity: 1, scale: 1, y: 0 }}
+        initial={prefersReducedMotion || !animateIn ? false : { opacity: 0, scale: 0.98, y: 10 }}
+        animate={prefersReducedMotion || !animateIn ? undefined : { opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       >
         {children}

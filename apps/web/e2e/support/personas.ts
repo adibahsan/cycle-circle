@@ -4,6 +4,15 @@ export const PERSONAS = {
   seed: { phone: '01700000001' },
   /** Dedicated e2e user, created on first dev-login: empty profile, first-run flows. */
   fresh: { phone: '01700000777' },
+  /** Dashboard-mode personas (#76), set up by ensureModePersonas: one profile each, read-only in tests. */
+  pregnant: { phone: '01700000781' },
+  menopause: { phone: '01700000782' },
+  /** Standard goal, no period ever logged: the first-run dashboard. */
+  firstRun: { phone: '01700000783' },
+  /** Insights with partial data (set up by ensureInsightsPersona): two completed cycles, no symptom logs. */
+  cyclesOnly: { phone: '01700000784' },
+  /** Standard goal, period 35 days ago on a 28-day cycle and no stored prediction: 7 days late (set up by ensureModePersonas). */
+  late: { phone: '01700000785' },
 } as const
 
 export type PersonaName = keyof typeof PERSONAS

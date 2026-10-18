@@ -4,6 +4,21 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
+## 2026-10-18 — Portal redesign, wide screens, faster sign-in (PR #82)
+
+**Shipped:**
+
+- Spec #66 portal redesign: pastel look, honest dashboard data and the P1 accessibility fixes (#67–#76, #78–#81).
+- Wide screens: every signed-in page recomposes into more columns instead of stretching; collapsible sidebar (240px / 72px rail).
+- Today is marked with an accent ring and glow on the calendar and symptoms grids.
+- Faster sign-in: OTP accepted → dashboard drops from ~1.5s to ~1.0s on a throttled phone. The shell's account, logging and completion data now stream from the server layout; new loading screens for the OTP page, Insights and onboarding.
+
+**Pre-deploy steps on the VPS:** none. No schema migrations and no new env vars.
+
+**Deploy:** `git push origin origin/main:production` → GitHub Actions *Production* workflow.
+
+---
+
 ## 2026-10-18 — BDApps subscription, file logging, UI audit (PR #61)
 
 **Shipped** (supersedes PRs #57–#60):

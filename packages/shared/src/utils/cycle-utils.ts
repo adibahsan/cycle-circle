@@ -1,6 +1,9 @@
 import { differenceInDays, addDays, format, startOfDay } from 'date-fns';
 import type { CyclePhase, PredictionTier, UserProfile, Prediction } from '../types/types';
 
+/** Milliseconds in a calendar day (UTC; no DST). */
+export const MS_PER_DAY = 86_400_000;
+
 export function getCurrentCycleDay(lastPeriodStart: string, cycleLength: number): number {
   const today = startOfDay(new Date());
   const lastPeriod = startOfDay(new Date(lastPeriodStart));
@@ -14,6 +17,40 @@ export function getCurrentPhase(cycleDay: number, periodLength: number, cycleLen
   if (cycleDay < ovulationDay - 4) return 'follicular';
   if (cycleDay <= ovulationDay + 1) return 'ovulation';
   return 'luteal';
+}
+
+export interface PhaseRange {
+  phase: CyclePhase;
+  /** First cycle day of the phase (1-based). When `days` is 0, `start` is `end + 1`. */
+  start: number;
+  /** Last cycle day of the phase, inclusive. */
+  end: number;
+  days: number;
+}
+
+/**
+ * Day ranges for each phase, in cycle order, using the same boundaries as
+ * `getCurrentPhase`. Lengths always sum to `cycleLength`; a phase that a long
+ * period or short cycle crowds out gets 0 days, never a negative count.
+ */
+export function getPhaseRanges(cycleLength: number, periodLength: number): PhaseRange[] {
+  const ovulationDay = cycleLength - 14;
+  const clamp = (day: number, floor: number) => Math.min(cycleLength, Math.max(floor, day));
+  const menstrualEnd = clamp(periodLength, 0);
+  const follicularEnd = clamp(ovulationDay - 5, menstrualEnd);
+  const ovulationEnd = clamp(ovulationDay + 1, follicularEnd);
+  const ends: [CyclePhase, number][] = [
+    ['menstrual', menstrualEnd],
+    ['follicular', follicularEnd],
+    ['ovulation', ovulationEnd],
+    ['luteal', cycleLength],
+  ];
+  let prevEnd = 0;
+  return ends.map(([phase, end]) => {
+    const range = { phase, start: prevEnd + 1, end, days: end - prevEnd };
+    prevEnd = end;
+    return range;
+  });
 }
 
 export function getDaysUntilNextPeriod(cycleDay: number, cycleLength: number): number {

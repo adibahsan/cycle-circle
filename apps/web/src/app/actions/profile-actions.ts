@@ -101,6 +101,8 @@ export async function deleteProfile(profileId: string) {
 }
 
 export async function setActiveProfileCookie(profileId: string) {
+  // Cheap guard: setting a cookie re-renders the route, so skip when already in sync.
+  if ((await cookies()).get('vesta_active_profile')?.value === profileId) return
   const jwt = await requireAuth()
   const user = await getAuthUser(jwt.sub)
   await assertProfileOwnership(profileId, user.id)

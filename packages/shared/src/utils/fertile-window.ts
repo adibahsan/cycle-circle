@@ -1,3 +1,5 @@
+import { MS_PER_DAY } from './cycle-utils'
+
 export interface FertileDay {
   date: string // YYYY-MM-DD
   fertile: boolean
@@ -8,7 +10,6 @@ export interface FertileWindow {
   end: string
 }
 
-const DAY_MS = 86_400_000
 const toMs = (iso: string) => Date.parse(`${iso}T00:00:00Z`)
 
 /**
@@ -31,7 +32,7 @@ export function selectFertileWindow(
   const runs: FertileWindow[] = []
   for (const { date } of fertile) {
     const last = runs[runs.length - 1]
-    if (last && toMs(date) - toMs(last.end) <= DAY_MS) last.end = date
+    if (last && toMs(date) - toMs(last.end) <= MS_PER_DAY) last.end = date
     else runs.push({ start: date, end: date })
   }
 

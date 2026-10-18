@@ -13,7 +13,6 @@ import {
   Bell,
   Download,
   User,
-  Shield,
   LogOut,
   ChevronRight,
   Users,
@@ -31,6 +30,8 @@ import { useAppStore } from '@/lib/store'
 import { useLanguage } from '@/lib/use-language'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { TINT_CLASSES, type CardTint } from '@/components/ui/tints'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 import { updateNotificationPrefs, exportUserDataCsv, exportUserDataRows, updateProfileReminderOptOut } from '@/app/actions/settings-actions'
 import { updateContactInfo } from '@/app/actions/user-actions'
 import type { AuthUser } from '@vesta/shared/server/auth'
@@ -82,7 +83,7 @@ function SegmentedControl<T extends string>({
   onChange: (v: T) => void
 }) {
   return (
-    <div role="radiogroup" className="flex items-center gap-0.5 p-0.5 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+    <div role="radiogroup" className="flex items-center gap-0.5 p-1 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
       {options.map(opt => {
         const active = opt.value === value
         return (
@@ -91,16 +92,16 @@ function SegmentedControl<T extends string>({
             role="radio"
             aria-checked={active}
             onClick={() => onChange(opt.value)}
-            className={`relative flex-1 py-1.5 px-4 rounded-[10px] text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] ${
+            className={`relative flex-1 min-h-11 py-2 px-4 rounded-full text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] ${
               active
-                ? 'text-[var(--color-on-accent)] shadow-soft'
+                ? 'text-[var(--color-text-primary)]'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
             }`}
           >
             {active && (
               <motion.span
                 layoutId={`seg-${options.map(o => o.value).join('-')}`}
-                className="absolute inset-0 rounded-[10px] bg-[var(--goal-accent)]"
+                className="absolute inset-0 rounded-full bg-[var(--color-bg-card)] shadow-soft"
                 transition={{ type: 'spring', damping: 22, stiffness: 300 }}
               />
             )}
@@ -130,30 +131,53 @@ function Toggle({
       aria-checked={checked}
       aria-label={label ?? id}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
-        checked ? 'gradient-primary' : 'bg-[var(--color-border-strong)]'
-      }`}
+      className="group inline-flex h-11 w-14 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
     >
-      <motion.span
-        layout
-        transition={{ type: 'spring', damping: 22, stiffness: 400 }}
-        className="inline-block rounded-full bg-[var(--color-bg-card)] shadow-soft"
-        style={{ width: 18, height: 18, translateX: checked ? 20 : 4 }}
-      />
+      {/* 44px tap area around the 24px visual track */}
+      <span
+        aria-hidden="true"
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+          checked ? 'gradient-primary' : 'bg-[var(--color-border-strong)]'
+        }`}
+      >
+        <motion.span
+          layout
+          transition={{ type: 'spring', damping: 22, stiffness: 400 }}
+          className="inline-block rounded-full bg-[var(--color-bg-card)] shadow-soft"
+          style={{ width: 18, height: 18, translateX: checked ? 20 : 4 }}
+        />
+      </span>
     </button>
   )
 }
 
-function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
+
+// Contact (add email / add phone) row buttons: the same three styles for both rows.
+const CONTACT_SAVE =
+  'min-h-11 px-3 py-2 rounded-lg text-xs font-semibold text-[var(--color-on-accent)] bg-[var(--goal-accent)] disabled:opacity-50 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]'
+const CONTACT_CANCEL =
+  'min-h-11 px-2 py-2 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]'
+const CONTACT_ADD =
+  'flex items-center gap-2 w-full min-h-11 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]'
+
+/** Badge tint per settings section (kept out of JSX attributes so label scans stay clean). */
+const SECTION_TINT = {
+  appearance: 'sky',
+  notifications: 'pink',
+  export: 'mint',
+  account: 'lavender',
+  about: 'sage',
+} as const satisfies Record<string, CardTint>
+
+/** Section title with a drawn icon on a pastel tint, for the shared SectionHeader. */
+function SectionTitle({ icon: Icon, tint, children }: { icon: React.ElementType; tint: CardTint; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 mb-3">
-      <div className="w-7 h-7 rounded-lg bg-[var(--goal-accent)] flex items-center justify-center shrink-0">
-        <Icon size={14} className="text-[var(--color-on-accent)]" aria-hidden="true" />
-      </div>
-      <h2 className="text-base font-bold text-[var(--color-text-primary)]">
-        {title}
-      </h2>
-    </div>
+    <span className="flex items-center gap-2.5">
+      <span aria-hidden="true" className={`w-8 h-8 rounded-full ${TINT_CLASSES[tint].badge} flex items-center justify-center shrink-0`}>
+        <Icon size={15} />
+      </span>
+      {children}
+    </span>
   )
 }
 
@@ -169,16 +193,17 @@ function AccountRow({
   badge?: string
 }) {
   return (
-    <Link href={href} className="flex items-center gap-3 py-3 px-1 group">
+    <Link href={href} className="flex items-center gap-3 py-3 px-1 min-h-11 rounded-sm group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]">
       <Icon
         size={17}
-        className="text-[var(--color-text-muted)] group-hover:text-[var(--goal-accent)] transition-colors shrink-0"
+        aria-hidden="true"
+        className="text-[var(--color-text-muted)] group-hover:text-[var(--color-text-primary)] transition-colors shrink-0"
       />
       <span className="flex-1 text-sm text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] transition-colors">
         {label}
       </span>
       {badge && (
-        <span className="flex items-center gap-1 text-xs font-bold text-[var(--color-on-accent)] px-2 py-0.5 rounded-full bg-[var(--goal-accent)]">
+        <span className="flex items-center gap-1 text-xs font-bold text-accent-peach px-2.5 py-0.5 rounded-full bg-tint-peach">
           {badge}
         </span>
       )}
@@ -422,12 +447,13 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
   return (
     <>
 
-      <PageContainer>
+      <PageContainer width="canvas">
         <PageHeader title={t('settings.title')} />
 
-        <div className="lg:grid lg:grid-cols-2 lg:gap-5 space-y-5 lg:space-y-0">
+        {/* Two columns from lg; from 2xl an explicit three-column grid: appearance + notifications | account | export + about. */}
+        <div className="lg:grid lg:grid-cols-2 lg:gap-5 space-y-5 lg:space-y-0 2xl:grid-cols-3 2xl:grid-rows-[auto_1fr] 2xl:gap-6 2xl:items-start">
           {/* ── Left column ── */}
-          <div className="space-y-6">
+          <div className="space-y-6 2xl:col-start-1 2xl:row-start-1 2xl:row-span-2">
             {/* 1. Language & Appearance */}
             <motion.div
               custom={0}
@@ -435,8 +461,8 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader icon={Globe} title={t('settings.languageAndAppearance')} />
-              <Card padding="md" className="space-y-5">
+              <SectionHeader title={<SectionTitle icon={Globe} tint={SECTION_TINT.appearance}>{t('settings.languageAndAppearance')}</SectionTitle>} />
+              <Card tone="panel" padding="md" className="space-y-5">
                 {/* Language */}
                 <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
@@ -484,8 +510,8 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader icon={Bell} title={t('settings.notifications')} />
-              <Card padding="md" className="divide-y divide-[var(--color-border)]">
+              <SectionHeader title={<SectionTitle icon={Bell} tint={SECTION_TINT.notifications}>{t('settings.notifications')}</SectionTitle>} />
+              <Card tone="panel" padding="md" className="divide-y divide-[var(--color-border)]">
                 {[
                   {
                     key: 'periodAlert' as const,
@@ -540,20 +566,21 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
           </div>
 
           {/* ── Right column ── */}
-          <div className="space-y-6">
+          <div className="space-y-6 2xl:contents">
             {/* 3. Data Export */}
             <motion.div
               custom={2}
               variants={sectionVariants}
               initial="hidden"
               animate="visible"
+              className="2xl:col-start-3 2xl:row-start-1"
             >
-              <SectionHeader icon={Download} title={t('settings.export')} />
-              <Card padding="md" className="space-y-3">
+              <SectionHeader title={<SectionTitle icon={Download} tint={SECTION_TINT.export}>{t('settings.export')}</SectionTitle>} />
+              <Card tone="panel" padding="md" className="space-y-3">
                 <p className="text-xs text-[var(--color-text-muted)]">
                   {t('settings.exportDesc')}
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <input
                     type="checkbox"
                     id="export-all-profiles"
@@ -563,7 +590,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   />
                   <label
                     htmlFor="export-all-profiles"
-                    className="text-xs text-[var(--color-text-muted)] cursor-pointer select-none"
+                    className="flex-1 min-h-11 flex items-center text-xs text-[var(--color-text-muted)] cursor-pointer select-none"
                   >
                     {t('settings.exportAllProfiles')}
                   </label>
@@ -572,20 +599,20 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   <button
                     onClick={handleExportCsv}
                     disabled={exporting}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--goal-accent)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                    className="flex flex-col items-center gap-2 rounded-2xl border border-transparent bg-tint-sky p-4 hover:border-[var(--color-accent-sky)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                   >
-                    <FileText size={22} className="text-[var(--color-secondary)]" aria-hidden="true" />
-                    <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                    <FileText size={22} className="text-accent-sky" aria-hidden="true" />
+                    <span className="text-xs font-semibold text-[var(--color-text-primary)]">
                       {t('settings.exportCsv')}
                     </span>
                   </button>
                   <button
                     onClick={handleExportExcel}
                     disabled={exporting}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--goal-accent)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                    className="flex flex-col items-center gap-2 rounded-2xl border border-transparent bg-tint-mint p-4 hover:border-[var(--color-accent-mint)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                   >
-                    <FileSpreadsheet size={22} className="text-[var(--goal-accent)]" aria-hidden="true" />
-                    <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                    <FileSpreadsheet size={22} className="text-accent-mint" aria-hidden="true" />
+                    <span className="text-xs font-semibold text-[var(--color-text-primary)]">
                       {t('settings.exportExcel')}
                     </span>
                   </button>
@@ -599,11 +626,12 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               variants={sectionVariants}
               initial="hidden"
               animate="visible"
+              className="2xl:col-start-2 2xl:row-start-1 2xl:row-span-2"
             >
-              <SectionHeader icon={User} title={t('settings.account')} />
-              <Card padding="md" className="space-y-2">
+              <SectionHeader title={<SectionTitle icon={User} tint={SECTION_TINT.account}>{t('settings.account')}</SectionTitle>} />
+              <Card tone="panel" padding="md" className="space-y-2">
                 {/* Account info */}
-                <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-3 space-y-1.5">
+                <div className="rounded-2xl bg-[var(--color-bg-secondary)] p-4 space-y-1.5">
                   {user.phone && (
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[var(--color-text-muted)]">{t('settings.phone')}</span>
@@ -627,26 +655,28 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                       {addingEmail ? (
                         <div>
                           <div className="flex items-center gap-2">
+                            <label htmlFor="settings-contact-email" className="sr-only">{t('settings.email')}</label>
                             <input
+                              id="settings-contact-email"
                               type="email"
                               name="email"
                               autoComplete="email"
                               placeholder={t('settings.emailInputPlaceholder')}
                               value={contactEmail}
                               onChange={(e) => { setContactEmail(e.target.value); if (emailError) setEmailError('') }}
-                              className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+                              className="flex-1 min-w-0 min-h-11 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
                               spellCheck={false}
                             />
                             <button
                               onClick={handleAddEmail}
                               disabled={!contactEmail || contactSaving}
-                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[var(--color-on-accent)] bg-[var(--goal-accent)] disabled:opacity-50 transition-opacity"
+                              className={CONTACT_SAVE}
                             >
-                              {contactSaving ? '...' : t('common.save')}
+                              {contactSaving ? '…' : t('common.save')}
                             </button>
                             <button
                               onClick={() => { setAddingEmail(false); setContactEmail(''); setEmailError('') }}
-                              className="px-2 py-1.5 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                              className={CONTACT_CANCEL}
                             >
                               {t('common.cancel')}
                             </button>
@@ -660,7 +690,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                       ) : (
                         <button
                           onClick={() => { setAddingEmail(true); setEmailError('') }}
-                          className="flex items-center gap-2 w-full py-1 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                          className={CONTACT_ADD}
                         >
                           <Mail size={12} aria-hidden="true" />
                           {t('settings.addEmail')}
@@ -675,26 +705,28 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                       {addingPhone ? (
                         <div>
                           <div className="flex items-center gap-2">
+                            <label htmlFor="settings-contact-phone" className="sr-only">{t('settings.phone')}</label>
                             <input
+                              id="settings-contact-phone"
                               type="tel"
                               name="phone"
                               autoComplete="tel"
                               placeholder={t('auth.phonePlaceholder')}
                               value={contactPhone}
                               onChange={(e) => { setContactPhone(e.target.value); if (phoneError) setPhoneError('') }}
-                              className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+                              className="flex-1 min-w-0 min-h-11 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
                               spellCheck={false}
                             />
                             <button
                               onClick={handleAddPhone}
                               disabled={!contactPhone || contactSaving}
-                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[var(--color-on-accent)] bg-[var(--goal-accent)] disabled:opacity-50 transition-opacity"
+                              className={CONTACT_SAVE}
                             >
-                              {contactSaving ? '...' : t('common.save')}
+                              {contactSaving ? '…' : t('common.save')}
                             </button>
                             <button
                               onClick={() => { setAddingPhone(false); setContactPhone(''); setPhoneError('') }}
-                              className="px-2 py-1.5 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                              className={CONTACT_CANCEL}
                             >
                               {t('common.cancel')}
                             </button>
@@ -708,7 +740,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                       ) : (
                         <button
                           onClick={() => { setAddingPhone(true); setPhoneError('') }}
-                          className="flex items-center gap-2 w-full py-1 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                          className={CONTACT_ADD}
                         >
                           <Phone size={12} aria-hidden="true" />
                           {t('settings.addPhone')}
@@ -725,7 +757,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                         <span
                           className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                             planTier === 'PRO'
-                              ? 'bg-[var(--goal-accent)] text-[var(--color-on-accent)]'
+                              ? 'bg-tint-peach text-accent-peach'
                               : planTier === 'LAPSED'
                               ? 'bg-[color-mix(in_srgb,var(--color-accent)_16%,var(--color-bg-card))] border border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] text-[var(--color-text-primary)]'
                               : 'bg-[var(--color-border)] text-[var(--color-text-muted)]'
@@ -753,7 +785,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                       sessionStorage.setItem('vesta_replay_tour', '1')
                       router.push('/dashboard')
                     }}
-                    className="flex items-center gap-3 py-3 px-1 w-full group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] rounded-sm"
+                    className="flex items-center gap-3 py-3 px-1 w-full min-h-11 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] rounded-sm"
                   >
                     <Compass
                       size={17}
@@ -797,17 +829,18 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               variants={sectionVariants}
               initial="hidden"
               animate="visible"
+              className="2xl:col-start-3 2xl:row-start-2"
             >
-              <SectionHeader icon={Info} title={t('settings.about')} />
-              <Card padding="md" className="space-y-3">
+              <SectionHeader title={<SectionTitle icon={Info} tint={SECTION_TINT.about}>{t('settings.about')}</SectionTitle>} />
+              <Card tone="panel" padding="md" className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[var(--color-text-secondary)]">{t('settings.appVersion')}</span>
                   <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('settings.versionName', { version: '2.0' })}</span>
                 </div>
 
-                <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-3 py-2.5 flex items-start gap-2">
-                  <Lock aria-hidden="true" size={14} className="text-[var(--color-secondary)] mt-0.5 shrink-0" />
-                  <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                <div className="rounded-2xl bg-tint-sage px-4 py-3 flex items-start gap-2">
+                  <Lock aria-hidden="true" size={14} className="text-accent-sage mt-0.5 shrink-0" />
+                  <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
                     {t('settings.encryptionNote')}
                   </p>
                 </div>

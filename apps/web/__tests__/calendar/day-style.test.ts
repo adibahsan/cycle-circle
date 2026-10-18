@@ -22,6 +22,20 @@ describe('dayStyleKind: one visual meaning per state', () => {
   it('a plain day has no style', () => {
     expect(dayStyleKind(base)).toBe('plain')
   })
+  it('follicular and luteal days get their own phase tint', () => {
+    expect(dayStyleKind(base, 'follicular')).toBe('follicular')
+    expect(dayStyleKind(base, 'luteal')).toBe('luteal')
+  })
+  it('period, fertile and ovulation states win over the phase tint', () => {
+    expect(dayStyleKind({ ...base, isPeriod: true }, 'luteal')).toBe('period')
+    expect(dayStyleKind({ ...base, isFertile: true }, 'follicular')).toBe('fertile')
+    expect(dayStyleKind({ ...base, isOvulation: true }, 'luteal')).toBe('ovulation')
+  })
+  it('menstrual or ovulation phase without a matching state stays plain (states come from the data)', () => {
+    expect(dayStyleKind(base, 'menstrual')).toBe('plain')
+    expect(dayStyleKind(base, 'ovulation')).toBe('plain')
+    expect(dayStyleKind(base, null)).toBe('plain')
+  })
 })
 
 describe('DAY_STYLES', () => {
@@ -57,6 +71,24 @@ describe('CalendarClient wiring', () => {
   it('scrolls the detail card into view', () => {
     expect(src).toContain('scrollIntoView')
   })
+  it('tints follicular and luteal days from the shared phase ranges', () => {
+    expect(src).toContain("from '@/lib/calendar-phase'")
+    expect(src).toMatch(/cyclePhaseOn\(/)
+    expect(src).toMatch(/periodStarts\(/)
+    expect(src).not.toMatch(/- ?14\b/) // no hard-coded luteal length
+  })
+  it('the legend explains the whole cycle, follicular and luteal included', () => {
+    expect(src).toContain("'calendar.follicularPhase'")
+    expect(src).toContain("'calendar.lutealPhase'")
+    expect(src).toMatch(/kind: 'follicular'/)
+    expect(src).toMatch(/kind: 'luteal'/)
+  })
+  it('uses the new look: panel and tinted cards, shared section headers, no glow', () => {
+    expect(src).toContain('tone="panel"')
+    expect(src).toMatch(/tone="(peach|pink|mint|lavender|sky|sage)"/)
+    expect(src).toContain("from '@/components/ui/SectionHeader'")
+    expect(src).not.toContain('shadow-glow')
+  })
   it('shows the add plus on hover and focus', () => {
     expect(src).toMatch(/group-hover/)
     expect(src).toMatch(/group-focus-within/)
@@ -87,16 +119,63 @@ const mix = (fg: number[], pct: number, bg: number[]) => {
 const lum = (rgb: number[]) => { const [r, g, b] = rgb.map(lin); return 0.2126 * r + 0.7152 * g + 0.0722 * b }
 const contrast = (a: number[], b: number[]) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05) }
 
-describe('dark fertile tint', () => {
+function cssBlock(css: string, selector: string): Record<string, string> {
+  const start = css.indexOf(`${selector} {`)
+  const body = css.slice(css.indexOf('{', start) + 1, css.indexOf('\n}', start))
+  const out: Record<string, string> = {}
+  for (const m of body.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) out[m[1]] = m[2].trim()
+  return out
+}
+
+describe('fertile tint (mint, spec #66)', () => {
+  const css = fs.readFileSync(path.resolve(__dirname, '../../src/app/globals.css'), 'utf8')
+  const light = cssBlock(css, '@theme')
+  const themes = [['light', light], ['dark', { ...light, ...cssBlock(css, '.dark') }]] as const
   const pct = Number(/fertile\) (\d+)%/.exec(DAY_STYLES.fertile.background)![1])
-  const card = hex('#222C38')
-  const tint = mix(hex('#F2C46D'), pct, card)
-  it('keeps day numbers at 4.5:1 or better', () => {
-    expect(contrast(hex('#F7EEF0'), tint)).toBeGreaterThanOrEqual(4.5)
-  })
-  it('is warm (red above blue) and distinct from the plain card and from solid ovulation gold', () => {
-    expect(tint[0] - tint[2]).toBeGreaterThan(0.08)
-    expect(contrast(tint, card)).toBeGreaterThan(1.3)
-    expect(contrast(tint, hex('#D4B26A'))).toBeGreaterThan(1.5)
+
+  for (const [name, t] of themes) {
+    const card = hex(t['--color-bg-card'])
+    const tint = mix(hex(t['--color-fertile']), pct, card)
+    it(`${name}: keeps day numbers at 4.5:1 or better`, () => {
+      expect(contrast(hex(t['--color-text-primary']), tint)).toBeGreaterThanOrEqual(4.5)
+    })
+    it(`${name}: is mint (green above red) and distinct from the plain card and from solid ovulation`, () => {
+      expect(tint[1] - tint[0]).toBeGreaterThan(0.03)
+      expect(contrast(tint, card)).toBeGreaterThan(name === 'light' ? 1.1 : 1.3)
+      expect(contrast(tint, hex(t['--color-ovulation']))).toBeGreaterThan(1.5)
+    })
+  }
+})
+
+describe('phase tints (follicular pink, luteal lavender)', () => {
+  const css = fs.readFileSync(path.resolve(__dirname, '../../src/app/globals.css'), 'utf8')
+  const light = cssBlock(css, '@theme')
+  const themes = [['light', light], ['dark', { ...light, ...cssBlock(css, '.dark') }]] as const
+  for (const phase of ['follicular', 'luteal'] as const) {
+    const s = DAY_STYLES[phase]
+    it(`${phase} is mixed over the card surface with no border and normal text`, () => {
+      expect(s.background).toMatch(new RegExp(`color-mix\\(in oklab, var\\(--color-${phase}\\) \\d+%, var\\(--color-bg-card\\)\\)`))
+      expect(s.border).toBe('none')
+      expect(s.color).toBe('var(--color-text-primary)')
+    })
+    const pct = Number(new RegExp(`${phase}\\) (\\d+)%`).exec(s.background)![1])
+    for (const [name, t] of themes) {
+      const card = hex(t['--color-bg-card'])
+      const tint = mix(hex(t[`--color-${phase}`]), pct, card)
+      it(`${name} ${phase}: day numbers stay at 4.5:1, tint is visible but lighter than solid period`, () => {
+        expect(contrast(hex(t['--color-text-primary']), tint)).toBeGreaterThanOrEqual(4.5)
+        expect(contrast(tint, card)).toBeGreaterThan(1.08)
+        expect(contrast(tint, hex(t['--color-menstrual']))).toBeGreaterThan(1.5)
+      })
+    }
+  }
+  it('follicular and luteal tints are told apart (pink is redder, lavender bluer)', () => {
+    for (const [, t] of themes) {
+      const card = hex(t['--color-bg-card'])
+      const pct = (p: string) => Number(new RegExp(`${p}\\) (\\d+)%`).exec(DAY_STYLES[p as 'luteal'].background)![1])
+      const f = mix(hex(t['--color-follicular']), pct('follicular'), card)
+      const l = mix(hex(t['--color-luteal']), pct('luteal'), card)
+      expect(f[0] - f[2]).toBeGreaterThan(l[0] - l[2])
+    }
   })
 })

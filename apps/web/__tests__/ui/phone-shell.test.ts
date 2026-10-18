@@ -72,7 +72,7 @@ describe('tour card placement on phones', () => {
 })
 
 describe('phone shell source rules', () => {
-  const layout = read('app/(main)/layout.tsx')
+  const layout = read('components/shell/MainShell.tsx')
   const globals = read('app/globals.css')
 
   it('root layout exports a viewport with viewport-fit=cover', () => {
@@ -137,7 +137,7 @@ describe('phone bars are opaque', () => {
   })
 
   it('phone header uses --color-bg-card, not .glass', () => {
-    const layout = read('app/(main)/layout.tsx')
+    const layout = read('components/shell/MainShell.tsx')
     const tag = layout.match(/<header[\s\S]*?>/)![0]
     expect(tag).toContain('md:hidden')
     expect(tag).toContain('bg-[var(--color-bg-card)]')

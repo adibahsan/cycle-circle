@@ -1,6 +1,6 @@
 import type { FullConfig } from '@playwright/test'
 import { saveLoginState } from './support/auth'
-import { ensureFreshPersona } from './support/ensure-persona'
+import { ensureFreshPersona, ensureModePersonas, ensureInsightsPersona } from './support/ensure-persona'
 
 /** Runs once per `pnpm e2e`: log in the personas; tests reuse the saved state. */
 export default async function globalSetup(config: FullConfig) {
@@ -8,4 +8,8 @@ export default async function globalSetup(config: FullConfig) {
   await saveLoginState(baseURL, 'seed')
   await saveLoginState(baseURL, 'fresh') // creates the user on first dev-login
   await ensureFreshPersona()
+  for (const p of ['pregnant', 'menopause', 'firstRun', 'late'] as const) await saveLoginState(baseURL, p)
+  await ensureModePersonas()
+  await saveLoginState(baseURL, 'cyclesOnly')
+  await ensureInsightsPersona()
 }

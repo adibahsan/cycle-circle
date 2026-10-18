@@ -9,3 +9,9 @@ export function deviceDayString(d: Date = new Date()): string {
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
 }
+
+/** A stored date (Date or ISO string) as the device-local YYYY-MM-DD; a bare YYYY-MM-DD passes through. */
+export function toDeviceDay(d: Date | string): string {
+  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d
+  return deviceDayString(new Date(d))
+}

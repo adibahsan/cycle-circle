@@ -3,17 +3,16 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function CalendarLoading() {
   return (
-    <PageContainer width="wide" className="animate-pulse-soft">
+    <PageContainer width="canvas">
       {/* Page Header */}
       <div>
         <Shimmer className="h-7 w-28 rounded-lg" />
-        <Shimmer className="h-4 w-40 rounded-md mt-1.5" />
       </div>
 
       {/* Main split layout */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col gap-5 xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem] xl:items-start">
         {/* Calendar Grid Card */}
-        <div className="lg:w-[480px] lg:shrink-0 rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] p-6 space-y-4">
+        <div className="min-w-0 rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel p-6 space-y-4">
           {/* Header controls (Month / Navs) */}
           <div className="flex justify-between items-center">
             <Shimmer className="h-9 w-9 rounded-xl" />
@@ -33,7 +32,7 @@ export default function CalendarLoading() {
           {/* Day Grid */}
           <div className="grid grid-cols-7 gap-2">
             {Array.from({ length: 35 }).map((_, i) => (
-              <Shimmer key={i} className="aspect-square w-full rounded-xl" />
+              <Shimmer key={i} className="aspect-square xl:aspect-[4/3] w-full rounded-xl" />
             ))}
           </div>
 
@@ -47,9 +46,9 @@ export default function CalendarLoading() {
         </div>
 
         {/* Right Detail/Summary panels */}
-        <div className="flex-1 flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-w-0">
           {/* Detailed Selected Day Sheet */}
-          <div className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] p-6 space-y-4">
+          <div className="rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel p-6 space-y-4">
             <div className="flex justify-between items-center">
               <Shimmer className="h-5 w-44 rounded-lg" />
               <Shimmer className="h-6 w-6 rounded-full" />
@@ -68,7 +67,7 @@ export default function CalendarLoading() {
           </div>
 
           {/* Monthly Cycle Prediction Summary Card */}
-          <div className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] p-6 space-y-3">
+          <div className="rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel p-6 space-y-3">
             <Shimmer className="h-4.5 w-24 rounded-md" />
             <div className="space-y-2">
               <div className="flex justify-between items-center">

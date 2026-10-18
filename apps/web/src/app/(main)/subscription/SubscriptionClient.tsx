@@ -17,6 +17,8 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
+import { Card } from '@/components/ui/Card'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 import { AddPhoneDialog } from '@/components/AddPhoneDialog'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { SubscriptionStatus } from '@vesta/shared/types'
@@ -127,219 +129,220 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
   const canUnsubscribe = isProUser && Boolean(user.phone)
 
   return (
-    <PageContainer>
+    <PageContainer width="canvas">
       <PageHeader
         title={isProUser ? t('subscription.titlePro') : t('subscription.title')}
         subtitle={isProUser ? t('subscription.subtitlePro') : t('subscription.unlockTagline')}
       />
 
-      {/* ── Current Plan + Upgrade Cards ── */}
-      <div className={`flex flex-col gap-5 ${isProUser ? "" : "lg:grid lg:grid-cols-2"}`}>
-        {/* ── Current Plan Card ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.38, delay: 0.05 }}
-        >
-          <div className="surface-wash rounded-3xl border border-[var(--color-border)] shadow-soft p-6">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-[var(--color-text-muted)]">
-                  {t('subscription.currentPlan')}
-                </p>
-                <p className="text-lg font-bold text-[var(--color-text-primary)]">
-                  {tier === 'FREE' ? t('subscription.vestaFree') : t('subscription.vestaPro')}
-                </p>
-                {trial === 'active' && hoursLeft !== null && (
-                  <p className="text-xs text-[var(--color-gold-ink)] font-medium">
-                    {t('subscription.trialHoursLeft', { hours: hoursLeft })}
-                  </p>
-                )}
-                {trial === 'expired' && (
-                  <p className="flex items-center gap-1 text-xs text-[var(--color-error)] font-semibold">
-                    <AlertCircle size={12} aria-hidden="true" />
-                    {t('subscription.trialExpiredNote')}
-                  </p>
-                )}
-                {tier === 'LAPSED' && (
-                  <p className="text-xs text-[var(--color-gold-ink)] font-semibold">
-                    {t('subscription.planLapsedNote')}
-                  </p>
-                )}
-              </div>
-
-              {tier === 'PRO' ? (
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-bg-card))] text-[var(--color-text-primary)] text-xs font-bold">
-                  <Crown size={12} aria-hidden="true" /> <span className="uppercase">{t('subscription.pro')}</span>
-                </span>
-              ) : tier === 'LAPSED' ? (
-                <span className="px-3 py-1.5 rounded-full bg-[var(--color-bg-peach)] border border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] text-[var(--color-gold-ink)] text-xs font-semibold">
-                  {t('subscription.planLapsed')}
-                </span>
-              ) : (
-                <span className="px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-muted)] text-xs font-semibold">
-                  <span className="uppercase">{t('subscription.free')}</span>
-                </span>
-              )}
-            </div>
-
-            <div className="mt-4 space-y-1.5">
-              {isProUser ? (
-                PRO_FEATURE_KEYS.map(({ icon: Icon, labelKey }) => (
-                  <div
-                    key={labelKey}
-                    className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
-                  >
-                    <Check aria-hidden="true" size={14} className="text-[var(--goal-accent)] shrink-0" />
-                    {t(labelKey)}
-                  </div>
-                ))
-              ) : (
-                FREE_FEATURE_KEYS.map(key => (
-                  <div
-                    key={key}
-                    className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
-                  >
-                    <Check aria-hidden="true" size={14} className="text-[var(--color-text-muted)] shrink-0" />
-                    {t(key)}
-                  </div>
-                ))
-              )}
-            </div>
-
-            {canUnsubscribe && (
-              <div className="mt-5">
-                <Button variant="outline" fullWidth onClick={() => { setUnsubResult(null); setConfirmOpen(true) }}>
-                  {t('subscription.unsubscribeButton')}
-                </Button>
-              </div>
-            )}
-            <div aria-live="polite" aria-atomic="true">
-              {unsubResult && (
-                <p
-                  className={`mt-3 text-sm font-medium ${unsubResult === 'success' ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-error)]'}`}
-                >
-                  {unsubResult === 'success'
-                    ? t('subscription.unsubscribeSuccess')
-                    : unsubResult === 'adminOverride'
-                    ? t('subscription.unsubscribeAdminOverride')
-                    : unsubResult === 'noPhone'
-                    ? t('subscription.unsubscribeNoPhone')
-                    : t('subscription.unsubscribeError')}
-                </p>
-              )}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* ── Pro Plan Upgrade Card ── */}
-        {!isProUser && (
+      {/* From 2xl the plans and the Free vs Pro table sit side by side. */}
+      <div className={`flex flex-col gap-5 2xl:grid 2xl:items-start 2xl:gap-6 ${isProUser ? '2xl:grid-cols-2' : '2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'}`}>
+        {/* ── Current Plan + Upgrade Cards ── */}
+        <div className={`flex flex-col gap-5 ${isProUser ? "" : "lg:grid lg:grid-cols-2"}`}>
+          {/* ── Current Plan Card ── */}
           <motion.div
-            className="order-first md:order-none"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
+            transition={{ duration: 0.38, delay: 0.05 }}
           >
-            <div className="relative rounded-3xl overflow-hidden shadow-soft h-full surface-wash border border-[color-mix(in_srgb,var(--color-accent)_45%,var(--color-border))]">
-              <div className="relative p-6 space-y-5">
-                <div className="flex items-center gap-2.5">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-bg-card))] text-[var(--color-text-primary)] text-xs font-bold">
+            <Card tone="panel" padding="lg" className="h-full">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-[var(--color-text-muted)]">
+                    {t('subscription.currentPlan')}
+                  </p>
+                  <p className="text-lg font-bold text-[var(--color-text-primary)]">
+                    {tier === 'FREE' ? t('subscription.vestaFree') : t('subscription.vestaPro')}
+                  </p>
+                  {trial === 'active' && hoursLeft !== null && (
+                    <p className="text-xs text-[var(--color-gold-ink)] font-medium">
+                      {t('subscription.trialHoursLeft', { hours: hoursLeft })}
+                    </p>
+                  )}
+                  {trial === 'expired' && (
+                    <p className="flex items-center gap-1 text-xs text-[var(--color-error)] font-semibold">
+                      <AlertCircle size={12} aria-hidden="true" />
+                      {t('subscription.trialExpiredNote')}
+                    </p>
+                  )}
+                  {tier === 'LAPSED' && (
+                    <p className="text-xs text-[var(--color-gold-ink)] font-semibold">
+                      {t('subscription.planLapsedNote')}
+                    </p>
+                  )}
+                </div>
+
+                {tier === 'PRO' ? (
+                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-tint-peach text-accent-peach text-xs font-bold">
                     <Crown size={12} aria-hidden="true" /> <span className="uppercase">{t('subscription.pro')}</span>
                   </span>
-                  <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{t('subscription.title')}</h2>
-                </div>
+                ) : tier === 'LAPSED' ? (
+                  <span className="px-3 py-1.5 rounded-full bg-tint-peach text-accent-peach text-xs font-semibold">
+                    {t('subscription.planLapsed')}
+                  </span>
+                ) : (
+                  <span className="px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] text-xs font-semibold">
+                    <span className="uppercase">{t('subscription.free')}</span>
+                  </span>
+                )}
+              </div>
 
-                <div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl font-extrabold text-[var(--color-text-primary)]">৳5</span>
-                    <span className="text-[var(--color-text-secondary)] text-sm">/{t('subscription.dayUnit')}</span>
-                  </div>
-                  <p className="text-[var(--color-text-muted)] text-xs mt-0.5">
-                    {t('subscription.billedViaBDApps')}
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  {PRO_FEATURE_KEYS.map(({ icon: Icon, labelKey }) => (
+              <div className="mt-4 space-y-1.5">
+                {isProUser ? (
+                  PRO_FEATURE_KEYS.map(({ icon: Icon, labelKey }) => (
                     <div
                       key={labelKey}
-                      className="flex items-center gap-2.5 text-[var(--color-text-secondary)] text-sm"
+                      className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
                     >
-                      <div className="w-5 h-5 rounded-full bg-[var(--color-accent)]/25 flex items-center justify-center shrink-0">
-                        <Check size={12} className="text-[var(--color-gold-ink)]" aria-hidden="true" />
-                      </div>
+                      <Check aria-hidden="true" size={14} className="text-accent-mint shrink-0" />
                       {t(labelKey)}
                     </div>
-                  ))}
+                  ))
+                ) : (
+                  FREE_FEATURE_KEYS.map(key => (
+                    <div
+                      key={key}
+                      className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
+                    >
+                      <Check aria-hidden="true" size={14} className="text-[var(--color-text-muted)] shrink-0" />
+                      {t(key)}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {canUnsubscribe && (
+                <div className="mt-5">
+                  <Button variant="outline" fullWidth onClick={() => { setUnsubResult(null); setConfirmOpen(true) }}>
+                    {t('subscription.unsubscribeButton')}
+                  </Button>
                 </div>
-
-                <button
-                  onClick={() => setAddPhoneOpen(true)}
-                  className={`w-full bg-[var(--color-action)] text-[var(--color-on-action)] font-bold rounded-full text-base hover:opacity-90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-action)] ${
-                    trial === 'expired' ? 'py-4 text-lg motion-safe:animate-pulse' : 'py-3.5'
-                  }`}
-                >
-                  {t('subscription.upgradeButton')}
-                </button>
+              )}
+              <div aria-live="polite" aria-atomic="true">
+                {unsubResult && (
+                  <p
+                    className={`mt-3 text-sm font-medium ${unsubResult === 'success' ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-error)]'}`}
+                  >
+                    {unsubResult === 'success'
+                      ? t('subscription.unsubscribeSuccess')
+                      : unsubResult === 'adminOverride'
+                      ? t('subscription.unsubscribeAdminOverride')
+                      : unsubResult === 'noPhone'
+                      ? t('subscription.unsubscribeNoPhone')
+                      : t('subscription.unsubscribeError')}
+                  </p>
+                )}
               </div>
-            </div>
+            </Card>
           </motion.div>
-        )}
-      </div>
 
-      {/* ── Comparison Table ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.42, delay: 0.15 }}
-      >
-        <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
-          {t('subscription.freeVsPro')}
-        </h2>
-
-        <div className="rounded-3xl overflow-hidden bg-[var(--color-bg-card)] shadow-soft divide-y divide-[var(--color-border)]">
-          <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3 surface-peach">
-            <div className="px-3 sm:px-4 py-3 text-xs font-semibold text-[var(--color-text-muted)] col-span-1">
-              {t('subscription.featureHeader')}
-            </div>
-            <div className="px-1 sm:px-2 py-3 text-center">
-              <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-                {t('subscription.free')}
-              </span>
-            </div>
-            <div className="px-1 sm:px-2 py-3 text-center">
-              <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-bg-card))] text-[var(--color-text-primary)]">
-                <Crown size={10} aria-hidden="true" /> {t('subscription.pro')}
-              </span>
-            </div>
-          </div>
-
-          {COMPARISON_FEATURE_KEYS.map(({ key, labelKey, free, pro }) => (
-            <div
-              key={key}
-              className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3"
+          {/* ── Pro Plan Upgrade Card ── */}
+          {!isProUser && (
+            <motion.div
+              className="order-first md:order-none"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
             >
-              <div className="px-3 sm:px-4 py-3 text-sm md:text-base text-[var(--color-text-secondary)] col-span-1">
-                {t(labelKey)}
+              <Card tone="peach" padding="lg" className="h-full">
+                <div className="space-y-5">
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--color-bg-card)] text-accent-peach text-xs font-bold">
+                      <Crown size={12} aria-hidden="true" /> <span className="uppercase">{t('subscription.pro')}</span>
+                    </span>
+                    <h2 className="text-xl font-bold text-accent-peach">{t('subscription.title')}</h2>
+                  </div>
+
+                  <div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-3xl font-extrabold text-[var(--color-text-primary)]">৳5</span>
+                      <span className="text-[var(--color-text-secondary)] text-sm">/{t('subscription.dayUnit')}</span>
+                    </div>
+                    <p className="text-[var(--color-text-muted)] text-xs mt-0.5">
+                      {t('subscription.billedViaBDApps')}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {PRO_FEATURE_KEYS.map(({ icon: Icon, labelKey }) => (
+                      <div
+                        key={labelKey}
+                        className="flex items-center gap-2.5 text-[var(--color-text-secondary)] text-sm"
+                      >
+                        <div className="w-5 h-5 rounded-full bg-[var(--color-bg-card)] flex items-center justify-center shrink-0">
+                          <Check size={12} className="text-accent-peach" aria-hidden="true" />
+                        </div>
+                        {t(labelKey)}
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => setAddPhoneOpen(true)}
+                    className={`w-full bg-[var(--color-action)] text-[var(--color-on-action)] font-bold rounded-full text-base hover:opacity-90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-action)] ${
+                      trial === 'expired' ? 'py-4 text-lg' : 'py-3.5'
+                    }`}
+                  >
+                    {t('subscription.upgradeButton')}
+                  </button>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+        </div>
+
+        {/* ── Comparison Table ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.42, delay: 0.15 }}
+        >
+          <SectionHeader title={t('subscription.freeVsPro')} />
+
+          <Card tone="panel" className="p-0 overflow-hidden divide-y divide-[var(--color-border)]">
+            <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3 bg-tint-peach">
+              <div className="px-4 sm:px-5 py-3 text-xs font-semibold text-[var(--color-text-secondary)] col-span-1">
+                {t('subscription.featureHeader')}
               </div>
-              <div className="px-1 sm:px-2 py-3 flex justify-center items-center">
-                {free ? (
-                  <Check size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
-                ) : (
-                  <X size={16} className="text-[var(--color-border)]" aria-hidden="true" />
-                )}
+              <div className="px-1 sm:px-2 py-3 text-center">
+                <span className="text-xs font-semibold text-[var(--color-text-muted)]">
+                  {t('subscription.free')}
+                </span>
               </div>
-              <div className="px-1 sm:px-2 py-3 flex justify-center items-center">
-                {pro ? (
-                  <Check size={16} strokeWidth={2.5} className="text-[var(--color-primary)]" aria-hidden="true" />
-                ) : (
-                  <X size={16} className="text-[var(--color-border)]" aria-hidden="true" />
-                )}
+              <div className="px-1 sm:px-2 py-3 text-center">
+                <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-[var(--color-bg-card)] text-accent-peach">
+                  <Crown size={10} aria-hidden="true" /> {t('subscription.pro')}
+                </span>
               </div>
             </div>
-          ))}
-        </div>
-      </motion.div>
+
+            {COMPARISON_FEATURE_KEYS.map(({ key, labelKey, free, pro }) => (
+              <div
+                key={key}
+                className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3"
+              >
+                <div className="px-4 sm:px-5 py-3 text-sm md:text-base text-[var(--color-text-secondary)] col-span-1">
+                  {t(labelKey)}
+                </div>
+                <div className="px-1 sm:px-2 py-3 flex justify-center items-center">
+                  {free ? (
+                    <Check size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
+                  ) : (
+                    <X size={16} className="text-[var(--color-border)]" aria-hidden="true" />
+                  )}
+                </div>
+                <div className="px-1 sm:px-2 py-3 flex justify-center items-center">
+                  {pro ? (
+                    <Check size={16} strokeWidth={2.5} className="text-accent-mint" aria-hidden="true" />
+                  ) : (
+                    <X size={16} className="text-[var(--color-border)]" aria-hidden="true" />
+                  )}
+                </div>
+              </div>
+            ))}
+          </Card>
+        </motion.div>
+      </div>
 
       {/* ── Footer note ── */}
       {!isProUser && (

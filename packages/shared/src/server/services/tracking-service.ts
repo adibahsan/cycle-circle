@@ -9,6 +9,9 @@ import {
 import { isPregnancy, isMenopause } from '../../utils/goal'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
 import { TIER2_MIN_CYCLES } from '../prediction-calc'
+import { getCurrentPhase, MS_PER_DAY } from '../../utils/cycle-utils'
+import type { CyclePhase } from '../../types/types'
+import { loadPhasePattern, loadRecentSymptomPattern, type PhasePatternEntry } from './insights-service'
 
 // ── Ownership helpers ──────────────────────────────────────────────────────────
 
@@ -379,7 +382,7 @@ export async function getEngagementSummary(
   for (let i = 1; i < allPeriodLogs.length; i++) {
     const gap = Math.round(
       (allPeriodLogs[i].startDate.getTime() - allPeriodLogs[i - 1].startDate.getTime()) /
-        (1000 * 60 * 60 * 24),
+        MS_PER_DAY,
     )
     if (gap > 0 && gap < 90) cyclesLogged++
   }
@@ -456,20 +459,30 @@ export async function getProfilesForReminders(userId?: string) {
   })
 }
 
-// ── Phase calculation ──────────────────────────────────────────────────────────
+// ── Current cycle position ─────────────────────────────────────────────────────
 
-type CyclePhase = 'menstrual' | 'follicular' | 'ovulatory' | 'luteal'
-
-function calculatePhase(
-  currentCycleDay: number,
-  periodLength: number,
-  cycleLength: number,
-  ovulationDay: number,
-): CyclePhase {
-  if (currentCycleDay <= periodLength) return 'menstrual'
-  if (currentCycleDay >= ovulationDay - 1 && currentCycleDay <= ovulationDay + 1) return 'ovulatory'
-  if (currentCycleDay < ovulationDay - 1) return 'follicular'
-  return 'luteal'
+/**
+ * Cycle day and phase the dashboard shows. The phase comes from the shared
+ * `getCurrentPhase`, the same classifier the stepper's day ranges and the
+ * Phase pattern ranking use, so all three always name the same phase.
+ * The cycle day is capped at the cycle length (a late period stays on the last day).
+ */
+export function dashboardCycleState({
+  lastStartMs,
+  todayMs,
+  periodLength,
+  cycleLength,
+}: {
+  /** Start of the latest period, at day start. */
+  lastStartMs: number
+  /** Today, at day start. */
+  todayMs: number
+  periodLength: number
+  cycleLength: number
+}): { cycleDay: number; phase: CyclePhase } {
+  const rawCycleDay = Math.max(1, Math.round((todayMs - lastStartMs) / MS_PER_DAY) + 1)
+  const cycleDay = Math.min(rawCycleDay, cycleLength)
+  return { cycleDay, phase: getCurrentPhase(cycleDay, periodLength, cycleLength) }
 }
 
 // ── Dashboard ──────────────────────────────────────────────────────────────────
@@ -495,36 +508,24 @@ export async function getDashboardData(profileId: string, userId: string) {
   let currentPhase: CyclePhase = 'follicular'
   let countdownToNextPeriod: number | null = null
 
-  const estimatedOvulationDayInCycle = profile.cycleLength - 14
-
   if (lastPeriod) {
     const lastStart = new Date(lastPeriod.startDate)
     lastStart.setHours(0, 0, 0, 0)
-    const diffMs = today.getTime() - lastStart.getTime()
-    const rawCycleDay = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1)
-    currentCycleDay = Math.min(rawCycleDay, profile.cycleLength)
-
-    let ovulationDayInCycle = estimatedOvulationDayInCycle
-    if (prediction?.ovulationDay) {
-      const ovDate = new Date(prediction.ovulationDay)
-      ovDate.setHours(0, 0, 0, 0)
-      ovulationDayInCycle =
-        Math.floor((ovDate.getTime() - lastStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
-    }
-
-    currentPhase = calculatePhase(
-      currentCycleDay,
-      profile.periodLength,
-      profile.cycleLength,
-      ovulationDayInCycle,
-    )
+    const state = dashboardCycleState({
+      lastStartMs: lastStart.getTime(),
+      todayMs: today.getTime(),
+      periodLength: profile.periodLength,
+      cycleLength: profile.cycleLength,
+    })
+    currentCycleDay = state.cycleDay
+    currentPhase = state.phase
   }
 
   if (prediction?.nextPeriodStart) {
     const nextStart = new Date(prediction.nextPeriodStart)
     nextStart.setHours(0, 0, 0, 0)
     countdownToNextPeriod = Math.ceil(
-      (nextStart.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      (nextStart.getTime() - today.getTime()) / MS_PER_DAY,
     )
   } else if (lastPeriod) {
     const lastStart = new Date(lastPeriod.startDate)
@@ -532,7 +533,7 @@ export async function getDashboardData(profileId: string, userId: string) {
     const nextEstimated = new Date(lastStart)
     nextEstimated.setDate(nextEstimated.getDate() + profile.cycleLength)
     countdownToNextPeriod = Math.ceil(
-      (nextEstimated.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      (nextEstimated.getTime() - today.getTime()) / MS_PER_DAY,
     )
   }
 
@@ -542,7 +543,7 @@ export async function getDashboardData(profileId: string, userId: string) {
         duration:
           Math.floor(
             (new Date(lastPeriod.endDate).getTime() - new Date(lastPeriod.startDate).getTime()) /
-              (1000 * 60 * 60 * 24),
+              MS_PER_DAY,
           ) + 1,
         flowIntensity: lastPeriod.flowIntensity,
       }
@@ -558,6 +559,14 @@ export async function getDashboardData(profileId: string, userId: string) {
 
   const pregnant = mode === 'pregnancy'
 
+  // Phase pattern (#75): only meaningful when a current phase is shown.
+  const phasePattern: PhasePatternEntry[] =
+    mode === 'standard' && lastPeriod
+      ? await loadPhasePattern(profileId, profile.periodLength, currentPhase)
+      : []
+  // Symptom pattern (#66 S1): menopause has no phases, so it ranks a recent window instead.
+  const symptomPattern: PhasePatternEntry[] = mode === 'menopause' ? await loadRecentSymptomPattern(profileId) : []
+
   return {
     mode,
     currentCycleDay,
@@ -566,6 +575,8 @@ export async function getDashboardData(profileId: string, userId: string) {
     lastPeriod: lastPeriodSummary,
     prediction: pregnant ? null : prediction,
     lastSymptomLogDate,
+    phasePattern,
+    symptomPattern,
   }
 }
 

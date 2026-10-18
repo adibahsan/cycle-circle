@@ -16,6 +16,7 @@ function phaseColorFor(name: string): string {
 import '@vesta/shared/utils/i18n'
 import { getArticleBody } from '@/app/actions/content-actions'
 import { PageContainer } from '@/components/ui/PageContainer'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { PhaseIcon } from '@/components/ui/PhaseIcon'
 
@@ -137,8 +138,9 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
   }
 
   if (selectedArticle) {
+    const moreArticles = displayedArticles.filter(a => a.id !== selectedArticle.id).slice(0, 5)
     return (
-      <PageContainer>
+      <PageContainer width="canvas">
         <PageHeader title={getTitle(selectedArticle)} />
         <button
           onClick={() => setSelectedArticle(null)}
@@ -148,75 +150,100 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
           {t('content.backToArticles')}
         </button>
 
-        <article className="glass rounded-2xl p-6">
-          {selectedArticle.category && (
-            <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)] mb-3">
-              {selectedArticle.category.name}
-            </span>
-          )}
+        {/* From xl the article keeps a reading measure and the spare width holds what to read next. */}
+        <div className="flex flex-col gap-5 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start 2xl:grid-cols-[minmax(0,1fr)_24rem]">
+          <article className="glass rounded-2xl p-6 sm:p-8">
+            {selectedArticle.category && (
+              <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)] mb-3">
+                {selectedArticle.category.name}
+              </span>
+            )}
 
-          {selectedArticle.cyclePhases.length > 0 && (
-            <div className="flex gap-1.5 mb-4">
-              {selectedArticle.cyclePhases.map(phase => (
-                <span
-                  key={phase}
-                  className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                  style={{ backgroundColor: phaseColorFor(phase), color: `var(--color-on-${phase.toLowerCase()})` }}
-                >
-                  {t(`dashboard.${phase.toLowerCase()}`)}
-                </span>
-              ))}
-            </div>
-          )}
+            {selectedArticle.cyclePhases.length > 0 && (
+              <div className="flex gap-1.5 mb-4">
+                {selectedArticle.cyclePhases.map(phase => (
+                  <span
+                    key={phase}
+                    className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                    style={{ backgroundColor: phaseColorFor(phase), color: `var(--color-on-${phase.toLowerCase()})` }}
+                  >
+                    {t(`dashboard.${phase.toLowerCase()}`)}
+                  </span>
+                ))}
+              </div>
+            )}
 
-          {/* Locale fallback banner — BN user viewing EN-only article */}
-          {isBodyFallback && (
-            <div
-              role="note"
-              className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] text-xs"
-            >
-              <Info size={13} aria-hidden="true" className="shrink-0" />
-              <span>{t('content.showingInEnglish')}</span>
-            </div>
-          )}
+            {/* Locale fallback banner — BN user viewing EN-only article */}
+            {isBodyFallback && (
+              <div
+                role="note"
+                className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] text-xs"
+              >
+                <Info size={13} aria-hidden="true" className="shrink-0" />
+                <span>{t('content.showingInEnglish')}</span>
+              </div>
+            )}
 
-          {/* Body loading / error / content */}
-          {isBodyLoading && (
-            <div
-              className="flex items-center justify-center py-12"
-              aria-live="polite"
-              aria-label={t('common.loading')}
-            >
-              <Loader2
-                size={24}
-                className="text-[var(--goal-accent)] animate-spin"
-                aria-hidden="true"
+            {/* Body loading / error / content */}
+            {isBodyLoading && (
+              <div
+                className="flex items-center justify-center py-12"
+                aria-live="polite"
+                aria-label={t('common.loading')}
+              >
+                <Loader2
+                  size={24}
+                  className="text-[var(--goal-accent)] animate-spin"
+                  aria-hidden="true"
+                />
+              </div>
+            )}
+
+            {!isBodyLoading && bodyError && (
+              <p
+                className="text-sm text-[var(--color-text-muted)] py-8 text-center"
+                aria-live="polite"
+              >
+                {t('common.errorLoadingContent')}
+              </p>
+            )}
+
+            {!isBodyLoading && !bodyError && resolvedBodyHtml && (
+              <div
+                className="prose prose-sm max-w-[70ch] text-[var(--color-text-secondary)] [&_h2]:text-[var(--color-text-primary)] [&_h3]:text-[var(--color-text-primary)] [&_strong]:text-[var(--color-text-primary)] [&_a]:text-[var(--goal-accent)]"
+                dangerouslySetInnerHTML={{ __html: resolvedBodyHtml }}
               />
-            </div>
-          )}
+            )}
+          </article>
 
-          {!isBodyLoading && bodyError && (
-            <p
-              className="text-sm text-[var(--color-text-muted)] py-8 text-center"
-              aria-live="polite"
-            >
-              {t('common.errorLoadingContent')}
-            </p>
+          {moreArticles.length > 0 && (
+            <aside aria-labelledby="more-articles-title" className="xl:sticky xl:top-4">
+              <SectionHeader as="h2" id="more-articles-title" title={t('content.moreArticles')} />
+              <ul className="flex flex-col gap-2">
+                {moreArticles.map(article => (
+                  <li key={article.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenArticle(article)}
+                      className="w-full text-left rounded-2xl bg-[var(--color-bg-card)] p-4 hover:shadow-soft transition-shadow duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                    >
+                      <span className="block text-sm font-bold text-[var(--color-text-primary)] leading-snug">{getTitle(article)}</span>
+                      {getExcerpt(article) && (
+                        <span className="mt-1 block text-xs text-[var(--color-text-muted)] line-clamp-2">{getExcerpt(article)}</span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </aside>
           )}
-
-          {!isBodyLoading && !bodyError && resolvedBodyHtml && (
-            <div
-              className="prose prose-sm max-w-none text-[var(--color-text-secondary)] [&_h2]:text-[var(--color-text-primary)] [&_h3]:text-[var(--color-text-primary)] [&_strong]:text-[var(--color-text-primary)] [&_a]:text-[var(--goal-accent)]"
-              dangerouslySetInnerHTML={{ __html: resolvedBodyHtml }}
-            />
-          )}
-        </article>
+        </div>
       </PageContainer>
     )
   }
 
   return (
-    <PageContainer>
+    <PageContainer width="canvas">
       <PageHeader title={t('content.title')} subtitle={t('content.subtitle')} />
 
       {/* Phase filter tabs */}
@@ -231,7 +258,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
               <button
                 key={tab.id}
                 onClick={() => handleFilterChange(tab.id)}
-                className="flex-none flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors duration-200 active:scale-95 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                className="flex-none flex items-center gap-1.5 min-h-11 px-4 rounded-full text-sm font-semibold border transition-colors duration-200 active:scale-95 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                 style={
                   isActive
                     ? { backgroundColor: accent, borderColor: accent, color: onAccent }
@@ -284,7 +311,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2 2xl:grid-cols-3">
           {displayedArticles.map(article => {
             const isForCurrentPhase = isSurfacing && article.cyclePhases.includes(currentPhase!)
             // EN chip: shown when a BN user's article falls back to English for its

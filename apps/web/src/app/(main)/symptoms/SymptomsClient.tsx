@@ -21,60 +21,20 @@ import { bn } from 'date-fns/locale/bn';
 import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { useLanguage } from '@/lib/use-language';
-import { SYMPTOMS_DATA } from '@/lib/symptoms-data';
+import { SYMPTOMS_DATA, toDbCategory } from '@/lib/symptoms-data';
+import { SymptomChip } from '@/components/symptoms/SymptomChip';
+import { SymptomCategoryTabs, CATEGORIES, CATEGORY_TINTS } from '@/components/symptoms/SymptomCategoryTabs';
+import { TINT_CLASSES } from '@/components/ui/tints';
+import { cn } from '@/lib/cn';
+import { SaveErrorStatus } from '@/components/symptoms/SaveErrorStatus';
 import { ALL_GOOD_SYMPTOM_ID } from '@vesta/shared/utils/symptoms';
 import { toggleSymptom, markAllGoodToday, saveSymptoms } from '@/app/actions/tracking-actions';
 import { useToast } from '@/components/ui/Toast';
 import type { Profile, PrismaSymptomLog, SymptomCategory } from '@vesta/shared/types';
 import '@vesta/shared/utils/i18n';
+import { TODAY_GLOW } from '@/lib/calendar-day-style';
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-export const CATEGORIES: { key: SymptomCategory; labelKey: string }[] = [
-  { key: 'physical', labelKey: 'symptoms.physical' },
-  { key: 'mood', labelKey: 'symptoms.mood' },
-  { key: 'discharge', labelKey: 'symptoms.discharge' },
-  { key: 'lifestyle', labelKey: 'symptoms.lifestyle' },
-];
-
-export const CATEGORY_COLORS: Record<SymptomCategory, { bg: string; border: string; text: string; ring: string; on: string }> = {
-  physical: {
-    bg: 'color-mix(in srgb, var(--color-primary) 12%, transparent)',
-    border: 'color-mix(in srgb, var(--color-primary) 35%, transparent)',
-    text: 'var(--color-primary)',
-    ring: 'color-mix(in srgb, var(--color-primary) 40%, transparent)',
-    on: 'var(--color-on-accent)',
-  },
-  mood: {
-    bg: 'color-mix(in srgb, var(--color-secondary) 12%, transparent)',
-    border: 'color-mix(in srgb, var(--color-secondary) 35%, transparent)',
-    text: 'var(--color-secondary)',
-    ring: 'color-mix(in srgb, var(--color-secondary) 40%, transparent)',
-    on: 'var(--color-on-luteal)',
-  },
-  discharge: {
-    bg: 'color-mix(in srgb, var(--color-coral) 12%, transparent)',
-    border: 'color-mix(in srgb, var(--color-coral) 35%, transparent)',
-    text: 'var(--color-coral)',
-    ring: 'color-mix(in srgb, var(--color-coral) 40%, transparent)',
-    on: 'var(--color-on-fertile)',
-  },
-  lifestyle: {
-    bg: 'color-mix(in srgb, var(--color-accent) 12%, transparent)',
-    border: 'color-mix(in srgb, var(--color-accent) 35%, transparent)',
-    text: 'var(--color-accent)',
-    ring: 'color-mix(in srgb, var(--color-accent) 40%, transparent)',
-    on: 'var(--color-on-ovulation)',
-  },
-};
-
-export function toDbCategory(
-  category: SymptomCategory
-): 'PHYSICAL' | 'MOOD' | 'DISCHARGE' | 'LIFESTYLE' {
-  return category.toUpperCase() as 'PHYSICAL' | 'MOOD' | 'DISCHARGE' | 'LIFESTYLE';
-}
 
 // ─── Mini Calendar ──────────────────────────────────────────────────────────
 
@@ -105,7 +65,7 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
   const today = new Date();
 
   return (
-    <Card padding="md">
+    <Card tone="panel" padding="md">
       {/* Month nav */}
       <div className="flex items-center justify-between mb-4">
         <button
@@ -131,7 +91,7 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
       <div className="grid grid-cols-7 mb-2">
         {DOW.map((d) => (
           <div key={d} className="flex items-center justify-center">
-            <span className="text-[11px] md:text-xs font-bold text-[var(--color-text-muted)]">
+            <span className="text-xs font-bold text-[var(--color-text-muted)]">
               {d}
             </span>
           </div>
@@ -149,9 +109,10 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
             <button
               key={format(date, 'yyyy-MM-dd')}
               onClick={() => onDateSelect(date)}
+              aria-current={isToday ? 'date' : undefined}
               className={`aspect-square flex items-center justify-center rounded-xl text-sm md:text-base font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 ${
                 !inMonth ? 'text-[var(--color-text-muted)] opacity-40' : ''
-              }`}
+              }${isToday ? ' relative z-[1]' : ''}`}
               style={{
                 backgroundColor: isSelected
                   ? 'var(--color-primary)'
@@ -166,6 +127,7 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
                       ? 'var(--color-text-primary)'
                       : 'var(--color-text-muted)',
                 fontWeight: isToday || isSelected ? 700 : 500,
+                boxShadow: isToday ? TODAY_GLOW : undefined,
               }}
             >
               {format(date, 'd')}
@@ -174,56 +136,6 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
         })}
       </div>
     </Card>
-  );
-});
-
-// ─── Symptom Chip ───────────────────────────────────────────────────────────
-
-interface SymptomChipProps {
-  id: string;
-  icon: string;
-  name: string;
-  selected: boolean;
-  category: SymptomCategory;
-  onToggle: (id: string) => void;
-}
-
-export const SymptomChip = memo(function SymptomChip({ id, icon, name, selected, category, onToggle }: SymptomChipProps) {
-  return (
-    <motion.button
-      onClick={() => onToggle(id)}
-      whileTap={{ scale: 0.92 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-      className="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border transition-colors duration-200 w-full h-full min-h-[88px] relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
-      style={{
-        background: selected ? 'color-mix(in srgb, var(--goal-accent) 14%, transparent)' : 'var(--color-bg-card)',
-        borderColor: selected ? 'var(--goal-accent)' : 'var(--color-border)',
-        boxShadow: selected ? '0 0 0 2px color-mix(in srgb, var(--goal-accent) 40%, transparent)' : 'none',
-      }}
-      aria-pressed={selected}
-      aria-label={name}
-    >
-      <span className="text-2xl leading-none">{icon}</span>
-      <span
-        className="text-[11px] font-semibold text-center leading-tight"
-        style={{ color: selected ? 'var(--goal-accent)' : 'var(--color-text-secondary)' }}
-      >
-        {name}
-      </span>
-      {selected && (
-        <motion.span
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          exit={{ scale: 0 }}
-          className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center"
-          style={{ background: 'var(--goal-accent)' }}
-        >
-          <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
-            <path d="M1.5 4l2 2 3-3" stroke="var(--color-on-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </motion.span>
-      )}
-    </motion.button>
   );
 });
 
@@ -250,6 +162,7 @@ export function SymptomsClient({
   const dateLocale = language === 'bn' ? bn : undefined;
   const [activeCategory, setActiveCategory] = useState<SymptomCategory>('physical');
   const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const toast = useToast();
 
   const selectedDate = useMemo(() => parseISO(date), [date]);
@@ -314,6 +227,7 @@ export function SymptomsClient({
   }, [router, activeProfileId]);
 
   const handleToggle = useCallback((symptomId: string) => {
+    setSaveFailed(false);
     setLocalSelected((prev) => {
       const next = new Set(prev);
       // Selecting a real symptom clears the "all good" state (mutually exclusive).
@@ -327,10 +241,10 @@ export function SymptomsClient({
     });
   }, []);
 
-  // "All good / no issues" — immediate toggle (owns the sentinel for the day).
   async function handleToggleAllGood() {
     if (saving) return;
     setSaving(true);
+    setSaveFailed(false);
     try {
       if (isAllGood) {
         // Clear the existing sentinel → nothing logged for the day.
@@ -351,14 +265,19 @@ export function SymptomsClient({
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
       }
+    } catch (err) {
+      console.error('Failed to update all-good check-in:', err);
+      setSaveFailed(true);
     } finally {
       setSaving(false);
     }
   }
 
   async function handleSave() {
+    if (saving) return;
     const savedCount = added.length;
     setSaving(true);
+    setSaveFailed(false);
     try {
       const addedPayload = added.flatMap((id) => {
         const symptom = SYMPTOMS_DATA.find((s) => s.id === id);
@@ -387,15 +306,17 @@ export function SymptomsClient({
       if (savedCount > 0) {
         toast.celebrate('symptom', savedCount);
       }
+    } catch (err) {
+      // Keep the selection so she can retry; say so in the live region.
+      console.error('Failed to save symptoms:', err);
+      setSaveFailed(true);
     } finally {
       setSaving(false);
     }
   }
 
-  const activeTabIndex = CATEGORIES.findIndex((c) => c.key === activeCategory);
-
   return (
-    <PageContainer className="pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+5rem)]">
+    <PageContainer width="canvas" className="pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+5rem)]">
       <PageHeader
         title={t('symptoms.title')}
         subtitle={format(selectedDate, 'EEEE, MMMM d', { locale: dateLocale })}
@@ -404,7 +325,7 @@ export function SymptomsClient({
       <div className="flex flex-col xl:flex-row gap-5">
 
         {/* ── Left: month calendar + summary ── */}
-        <div className="xl:w-[440px] xl:shrink-0 xl:sticky xl:top-4 xl:self-start flex flex-col gap-3">
+        <div className="xl:w-[440px] 2xl:w-[480px] xl:shrink-0 xl:sticky xl:top-4 xl:self-start flex flex-col gap-3">
           {/* Full month calendar */}
           <MiniCalendar
             selectedDate={selectedDate}
@@ -413,7 +334,7 @@ export function SymptomsClient({
 
           {/* Summary card (desktop) */}
           {totalSelected > 0 && (
-            <Card padding="sm">
+            <Card tone="panel" padding="sm">
               <div className="text-center">
                 <p className="text-sm font-medium text-[var(--color-text-secondary)]">
                   {totalSelected} {totalSelected === 1 ? t('symptoms.symptomLabel') : t('symptoms.symptomsLabel')}
@@ -425,8 +346,7 @@ export function SymptomsClient({
                     return (
                       <span
                         key={key}
-                        className="min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center leading-none"
-                        style={{ background: CATEGORY_COLORS[key].text, color: CATEGORY_COLORS[key].on }}
+                        className={cn('min-w-[20px] h-5 px-1.5 rounded-full text-xs tabular-nums font-bold flex items-center justify-center leading-none', TINT_CLASSES[CATEGORY_TINTS[key]].solid)}
                       >
                         {count}
                       </span>
@@ -441,112 +361,70 @@ export function SymptomsClient({
         {/* ── Right: category tabs + symptom grid + save ── */}
         <div className="flex-1 min-w-0 flex flex-col gap-4">
 
-          {/* All good / no issues — quick toggle for "nothing to report" days */}
-          <button
-            type="button"
-            onClick={handleToggleAllGood}
-            disabled={saving}
-            aria-pressed={isAllGood}
-            className={[
-              'w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold',
-              'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2',
-              'focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-60',
-              isAllGood
-                ? 'text-[var(--color-on-accent)]'
-                : 'border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:border-[var(--goal-accent)] hover:text-[var(--color-text-primary)]',
-            ].join(' ')}
-            style={
-              isAllGood
-                ? {
-                    background:
-                      'linear-gradient(135deg, var(--goal-accent, var(--color-primary)) 0%, color-mix(in srgb, var(--goal-accent, var(--color-primary)) 70%, var(--color-secondary)) 100%)',
-                  }
-                : undefined
-            }
+          {/* Category tabs + the active category's chips */}
+          <SymptomCategoryTabs
+            action={(
+              <button
+                type="button"
+                onClick={handleToggleAllGood}
+                disabled={saving}
+                aria-pressed={isAllGood}
+                className={cn(
+                  'w-full xl:w-auto xl:px-6 min-h-[44px] flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold',
+                  'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-mint disabled:opacity-60',
+                  isAllGood
+                    ? 'bg-tint-mint text-accent-mint border-accent-mint'
+                    : 'bg-[var(--color-bg-card)] border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
+                )}
+              >
+                <CheckCircle2 size={16} aria-hidden="true" />
+                {isAllGood ? t('symptoms.allGoodActive') : t('symptoms.allGood')}
+              </button>
+            )}
+            active={activeCategory}
+            onChange={setActiveCategory}
+            counts={{
+              physical: categoryCount('physical'),
+              mood: categoryCount('mood'),
+              discharge: categoryCount('discharge'),
+              lifestyle: categoryCount('lifestyle'),
+            }}
           >
-            <CheckCircle2 size={16} aria-hidden="true" />
-            {isAllGood ? t('symptoms.allGoodActive') : t('symptoms.allGood')}
-          </button>
-
-          {/* Category tabs */}
-          <div className="relative">
-            <div
-              role="tablist"
-              className="flex gap-1 rounded-2xl p-1"
-              style={{ background: 'var(--color-bg-secondary)' }}
-            >
+            {/* Symptom grid */}
+            <AnimatePresence mode="wait">
               <motion.div
-                className="absolute top-1 bottom-1 rounded-xl"
-                style={{ background: 'var(--color-bg-card)', boxShadow: '0 2px 8px color-mix(in srgb, var(--color-brand-navy) 8%, transparent)' }}
-                animate={{
-                  left: `calc(${activeTabIndex} * 25% + 4px)`,
-                  width: 'calc(25% - 8px)',
-                }}
-                transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-              />
+                key={activeCategory}
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -12 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                className="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 auto-rows-fr gap-2"
+              >
+                {categorySymptoms.map((symptom, i) => {
+                  const selected = isSymptomSelected(symptom.id);
+                  return (
+                    <motion.div
+                      key={symptom.id}
+                      className="h-full"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.03, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <SymptomChip
+                        id={symptom.id}
+                        icon={symptom.icon}
+                        name={getSymptomName(symptom)}
+                        selected={selected}
+                        onToggle={handleToggle}
+                      />
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            </AnimatePresence>
+          </SymptomCategoryTabs>
 
-              {CATEGORIES.map(({ key, labelKey }) => {
-                const isActive = activeCategory === key;
-                const count = categoryCount(key);
-                return (
-                  <button
-                    key={key}
-                    role="tab"
-                    aria-selected={isActive}
-                    onClick={() => setActiveCategory(key)}
-                    className="relative flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl text-xs font-semibold transition-colors duration-200 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
-                    style={{
-                      color: isActive ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
-                    }}
-                  >
-                    {t(labelKey)}
-                    {count > 0 && (
-                      <span
-                        className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full text-[11px] font-bold flex items-center justify-center leading-none"
-                        style={{ background: CATEGORY_COLORS[key].text, color: CATEGORY_COLORS[key].on }}
-                      >
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Symptom grid */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeCategory}
-              initial={{ opacity: 0, x: 12 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -12 }}
-              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2"
-            >
-              {categorySymptoms.map((symptom, i) => {
-                const selected = isSymptomSelected(symptom.id);
-                return (
-                  <motion.div
-                    key={symptom.id}
-                    className="h-full"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.03, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <SymptomChip
-                      id={symptom.id}
-                      icon={symptom.icon}
-                      name={getSymptomName(symptom)}
-                      selected={selected}
-                      category={symptom.category}
-                      onToggle={handleToggle}
-                    />
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          </AnimatePresence>
+          <SaveErrorStatus show={saveFailed} className="hidden xl:block" />
 
           {/* Inline save button (desktop) */}
           <AnimatePresence mode="wait">
@@ -560,21 +438,18 @@ export function SymptomsClient({
                 onClick={handleSave}
                 disabled={saving}
                 aria-label={t('symptoms.saveChanges', { count: changeCount })}
-                className="hidden xl:flex w-full rounded-2xl px-5 py-3.5 items-center justify-center gap-3 shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-70 transition-colors duration-200"
-                style={{
-                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                }}
+                className="hidden xl:flex w-full min-h-[44px] rounded-full px-5 py-3.5 items-center justify-center gap-3 bg-[var(--color-action)] text-[var(--color-on-action)] shadow-soft hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-action)] disabled:opacity-70 transition-opacity duration-200"
               >
                 {saving ? (
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="animate-spin">
-                    <circle cx="8" cy="8" r="6" stroke="var(--color-on-accent)" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" strokeLinecap="round" />
+                    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" strokeLinecap="round" />
                   </svg>
                 ) : (
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M3 8.5l3.5 3.5L13 4" stroke="var(--color-on-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M3 8.5l3.5 3.5L13 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
-                <span className="text-[var(--color-on-accent)] font-bold text-sm">
+                <span className="font-bold text-sm">
                   {saving
                     ? t('symptoms.saving')
                     : t('symptoms.saveChanges', { count: changeCount })}
@@ -587,86 +462,87 @@ export function SymptomsClient({
 
       {/* ── Fixed bottom bar (mobile only) ── */}
       <div
-        aria-live="polite"
-        aria-atomic="true"
         className="fixed bottom-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+0.75rem)] md:bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-30 xl:hidden"
       >
-        <AnimatePresence mode="wait">
-          {hasChanges ? (
-            <motion.button
-              key="save-bar"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 16 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-              onClick={handleSave}
-              disabled={saving}
-              aria-label={t('symptoms.saveChanges', { count: changeCount })}
-              className="w-full rounded-2xl px-5 py-3.5 flex items-center justify-center gap-3 shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-70 transition-colors duration-200"
-              style={{
-                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-              }}
-            >
-              {saving ? (
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="animate-spin">
-                  <circle cx="8" cy="8" r="6" stroke="var(--color-on-accent)" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" strokeLinecap="round" />
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M3 8.5l3.5 3.5L13 4" stroke="var(--color-on-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              )}
-              <span className="text-[var(--color-on-accent)] font-bold text-sm">
-                {saving
-                  ? t('symptoms.saving')
-                  : t('symptoms.saveChanges', { count: changeCount })}
-              </span>
-            </motion.button>
-          ) : isAllGood ? (
-            <motion.div
-              key="all-good-bar"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className="rounded-2xl px-5 py-3 flex items-center justify-center gap-2"
-              style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}
-            >
-              <CheckCircle2 size={15} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
-              <p className="text-[var(--color-text-muted)] text-sm">
-                {t('symptoms.allGoodActive')}
-              </p>
-            </motion.div>
-          ) : totalSelected > 0 ? (
-            <motion.div
-              key="saved-summary"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className="rounded-2xl px-5 py-3 flex items-center justify-center"
-              style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}
-            >
-              <p className="text-[var(--color-text-muted)] text-sm">
-                {totalSelected} {t('symptoms.symptomsLabel')} {t('symptoms.forDate', { date: format(selectedDate, 'MMM d', { locale: dateLocale }) })}
-              </p>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="no-symptoms"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className="rounded-2xl px-5 py-3 flex items-center justify-center"
-              style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}
-            >
-              <p className="text-[var(--color-text-muted)] text-sm">
-                {t('symptoms.tapToLog', { date: format(selectedDate, 'MMM d', { locale: dateLocale }) })}
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <SaveErrorStatus
+          show={saveFailed}
+          className={saveFailed ? 'mb-2 rounded-2xl px-4 py-2.5 bg-[var(--color-bg-card)] border border-[var(--color-border)]' : ''}
+        />
+        <div aria-live="polite" aria-atomic="true">
+          <AnimatePresence mode="wait">
+            {hasChanges ? (
+              <motion.button
+                key="save-bar"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 16 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                onClick={handleSave}
+                disabled={saving}
+                aria-label={t('symptoms.saveChanges', { count: changeCount })}
+                className="w-full min-h-[44px] rounded-full px-5 py-3.5 flex items-center justify-center gap-3 bg-[var(--color-action)] text-[var(--color-on-action)] shadow-soft hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-action)] disabled:opacity-70 transition-opacity duration-200"
+              >
+                {saving ? (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="animate-spin">
+                    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" strokeLinecap="round" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M3 8.5l3.5 3.5L13 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+                <span className="font-bold text-sm">
+                  {saving
+                    ? t('symptoms.saving')
+                    : t('symptoms.saveChanges', { count: changeCount })}
+                </span>
+              </motion.button>
+            ) : isAllGood ? (
+              <motion.div
+                key="all-good-bar"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.2 }}
+                className="rounded-2xl px-5 py-3 flex items-center justify-center gap-2"
+                style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}
+              >
+                <CheckCircle2 size={15} className="text-accent-mint" aria-hidden="true" />
+                <p className="text-[var(--color-text-muted)] text-sm">
+                  {t('symptoms.allGoodActive')}
+                </p>
+              </motion.div>
+            ) : totalSelected > 0 ? (
+              <motion.div
+                key="saved-summary"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.2 }}
+                className="rounded-2xl px-5 py-3 flex items-center justify-center"
+                style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}
+              >
+                <p className="text-[var(--color-text-muted)] text-sm">
+                  {totalSelected} {t('symptoms.symptomsLabel')} {t('symptoms.forDate', { date: format(selectedDate, 'MMM d', { locale: dateLocale }) })}
+                </p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="no-symptoms"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.2 }}
+                className="rounded-2xl px-5 py-3 flex items-center justify-center"
+                style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}
+              >
+                <p className="text-[var(--color-text-muted)] text-sm">
+                  {t('symptoms.tapToLog', { date: format(selectedDate, 'MMM d', { locale: dateLocale }) })}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
     </PageContainer>

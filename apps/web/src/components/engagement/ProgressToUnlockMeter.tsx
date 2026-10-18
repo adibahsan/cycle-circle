@@ -65,7 +65,6 @@ interface ProgressRingProps {
   stroke: number;
   prefersReducedMotion: boolean;
   mounted: boolean;
-  incomplete: boolean;
   centerLabel?: boolean;
 }
 
@@ -76,34 +75,14 @@ function ProgressRing({
   stroke,
   prefersReducedMotion,
   mounted,
-  incomplete,
   centerLabel = false,
 }: ProgressRingProps) {
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - percent / 100);
-  const showGlow = mounted && !prefersReducedMotion && incomplete;
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
-      {showGlow && (
-        <motion.div
-          aria-hidden="true"
-          className="absolute inset-0 rounded-full"
-          style={{
-            background:
-              'radial-gradient(circle, var(--goal-accent, var(--color-primary)) 0%, transparent 70%)',
-            opacity: 0,
-          }}
-          animate={{ opacity: [0, 0.18, 0], scale: [0.85, 1.08, 0.85] }}
-          transition={{
-            duration: 3.2,
-            ease: 'easeInOut',
-            repeat: Infinity,
-            repeatType: 'loop',
-          }}
-        />
-      )}
 
       <svg
         width={size}
@@ -217,7 +196,6 @@ export function ProgressToUnlockMeter({
             stroke={7}
             prefersReducedMotion={prm}
             mounted={mounted}
-            incomplete={!isUnlocked}
           />
         </div>
 

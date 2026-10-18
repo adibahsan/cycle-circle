@@ -3,7 +3,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function SettingsLoading() {
   return (
-    <PageContainer className="animate-pulse-soft">
+    <PageContainer width="canvas">
       {/* Title */}
       <div>
         <Shimmer className="h-8 w-32 rounded-lg" />
@@ -16,16 +16,16 @@ export default function SettingsLoading() {
           {/* Section 1: Language & Appearance */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Shimmer className="h-7 w-7 rounded-lg" />
+              <Shimmer className="h-8 w-8 rounded-full" />
               <Shimmer className="h-4 w-44 rounded-md" />
             </div>
-            <div className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] p-6 space-y-5">
+            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 space-y-5">
               <div className="flex justify-between items-center">
                 <div className="space-y-1.5 flex-1">
                   <Shimmer className="h-4.5 w-24 rounded-md" />
                   <Shimmer className="h-3 w-36 rounded-md" />
                 </div>
-                <Shimmer className="h-8 w-24 rounded-xl" />
+                <Shimmer className="h-11 w-24 rounded-full" />
               </div>
               <div className="h-px bg-[var(--color-border)]" />
               <div className="flex justify-between items-center">
@@ -33,7 +33,7 @@ export default function SettingsLoading() {
                   <Shimmer className="h-4.5 w-16 rounded-md" />
                   <Shimmer className="h-3 w-28 rounded-md" />
                 </div>
-                <Shimmer className="h-8 w-28 rounded-xl" />
+                <Shimmer className="h-11 w-28 rounded-full" />
               </div>
             </div>
           </div>
@@ -41,10 +41,10 @@ export default function SettingsLoading() {
           {/* Section 2: Notifications */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Shimmer className="h-7 w-7 rounded-lg" />
+              <Shimmer className="h-8 w-8 rounded-full" />
               <Shimmer className="h-4 w-28 rounded-md" />
             </div>
-            <div className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] p-6 divide-y divide-[var(--color-border)]">
+            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 divide-y divide-[var(--color-border)]">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="flex justify-between items-center py-3.5 first:pt-0 last:pb-0">
                   <div className="space-y-1.5 flex-1 pr-4">
@@ -63,10 +63,10 @@ export default function SettingsLoading() {
           {/* Section 3: Data Export */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Shimmer className="h-7 w-7 rounded-lg" />
+              <Shimmer className="h-8 w-8 rounded-full" />
               <Shimmer className="h-4 w-28 rounded-md" />
             </div>
-            <div className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] p-6 space-y-4">
+            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 space-y-4">
               <Shimmer className="h-3 w-48 rounded-md" />
               <div className="grid grid-cols-2 gap-3">
                 <Shimmer className="h-20 rounded-xl" />
@@ -78,10 +78,10 @@ export default function SettingsLoading() {
           {/* Section 4: Account */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Shimmer className="h-7 w-7 rounded-lg" />
+              <Shimmer className="h-8 w-8 rounded-full" />
               <Shimmer className="h-4 w-24 rounded-md" />
             </div>
-            <div className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] p-6 space-y-4">
+            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 space-y-4">
               {/* Account info card */}
               <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-3 space-y-2">
                 <div className="flex justify-between">

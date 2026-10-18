@@ -1,7 +1,6 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { motion } from 'motion/react';
 import { useReducedMotion } from 'motion/react';
 import { Flame } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -82,31 +81,13 @@ export function StreakBadge({ streak, streakAtRisk, className }: StreakBadgeProp
       aria-live="polite"
       aria-atomic="true"
     >
-      {/* Flame icon — decorative */}
-      {prm ? (
-        <Flame
-          size={18}
-          aria-hidden="true"
-          className="shrink-0"
-          style={{ color: streakAtRisk ? 'var(--color-gold-ink)' : 'var(--goal-accent, var(--color-primary))' }}
-        />
-      ) : (
-        <motion.div
-          className="shrink-0"
-          animate={
-            streakAtRisk
-              ? { scale: [1, 1.22, 0.98, 1.15, 1], rotate: [-5, 4, -3, 4, 0], opacity: [1, 0.7, 1] }
-              : { scale: [1, 1.12, 0.97, 1.08, 1], rotate: [-3, 2, -2, 3, 0], opacity: [1, 0.85, 1] }
-          }
-          transition={{ duration: streakAtRisk ? 1.4 : 2.2, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <Flame
-            size={18}
-            aria-hidden="true"
-            style={{ color: streakAtRisk ? 'var(--color-gold-ink)' : 'var(--goal-accent, var(--color-primary))' }}
-          />
-        </motion.div>
-      )}
+      {/* Flame icon — decorative, static */}
+      <Flame
+        size={18}
+        aria-hidden="true"
+        className="shrink-0"
+        style={{ color: streakAtRisk ? 'var(--color-gold-ink)' : 'var(--goal-accent, var(--color-primary))' }}
+      />
 
       {/* Count + label */}
       <div className="flex flex-col leading-tight">

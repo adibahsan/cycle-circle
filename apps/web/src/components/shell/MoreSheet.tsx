@@ -6,9 +6,11 @@ import { useTranslation } from 'react-i18next';
 import { Sun, Moon } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
-import { MORE_ITEMS, isNavActive } from '@/components/shell/nav-config';
+import { MORE_ITEMS, NAV_ACTIVE, isNavActive } from '@/components/shell/nav-config';
 import { NAV_ICONS } from '@/components/shell/nav-icons';
+import { TINT_CLASSES } from '@/components/ui/tints';
 import type { Theme } from '@vesta/shared/utils/theme';
+
 
 /** Phone "More" sheet: the destinations that left the bottom nav, plus theme and language. */
 export function MoreSheet({
@@ -40,7 +42,7 @@ export function MoreSheet({
       }
     >
       <ul className="flex flex-col gap-1 px-3 pb-2">
-        {MORE_ITEMS.map(({ href, icon, labelKey }) => {
+        {MORE_ITEMS.map(({ href, icon, labelKey, tint = 'pink' }) => {
           const Icon = NAV_ICONS[icon];
           const active = isNavActive(href, pathname);
           return (
@@ -49,12 +51,14 @@ export function MoreSheet({
                 href={href}
                 onClick={onClose}
                 aria-current={active ? 'page' : undefined}
-                className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
-                  active ? '' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
+                className={`flex min-h-12 items-center gap-3 rounded-full py-1.5 pl-1.5 pr-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
+                  active ? '' : 'text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]'
                 }`}
-                style={active ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 12%, transparent)' } : undefined}
+                style={active ? NAV_ACTIVE : undefined}
               >
-                <Icon size={18} aria-hidden="true" />
+                <span aria-hidden="true" className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${TINT_CLASSES[tint].badge}`}>
+                  <Icon size={18} aria-hidden="true" />
+                </span>
                 {t(labelKey)}
               </Link>
             </li>

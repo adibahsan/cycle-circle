@@ -3,7 +3,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function ProfilesLoading() {
   return (
-    <PageContainer className="animate-pulse-soft">
+    <PageContainer width="canvas">
       {/* Page Header */}
       <div>
         <Shimmer className="h-7 w-36 rounded-lg" />
@@ -15,11 +15,11 @@ export default function ProfilesLoading() {
         {Array.from({ length: 2 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 flex items-center justify-between gap-3 relative overflow-hidden"
+            className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-4 flex items-center justify-between gap-3 relative overflow-hidden"
           >
             <div className="flex items-center gap-3 flex-1 min-w-0">
               {/* Avatar placeholder */}
-              <Shimmer className="w-11 h-11 rounded-2xl shrink-0" />
+              <Shimmer className="w-11 h-11 rounded-full shrink-0" />
               
               {/* Info text rows */}
               <div className="flex-1 space-y-2">
@@ -44,8 +44,8 @@ export default function ProfilesLoading() {
       </div>
 
       {/* Add Profile dashed card placeholder */}
-      <div className="mt-4 rounded-2xl border border-dashed border-[var(--color-border)] p-4 flex items-center justify-center gap-2.5 bg-[var(--color-bg-secondary)]">
-        <Shimmer className="w-9 h-9 rounded-xl" />
+      <div className="mt-4 rounded-panel border border-dashed border-[var(--color-border)] p-4 flex items-center justify-center gap-2.5 bg-[var(--color-bg-secondary)]">
+        <Shimmer className="w-10 h-10 rounded-full" />
         <div className="space-y-1.5 flex-1 max-w-[120px]">
           <Shimmer className="h-4 w-16 rounded-md" />
           <Shimmer className="h-3 w-24 rounded-md" />
@@ -53,7 +53,7 @@ export default function ProfilesLoading() {
       </div>
 
       {/* Info notice banner */}
-      <div className="mt-5 rounded-2xl border border-[var(--color-border)] p-4 flex items-start gap-3 bg-[var(--color-bg-secondary)]/50">
+      <div className="mt-5 rounded-panel p-5 flex items-start gap-3 bg-tint-sage">
         <Shimmer className="h-6 w-6 rounded-full shrink-0" />
         <div className="space-y-2 flex-1">
           <Shimmer className="h-4 w-28 rounded-md" />

@@ -95,6 +95,9 @@ export async function expectWithinViewport(page: Page, container: Locator) {
 
 /** Apply named mocks (see e2e/support/mocks.ts) to /api/auth/status, /api/tracking/logging-status and /api/profile/completion. Call before goto. */
 export async function mockApi(page: Page, names: string[]) {
+  // The shell normally gets this data streamed from the server; this cookie (honoured outside
+  // production only, see app/(main)/layout.tsx) makes it fetch client-side so the routes below apply.
+  await page.context().addCookies([{ name: 'vesta_e2e_client_shell', value: '1', domain: 'localhost', path: '/' }])
   await page.route('**/api/auth/status', async (route) => {
     const res = await route.fetch()
     await route.fulfill({ response: res, json: applyStatusMock(await res.json(), names) })

@@ -9,11 +9,9 @@ import { CheckCircle2, Plus } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { useHasMounted } from '@/components/motion/useHasMounted';
 import { useLanguage } from '@/lib/use-language';
-import { SYMPTOMS_DATA } from '@/lib/symptoms-data';
-import {
-  SymptomChip,
-  toDbCategory,
-} from '@/app/(main)/symptoms/SymptomsClient';
+import { SYMPTOMS_DATA, toDbCategory } from '@/lib/symptoms-data';
+import { SymptomChip } from '@/components/symptoms/SymptomChip';
+import { SaveErrorStatus } from '@/components/symptoms/SaveErrorStatus';
 import { saveSymptoms, markAllGoodToday } from '@/app/actions/tracking-actions';
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal';
 import { useToast } from '@/components/ui/Toast';
@@ -100,6 +98,7 @@ export function TodayCheckInModal({
 
   const [localSelected, setLocalSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const toast = useToast();
   // Hand-over to the full symptom list: check-in hides first, then quick symptom opens
   // (and the reverse on close), so the two never overlap.
@@ -126,6 +125,7 @@ export function TodayCheckInModal({
   }
 
   const handleToggle = useCallback((id: string) => {
+    setSaveFailed(false);
     setLocalSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -141,6 +141,7 @@ export function TodayCheckInModal({
   async function handleSave() {
     if (localSelected.size === 0 || saving) return;
     setSaving(true);
+    setSaveFailed(false);
     try {
       const addedPayload = [...localSelected].flatMap((id) => {
         const symptom = SYMPTOMS_DATA.find((s) => s.id === id);
@@ -168,6 +169,10 @@ export function TodayCheckInModal({
       }
       setLocalSelected(new Set());
       onClose();
+    } catch (err) {
+      // Stay open with the selection intact so she can retry.
+      console.error('Failed to save check-in:', err);
+      setSaveFailed(true);
     } finally {
       setSaving(false);
     }
@@ -176,6 +181,7 @@ export function TodayCheckInModal({
   async function handleAllGood() {
     if (saving) return;
     setSaving(true);
+    setSaveFailed(false);
     try {
       await markAllGoodToday(profileId);
       router.refresh();
@@ -189,6 +195,9 @@ export function TodayCheckInModal({
         fireCelebration('streak', newStreak);
       }
       onClose();
+    } catch (err) {
+      console.error('Failed to save all-good check-in:', err);
+      setSaveFailed(true);
     } finally {
       setSaving(false);
     }
@@ -222,7 +231,7 @@ export function TodayCheckInModal({
               {t('checkIn.subtitle')}
             </p>
             {cycleDay && phase && (
-              <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
                 {t('dashboard.day')} {cycleDay} · {t(`dashboard.${phase.toLowerCase()}`)}
               </p>
             )}
@@ -242,7 +251,6 @@ export function TodayCheckInModal({
                   icon={symptom.icon}
                   name={getSymptomName(symptom)}
                   selected={localSelected.has(symptom.id)}
-                  category={symptom.category}
                   onToggle={handleToggle}
                 />
               ) : (
@@ -263,13 +271,14 @@ export function TodayCheckInModal({
                     icon={symptom.icon}
                     name={getSymptomName(symptom)}
                     selected={localSelected.has(symptom.id)}
-                    category={symptom.category}
-                    onToggle={handleToggle}
+                      onToggle={handleToggle}
                   />
                 </motion.div>
               )
             )}
           </div>
+
+          <SaveErrorStatus show={saveFailed} />
 
           {/* ── CTA row: More + All Good ── */}
           <div className="flex gap-2">
