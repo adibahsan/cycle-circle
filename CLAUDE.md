@@ -34,7 +34,7 @@ App-specific files stay as `@/lib/*` and `@/components/*`:
 
 - All Prisma operations run from `packages/shared/`.
 - Prisma targets PostgreSQL on Supabase with **RLS** enabled.
-- QStash is **not yet wired** — cron email is sent synchronously; Vercel Cron handles scheduling in prod.
+- QStash is **not yet wired** — cron email is sent synchronously; prod runs on the VPS and a host crontab calls the cron routes (see `docs/ops/05-operations.md`), not Vercel Cron.
 
 ## Key References
 
