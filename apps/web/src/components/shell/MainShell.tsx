@@ -554,8 +554,8 @@ function MainLayoutInner({ children, initial }: { children: React.ReactNode; ini
           )}
         </header>
 
-        {/* Page content */}
-        <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+1.5rem)] md:pb-8">
+        {/* Page content. A flex column, so a PageContainer with `fill` can take the screen's free height. */}
+        <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col focus:outline-none pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+1.5rem)] md:pb-8 xl:pb-4">
           {children}
         </main>
       </div>

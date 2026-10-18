@@ -1,24 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import {
-  format,
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  isSameMonth,
-  isSameDay,
-  addMonths,
-  subMonths,
-  parseISO,
-} from 'date-fns';
+import { format, startOfMonth, parseISO } from 'date-fns';
 import { bn } from 'date-fns/locale/bn';
-import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, ClipboardList } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { useLanguage } from '@/lib/use-language';
 import { SYMPTOMS_DATA, toDbCategory } from '@/lib/symptoms-data';
@@ -32,112 +20,10 @@ import { toggleSymptom, markAllGoodToday, saveSymptoms } from '@/app/actions/tra
 import { useToast } from '@/components/ui/Toast';
 import type { Profile, PrismaSymptomLog, SymptomCategory } from '@vesta/shared/types';
 import '@vesta/shared/utils/i18n';
-import { TODAY_GLOW } from '@/lib/calendar-day-style';
+import { SymptomTintContext } from '@/components/symptoms/tints';
+import { MonthGrid } from '@/components/calendar/MonthGrid';
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
-
-// ─── Mini Calendar ──────────────────────────────────────────────────────────
-
-interface MiniCalendarProps {
-  selectedDate: Date;
-  onDateSelect: (date: Date) => void;
-}
-
-const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: MiniCalendarProps) {
-  const { t } = useTranslation();
-  const language = useLanguage();
-  const dateLocale = language === 'bn' ? bn : undefined;
-  const [viewMonth, setViewMonth] = useState(() => startOfMonth(selectedDate));
-
-  const gridDays = useMemo(() => {
-    const monthStart = startOfMonth(viewMonth);
-    const monthEnd = endOfMonth(viewMonth);
-    const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-    const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
-    return eachDayOfInterval({ start: gridStart, end: gridEnd });
-  }, [viewMonth]);
-
-  const DOW = [
-    t('calendar.sun'), t('calendar.mon'), t('calendar.tue'), t('calendar.wed'),
-    t('calendar.thu'), t('calendar.fri'), t('calendar.sat'),
-  ];
-
-  const today = new Date();
-
-  return (
-    <Card tone="panel" padding="sm" className="md:p-5 xl:p-4">
-      {/* Month nav */}
-      <div className="flex items-center justify-between mb-1 md:mb-3">
-        <button
-          onClick={() => setViewMonth((m) => subMonths(m, 1))}
-          aria-label={t('calendar.previousMonth')}
-          className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
-        >
-          <ChevronLeft size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
-        </button>
-        <h2 className="text-base font-bold text-[var(--color-text-primary)]">
-          {format(viewMonth, 'MMMM yyyy', { locale: dateLocale })}
-        </h2>
-        <button
-          onClick={() => setViewMonth((m) => addMonths(m, 1))}
-          aria-label={t('calendar.nextMonth')}
-          className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-xl hover:bg-[var(--color-bg-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
-        >
-          <ChevronRight size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
-        </button>
-      </div>
-
-      {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 mb-1 md:mb-2">
-        {DOW.map((d) => (
-          <div key={d} className="flex items-center justify-center">
-            <span className="text-xs font-bold text-[var(--color-text-muted)]">
-              {d}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Day grid */}
-      <div className="grid grid-cols-7 gap-0.5 md:gap-1">
-        {gridDays.map((date) => {
-          const inMonth = isSameMonth(date, viewMonth);
-          const isSelected = isSameDay(date, selectedDate);
-          const isToday = isSameDay(date, today);
-
-          return (
-            <button
-              key={format(date, 'yyyy-MM-dd')}
-              onClick={() => onDateSelect(date)}
-              aria-current={isToday ? 'date' : undefined}
-              className={`h-11 md:h-auto md:aspect-square xl:aspect-auto xl:h-11 flex items-center justify-center rounded-xl text-sm md:text-base font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 ${
-                !inMonth ? 'text-[var(--color-text-muted)] opacity-40' : ''
-              }${isToday ? ' relative z-[1]' : ''}`}
-              style={{
-                backgroundColor: isSelected
-                  ? 'var(--color-primary)'
-                  : isToday
-                    ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)'
-                    : 'transparent',
-                color: isSelected
-                  ? 'var(--color-on-accent)'
-                  : isToday
-                    ? 'var(--color-primary)'
-                    : inMonth
-                      ? 'var(--color-text-primary)'
-                      : 'var(--color-text-muted)',
-                fontWeight: isToday || isSelected ? 700 : 500,
-                boxShadow: isToday ? TODAY_GLOW : undefined,
-              }}
-            >
-              {format(date, 'd')}
-            </button>
-          );
-        })}
-      </div>
-    </Card>
-  );
-});
 
 // ─── Main Client Component ──────────────────────────────────────────────────
 
@@ -166,6 +52,7 @@ export function SymptomsClient({
   const toast = useToast();
 
   const selectedDate = useMemo(() => parseISO(date), [date]);
+  const [viewMonth, setViewMonth] = useState(() => startOfMonth(selectedDate));
 
   const [localSelected, setLocalSelected] = useState<Set<string>>(() =>
     new Set(symptomLogs.map((l) => l.symptomId))
@@ -315,47 +202,102 @@ export function SymptomsClient({
     }
   }
 
+  const allGoodButton = (
+    <button
+      type="button"
+      onClick={handleToggleAllGood}
+      disabled={saving}
+      aria-pressed={isAllGood}
+      className={cn(
+        'w-full xl:w-auto xl:px-6 min-h-[44px] flex items-center justify-center gap-2 py-2 rounded-full border text-sm font-semibold',
+        'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-mint disabled:opacity-60',
+        isAllGood
+          ? 'bg-tint-mint text-accent-mint border-accent-mint'
+          : 'bg-[var(--color-bg-card)] border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
+      )}
+    >
+      <CheckCircle2 size={16} aria-hidden="true" />
+      {isAllGood ? t('symptoms.allGoodActive') : t('symptoms.allGood')}
+    </button>
+  );
+
   return (
-    <PageContainer width="canvas" className="gap-3 md:gap-5 pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+5rem)] xl:pb-4">
+    <PageContainer width="canvas" fill className="gap-3 md:gap-5 pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+5rem)] xl:pb-4">
       <PageHeader
         title={t('symptoms.title')}
         subtitle={format(selectedDate, 'EEEE, MMMM d', { locale: dateLocale })}
       />
       {/* ── Desktop: calendar left, symptoms right ── */}
-      <div className="flex flex-col xl:flex-row gap-3 md:gap-5">
+      <div className="flex flex-col xl:flex-1 xl:flex-row gap-3 md:gap-5">
 
         {/* ── Left: month calendar + summary ── */}
-        <div className="xl:w-[440px] 2xl:w-[480px] xl:shrink-0 xl:sticky xl:top-4 xl:self-start flex flex-col gap-2 md:gap-3">
-          {/* Full month calendar */}
-          <MiniCalendar
-            selectedDate={selectedDate}
-            onDateSelect={handleDateSelect}
+        {/* Desktop: the calendar, then the day's log filling the column to the bottom of the screen. */}
+        <div className="xl:w-[400px] 2xl:w-[440px] xl:shrink-0 flex flex-col gap-2 md:gap-3">
+          {/* Full month calendar: the same grid as the calendar page */}
+          <MonthGrid
+            month={viewMonth}
+            onMonthChange={setViewMonth}
+            selected={selectedDate}
+            onSelect={handleDateSelect}
           />
 
-          {/* Summary card (desktop) */}
-          {totalSelected > 0 && (
-            <Card tone="panel" padding="sm">
-              <div className="text-center">
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]">
-                  {totalSelected} {totalSelected === 1 ? t('symptoms.symptomLabel') : t('symptoms.symptomsLabel')}
+          {/* The day's log. Phones: only once something is picked. Desktop: always, filling the column under the calendar. */}
+          <Card
+            tone="panel"
+            padding="sm"
+            className={cn('xl:flex xl:flex-1 xl:flex-col', totalSelected === 0 && !isAllGood && 'hidden')}
+          >
+            {isAllGood ? (
+              <p className="flex items-center justify-center gap-2 text-sm font-medium text-accent-mint xl:my-auto">
+                <CheckCircle2 size={16} aria-hidden="true" />
+                {t('symptoms.allGoodActive')}
+              </p>
+            ) : totalSelected === 0 ? (
+              <div className="flex flex-col items-center gap-3 text-center xl:my-auto">
+                <span aria-hidden="true" className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] 2xl:flex">
+                  <ClipboardList size={22} />
+                </span>
+                <p className="text-sm text-[var(--color-text-muted)]">
+                  {t('symptoms.tapToLog', { date: format(selectedDate, 'MMM d', { locale: dateLocale }) })}
                 </p>
-                <div className="flex justify-center gap-1.5 mt-2">
-                  {CATEGORIES.map(({ key }) => {
-                    const count = categoryCount(key);
-                    if (count === 0) return null;
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-center gap-2 xl:justify-between">
+                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">
+                    {totalSelected} {totalSelected === 1 ? t('symptoms.symptomLabel') : t('symptoms.symptomsLabel')}
+                  </p>
+                  <div className="flex gap-1.5">
+                    {CATEGORIES.map(({ key }) => {
+                      const count = categoryCount(key);
+                      if (count === 0) return null;
+                      return (
+                        <span
+                          key={key}
+                          className={cn('min-w-[20px] h-5 px-1.5 rounded-full text-xs tabular-nums font-bold flex items-center justify-center leading-none', TINT_CLASSES[CATEGORY_TINTS[key]].solid)}
+                        >
+                          {count}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+                {/* Desktop: what is picked, by name */}
+                <ul className="mt-3 hidden flex-wrap gap-1.5 xl:flex">
+                  {SYMPTOMS_DATA.filter((s) => realSelected.has(s.id)).map((s) => {
+                    const Icon = s.icon;
+                    const c = TINT_CLASSES[CATEGORY_TINTS[s.category]];
                     return (
-                      <span
-                        key={key}
-                        className={cn('min-w-[20px] h-5 px-1.5 rounded-full text-xs tabular-nums font-bold flex items-center justify-center leading-none', TINT_CLASSES[CATEGORY_TINTS[key]].solid)}
-                      >
-                        {count}
-                      </span>
+                      <li key={s.id} className={cn('flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold', c.surface, c.ink)}>
+                        <Icon size={14} aria-hidden="true" />
+                        {getSymptomName(s)}
+                      </li>
                     );
                   })}
-                </div>
-              </div>
-            </Card>
-          )}
+                </ul>
+              </>
+            )}
+          </Card>
         </div>
 
         {/* ── Right: category tabs + symptom grid + save ── */}
@@ -363,24 +305,8 @@ export function SymptomsClient({
 
           {/* Category tabs + the active category's chips */}
           <SymptomCategoryTabs
-            action={(
-              <button
-                type="button"
-                onClick={handleToggleAllGood}
-                disabled={saving}
-                aria-pressed={isAllGood}
-                className={cn(
-                  'w-full xl:w-auto xl:px-6 min-h-[44px] flex items-center justify-center gap-2 py-2 xl:py-3 rounded-full border text-sm font-semibold',
-                  'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-mint disabled:opacity-60',
-                  isAllGood
-                    ? 'bg-tint-mint text-accent-mint border-accent-mint'
-                    : 'bg-[var(--color-bg-card)] border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
-                )}
-              >
-                <CheckCircle2 size={16} aria-hidden="true" />
-                {isAllGood ? t('symptoms.allGoodActive') : t('symptoms.allGood')}
-              </button>
-            )}
+            action={allGoodButton}
+            className="xl:flex-1 2xl:hidden"
             active={activeCategory}
             onChange={setActiveCategory}
             counts={{
@@ -398,7 +324,7 @@ export function SymptomsClient({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -12 }}
                 transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                className="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 auto-rows-fr gap-1.5 md:gap-2"
+                className="grid grid-cols-3 auto-rows-fr gap-1.5 md:gap-2"
               >
                 {categorySymptoms.map((symptom, i) => {
                   const selected = isSymptomSelected(symptom.id);
@@ -416,6 +342,7 @@ export function SymptomsClient({
                         name={getSymptomName(symptom)}
                         selected={selected}
                         onToggle={handleToggle}
+                        layout="adaptive"
                       />
                     </motion.div>
                   );
@@ -424,7 +351,51 @@ export function SymptomsClient({
             </AnimatePresence>
           </SymptomCategoryTabs>
 
-          <SaveErrorStatus show={saveFailed} className="hidden xl:block" />
+          {/* 2xl: every category at once, so the wide screen holds the whole list without tab switching */}
+          <div className="hidden 2xl:flex 2xl:flex-1 flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                {t('symptoms.tapToLog', { date: format(selectedDate, 'MMM d', { locale: dateLocale }) })}
+              </p>
+              {allGoodButton}
+            </div>
+            <div className="grid flex-1 grid-cols-2 auto-rows-fr gap-3">
+              {CATEGORIES.map(({ key, labelKey }) => {
+                const tint = CATEGORY_TINTS[key];
+                const count = categoryCount(key);
+                return (
+                  <Card key={key} tone={tint} padding="sm" className="@container h-full">
+                    <h2 className="mb-2 flex items-center gap-2 px-1 text-sm font-bold text-[var(--color-text-primary)]">
+                      {t(labelKey)}
+                      {count > 0 && (
+                        <span className={cn('min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold flex items-center justify-center leading-none tabular-nums', TINT_CLASSES[tint].solid)}>
+                          {count}
+                        </span>
+                      )}
+                    </h2>
+                    <div role="group" aria-label={t(labelKey)} className="grid grid-cols-2 @[30rem]:grid-cols-3 gap-2">
+                      <SymptomTintContext.Provider value={tint}>
+                        {SYMPTOMS_DATA.filter((s) => s.category === key).map((symptom) => (
+                          <SymptomChip
+                            key={symptom.id}
+                            id={symptom.id}
+                            icon={symptom.icon}
+                            name={getSymptomName(symptom)}
+                            selected={isSymptomSelected(symptom.id)}
+                            onToggle={handleToggle}
+                            layout="adaptive"
+                          />
+                        ))}
+                      </SymptomTintContext.Provider>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Empty, it cancels its column gap so the column ends level with the calendar. */}
+          <SaveErrorStatus show={saveFailed} className="hidden xl:block xl:empty:-mt-4" />
 
           {/* Inline save button (desktop) */}
           <AnimatePresence mode="wait">

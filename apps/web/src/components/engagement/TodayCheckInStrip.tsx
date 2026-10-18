@@ -102,7 +102,8 @@ export function TodayCheckInStrip({
   );
 
   const inner = variant === 'card' ? (
-    <Card padding="md" className="flex flex-col gap-3">
+    // Fills a stretched grid cell (the dashboard rail pairs it with the phase pattern), content centred.
+    <Card padding="md" className="flex h-full flex-col justify-center gap-3">
       {innerContent}
     </Card>
   ) : (

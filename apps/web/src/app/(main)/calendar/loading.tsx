@@ -3,16 +3,16 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function CalendarLoading() {
   return (
-    <PageContainer width="canvas">
+    <PageContainer width="canvas" fill>
       {/* Page Header */}
       <div>
         <Shimmer className="h-7 w-28 rounded-lg" />
       </div>
 
       {/* Main split layout */}
-      <div className="flex flex-col gap-5 xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem] xl:items-start">
+      <div className="flex flex-col gap-5 xl:flex-1 xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">
         {/* Calendar Grid Card */}
-        <div className="min-w-0 rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel p-6 space-y-4">
+        <div className="min-w-0 rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel px-2 py-2 sm:px-4 md:py-4 space-y-2">
           {/* Header controls (Month / Navs) */}
           <div className="flex justify-between items-center">
             <Shimmer className="h-9 w-9 rounded-xl" />
@@ -30,9 +30,9 @@ export default function CalendarLoading() {
           </div>
 
           {/* Day Grid */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-0.5 md:gap-1">
             {Array.from({ length: 35 }).map((_, i) => (
-              <Shimmer key={i} className="aspect-square xl:aspect-[4/3] w-full rounded-xl" />
+              <Shimmer key={i} className="h-11 md:h-14 2xl:h-16 w-full rounded-xl" />
             ))}
           </div>
 

@@ -89,9 +89,11 @@ describe('CalendarClient wiring', () => {
     expect(src).toContain("from '@/components/ui/SectionHeader'")
     expect(src).not.toContain('shadow-glow')
   })
-  it('shows the add plus on hover and focus', () => {
-    expect(src).toMatch(/group-hover/)
-    expect(src).toMatch(/group-focus-within/)
+  it('shows the add plus on hover and focus (drawn by the shared month grid)', () => {
+    const grid = fs.readFileSync(path.resolve(__dirname, '../../src/components/calendar/MonthGrid.tsx'), 'utf8')
+    expect(src).toContain("from '@/components/calendar/MonthGrid'")
+    expect(grid).toMatch(/group-hover/)
+    expect(grid).toMatch(/group-focus-within/)
   })
 })
 

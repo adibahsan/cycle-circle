@@ -3,7 +3,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function FeedbackLoading() {
   return (
-    <PageContainer width="canvas">
+    <PageContainer width="canvas" fill>
       {/* Page Header */}
       <div>
         <Shimmer className="h-8 w-44 rounded-lg" />
@@ -11,7 +11,7 @@ export default function FeedbackLoading() {
       </div>
 
       {/* Grid: Form Left, History Right */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:flex-1 gap-6">
         {/* Left Column: Form Card */}
         <div>
           <div className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] p-6 space-y-5">

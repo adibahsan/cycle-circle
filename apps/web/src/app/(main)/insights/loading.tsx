@@ -6,7 +6,7 @@ const CARD = 'rounded-panel bg-[var(--color-bg-card)] border border-transparent 
 /** Skeleton in the insights page's shape: header + range control, then the chart cards. */
 export default function InsightsLoading() {
   return (
-    <PageContainer width="canvas">
+    <PageContainer width="canvas" fill>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <Shimmer className="h-8 w-40 rounded-lg" />
@@ -15,7 +15,7 @@ export default function InsightsLoading() {
         <Shimmer className="h-9 w-full sm:w-64 rounded-xl" />
       </div>
 
-      <div className="flex flex-col gap-3 xl:grid xl:grid-cols-2 xl:items-start">
+      <div className="flex flex-col gap-3 xl:grid xl:flex-1 xl:grid-cols-2 xl:auto-rows-fr">
         <div className={CARD}>
           <Shimmer className="h-5 w-40 rounded-md" />
           <Shimmer className="h-8 w-44 rounded-xl" />

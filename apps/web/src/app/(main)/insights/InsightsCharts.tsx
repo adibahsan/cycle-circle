@@ -90,7 +90,8 @@ export function CycleLengthTrendChart({
   )
 
   return (
-    <div className="h-[150px] sm:h-[190px]">
+    <div className="h-[150px] sm:h-[190px] xl:relative xl:h-auto xl:min-h-[110px] xl:flex-1">
+    <div className="h-full xl:absolute xl:inset-0">
     <ResponsiveContainer width="100%" height="100%">
       {chartType === 'line' ? (
         <LineChart {...sharedProps} accessibilityLayer>
@@ -147,6 +148,7 @@ export function CycleLengthTrendChart({
       )}
     </ResponsiveContainer>
     </div>
+    </div>
   )
 }
 
@@ -166,7 +168,8 @@ export function SymptomFrequencyChart({
   formatNumber: (n: number) => string
 }) {
   return (
-    <div className="h-[140px] sm:h-[170px]">
+    <div className="h-[140px] sm:h-[170px] xl:relative xl:h-auto xl:min-h-[110px] xl:flex-1">
+    <div className="h-full xl:absolute xl:inset-0">
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
         accessibilityLayer
@@ -208,6 +211,7 @@ export function SymptomFrequencyChart({
         <Bar dataKey="count" radius={[6, 6, 0, 0]} isAnimationActive={animate} fill={INSIGHTS_CHART_COLORS.symptoms} />
       </BarChart>
     </ResponsiveContainer>
+    </div>
     </div>
   )
 }

@@ -3,11 +3,11 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function SymptomsLoading() {
   return (
-    <PageContainer width="canvas">
+    <PageContainer width="canvas" fill>
       {/* Split layout */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col xl:flex-1 xl:flex-row gap-3 md:gap-5">
         {/* Left Column: Title + Mini Calendar */}
-        <div className="lg:w-[480px] lg:shrink-0 flex flex-col gap-3">
+        <div className="xl:w-[400px] 2xl:w-[440px] xl:shrink-0 flex flex-col gap-3">
           {/* Header */}
           <div>
             <Shimmer className="h-7 w-40 rounded-lg" />
@@ -15,7 +15,7 @@ export default function SymptomsLoading() {
           </div>
 
           {/* Mini Calendar Card */}
-          <div className="rounded-panel bg-[var(--color-bg-card)] shadow-panel dark:border dark:border-[var(--color-border)] p-6 space-y-4">
+          <div className="rounded-panel bg-[var(--color-bg-card)] shadow-panel dark:border dark:border-[var(--color-border)] px-2 py-2 sm:px-4 md:py-4 space-y-2">
             <div className="flex justify-between items-center">
               <Shimmer className="h-8 w-8 rounded-xl" />
               <Shimmer className="h-5 w-32 rounded-md" />
@@ -30,9 +30,9 @@ export default function SymptomsLoading() {
               ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-0.5 md:gap-1">
               {Array.from({ length: 35 }).map((_, i) => (
-                <Shimmer key={i} className="aspect-square w-full rounded-xl" />
+                <Shimmer key={i} className="h-11 md:h-14 2xl:h-16 w-full rounded-xl" />
               ))}
             </div>
           </div>
@@ -63,10 +63,10 @@ export default function SymptomsLoading() {
           </div>
 
           {/* Symptom chips grid */}
-          <div className="rounded-panel bg-tint-pink p-3 md:p-4 grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 auto-rows-fr gap-2">
-            {Array.from({ length: 15 }).map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-[var(--color-bg-card)]">
-                <Shimmer className="h-10 w-10 rounded-full" />
+          <div className="rounded-panel bg-tint-pink p-2 md:p-4 grid grid-cols-3 auto-rows-fr gap-1.5 md:gap-2">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 p-1.5 min-h-[72px] md:min-h-12 rounded-2xl md:rounded-xl bg-[var(--color-bg-card)]">
+                <Shimmer className="h-8 w-8 rounded-full" />
                 <Shimmer className="h-3 w-14 rounded-md" />
               </div>
             ))}

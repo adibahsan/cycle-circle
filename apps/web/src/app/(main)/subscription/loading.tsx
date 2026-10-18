@@ -3,7 +3,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function SubscriptionLoading() {
   return (
-    <PageContainer width="canvas">
+    <PageContainer width="canvas" fill>
       {/* Page Title */}
       <div>
         <Shimmer className="h-8 w-44 rounded-lg" />
@@ -52,9 +52,9 @@ export default function SubscriptionLoading() {
       </div>
 
       {/* Comparison table */}
-      <div className="space-y-3">
+      <div className="space-y-3 xl:flex xl:flex-1 xl:flex-col">
         <Shimmer className="h-5 w-32 rounded-lg" />
-        <div className="rounded-panel overflow-hidden border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)]">
+        <div className="rounded-panel overflow-hidden border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] xl:flex-1">
           {/* Header Row */}
           <div className="grid grid-cols-3 bg-[var(--color-bg-secondary)] p-3">
             <Shimmer className="h-4 w-16 rounded-md col-span-1" />

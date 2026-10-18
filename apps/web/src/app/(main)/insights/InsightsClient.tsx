@@ -220,7 +220,7 @@ function PeriodRegularityCard({ data, lang }: { data: PeriodRegularity; lang: La
   const badgeLabel = data.regular ? t('insights.regularityStable') : t('insights.regularityVariable')
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 xl:flex-1 xl:justify-center">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" aria-hidden="true">
         <Card tone="pink" padding="sm" className="px-3 py-3">
           <span className="text-xs font-semibold text-accent-pink">{t('insights.regularityLabel')}</span>
@@ -277,7 +277,7 @@ function FertileWindowHistoryList({ data, lang }: { data: FertileWindowPoint[]; 
   }))
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1.5 xl:flex-1">
       <ChartSummary id="fertile-summary">{t('insights.fertileSummary', { n: num(visible.length) })}</ChartSummary>
       <ul className="flex flex-col gap-1.5" aria-hidden="true">
         {rows.map(({ entry, index, span }) => (
@@ -382,7 +382,7 @@ export function InsightsClient({
   return (
     // tabular-nums on Recharts numeric axis ticks (FR-INSIGHTS NFR) — applied
     // to the tick value text so chart axes line up digit-for-digit.
-    <PageContainer width="canvas" className="[&_.recharts-cartesian-axis-tick-value]:[font-variant-numeric:tabular-nums]">
+    <PageContainer width="canvas" fill className="[&_.recharts-cartesian-axis-tick-value]:[font-variant-numeric:tabular-nums]">
       {/* ── Page header ──────────────────────────────────────────────────── */}
       <PageHeader
         title={t('insights.title')}
@@ -411,10 +411,10 @@ export function InsightsClient({
           </div>
         </Card>
       ) : (
-        <>
+        <div className="flex flex-col gap-5 xl:flex-1">
       {/* From xl the charts sit two across so wide screens fill; cards in a row share its height, and an odd
           last chart spans the row. */}
-      <div className="flex flex-col gap-3 xl:grid xl:grid-cols-2 xl:[&>*>*]:h-full xl:[&>*:last-child:nth-child(odd)]:col-span-2">
+      <div className="flex flex-col gap-3 xl:grid xl:flex-1 xl:grid-cols-2 xl:auto-rows-fr xl:[&>*>*]:h-full xl:[&>*:last-child:nth-child(odd)]:col-span-2">
         {/* ── Cycle Length Trend ─────────────────────────────────────────────── */}
         {shows('cycleLengthTrend') && (
           <motion.div
@@ -423,7 +423,7 @@ export function InsightsClient({
           transition={{ delay: 0.15, duration: 0.4 }}
         >
           <Card tone="panel" padding="sm" className="p-4">
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
                 variant="inline"
                 title={t('insights.cycleLengthTrend')}
@@ -467,7 +467,7 @@ export function InsightsClient({
           transition={{ delay: 0.22, duration: 0.4 }}
         >
           <Card tone="panel" padding="sm" className="p-4">
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
                 variant="inline"
                 title={t('insights.symptomFrequency')}
@@ -508,7 +508,7 @@ export function InsightsClient({
           transition={{ delay: 0.29, duration: 0.4 }}
         >
           <Card tone="panel" padding="sm" className="p-4">
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
                 variant="inline"
                 title={t('insights.periodRegularity')}
@@ -528,7 +528,7 @@ export function InsightsClient({
           transition={{ delay: 0.36, duration: 0.4 }}
         >
           <Card tone="panel" padding="sm" className="p-4">
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
                 variant="inline"
                 title={t('insights.fertileWindowHistory')}
@@ -549,7 +549,7 @@ export function InsightsClient({
           {t('insights.missingNote', { charts: grouped.missing.map((k) => t(`insights.${k}`)).join(', ') })}
         </p>
       )}
-        </>
+        </div>
       )}
     </PageContainer>
   )

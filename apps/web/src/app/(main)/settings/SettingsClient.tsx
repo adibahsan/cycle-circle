@@ -447,13 +447,13 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
   return (
     <>
 
-      <PageContainer width="canvas">
+      <PageContainer width="canvas" fill>
         <PageHeader title={t('settings.title')} />
 
         {/* Two columns from lg; from xl an explicit three-column grid: appearance + notifications | account | export + about. */}
-        <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-3 lg:space-y-0 xl:grid-cols-3 xl:grid-rows-[auto_1fr] xl:gap-4 xl:items-start">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-3 lg:space-y-0 xl:grid-cols-3 xl:grid-rows-[auto_1fr] xl:gap-4 xl:items-stretch xl:flex-1">
           {/* ── Left column ── */}
-          <div className="space-y-3 lg:space-y-4 xl:col-start-1 xl:row-start-1 xl:row-span-2">
+          <div className="space-y-3 lg:space-y-4 xl:col-start-1 xl:row-start-1 xl:row-span-2 xl:flex xl:flex-col">
             {/* 1. Language & Appearance */}
             <motion.div
               custom={0}
@@ -509,9 +509,10 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               variants={sectionVariants}
               initial="hidden"
               animate="visible"
+              className="xl:flex xl:flex-1 xl:flex-col"
             >
               <SectionHeader className="mb-2!" title={<SectionTitle icon={Bell} tint={SECTION_TINT.notifications}>{t('settings.notifications')}</SectionTitle>} />
-              <Card tone="panel" padding="sm" className="divide-y divide-[var(--color-border)] sm:p-4">
+              <Card tone="panel" padding="sm" className="divide-y divide-[var(--color-border)] sm:p-4 xl:flex-1">
                 {[
                   {
                     key: 'periodAlert' as const,
@@ -573,7 +574,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               variants={sectionVariants}
               initial="hidden"
               animate="visible"
-              className="xl:col-start-3 xl:row-start-1"
+              className="xl:col-start-3 xl:row-start-1 xl:mb-0!"
             >
               <SectionHeader className="mb-2!" title={<SectionTitle icon={Download} tint={SECTION_TINT.export}>{t('settings.export')}</SectionTitle>} />
               <Card tone="panel" padding="sm" className="space-y-2 sm:p-4">
@@ -626,10 +627,10 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               variants={sectionVariants}
               initial="hidden"
               animate="visible"
-              className="xl:col-start-2 xl:row-start-1 xl:row-span-2"
+              className="xl:col-start-2 xl:row-start-1 xl:row-span-2 xl:flex xl:flex-col xl:mb-0!"
             >
               <SectionHeader className="mb-2!" title={<SectionTitle icon={User} tint={SECTION_TINT.account}>{t('settings.account')}</SectionTitle>} />
-              <Card tone="panel" padding="sm" className="space-y-1.5 sm:p-4">
+              <Card tone="panel" padding="sm" className="space-y-1.5 sm:p-4 xl:flex xl:flex-1 xl:flex-col">
                 {/* Account info */}
                 <div className="rounded-2xl bg-[var(--color-bg-secondary)] p-3 space-y-1">
                   {user.phone && (
@@ -809,7 +810,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                 </div>
 
                 {/* Logout */}
-                <div>
+                <div className="xl:mt-auto">
                   <Button
                     variant="outline"
                     fullWidth
@@ -829,10 +830,10 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               variants={sectionVariants}
               initial="hidden"
               animate="visible"
-              className="xl:col-start-3 xl:row-start-2"
+              className="xl:col-start-3 xl:row-start-2 xl:flex xl:flex-col"
             >
               <SectionHeader className="mb-2!" title={<SectionTitle icon={Info} tint={SECTION_TINT.about}>{t('settings.about')}</SectionTitle>} />
-              <Card tone="panel" padding="sm" className="space-y-2 sm:p-4">
+              <Card tone="panel" padding="sm" className="space-y-2 sm:p-4 xl:flex-1">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[var(--color-text-secondary)]">{t('settings.appVersion')}</span>
                   <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('settings.versionName', { version: '2.0' })}</span>

@@ -34,13 +34,14 @@ interface SymptomCategoryTabsProps {
   children: ReactNode;
   /** Optional action (e.g. "All good"); sits above the tabs below xl, right of them on xl+. */
   action?: ReactNode;
+  className?: string;
 }
 
 /**
  * WAI-ARIA tabs for symptom categories: roving tabindex, Arrow/Home/End move and activate,
  * the panel holds the active category's chips as a labelled group.
  */
-export function SymptomCategoryTabs({ active, onChange, counts, children, action }: SymptomCategoryTabsProps) {
+export function SymptomCategoryTabs({ active, onChange, counts, children, action, className }: SymptomCategoryTabsProps) {
   const { t } = useTranslation();
   const base = useId();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -64,7 +65,7 @@ export function SymptomCategoryTabs({ active, onChange, counts, children, action
   const activeTint = CATEGORY_TINTS[active];
 
   return (
-    <div className="flex flex-col gap-2 md:gap-3">
+    <div className={cn('flex flex-col gap-2 md:gap-3', className)}>
       <div className="flex flex-col gap-2 md:gap-4 xl:flex-row xl:flex-wrap xl:items-center xl:justify-between xl:gap-3">
       <div
         role="tablist"
@@ -111,7 +112,8 @@ export function SymptomCategoryTabs({ active, onChange, counts, children, action
       {action && <div className="order-first xl:order-last xl:shrink-0">{action}</div>}
       </div>
 
-      <Card tone={activeTint} padding="sm" className="p-2 md:p-4">
+      {/* flex-1: fills the column when the page stretches it to the screen bottom */}
+      <Card tone={activeTint} padding="sm" className="p-2 md:p-4 flex-1">
         <div role="tabpanel" id={panelId(activeIndex)} aria-labelledby={tabId(activeIndex)}>
           <div role="group" aria-label={t(CATEGORIES[activeIndex].labelKey)}>
             <SymptomTintContext.Provider value={activeTint}>{children}</SymptomTintContext.Provider>
