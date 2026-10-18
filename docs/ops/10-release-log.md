@@ -4,6 +4,35 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
+## 2026-10-19 — Admin portal to SRS v1.4 (PR #105, tag 2.2.0)
+
+**Shipped** (spec #84, tickets #85–#104):
+
+- Admin access: 7-day admin login, a 403 "Not an admin" page, and suspension or deletion ends existing sessions on the next request in both apps.
+- Billing safety (ADR 0006): Revoke, Suspend and Delete also unsubscribe the number on BDApps. An admin override ends when BDApps reports a new subscription. Deleted accounts can be restored for 30 days, then purged.
+- Admin Logs page (merchant, webhook, translog; OTP codes masked) and a per-user plan history tab.
+- Analytics on real data, with per-panel ranges and metrics, chart tables, and nightly MAE snapshots. The dashboard KPIs are at most 60 s old.
+- SMS: CSV upload, a send-language choice, a part counter, queue edit and reschedule, and FAILED marking after retries.
+- Articles: uploaded images stored on the server volume, the Bengali font in the editor, and publish warnings.
+- Feedback filters (Dhaka dates, exact or minimum rating, search) and hardened CSV exports (BOM, quoting, formula prefix, audit log).
+- Toasts and confirm dialogs across admin, a skip link, responsive stat grids, and focus rings.
+- Grace period and CaaS admin views removed (`consecutiveFailures` and `gracePeriodEndsAt` columns dropped).
+
+**Pre-deploy steps on the VPS**
+
+1. `sudo install -d -m 0755 -o 1001 -g 1001 /var/lib/vesta/uploads` (it must exist before compose mounts it).
+
+**Migrations** (applied by `deploy.sh`): `20261019100000_sms_queue`, `20261019102000_nightly_maintenance`, `20261019890000_sessions_valid_after`, `20261019920000_sms_send_language`, `20261019950000_revoke_unsubscribe`, `20261019990000_remove_grace_period`.
+
+**Post-deploy steps on the VPS**
+
+1. `bash /opt/vesta/ops/deploy/scripts/install-vesta-crontab.sh` adds the third, 02:30 UTC nightly-maintenance entry.
+2. `docker compose -f ops/deploy/compose.prod.yml exec -T nginx sh -c 'nginx -t && nginx -s reload'` loads `client_max_body_size 6m` on admin.
+
+**Deploy:** `git push origin origin/main:production` → GitHub Actions *Production* workflow.
+
+---
+
 ## 2026-10-19 — Compact desktop layouts, Night blush dark mode, full logo (PR #83, tag 2.1.0)
 
 **Shipped:**
