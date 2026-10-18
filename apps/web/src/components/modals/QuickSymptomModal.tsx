@@ -8,14 +8,11 @@ import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { useHasMounted } from '@/components/motion/useHasMounted';
 import { useLanguage } from '@/lib/use-language';
-import { SYMPTOMS_DATA } from '@/lib/symptoms-data';
+import { SYMPTOMS_DATA, toDbCategory } from '@/lib/symptoms-data';
 import { saveSymptoms } from '@/app/actions/tracking-actions';
-import {
-  SymptomChip,
-  CATEGORIES,
-  CATEGORY_COLORS,
-  toDbCategory,
-} from '@/app/(main)/symptoms/SymptomsClient';
+import { SymptomChip } from '@/components/symptoms/SymptomChip';
+import { SymptomCategoryTabs, CATEGORIES } from '@/components/symptoms/SymptomCategoryTabs';
+import { SaveErrorStatus } from '@/components/symptoms/SaveErrorStatus';
 import { deviceDayString } from '@/lib/local-date';
 import { goalAccentVar } from '@vesta/shared/utils/goal';
 import type { SymptomCategory } from '@vesta/shared/types';
@@ -56,12 +53,14 @@ export function QuickSymptomModal({
   const [activeCategory, setActiveCategory] = useState<SymptomCategory>(CATEGORIES[0].key);
   const [selected, setSelected] = useState<Set<string>>(() => new Set(initialSelected));
   const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
 
   // Reset selection each time the modal opens
   useEffect(() => {
     if (open) {
       setSelected(new Set(initialSelected));
       setActiveCategory(CATEGORIES[0].key);
+      setSaveFailed(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -82,6 +81,7 @@ export function QuickSymptomModal({
   const logDate = initialDate ?? deviceDayString();
 
   const handleToggle = useCallback((id: string) => {
+    setSaveFailed(false);
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -96,6 +96,7 @@ export function QuickSymptomModal({
   async function handleSave() {
     if (!hasChanges || saving) return;
     setSaving(true);
+    setSaveFailed(false);
     try {
       const addedPayload = added.flatMap((id) => {
         const symptom = SYMPTOMS_DATA.find((s) => s.id === id);
@@ -114,6 +115,10 @@ export function QuickSymptomModal({
       const savedCount = added.length;
       onSaved?.(savedCount);
       onClose();
+    } catch (err) {
+      // Stay open with the selection intact so she can retry.
+      console.error('Failed to save symptoms:', err);
+      setSaveFailed(true);
     } finally {
       setSaving(false);
     }
@@ -124,7 +129,8 @@ export function QuickSymptomModal({
   }
 
   const categorySymptoms = SYMPTOMS_DATA.filter((s) => s.category === activeCategory);
-  const activeTabIndex = CATEGORIES.findIndex((c) => c.key === activeCategory);
+  const countFor = (cat: SymptomCategory) =>
+    SYMPTOMS_DATA.filter((s) => s.category === cat && selected.has(s.id)).length;
 
   const header = (
     <div style={{ '--goal-accent': accentVar } as React.CSSProperties}>
@@ -147,6 +153,7 @@ export function QuickSymptomModal({
 
   const footer = (
     <div className="px-5 pt-3 pb-5" style={{ '--goal-accent': accentVar } as React.CSSProperties}>
+        <SaveErrorStatus show={saveFailed} className={saveFailed ? 'mb-2' : ''} />
         <button
           onClick={handleSave}
           disabled={!hasChanges || saving}
@@ -222,121 +229,69 @@ export function QuickSymptomModal({
         className="flex flex-col gap-4 px-5 pb-3 pt-2"
         style={{ '--goal-accent': accentVar } as React.CSSProperties}
       >
-        {/* ── Category tabs ── */}
-        <div className="relative">
-          <div
-            role="tablist"
-            className="flex gap-1 rounded-2xl p-1"
-            style={{ background: 'var(--color-bg-secondary)' }}
-          >
-            {!prefersReduced && (
+        <SymptomCategoryTabs
+          active={activeCategory}
+          onChange={setActiveCategory}
+          counts={{
+            physical: countFor('physical'),
+            mood: countFor('mood'),
+            discharge: countFor('discharge'),
+            lifestyle: countFor('lifestyle'),
+          }}
+        >
+          {/* ── Symptom grid ── */}
+          <AnimatePresence mode="wait">
+            {prefersReduced ? (
+              <div
+                key={activeCategory}
+                className="grid grid-cols-3 gap-2"
+              >
+                {categorySymptoms.map((symptom) => (
+                  <div key={symptom.id} className="h-full">
+                    <SymptomChip
+                      id={symptom.id}
+                      icon={symptom.icon}
+                      name={getSymptomName(symptom)}
+                      selected={selected.has(symptom.id)}
+                      onToggle={handleToggle}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
               <motion.div
-                className="absolute top-1 bottom-1 rounded-xl"
-                style={{
-                  background: 'var(--color-bg-card)',
-                  boxShadow: '0 2px 8px color-mix(in srgb, var(--color-brand-navy) 8%, transparent)',
-                }}
-                animate={{
-                  left: `calc(${activeTabIndex} * 25% + 4px)`,
-                  width: 'calc(25% - 8px)',
-                }}
-                transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-              />
+                key={activeCategory}
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -12 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                className="grid grid-cols-3 gap-2"
+              >
+                {categorySymptoms.map((symptom, i) => (
+                  <motion.div
+                    key={symptom.id}
+                    className="h-full"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{
+                      delay: i * 0.03,
+                      duration: 0.25,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
+                  >
+                    <SymptomChip
+                      id={symptom.id}
+                      icon={symptom.icon}
+                      name={getSymptomName(symptom)}
+                      selected={selected.has(symptom.id)}
+                      onToggle={handleToggle}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
             )}
-
-            {CATEGORIES.map(({ key, labelKey }) => {
-              const isActive = activeCategory === key;
-              const count = SYMPTOMS_DATA.filter(
-                (s) => s.category === key && selected.has(s.id)
-              ).length;
-              return (
-                <button
-                  key={key}
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => setActiveCategory(key)}
-                  className="relative flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-xs font-semibold transition-colors duration-200 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40"
-                  style={{
-                    color: isActive
-                      ? 'var(--color-text-primary)'
-                      : 'var(--color-text-muted)',
-                    ...(prefersReduced && isActive
-                      ? { background: 'var(--color-bg-card)' }
-                      : {}),
-                  }}
-                >
-                  {t(labelKey)}
-                  {count > 0 && (
-                    <span
-                      className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full text-[11px] font-bold flex items-center justify-center leading-none"
-                      style={{
-                        background: CATEGORY_COLORS[key].text,
-                        color: CATEGORY_COLORS[key].on,
-                      }}
-                    >
-                      {count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── Symptom grid ── */}
-        <AnimatePresence mode="wait">
-          {prefersReduced ? (
-            <div
-              key={activeCategory}
-              className="grid grid-cols-3 gap-2"
-            >
-              {categorySymptoms.map((symptom) => (
-                <div key={symptom.id} className="h-full">
-                  <SymptomChip
-                    id={symptom.id}
-                    icon={symptom.icon}
-                    name={getSymptomName(symptom)}
-                    selected={selected.has(symptom.id)}
-                    category={symptom.category}
-                    onToggle={handleToggle}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <motion.div
-              key={activeCategory}
-              initial={{ opacity: 0, x: 12 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -12 }}
-              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="grid grid-cols-3 gap-2"
-            >
-              {categorySymptoms.map((symptom, i) => (
-                <motion.div
-                  key={symptom.id}
-                  className="h-full"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{
-                    delay: i * 0.03,
-                    duration: 0.25,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                >
-                  <SymptomChip
-                    id={symptom.id}
-                    icon={symptom.icon}
-                    name={getSymptomName(symptom)}
-                    selected={selected.has(symptom.id)}
-                    category={symptom.category}
-                    onToggle={handleToggle}
-                  />
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+          </AnimatePresence>
+        </SymptomCategoryTabs>
 
         {/* ── Empty helper text ── */}
         <AnimatePresence>
