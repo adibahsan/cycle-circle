@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff } from 'lucide-react'
 import VestaLogo from '@/components/ui/VestaLogo'
@@ -14,6 +14,9 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [state, setState] = useState<FormState>('idle')
   const [errorMsg, setErrorMsg] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({})
+  const emailRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
 
   async function login(loginEmail: string, loginPassword: string) {
     setState('loading')
@@ -42,7 +45,13 @@ export default function AdminLoginPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!email.trim() || !password) return
+    const errors: { email?: string; password?: string } = {}
+    if (!email.trim()) errors.email = 'Enter your email address.'
+    else if (!/^\S+@\S+\.\S+$/.test(email.trim())) errors.email = 'Enter a valid email address.'
+    if (!password) errors.password = 'Enter your password.'
+    setFieldErrors(errors)
+    if (errors.email) { emailRef.current?.focus(); return }
+    if (errors.password) { passwordRef.current?.focus(); return }
     await login(email, password)
   }
 
@@ -84,12 +93,18 @@ export default function AdminLoginPage() {
                 autoFocus
                 required
                 spellCheck={false}
+                ref={emailRef}
+                aria-invalid={fieldErrors.email ? true : undefined}
+                aria-describedby={fieldErrors.email ? 'email-error' : undefined}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors((f) => ({ ...f, email: undefined })) }}
                 placeholder="admin@vesta.health…"
                 disabled={state === 'loading'}
                 className="w-full px-4 py-3 rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] transition-colors disabled:opacity-60"
               />
+              {fieldErrors.email && (
+                <p id="email-error" role="alert" className="text-xs text-[var(--color-danger)]">{fieldErrors.email}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -103,8 +118,11 @@ export default function AdminLoginPage() {
                   name="password"
                   autoComplete="current-password"
                   required
+                  ref={passwordRef}
+                  aria-invalid={fieldErrors.password ? true : undefined}
+                  aria-describedby={fieldErrors.password ? 'password-error' : undefined}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); if (fieldErrors.password) setFieldErrors((f) => ({ ...f, password: undefined })) }}
                   placeholder="Enter your password…"
                   disabled={state === 'loading'}
                   className="w-full px-4 py-3 pr-11 rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] transition-colors disabled:opacity-60"
@@ -122,6 +140,9 @@ export default function AdminLoginPage() {
                   }
                 </button>
               </div>
+              {fieldErrors.password && (
+                <p id="password-error" role="alert" className="text-xs text-[var(--color-danger)]">{fieldErrors.password}</p>
+              )}
             </div>
 
             {state === 'error' && (
@@ -132,7 +153,7 @@ export default function AdminLoginPage() {
 
             <button
               type="submit"
-              disabled={state === 'loading' || !email.trim() || !password}
+              disabled={state === 'loading'}
               className="w-full py-3 rounded-xl bg-[var(--color-action)] text-[var(--color-on-action)] text-sm font-semibold shadow-soft hover:opacity-90 active:scale-[0.98] transition-[opacity,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               {state === 'loading' ? (

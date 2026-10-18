@@ -3,6 +3,10 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import Image from '@tiptap/extension-image'
+import { useRef, useState } from 'react'
+import type { Editor } from '@tiptap/react'
+import { uploadArticleImage } from '@/app/actions/upload-actions'
 import { clsx } from 'clsx'
 
 interface TiptapEditorProps {
@@ -10,6 +14,8 @@ interface TiptapEditorProps {
   onChange: (content: string) => void
   placeholder?: string
   minHeight?: string
+  /** BCP-47 language of the content, set on the editable element (e.g. 'bn'). */
+  lang?: string
 }
 
 interface ToolbarButtonProps {
@@ -44,15 +50,33 @@ function Divider() {
   )
 }
 
+async function uploadAndInsert(editor: Editor, file: File, setError: (m: string | null) => void) {
+  setError(null)
+  const fd = new FormData()
+  fd.append('file', file)
+  try {
+    const res = await uploadArticleImage(fd)
+    if ('error' in res) setError(res.error)
+    else editor.chain().focus().setImage({ src: res.url, alt: file.name.replace(/\.[^.]+$/, '') }).run()
+  } catch {
+    setError('Upload failed. Try again.')
+  }
+}
+
 export function TiptapEditor({
   content,
   onChange,
   placeholder,
   minHeight = '200px',
+  lang,
 }: TiptapEditorProps) {
+  const editorRef = useRef<Editor | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const editor = useEditor({
     extensions: [
       StarterKit,
+      Image,
       Placeholder.configure({
         placeholder: placeholder || 'Start writing…',
         emptyEditorClass: 'is-editor-empty',
@@ -63,11 +87,27 @@ export function TiptapEditor({
       onChange(editor.getHTML())
     },
     editorProps: {
+      handlePaste: (_view, event) => {
+        const file = Array.from(event.clipboardData?.files ?? []).find((f) => f.type.startsWith('image/'))
+        if (!file || !editorRef.current) return false
+        void uploadAndInsert(editorRef.current, file, setUploadError)
+        return true
+      },
+      handleDrop: (_view, event) => {
+        const file = Array.from(event.dataTransfer?.files ?? []).find((f) => f.type.startsWith('image/'))
+        if (!file || !editorRef.current) return false
+        event.preventDefault()
+        void uploadAndInsert(editorRef.current, file, setUploadError)
+        return true
+      },
       attributes: {
+        ...(lang ? { lang } : {}),
         class: 'prose prose-sm max-w-none focus:outline-none text-[var(--color-text-primary)]',
       },
     },
   })
+
+  editorRef.current = editor
 
   if (!editor) return null
 
@@ -169,6 +209,35 @@ export function TiptapEditor({
 
         <Divider />
 
+        {/* Image */}
+        <ToolbarButton
+          onClick={() => fileRef.current?.click()}
+          active={false}
+          title="Insert image"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+            <circle cx="4.5" cy="5.5" r="1.1" fill="currentColor" />
+            <path d="M1.5 11l3.5-3.5 2.5 2.5 2-2 3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </ToolbarButton>
+        <input
+          ref={fileRef}
+          type="file"
+          name="article-image"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="hidden"
+          aria-label="Choose an image to insert"
+          tabIndex={-1}
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            e.target.value = ''
+            if (file) void uploadAndInsert(editor, file, setUploadError)
+          }}
+        />
+
+        <Divider />
+
         {/* Undo/Redo */}
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
@@ -192,12 +261,16 @@ export function TiptapEditor({
         </ToolbarButton>
       </div>
 
+      <p role="alert" aria-live="polite" className={uploadError ? 'px-4 py-2 text-xs text-[var(--color-danger)] border-b border-[var(--color-border)]' : 'sr-only'}>
+        {uploadError}
+      </p>
+
       {/* Editor area */}
       <EditorContent
         editor={editor}
         style={{ minHeight }}
         aria-label="Article content"
-        className="px-4 py-3 [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[inherit] [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h2]:text-xl [&_.ProseMirror_h2]:font-bold [&_.ProseMirror_h2]:mt-4 [&_.ProseMirror_h2]:mb-2 [&_.ProseMirror_h3]:text-base [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_h3]:mt-3 [&_.ProseMirror_h3]:mb-1 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-[var(--color-primary)]/40 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:text-[var(--color-text-secondary)] [&_.ProseMirror_blockquote]:italic [&_.ProseMirror_code]:bg-[var(--color-bg-secondary)] [&_.ProseMirror_code]:px-1.5 [&_.ProseMirror_code]:py-0.5 [&_.ProseMirror_code]:rounded [&_.ProseMirror_code]:font-mono [&_.ProseMirror_code]:text-xs [&_.is-editor-empty]:before:content-[attr(data-placeholder)] [&_.is-editor-empty]:before:text-[var(--color-text-muted)] [&_.is-editor-empty]:before:pointer-events-none [&_.is-editor-empty]:before:float-left [&_.is-editor-empty]:before:h-0"
+        className="px-4 py-3 [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[inherit] [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h2]:text-xl [&_.ProseMirror_h2]:font-bold [&_.ProseMirror_h2]:mt-4 [&_.ProseMirror_h2]:mb-2 [&_.ProseMirror_h3]:text-base [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_h3]:mt-3 [&_.ProseMirror_h3]:mb-1 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-[var(--color-primary)]/40 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:text-[var(--color-text-secondary)] [&_.ProseMirror_blockquote]:italic [&_.ProseMirror_img]:max-w-full [&_.ProseMirror_img]:h-auto [&_.ProseMirror_img]:rounded-lg [&_.ProseMirror_code]:bg-[var(--color-bg-secondary)] [&_.ProseMirror_code]:px-1.5 [&_.ProseMirror_code]:py-0.5 [&_.ProseMirror_code]:rounded [&_.ProseMirror_code]:font-mono [&_.ProseMirror_code]:text-xs [&_.is-editor-empty]:before:content-[attr(data-placeholder)] [&_.is-editor-empty]:before:text-[var(--color-text-muted)] [&_.is-editor-empty]:before:pointer-events-none [&_.is-editor-empty]:before:float-left [&_.is-editor-empty]:before:h-0"
       />
     </div>
   )

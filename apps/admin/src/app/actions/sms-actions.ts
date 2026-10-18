@@ -6,7 +6,12 @@ import {
   createBroadcastsBulk,
   deleteBroadcast,
   sendBroadcast,
+  updateBroadcast,
+  rescheduleBroadcast,
   parseBulkSmsInput,
+  parseSmsCsv,
+  scheduleDrafts,
+  type SmsSendLanguage,
 } from '@vesta/shared/server/services'
 import { revalidateTag } from 'next/cache'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
@@ -15,22 +20,27 @@ export async function createSmsBroadcast(
   message: string,
   messageBn?: string,
   scheduledFor?: string,
+  sendLanguage: SmsSendLanguage = 'BOTH',
 ) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  const broadcast = await createBroadcast(admin.id, message, messageBn, scheduledFor)
+  const broadcast = await createBroadcast(admin.id, message, messageBn, scheduledFor, sendLanguage)
 
   revalidateTag(adminCacheTags.sms, { expire: 0 })
   return broadcast
 }
 
-export async function createSmsBroadcastsBulk(rawText: string, startDate?: string) {
+export async function createSmsBroadcastsBulk(
+  rawText: string,
+  startDate?: string,
+  sendLanguage: SmsSendLanguage = 'BOTH',
+) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
   const rows = parseBulkSmsInput(rawText)
-  const created = await createBroadcastsBulk(admin.id, rows, startDate)
+  const created = await createBroadcastsBulk(admin.id, rows, startDate, sendLanguage)
 
   revalidateTag(adminCacheTags.sms, { expire: 0 })
   return { count: created.length, broadcasts: created }
@@ -50,6 +60,60 @@ export async function sendSmsBroadcast(id: string) {
   const admin = await getAuthUser(jwt.sub)
 
   await sendBroadcast(id, admin.id)
+
+  revalidateTag(adminCacheTags.sms, { expire: 0 })
+  return { success: true }
+}
+
+/** Parse a CSV and return each line with the date it would go out — nothing is saved. */
+export async function previewSmsCsv(csvText: string, startDate?: string) {
+  await requireAdminAuth()
+  const { drafts, errors } = parseSmsCsv(csvText)
+  const dates = scheduleDrafts(drafts, startDate)
+  return {
+    errors,
+    rows: drafts.map((d, i) => ({ ...d, sendAt: dates[i].toISOString() })),
+  }
+}
+
+/** Create SCHEDULED broadcasts from a CSV. Refuses if any line is invalid. */
+export async function createSmsBroadcastsFromCsv(
+  csvText: string,
+  startDate?: string,
+  sendLanguage: SmsSendLanguage = 'BOTH',
+) {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  const { drafts, errors } = parseSmsCsv(csvText)
+  if (errors.length > 0) throw new Error(`Fix ${errors.length} CSV line(s) first (line ${errors[0].line}: ${errors[0].message})`)
+  if (drafts.length === 0) throw new Error('The CSV has no messages')
+  const created = await createBroadcastsBulk(admin.id, drafts, startDate, sendLanguage)
+
+  revalidateTag(adminCacheTags.sms, { expire: 0 })
+  return { count: created.length }
+}
+
+/** Edit the text / language of an unsent broadcast. */
+export async function updateSmsBroadcast(
+  id: string,
+  input: { message: string; messageBn?: string; sendLanguage: SmsSendLanguage },
+) {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  await updateBroadcast(id, admin.id, input)
+
+  revalidateTag(adminCacheTags.sms, { expire: 0 })
+  return { success: true }
+}
+
+/** Move an unsent broadcast to a new send time (`scheduledFor` is an ISO instant). */
+export async function rescheduleSmsBroadcast(id: string, scheduledFor: string) {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  await rescheduleBroadcast(id, admin.id, scheduledFor)
 
   revalidateTag(adminCacheTags.sms, { expire: 0 })
   return { success: true }

@@ -1,18 +1,25 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useState, useTransition } from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 import { Download } from 'lucide-react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { useToast } from '@/components/ui'
 import { Pagination } from '@/components/ui/Pagination'
 import { exportFeedbackCsv } from '@/app/actions/export-actions'
+import {
+  feedbackFiltersFromParams,
+  ratingFilterFromValue,
+  ratingFilterToParams,
+  ratingFilterToValue,
+} from '@vesta/shared/utils/feedback-filters'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
-import { DateRangeControl } from '@/components/charts/DateRangeControl'
+import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 
 type FeedbackItem = {
   id: string
@@ -45,13 +52,11 @@ const CATEGORY_OPTIONS = [
   { value: 'SATISFACTION', label: 'Satisfaction' },
 ]
 
+// Option values come from ratingFilterToValue so the select never hand-builds the encoding.
 const RATING_OPTIONS = [
-  { value: 'all', label: 'All Ratings' },
-  { value: '1', label: '1+ Stars' },
-  { value: '2', label: '2+ Stars' },
-  { value: '3', label: '3+ Stars' },
-  { value: '4', label: '4+ Stars' },
-  { value: '5', label: '5 Stars' },
+  { value: ratingFilterToValue(undefined), label: 'All Ratings' },
+  ...[1, 2, 3, 4, 5].map((stars) => ({ value: ratingFilterToValue({ mode: 'min', stars }), label: `${stars}+ Stars` })),
+  ...[1, 2, 3, 4, 5].map((stars) => ({ value: ratingFilterToValue({ mode: 'eq', stars }), label: `Exactly ${stars}` })),
 ]
 
 type CategoryVariant = 'danger' | 'info' | 'neutral' | 'success'
@@ -133,7 +138,7 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
   const [exporting, setExporting] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+  const toast = useToast()
 
   // ── Analytics data transformations ─────────────────────────────────────────
 
@@ -155,8 +160,12 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
     count: d.count,
   }))
 
-  const currentCategory = searchParams.get('category') ?? 'all'
-  const currentMinRating = searchParams.get('minRating') ?? 'all'
+  const filters = feedbackFiltersFromParams(searchParams)
+  const currentCategory = filters.category ?? 'all'
+  const currentRating = ratingFilterToValue(filters.rating)
+  const currentDateFrom = filters.dateFrom ?? ''
+  const currentDateTo = filters.dateTo ?? ''
+  const currentQuery = filters.search ?? ''
   const currentPage = data.page
   const currentPageSize = data.pageSize
 
@@ -183,7 +192,12 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
   }
 
   function handleRatingChange(value: string) {
-    updateParams({ minRating: value })
+    updateParams(ratingFilterToParams(ratingFilterFromValue(value)))
+  }
+
+  // FilterBar debounces typing; push the settled term to the URL.
+  function handleSearchChange(term: string) {
+    updateParams({ q: term.trim() })
   }
 
   function handlePageChange(page: number) {
@@ -201,28 +215,20 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
     [router],
   )
 
-  const filteredItems = searchTerm.trim()
-    ? data.items.filter((item) => {
-        const term = searchTerm.toLowerCase()
-        return (
-          item.message.toLowerCase().includes(term) ||
-          (item.user.fullName ?? '').toLowerCase().includes(term) ||
-          (item.user.email ?? '').toLowerCase().includes(term)
-        )
-      })
-    : data.items
-
   async function handleExport() {
     setExporting(true)
     try {
-      const csv = await exportFeedbackCsv()
-      const blob = new Blob([csv], { type: 'text/csv' })
+      const csv = await exportFeedbackCsv(filters)
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `feedback-${new Date().toISOString().split('T')[0]}.csv`
       a.click()
       URL.revokeObjectURL(url)
+      toast.success('Feedback CSV exported')
+    } catch (err) {
+      toast.error(err instanceof Error && err.message ? err.message : 'Export failed')
     } finally {
       setExporting(false)
     }
@@ -283,7 +289,7 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
           <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
             Analytics
           </h2>
-          <DateRangeControl paramKey="range" />
+          <UrlSegmentedControl paramKey="range" />
         </div>
 
         {/* Chart grid */}
@@ -346,8 +352,8 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
 
       {/* Filters */}
       <FilterBar
-        searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
+        searchValue={currentQuery}
+        onSearchChange={handleSearchChange}
         searchPlaceholder="Search feedback…"
         filters={[
           {
@@ -361,16 +367,43 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
             key: 'minRating',
             label: 'Rating',
             options: RATING_OPTIONS,
-            value: currentMinRating,
+            value: currentRating,
             onChange: handleRatingChange,
           },
         ]}
       />
 
+      {/* Date range */}
+      <div className="flex flex-wrap items-center gap-3">
+        {([
+          ['dateFrom', 'From', currentDateFrom],
+          ['dateTo', 'To', currentDateTo],
+        ] as const).map(([key, label, value]) => (
+          <div key={key} className="flex items-center gap-2">
+            <label htmlFor={`filter-${key}`} className="text-sm text-[var(--color-text-muted)] whitespace-nowrap">
+              {label}:
+            </label>
+            <input
+              id={`filter-${key}`}
+              name={key}
+              type="date"
+              value={value}
+              onChange={(e) => updateParams({ [key]: e.target.value })}
+              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors"
+            />
+          </div>
+        ))}
+        {(currentDateFrom || currentDateTo) && (
+          <Button variant="ghost" size="sm" onClick={() => updateParams({ dateFrom: '', dateTo: '' })}>
+            Clear dates
+          </Button>
+        )}
+      </div>
+
       {/* Table */}
       <DataTable
         columns={COLUMNS}
-        data={filteredItems as unknown as FeedbackItem[]}
+        data={data.items}
         emptyMessage="No feedback matches your filters."
         keyExtractor={(row) => row.id}
         onRowClick={handleRowClick}

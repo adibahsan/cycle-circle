@@ -83,3 +83,21 @@ _Avoid_: transaction log, billing log, subscription history
 **Cron run**:
 One execution of a scheduled job, recorded as a single summary of what it checked and changed, plus any per-item failures.
 _Avoid_: job log, scheduler log
+
+### Admin actions
+
+**Revoke**:
+An admin action that makes a user Free and unsubscribes their number on BDApps, so they stop being charged; their data is kept.
+_Avoid_: cancel Pro, downgrade, remove subscription
+
+**Suspend**:
+An admin action that blocks a user from logging in and unsubscribes their number on BDApps; their data is kept, and Reactivate lifts only the block.
+_Avoid_: ban, disable, deactivate
+
+**Admin override**:
+A plan (Free or Pro) set by an admin that wins over what BDApps reports, until BDApps reports a new subscription for that number.
+_Avoid_: manual plan, forced plan, comp
+
+**Delete**:
+An admin action that hides a user's account and unsubscribes their number on BDApps; an admin can restore it within 30 days.
+_Avoid_: remove, purge, soft-delete

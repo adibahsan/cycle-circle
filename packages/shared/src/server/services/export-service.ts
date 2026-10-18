@@ -1,29 +1,75 @@
 import { prisma } from '../db'
+import { createAuditLog } from './audit-service'
+import { buildFeedbackWhere, type FeedbackFilters } from './feedback-service'
+
+type CsvCell = string | number | boolean | Date | null | undefined
+
+const BOM = '﻿'
+
+function csvCell(value: CsvCell): string {
+  if (value === null || value === undefined) return ''
+  let s = value instanceof Date ? value.toISOString() : String(value)
+  // Formula-injection guard: only for text, never for real numbers.
+  if (typeof value === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
 
 /**
- * Generate a CSV string of all feedback entries with user info.
- * Returns the CSV as a string (header + rows joined by newlines).
+ * Shared CSV writer: UTF-8 BOM (so Excel reads Bengali), RFC 4180 quoting,
+ * CRLF row separators, and a leading `'` on cells that would run as formulas.
  */
-export async function generateFeedbackCsv(): Promise<string> {
+export function toCsv(header: string[], rows: CsvCell[][]): string {
+  const lines = [header, ...rows].map(r => r.map(csvCell).join(','))
+  return BOM + lines.join('\r\n')
+}
+
+export type FeedbackExportFilters = FeedbackFilters
+
+/** CSV of feedback entries (all fields), honouring the admin's current filters. Audit-logged. */
+export async function generateFeedbackCsv(
+  adminId: string,
+  filters: FeedbackExportFilters = {},
+): Promise<string> {
+  const { category, rating, minRating, dateFrom, dateTo } = filters
+  const search = filters.search?.trim()
+  const where = buildFeedbackWhere(filters)
+
   const items = await prisma.feedback.findMany({
+    where,
     include: { user: { select: { fullName: true, email: true } } },
     orderBy: { createdAt: 'desc' },
   })
 
-  const header = 'ID,User,Email,Category,Message,Rating,Date'
-  const rows = items.map(f => {
-    const message = f.message.replace(/"/g, '""')
-    return `${f.id},"${f.user.fullName ?? ''}","${f.user.email ?? ''}",${f.category},"${message}",${f.rating ?? ''},"${f.createdAt.toISOString()}"`
+  await createAuditLog(adminId, 'EXPORT_FEEDBACK_CSV', 'Feedback', 'csv', {
+    rows: items.length,
+    filters: {
+      category: category ?? null,
+      rating: rating ?? null,
+      minRating: minRating ?? null,
+      search: search || null,
+      dateFrom: dateFrom?.toISOString() ?? null,
+      dateTo: dateTo?.toISOString() ?? null,
+    },
   })
 
-  return [header, ...rows].join('\n')
+  return toCsv(
+    ['ID', 'User ID', 'Profile ID', 'User', 'Email', 'Category', 'Message', 'Rating', 'Date'],
+    items.map(f => [
+      f.id,
+      f.userId,
+      f.profileId,
+      f.user.fullName,
+      f.user.email,
+      f.category,
+      f.message,
+      f.rating,
+      f.createdAt,
+    ]),
+  )
 }
 
-/**
- * Generate a CSV string of all non-deleted users.
- * Returns the CSV as a string (header + rows joined by newlines).
- */
-export async function generateUsersCsv(): Promise<string> {
+/** CSV of all non-deleted users. Audit-logged. */
+export async function generateUsersCsv(adminId: string): Promise<string> {
   const users = await prisma.user.findMany({
     where: { deletedAt: null },
     select: {
@@ -42,12 +88,22 @@ export async function generateUsersCsv(): Promise<string> {
     orderBy: { createdAt: 'desc' },
   })
 
-  const header =
-    'ID,Name,Phone,Email,Auth Method,Subscription,Role,Profiles,Profile Complete,Created,Last Login'
-  const rows = users.map(
-    u =>
-      `${u.id},"${u.fullName ?? ''}","${u.phone ?? ''}","${u.email ?? ''}",${u.authMethod},${u.subscriptionStatus},${u.role},${u._count.profiles},${u.profileCompleted},"${u.createdAt.toISOString()}","${u.lastLoginAt?.toISOString() ?? ''}"`,
-  )
+  await createAuditLog(adminId, 'EXPORT_USERS_CSV', 'User', 'csv', { rows: users.length })
 
-  return [header, ...rows].join('\n')
+  return toCsv(
+    ['ID', 'Name', 'Phone', 'Email', 'Auth Method', 'Subscription', 'Role', 'Profiles', 'Profile Complete', 'Created', 'Last Login'],
+    users.map(u => [
+      u.id,
+      u.fullName,
+      u.phone,
+      u.email,
+      u.authMethod,
+      u.subscriptionStatus,
+      u.role,
+      u._count.profiles,
+      u.profileCompleted,
+      u.createdAt,
+      u.lastLoginAt,
+    ]),
+  )
 }

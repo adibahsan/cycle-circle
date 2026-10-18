@@ -5,6 +5,8 @@ import { ServerCog, Play } from 'lucide-react'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { useToast } from '@/components/ui/Toast'
 import {
   triggerDailyReminders,
   triggerCaasCheck,
@@ -157,18 +159,34 @@ export function SystemClient({
   const [isCaasPending, startCaas] = useTransition()
   const [, startToggle] = useTransition()
 
-  function handleRunReminders() {
-    startReminders(async () => {
-      const result = await triggerDailyReminders()
-      setRemindersResult(result)
-    })
+  const toast = useToast()
+  const [confirmSlug, setConfirmSlug] = useState<'daily-reminders' | 'caas-check' | null>(null)
+
+  function report(label: string, result: CronJobResult) {
+    if (result.ok) toast.success(`${label} finished`)
+    else toast.error(result.error ?? `${label} failed`)
   }
 
-  function handleRunCaas() {
-    startCaas(async () => {
-      const result = await triggerCaasCheck()
-      setCaasResult(result)
-    })
+  function runSafely(label: string, job: () => Promise<CronJobResult>, set: (r: CronJobResult) => void) {
+    return async () => {
+      try {
+        const result = await job()
+        set(result)
+        report(label, result)
+      } catch (err) {
+        toast.error(err instanceof Error && err.message ? err.message : `${label} failed`)
+      }
+    }
+  }
+
+  function handleConfirmRun() {
+    const slug = confirmSlug
+    setConfirmSlug(null)
+    if (slug === 'daily-reminders') {
+      startReminders(runSafely('Daily reminders', triggerDailyReminders, setRemindersResult))
+    } else if (slug === 'caas-check') {
+      startCaas(runSafely('Subscription check', triggerCaasCheck, setCaasResult))
+    }
   }
 
   function handleToggle(slug: CronSlug) {
@@ -211,7 +229,7 @@ export function SystemClient({
           schedule="08:00 UTC daily"
           result={remindersResult}
           isPending={isRemindingPending}
-          onRun={handleRunReminders}
+          onRun={() => setConfirmSlug('daily-reminders')}
           slug="daily-reminders"
           enabled={settings['daily-reminders']}
           isToggling={togglingSlug === 'daily-reminders'}
@@ -224,13 +242,27 @@ export function SystemClient({
           schedule="02:00 UTC daily"
           result={caasResult}
           isPending={isCaasPending}
-          onRun={handleRunCaas}
+          onRun={() => setConfirmSlug('caas-check')}
           slug="caas-check"
           enabled={settings['caas-check']}
           isToggling={togglingSlug === 'caas-check'}
           onToggle={() => handleToggle('caas-check')}
         />
       </div>
+
+      <ConfirmModal
+        open={confirmSlug !== null}
+        onClose={() => setConfirmSlug(null)}
+        onConfirm={handleConfirmRun}
+        title={confirmSlug === 'caas-check' ? 'Run subscription check now?' : 'Send daily reminders now?'}
+        message={
+          confirmSlug === 'caas-check'
+            ? 'This runs real CAAS billing checks and can lapse subscriptions after repeated failures.'
+            : 'This sends real reminder emails and notifications to active subscribers.'
+        }
+        confirmLabel="Run now"
+        variant="warning"
+      />
     </div>
   )
 }

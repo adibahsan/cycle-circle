@@ -3,32 +3,19 @@ import { logger } from '../log'
 import { smsSend } from '../adapters/bdapps'
 import { createAuditLog } from './audit-service'
 import { env } from '../../utils/env'
+import {
+  composeSms,
+  scheduleDrafts,
+  canEditBroadcast,
+  canDeleteBroadcast,
+  canSendBroadcast,
+  type SmsDraft,
+  type SmsSendLanguage,
+} from '../../utils/sms'
 
 // ── Pure helpers ───────────────────────────────────────────────────────────────
 
-/**
- * Combine bilingual SMS content for a single tel:all broadcast.
- * If messageBn is absent or blank it is omitted.
- */
-export function combineBilingualSms(messageEn: string, messageBn?: string | null): string {
-  return messageBn && messageBn.trim() ? `${messageEn}\n${messageBn}` : messageEn
-}
-
-/**
- * Parse bulk SMS entry. One message per non-empty line; an optional Bengali
- * translation follows a '|' separator: "English text | Bengali text".
- */
-export function parseBulkSmsInput(text: string): { messageEn: string; messageBn?: string }[] {
-  return text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0)
-    .map((line) => {
-      const [en, bn] = line.split('|').map((s) => s.trim())
-      return bn ? { messageEn: en, messageBn: bn } : { messageEn: en }
-    })
-    .filter((r) => r.messageEn.length > 0)
-}
+export * from '../../utils/sms'
 
 // ── Chart-data helpers ─────────────────────────────────────────────────────────
 
@@ -114,11 +101,14 @@ export async function createBroadcast(
   message: string,
   messageBn?: string,
   scheduledFor?: string,
+  sendLanguage: SmsSendLanguage = 'BOTH',
 ) {
+  composeSms(message, messageBn, sendLanguage) // validates the language/text combination
   return prisma.smsBroadcast.create({
     data: {
       message,
       messageBn: messageBn || null,
+      sendLanguage,
       scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
       status: scheduledFor ? 'SCHEDULED' : 'DRAFT',
       createdBy,
@@ -127,34 +117,32 @@ export async function createBroadcast(
 }
 
 /**
- * Create multiple SCHEDULED broadcasts, one per day starting from startDate
- * (or tomorrow), at 08:00 UTC.
+ * Create multiple SCHEDULED broadcasts from parsed drafts (line parser or CSV).
+ * Dated drafts go out on their own date, undated ones one per day from startDate
+ * (or tomorrow), at 08:00 UTC. All drafts are validated before any row is written.
  */
 export async function createBroadcastsBulk(
   createdBy: string,
-  rows: { messageEn: string; messageBn?: string }[],
+  rows: SmsDraft[],
   startDate?: string,
+  sendLanguage: SmsSendLanguage = 'BOTH',
 ) {
-  const base = startDate ? new Date(startDate) : new Date()
-  if (!startDate) base.setUTCDate(base.getUTCDate() + 1)
-  base.setUTCHours(8, 0, 0, 0)
-  const created = []
-  for (let i = 0; i < rows.length; i++) {
-    const when = new Date(base)
-    when.setUTCDate(base.getUTCDate() + i)
-    created.push(
-      await prisma.smsBroadcast.create({
+  for (const r of rows) composeSms(r.messageEn, r.messageBn, sendLanguage)
+  const dates = scheduleDrafts(rows, startDate)
+  return prisma.$transaction(
+    rows.map((r, i) =>
+      prisma.smsBroadcast.create({
         data: {
-          message: rows[i].messageEn,
-          messageBn: rows[i].messageBn ?? null,
-          scheduledFor: when,
+          message: r.messageEn,
+          messageBn: r.messageBn ?? null,
+          sendLanguage,
+          scheduledFor: dates[i],
           status: 'SCHEDULED',
           createdBy,
         },
       }),
-    )
-  }
-  return created
+    ),
+  )
 }
 
 /**
@@ -162,12 +150,113 @@ export async function createBroadcastsBulk(
  */
 export async function deleteBroadcast(id: string) {
   const broadcast = await prisma.smsBroadcast.findUnique({ where: { id } })
-  if (!broadcast || broadcast.status === 'SENT' || broadcast.status === 'SENDING') {
+  if (!broadcast || !canDeleteBroadcast(broadcast.status)) {
     throw new Error('Cannot delete a sent or in-progress broadcast')
   }
 
   await prisma.smsBroadcast.delete({ where: { id } })
   return { success: true }
+}
+
+/** A send is tried this many times within one run (with backoff) before the broadcast is marked FAILED. */
+export const SMS_MAX_SEND_ATTEMPTS = 3
+/** Base wait between attempts; attempt n waits n x this. */
+const SMS_RETRY_BACKOFF_MS = 1000
+
+export interface SendOptions {
+  /** Base backoff between attempts in ms (tests pass 0). */
+  backoffMs?: number
+}
+
+/** Call smsSend up to SMS_MAX_SEND_ATTEMPTS times; throws the last error. */
+async function smsSendWithRetries(message: string, backoffMs: number) {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= SMS_MAX_SEND_ATTEMPTS; attempt++) {
+    try {
+      return await smsSend(message, ['tel:all'])
+    } catch (err) {
+      lastError = err
+      if (attempt < SMS_MAX_SEND_ATTEMPTS && backoffMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, backoffMs * attempt))
+      }
+    }
+  }
+  throw lastError
+}
+
+async function loadEditable(id: string) {
+  const b = await prisma.smsBroadcast.findUnique({ where: { id } })
+  if (!b) throw new Error('Broadcast not found')
+  if (!canEditBroadcast(b.status)) {
+    throw new Error(
+      b.status === 'SENT' ? 'A sent broadcast cannot be changed' : 'A broadcast that is sending cannot be changed',
+    )
+  }
+  return b
+}
+
+function parseScheduleDate(value: string): Date {
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) throw new Error('Invalid schedule date')
+  return d
+}
+
+export interface UpdateBroadcastInput {
+  message?: string
+  messageBn?: string | null
+  sendLanguage?: SmsSendLanguage
+}
+
+/**
+ * Edit the text / send language of an unsent broadcast. A FAILED broadcast goes back
+ * into the queue (SCHEDULED when it has a date, else DRAFT) with its error cleared.
+ */
+export async function updateBroadcast(id: string, adminUserId: string, input: UpdateBroadcastInput) {
+  const b = await loadEditable(id)
+  const message = input.message ?? b.message
+  const messageBn = input.messageBn === undefined ? b.messageBn : input.messageBn || null
+  const sendLanguage = input.sendLanguage ?? (b.sendLanguage as SmsSendLanguage)
+  if (!message.trim()) throw new Error('Message cannot be empty')
+  composeSms(message, messageBn, sendLanguage) // validates the language/text combination
+
+  const updated = await prisma.smsBroadcast.update({
+    where: { id },
+    data: {
+      message,
+      messageBn,
+      sendLanguage,
+      ...(b.status === 'FAILED'
+        ? { status: b.scheduledFor ? 'SCHEDULED' : 'DRAFT', lastError: null, sendAttempts: 0 }
+        : {}),
+    },
+  })
+  await createAuditLog(adminUserId, 'UPDATE_SMS_BROADCAST', 'SmsBroadcast', id, { sendLanguage })
+  return updated
+}
+
+/** Put an unsent broadcast in the queue for `scheduledFor` (resets attempts and any FAILED state). */
+export async function rescheduleBroadcast(id: string, adminUserId: string, scheduledFor: string) {
+  const when = parseScheduleDate(scheduledFor)
+  const b = await loadEditable(id)
+  const updated = await prisma.smsBroadcast.update({
+    where: { id },
+    data: { scheduledFor: when, status: 'SCHEDULED', lastError: null, sendAttempts: 0 },
+  })
+  await createAuditLog(adminUserId, 'RESCHEDULE_SMS_BROADCAST', 'SmsBroadcast', id, {
+    from: b.scheduledFor?.toISOString() ?? null,
+    to: when.toISOString(),
+  })
+  return updated
+}
+
+/** The scheduled broadcast that will go out next, if any. */
+export async function getNextScheduledBroadcastId(): Promise<string | null> {
+  const next = await prisma.smsBroadcast.findFirst({
+    where: { status: 'SCHEDULED', scheduledFor: { not: null } },
+    orderBy: { scheduledFor: 'asc' },
+    select: { id: true },
+  })
+  return next?.id ?? null
 }
 
 export interface SmsBroadcastListParams {
@@ -185,22 +274,32 @@ export async function listBroadcasts(params: SmsBroadcastListParams = {}) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {}
-  if (status && status !== 'all') where.status = status
+  // 'queue' = everything still to go out (not SENT), soonest first, undated last.
+  if (status === 'queue') where.status = { in: ['DRAFT', 'SCHEDULED', 'SENDING', 'FAILED'] }
+  else if (status && status !== 'all') where.status = status
+  const orderBy =
+    status === 'queue'
+      ? [{ scheduledFor: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }]
+      : [{ createdAt: 'desc' }]
 
-  const [broadcasts, total] = await Promise.all([
+  const [broadcasts, total, overallTotal] = await Promise.all([
     prisma.smsBroadcast.findMany({
       where,
       include: { creator: { select: { fullName: true, email: true } } },
-      orderBy: { createdAt: 'desc' },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      orderBy: orderBy as any,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
     prisma.smsBroadcast.count({ where }),
+    prisma.smsBroadcast.count(),
   ])
 
   return {
     broadcasts,
     total,
+    /** All broadcasts regardless of filter — tells "none yet" from "no filter match". */
+    overallTotal,
     page,
     pageSize,
     totalPages: Math.ceil(total / pageSize),
@@ -215,9 +314,17 @@ export async function listBroadcasts(params: SmsBroadcastListParams = {}) {
  *
  * Called by both manual sendBroadcast and the cron dispatchScheduledBroadcast.
  */
-async function performSend(broadcast: { id: string; message: string; messageBn: string | null }) {
+async function performSend(
+  broadcast: {
+    id: string
+    message: string
+    messageBn: string | null
+    sendLanguage: SmsSendLanguage
+  },
+  opts: SendOptions = {},
+) {
   const isDevMode = env.DEV_MODE || env.NODE_ENV === 'development'
-  const combined = combineBilingualSms(broadcast.message, broadcast.messageBn)
+  const combined = composeSms(broadcast.message, broadcast.messageBn, broadcast.sendLanguage)
   let providerMessageId: string | null = null
   let deliveredCount = 0
   let targetCount = 0
@@ -228,7 +335,7 @@ async function performSend(broadcast: { id: string; message: string; messageBn: 
     deliveredCount = 1
     targetCount = 1
   } else {
-    const res = await smsSend(combined, ['tel:all'])
+    const res = await smsSendWithRetries(combined, opts.backoffMs ?? SMS_RETRY_BACKOFF_MS)
     providerMessageId = res.messageId ?? null
     // Real per-recipient counts arrive asynchronously via /api/webhooks/sms/report.
   }
@@ -249,8 +356,13 @@ async function performSend(broadcast: { id: string; message: string; messageBn: 
       targetCount,
       deliveredCount,
       failedCount: 0,
+      lastError: null,
     },
   })
+}
+
+function errorText(err: unknown) {
+  return (err instanceof Error ? err.message : String(err)).slice(0, 500)
 }
 
 // ── Public send functions ──────────────────────────────────────────────────────
@@ -263,13 +375,13 @@ async function performSend(broadcast: { id: string; message: string; messageBn: 
  * In production the BDApps smsSend API is called with `destinationAddresses:
  * ["tel:all"]` to reach all subscribers.
  */
-export async function sendBroadcast(broadcastId: string, adminUserId: string) {
+export async function sendBroadcast(broadcastId: string, adminUserId: string, opts: SendOptions = {}) {
   const broadcast = await prisma.smsBroadcast.findUnique({ where: { id: broadcastId } })
 
   if (!broadcast) {
     throw new Error('Broadcast not found')
   }
-  if (broadcast.status !== 'DRAFT' && broadcast.status !== 'SCHEDULED') {
+  if (!canSendBroadcast(broadcast.status)) {
     throw new Error(`Cannot send a broadcast with status ${broadcast.status}`)
   }
 
@@ -280,7 +392,7 @@ export async function sendBroadcast(broadcastId: string, adminUserId: string) {
   })
 
   try {
-    const updated = await performSend(broadcast)
+    const updated = await performSend(broadcast, opts)
 
     await createAuditLog(adminUserId, 'SEND_SMS_BROADCAST', 'SmsBroadcast', broadcastId, {
       message: broadcast.message.slice(0, 100),
@@ -289,10 +401,10 @@ export async function sendBroadcast(broadcastId: string, adminUserId: string) {
 
     return updated
   } catch (error) {
-    // Roll back to the previous status so the admin can retry
+    // Retries already ran inside performSend: record the failure (the admin can reschedule it).
     await prisma.smsBroadcast.update({
       where: { id: broadcastId },
-      data: { status: broadcast.status },
+      data: { status: 'FAILED', sendAttempts: SMS_MAX_SEND_ATTEMPTS, lastError: errorText(error) },
     })
     throw error
   }
@@ -302,7 +414,7 @@ export async function sendBroadcast(broadcastId: string, adminUserId: string) {
  * Dispatch the next due scheduled broadcast (one per run = one per day).
  * Returns what happened.
  */
-export async function dispatchScheduledBroadcast(now: Date = new Date()) {
+export async function dispatchScheduledBroadcast(now: Date = new Date(), opts: SendOptions = {}) {
   const due = await prisma.smsBroadcast.findFirst({
     where: { status: 'SCHEDULED', scheduledFor: { lte: now } },
     orderBy: { scheduledFor: 'asc' },
@@ -310,14 +422,18 @@ export async function dispatchScheduledBroadcast(now: Date = new Date()) {
   if (!due) return { dispatched: false as const }
   await prisma.smsBroadcast.update({ where: { id: due.id }, data: { status: 'SENDING' } })
   try {
-    const sent = await performSend(due)
+    const sent = await performSend(due, opts)
     await createAuditLog(due.createdBy, 'DISPATCH_SMS_BROADCAST', 'SmsBroadcast', due.id, {
       auto: true,
     })
     return { dispatched: true as const, broadcastId: sent.id }
   } catch (err) {
-    await prisma.smsBroadcast.update({ where: { id: due.id }, data: { status: 'SCHEDULED' } })
-    logger.cron('sms.broadcast.dispatch.failed', { broadcastId: due.id, error: String(err) }, { level: 'error' })
+    // performSend already retried; a failing broadcast must not hold the queue across days.
+    await prisma.smsBroadcast.update({
+      where: { id: due.id },
+      data: { status: 'FAILED', sendAttempts: SMS_MAX_SEND_ATTEMPTS, lastError: errorText(err) },
+    })
+    logger.cron('sms.broadcast.dispatch.failed', { broadcastId: due.id, attempts: SMS_MAX_SEND_ATTEMPTS, failed: true, error: String(err) }, { level: 'error' })
     return { dispatched: false as const, error: String(err) }
   }
 }

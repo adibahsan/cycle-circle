@@ -67,7 +67,7 @@ The sections below retain the **reference sketches** aligned with the checked-in
 | `ops/deploy/Dockerfile.admin` | Same pattern for `apps/admin` |
 | `ops/deploy/compose.prod.yml` | Prod Compose stack: nginx, certbot, web, admin, postgres, redis, monitoring (Prometheus/Grafana + exporters) |
 | `ops/deploy/nginx/cycle-circle.conf` | TLS-terminating vhost config, based on `ops/docker/nginx/edge.conf` |
-| `ops/deploy/vesta-crontab` | Host crontab: the two app crons + cert renewal |
+| `ops/deploy/vesta-crontab` | Host crontab: the three app crons + cert renewal |
 
 ### Dockerfile.web (proposed)
 
@@ -290,12 +290,13 @@ server {
 # apps/web/worker/index.ts (BullMQ) is a LOCAL DEV alternative only — do not run it in prod.
 0 8 * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/daily-reminders >> /var/log/vesta/cron-daily-reminders.log 2>&1
 0 2 * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/caas-check >> /var/log/vesta/cron-caas-check.log 2>&1
+30 2 * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/nightly-maintenance >> /var/log/vesta/cron-nightly-maintenance.log 2>&1
 
 # TLS renewal, twice daily (certbot's own recommendation; it no-ops unless <30 days remain)
 0 3,15 * * * cd /opt/vesta && docker compose -f ops/deploy/compose.prod.yml run --rm certbot renew --webroot -w /var/www/certbot --quiet && docker compose -f ops/deploy/compose.prod.yml exec -T nginx nginx -s reload >> /var/log/vesta/certbot-renew.log 2>&1
 ```
 
-Both cron routes accept `GET` and `POST` and export the same `withCronAuth`-wrapped handler (`apps/web/src/app/api/cron/{daily-reminders,caas-check}/route.ts`) — `curl -X POST` above matches how Vercel's own cron and the local worker invoke them.
+All three cron routes accept `GET` and `POST` and export the same `withCronAuth`-wrapped handler (`apps/web/src/app/api/cron/{daily-reminders,caas-check,nightly-maintenance}/route.ts`) — `curl -X POST` above matches how Vercel's own cron and the local worker invoke them.
 
 ---
 
@@ -410,6 +411,7 @@ Run these as the `vesta` user (sudo where noted). Assumes §2's artifacts exist 
     sed "s/CRON_SECRET_PLACEHOLDER/$(grep ^CRON_SECRET= /opt/vesta/.env.web.production | cut -d= -f2-)/" ops/deploy/vesta-crontab | crontab -u vesta -
     chmod +x /opt/vesta/ops/deploy/scripts/backup-db.sh
     sudo mkdir -p /var/log/vesta && sudo chown vesta:vesta /var/log/vesta
+    sudo mkdir -p /var/lib/vesta/uploads   # article images (see 05-operations.md §4)
     crontab -u vesta -l   # confirm it installed
     ```
 

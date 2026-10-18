@@ -35,7 +35,7 @@ describe('placePopover (picker is never clipped)', () => {
 })
 
 describe('admin pop-ups use the shell', () => {
-  const hand = ['components/ui/ConfirmModal.tsx', 'app/(admin)/sms/SmsClient.tsx', 'app/(admin)/content/ContentClient.tsx', 'app/(admin)/layout.tsx']
+  const hand = ['components/ui/ConfirmModal.tsx', 'app/(admin)/sms/SmsClient.tsx', 'app/(admin)/sms/CreateBroadcastModal.tsx', 'app/(admin)/sms/EditBroadcastModal.tsx', 'app/(admin)/sms/RescheduleModal.tsx', 'app/(admin)/content/ContentClient.tsx', 'app/(admin)/layout.tsx']
   for (const f of hand) {
     it(`${f} has no hand-rolled overlay`, () => {
       const src = read(f)
@@ -56,7 +56,8 @@ describe('admin pop-ups use the shell', () => {
 
   it('the confirm modal and the pop-ups are on Modal', () => {
     expect(read('components/ui/ConfirmModal.tsx')).toContain("from './Modal'")
-    expect(read('app/(admin)/sms/SmsClient.tsx')).toContain('<Modal')
+    for (const f of ['CreateBroadcastModal', 'EditBroadcastModal', 'RescheduleModal'])
+      expect(read(`app/(admin)/sms/${f}.tsx`)).toContain('<Modal')
     expect(read('app/(admin)/content/ContentClient.tsx')).toContain('<Modal')
   })
 

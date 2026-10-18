@@ -3,6 +3,7 @@ import {
   getSmsBroadcasts,
   getSmsSendHistory,
   getSmsDeliveryBreakdown,
+  getNextSmsBroadcastId,
 } from '@/app/queries/sms-queries'
 import { SmsClient } from './SmsClient'
 
@@ -28,14 +29,15 @@ export default async function SmsPage({
   const days = RANGE_TO_DAYS[range]
 
   // Fetch all data in parallel
-  const [data, sendHistory, deliveryBreakdown] = await Promise.all([
+  const [data, sendHistory, deliveryBreakdown, nextSendId] = await Promise.all([
     getSmsBroadcasts({
       page: Number(params.page) || 1,
       pageSize: Number(params.pageSize) || 20,
-      status: params.status,
+      status: params.status ?? 'queue',
     }),
     getSmsSendHistory(days),
     getSmsDeliveryBreakdown(),
+    getNextSmsBroadcastId(),
   ])
 
   return (
@@ -44,6 +46,7 @@ export default async function SmsPage({
       sendHistory={sendHistory}
       deliveryBreakdown={deliveryBreakdown}
       range={range}
+      nextSendId={nextSendId}
     />
   )
 }

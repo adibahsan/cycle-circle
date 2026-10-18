@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useRef, useTransition } from 'react'
+import { useState, useRef, useTransition, type KeyboardEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useToast } from '@/components/ui/Toast'
 import {
   ArrowLeft,
   Phone,
@@ -22,22 +23,27 @@ import {
   Clock,
   Activity,
   Bell,
+  History,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { RefetchButton } from '@/components/ui/RefetchButton'
+import { useUrlTab } from '@/lib/use-url-tab'
+import type { PlanHistoryEntry } from '@vesta/shared/server/services'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { Select } from '@/components/ui/Select'
 import {
   suspendUser,
   reactivateUser,
   softDeleteUser,
+  restoreUser,
   setUserSubscriptionStatus,
   setUserNotificationPrefs,
 } from '@/app/actions/user-actions'
 import { sendUserReminders, type CronJobResult } from '@/app/actions/system-actions'
+import { isWithinRestoreWindow, RESTORE_WINDOW_DAYS } from '@vesta/shared/utils/restore-window'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
 
@@ -116,6 +122,8 @@ interface UserDetail {
 
 interface UserDetailClientProps {
   user: UserDetail
+  /** Loaded server-side only while the Plan history tab is open. */
+  planHistory: PlanHistoryEntry[] | null
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -156,11 +164,14 @@ function StatusBadge({ status }: { status: UserStatus }) {
   return <Badge variant="neutral">Deleted</Badge>
 }
 
-type TabKey = 'profiles' | 'subscription' | 'feedback'
+type TabKey = 'profiles' | 'subscription' | 'plan' | 'feedback'
+
+const TAB_KEYS = ['profiles', 'subscription', 'plan', 'feedback'] as const satisfies readonly TabKey[]
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'profiles', label: 'Profiles', icon: <Heart size={15} aria-hidden="true" /> },
   { key: 'subscription', label: 'Subscription', icon: <CreditCard size={15} aria-hidden="true" /> },
+  { key: 'plan', label: 'Plan history', icon: <History size={15} aria-hidden="true" /> },
   { key: 'feedback', label: 'Feedback', icon: <MessageSquare size={15} aria-hidden="true" /> },
 ]
 
@@ -168,25 +179,39 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
 // Confirm modal state
 // ─────────────────────────────────────────────────────────────────────────────
 
-type ModalAction = 'suspend' | 'delete' | 'setStatus' | null
+type ModalAction = 'suspend' | 'delete' | 'reactivate' | 'restore' | 'setStatus' | null
 
 const MODAL_CONFIG: Record<
-  'suspend' | 'delete',
+  'suspend' | 'delete' | 'reactivate' | 'restore',
   { title: string; message: string; confirmLabel: string; variant: 'danger' | 'warning' }
 > = {
   suspend: {
     title: 'Suspend User',
     message:
-      'This will prevent the user from logging in. They can be reactivated at any time.',
+      'This signs the user out everywhere immediately, prevents them from logging in, and unsubscribes their number on BDApps. They can be reactivated at any time, but reactivating does not re-subscribe them.',
     confirmLabel: 'Suspend',
     variant: 'warning',
   },
   delete: {
     title: 'Delete User',
     message:
-      'This soft-deletes the user account. Their data is retained but the account will be inaccessible.',
+      `This soft-deletes the user account and unsubscribes their number on BDApps. The account can be restored for ${RESTORE_WINDOW_DAYS} days, after which it is purged. Restoring does not re-subscribe them.`,
     confirmLabel: 'Delete',
     variant: 'danger',
+  },
+  reactivate: {
+    title: 'Reactivate User',
+    message:
+      'This lets the user log in again. It does not re-subscribe their number on BDApps; they subscribe again by logging in with their phone.',
+    confirmLabel: 'Reactivate',
+    variant: 'warning',
+  },
+  restore: {
+    title: 'Restore User',
+    message:
+      'This restores the deleted account. It does not re-subscribe their number on BDApps; they subscribe again by logging in with their phone.',
+    confirmLabel: 'Restore',
+    variant: 'warning',
   },
 }
 
@@ -592,6 +617,77 @@ function SubscriptionTab({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Plan history Tab (translog lines for this user)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CAUSE_LABELS: Record<string, string> = {
+  'otp-verify': 'OTP sign-in',
+  'phone-verify': 'Phone verified',
+  'dev-login': 'Dev login',
+  webhook: 'BDApps webhook',
+  'nightly-check': 'Nightly check',
+  unsubscribe: 'Unsubscribed',
+  admin: 'Admin',
+  unknown: 'Unknown',
+}
+
+function PlanHistoryTab({ entries }: { entries: PlanHistoryEntry[] }) {
+  if (entries.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-12 text-[var(--color-text-muted)]">
+        <History size={36} aria-hidden="true" className="opacity-30" />
+        <p className="text-sm">No plan changes recorded for this user.</p>
+      </div>
+    )
+  }
+
+  return (
+    <ol className="space-y-3">
+      {entries.map((e, i) => (
+        <li
+          key={`${e.ts}-${i}`}
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 shadow-soft"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-primary)]">
+              {e.event === 'plan.bdapps-unsubscribe' ? (
+                <>
+                  <Badge variant={e.unsubscribe?.result === 'failed' ? 'danger' : e.unsubscribe?.result === 'skipped' ? 'warning' : 'success'} size="sm">
+                    {e.unsubscribe?.result ?? 'skipped'}
+                  </Badge>
+                  <span>BDApps unsubscribe</span>
+                </>
+              ) : e.event === 'plan.override-kept' ? (
+                <>
+                  <Badge variant="warning" size="sm">{e.to ?? '—'}</Badge>
+                  <span>Admin override kept</span>
+                </>
+              ) : (
+                <>
+                  <Badge variant="neutral" size="sm">{e.from ?? 'None'}</Badge>
+                  <span aria-hidden="true">→</span>
+                  <span className="sr-only">to</span>
+                  <Badge variant={e.to === 'PRO' ? 'success' : 'neutral'} size="sm">{e.to ?? '—'}</Badge>
+                  {!e.changed && <span className="text-xs text-[var(--color-text-muted)]">(no change)</span>}
+                </>
+              )}
+            </div>
+            <p className="text-xs text-[var(--color-text-muted)]">
+              {CAUSE_LABELS[e.cause] ?? e.cause}
+              {e.adminId && <> · by admin <span className="font-mono">{e.adminId}</span></>}
+              {e.unsubscribe?.error && <> · {e.unsubscribe.error}</>}
+            </p>
+          </div>
+          <time dateTime={e.ts} className="text-xs tabular-nums text-[var(--color-text-muted)]">
+            {formatDateTime(new Date(e.ts))}
+          </time>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Feedback Tab
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -655,51 +751,68 @@ function FeedbackTab({ feedback }: { feedback: Feedback[] }) {
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function UserDetailClient({ user }: UserDetailClientProps) {
+export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [activeTab, setActiveTab] = useState<TabKey>('profiles')
+  const [activeTab, setActiveTab] = useUrlTab(TAB_KEYS, 'profiles')
+  const toast = useToast()
   const [modalAction, setModalAction] = useState<ModalAction>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [suspendReason, setSuspendReason] = useState('')
 
   // Subscription status selector state
   const [pendingStatus, setPendingStatus] = useState<'PRO' | 'FREE' | 'LAPSED' | null>(null)
+
+  function handleTabKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const i = TAB_KEYS.indexOf(activeTab)
+    const next =
+      e.key === 'ArrowRight' ? (i + 1) % TAB_KEYS.length
+      : e.key === 'ArrowLeft' ? (i - 1 + TAB_KEYS.length) % TAB_KEYS.length
+      : e.key === 'Home' ? 0
+      : e.key === 'End' ? TAB_KEYS.length - 1
+      : -1
+    if (next < 0) return
+    e.preventDefault()
+    setActiveTab(TAB_KEYS[next])
+    document.getElementById(`tab-${TAB_KEYS[next]}`)?.focus()
+  }
 
   const status = getUserStatus(user)
   const isSuspended = status === 'suspended'
   const isDeleted = status === 'deleted'
   const userTier = getSubscriptionTier(user)
   const isPro = userTier === 'PRO'
+  const canRestore = isDeleted && !!user.deletedAt && isWithinRestoreWindow(new Date(user.deletedAt))
 
   async function handleConfirm() {
     if (!modalAction) return
     setActionError(null)
 
     try {
-      if (modalAction === 'suspend') await suspendUser(user.id)
-      else if (modalAction === 'delete') await softDeleteUser(user.id)
+      if (modalAction === 'suspend' || modalAction === 'delete') {
+        const res = modalAction === 'suspend'
+          ? await suspendUser(user.id, suspendReason.trim())
+          : await softDeleteUser(user.id)
+        if (res.bdappsError) {
+          toast.error(`${modalAction === 'suspend' ? 'User suspended' : 'User deleted'}, but the BDApps unsubscribe failed: ${res.bdappsError}. The user may still be charged.`)
+        }
+      }
+      else if (modalAction === 'reactivate') await reactivateUser(user.id)
+      else if (modalAction === 'restore') await restoreUser(user.id)
       else if (modalAction === 'setStatus' && pendingStatus) {
-        await setUserSubscriptionStatus(user.id, pendingStatus)
+        const res = await setUserSubscriptionStatus(user.id, pendingStatus)
+        if (res.bdappsError) {
+          toast.error(`Plan changed, but the BDApps unsubscribe failed: ${res.bdappsError}. The user may still be charged.`)
+        }
         setPendingStatus(null)
       }
 
       setModalAction(null)
+      setSuspendReason('')
       startTransition(() => router.refresh())
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
     }
-  }
-
-  function handleReactivate() {
-    setActionError(null)
-    startTransition(async () => {
-      try {
-        await reactivateUser(user.id)
-        router.refresh()
-      } catch (err) {
-        setActionError(err instanceof Error ? err.message : 'Failed to reactivate user.')
-      }
-    })
   }
 
   function handleStatusSelectChange(value: string) {
@@ -810,8 +923,8 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={handleReactivate}
-                  loading={isPending}
+                  onClick={() => setModalAction('reactivate')}
+                  disabled={isPending}
                 >
                   <CheckCircle size={14} aria-hidden="true" />
                   Reactivate
@@ -841,9 +954,24 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
           )}
 
           {isDeleted && (
-            <Badge variant="neutral" className="shrink-0">
-              Deleted {formatDate(user.deletedAt)}
-            </Badge>
+            <div className="flex shrink-0 items-center gap-3">
+              <Badge variant="neutral">Deleted {formatDate(user.deletedAt)}</Badge>
+              {canRestore ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setModalAction('restore')}
+                  disabled={isPending}
+                >
+                  <CheckCircle size={14} aria-hidden="true" />
+                  Restore
+                </Button>
+              ) : (
+                <span className="text-xs text-[var(--color-text-muted)]">
+                  Restore window ({RESTORE_WINDOW_DAYS} days) has passed
+                </span>
+              )}
+            </div>
           )}
         </div>
 
@@ -865,7 +993,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="glass rounded-2xl border border-[var(--color-border)] p-4 shadow-soft text-center">
           <p className="text-2xl font-bold tabular-nums text-[var(--color-text-primary)]">{user.profiles.length}</p>
           <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Profiles</p>
@@ -886,12 +1014,23 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
       {!isDeleted && <SendRemindersCard userId={user.id} />}
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-[var(--color-bg-secondary)] p-1 w-fit">
+      <div
+        role="tablist"
+        aria-label="User details"
+        className="flex gap-1 rounded-xl bg-[var(--color-bg-secondary)] p-1 w-fit max-w-full overflow-x-auto"
+        onKeyDown={handleTabKeyDown}
+      >
         {TABS.map((tab) => (
           <button
             key={tab.key}
+            type="button"
+            role="tab"
+            id={`tab-${tab.key}`}
+            aria-selected={activeTab === tab.key}
+            aria-controls={`tabpanel-${tab.key}`}
+            tabIndex={activeTab === tab.key ? 0 : -1}
             onClick={() => setActiveTab(tab.key)}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] ${
+            className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] ${
               activeTab === tab.key
                 ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-soft'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
@@ -904,7 +1043,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
       </div>
 
       {/* Tab content */}
-      <div>
+      <div role="tabpanel" id={`tabpanel-${activeTab}`} aria-labelledby={`tab-${activeTab}`} tabIndex={0} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] rounded-xl">
         {activeTab === 'profiles' && <ProfilesTab profiles={user.profiles} userId={user.id} />}
         {activeTab === 'subscription' && (
           <SubscriptionTab
@@ -912,15 +1051,17 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
             userStatus={userTier}
           />
         )}
+        {activeTab === 'plan' && <PlanHistoryTab entries={planHistory ?? []} />}
         {activeTab === 'feedback' && <FeedbackTab feedback={user.feedback} />}
       </div>
 
       {/* Confirm modals */}
       <ConfirmModal
         open={modalAction !== null}
-        onClose={() => { setModalAction(null); setPendingStatus(null) }}
+        onClose={() => { setModalAction(null); setPendingStatus(null); setSuspendReason('') }}
         onConfirm={handleConfirm}
         loading={isPending}
+        confirmDisabled={modalAction === 'suspend' && !suspendReason.trim()}
         title={
           modalAction === 'setStatus'
             ? 'Change Subscription Status'
@@ -949,7 +1090,26 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
             ? MODAL_CONFIG[modalAction].variant
             : 'danger'
         }
-      />
+      >
+        {modalAction === 'suspend' && (
+          <div className="mb-6">
+            <label htmlFor="suspend-reason" className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+              Reason (required, saved to the audit log)
+            </label>
+            <textarea
+              id="suspend-reason"
+              name="suspend-reason"
+              rows={3}
+              required
+              maxLength={500}
+              value={suspendReason}
+              onChange={(e) => setSuspendReason(e.target.value)}
+              placeholder="Why is this account being suspended…"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-2 text-sm text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+            />
+          </div>
+        )}
+      </ConfirmModal>
     </div>
   )
 }

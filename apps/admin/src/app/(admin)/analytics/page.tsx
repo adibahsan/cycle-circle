@@ -4,8 +4,9 @@ import {
   getSymptomsByCategory,
   getPredictionAccuracy,
   getUserRetention,
-  getUserTrend,
+  getTrendMetric,
   getPredictionMae,
+  getPredictionMaeTrend,
   getSymptomsByPhase,
 } from '@/app/queries/analytics-queries'
 import {
@@ -13,15 +14,13 @@ import {
   getFeedbackCategories,
   getFeedbackRatings,
 } from '@/app/queries/feedback-queries'
+import {
+  ACCURACY_METRICS,
+  TREND_METRICS,
+  resolveMetric,
+  resolvePanelRange,
+} from '@/lib/analytics-panels'
 import { AnalyticsClient } from './AnalyticsClient'
-
-// Map the ?range= URL param to a number of days for getUserTrend.
-const RANGE_TO_DAYS: Record<string, number> = {
-  '7d': 7,
-  '30d': 30,
-  '90d': 90,
-  '1y': 365,
-}
 
 export default async function AnalyticsPage({
   searchParams,
@@ -30,46 +29,56 @@ export default async function AnalyticsPage({
 }) {
   await requireAdminUser()
 
-  const resolvedParams = await searchParams
-  const rawRange = Array.isArray(resolvedParams.range)
-    ? resolvedParams.range[0]
-    : (resolvedParams.range ?? '30d')
-  const range = rawRange in RANGE_TO_DAYS ? rawRange : '30d'
-  const days = RANGE_TO_DAYS[range]
+  const params = await searchParams
+  const now = new Date()
+  const cycleLength = resolvePanelRange(params, 'cycleLength', now)
+  const symptoms = resolvePanelRange(params, 'symptoms', now)
+  const phase = resolvePanelRange(params, 'phase', now)
+  const accuracy = resolvePanelRange(params, 'accuracy', now)
+  const mae = resolvePanelRange(params, 'mae', now)
+  const retention = resolvePanelRange(params, 'retention', now)
+  const trend = resolvePanelRange(params, 'trend', now)
+  const feedback = resolvePanelRange(params, 'feedback', now)
+  const accuracyMetric = resolveMetric(params, ACCURACY_METRICS)
+  const trendMetric = resolveMetric(params, TREND_METRICS)
 
   const [
     cycleLengths,
-    symptoms,
+    symptomsData,
     predictions,
-    retention,
-    trend,
+    retentionData,
+    trendData,
     predictionMae,
+    predictionMaeTrend,
     feedbackVolume,
     feedbackCategories,
     feedbackRatings,
     symptomsByPhase,
   ] = await Promise.all([
-    getCycleLengthDistribution(),
-    getSymptomsByCategory(),
-    getPredictionAccuracy(),
-    getUserRetention(),
-    getUserTrend(days),
+    getCycleLengthDistribution(cycleLength.range),
+    getSymptomsByCategory(symptoms.range),
+    getPredictionAccuracy(accuracy.range),
+    getUserRetention(retention.range),
+    getTrendMetric(trendMetric, trend.days),
     getPredictionMae(),
-    getFeedbackVolume(days),
-    getFeedbackCategories(days),
-    getFeedbackRatings(days),
-    getSymptomsByPhase(),
+    getPredictionMaeTrend(mae.range),
+    getFeedbackVolume(feedback.days),
+    getFeedbackCategories(feedback.days),
+    getFeedbackRatings(feedback.days),
+    getSymptomsByPhase(phase.range),
   ])
 
   return (
     <AnalyticsClient
       cycleLengths={cycleLengths}
-      symptoms={symptoms}
+      symptoms={symptomsData}
       predictions={predictions}
-      retention={retention}
-      trend={trend}
-      range={range}
+      accuracyMetric={accuracyMetric}
+      retention={retentionData}
+      trend={trendData}
+      trendMetric={trendMetric}
       predictionMae={predictionMae}
+      predictionMaeTrend={predictionMaeTrend}
       feedbackVolume={feedbackVolume}
       feedbackCategories={feedbackCategories}
       feedbackRatings={feedbackRatings}

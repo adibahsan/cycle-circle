@@ -136,6 +136,16 @@ Optional on both apps (see [08-logging.md](./08-logging.md)). Prod Compose sets 
 
 ---
 
+## Article image uploads
+
+Optional on both apps. Prod Compose sets `UPLOAD_DIR` for `web` (read-only) and `admin` (read-write); no env-file entry is required.
+
+| Variable | Required? | Notes |
+|---|---|---|
+| `UPLOAD_DIR` | No | Directory holding uploaded article images, served by the apps at `/uploads/<name>`. Default `<cwd>/uploads`; prod `/var/lib/vesta/uploads` (host bind mount). |
+
+---
+
 ## Related docs
 
 - [03-deployment.md](./03-deployment.md) — how these files are created, permissioned, and loaded; the Dockerfile build-arg mechanics for `NEXT_PUBLIC_*`

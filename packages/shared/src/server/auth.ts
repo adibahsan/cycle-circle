@@ -3,10 +3,16 @@ import { cookies } from 'next/headers'
 import { prisma } from './db'
 import { env } from '../utils/env'
 import { ApiError } from './api-error'
-import { blacklistJti, isJtiBlacklisted } from './adapters/redis'
+import {
+  blacklistJti,
+  isJtiBlacklisted,
+  getSessionsValidAfterCache,
+  setSessionsValidAfterCache,
+} from './adapters/redis'
 
 const COOKIE_NAME = env.AUTH_COOKIE_NAME
-const JWT_EXPIRY_SECONDS = 60 * 60 * 24 * 30 // 30 days
+const JWT_EXPIRY_SECONDS = 60 * 60 * 24 * 30 // 30 days (web app)
+export const ADMIN_JWT_EXPIRY_SECONDS = 60 * 60 * 24 * 7 // 7 days (admin app)
 
 function secret() {
   return new TextEncoder().encode(env.JWT_SECRET)
@@ -27,7 +33,7 @@ export async function issueJwt(payload: {
   phone?: string
   email?: string
   role?: string
-}): Promise<string> {
+}, expirySeconds: number = JWT_EXPIRY_SECONDS): Promise<string> {
   const jti = crypto.randomUUID()
   const token = await new SignJWT({
     phone: payload.phone,
@@ -38,19 +44,19 @@ export async function issueJwt(payload: {
     .setSubject(payload.sub)
     .setJti(jti)
     .setIssuedAt()
-    .setExpirationTime(`${JWT_EXPIRY_SECONDS}s`)
+    .setExpirationTime(`${expirySeconds}s`)
     .sign(secret())
 
   return token
 }
 
-export async function setAuthCookie(token: string): Promise<void> {
+export async function setAuthCookie(token: string, maxAgeSeconds: number = JWT_EXPIRY_SECONDS): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: JWT_EXPIRY_SECONDS,
+    maxAge: maxAgeSeconds,
     path: '/',
   })
 }
@@ -69,11 +75,48 @@ export async function verifyAuth(): Promise<JwtPayload | null> {
     const { payload } = await jwtVerify(token, secret())
     const jti = payload.jti as string | undefined
     if (jti && (await isJtiBlacklisted(jti))) return null
+    if (payload.sub && (await isIssuedBeforeSessionsValidAfter(payload.sub, payload.iat))) return null
 
     return payload as JwtPayload
   } catch {
     return null
   }
+}
+
+/**
+ * True when a token (JWT `iat`, seconds) predates the user's sessions-valid-after
+ * marker (epoch ms; 0/null = none). Fail-closed on the boundary second: a token
+ * issued in the same second as the marker is rejected.
+ */
+export function isIssuedBeforeMarker(iat: number | undefined, markerMs: number | null): boolean {
+  if (!markerMs) return false
+  return (iat ?? 0) <= Math.floor(markerMs / 1000)
+}
+
+/** Marker lookup: session store (Redis) first, database fallback (then re-cached). */
+async function isIssuedBeforeSessionsValidAfter(userId: string, iat: number | undefined): Promise<boolean> {
+  let markerMs = await getSessionsValidAfterCache(userId)
+  if (markerMs === null) {
+    const row = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { sessionsValidAfter: true },
+    })
+    markerMs = row?.sessionsValidAfter?.getTime() ?? 0
+    await setSessionsValidAfterCache(userId, markerMs)
+  }
+  return isIssuedBeforeMarker(iat, markerMs)
+}
+
+/**
+ * Invalidate every existing session of a user: all tokens issued up to now are
+ * rejected by verifyAuth on their next request (web and admin). Reusable by any
+ * flow that ends access (suspend, delete, BDApps unsubscribe).
+ */
+export async function bumpSessionsValidAfter(userId: string): Promise<Date> {
+  const now = new Date()
+  await prisma.user.update({ where: { id: userId }, data: { sessionsValidAfter: now } })
+  await setSessionsValidAfterCache(userId, now.getTime())
+  return now
 }
 
 export async function requireAuth(): Promise<JwtPayload> {

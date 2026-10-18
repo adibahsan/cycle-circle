@@ -19,8 +19,10 @@ export async function listAuditLogs(params: {
   action?: string
   targetType?: string
   adminId?: string
+  search?: string
 }) {
   const { page = 1, pageSize = 20, action, targetType, adminId } = params
+  const search = params.search?.trim()
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {}
@@ -28,6 +30,14 @@ export async function listAuditLogs(params: {
   if (action) where.action = action
   if (targetType) where.targetType = targetType
   if (adminId) where.adminId = adminId
+  if (search) {
+    // Actions are stored as SNAKE_CASE; the UI shows them with spaces.
+    const actionTerm = search.replace(/\s+/g, '_')
+    where.OR = [
+      { action: { contains: actionTerm, mode: 'insensitive' } },
+      { targetId: { contains: search, mode: 'insensitive' } },
+    ]
+  }
 
   const [logs, total] = await Promise.all([
     prisma.adminAuditLog.findMany({

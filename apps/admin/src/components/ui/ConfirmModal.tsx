@@ -13,6 +13,9 @@ interface ConfirmModalProps {
   confirmLabel?: string;
   variant?: 'danger' | 'warning';
   loading?: boolean;
+  /** Extra content (e.g. a reason field) rendered under the message. */
+  children?: React.ReactNode;
+  confirmDisabled?: boolean;
 }
 
 export function ConfirmModal({
@@ -24,6 +27,8 @@ export function ConfirmModal({
   confirmLabel = 'Confirm',
   variant = 'danger',
   loading,
+  children,
+  confirmDisabled,
 }: ConfirmModalProps) {
   return (
     <Modal open={open} onClose={onClose} titleId="confirm-modal-title" dismissible={!loading}>
@@ -74,6 +79,7 @@ export function ConfirmModal({
           {title}
         </h2>
         <p className="mb-6 text-center text-sm text-[var(--color-text-secondary)]">{message}</p>
+        {children}
 
         <div className="flex gap-3">
           <Button
@@ -88,6 +94,7 @@ export function ConfirmModal({
             variant={variant === 'danger' ? 'danger' : 'primary'}
             fullWidth
             loading={loading}
+            disabled={confirmDisabled}
             onClick={onConfirm}
           >
             {confirmLabel}

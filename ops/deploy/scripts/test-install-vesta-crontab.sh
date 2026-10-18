@@ -53,8 +53,8 @@ done < "$SRC_CRONTAB"
 
 # Hard-coded literal check, independent of the substitution logic above.
 n=$(grep -cF -- 'Bearer ab&cd/ef\gh"' "$T/installed" || true)
-if [ "$n" -ne 2 ]; then
-  echo "FAIL: expected exactly 2 lines with literal secret, got $n"; fail=1
+if [ "$n" -ne 3 ]; then
+  echo "FAIL: expected exactly 3 lines with literal secret, got $n"; fail=1
 fi
 
 # Non-schedule lines unchanged.

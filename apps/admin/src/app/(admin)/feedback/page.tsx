@@ -5,6 +5,7 @@ import {
   getFeedbackCategories,
   getFeedbackRatings,
 } from '@/app/queries/feedback-queries'
+import { feedbackFiltersFromParams, toFeedbackQuery } from '@vesta/shared/utils/feedback-filters'
 import { FeedbackClient } from './FeedbackClient'
 
 const RANGE_DAYS: Record<string, number> = {
@@ -28,8 +29,7 @@ export default async function FeedbackPage({
     getFeedbackList({
       page: Number(params.page) || 1,
       pageSize: Number(params.pageSize) || 20,
-      category: params.category,
-      minRating: params.minRating ? Number(params.minRating) : undefined,
+      ...toFeedbackQuery(feedbackFiltersFromParams({ get: (k) => params[k] })),
     }),
     getFeedbackVolume(days),
     getFeedbackCategories(days),

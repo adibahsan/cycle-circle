@@ -7,11 +7,15 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 export interface DateRangeOption {
   value: string
   label: string
-  days: number
+  days?: number
 }
 
-export interface DateRangeControlProps {
+export interface UrlSegmentedControlProps {
   paramKey?: string
+  /** Accessible group name; also used for non-date selectors such as a metric picker. */
+  label?: string
+  /** Option value shown active when the param is absent; falls back to the 30-day option. */
+  defaultValue?: string
   options?: DateRangeOption[]
   className?: string
 }
@@ -25,13 +29,15 @@ const DEFAULT_OPTIONS: DateRangeOption[] = [
   { value: '1y',  label: '1y',  days: 365 },
 ]
 
-// ── DateRangeControl ──────────────────────────────────────────────────────
+// ── UrlSegmentedControl ──────────────────────────────────────────────────────
 
-export function DateRangeControl({
+export function UrlSegmentedControl({
   paramKey = 'range',
+  label = 'Date range',
+  defaultValue,
   options = DEFAULT_OPTIONS,
   className,
-}: DateRangeControlProps): React.JSX.Element {
+}: UrlSegmentedControlProps): React.JSX.Element {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -40,7 +46,9 @@ export function DateRangeControl({
   // otherwise fall back to the option whose days === 30, then the first option.
   const currentValue = searchParams.get(paramKey)
   const defaultOption =
-    options.find((o) => o.days === 30) ?? options[0]
+    options.find((o) => o.value === defaultValue) ??
+    options.find((o) => o.days === 30) ??
+    options[0]
 
   const activeOption =
     options.find((o) => o.value === currentValue) ?? defaultOption
@@ -56,7 +64,7 @@ export function DateRangeControl({
   return (
     <div
       role="group"
-      aria-label="Date range"
+      aria-label={label}
       className={[
         'flex items-center gap-0.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-0.5',
         className ?? '',

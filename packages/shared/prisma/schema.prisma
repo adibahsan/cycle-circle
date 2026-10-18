@@ -104,6 +104,12 @@ enum SmsBroadcastStatus {
   FAILED
 }
 
+enum SmsSendLanguage {
+  BN
+  EN
+  BOTH
+}
+
 enum EmailType {
   MAGIC_LINK
   PERIOD_ALERT
@@ -148,6 +154,7 @@ model User {
   role                     Role               @default(USER)
   suspendedAt         DateTime?
   suspendedBy         String?
+  sessionsValidAfter  DateTime?
   deletedAt           DateTime?
   lastLoginAt         DateTime?
   createdAt           DateTime           @default(now())
@@ -241,11 +248,11 @@ model Subscription {
   bdappsSubscriberId    String?
   paymentInstrumentName String?
   amount                Int?
-  consecutiveFailures   Int                @default(0)
-  gracePeriodEndsAt     DateTime?
   adminOverride         Boolean            @default(false)
   adminOverrideBy       String?
   adminOverrideAt       DateTime?
+  /// Revoke only: the BDApps unsubscribe failed, so a repeat REGISTERED must not end the override.
+  adminOverrideUnsubFailed Boolean @default(false)
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 
@@ -376,6 +383,7 @@ model SmsBroadcast {
   id             String             @id @default(cuid())
   message        String
   messageBn      String?
+  sendLanguage   SmsSendLanguage    @default(BOTH)
   scheduledFor   DateTime?
   sentAt         DateTime?
   status         SmsBroadcastStatus @default(DRAFT)
@@ -386,6 +394,9 @@ model SmsBroadcast {
   targetCount    Int?
   deliveredCount Int?
   failedCount    Int?
+  // Send attempts since last (re)schedule; FAILED once it reaches the retry cap.
+  sendAttempts   Int                @default(0)
+  lastError      String?
   createdBy      String
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
@@ -446,4 +457,17 @@ model CronSetting {
   enabled   Boolean  @default(true)
   updatedAt DateTime @updatedAt
   updatedBy String? // admin user id who last changed it
+}
+
+/// Nightly prediction-accuracy snapshot: one row per tier per UTC date (ADR 0006
+/// nightly job). The admin dashboard and analytics read the latest date.
+model PredictionAccuracySnapshot {
+  id         String   @id @default(cuid())
+  date       DateTime @db.Date
+  tier       String // 'AVERAGE' | 'ARIMA'
+  maeDays    Float? // null when the tier had no sample
+  sampleSize Int
+  computedAt DateTime @default(now())
+
+  @@unique([date, tier])
 }

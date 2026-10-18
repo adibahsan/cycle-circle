@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Manrope } from 'next/font/google';
+import { Manrope, Noto_Sans_Bengali } from 'next/font/google';
 import { Providers } from '@/components/Providers';
 import { themeBootScript } from '@vesta/shared/utils/theme';
 import './globals.css';
@@ -8,6 +8,13 @@ const manrope = Manrope({
   subsets: ['latin'],
   variable: '--font-display',
   display: 'swap',
+});
+
+const notoBengali = Noto_Sans_Bengali({
+  subsets: ['bengali'],
+  variable: '--font-bengali',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
 });
 
 const siteUrl = 'https://test-vesta-admin.velirasolutions.com';
@@ -29,7 +36,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={manrope.variable} suppressHydrationWarning>
+    <html lang="en" className={`${manrope.variable} ${notoBengali.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootScript('vesta-admin-store') }} />
       </head>
