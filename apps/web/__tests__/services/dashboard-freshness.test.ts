@@ -24,20 +24,30 @@ describe('getDashboardStats freshness', () => {
     const { profile } = await createTestUser('9001')
     await insertPeriodLogs(profile.id, ['2026-01-01'])
 
-    // Other test files write to the same DB in parallel, so compare against
-    // live counts taken either side of the call instead of a fixed +1.
+    // Other test files write to the same DB in parallel, so global counts can move (up and
+    // down) while we measure. Only trust a reading taken in a quiet window: counts equal
+    // before and after the call. In a quiet window the stats must equal the live counts
+    // exactly, which includes our fixture; a cached result would miss it.
     const counts = () =>
       Promise.all([
         testPrisma.user.count({ where: { deletedAt: null } }),
         testPrisma.profile.count(),
       ])
-    const [usersBefore, profilesBefore] = await counts()
-    const stats = await getDashboardStats()
-    const [usersAfter, profilesAfter] = await counts()
-    expect(stats.totalUsers).toBeGreaterThanOrEqual(Math.min(usersBefore, usersAfter))
-    expect(stats.totalUsers).toBeLessThanOrEqual(Math.max(usersBefore, usersAfter))
-    expect(stats.totalProfiles).toBeGreaterThanOrEqual(Math.min(profilesBefore, profilesAfter))
-    expect(stats.totalProfiles).toBeLessThanOrEqual(Math.max(profilesBefore, profilesAfter))
+    let stable: { stats: Awaited<ReturnType<typeof getDashboardStats>>; users: number; profiles: number } | null = null
+    for (let attempt = 0; attempt < 50 && !stable; attempt++) {
+      const [usersBefore, profilesBefore] = await counts()
+      const stats = await getDashboardStats()
+      const [usersAfter, profilesAfter] = await counts()
+      if (usersBefore === usersAfter && profilesBefore === profilesAfter) {
+        stable = { stats, users: usersAfter, profiles: profilesAfter }
+      } else {
+        await new Promise((r) => setTimeout(r, 100))
+      }
+    }
+    expect(stable, 'DB never quiet long enough to compare counts').not.toBeNull()
+    const { stats, users, profiles } = stable!
+    expect(stats.totalUsers).toBe(users)
+    expect(stats.totalProfiles).toBe(profiles)
     expect(stats.dailyLogs).toBeGreaterThanOrEqual(1)
   })
 })
