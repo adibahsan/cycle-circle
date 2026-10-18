@@ -16,9 +16,9 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Cell,
 } from 'recharts'
 import type { CycleLengthPoint, SymptomFrequencyPoint } from '@/app/queries/insights-queries'
+import { INSIGHTS_CHART_COLORS } from '@/lib/insights-data'
 
 export type ChartType = 'line' | 'bar' | 'area'
 
@@ -41,7 +41,7 @@ export function CycleLengthTrendChart({
   formatDate: (ymd: string) => string
   formatNumber: (n: number) => string
 }) {
-  const color = 'var(--goal-accent)'
+  const color = INSIGHTS_CHART_COLORS.cycleLength
 
   const sharedProps = {
     data,
@@ -80,7 +80,7 @@ export function CycleLengthTrendChart({
       contentStyle={{
         background: 'var(--color-bg-card)',
         border: '1px solid var(--color-border)',
-        borderRadius: 12,
+        borderRadius: 16,
         fontSize: 12,
         color: 'var(--color-text-primary)',
       }}
@@ -139,7 +139,7 @@ export function CycleLengthTrendChart({
           <Bar
             dataKey="cycleLength"
             fill={color}
-            radius={[4, 4, 0, 0]}
+            radius={[6, 6, 0, 0]}
             isAnimationActive={animate}
           />
         </BarChart>
@@ -191,7 +191,7 @@ export function SymptomFrequencyChart({
           contentStyle={{
             background: 'var(--color-bg-card)',
             border: '1px solid var(--color-border)',
-            borderRadius: 12,
+            borderRadius: 16,
             fontSize: 12,
             color: 'var(--color-text-primary)',
           }}
@@ -202,14 +202,7 @@ export function SymptomFrequencyChart({
               : label
           }
         />
-        <Bar dataKey="count" radius={[4, 4, 0, 0]} isAnimationActive={animate} fill="var(--goal-accent)">
-          {data.map((entry) => (
-            <Cell
-              key={entry.category}
-              fill="var(--goal-accent)"
-            />
-          ))}
-        </Bar>
+        <Bar dataKey="count" radius={[6, 6, 0, 0]} isAnimationActive={animate} fill={INSIGHTS_CHART_COLORS.symptoms} />
       </BarChart>
     </ResponsiveContainer>
   )

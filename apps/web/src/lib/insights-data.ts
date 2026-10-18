@@ -83,3 +83,12 @@ export function summarizeSymptoms(
   const top = data.reduce((a, b) => (b.count > a.count ? b : a))
   return { top: top.category, topCount: top.count, total }
 }
+
+// ─── Chart colours (#80) ──────────────────────────────────────────────────────
+
+/** Series colours from the pastel accent tokens; each has a dark value. Never the goal accent. */
+export const INSIGHTS_CHART_COLORS = {
+  cycleLength: 'var(--color-accent-pink)',
+  symptoms: 'var(--color-accent-lavender)',
+  fertileWindow: 'var(--color-accent-mint)',
+} as const

@@ -9,7 +9,9 @@ import '@vesta/shared/utils/i18n'
 import { useLanguage } from '@/lib/use-language'
 import type { Lang } from '@/lib/language'
 import { useHasMounted } from '@/components/motion/useHasMounted'
+import { BarChart3 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 import type {
   CycleLengthPoint,
   SymptomFrequencyPoint,
@@ -26,13 +28,14 @@ import {
   insightsLocale,
   summarizeCycleLengths,
   summarizeSymptoms,
+  INSIGHTS_CHART_COLORS,
   type InsightKey,
 } from '@/lib/insights-data'
 import type { ChartType } from './InsightsCharts'
 
 // Recharts loads only when a chart renders (never on the empty state).
 function ChartPlaceholder({ height }: { height: number }) {
-  return <div aria-hidden="true" className="w-full rounded-xl bg-[var(--color-bg-secondary)]" style={{ height }} />
+  return <div aria-hidden="true" className="w-full rounded-2xl bg-[var(--color-bg-secondary)]" style={{ height }} />
 }
 const CycleLengthTrendChart = dynamic(() => import('./InsightsCharts').then((m) => m.CycleLengthTrendChart), {
   ssr: false,
@@ -62,6 +65,20 @@ export interface InsightsClientProps {
 }
 
 type DateRange = '3m' | '6m' | '1y' | 'all'
+
+const RANGE_LABEL_KEYS: Record<DateRange, string> = {
+  '3m': 'insights.last3Months',
+  '6m': 'insights.last6Months',
+  '1y': 'insights.lastYear',
+  all: 'insights.allTime',
+}
+
+/** Pill toggle: neutral ink when on (the goal accent is kept for primary buttons). */
+const TOGGLE_BASE =
+  'min-h-9 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-card)] focus-visible:ring-[var(--color-primary)]'
+const TOGGLE_ON = 'bg-[var(--color-text-primary)] text-[var(--color-bg-card)]'
+const TOGGLE_OFF =
+  'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
 
 // ─── Date range helpers ───────────────────────────────────────────────────────
 
@@ -136,17 +153,6 @@ function ChartSummary({ id, children }: { id: string; children: React.ReactNode 
   )
 }
 
-function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
-  return (
-    <div className="mb-3">
-      <h2 className="text-base font-bold text-[var(--color-text-primary)]">{title}</h2>
-      {subtitle && (
-        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{subtitle}</p>
-      )}
-    </div>
-  )
-}
-
 // ─── Date Range + Chart Type controls ────────────────────────────────────────
 
 function DateRangeControl({
@@ -157,12 +163,7 @@ function DateRangeControl({
   onChange: (r: DateRange) => void
 }) {
   const { t } = useTranslation()
-  const options: { key: DateRange; labelKey: string }[] = [
-    { key: '3m', labelKey: 'insights.last3Months' },
-    { key: '6m', labelKey: 'insights.last6Months' },
-    { key: '1y', labelKey: 'insights.lastYear' },
-    { key: 'all', labelKey: 'insights.allTime' },
-  ]
+  const options = (Object.keys(RANGE_LABEL_KEYS) as DateRange[]).map((key) => ({ key, labelKey: RANGE_LABEL_KEYS[key] }))
   return (
     <div className="flex items-center gap-1 flex-wrap" role="group" aria-label={t('insights.dateRange')}>
       {options.map(({ key, labelKey }) => (
@@ -170,11 +171,8 @@ function DateRangeControl({
           key={key}
           onClick={() => onChange(key)}
           aria-pressed={value === key}
-          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--goal-accent)] ${
-            value === key
-              ? 'bg-[var(--goal-accent)] text-[var(--color-on-accent)]'
-              : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-[var(--color-border)]'
-          }`}
+          type="button"
+          className={`${TOGGLE_BASE} ${value === key ? TOGGLE_ON : TOGGLE_OFF}`}
         >
           {t(labelKey)}
         </button>
@@ -203,11 +201,8 @@ function ChartTypeControl({
           key={key}
           onClick={() => onChange(key)}
           aria-pressed={value === key}
-          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--goal-accent)] ${
-            value === key
-              ? 'bg-[var(--goal-accent)]/15 text-[var(--goal-accent)] border border-[var(--goal-accent)]/30'
-              : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-[var(--color-border)]'
-          }`}
+          type="button"
+          className={`${TOGGLE_BASE} ${value === key ? TOGGLE_ON : TOGGLE_OFF}`}
         >
           {t(labelKey)}
         </button>
@@ -223,43 +218,38 @@ function PeriodRegularityCard({ data, lang }: { data: PeriodRegularity; lang: La
   const { t } = useTranslation()
   const num = (n: number) => formatInsightNumber(n, lang)
   const daysLabel = t('insights.days')
-  const badgeColor = data.regular ? 'var(--color-fertile)' : 'var(--color-menstrual)'
-  const badgeTextColor = data.regular ? 'var(--color-on-fertile)' : 'var(--color-on-menstrual)'
   const badgeLabel = data.regular ? t('insights.regularityStable') : t('insights.regularityVariable')
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8" aria-hidden="true">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-xs text-[var(--color-text-muted)] font-medium">{t('insights.regularityLabel')}</span>
-          <div className="flex items-baseline gap-1">
-            <span className="text-4xl font-extrabold tabular-nums leading-none" style={{ color: 'var(--goal-accent)' }}>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-hidden="true">
+        <Card tone="pink" padding="sm" className="px-4 py-4">
+          <span className="text-xs font-semibold text-accent-pink">{t('insights.regularityLabel')}</span>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="font-display font-extrabold text-4xl tabular-nums leading-none text-[var(--color-text-primary)]">
               {num(data.mean)}
             </span>
-            <span className="text-sm text-[var(--color-text-muted)]">{daysLabel}</span>
+            <span className="text-sm text-[var(--color-text-secondary)]">{daysLabel}</span>
           </div>
-        </div>
+        </Card>
 
-        <div className="flex flex-col gap-0.5">
-          <span className="text-xs text-[var(--color-text-muted)] font-medium">{t('insights.variationLabel')}</span>
-          <div className="flex items-baseline gap-1">
-            <span className="text-4xl font-extrabold tabular-nums leading-none" style={{ color: 'var(--color-secondary)' }}>
+        <Card tone="lavender" padding="sm" className="px-4 py-4">
+          <span className="text-xs font-semibold text-accent-lavender">{t('insights.variationLabel')}</span>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="font-display font-extrabold text-4xl tabular-nums leading-none text-[var(--color-text-primary)]">
               ±{num(data.stdDev)}
             </span>
-            <span className="text-sm text-[var(--color-text-muted)]">{daysLabel}</span>
+            <span className="text-sm text-[var(--color-text-secondary)]">{daysLabel}</span>
           </div>
-        </div>
+        </Card>
 
-        <div
-          className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold self-start sm:self-center"
-          style={{ backgroundColor: badgeColor, color: badgeTextColor }}
-        >
-          {badgeLabel}
-        </div>
-
-        <div className="text-xs text-[var(--color-text-muted)] tabular-nums sm:ml-auto">
-          {t('insights.sampleSize', { n: num(data.sampleSize) })}
-        </div>
+        <Card tone={data.regular ? 'mint' : 'peach'} padding="sm" className="flex items-center px-4 py-4">
+          <span
+            className={`font-display font-extrabold text-2xl leading-none ${data.regular ? 'text-accent-mint' : 'text-accent-peach'}`}
+          >
+            {badgeLabel}
+          </span>
+        </Card>
       </div>
       <p className="sr-only">
         {t('insights.regularitySummary', { mean: num(data.mean), stdDev: num(data.stdDev), status: badgeLabel })}{' '}
@@ -294,7 +284,7 @@ function FertileWindowHistoryList({ data, lang }: { data: FertileWindowPoint[]; 
         {rows.map(({ entry, index, span }) => (
           <li
             key={entry.cycleStart}
-            className="flex items-center gap-3 py-2 px-3 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]"
+            className="flex items-center gap-3 py-2.5 px-3 rounded-2xl bg-[var(--color-bg-secondary)]"
           >
             <span className="text-xs font-bold text-[var(--color-text-muted)] w-6 tabular-nums shrink-0">{num(index)}</span>
             <div className="flex-1 flex flex-col gap-1">
@@ -309,7 +299,7 @@ function FertileWindowHistoryList({ data, lang }: { data: FertileWindowPoint[]; 
               <div className="h-1.5 rounded-full bg-[var(--color-border)] overflow-hidden">
                 <div
                   className="h-full rounded-full"
-                  style={{ backgroundColor: 'var(--color-fertile)', width: `${Math.min(100, (span / 7) * 100)}%` }}
+                  style={{ backgroundColor: INSIGHTS_CHART_COLORS.fertileWindow, width: `${Math.min(100, (span / 7) * 100)}%` }}
                 />
               </div>
             </div>
@@ -411,8 +401,11 @@ export function InsightsClient({
       />
 
       {!hasData ? (
-        <Card padding="lg">
+        <Card tone="panel" padding="lg">
           <div role="status" className="flex flex-col items-center gap-2 py-10 text-center" data-testid="insights-empty">
+            <span className="mb-2 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-tint-lavender text-accent-lavender">
+              <BarChart3 className="h-7 w-7" aria-hidden="true" />
+            </span>
             <p className="text-base font-semibold text-[var(--color-text-primary)]">{t('insights.emptyTitle')}</p>
             <p className="text-sm text-[var(--color-text-muted)] max-w-sm">{noData}</p>
           </div>
@@ -441,17 +434,14 @@ export function InsightsClient({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15, duration: 0.4 }}
       >
-        <Card padding="md">
+        <Card tone="panel" padding="md">
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-              <SectionHeader title={t('insights.cycleLengthTrend')} />
-              <div className="flex flex-col gap-1 sm:items-end">
-                <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-                  {t('insights.chartType')}
-                </span>
-                <ChartTypeControl value={chartType} onChange={setChartType} />
-              </div>
-            </div>
+            <SectionHeader
+              variant="inline"
+              title={t('insights.cycleLengthTrend')}
+              subtitle={t(RANGE_LABEL_KEYS[dateRange])}
+            />
+            <ChartTypeControl value={chartType} onChange={setChartType} />
             {cycleStats && (
               <ChartSummary id="cycle-length-summary">
                 {t('insights.cycleSummary', {
@@ -488,9 +478,14 @@ export function InsightsClient({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.22, duration: 0.4 }}
       >
-        <Card padding="md">
+        <Card tone="panel" padding="md">
           <div className="flex flex-col gap-3">
-            <SectionHeader title={t('insights.symptomFrequency')} subtitle={t('insights.symptomAllTime')} />
+            <SectionHeader
+              variant="inline"
+              title={t('insights.symptomFrequency')}
+              subtitle={t('insights.allTime')}
+            />
+            <ChartSummary id="symptom-range-note">{t('insights.symptomAllTime')}</ChartSummary>
             {symptomStats && (
               <ChartSummary id="symptom-summary">
                 {t('insights.symptomSummary', {
@@ -524,9 +519,13 @@ export function InsightsClient({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.29, duration: 0.4 }}
       >
-        <Card padding="md">
+        <Card tone="panel" padding="md">
           <div className="flex flex-col gap-3">
-            <SectionHeader title={t('insights.periodRegularity')} />
+            <SectionHeader
+              variant="inline"
+              title={t('insights.periodRegularity')}
+              subtitle={t('insights.sampleSize', { n: num(periodRegularity.sampleSize) })}
+            />
             <PeriodRegularityCard data={periodRegularity} lang={language} />
           </div>
         </Card>
@@ -540,9 +539,13 @@ export function InsightsClient({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.36, duration: 0.4 }}
       >
-        <Card padding="md">
+        <Card tone="panel" padding="md">
           <div className="flex flex-col gap-3">
-            <SectionHeader title={t('insights.fertileWindowHistory')} />
+            <SectionHeader
+              variant="inline"
+              title={t('insights.fertileWindowHistory')}
+              subtitle={t(RANGE_LABEL_KEYS[dateRange])}
+            />
             <FertileWindowHistoryList data={filteredFertileWindowHistory} lang={language} />
           </div>
         </Card>
@@ -552,7 +555,7 @@ export function InsightsClient({
         <p
           role="note"
           data-testid="insights-missing-note"
-          className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-3 text-sm text-[var(--color-text-muted)]"
+          className="rounded-panel bg-tint-sky px-5 py-4 text-sm text-[var(--color-text-secondary)]"
         >
           {t('insights.missingNote', { charts: grouped.missing.map((k) => t(`insights.${k}`)).join(', ') })}
         </p>
