@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { issueJwt, setAuthCookie, verifyAdminLogin } from '@vesta/shared/server/auth'
+import { ADMIN_JWT_EXPIRY_SECONDS, issueJwt, setAuthCookie, verifyAdminLogin } from '@vesta/shared/server/auth'
 import { ApiError, handleApiError } from '@vesta/shared/server/api-error'
 
 export async function POST(request: Request) {
@@ -10,8 +10,8 @@ export async function POST(request: Request) {
     }
 
     const user = await verifyAdminLogin(email, password)
-    const jwt = await issueJwt({ sub: user.id, email: user.email ?? undefined, role: 'ADMIN' })
-    await setAuthCookie(jwt)
+    const jwt = await issueJwt({ sub: user.id, email: user.email ?? undefined, role: 'ADMIN' }, ADMIN_JWT_EXPIRY_SECONDS)
+    await setAuthCookie(jwt, ADMIN_JWT_EXPIRY_SECONDS)
 
     return NextResponse.json({ success: true })
   } catch (error) {
