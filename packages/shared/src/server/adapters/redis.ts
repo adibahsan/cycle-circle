@@ -107,6 +107,36 @@ export async function isJtiBlacklisted(jti: string): Promise<boolean> {
   return true
 }
 
+// ─── Sessions-valid-after marker ──────────────────────────────────────────────
+//
+// Per-user epoch-ms marker: JWTs issued at or before it are rejected. The
+// database column User.sessionsValidAfter is the source of truth; this is the
+// cheap read path. Value "0" means "no marker" (negative cache).
+
+const SESSIONS_VALID_AFTER_TTL_SECONDS = 60 * 60 * 24 * 31 // outlives the 30-day JWT
+
+/** Returns the cached marker (epoch ms, 0 = none), or null on cache miss / no Redis / outage. */
+export async function getSessionsValidAfterCache(userId: string): Promise<number | null> {
+  if (!redis) return null
+  try {
+    const v = await redis.get(`sva:${userId}`)
+    return v === null ? null : Number(v)
+  } catch (err) {
+    logRedisError('getSessionsValidAfterCache', err)
+    return null
+  }
+}
+
+/** Writes the marker (epoch ms, 0 = none) to the cache. Best-effort. */
+export async function setSessionsValidAfterCache(userId: string, ms: number): Promise<void> {
+  if (!redis) return
+  try {
+    await redis.set(`sva:${userId}`, String(ms), 'EX', SESSIONS_VALID_AFTER_TTL_SECONDS)
+  } catch (err) {
+    logRedisError('setSessionsValidAfterCache', err)
+  }
+}
+
 // ─── Sliding-window Rate Limiter ──────────────────────────────────────────────
 
 export interface RateLimitResult {

@@ -8,6 +8,7 @@ import {
   Activity,
   TrendingUp,
   TrendingDown,
+  Target,
 } from 'lucide-react'
 import { StatCard } from '@/components/ui/StatCard'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
@@ -37,6 +38,7 @@ const ChartPanel = dynamic(
 
 interface DashboardClientProps {
   stats: {
+    generatedAt: string
     totalUsers: number
     activeUsers: number
     totalProfiles: number
@@ -44,6 +46,10 @@ interface DashboardClientProps {
     dailyLogs: number
     newUsersThisWeek: number
     userGrowth: number
+  }
+  mae: {
+    tiers: { tier: 'AVERAGE' | 'ARIMA'; maeDays: number | null; sampleSize: number }[]
+    computedAt: string | null
   }
   userTrend: { date: string; count: number }[]
   signupTrend: { date: string; count: number }[]
@@ -63,7 +69,7 @@ function formatNumber(n: number) {
 }
 
 
-export function DashboardClient({ stats, userTrend, signupTrend, subscriptionTrend, range }: DashboardClientProps) {
+export function DashboardClient({ stats, mae, userTrend, signupTrend, subscriptionTrend, range }: DashboardClientProps) {
   const growthLabel = 'vs last week'
   const growthPositive = stats.userGrowth >= 0
 
@@ -73,7 +79,14 @@ export function DashboardClient({ stats, userTrend, signupTrend, subscriptionTre
     <div className="space-y-8 page-enter">
       <AdminPageHeader
         title="Dashboard"
-        description="Platform overview — last updated just now"
+        description={
+          <>
+            Platform overview — last updated{' '}
+            <time dateTime={stats.generatedAt} suppressHydrationWarning>
+              {new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(new Date(stats.generatedAt))}
+            </time>
+          </>
+        }
         tags={[adminCacheTags.dashboard]}
       />
 
@@ -142,6 +155,45 @@ export function DashboardClient({ stats, userTrend, signupTrend, subscriptionTre
           </div>
         </div>
       </div>
+
+      {/* Prediction accuracy */}
+      <section
+        aria-label="Prediction accuracy"
+        className="glass rounded-2xl border border-[var(--color-border)] p-5 shadow-soft"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-bg-secondary)] text-[var(--color-primary)]">
+            <Target size={20} aria-hidden="true" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Prediction accuracy</h2>
+            <p className="text-xs text-[var(--color-text-muted)]">
+              Mean absolute error in days, by prediction tier (lower is better)
+            </p>
+          </div>
+        </div>
+        {mae.computedAt ? (
+          <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {mae.tiers.map((t) => (
+              <div key={t.tier}>
+                <dt className="text-xs font-medium text-[var(--color-text-muted)]">
+                  {t.tier === 'AVERAGE' ? 'Average tier' : 'ARIMA tier'}
+                </dt>
+                <dd className="text-xl font-bold tabular-nums text-[var(--color-text-primary)]">
+                  {t.maeDays === null ? 'No data' : `${t.maeDays} d`}
+                  {t.maeDays !== null && (
+                    <span className="ml-2 text-xs font-normal text-[var(--color-text-muted)]">
+                      n={t.sampleSize}
+                    </span>
+                  )}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className="mt-4 text-sm text-[var(--color-text-muted)]">No data yet</p>
+        )}
+      </section>
 
       {/* User Trend Chart */}
       <SignupTrendChart data={chartData} />

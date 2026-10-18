@@ -37,6 +37,7 @@ export async function getDashboardStats() {
   ])
 
   return {
+    generatedAt: now.toISOString(),
     totalUsers,
     activeUsers,
     totalProfiles,
@@ -113,19 +114,62 @@ export async function getUserTrend(
   return Object.entries(dailyCounts).map(([date, count]) => ({ date, count }))
 }
 
-/**
- * Return a histogram of cycle lengths across all profiles.
- */
-export async function getCycleLengthDistribution() {
-  const profiles = await prisma.profile.findMany({ select: { cycleLength: true } })
+/** Date window every analytics panel query takes; #103 adds metric/config fields. */
+export interface AnalyticsRange {
+  from: Date
+  to: Date
+}
 
-  const distribution: Record<number, number> = {}
-  for (const p of profiles) {
-    distribution[p.cycleLength] = (distribution[p.cycleLength] || 0) + 1
+/** Measured gaps outside this many days are treated as missed logs, not real cycles. */
+export const PLAUSIBLE_CYCLE_MIN_DAYS = 15
+export const PLAUSIBLE_CYCLE_MAX_DAYS = 90
+
+/**
+ * Whole-day gaps between consecutive period starts (ascending ms) that fall
+ * in the plausible range. Each gap is attributed to the later start's time.
+ */
+export function measuredCycleGaps(
+  startsMsAsc: number[],
+): { endMs: number; days: number }[] {
+  const gaps: { endMs: number; days: number }[] = []
+  for (let i = 1; i < startsMsAsc.length; i++) {
+    const days = Math.round((startsMsAsc[i] - startsMsAsc[i - 1]) / MS_PER_DAY)
+    if (days >= PLAUSIBLE_CYCLE_MIN_DAYS && days <= PLAUSIBLE_CYCLE_MAX_DAYS) {
+      gaps.push({ endMs: startsMsAsc[i], days })
+    }
+  }
+  return gaps
+}
+
+/**
+ * Histogram of measured cycle lengths: gaps between consecutive logged period
+ * starts per profile (implausible gaps excluded), not the length users typed in.
+ * A cycle counts when the later period start falls in [from, to]. Aggregate only.
+ */
+export async function getCycleLengthDistribution({ from, to }: AnalyticsRange) {
+  const logs = await prisma.periodLog.findMany({
+    where: { startDate: { lte: to } },
+    select: { profileId: true, startDate: true },
+    orderBy: [{ profileId: 'asc' }, { startDate: 'asc' }],
+  })
+
+  const startsByProfile = new Map<string, number[]>()
+  for (const l of logs) {
+    const arr = startsByProfile.get(l.profileId) ?? []
+    arr.push(l.startDate.getTime())
+    startsByProfile.set(l.profileId, arr)
   }
 
-  return Object.entries(distribution)
-    .map(([length, count]) => ({ cycleLength: Number(length), count }))
+  const distribution = new Map<number, number>()
+  for (const starts of startsByProfile.values()) {
+    for (const g of measuredCycleGaps(starts)) {
+      if (g.endMs < from.getTime()) continue
+      distribution.set(g.days, (distribution.get(g.days) ?? 0) + 1)
+    }
+  }
+
+  return [...distribution.entries()]
+    .map(([cycleLength, count]) => ({ cycleLength, count }))
     .sort((a, b) => a.cycleLength - b.cycleLength)
 }
 
@@ -159,40 +203,81 @@ export async function getPredictionAccuracy() {
   }))
 }
 
+const MS_PER_WEEK = 7 * MS_PER_DAY
+
+export interface RetentionCohort {
+  /** Start (YYYY-MM-DD, UTC) of the 7-day signup cohort. */
+  cohortWeek: string
+  size: number
+  /** Share of the cohort active in week k after signup; only fully elapsed weeks. */
+  weeks: { week: number; active: number; rate: number }[]
+}
+
 /**
- * Return weekly cohort retention over the past N weeks (default 8).
- * Each entry contains the cohort week start date, users created that week,
- * users retained (logged in within the last 7 days), and a retention rate.
+ * Weekly signup-cohort retention curve. Cohorts are consecutive 7-day buckets
+ * starting at `from` (users created in [from, to], not deleted). A user is
+ * active in week k when any of their profiles has a symptom or period log
+ * created during days [7k, 7k+7) after their signup. Aggregate only: no ids.
  */
-export async function getUserRetention(weeks: number = 8) {
-  const cohorts = []
+export async function getUserRetention(
+  { from, to }: AnalyticsRange,
+  { maxWeeks = 8, now = new Date() }: { maxWeeks?: number; now?: Date } = {},
+): Promise<RetentionCohort[]> {
+  const users = await prisma.user.findMany({
+    where: { deletedAt: null, createdAt: { gte: from, lte: to } },
+    select: { id: true, createdAt: true },
+  })
+  if (users.length === 0) return []
 
-  for (let i = 0; i < weeks; i++) {
-    const weekStart = new Date(Date.now() - (weeks - i) * 7 * 24 * 60 * 60 * 1000)
-    const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000)
+  const userIds = users.map((u) => u.id)
+  const [symptom, period] = await Promise.all([
+    prisma.symptomLog.findMany({
+      where: { profile: { userId: { in: userIds } } },
+      select: { createdAt: true, profile: { select: { userId: true } } },
+    }),
+    prisma.periodLog.findMany({
+      where: { profile: { userId: { in: userIds } } },
+      select: { createdAt: true, profile: { select: { userId: true } } },
+    }),
+  ])
 
-    const [created, retained] = await Promise.all([
-      prisma.user.count({
-        where: { createdAt: { gte: weekStart, lt: weekEnd }, deletedAt: null },
-      }),
-      prisma.user.count({
-        where: {
-          createdAt: { gte: weekStart, lt: weekEnd },
-          deletedAt: null,
-          lastLoginAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-        },
-      }),
-    ])
-
-    cohorts.push({
-      week: weekStart.toISOString().split('T')[0],
-      created,
-      retained,
-      rate: created > 0 ? Math.round((retained / created) * 100) : 0,
-    })
+  const createdMs = new Map(users.map((u) => [u.id, u.createdAt.getTime()]))
+  // userId -> set of week offsets in which the user was active
+  const activeWeeks = new Map<string, Set<number>>()
+  for (const l of [...symptom, ...period]) {
+    const uid = l.profile.userId
+    const k = Math.floor((l.createdAt.getTime() - createdMs.get(uid)!) / MS_PER_WEEK)
+    if (k < 0 || k >= maxWeeks) continue
+    const set = activeWeeks.get(uid) ?? new Set<number>()
+    set.add(k)
+    activeWeeks.set(uid, set)
   }
 
-  return cohorts
+  const cohortMembers = new Map<number, string[]>()
+  for (const u of users) {
+    const c = Math.floor((u.createdAt.getTime() - from.getTime()) / MS_PER_WEEK)
+    const arr = cohortMembers.get(c) ?? []
+    arr.push(u.id)
+    cohortMembers.set(c, arr)
+  }
+
+  return [...cohortMembers.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([c, members]) => {
+      const cohortEndMs = from.getTime() + (c + 1) * MS_PER_WEEK
+      const weeks: RetentionCohort['weeks'] = []
+      for (let k = 0; k < maxWeeks; k++) {
+        // Skip weeks that haven't fully elapsed for the whole cohort yet.
+        if (cohortEndMs + (k + 1) * MS_PER_WEEK > now.getTime()) break
+        const active = members.filter((id) => activeWeeks.get(id)?.has(k)).length
+        weeks.push({ week: k, active, rate: Math.round((active / members.length) * 100) })
+      }
+      return {
+        cohortWeek: new Date(from.getTime() + c * MS_PER_WEEK).toISOString().split('T')[0],
+        size: members.length,
+        weeks,
+      }
+    })
 }
 
 // ── Engagement / Logging Analytics ────────────────────────────────────────
@@ -422,6 +507,20 @@ export async function getPredictionAccuracyMae() {
 }
 
 /**
+ * Latest per-tier prediction MAE for the admin dashboard card.
+ * Single read seam: today it backtests live; #102 swaps the body for the
+ * latest nightly snapshot row. `computedAt` is null when there is no data.
+ */
+export async function getLatestPredictionMae(): Promise<{
+  tiers: { tier: 'AVERAGE' | 'ARIMA'; maeDays: number | null; sampleSize: number }[]
+  computedAt: string | null
+}> {
+  const tiers = await getPredictionAccuracyMae()
+  const hasData = tiers.some((t) => t.sampleSize > 0)
+  return { tiers, computedAt: hasData ? new Date().toISOString() : null }
+}
+
+/**
  * Return weekly cohort logging retention over the past N weeks (default 8).
  *
  * Cohort = profiles whose first SymptomLog falls in the cohort week.
@@ -499,15 +598,37 @@ export function phaseForLog(
   return getCurrentPhase(cycleDay, periodLength, cycleLength)
 }
 
-/** Count symptom logs by the cycle phase they fall in (population-wide). */
-export async function getSymptomsByPhase(): Promise<{ phase: string; count: number }[]> {
-  const [profiles, periodLogs, symptomLogs] = await Promise.all([
-    prisma.profile.findMany({ select: { id: true, cycleLength: true, periodLength: true } }),
+export interface PhaseSymptoms {
+  phase: 'MENSTRUAL' | 'FOLLICULAR' | 'OVULATION' | 'LUTEAL'
+  /** All symptom logs in the phase (excluding "all good"). */
+  total: number
+  top: { symptomId: string; count: number }[]
+}
+
+/**
+ * Most common symptom types per cycle phase (top N, "all good" excluded) for
+ * symptom logs dated in [from, to], phase anchored to each profile's period
+ * history. Aggregate only.
+ */
+export async function getSymptomsByPhase(
+  { from, to }: AnalyticsRange,
+  { topN = 5 }: { topN?: number } = {},
+): Promise<PhaseSymptoms[]> {
+  const symptomLogs = await prisma.symptomLog.findMany({
+    where: { date: { gte: from, lte: to }, symptomId: { not: ALL_GOOD_SYMPTOM_ID } },
+    select: { profileId: true, date: true, symptomId: true },
+  })
+  const profileIds = [...new Set(symptomLogs.map((l) => l.profileId))]
+  const [profiles, periodLogs] = await Promise.all([
+    prisma.profile.findMany({
+      where: { id: { in: profileIds } },
+      select: { id: true, cycleLength: true, periodLength: true },
+    }),
     prisma.periodLog.findMany({
+      where: { profileId: { in: profileIds } },
       select: { profileId: true, startDate: true },
       orderBy: [{ profileId: 'asc' }, { startDate: 'asc' }],
     }),
-    prisma.symptomLog.findMany({ select: { profileId: true, date: true } }),
   ])
 
   const profileMap = new Map(profiles.map((p) => [p.id, p]))
@@ -518,23 +639,32 @@ export async function getSymptomsByPhase(): Promise<{ phase: string; count: numb
     startsByProfile.set(l.profileId, arr)
   }
 
-  const counts: Record<string, number> = { MENSTRUAL: 0, FOLLICULAR: 0, OVULATION: 0, LUTEAL: 0 }
+  const phases = ['MENSTRUAL', 'FOLLICULAR', 'OVULATION', 'LUTEAL'] as const
+  const counts = new Map<string, Map<string, number>>(phases.map((p) => [p, new Map()]))
   for (const log of symptomLogs) {
     const prof = profileMap.get(log.profileId)
     const starts = startsByProfile.get(log.profileId)
     if (!prof || !starts) continue
     const phase = phaseForLog(
-      new Date(log.date).getTime(),
+      log.date.getTime(),
       starts,
       prof.cycleLength ?? 28,
       prof.periodLength ?? 5,
     )
     if (!phase) continue
-    counts[phase.toUpperCase()] += 1
+    const m = counts.get(phase.toUpperCase())!
+    m.set(log.symptomId, (m.get(log.symptomId) ?? 0) + 1)
   }
 
-  return (['MENSTRUAL', 'FOLLICULAR', 'OVULATION', 'LUTEAL'] as const).map((phase) => ({
-    phase,
-    count: counts[phase],
-  }))
+  return phases.map((phase) => {
+    const m = counts.get(phase)!
+    const sorted = [...m.entries()]
+      .map(([symptomId, count]) => ({ symptomId, count }))
+      .sort((a, b) => b.count - a.count || a.symptomId.localeCompare(b.symptomId))
+    return {
+      phase,
+      total: sorted.reduce((n, x) => n + x.count, 0),
+      top: sorted.slice(0, topN),
+    }
+  })
 }

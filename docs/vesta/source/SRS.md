@@ -1,8 +1,8 @@
 # Software Requirements Specification
 
 **Project:** Vesta v1 — Bilingual Reproductive Health & Cycle Intelligence Platform for Bangladesh
-**Document Version:** 1.3
-**Date:** 15 June 2026  
+**Document Version:** 1.4
+**Date:** 19 October 2026  
 **Status:** Draft for Client Sign-Off
 **Standard:** IEEE 830-1998
 
@@ -15,8 +15,8 @@
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Document title    | Software Requirements Specification — Vesta v1                                                                                                                                 |
 | Document ID       | SRS-VESTA-001                                                                                                                                                                  |
-| Version           | 1.3                                                                                                                                                                            |
-| Issue date        | June 2026                                                                                                                                                                      |
+| Version           | 1.4 
+| Issue date        | October 2026
 | Source            | `docs/vesta/source/SRS.md`                                                                                                                                                            |
 | Published copy    | `docs/site/vesta/vesta-srs.html`                                                                                                                                             |
 | Related artifacts | `docs/vesta/source/vesta-kb.md`, `docs/vesta/source/vesta-mvp-plan.html`, `docs/vesta/source/vesta-user-stories.html`, `docs/vesta/source/vesta-user-journey-flows.html`, `docs/vesta/source/bdapps-tap-api.html` |
@@ -33,6 +33,7 @@
 | 1.1     | 2026-05-03 | Adib | Deferred Pro auto-disable to v2; added SMS content circulation (FR-SMS); added BDApps webhook endpoints (FR-WEBHOOK) |
 | 1.2     | 2026-05-09 | Adib | Client feedback: email fallback auth with 24h trial window; SMS period/fertile alerts for subscribers; profile completion flow post-OTP; in-app feedback module (FR-FEEDBACK); grace period warning policy (no expiry date shown) |
 | 1.3     | 2026-06-15 | Adib | V1 client review feedback (Appendix D): logging-encouragement nudges (FR-NUDGE); editable profile mode (FR-PROFILE); goal-based TTC notification filtering (FR-NOTIF, FR-SMS); email+SMS profile-completion reminders (FR-AUTH); configurable analytics dashboards incl. feedback + new user-facing insights (FR-ANALYTICS, FR-FEEDBACK, FR-INSIGHTS); BDApps charging analysis logged as open/blocked |
+| 1.4     | 2026-10-19 | Adib | Admin portal reconciliation (ADR 0002, ADR 0006, 2026-10-19 decisions): BDApps subscription replaces CaaS direct debit as the Pro gate; grace period, "recent CAAS results" and "revoke stops next CAAS charge" removed; Revoke, Suspend and Delete also unsubscribe the number on BDApps; admin override ends on a new BDApps subscription; 30-day restore then purge for deleted accounts; admin Logs page and per-user plan history; 7-day admin login and 403 page; SMS language, part counter, CSV upload and queue editing; article images on a server volume; nightly admin-maintenance job |
 
 
 ### Revision Markers
@@ -42,6 +43,7 @@ Items added or changed in revisions are marked inline throughout this document:
 - ***(v1.1)*** — Added in version 1.1 (2026-05-03): FR-SMS, FR-WEBHOOK, BDApps SMS Send API, inbound webhooks, Pro auto-disable deferred to v2.
 - ***(v1.2)*** — Added in version 1.2 (2026-05-09): Email fallback auth with 24h trial window, profile completion flow, in-app feedback module (FR-FEEDBACK), SMS period/fertile alerts for subscribers, content override logic, grace period warning policy.
 - ***(v1.3)*** — Added in version 1.3 (2026-06-15): client V1-review feedback round (Appendix D); FR-NUDGE, FR-INSIGHTS; editable profile mode; goal-based notification filtering; proactive profile-completion reminders; configurable analytics dashboards; BDApps charging analysis (open).
+- ***(v1.4)*** — Added or changed in version 1.4 (2026-10-19): admin-portal reconciliation to ADR 0002 and ADR 0006; grace period and CaaS admin views removed; unsubscribe on Revoke/Suspend/Delete; 30-day restore and purge; admin Logs page; SMS language and part counter; article image volume; 7-day admin login.
 - ***(v1.1; updated v1.2)*** — Introduced in v1.1 and subsequently modified in v1.2.
 
 
@@ -117,12 +119,12 @@ Vesta v1 shall deliver phone-number-based account management (verified via BDApp
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **AES-256-GCM**    | Advanced Encryption Standard, 256-bit key, Galois/Counter Mode. The symmetric cipher used to encrypt sensitive health fields at rest via `prisma-field-encryption`. |
 | **ARIMA**          | AutoRegressive Integrated Moving Average — Tier 2 statistical model for cycle prediction, unlocked automatically once a profile has 6 logged cycles.                |
-| **BDApps**         | The Robi Axiata developer platform that exposes OTP and CAAS APIs used by Vesta for verification and billing.                                                       |
-| **CAAS**           | Carrier Aggregated Application Services — the BDApps billing system that charges a user's mobile balance via direct-debit API.                                      |
+| **BDApps**         | The Robi Axiata developer platform that exposes OTP, subscription and SMS APIs used by Vesta for verification, Pro billing and messaging. *(v1.4)*                  |
+| **CAAS**           | Carrier Aggregated Application Services — BDApps direct-debit API. Parked: CaaS endpoints return 404 for our app; BDApps subscription charging bills Pro instead (ADR 0002). *(v1.4)* |
 | **CRON_SECRET**    | Shared secret in the `Authorization` (or custom) header that authenticates Vercel Cron requests to internal endpoints.                                              |
 | **DoD**            | Definition of Done — the formal acceptance gates that shall pass before production release.                                                                         |
 | **Email Trial Window** | A 24-hour limited-access period granted to users who authenticate via the email fallback method. During this window the platform collects required user data; after expiry, premium features are locked until subscription. *(v1.2)* |
-| **Grace Period**   | Configurable N-day window after a CAAS balance-check failure during which Pro access remains active before being revoked.                                           |
+| **Grace Period**   | Removed in v1.4. BDApps, not CaaS, bills Pro, so there are no balance-check failures to count (ADR 0002 amendment 2026-10-19). *(v1.4)*                              |
 | **JWT**            | JSON Web Token — issued in an HttpOnly cookie on successful OTP verification. Carries a `jti` claim used by the blacklist mechanism.                                |
 | **LSTM**           | Long Short-Term Memory neural network — Tier 3 prediction model stub planned for v2; not implemented in v1.                                                         |
 | **MAE**            | Mean Absolute Error — the per-tier accuracy metric reported by the prediction-accuracy job.                                                                         |
@@ -188,7 +190,7 @@ The system shall integrate with five external services:
 | External system | Purpose                                                             |
 | --------------- | ------------------------------------------------------------------- |
 | BDApps OTP API  | Phone-number ownership verification on sign-up                      |
-| BDApps CAAS API | Direct-debit charging and daily balance queries for Pro subscribers |
+| BDApps Subscription API | Subscribe/unsubscribe and status queries; CaaS direct debit is parked *(v1.4)* |
 | Resend          | Transactional email delivery in EN and BN                           |
 | Upstash Redis   | JWT blacklist, session state, rate-limit counters                   |
 | Upstash QStash  | Asynchronous job dispatch (email worker, prediction recalc)         |
@@ -235,10 +237,11 @@ Free-tier service limits shall apply at launch (see [§2.4 Constraints](#24-cons
 
 #### 2.1.8 Operations
 
-Two scheduled operations modes shall run on Vercel Cron:
+Scheduled operations run from a host crontab on the production VPS (Vercel Cron applies only to Vercel deployments): *(v1.4)*
 
 - `0 8 * * *` (08:00 UTC) — daily reminders worker.
-- `0 2 * * *` (02:00 UTC) — daily CAAS balance-check worker.
+- `0 2 * * *` (02:00 UTC) — nightly BDApps subscription status check. *(v1.4)*
+- Nightly admin-maintenance entry — stores the dated per-tier prediction-accuracy snapshot and purges accounts deleted more than 30 days ago. *(v1.4)*
 
 #### 2.1.9 Site Adaptation Requirements
 
@@ -259,7 +262,7 @@ The system provides the following major capabilities. Each item below is expande
 | Symptom logging                                 | FR-SYMP      | P0       |
 | Three-tier prediction engine                    | FR-PRED      | P0       |
 | Onboarding flow                                 | FR-ONBOARD   | P0       |
-| Pro subscription via BDApps CAAS                | FR-BILL      | P0       |
+| Pro subscription via BDApps subscription *(v1.4)* | FR-BILL      | P0       |
 | Feature gating (schema-only in v1)              | FR-GATE      | P0       |
 | Bilingual UI (EN + BN)                          | FR-I18N      | P0       |
 | Field-level encryption                          | FR-ENC       | P0       |
@@ -282,7 +285,7 @@ The system provides the following major capabilities. Each item below is expande
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | **End User**       | Individual tracking her own cycle. Primary persona. Uses a phone-number account on the free tier. Assumed literacy in either Bengali or English; comfortable with smartphone web apps. | Onboarding, period logging, dashboard, calendar, symptom logging                              |
 | **Family Manager** | A user who manages profiles for family members (wife, sister, mother, daughter, girlfriend). Up to six profiles per account.                                                           | Profile switcher, per-profile data isolation                                                  |
-| **Pro Subscriber** | A user who has upgraded to Pro via BDApps CAAS direct debit. The subscription field is persisted in v1 even though feature gating is deferred.                                         | Subscription flow; grace-period notifications                                                 |
+| **Pro Subscriber** | A user whose number BDApps reports as subscribed (`REGISTERED`); logging in by phone subscribes the number (ADR 0002). *(v1.4)* The subscription field is persisted in v1 even though feature gating is deferred.                                         | Subscription flow; grace-period notifications                                                 |
 | **Email Trial User** *(v1.2)* | A transient user class — a user who authenticated via email fallback (OTP unavailable). Has a 24-hour limited-access window to explore basic features and complete profile data. After 24 hours, premium features are locked until subscription. | Profile completion, basic feature exploration, data collection |
 | **Super Admin**    | Technical owner with full system access — user management, subscription management, analytics, and bilingual content publishing. (v1 has no separate Content Admin role.)              | Admin panel, session management, KPIs, Tiptap CMS, article publish/edit, phase-tag assignment |
 
@@ -297,7 +300,7 @@ The system provides the following major capabilities. Each item below is expande
 | CON-TECH-03 | Supabase Free 500 MB storage            | Free tier PostgreSQL is capped at 500 MB before auto-pause                  | Encrypted health blobs increase row size; storage shall be monitored and the upgrade trigger shall be respected |
 | CON-REG-01  | BDT currency only                       | BDApps CAAS processes only Bangladeshi Taka                                 | Pro subscription pricing shall be denominated in BDT                                                            |
 | CON-TECH-04 | Prisma pinned to 6.13                   | `prisma-field-encryption` requires Prisma 6.13.x                            | Prisma shall not be upgraded without verifying encryption-library compatibility                                 |
-| CON-TECH-05 | 2 Vercel Cron jobs maximum              | Hobby plan permits exactly two scheduled cron jobs                          | Daily reminders and CAAS check shall share the two-job budget                                                   |
+| CON-TECH-05 | 2 Vercel Cron jobs maximum              | Hobby plan permits exactly two scheduled cron jobs                          | Superseded in v1.4: production runs a host crontab on the VPS, so there is no Vercel Cron job limit                                                   |
 
 
 ### 2.5 Assumptions and Dependencies
@@ -305,7 +308,7 @@ The system provides the following major capabilities. Each item below is expande
 
 | ID    | Assumption / Dependency                                                                                                                                                     |
 | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AD-01 | BDApps OTP and CAAS APIs are reachable from Vercel egress; transient errors are tolerated via exponential backoff and consecutive-failure counting.                         |
+| AD-01 | BDApps OTP and subscription APIs are reachable from Vercel egress; transient errors are tolerated via exponential backoff. *(v1.4)*                         |
 | AD-02 | Robi/BDApps upstream rate-limiting may engage before app-level rate limits and may surface to users as throttling errors even when below documented application thresholds. |
 | AD-03 | Resend free-tier limits (3,000 emails/month, 100/day) are sufficient for v1 traffic.                                                                                        |
 | AD-04 | Supabase keep-alive ping prevents Free-tier auto-pause; if it does not, the upgrade trigger to Supabase Pro shall be activated.                                             |
@@ -410,6 +413,8 @@ User enters phone
 
 ##### 3.1.3.2 BDApps CAAS API — Subscription Billing
 
+> **(v1.4) Parked.** CaaS endpoints return 404 for our app; BDApps subscription charging bills Pro instead (ADR 0002). This section is kept for reference only.
+
 **Base URL:** `https://developer.bdapps.com`
 **Currency:** BDT only.
 **Note:** `paymentInstrumentName` shall be pre-registered in the BDApps dashboard.
@@ -429,7 +434,7 @@ User enters phone
 
 **Success response fields:** `externalTrxId`, `internalTrxId`, `referenceId`, `timeStamp`.
 
-`**POST /caas/get/balance`** — Queries the subscriber's chargeable balance and account status. Called by the daily CAAS cron for every Pro subscriber and used to detect lapses.
+`**POST /caas/get/balance`** — Queries the subscriber's chargeable balance and account status. Parked in v1.4: CaaS endpoints return 404 for our app and the nightly BDApps `getStatus` check replaces this balance check.
 
 
 | Parameter               | Required | Description                   |
@@ -484,7 +489,7 @@ The application shall expose four route-handler endpoints to receive inbound eve
 | `POST /api/webhooks/sms/receive` | Inbound SMS (MO) from subscriber | `sourceAddress`, `message`, `messageId`, `timeStamp` |
 | `POST /api/webhooks/sms/report` | SMS delivery status report | `destinationAddress`, `requestId`, `deliveryStatus` (`DELIVERED` / `FAILED` / `PENDING`), `timeStamp` |
 | `POST /api/webhooks/ussd/receive` | USSD session events | `subscriberId`, `ussdContent`, `sessionId`, `status` |
-| `POST /api/webhooks/subscription/notify` | Subscription status changes and CAAS payment confirmations | `subscriberId`, `status` (`ACTIVE` / `INACTIVE` / `SUSPENDED` / `EXPIRED`), `reason`, `timeStamp` |
+| `POST /api/webhooks/subscription/notify` | Subscription status changes (and payment confirmations if CaaS is ever enabled) | `subscriberId`, `status` (`ACTIVE` / `INACTIVE` / `SUSPENDED` / `EXPIRED`), `reason`, `timeStamp` |
 
 All webhook endpoints shall respond with HTTP 200 within 5 seconds. Validation shall be enforced via IP whitelist or request signature as configured in the BDApps portal.
 
@@ -524,7 +529,7 @@ Each functional requirement below states the expected behaviour and the testable
 - Email login shall use a magic-link flow delivered via Resend.
 - Users authenticated via email shall receive a **24-hour limited-access window** (Email Trial Window).
 - During the 24-hour window: the platform shall collect all required user data (including phone number and profile details); users can explore basic features.
-- After 24 hours: premium features and sensitive data shall be locked; subscription (via BDApps CAAS) shall be required for continued access.
+- After 24 hours: premium features and sensitive data shall be locked; a BDApps subscription (phone login) shall be required for continued access.
 - The system shall track `auth_method` (`otp` | `email`) and `email_trial_expires_at` on the user record.
 - The 24-hour trial ensures full onboarding data collection during the window while enabling conversion to paid users.
 
@@ -664,28 +669,26 @@ Each functional requirement below states the expected behaviour and the testable
 - A new user shall complete onboarding and land on the dashboard with Tier 1 predictions pre-populated.
 - Onboarding shall be skippable; the user shall still reach the dashboard, where predictions shall display "add your first period".
 
-#### FR-BILL — Pro Subscription via BDApps CAAS
+#### FR-BILL — Pro Subscription via BDApps Subscription *(updated v1.4)*
 
 **Priority:** P0
 
 **Requirements:**
 
-- When the user selects the Pro plan, the system shall call BDApps `caas/direct/debit`.
-- On success, a subscription record shall be created and Pro features shall be unlocked immediately.
-- A daily cron at 02:00 UTC shall call `caas/get/balance` for all Pro subscribers.
-- On a balance-check failure, the system shall increment the `consecutive_failures` counter. **(deferred — v2)** *(v1.1)*
-- After N consecutive failures (configurable), the system shall start a grace-period countdown. **(deferred — v2)** *(v1.1)*
-- Grace-period warning notifications shall display renewal reminders (e.g. "Please renew your subscription") without exposing the exact Pro expiration date or cutoff timing. Only reminder/warning messaging shall be shown to encourage renewal. **(deferred — v2)** *(v1.2)*
-- At grace-period expiry, the system shall disable Pro and shall send a final email warning to the user. **(deferred — v2)** *(v1.1)*
-- Transient BDApps errors shall be tolerated; only N consecutive failures shall trigger lapse. **(deferred — v2)** *(v1.1)*
-- The BDApps CAAS charging-flow analysis (failure / retry / recovery handling and transaction reconciliation) is tracked as an OPEN item — see Appendix D §D.7 — pending resolution before its requirements are finalised. *(v1.3)*
+- Pro means BDApps reports the user's number as `REGISTERED` (ADR 0002). Verifying a phone OTP subscribes the number and makes the user Pro. *(v1.4)*
+- BDApps `UNREGISTERED` — reported by the subscription-notify webhook, the nightly `getStatus` check, or the in-app Unsubscribe button — makes the user Free; data is kept. *(v1.4)*
+- CaaS direct debit (`caas/direct/debit`, `caas/get/balance`) is parked and not part of v1; BDApps subscription charging bills Pro. *(v1.4)*
+- The grace period, `consecutive_failures` counting and the grace-period warning notifications are removed, not deferred. *(v1.4)*
+- **Unsubscribe on access removal:** the admin actions Revoke, Suspend and Delete each also unsubscribe the number on BDApps (`/subscription/send`, action `0`). Reactivate and Restore lift only the block and do not re-subscribe; the user logs in by phone to subscribe again (ADR 0006). *(v1.4)*
+- **Admin override:** a plan (Free or Pro) set by an admin wins over what BDApps reports only until BDApps reports a new subscription for that number; a repeat status of the old subscription does not end it. *(v1.4)*
+- A failed BDApps unsubscribe shall be surfaced to the admin, never swallowed; our side of the action still applies. *(v1.4)*
 
 **Acceptance criteria:**
 
-- A Pro upgrade via CAAS shall charge the mobile balance and shall update `subscription_status` within one API request.
-- The daily CAAS cron shall run at 02:00 UTC and shall update the subscriptions table (verifiable in logs).
-- Grace-period activation and Pro revocation shall be validated in v2; v1 shall only preserve the schema/state needed for future implementation. **(deferred — v2)**
-- A real BDApps CAAS charge shall be verified in production.
+- A successful phone OTP verify shall make the user Pro and store the subscriber id. *(v1.4)*
+- A BDApps `UNREGISTERED` event shall make the user Free without deleting data. *(v1.4)*
+- Revoke, Suspend and Delete shall each call BDApps unsubscribe; Reactivate and Restore shall not call BDApps. *(v1.4)*
+- A revoked user who subscribes again shall become Pro (the override ends on the new subscription). *(v1.4)*
 
 #### FR-GATE — Feature Gating (Email Trial + Subscription Schema) *(updated v1.2)*
 
@@ -694,8 +697,8 @@ Each functional requirement below states the expected behaviour and the testable
 **Requirements:**
 
 - A `subscription_status` column shall exist on the user/profile table with values `free | pro | lapsed` and default `free`.
-- The CAAS billing flow shall keep `subscription_status` accurate so that future Pro/free gating can rely on the field.
-- **Email trial gating (active in v1):** *(v1.2)* The system shall enforce the 24-hour email trial window. Users authenticated via email shall have `auth_method = 'email'` and `email_trial_expires_at` tracked. After the 24-hour window expires, premium features and sensitive data shall be locked (HTTP 403). Subscription via BDApps CAAS shall be required for continued access.
+- The BDApps subscription flow (OTP verify, webhook, nightly check) shall keep `subscription_status` accurate so that future Pro/free gating can rely on the field. *(v1.4)*
+- **Email trial gating (active in v1):** *(v1.2)* The system shall enforce the 24-hour email trial window. Users authenticated via email shall have `auth_method = 'email'` and `email_trial_expires_at` tracked. After the 24-hour window expires, premium features and sensitive data shall be locked (HTTP 403). A BDApps subscription (phone login) shall be required for continued access.
 - **Pro/free feature gating (deferred — post-v1):** Subscription-based gating logic (free vs. pro tier enforcement, upgrade prompts, Pro-only endpoints) shall be deferred to post-v1. The schema is in place so gating can be enabled later without a schema change.
 
 **Acceptance criteria:**
@@ -766,7 +769,7 @@ Each functional requirement below states the expected behaviour and the testable
 - Each endpoint shall validate the inbound request via IP whitelist or signature verification as configured in the BDApps portal.
 - Each endpoint shall persist the event payload in a `webhook_events` log table for audit and debugging.
 - The `/api/webhooks/subscription/notify` endpoint shall update `subscription_status` in the `subscriptions` table on status changes (ACTIVE → pro; INACTIVE / SUSPENDED / EXPIRED → lapsed).
-- The `/api/webhooks/sms/report` endpoint shall update the delivery status for the corresponding SMS broadcast message.
+- The `/api/webhooks/sms/report` endpoint shall update the delivery status for the corresponding SMS broadcast message when delivery reports are enabled. Our BDApps SMS plan has delivery reports disabled (E1312), so sends request none and the admin shows "sent / failed to send"; the webhook code is kept for a plan change. *(v1.4)*
 - The `/api/webhooks/sms/receive` endpoint shall log inbound subscriber messages for admin review.
 - The `/api/webhooks/ussd/receive` endpoint shall log USSD session events; interactive USSD menus are deferred to v2.
 - All webhook handlers shall respond with HTTP 200 within 5 seconds to prevent BDApps retry storms.
@@ -776,7 +779,7 @@ Each functional requirement below states the expected behaviour and the testable
 
 - Each webhook endpoint shall return HTTP 200 on a valid BDApps payload and HTTP 401 on an invalid or unsigned request.
 - A subscription status change via the subscription/notify webhook shall update `subscription_status` in the database within 1 second.
-- An SMS delivery report shall update the broadcast message status visible in the admin panel.
+- When delivery reports are enabled, an SMS delivery report shall update the broadcast message status visible in the admin panel. *(v1.4)*
 - Duplicate webhook payloads shall not create duplicate records.
 
 #### FR-NOTIF — Email Notifications & Per-Profile Preferences
@@ -829,43 +832,52 @@ Each functional requirement below states the expected behaviour and the testable
 **Requirements — Daily content circulation:**
 
 - The Super Admin shall be able to create SMS content messages (short health tips, reminders, educational content) in both English and Bengali.
-- The admin panel shall support batch-uploading multiple SMS messages via CSV upload or a form-based bulk-entry interface.
+- The admin panel shall support batch-uploading multiple SMS messages via CSV upload (header row; columns for scheduled date, English text and Bengali text; quoted fields) or a form-based bulk-entry interface. *(v1.4)*
 - The admin shall be able to schedule messages for daily dispatch — one message per day from the queue, sent during the existing daily-reminders cron window (08:00 UTC).
 - The system shall call BDApps `sms/send` with `destinationAddresses: ["tel:all"]` to broadcast the day's scheduled message to all subscribers.
 - **Content override logic:** *(v1.2)* When new daily content is published, the previous day's content shall automatically be replaced/deactivated. Only the latest content version shall remain active and visible.
-- The system shall set `deliveryStatusRequest: 1` on every broadcast so delivery reports are received via the `/api/webhooks/sms/report` webhook.
+- Every broadcast shall be sent with `deliveryStatusRequest: 0` because BDApps delivery reports are disabled on our plan (E1312). *(v1.4)*
+- Each broadcast shall store a send language (`BN`, `EN` or `BOTH`), and the composed message shall follow it. *(v1.4)*
+- The compose form shall show a live SMS-part counter: GSM-7 at 160/153 characters per part, UCS-2 (Bengali) at 70/67. *(v1.4)*
+- Scheduled broadcasts in the queue shall be editable and reschedulable; the queue lists by scheduled date ascending. A send that fails after retries shall be marked FAILED with its last error stored. *(v1.4)*
 - SMS dispatch shall be folded into the existing `/api/cron/daily-reminders` cron job (08:00 UTC) to stay within the 2-job Vercel Hobby limit.
-- The admin panel shall display send history: message content, scheduled date, actual send time, and delivery-status summary (delivered / failed / pending counts sourced from webhook reports).
+- The admin panel shall display send history: message content, scheduled date, actual send time, and status (sent / failed to send). *(v1.4)*
 - SMS alert selection shall honour the same goal-based filtering as FR-NOTIF: a subscriber whose profile goal is `conceive` shall receive fertile-window SMS only, unless overridden in preferences. *(v1.3)*
 
 **Acceptance criteria:**
 
 - A Pro subscriber shall receive SMS alerts before predicted period date and fertile window opening. *(v1.2)*
-- A free-tier user shall NOT receive any SMS alerts — verified by checking the SMS dispatch log. *(v1.2)*
+- A free-tier user shall NOT receive any SMS alerts — verifiable by the SMS log showing no sends to free-tier numbers. *(v1.2; v1.4)*
 - An admin shall upload 7 messages via CSV; the system shall send one per day for 7 consecutive days to all subscribers.
 - Publishing new daily content shall deactivate the previous day's content; only the latest shall be visible. *(v1.2)*
 - A `tel:all` broadcast shall be confirmed working in the BDApps sandbox or production environment.
-- Delivery-report webhooks shall be received and the admin panel shall reflect accurate delivery statistics.
+- The admin panel shall show sent / failed-to-send counts for each broadcast. *(v1.4)*
 - Bengali SMS content shall render correctly on recipient handsets (encoding verified).
 
-#### FR-ADMIN — Admin Dashboard, User & Subscription Management
+#### FR-ADMIN — Admin Dashboard, User & Subscription Management *(updated v1.4)*
 
 **Priority:** P2
 
 **Requirements:**
 
 - A single Super Admin role shall have full system access — user management, subscription management, content publishing, analytics.
-- The admin dashboard shall display top-line KPIs: total users, active profiles, Pro subscribers, daily logs, prediction-accuracy summary.
-- User management shall provide list, search, view profile metadata, suspend, soft-delete, and inspect subscription state.
-- Subscription management shall provide views for current Pro subscribers, recent CAAS results, grace-period users, and manual revoke / re-grant actions.
-- The admin session shall use a separate login screen, a short-lived JWT, and Super Admin authentication middleware on every admin route.
+- The admin dashboard shall display top-line KPIs: total users, active profiles, Pro subscribers, daily logs, prediction-accuracy summary (latest nightly snapshot and trend). KPI views use a cache TTL of 60 seconds or less and the "last updated" label shows the real data age. *(v1.4)*
+- User management shall provide list, search, view profile metadata, suspend, reactivate, delete, restore, and inspect subscription state, plus a per-user plan history drawn from the translog. *(v1.4)*
+- Subscription management shall provide the view of current Pro subscribers and manual Revoke / re-grant actions (admin override). The "recent CAAS results" and "grace-period users" views are removed. *(v1.4)*
+- **Unsubscribe:** Revoke, Suspend and Delete also unsubscribe the number on BDApps (see FR-BILL, ADR 0006). *(v1.4)*
+- **Delete and restore:** Delete hides the account and an admin can restore it for 30 days; after that a nightly job purges the user, their profiles and logs, leaving one translog line. *(v1.4)*
+- **Logs page:** one admin Logs page shall show merchant calls, webhook events and the translog from the dated per-channel log files (ADR 0004), filterable by channel, date, text, request id and user, with OTP codes masked at read time. It replaces the "recent CAAS results" view. *(v1.4)*
+- **Admin session:** the admin uses a separate login screen and cookie with a 7-day token (the web app token is 30 days). A request with no token is redirected to login; a valid non-admin token receives a 403 "Not an admin" page offering log-out-and-switch. Every admin server action calls the admin auth check. *(v1.4)*
+- Every admin action shall confirm or report its result (toast with an `aria-live="polite"` region), destructive or real-world actions shall use a confirm dialog, and every page shall work at 375, 768 and 1280 px. *(v1.4)*
 
 **Acceptance criteria:**
 
-- A non-Super-Admin user accessing any `/admin` route shall receive HTTP 403.
+- A non-Super-Admin user accessing any `/admin` route shall receive HTTP 403; a request with no session shall be redirected to login. *(v1.4)*
 - The KPI dashboard shall reflect DB state within one minute of an event (signup, log, upgrade).
-- Suspending a user shall immediately prevent that user's JWT from authenticating.
-- Manual Pro revoke shall update `subscription_status` and shall stop the next CAAS charge attempt.
+- Suspending a user shall immediately prevent that user's token from authenticating, in both apps (per-user "sessions valid after" marker). *(v1.4)*
+- Manual Pro revoke shall update `subscription_status` and unsubscribe the number on BDApps so no further subscription charge is made. *(v1.4)*
+- A deleted account shall be restorable for 30 days and purged after that, leaving one translog line. *(v1.4)*
+- The Logs page shall show OTP values masked. *(v1.4)*
 
 #### FR-CMS — Content CMS (Tiptap)
 
@@ -876,7 +888,8 @@ Each functional requirement below states the expected behaviour and the testable
 - The admin panel shall include a Tiptap 3.x rich-text editor for creating and editing bilingual articles.
 - The editor shall support side-by-side EN/BN editing with phase-tag and category selectors.
 - A draft/publish lifecycle shall be enforced; only published articles shall surface in the reader UI.
-- Image uploads shall be stored in Supabase storage; saved HTML shall be sanitised.
+- Image uploads shall be stored on a server volume and served by the web app under an uploads path; the upload action is admin-only, checks type and size, and generates file names. Saved HTML shall be sanitised, with image sources allowed only from that path. The uploads volume shall be included in backups. Object storage (R2/S3) is out of scope. *(v1.4)*
+- The admin editor shall load the same Bengali font as the web app, Bengali fields shall carry `lang="bn"`, and failure of the cross-app cache refresh shall be shown to the admin. *(v1.4)*
 
 **Acceptance criteria:**
 
@@ -890,11 +903,11 @@ Each functional requirement below states the expected behaviour and the testable
 
 **Requirements:**
 
-- The system shall provide anonymised population health charts (cycle-length distribution, common symptoms by phase, retention curves) rendered with Recharts 3.x.
-- The system shall produce a prediction-accuracy report computed nightly: per-tier MAE between predicted next-period start and actual logged start.
+- The system shall provide anonymised population health charts (cycle-length distribution from measured gaps between consecutive logged period starts, top symptoms by cycle phase, weekly cohort retention curves) rendered with Recharts 3.x. *(v1.4)*
+- The system shall produce a prediction-accuracy report computed nightly by the admin-maintenance job and stored as a dated per-tier MAE snapshot: MAE between predicted next-period start and actual logged start. *(v1.4)*
 - Analytics queries shall respect encryption boundaries; no plaintext export of `symptom_logs.value` shall occur.
 - Analytics shall be admin-only and shall not be exposed to end users.
-- The admin analytics dashboard shall provide configurable chart views: selectable chart type, adjustable date range, and metric selection per panel. *(v1.3)*
+- The admin analytics dashboard shall provide configurable chart views: selectable chart type, adjustable date range, and metric selection per panel; each panel query takes its own range and metric. *(v1.3; v1.4)*
 - Admin analytics shall include a feedback-module panel (submission volume, trend, category mix, and rating distribution) sourced from FR-FEEDBACK data. *(v1.3)*
 
 **Acceptance criteria:**
@@ -930,8 +943,8 @@ Each functional requirement below states the expected behaviour and the testable
 - Users shall be able to submit feedback in one of four categories: bug report, feature request, general feedback, or satisfaction rating.
 - Each submission shall include a free-text field and an optional 1–5 star satisfaction rating.
 - Feedback shall be stored in a `feedback` table with fields: `id`, `user_id`, `profile_id`, `category`, `message`, `rating`, `created_at`.
-- The admin panel shall display all feedback submissions with filters by category, date range, and rating.
-- The admin shall be able to export feedback data as CSV.
+- The admin panel shall display all feedback submissions with filters by category, date range, exact or minimum rating, and text search. *(v1.4)*
+- The admin shall be able to export feedback data as CSV including all fields and honouring the current filters. CSV exports start with a UTF-8 BOM (so Bengali opens correctly in Excel), escape every field per RFC 4180, prefix cells starting with `=`, `+`, `-` or `@`, and are audit-logged. *(v1.4)*
 - Feedback submissions shall not expose PII of other users; each user shall only see their own submission history.
 - The admin feedback view shall include an analytics dashboard with configurable charts (volume over time, category breakdown, and rating distribution), in addition to the list and filter view. *(v1.3)*
 
@@ -1006,7 +1019,7 @@ The constraints in [§2.4](#24-constraints) (CON-TECH-01 – CON-TECH-05, CON-RE
 
 | ID             | Requirement                                                                                                         | Verification                                                                                                 |
 | -------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **NFR-REL-01** | Transient BDApps errors shall not cause Pro lapse; only N consecutive failures shall trigger the grace-period flow. **(deferred — v2)** | Failure-injection test: simulate transient errors; subscription remains active until N consecutive failures. |
+| **NFR-REL-01** | Transient BDApps errors shall not change a user's plan; only an explicit `UNREGISTERED` status makes a user Free. *(v1.4; grace period removed)* | Failure-injection test: simulate transient errors; subscription remains unchanged. |
 
 
 #### 3.5.2 Availability
@@ -1034,7 +1047,6 @@ The constraints in [§2.4](#24-constraints) (CON-TECH-01 – CON-TECH-05, CON-RE
 
 | ID               | Requirement                                                                                                 | Verification                                                                                    |
 | ---------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| **NFR-MAINT-01** | The grace-period length shall be configurable without a code deploy. *(NFR-BILL-02 in source.)* **(deferred — v2)** | DB-config update shall change the grace period and the new value shall take effect immediately. |
 | **NFR-MAINT-02** | The pinned Prisma version (6.13.x) shall be honoured until `prisma-field-encryption` certifies a newer one. | Dependency lockfile audit.                                                                      |
 
 
@@ -1068,8 +1080,7 @@ The constraints in [§2.4](#24-constraints) (CON-TECH-01 – CON-TECH-05, CON-RE
 
 | ID              | Requirement                                                                                             | Verification                                                                  |
 | --------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **NFR-BILL-01** | *(Deferred — post-v1.)* Pro features shall be gated within one API request of a successful CAAS charge. | Schema is in place (FR-GATE); middleware enforcement is not part of v1 scope. |
-| **NFR-BILL-02** | Grace-period length shall be configurable without a code deploy. **(deferred — v2)**                    | DB config; change grace period; new value shall take effect immediately.      |
+| **NFR-BILL-01** | *(Deferred — post-v1.)* Pro features shall be gated within one API request of a BDApps `REGISTERED` status. *(v1.4)* | Schema is in place (FR-GATE); middleware enforcement is not part of v1 scope. |
 
 
 ### 3.6 Other Requirements
@@ -1083,7 +1094,7 @@ The database shall be PostgreSQL 16 on Supabase with Row Level Security enabled 
 
 | ID     | Requirement                                                                                                     |
 | ------ | --------------------------------------------------------------------------------------------------------------- |
-| OPS-01 | Two Vercel Cron jobs shall run: `/api/cron/daily-reminders` (08:00 UTC) and `/api/cron/caas-check` (02:00 UTC). |
+| OPS-01 | Production cron entries run from a host crontab on the VPS: `/api/cron/daily-reminders` (08:00 UTC), the nightly BDApps subscription check (02:00 UTC), and the nightly admin-maintenance job (prediction-accuracy snapshot and 30-day purge). *(v1.4)* |
 | OPS-02 | Cron endpoints shall be authenticated via the `CRON_SECRET` header.                                             |
 | OPS-03 | Storage utilisation against the Supabase 500 MB cap shall be monitored.                                         |
 
@@ -1109,7 +1120,8 @@ The database shall be PostgreSQL 16 on Supabase with Row Level Security enabled 
 | Path                        | Schedule                      | Purpose                                                                                                           | Auth                 |
 | --------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------- |
 | `/api/cron/daily-reminders` | `0 8 * * `* (08:00 UTC daily) | Check notification preferences; dispatch email jobs to QStash + dispatch next scheduled SMS broadcast (FR-SMS)    | `CRON_SECRET` header |
-| `/api/cron/caas-check`      | `0 2 * * *` (02:00 UTC daily) | Query balance for all Pro subscribers; update `consecutive_failures`; trigger grace period or revoke Pro on lapse (auto-disable deferred to v2) | `CRON_SECRET` header |
+| nightly subscription check | `0 2 * * *` (02:00 UTC daily) | Query BDApps `getStatus` for subscribers and correct plan state (no grace period) *(v1.4)* | `CRON_SECRET` header |
+| admin-maintenance cron route | nightly | Store dated per-tier MAE snapshot; purge accounts deleted more than 30 days ago *(v1.4)* | `CRON_SECRET` header |
 
 
 **Upgrade Path.**
@@ -1151,11 +1163,11 @@ The system shall not be considered production-ready until all of the following g
 
 - Bilingual health articles shall render correctly in both languages with phase tags.
 
-### Billing — BDApps CAAS
+### Billing — BDApps subscription *(v1.4)*
 
-- Pro upgrade via CAAS shall charge mobile balance and shall update `subscription_status` to `pro` in DB (gating deferred — post-v1).
-- The daily CAAS cron shall run; the grace period shall activate on lapse; Pro shall be revoked at grace expiry. **(deferred — v2)**
-- BDApps CAAS charge shall be verified with a real transaction in the production environment.
+- Phone login via BDApps OTP shall subscribe the number and set `subscription_status` to `pro` in DB (gating deferred — post-v1). *(v1.4)*
+- The nightly subscription check shall run and correct plan state; there is no grace period. *(v1.4)*
+- A real BDApps subscription shall be verified in the production environment. *(v1.4)*
 
 ### Admin Panel
 
@@ -1224,16 +1236,16 @@ Error path:
   (60 s resend cooldown applies)
 ```
 
-#### B.2 Pro Subscription Lifecycle
+#### B.2 Pro Subscription Lifecycle *(rewritten v1.4)*
 
 
-| Step | Title                                | Description                                                                                                                                                                                 |
-| ---- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | User selects Pro plan                | Frontend calls backend → backend calls `caas/direct/debit`. On success, the `subscriptions` record is created with status `ACTIVE`. Pro features are unlocked immediately.                  |
-| 2    | Daily balance check (02:00 UTC cron) | Vercel Cron calls `/api/cron/caas-check`. For each Pro subscriber, the system calls `caas/get/balance`. On success, `consecutive_failures` resets to 0. On failure, the counter increments. |
-| 3    | **(v2)** Lapse detection             | When `consecutive_failures` reaches the configured threshold N, `grace_start = now()`. Pro access remains active during the grace period.                                                   |
-| 4    | **(v2)** Grace-period warning        | Warning notifications are sent encouraging renewal. **The system shall NOT display the exact Pro expiration date or cutoff timing.** Only reminder/warning messaging (e.g. "Please renew your subscription soon") shall be shown to encourage renewal without exposing the countdown. |
-| 5    | **(v2)** Pro access revoked          | At grace-period expiry, `subscriptions.status = LAPSED`. Feature gating (when enabled post-v1) blocks Pro features and the user sees an upgrade prompt.                                     |
+| Step | Title                         | Description                                                                                                                                                  |
+| ---- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1    | User logs in by phone         | BDApps OTP verify subscribes the number; the `subscriptions` record is created and the user is Pro while BDApps reports `REGISTERED`.                        |
+| 2    | Nightly status check          | The host crontab calls the nightly check, which runs `getStatus` for subscribers and corrects plan state. The webhook updates state in real time.            |
+| 3    | Unsubscribed                  | On `UNREGISTERED` (webhook, nightly check or in-app Unsubscribe) the user becomes Free and keeps their data; logging in by phone again re-subscribes.        |
+| 4    | Admin Revoke / Suspend / Delete | The admin action also unsubscribes the number on BDApps. Reactivate and Restore do not re-subscribe. An admin override ends when BDApps reports a new subscription. |
+
 
 
 #### B.3 Infrastructure Diagram
@@ -1242,8 +1254,10 @@ Error path:
 VERCEL (Hobby — $0/mo)
   ├── Next.js 16 (React 19) app
   ├── Route Handlers (API) via Next.js
-  ├── Cron: /api/cron/daily-reminders  (0 8 * * *)
-  └── Cron: /api/cron/caas-check       (0 2 * * *)
+  ├── Cron entries (host crontab on the production VPS) *(v1.4)*
+  │     /api/cron/daily-reminders  (0 8 * * *)
+  │     nightly subscription check (0 2 * * *)
+  └──   nightly admin-maintenance job
 
 SUPABASE (Free — $0/mo)
   ├── PostgreSQL 16
@@ -1259,7 +1273,7 @@ RESEND (Free — $0/mo)
 
 BDAPPS (Usage-based)
   ├── OTP API  — /otp/request, /otp/verify
-  └── CAAS API — /caas/direct/debit, /caas/get/balance
+  └── Subscription API — /subscription/send, /subscription/getStatus (CaaS parked) *(v1.4)*
 ```
 
 ### Appendix C — Requirements Traceability Matrix
@@ -1277,7 +1291,7 @@ The matrix below maps each Functional Requirement to its priority bucket, the up
 | FR-SYMP      | Symptom Logging                                 | P0       | R1 §5, R6 §3.FR-SYMP      | Core Tracking #2                           | NFR-SEC-01                            |
 | FR-PRED      | Three-Tier Prediction Engine                    | P0       | R1 §5, R6 §3.FR-PRED      | Core Tracking #1                           | NFR-PERF-01, NFR-PERF-02              |
 | FR-ONBOARD   | Onboarding Flow                                 | P0       | R1 §5, R6 §3.FR-ONBOARD   | (covered by Tracking + I18N)               | NFR-I18N-01                           |
-| FR-BILL      | Pro Subscription via BDApps CAAS                | P0       | R1 §2, R5, R6 §3.FR-BILL  | Billing — BDApps CAAS #1–3                 | NFR-REL-01, NFR-MAINT-01              |
+| FR-BILL      | Pro Subscription via BDApps Subscription *(v1.4)* | P0       | R1 §2, R5, R6 §3.FR-BILL  | Billing — BDApps subscription #1–3         | NFR-REL-01                            |
 | FR-GATE      | Feature Gating (Email Trial + Schema) *(v1.2)*  | P0       | R6 §3.FR-GATE             | Authentication & Accounts #3; Billing #1   | NFR-BILL-01 (deferred), NFR-BILL-02   |
 | FR-I18N      | Bilingual UI (EN + BN)                          | P0       | R1 §5, R6 §3.FR-I18N      | Localisation #1                            | NFR-I18N-01, NFR-I18N-02, NFR-RESP-01 |
 | FR-ENC       | Field-Level Encryption                          | P0       | R1 §5, R6 §3.FR-ENC       | Security #1                                | NFR-SEC-01                            |
@@ -1308,7 +1322,7 @@ This appendix records the client's V1 review round (referenced as "Vesta V1 — 
 | 6 | "feed back we need proper analytics dashboard" | Admin analytics is robust but not configurable; there is no analytics view for the feedback module and no user-facing analytics. Client clarified: all dashboards should offer configurable chart views. | Amend **FR-ANALYTICS** (configurable charts + feedback panel) and **FR-FEEDBACK** (feedback analytics); new **FR-INSIGHTS** (user-facing insights dashboard). | Planned (v1.3) |
 | 7 | "BDApps Charging Analysis (Upon Resolving with Arika Apu)" | CAAS charging works (`caas/direct/debit`, transaction tracking) but there is no documented analysis of charge failure / retry / recovery and reconciliation. | See §D.7 below — recorded as an open item; no committed requirement yet. | OPEN — blocked |
 
-#### D.7 — BDApps Charging Analysis *(OPEN — blocked)*
+#### D.7 — BDApps Charging Analysis *(OPEN — blocked; superseded by v1.4 — CaaS parked, see ADR 0002)*
 
 **Status:** OPEN — pending resolution with Arika.
 

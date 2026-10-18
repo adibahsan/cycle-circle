@@ -19,7 +19,7 @@ function revalidateUserTags(userId: string) {
   revalidateTag(adminCacheTags.dashboard, { expire: 0 })
 }
 
-export async function suspendUser(userId: string, reason?: string) {
+export async function suspendUser(userId: string, reason: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
