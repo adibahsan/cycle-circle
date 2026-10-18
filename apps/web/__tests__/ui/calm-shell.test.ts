@@ -46,7 +46,7 @@ describe('calm shell (#71)', () => {
   })
 
   it('full-height shells use dynamic viewport units', () => {
-    for (const f of ['app/layout.tsx', 'app/(main)/layout.tsx']) {
+    for (const f of ['app/layout.tsx', 'components/shell/MainShell.tsx']) {
       const src = read(f)
       expect(src, f).not.toMatch(/\b(min-)?h-screen\b|100vh/)
     }

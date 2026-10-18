@@ -67,7 +67,7 @@ describe('active nav item', () => {
 
 describe('shell surfaces', () => {
   const shell = {
-    layout: read('app/(main)/layout.tsx'),
+    layout: read('components/shell/MainShell.tsx'),
     bottomNav: read('components/shell/BottomNav.tsx'),
     moreSheet: read('components/shell/MoreSheet.tsx'),
     profileChip: read('components/shell/ProfileChip.tsx'),

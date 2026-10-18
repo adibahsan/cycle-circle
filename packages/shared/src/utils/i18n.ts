@@ -16,6 +16,8 @@ const resources = {
         collapseSidebar: 'Collapse sidebar', expandSidebar: 'Expand sidebar',
       },
       auth: {
+        openingDashboard: 'Opening your dashboard…',
+        openingSetup: 'Setting things up…',
         emailLoginTitle: 'Email login',
         emailLoginSub: "We'll email you a magic link — no password needed.",
         trialWindowTitle: '24-hour trial window',
@@ -863,6 +865,8 @@ const resources = {
         collapseSidebar: 'সাইডবার ছোট করুন', expandSidebar: 'সাইডবার বড় করুন',
       },
       auth: {
+        openingDashboard: 'আপনার ড্যাশবোর্ড খোলা হচ্ছে…',
+        openingSetup: 'সবকিছু প্রস্তুত করা হচ্ছে…',
         emailLoginTitle: 'ইমেইল লগইন',
         emailLoginSub: 'আমরা আপনাকে একটি ম্যাজিক লিংক ইমেইল করব — পাসওয়ার্ড লাগবে না।',
         trialWindowTitle: '২৪ ঘণ্টার ট্রায়াল',

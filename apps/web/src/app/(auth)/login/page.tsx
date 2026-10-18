@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'motion/react';
@@ -30,6 +30,11 @@ export default function LoginPage() {
   const [phone, setPhone] = useState(devMode ? DEV_DEFAULT_PHONE : '');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // /verify-otp is public: warm its code so the OTP inputs appear instantly after submit.
+  useEffect(() => {
+    router.prefetch('/verify-otp');
+  }, [router]);
 
   function validatePhone(value: string) {
     const digits = value.replace(/\D/g, '');

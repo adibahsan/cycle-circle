@@ -13,7 +13,7 @@ function walk(p: string): string[] {
 }
 
 const owned = [
-  'app/(main)/layout.tsx',
+  'components/shell/MainShell.tsx',
   'app/(main)/dashboard',
   'app/(main)/calendar',
   'components/PeriodLogModal.tsx',

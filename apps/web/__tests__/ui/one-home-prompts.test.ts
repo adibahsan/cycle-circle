@@ -61,7 +61,7 @@ describe('loggingNudgeVariant', () => {
 
 describe('one home per prompt (source scan)', () => {
   it('the main layout no longer renders the completion banner', () => {
-    const layout = src('app/(main)/layout.tsx')
+    const layout = src('components/shell/MainShell.tsx')
     expect(layout).not.toMatch(/<ProfileCompletionTracker/)
     expect(layout).not.toMatch(/variant="pill"/)
     expect(layout).toContain('<ProfileChip')

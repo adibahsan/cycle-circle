@@ -110,6 +110,8 @@ interface Props {
   profiles: PrismaProfile[]
   user: AuthUser
   activeProfileId: string
+  /** True when the active-profile cookie already matches; skips the cookie server action (which re-renders the route). */
+  profileCookieSynced: boolean
   dashboardData: DashboardData | null
   completion: ProfileCompletionStatus
   lastSymptomLogDate: Date | string | null
@@ -131,7 +133,7 @@ function normalizeFlow(f: string): FlowIntensity {
 
 // ─── Dashboard Client ─────────────────────────────────────────────────────────
 
-export function DashboardClient({ profiles, user: _user, activeProfileId, dashboardData, completion, lastSymptomLogDate, goal, engagement, phaseArticles = [], phasePattern }: Props) {
+export function DashboardClient({ profiles, user: _user, activeProfileId, profileCookieSynced, dashboardData, completion, lastSymptomLogDate, goal, engagement, phaseArticles = [], phasePattern }: Props) {
   const { t } = useTranslation()
   const router = useRouter()
   const setActiveProfile = useAppStore((s) => s.setActiveProfile)
@@ -143,9 +145,9 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   useEffect(() => {
     if (profile) {
       setActiveProfile(profile.id, profile.name)
-      setActiveProfileCookie(profile.id)
+      if (!profileCookieSynced) setActiveProfileCookie(profile.id)
     }
-  }, [profile?.id, profile?.name, setActiveProfile])
+  }, [profile?.id, profile?.name, setActiveProfile, profileCookieSynced])
 
   const [showModal, setShowModal] = useState(false)
   const [editLogId, setEditLogId] = useState<string | undefined>(undefined)

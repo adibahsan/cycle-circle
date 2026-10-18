@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import type { PrefetchKind } from 'next/dist/client/components/router-reducer/router-reducer-types';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, RefreshCw, CheckCircle2, CircleAlert } from 'lucide-react';
@@ -32,6 +33,7 @@ export default function VerifyOtpPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [target, setTarget] = useState<'/dashboard' | '/onboarding'>('/dashboard');
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
   const [endsAt, setEndsAt] = useState<number>(() => Date.now() + RESEND_SECONDS * 1000);
   const [resending, setResending] = useState(false);
@@ -118,16 +120,22 @@ export default function VerifyOtpPage() {
       const body = await res.json().catch(() => ({})) as { error?: string | { message?: string; code?: string }; user?: { profileCompleted?: boolean } };
       if (!res.ok) {
         setError(errorMessage(body, 'auth.verificationFailed'));
+        setLoading(false);
         return;
       }
+      const next = body.user?.profileCompleted ? '/dashboard' : '/onboarding';
+      // Auth cookie is set now, so prefetching the protected route is safe. A full prefetch
+      // fetches the page's data too, so it loads during the success tick instead of after it.
+      router.prefetch(next, { kind: 'full' as PrefetchKind });
+      setTarget(next);
       setSuccess(true);
-      await new Promise((res) => setTimeout(res, 700));
-      router.replace(body.user?.profileCompleted ? '/dashboard' : '/onboarding');
+      await new Promise((res) => setTimeout(res, 400));
+      router.replace(next);
+      return;
     } catch {
       setError(t('auth.verificationFailed'));
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   }
 
   async function handleResend() {
@@ -238,7 +246,7 @@ export default function VerifyOtpPage() {
           size="lg"
           type="submit"
           disabled={loading || success || !allFilled}
-          className="text-base font-bold"
+          className={`text-base font-bold ${success ? 'disabled:opacity-100' : ''}`}
         >
           <AnimatePresence mode="wait" initial={false}>
             {success ? (
@@ -271,6 +279,10 @@ export default function VerifyOtpPage() {
             )}
           </AnimatePresence>
         </Button>
+        {/* Always mounted so screen readers announce the hand-off; the overlay shows it visually. */}
+        <p aria-live="polite" className="sr-only">
+          {success ? t(target === '/dashboard' ? 'auth.openingDashboard' : 'auth.openingSetup') : ''}
+        </p>
       </motion.div>
 
       {/* Resend */}
@@ -331,13 +343,13 @@ export default function VerifyOtpPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.15 }}
             className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-bg-primary)]/90 backdrop-blur-sm z-20 rounded-inherit"
           >
             <motion.div
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.05 }}
+              transition={{ type: 'spring', stiffness: 360, damping: 22 }}
               className="w-24 h-24 rounded-full flex items-center justify-center shadow-[0_8px_40px_color-mix(in_srgb,var(--color-primary)_40%,transparent)] bg-[var(--color-primary)]"
             >
               <CheckCircle2 size={44} className="text-[var(--color-on-accent)]" strokeWidth={2} aria-hidden="true" />
@@ -345,11 +357,15 @@ export default function VerifyOtpPage() {
             <motion.p
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25, duration: 0.35 }}
+              transition={{ delay: 0.08, duration: 0.2 }}
               className="mt-5 text-lg font-bold text-[var(--color-text-primary)]"
             >
               {t('auth.verified')}
             </motion.p>
+            {/* The overlay is timed to fit the 400ms hand-off while the next page loads. */}
+            <p aria-hidden="true" className="mt-1 text-sm text-[var(--color-text-muted)]">
+              {t(target === '/dashboard' ? 'auth.openingDashboard' : 'auth.openingSetup')}
+            </p>
           </motion.div>
         )}
       </AnimatePresence>

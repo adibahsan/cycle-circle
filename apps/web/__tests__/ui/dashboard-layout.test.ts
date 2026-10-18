@@ -84,7 +84,7 @@ describe('dashboard layout sources', () => {
     expect(allDash).toContain('data-testid="hero-stats"')
   })
   it('layout listens with the shared event constant', () => {
-    const layout = read('src/app/(main)/layout.tsx')
+    const layout = read('src/components/shell/MainShell.tsx')
     expect(layout).toContain('OPEN_COMPLETION_EVENT')
     expect(layout).not.toContain("'vesta:open-completion'")
   })

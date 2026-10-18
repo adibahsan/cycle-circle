@@ -1030,7 +1030,7 @@ export default function OnboardingClient({ user }: OnboardingClientProps) {
   }
 
   return (
-    <CenteredShell prefersReducedMotion={prefersReducedMotion}>
+    <CenteredShell prefersReducedMotion={prefersReducedMotion} animateIn={false}>
       {/* ── Header (shrink-0) ── */}
       <div className="shrink-0 px-5 pt-5 pb-3 md:px-7">
         <div className="flex items-center justify-between">
@@ -1053,7 +1053,8 @@ export default function OnboardingClient({ user }: OnboardingClientProps) {
 
       {/* ── Scrollable content (flex-1) ── */}
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-        <AnimatePresence mode="wait" custom={direction}>
+        {/* initial={false}: the first step replaces the loading skeleton in place; only step changes animate. */}
+        <AnimatePresence mode="wait" custom={direction} initial={false}>
           <motion.div
             key={step}
             custom={direction}

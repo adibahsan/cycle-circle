@@ -16,14 +16,18 @@ export function ProfileChip({
   name,
   status,
   onOpenCompletion,
+  pending = false,
   className = '',
 }: {
   name: string;
   status: ProfileCompletionStatus | null;
   onOpenCompletion: () => void;
+  /** Name not known yet and still loading: show a placeholder instead of the generic label. */
+  pending?: boolean;
   className?: string;
 }) {
   const { t } = useTranslation();
+  const showPlaceholder = pending && !name;
   const label = name || t('profileCompletion.headerLabel');
   const incomplete = !!status && !status.complete;
   const r = (SIZE - STROKE) / 2;
@@ -68,7 +72,11 @@ export function ProfileChip({
         aria-label={t('nav.profileSwitcher', { name: label })}
         className="sb-chip-link min-w-0 truncate rounded-full py-1.5 pl-1.5 pr-3 text-sm font-medium text-[var(--color-text-primary)] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
       >
-        {label}
+        {showPlaceholder ? (
+          <span aria-hidden="true" className="block h-3 w-16 rounded bg-[var(--color-border)] animate-pulse motion-reduce:animate-none" />
+        ) : (
+          label
+        )}
       </Link>
     </div>
   );

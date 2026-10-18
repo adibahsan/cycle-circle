@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { getCurrentUser } from '@/app/queries/auth-queries'
 import { getProfiles, getActiveProfileId } from '@/app/queries/profile-queries'
 import { getDashboardData, getEngagementSummary } from '@/app/queries/tracking-queries'
@@ -21,14 +22,18 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ profileId?: string }>
 }) {
-  const user = await getCurrentUser()
+  const [user, profiles] = await Promise.all([getCurrentUser(), getProfiles()])
   if (!user) redirect('/login')
-
-  const profiles = await getProfiles()
   if (profiles.length === 0) redirect('/onboarding')
 
   const params = await searchParams
   const profileId = await getActiveProfileId(profiles, params.profileId)
+
+  // No valid cookie means the server already defaults to the first profile, so only a real
+  // switch needs the cookie action (it re-renders the route and clears the client router cache).
+  const cookieId = (await cookies()).get('vesta_active_profile')?.value
+  const savedProfileId = profiles.some((p) => p.id === cookieId) ? cookieId : profiles[0].id
+  const profileCookieSynced = savedProfileId === profileId
 
   const [dashboardData, completion, engagement] = await Promise.all([
     getDashboardData(profileId),
@@ -58,6 +63,7 @@ export default async function DashboardPage({
       profiles={profiles}
       user={user}
       activeProfileId={profileId}
+      profileCookieSynced={profileCookieSynced}
       dashboardData={dashboardData}
       completion={completion}
       lastSymptomLogDate={dashboardData?.lastSymptomLogDate ?? null}
