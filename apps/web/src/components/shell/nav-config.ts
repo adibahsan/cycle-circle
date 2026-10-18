@@ -1,5 +1,8 @@
 /** Navigation destinations for the signed-in shell. Pure data, no React. */
 
+import type { CardTint } from '@/components/ui/tints'
+import { GOAL_ACCENT_FILL } from '@/components/ui/action-styles'
+
 export type NavIconKey =
   | 'home' | 'calendar' | 'symptoms' | 'insights' | 'content'
   | 'settings' | 'profiles' | 'feedback' | 'subscription'
@@ -10,14 +13,14 @@ export interface NavItem {
   labelKey: string
   tourKey?: string
   /** Pastel badge behind the icon in the More sheet (a `--color-tint-*` name). */
-  tint?: 'peach' | 'pink' | 'mint' | 'lavender' | 'sky' | 'sage'
+  tint?: CardTint
 }
 
 /**
  * The active nav item: the goal accent filled, with the on-accent ink (>= 4.5:1 for every goal,
  * both themes). The only goal-accent surface in the shell besides focus rings and the profile ring.
  */
-export const NAV_ACTIVE = { color: 'var(--color-on-accent)', backgroundColor: 'var(--goal-accent)' } as const
+export const NAV_ACTIVE = GOAL_ACCENT_FILL
 
 const DASHBOARD: NavItem = { href: '/dashboard', icon: 'home', labelKey: 'nav.dashboard' }
 const CALENDAR: NavItem = { href: '/calendar', icon: 'calendar', labelKey: 'nav.calendar', tourKey: 'nav-calendar' }

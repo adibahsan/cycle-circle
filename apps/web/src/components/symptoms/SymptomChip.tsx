@@ -3,9 +3,10 @@
 import { memo, useContext } from 'react';
 import { motion } from 'motion/react';
 import { Check, type LucideIcon } from 'lucide-react';
-import type { CardTint } from '@/components/ui/Card';
+import type { CardTint } from '@/components/ui/tints';
 import { cn } from '@/lib/cn';
-import { SymptomTintContext, TINT_CLASSES } from './tints';
+import { SymptomTintContext } from './tints';
+import { TINT_CLASSES } from '@/components/ui/tints';
 
 interface SymptomChipProps {
   id: string;

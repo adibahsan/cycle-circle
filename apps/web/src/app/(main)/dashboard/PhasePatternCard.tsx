@@ -10,6 +10,8 @@ import { SectionHeader } from '@/components/ui/SectionHeader'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
 import { useLanguage } from '@/lib/use-language'
 import { cn } from '@/lib/cn'
+import { TINT_CLASSES, type CardTint } from '@/components/ui/tints'
+import { PILL_ACTION } from '@/components/ui/action-styles'
 import { formatCount } from './format'
 
 export interface PhasePatternItem {
@@ -17,9 +19,8 @@ export interface PhasePatternItem {
   count: number
 }
 
-// Full literal classes so Tailwind sees them; one pastel per rank.
-const TILE_TINTS = ['bg-tint-mint', 'bg-tint-lavender', 'bg-tint-peach'] as const
-const TILE_INK = ['text-accent-mint', 'text-accent-lavender', 'text-accent-peach'] as const
+/** One pastel per rank. */
+const TILE_TINTS: CardTint[] = ['mint', 'lavender', 'peach']
 
 interface PhasePatternCardProps {
   phase: CyclePhase
@@ -51,10 +52,10 @@ export function PhasePatternCard({ phase, pattern }: PhasePatternCardProps) {
               return (
                 <li
                   key={symptomId}
-                  className={cn('flex items-center gap-3 rounded-2xl p-3 sm:flex-col sm:items-start', TILE_TINTS[i % 3])}
+                  className={cn('flex items-center gap-3 rounded-2xl p-3 sm:flex-col sm:items-start', TINT_CLASSES[TILE_TINTS[i % TILE_TINTS.length]].surface)}
                 >
                   <span
-                    className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-card)]', TILE_INK[i % 3])}
+                    className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-card)]', TINT_CLASSES[TILE_TINTS[i % TILE_TINTS.length]].ink)}
                     aria-hidden="true"
                   >
                     <Icon size={18} aria-hidden="true" />
@@ -72,9 +73,9 @@ export function PhasePatternCard({ phase, pattern }: PhasePatternCardProps) {
             })}
           </ul>
         ) : (
-          <div data-testid="phase-pattern-empty" className="flex items-start gap-3 rounded-2xl bg-tint-sky p-4">
+          <div data-testid="phase-pattern-empty" className={cn('flex items-start gap-3 rounded-2xl p-4', TINT_CLASSES.sky.surface)}>
             <span
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-card)] text-accent-sky"
+              className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-card)]', TINT_CLASSES.sky.ink)}
               aria-hidden="true"
             >
               <NotebookPen size={18} aria-hidden="true" />
@@ -83,7 +84,7 @@ export function PhasePatternCard({ phase, pattern }: PhasePatternCardProps) {
               <p className="text-sm text-[var(--color-text-primary)]">{t('dashboard.patternEmpty')}</p>
               <Link
                 href="/symptoms"
-                className="mt-3 inline-flex min-h-11 items-center rounded-full bg-[var(--color-bg-card)] px-5 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                className={cn(PILL_ACTION, 'mt-3')}
               >
                 {t('dashboard.patternLogCta')}
               </Link>

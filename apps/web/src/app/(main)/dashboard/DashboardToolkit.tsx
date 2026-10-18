@@ -5,7 +5,9 @@ import { useTranslation } from 'react-i18next'
 import { BookOpen, CalendarDays, ChartLine, Droplets, HeartPulse, Users, type LucideIcon } from 'lucide-react'
 import type { CyclePhase } from '@vesta/shared/types'
 import { Button } from '@/components/ui/Button'
-import { Card, type CardTint } from '@/components/ui/Card'
+import { Card } from '@/components/ui/Card'
+import { TINT_CLASSES, type CardTint } from '@/components/ui/tints'
+import { PILL_ACTION } from '@/components/ui/action-styles'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 
 export interface PhaseArticle {
@@ -25,18 +27,7 @@ interface DashboardToolkitProps {
   onLogSymptoms: () => void
 }
 
-// Full literal classes so Tailwind sees them.
-const BADGE_INK: Record<CardTint, string> = {
-  peach: 'text-accent-peach',
-  pink: 'text-accent-pink',
-  mint: 'text-accent-mint',
-  lavender: 'text-accent-lavender',
-  sky: 'text-accent-sky',
-  sage: 'text-accent-sage',
-}
-
-const ACTION =
-  'inline-flex min-h-11 items-center justify-center gap-1.5 self-start rounded-full bg-[var(--color-bg-card)] px-5 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]'
+const ACTION = `${PILL_ACTION} self-start`
 
 function ToolCard({
   tone,
@@ -57,7 +48,7 @@ function ToolCard({
       <Card tone={tone} padding="md" className="flex h-full flex-col gap-3">
         <span
           aria-hidden="true"
-          className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-bg-card)] ${BADGE_INK[tone]}`}
+          className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-bg-card)] ${TINT_CLASSES[tone].ink}`}
         >
           <Icon size={24} strokeWidth={1.75} />
         </span>

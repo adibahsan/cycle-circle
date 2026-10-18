@@ -98,6 +98,8 @@ describe('shell surfaces', () => {
   })
 
   it('More sheet destinations sit in pastel tinted icon badges', () => {
-    expect(shell.moreSheet).toMatch(/bg-tint-/)
+    // Badges come from the shared tint map (#66 T1).
+    expect(shell.moreSheet).toMatch(/TINT_CLASSES\[\w+\]\.badge/)
+    expect(read('components/ui/tints.ts')).toMatch(/badge: 'bg-tint-/)
   })
 })

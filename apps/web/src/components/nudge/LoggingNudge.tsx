@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button';
 /** A navigation CTA styled like the primary small Button (a link, never a button inside a link). */
 const CTA_LINK_CLASS =
   'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--color-on-action)] shadow-soft transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]';
-const CTA_STYLE = { background: 'var(--goal-accent)', borderColor: 'var(--goal-accent)' } as React.CSSProperties;
+import { GOAL_ACCENT_FILL } from '@/components/ui/action-styles';
 import { useHasMounted } from '@/components/motion/useHasMounted';
 import { isTTC, isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal';
 import { loggingNudgeVariant } from '@/lib/prompt-rules';
@@ -192,10 +192,7 @@ export function LoggingNudge({
                     size="sm"
                     onClick={onLogPeriod}
                     className="text-xs focus-visible:ring-[var(--goal-accent)]"
-                    style={{
-                      background: 'var(--goal-accent)',
-                      borderColor: 'var(--goal-accent)',
-                    } as React.CSSProperties}
+                    style={GOAL_ACCENT_FILL}
                   >
                     {ctaLabel}
                   </Button>
@@ -203,7 +200,7 @@ export function LoggingNudge({
                   <Link
                     href="/calendar"
                     className={CTA_LINK_CLASS}
-                    style={CTA_STYLE}
+                    style={GOAL_ACCENT_FILL}
                   >
                     {ctaLabel}
                   </Link>
@@ -220,7 +217,7 @@ export function LoggingNudge({
               </>
             ) : (
               /* Stale variant: single primary CTA — Log symptoms */
-              <Link href="/symptoms" className={CTA_LINK_CLASS} style={CTA_STYLE}>
+              <Link href="/symptoms" className={CTA_LINK_CLASS} style={GOAL_ACCENT_FILL}>
                 {t('nudge.logSymptomsCta')}
               </Link>
             )}

@@ -5,7 +5,8 @@ import { parseISO } from 'date-fns'
 import { Baby, CalendarClock, Droplets, Flower2, HeartPulse, Sparkles, type LucideIcon } from 'lucide-react'
 import type { CyclePhase } from '@vesta/shared/types'
 import { Button } from '@/components/ui/Button'
-import { Card, type CardTint } from '@/components/ui/Card'
+import { Card } from '@/components/ui/Card'
+import { TINT_CLASSES } from '@/components/ui/tints'
 import { PhaseIcon } from '@/components/ui/PhaseIcon'
 import { formatShortDate } from '@/lib/format-date'
 import { daysSince, type FertileStatus, type PeriodStatus } from './dashboard-model'
@@ -123,13 +124,6 @@ export function CycleHero({ name, language, phase, cycleDay, fertile, period, ne
   )
 }
 
-// Full literal classes so Tailwind sees them.
-const BADGE_INK: Partial<Record<CardTint, string>> = {
-  pink: 'text-accent-pink',
-  lavender: 'text-accent-lavender',
-  sage: 'text-accent-sage',
-}
-
 /** Shared frame for the mode heroes: tinted panel, headline, sub line, icon badge, then content. */
 function HeroFrame({
   testId,
@@ -161,7 +155,7 @@ function HeroFrame({
           {/* Illustration placeholder until the illustration set (#77) lands. */}
           <span
             aria-hidden="true"
-            className={`hidden sm:flex h-20 w-20 shrink-0 items-center justify-center rounded-panel bg-[var(--color-bg-card)] ${BADGE_INK[tone]}`}
+            className={`hidden sm:flex h-20 w-20 shrink-0 items-center justify-center rounded-panel bg-[var(--color-bg-card)] ${TINT_CLASSES[tone].ink}`}
           >
             <Icon size={36} strokeWidth={1.75} />
           </span>

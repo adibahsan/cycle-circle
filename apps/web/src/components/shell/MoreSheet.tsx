@@ -8,17 +8,9 @@ import { Modal } from '@/components/ui/Modal';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import { MORE_ITEMS, NAV_ACTIVE, isNavActive, type NavItem } from '@/components/shell/nav-config';
 import { NAV_ICONS } from '@/components/shell/nav-icons';
+import { TINT_CLASSES } from '@/components/ui/tints';
 import type { Theme } from '@vesta/shared/utils/theme';
 
-// Full literal class strings so Tailwind can see them.
-const BADGE: Record<NonNullable<NavItem['tint']>, string> = {
-  peach: 'bg-tint-peach text-accent-peach',
-  pink: 'bg-tint-pink text-accent-pink',
-  mint: 'bg-tint-mint text-accent-mint',
-  lavender: 'bg-tint-lavender text-accent-lavender',
-  sky: 'bg-tint-sky text-accent-sky',
-  sage: 'bg-tint-sage text-accent-sage',
-};
 
 /** Phone "More" sheet: the destinations that left the bottom nav, plus theme and language. */
 export function MoreSheet({
@@ -64,7 +56,7 @@ export function MoreSheet({
                 }`}
                 style={active ? NAV_ACTIVE : undefined}
               >
-                <span aria-hidden="true" className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${BADGE[tint]}`}>
+                <span aria-hidden="true" className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${TINT_CLASSES[tint].badge}`}>
                   <Icon size={18} aria-hidden="true" />
                 </span>
                 {t(labelKey)}

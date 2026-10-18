@@ -29,7 +29,8 @@ import {
 import { useAppStore } from '@/lib/store'
 import { useLanguage } from '@/lib/use-language'
 import { Button } from '@/components/ui/Button'
-import { Card, type CardTint } from '@/components/ui/Card'
+import { Card } from '@/components/ui/Card'
+import { TINT_CLASSES, type CardTint } from '@/components/ui/tints'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { updateNotificationPrefs, exportUserDataCsv, exportUserDataRows, updateProfileReminderOptOut } from '@/app/actions/settings-actions'
 import { updateContactInfo } from '@/app/actions/user-actions'
@@ -150,15 +151,14 @@ function Toggle({
   )
 }
 
-// Full literal class strings so Tailwind can see them.
-const TINT_BADGE: Record<CardTint, string> = {
-  peach: 'bg-tint-peach text-accent-peach',
-  pink: 'bg-tint-pink text-accent-pink',
-  mint: 'bg-tint-mint text-accent-mint',
-  lavender: 'bg-tint-lavender text-accent-lavender',
-  sky: 'bg-tint-sky text-accent-sky',
-  sage: 'bg-tint-sage text-accent-sage',
-}
+
+// Contact (add email / add phone) row buttons: the same three styles for both rows.
+const CONTACT_SAVE =
+  'min-h-11 px-3 py-2 rounded-lg text-xs font-semibold text-[var(--color-on-accent)] bg-[var(--goal-accent)] disabled:opacity-50 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]'
+const CONTACT_CANCEL =
+  'min-h-11 px-2 py-2 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]'
+const CONTACT_ADD =
+  'flex items-center gap-2 w-full min-h-11 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]'
 
 /** Badge tint per settings section (kept out of JSX attributes so label scans stay clean). */
 const SECTION_TINT = {
@@ -173,7 +173,7 @@ const SECTION_TINT = {
 function SectionTitle({ icon: Icon, tint, children }: { icon: React.ElementType; tint: CardTint; children: React.ReactNode }) {
   return (
     <span className="flex items-center gap-2.5">
-      <span aria-hidden="true" className={`w-8 h-8 rounded-full ${TINT_BADGE[tint]} flex items-center justify-center shrink-0`}>
+      <span aria-hidden="true" className={`w-8 h-8 rounded-full ${TINT_CLASSES[tint].badge} flex items-center justify-center shrink-0`}>
         <Icon size={15} />
       </span>
       {children}
@@ -667,13 +667,13 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                             <button
                               onClick={handleAddEmail}
                               disabled={!contactEmail || contactSaving}
-                              className="min-h-11 px-3 py-2 rounded-lg text-xs font-semibold text-[var(--color-on-accent)] bg-[var(--goal-accent)] disabled:opacity-50 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                              className={CONTACT_SAVE}
                             >
                               {contactSaving ? '…' : t('common.save')}
                             </button>
                             <button
                               onClick={() => { setAddingEmail(false); setContactEmail(''); setEmailError('') }}
-                              className="min-h-11 px-2 py-2 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
+                              className={CONTACT_CANCEL}
                             >
                               {t('common.cancel')}
                             </button>
@@ -687,7 +687,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                       ) : (
                         <button
                           onClick={() => { setAddingEmail(true); setEmailError('') }}
-                          className="flex items-center gap-2 w-full min-h-11 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
+                          className={CONTACT_ADD}
                         >
                           <Mail size={12} aria-hidden="true" />
                           {t('settings.addEmail')}
@@ -717,13 +717,13 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                             <button
                               onClick={handleAddPhone}
                               disabled={!contactPhone || contactSaving}
-                              className="min-h-11 px-3 py-2 rounded-lg text-xs font-semibold text-[var(--color-on-accent)] bg-[var(--goal-accent)] disabled:opacity-50 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                              className={CONTACT_SAVE}
                             >
                               {contactSaving ? '…' : t('common.save')}
                             </button>
                             <button
                               onClick={() => { setAddingPhone(false); setContactPhone(''); setPhoneError('') }}
-                              className="min-h-11 px-2 py-2 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
+                              className={CONTACT_CANCEL}
                             >
                               {t('common.cancel')}
                             </button>
@@ -737,7 +737,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                       ) : (
                         <button
                           onClick={() => { setAddingPhone(true); setPhoneError('') }}
-                          className="flex items-center gap-2 w-full min-h-11 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
+                          className={CONTACT_ADD}
                         >
                           <Phone size={12} aria-hidden="true" />
                           {t('settings.addPhone')}

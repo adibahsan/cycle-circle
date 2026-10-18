@@ -1,21 +1,12 @@
 import { cn } from '@/lib/cn';
+import { TINT_CLASSES, type CardTint } from './tints';
 
-/** The six pastel tints from globals.css (`--color-tint-*` / `--color-accent-*`). */
-export const CARD_TINTS = ['peach', 'pink', 'mint', 'lavender', 'sky', 'sage'] as const;
-export type CardTint = (typeof CARD_TINTS)[number];
+export { CARD_TINTS, type CardTint } from './tints';
 /** `panel`: 28px white panel with the neutral panel shadow. A tint: 28px pastel surface, flat. */
 export type CardTone = 'panel' | CardTint;
 
-// Full literal class strings so Tailwind can see them.
-const TONE_CLASSES: Record<CardTone, string> = {
-  panel: 'rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel',
-  peach: 'rounded-panel bg-tint-peach',
-  pink: 'rounded-panel bg-tint-pink',
-  mint: 'rounded-panel bg-tint-mint',
-  lavender: 'rounded-panel bg-tint-lavender',
-  sky: 'rounded-panel bg-tint-sky',
-  sage: 'rounded-panel bg-tint-sage',
-};
+const PANEL = 'rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel';
+const toneClasses = (tone: CardTone) => (tone === 'panel' ? PANEL : `rounded-panel ${TINT_CLASSES[tone].surface}`);
 
 interface CardProps {
   children: React.ReactNode;
@@ -33,7 +24,7 @@ export function Card({ children, className, padding = 'md', tone, hover, style }
       style={style}
       className={cn(
         tone
-          ? TONE_CLASSES[tone]
+          ? toneClasses(tone)
           : 'rounded-lg bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft',
         {
           'p-3': padding === 'sm',

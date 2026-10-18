@@ -3,9 +3,11 @@
 import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SymptomCategory } from '@vesta/shared/types';
-import { Card, type CardTint } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
+import type { CardTint } from '@/components/ui/tints';
 import { cn } from '@/lib/cn';
-import { SymptomTintContext, TINT_CLASSES } from './tints';
+import { SymptomTintContext } from './tints';
+import { TINT_CLASSES } from '@/components/ui/tints';
 import '@vesta/shared/utils/i18n';
 
 export const CATEGORIES: { key: SymptomCategory; labelKey: string }[] = [

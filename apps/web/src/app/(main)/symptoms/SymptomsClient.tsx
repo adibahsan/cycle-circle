@@ -24,7 +24,7 @@ import { useLanguage } from '@/lib/use-language';
 import { SYMPTOMS_DATA, toDbCategory } from '@/lib/symptoms-data';
 import { SymptomChip } from '@/components/symptoms/SymptomChip';
 import { SymptomCategoryTabs, CATEGORIES, CATEGORY_TINTS } from '@/components/symptoms/SymptomCategoryTabs';
-import { TINT_CLASSES } from '@/components/symptoms/tints';
+import { TINT_CLASSES } from '@/components/ui/tints';
 import { cn } from '@/lib/cn';
 import { SaveErrorStatus } from '@/components/symptoms/SaveErrorStatus';
 import { ALL_GOOD_SYMPTOM_ID } from '@vesta/shared/utils/symptoms';

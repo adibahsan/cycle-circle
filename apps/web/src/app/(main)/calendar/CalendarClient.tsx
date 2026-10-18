@@ -40,6 +40,10 @@ import { toDeviceDay } from '@/lib/local-date'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
 
+/** Prev/next page buttons under the day's log list. */
+const PAGER_BUTTON =
+  'flex items-center gap-1 px-3 min-h-11 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-card)]/60 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40'
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PrismaProfile {
@@ -482,7 +486,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
                   aria-label={t('calendar.prevPage')}
-                  className="flex items-center gap-1 px-3 min-h-11 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-card)]/60 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
+                  className={PAGER_BUTTON}
                 >
                   <ChevronLeft size={12} aria-hidden="true" />
                   {t('calendar.prev')}
@@ -494,7 +498,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page === totalPages - 1}
                   aria-label={t('calendar.nextPage')}
-                  className="flex items-center gap-1 px-3 min-h-11 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-card)]/60 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
+                  className={PAGER_BUTTON}
                 >
                   {t('calendar.next')}
                   <ChevronRight size={12} aria-hidden="true" />
