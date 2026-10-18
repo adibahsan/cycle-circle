@@ -258,7 +258,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
               <button
                 key={tab.id}
                 onClick={() => handleFilterChange(tab.id)}
-                className="flex-none flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors duration-200 active:scale-95 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                className="flex-none flex items-center gap-1.5 min-h-11 px-4 rounded-full text-sm font-semibold border transition-colors duration-200 active:scale-95 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                 style={
                   isActive
                     ? { backgroundColor: accent, borderColor: accent, color: onAccent }

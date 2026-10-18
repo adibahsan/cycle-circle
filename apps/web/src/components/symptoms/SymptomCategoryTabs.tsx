@@ -32,13 +32,15 @@ interface SymptomCategoryTabsProps {
   counts: Record<SymptomCategory, number>;
   /** The active category's chips; wrapped in a tab panel and a group labelled with the category. */
   children: ReactNode;
+  /** Optional action (e.g. "All good"); sits above the tabs below xl, right of them on xl+. */
+  action?: ReactNode;
 }
 
 /**
  * WAI-ARIA tabs for symptom categories: roving tabindex, Arrow/Home/End move and activate,
  * the panel holds the active category's chips as a labelled group.
  */
-export function SymptomCategoryTabs({ active, onChange, counts, children }: SymptomCategoryTabsProps) {
+export function SymptomCategoryTabs({ active, onChange, counts, children, action }: SymptomCategoryTabsProps) {
   const { t } = useTranslation();
   const base = useId();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -63,11 +65,12 @@ export function SymptomCategoryTabs({ active, onChange, counts, children }: Symp
 
   return (
     <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4 xl:flex-row xl:flex-wrap xl:items-center xl:justify-between xl:gap-3">
       <div
         role="tablist"
         aria-label={t('symptoms.categoriesLabel')}
         onKeyDown={onKeyDown}
-        className="flex gap-1 rounded-full p-1 bg-[var(--color-bg-secondary)]"
+        className="flex gap-1 rounded-full p-1 bg-[var(--color-bg-secondary)] xl:w-fit xl:max-w-full"
       >
         {CATEGORIES.map(({ key, labelKey }, i) => {
           const isActive = i === activeIndex;
@@ -87,7 +90,7 @@ export function SymptomCategoryTabs({ active, onChange, counts, children }: Symp
               tabIndex={isActive ? 0 : -1}
               onClick={() => onChange(key)}
               className={cn(
-                'relative flex-1 min-w-0 min-h-[44px] flex items-center justify-center gap-1 px-1 py-2 rounded-full text-xs font-semibold leading-tight text-center',
+                'relative flex-1 min-w-0 min-h-[44px] xl:flex-none xl:px-4 xl:text-sm flex items-center justify-center gap-1 px-1 py-2 rounded-full text-xs font-semibold leading-tight text-center',
                 'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2',
                 c.ring,
                 isActive ? cn(c.surface, c.ink) : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
@@ -104,6 +107,8 @@ export function SymptomCategoryTabs({ active, onChange, counts, children }: Symp
             </button>
           );
         })}
+      </div>
+      {action && <div className="order-first xl:order-last xl:shrink-0">{action}</div>}
       </div>
 
       <Card tone={activeTint} padding="sm" className="md:p-4">

@@ -241,7 +241,6 @@ export function SymptomsClient({
     });
   }, []);
 
-  // "All good / no issues" — immediate toggle (owns the sentinel for the day).
   async function handleToggleAllGood() {
     if (saving) return;
     setSaving(true);
@@ -362,26 +361,26 @@ export function SymptomsClient({
         {/* ── Right: category tabs + symptom grid + save ── */}
         <div className="flex-1 min-w-0 flex flex-col gap-4">
 
-          {/* All good / no issues — quick toggle for "nothing to report" days */}
-          <button
-            type="button"
-            onClick={handleToggleAllGood}
-            disabled={saving}
-            aria-pressed={isAllGood}
-            className={cn(
-              'w-full min-h-[44px] flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold',
-              'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-mint disabled:opacity-60',
-              isAllGood
-                ? 'bg-tint-mint text-accent-mint border-accent-mint'
-                : 'bg-[var(--color-bg-card)] border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
-            )}
-          >
-            <CheckCircle2 size={16} aria-hidden="true" />
-            {isAllGood ? t('symptoms.allGoodActive') : t('symptoms.allGood')}
-          </button>
-
           {/* Category tabs + the active category's chips */}
           <SymptomCategoryTabs
+            action={(
+              <button
+                type="button"
+                onClick={handleToggleAllGood}
+                disabled={saving}
+                aria-pressed={isAllGood}
+                className={cn(
+                  'w-full xl:w-auto xl:px-6 min-h-[44px] flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold',
+                  'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-mint disabled:opacity-60',
+                  isAllGood
+                    ? 'bg-tint-mint text-accent-mint border-accent-mint'
+                    : 'bg-[var(--color-bg-card)] border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
+                )}
+              >
+                <CheckCircle2 size={16} aria-hidden="true" />
+                {isAllGood ? t('symptoms.allGoodActive') : t('symptoms.allGood')}
+              </button>
+            )}
             active={activeCategory}
             onChange={setActiveCategory}
             counts={{
@@ -399,7 +398,7 @@ export function SymptomsClient({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -12 }}
                 transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                className="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-2"
+                className="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 auto-rows-fr gap-2"
               >
                 {categorySymptoms.map((symptom, i) => {
                   const selected = isSymptomSelected(symptom.id);

@@ -397,6 +397,7 @@ export function InsightsClient({
             t('insights.subtitle')
           )
         }
+        actions={hasData ? <DateRangeControl value={dateRange} onChange={setDateRange} /> : undefined}
       />
 
       {!hasData ? (
@@ -411,21 +412,6 @@ export function InsightsClient({
         </Card>
       ) : (
         <>
-      {/* ── Global controls ───────────────────────────────────────────────── */}
-      <motion.div
-        initial={shouldAnimate ? { opacity: 0, y: 8 } : false}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.35 }}
-        className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-      >
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-            {t('insights.dateRange')}
-          </span>
-          <DateRangeControl value={dateRange} onChange={setDateRange} />
-        </div>
-      </motion.div>
-
       {/* From 2xl the charts sit two across so wide screens fill; an odd last chart spans the row. */}
       <div className="flex flex-col gap-5 2xl:grid 2xl:grid-cols-2 2xl:items-start 2xl:[&>*:last-child:nth-child(odd)]:col-span-2">
         {/* ── Cycle Length Trend ─────────────────────────────────────────────── */}

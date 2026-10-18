@@ -45,7 +45,7 @@ export const SymptomChip = memo(function SymptomChip({ id, icon: Icon, name, sel
       </span>
       <span
         className={cn(
-          'text-xs font-semibold text-center leading-snug break-words [overflow-wrap:anywhere] max-w-full',
+          'text-xs font-semibold text-center leading-snug break-words [overflow-wrap:anywhere] max-w-full line-clamp-2',
           selected ? c.ink : 'text-[var(--color-text-primary)]',
         )}
       >

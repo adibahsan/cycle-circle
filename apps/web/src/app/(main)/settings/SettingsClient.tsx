@@ -450,10 +450,10 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
       <PageContainer width="canvas">
         <PageHeader title={t('settings.title')} />
 
-        {/* Two columns from lg; from 2xl the sections flow into three balanced columns, each at form width. */}
-        <div className="lg:grid lg:grid-cols-2 lg:gap-5 space-y-5 lg:space-y-0 2xl:block 2xl:columns-3 2xl:gap-6 2xl:[&>div]:contents 2xl:[&>div>*]:mb-6 2xl:[&>div>*]:break-inside-avoid">
+        {/* Two columns from lg; from 2xl an explicit three-column grid: appearance + notifications | account | export + about. */}
+        <div className="lg:grid lg:grid-cols-2 lg:gap-5 space-y-5 lg:space-y-0 2xl:grid-cols-3 2xl:grid-rows-[auto_1fr] 2xl:gap-6 2xl:items-start">
           {/* ── Left column ── */}
-          <div className="space-y-6">
+          <div className="space-y-6 2xl:col-start-1 2xl:row-start-1 2xl:row-span-2">
             {/* 1. Language & Appearance */}
             <motion.div
               custom={0}
@@ -566,13 +566,14 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
           </div>
 
           {/* ── Right column ── */}
-          <div className="space-y-6">
+          <div className="space-y-6 2xl:contents">
             {/* 3. Data Export */}
             <motion.div
               custom={2}
               variants={sectionVariants}
               initial="hidden"
               animate="visible"
+              className="2xl:col-start-3 2xl:row-start-1"
             >
               <SectionHeader title={<SectionTitle icon={Download} tint={SECTION_TINT.export}>{t('settings.export')}</SectionTitle>} />
               <Card tone="panel" padding="md" className="space-y-3">
@@ -625,6 +626,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               variants={sectionVariants}
               initial="hidden"
               animate="visible"
+              className="2xl:col-start-2 2xl:row-start-1 2xl:row-span-2"
             >
               <SectionHeader title={<SectionTitle icon={User} tint={SECTION_TINT.account}>{t('settings.account')}</SectionTitle>} />
               <Card tone="panel" padding="md" className="space-y-2">
@@ -827,6 +829,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               variants={sectionVariants}
               initial="hidden"
               animate="visible"
+              className="2xl:col-start-3 2xl:row-start-2"
             >
               <SectionHeader title={<SectionTitle icon={Info} tint={SECTION_TINT.about}>{t('settings.about')}</SectionTitle>} />
               <Card tone="panel" padding="md" className="space-y-3">

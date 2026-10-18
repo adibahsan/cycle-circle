@@ -19,7 +19,7 @@ import {
   differenceInCalendarDays,
 } from 'date-fns'
 import { bn } from 'date-fns/locale/bn'
-import { ChevronLeft, ChevronRight, X, Pencil, Baby, Plus, Droplets, Flower2, Sprout, ArrowRight } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, X, Pencil, Baby, Plus, Droplets, Flower2, Sprout, ArrowRight } from 'lucide-react'
 
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -182,7 +182,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
   }, [focusNow])
 
   return (
-    <div role="gridcell" className={`group relative aspect-square w-full${isToday ? ' z-[1]' : ''}`}>
+    <div role="gridcell" className={`group relative aspect-square xl:aspect-[4/3] w-full${isToday ? ' z-[1]' : ''}`}>
       <button
         ref={buttonRef}
         type="button"
@@ -201,7 +201,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
         }}
       >
         <span
-          className={`text-sm md:text-base leading-none tabular-nums${showAdd ? ' group-hover:opacity-0 group-focus-within:opacity-0 transition-opacity' : ''}`}
+          className={`text-sm md:text-base xl:text-lg leading-none tabular-nums${showAdd ? ' group-hover:opacity-0 group-focus-within:opacity-0 transition-opacity' : ''}`}
           style={{
             color: isCurrentMonth ? style.color : 'var(--color-text-muted)',
             fontWeight: isToday ? 800 : 600,
@@ -266,7 +266,7 @@ function DayDetail({ date, meta, symptoms, onClose, onAddLog }: DayDetailProps) 
   return (
     <motion.div
       ref={ref}
-      className="scroll-mb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+1.5rem)] 2xl:col-span-2"
+      className="scroll-mb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+1.5rem)]"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
@@ -696,20 +696,17 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
     <PageContainer width="canvas" className="relative overflow-hidden">
 
       {/* ── Page header ── */}
-      <PageHeader
-        title={t('nav.calendar')}
-        subtitle={format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}
-      />
+      <PageHeader title={t('nav.calendar')} />
 
       {/* ── Desktop: side-by-side layout (calendar + detail panel) ── */}
-      <div className="flex flex-col xl:flex-row gap-5">
+      <div className="flex flex-col gap-5 xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem] xl:items-start">
 
-        {/* ── Calendar card (constrained width on desktop) ── */}
+        {/* ── Calendar card (fills its column on desktop) ── */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="xl:w-[480px] 2xl:w-[600px] xl:shrink-0"
+          className="min-w-0"
         >
           {/* Narrower side padding on phones keeps each day cell at least 44px wide at 375px. */}
           <Card tone="panel" padding="md" className="px-2 sm:px-5">
@@ -821,8 +818,8 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
           </Card>
         </motion.div>
 
-        {/* ── Right panel: Day Detail + Monthly Summary (sticky on desktop; on 2xl the day spans the top, summary and recent periods sit two across) ── */}
-        <div className="flex-1 flex flex-col gap-4 xl:sticky xl:top-4 xl:self-start min-w-0 2xl:grid 2xl:grid-cols-2 2xl:items-start">
+        {/* ── Right panel: Day Detail + Monthly Summary (single sticky column on desktop) ── */}
+        <div className="flex flex-col gap-4 xl:sticky xl:top-4 xl:self-start min-w-0">
 
           {/* Day Detail */}
           <AnimatePresence mode="wait">
@@ -894,16 +891,16 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
             </motion.div>
           )}
 
-          {/* Empty state when no day selected; on 2xl it takes the day detail's full-width top slot. */}
+          {/* Empty state when no day selected. */}
           {!selectedDate && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.3 }}
-              className="2xl:order-first 2xl:col-span-2"
             >
-              <Card tone="panel" padding="md">
-                <p className="text-sm text-[var(--color-text-muted)] text-center py-4">
+              <Card tone="panel" padding="sm">
+                <p className="flex items-center justify-center gap-2 text-sm text-[var(--color-text-muted)]">
+                  <CalendarDays size={14} aria-hidden="true" />
                   {t('calendar.selectDay')}
                 </p>
               </Card>

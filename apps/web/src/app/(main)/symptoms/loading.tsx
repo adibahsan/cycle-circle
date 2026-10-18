@@ -51,16 +51,19 @@ export default function SymptomsLoading() {
 
         {/* Right Column: Tab selector + Symptom Chips grid */}
         <div className="flex-1 flex flex-col gap-4">
-          {/* Category Tabs */}
-          <div className="rounded-full p-1 bg-[var(--color-bg-secondary)] flex gap-1">
-            <Shimmer className="h-10 flex-1 rounded-full" />
-            <Shimmer className="h-10 flex-1 rounded-full" />
-            <Shimmer className="h-10 flex-1 rounded-full" />
-            <Shimmer className="h-10 flex-1 rounded-full" />
+          {/* Toolbar: All good (first below xl, right on xl+) + category tabs */}
+          <div className="flex flex-col gap-4 xl:flex-row xl:flex-wrap xl:items-center xl:justify-between xl:gap-3">
+            <Shimmer className="h-11 w-full rounded-full order-first xl:order-last xl:w-40" />
+            <div className="rounded-full p-1 bg-[var(--color-bg-secondary)] flex gap-1 xl:w-fit">
+              <Shimmer className="h-11 flex-1 rounded-full xl:w-24 xl:flex-none" />
+              <Shimmer className="h-11 flex-1 rounded-full xl:w-24 xl:flex-none" />
+              <Shimmer className="h-11 flex-1 rounded-full xl:w-24 xl:flex-none" />
+              <Shimmer className="h-11 flex-1 rounded-full xl:w-24 xl:flex-none" />
+            </div>
           </div>
 
           {/* Symptom chips grid */}
-          <div className="rounded-panel bg-tint-pink p-3 md:p-4 grid grid-cols-3 xl:grid-cols-4 gap-2">
+          <div className="rounded-panel bg-tint-pink p-3 md:p-4 grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 auto-rows-fr gap-2">
             {Array.from({ length: 15 }).map((_, i) => (
               <div key={i} className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-[var(--color-bg-card)]">
                 <Shimmer className="h-10 w-10 rounded-full" />
