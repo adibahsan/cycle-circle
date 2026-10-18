@@ -34,6 +34,12 @@ _Avoid_: popup, interstitial, nag
 The blocking screen shown to an email-trial account whose 24-hour trial has ended; only upgrading or logging out gets past it.
 _Avoid_: paywall, trial expired modal
 
+### Cycle insights
+
+**Phase pattern**:
+The symptoms a profile has logged most often in a given cycle phase, across its past cycles.
+_Avoid_: forecast, prediction, "how you might feel"
+
 ### Phone login
 
 **Subscriber**:
