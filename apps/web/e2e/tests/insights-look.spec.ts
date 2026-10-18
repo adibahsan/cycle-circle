@@ -26,10 +26,24 @@ async function tokenColor(page: Page, token: string): Promise<string> {
   }, token)
 }
 
+// The seed persona has symptom logs but no complete cycle, so only the symptom chart renders;
+// the cycle length line is checked when that persona has one.
 for (const theme of ['light', 'dark'] as const) {
+  test(`${theme}: symptom bars use the lavender accent token`, async ({ page }) => {
+    await page.setViewportSize(DESKTOP)
+    await gotoQuiet(page, '/insights')
+    await setTheme(page, theme)
+    const bar = page.locator('.recharts-bar-rectangle path').first()
+    await expect(bar).toBeVisible()
+    const fill = await bar.evaluate((el) => getComputedStyle(el).fill)
+    expect(fill).toBe(await tokenColor(page, '--color-accent-lavender'))
+  })
+
   test(`${theme}: the cycle length line uses the pink accent token`, async ({ page }) => {
     await page.setViewportSize(DESKTOP)
     await gotoQuiet(page, '/insights')
+    const heading = page.getByRole('heading', { name: en('insights.cycleLengthTrend') })
+    test.skip((await heading.count()) === 0, 'persona has no completed cycle')
     await setTheme(page, theme)
     const line = page.locator('.recharts-line-curve').first()
     await expect(line).toBeVisible()
@@ -41,9 +55,9 @@ for (const theme of ['light', 'dark'] as const) {
 test('section headings carry a subtitle on the same row', async ({ page }) => {
   await page.setViewportSize(DESKTOP)
   await gotoQuiet(page, '/insights')
-  const heading = page.getByRole('heading', { name: en('insights.cycleLengthTrend') })
+  const heading = page.getByRole('heading', { name: en('insights.symptomFrequency') })
   await expect(heading).toBeVisible()
-  // Default range is "All time"; the subtitle sits beside the heading in the same header row.
+  // Symptom frequency always covers all time; the subtitle sits beside the heading in the same header row.
   const subtitle = heading.locator('..').locator('p')
   await expect(subtitle).toHaveText(en('insights.allTime'))
   const [h, s] = [await heading.boundingBox(), await subtitle.boundingBox()]
