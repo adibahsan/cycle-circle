@@ -10,6 +10,8 @@ interface TiptapEditorProps {
   onChange: (content: string) => void
   placeholder?: string
   minHeight?: string
+  /** BCP-47 language of the content, set on the editable element (e.g. 'bn'). */
+  lang?: string
 }
 
 interface ToolbarButtonProps {
@@ -49,6 +51,7 @@ export function TiptapEditor({
   onChange,
   placeholder,
   minHeight = '200px',
+  lang,
 }: TiptapEditorProps) {
   const editor = useEditor({
     extensions: [
@@ -64,6 +67,7 @@ export function TiptapEditor({
     },
     editorProps: {
       attributes: {
+        ...(lang ? { lang } : {}),
         class: 'prose prose-sm max-w-none focus:outline-none text-[var(--color-text-primary)]',
       },
     },
