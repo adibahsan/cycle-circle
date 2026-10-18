@@ -177,7 +177,7 @@ const MODAL_CONFIG: Record<
   suspend: {
     title: 'Suspend User',
     message:
-      'This will prevent the user from logging in. They can be reactivated at any time.',
+      'This signs the user out everywhere immediately and prevents them from logging in. They can be reactivated at any time.',
     confirmLabel: 'Suspend',
     variant: 'warning',
   },
@@ -661,6 +661,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('profiles')
   const [modalAction, setModalAction] = useState<ModalAction>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [suspendReason, setSuspendReason] = useState('')
 
   // Subscription status selector state
   const [pendingStatus, setPendingStatus] = useState<'PRO' | 'FREE' | 'LAPSED' | null>(null)
@@ -676,7 +677,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
     setActionError(null)
 
     try {
-      if (modalAction === 'suspend') await suspendUser(user.id)
+      if (modalAction === 'suspend') await suspendUser(user.id, suspendReason.trim())
       else if (modalAction === 'delete') await softDeleteUser(user.id)
       else if (modalAction === 'setStatus' && pendingStatus) {
         await setUserSubscriptionStatus(user.id, pendingStatus)
@@ -684,6 +685,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
       }
 
       setModalAction(null)
+      setSuspendReason('')
       startTransition(() => router.refresh())
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
@@ -918,9 +920,10 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
       {/* Confirm modals */}
       <ConfirmModal
         open={modalAction !== null}
-        onClose={() => { setModalAction(null); setPendingStatus(null) }}
+        onClose={() => { setModalAction(null); setPendingStatus(null); setSuspendReason('') }}
         onConfirm={handleConfirm}
         loading={isPending}
+        confirmDisabled={modalAction === 'suspend' && !suspendReason.trim()}
         title={
           modalAction === 'setStatus'
             ? 'Change Subscription Status'
@@ -949,7 +952,26 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
             ? MODAL_CONFIG[modalAction].variant
             : 'danger'
         }
-      />
+      >
+        {modalAction === 'suspend' && (
+          <div className="mb-6">
+            <label htmlFor="suspend-reason" className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+              Reason (required, saved to the audit log)
+            </label>
+            <textarea
+              id="suspend-reason"
+              name="suspend-reason"
+              rows={3}
+              required
+              maxLength={500}
+              value={suspendReason}
+              onChange={(e) => setSuspendReason(e.target.value)}
+              placeholder="Why is this account being suspended…"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-2 text-sm text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+            />
+          </div>
+        )}
+      </ConfirmModal>
     </div>
   )
 }

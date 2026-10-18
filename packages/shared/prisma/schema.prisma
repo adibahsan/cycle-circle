@@ -148,6 +148,7 @@ model User {
   role                     Role               @default(USER)
   suspendedAt         DateTime?
   suspendedBy         String?
+  sessionsValidAfter  DateTime?
   deletedAt           DateTime?
   lastLoginAt         DateTime?
   createdAt           DateTime           @default(now())
