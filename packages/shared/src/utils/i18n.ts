@@ -187,6 +187,9 @@ const resources = {
         previousMonth: 'Previous month',
         nextMonth: 'Next month',
         pregnancyComingSoon: 'Pregnancy mode — predictions are paused. Full tracking coming soon.',
+        // #78
+        follicularPhase: 'Follicular phase',
+        lutealPhase: 'Luteal phase',
       },
       insights: {
         title: 'Cycle Insights',
@@ -945,6 +948,9 @@ const resources = {
         previousMonth: 'পূর্ববর্তী মাস',
         nextMonth: 'পরবর্তী মাস',
         pregnancyComingSoon: 'গর্ভাবস্থা মোড — পূর্বাভাস সাময়িকভাবে বন্ধ। সম্পূর্ণ ট্র্যাকিং শীঘ্রই আসছে।',
+        // #78
+        follicularPhase: 'ফলিকুলার পর্যায়',
+        lutealPhase: 'লুটিয়াল পর্যায়',
       },
       insights: {
         title: 'চক্র ইনসাইটস',

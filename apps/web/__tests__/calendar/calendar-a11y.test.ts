@@ -10,6 +10,8 @@ const LABELS: Record<string, string> = {
   'calendar.fertile': 'Fertile',
   'calendar.ovulationDay': 'Ovulation',
   'calendar.today': 'Today',
+  'calendar.follicularPhase': 'Follicular phase',
+  'calendar.lutealPhase': 'Luteal phase',
 }
 const t = (k: string) => LABELS[k] ?? k
 const oct15 = new Date(2026, 9, 15)
@@ -40,6 +42,19 @@ describe('dayAccessibleName: full date plus every state, nothing colour-only', (
         t,
       ),
     ).toBe('Thursday, October 15, 2026, Fertile, Ovulation')
+  })
+  it('a tinted follicular or luteal day says its phase in words, before Today', () => {
+    expect(dayAccessibleName({ date: oct15, flags: plain, phase: 'follicular', isToday: false, language: 'en' }, t)).toBe(
+      'Thursday, October 15, 2026, Follicular phase',
+    )
+    expect(dayAccessibleName({ date: oct15, flags: plain, phase: 'luteal', isToday: true, language: 'en' }, t)).toBe(
+      'Thursday, October 15, 2026, Luteal phase, Today',
+    )
+  })
+  it('a period day in the luteal range is announced only as a period (the tint it shows)', () => {
+    expect(
+      dayAccessibleName({ date: oct15, flags: { ...plain, isPeriod: true }, phase: 'luteal', isToday: false, language: 'en' }, t),
+    ).toBe('Thursday, October 15, 2026, Period')
   })
   it('Bengali names the date in Bengali, with no Latin letters or digits', () => {
     const name = dayAccessibleName({ date: oct15, flags: plain, isToday: false, language: 'bn' }, t)
