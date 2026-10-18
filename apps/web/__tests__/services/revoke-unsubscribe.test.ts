@@ -124,11 +124,45 @@ describe('override ends on re-subscription', () => {
     expect(await svc.hasAdminOverride(ids.grant)).toBe(false)
   })
 
-  it('listRevokedSubscribers returns only cleanly revoked masked users', async () => {
+  it('a skipped unsubscribe (no usable id) behaves like a failed one', async () => {
+    await svc.revokePro(ids.none, ids.admin)
+    expect((await sub('none')).adminOverrideUnsubFailed).toBe(true)
+    // absent old id: a REGISTERED report is just the old status, not a new subscription
+    expect(await svc.applyBdappsSubscription(ids.none, MASKED, true, 'webhook')).toBe('LAPSED')
+    expect(await svc.hasAdminOverride(ids.none)).toBe(true)
+
+    await svc.revokePro(ids.legacy, ids.admin)
+    expect(await svc.applyBdappsSubscription(ids.legacy, '+8801920000002', true, 'webhook')).toBe('LAPSED')
+    expect(await svc.hasAdminOverride(ids.legacy)).toBe(true)
+    // a masked id is a genuinely new subscription
+    expect(await svc.applyBdappsSubscription(ids.legacy, MASKED_NEW, true, 'otp-verify')).toBe('PRO')
+    expect(await svc.hasAdminOverride(ids.legacy)).toBe(false)
+  })
+
+  it('webhook compares the payload id with the override id ignoring the tel: prefix', async () => {
+    bdapps.setSubscription.mockRejectedValue(new Error('down'))
+    await svc.revokePro(ids.fail, ids.admin) // override row stores tel:<x>, unsubscribe failed
+    // a newer row for the same user holding the bare form of the same id
+    await testPrisma.subscription.create({
+      data: { userId: ids.fail, status: 'LAPSED', bdappsSubscriberId: MASKED.replace(/^tel:/, '') },
+    })
+    const res = await svc.syncBdappsSubscriptionBySubscriberId(MASKED, true, 'webhook')
+    expect(res).toMatchObject({ userId: ids.fail, status: 'LAPSED' })
+    expect(await svc.hasAdminOverride(ids.fail)).toBe(true)
+  })
+
+  it('listRevokedSubscribers returns revoked masked users, including failed unsubscribes, never skipped ones', async () => {
     await svc.revokePro(ids.masked, ids.admin)
     bdapps.setSubscription.mockRejectedValue(new Error('down'))
     await svc.revokePro(ids.fail, ids.admin)
-    const mine = (await svc.listRevokedSubscribers()).filter((r) => r.userId.startsWith(P))
-    expect(mine).toEqual([{ userId: ids.masked, subscriberId: MASKED }])
+    await svc.revokePro(ids.none, ids.admin) // skipped, no id
+    await svc.revokePro(ids.legacy, ids.admin) // skipped, phone id
+    const mine = (await svc.listRevokedSubscribers())
+      .filter((r) => r.userId.startsWith(P))
+      .sort((a, b) => a.userId.localeCompare(b.userId))
+    expect(mine).toEqual([
+      { userId: ids.fail, subscriberId: MASKED },
+      { userId: ids.masked, subscriberId: MASKED },
+    ])
   })
 })
