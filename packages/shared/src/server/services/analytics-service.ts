@@ -37,6 +37,7 @@ export async function getDashboardStats() {
   ])
 
   return {
+    generatedAt: now.toISOString(),
     totalUsers,
     activeUsers,
     totalProfiles,
@@ -419,6 +420,20 @@ export async function getPredictionAccuracyMae() {
     byProfile.set(l.profileId, arr)
   }
   return computePredictionMaeByTier([...byProfile.values()])
+}
+
+/**
+ * Latest per-tier prediction MAE for the admin dashboard card.
+ * Single read seam: today it backtests live; #102 swaps the body for the
+ * latest nightly snapshot row. `computedAt` is null when there is no data.
+ */
+export async function getLatestPredictionMae(): Promise<{
+  tiers: { tier: 'AVERAGE' | 'ARIMA'; maeDays: number | null; sampleSize: number }[]
+  computedAt: string | null
+}> {
+  const tiers = await getPredictionAccuracyMae()
+  const hasData = tiers.some((t) => t.sampleSize > 0)
+  return { tiers, computedAt: hasData ? new Date().toISOString() : null }
 }
 
 /**
