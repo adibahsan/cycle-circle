@@ -320,7 +320,7 @@ export function AnalyticsClient({
             ))}
           </div>
           <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-            Lower MAE = more accurate predictions. Backtested from all period-log history (global, not range-bound).
+            Lower MAE = more accurate predictions. Latest nightly snapshot, backtested from all period-log history (global, not range-bound).
           </p>
         </div>
 

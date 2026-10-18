@@ -506,18 +506,78 @@ export async function getPredictionAccuracyMae() {
   return computePredictionMaeByTier([...byProfile.values()])
 }
 
+export type PredictionMaeTier = {
+  tier: 'AVERAGE' | 'ARIMA'
+  maeDays: number | null
+  sampleSize: number
+}
+
+const MAE_TIERS = ['AVERAGE', 'ARIMA'] as const
+
+/** UTC calendar day a nightly snapshot belongs to. */
+function snapshotDay(d: Date): Date {
+  return new Date(d.toISOString().slice(0, 10))
+}
+
+/** Upsert one snapshot row per tier for the given night (re-runs overwrite). */
+export async function writePredictionSnapshot(now: Date, tiers: PredictionMaeTier[]) {
+  const date = snapshotDay(now)
+  for (const t of tiers) {
+    const data = { maeDays: t.maeDays, sampleSize: t.sampleSize, computedAt: now }
+    await prisma.predictionAccuracySnapshot.upsert({
+      where: { date_tier: { date, tier: t.tier } },
+      create: { date, tier: t.tier, ...data },
+      update: data,
+    })
+  }
+}
+
+/** Backtest now and store tonight's snapshot (nightly maintenance job). */
+export async function snapshotPredictionAccuracy(now: Date = new Date()) {
+  const tiers = await getPredictionAccuracyMae()
+  await writePredictionSnapshot(now, tiers)
+  return tiers
+}
+
 /**
- * Latest per-tier prediction MAE for the admin dashboard card.
- * Single read seam: today it backtests live; #102 swaps the body for the
- * latest nightly snapshot row. `computedAt` is null when there is no data.
+ * Latest per-tier prediction MAE for the admin dashboard and analytics, read
+ * from the most recent nightly snapshot. `computedAt` is null before the first
+ * snapshot exists.
  */
 export async function getLatestPredictionMae(): Promise<{
-  tiers: { tier: 'AVERAGE' | 'ARIMA'; maeDays: number | null; sampleSize: number }[]
+  tiers: PredictionMaeTier[]
   computedAt: string | null
 }> {
-  const tiers = await getPredictionAccuracyMae()
-  const hasData = tiers.some((t) => t.sampleSize > 0)
-  return { tiers, computedAt: hasData ? new Date().toISOString() : null }
+  const latest = await prisma.predictionAccuracySnapshot.findFirst({
+    orderBy: { date: 'desc' },
+    select: { date: true },
+  })
+  const rows = latest
+    ? await prisma.predictionAccuracySnapshot.findMany({ where: { date: latest.date } })
+    : []
+  const tiers = MAE_TIERS.map((tier) => {
+    const r = rows.find((x) => x.tier === tier)
+    return { tier, maeDays: r?.maeDays ?? null, sampleSize: r?.sampleSize ?? 0 }
+  })
+  const computedAt = rows.reduce<Date | null>(
+    (m, r) => (!m || r.computedAt > m ? r.computedAt : m),
+    null,
+  )
+  return { tiers, computedAt: computedAt ? computedAt.toISOString() : null }
+}
+
+/** Snapshot history for the analytics trend: one point per tier per night, oldest first. */
+export async function getPredictionMaeTrend({ from, to }: AnalyticsRange) {
+  const rows = await prisma.predictionAccuracySnapshot.findMany({
+    where: { date: { gte: snapshotDay(from), lte: snapshotDay(to) } },
+    orderBy: [{ date: 'asc' }, { tier: 'asc' }],
+  })
+  return rows.map((r) => ({
+    date: r.date.toISOString().slice(0, 10),
+    tier: r.tier as PredictionMaeTier['tier'],
+    maeDays: r.maeDays,
+    sampleSize: r.sampleSize,
+  }))
 }
 
 /**

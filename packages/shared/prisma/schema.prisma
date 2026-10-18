@@ -458,3 +458,16 @@ model CronSetting {
   updatedAt DateTime @updatedAt
   updatedBy String? // admin user id who last changed it
 }
+
+/// Nightly prediction-accuracy snapshot: one row per tier per UTC date (ADR 0006
+/// nightly job). The admin dashboard and analytics read the latest date.
+model PredictionAccuracySnapshot {
+  id         String   @id @default(cuid())
+  date       DateTime @db.Date
+  tier       String // 'AVERAGE' | 'ARIMA'
+  maeDays    Float? // null when the tier had no sample
+  sampleSize Int
+  computedAt DateTime @default(now())
+
+  @@unique([date, tier])
+}
