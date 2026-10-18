@@ -1,5 +1,6 @@
 import sanitizeHtml from 'sanitize-html'
 import { prisma } from '../db'
+import { articlePublishWarnings, isBlankBody } from '../../utils/article-warnings'
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
 
@@ -91,18 +92,29 @@ export async function listCategories() {
 
 // ── Article mutations ──────────────────────────────────────────────────────────
 
+const ARTICLE_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'] as const
+
+function assertArticleStatus(status: string | undefined): void {
+  if (status !== undefined && !(ARTICLE_STATUSES as readonly string[]).includes(status)) {
+    throw new Error(`Invalid article status "${status}". Expected one of ${ARTICLE_STATUSES.join(', ')}.`)
+  }
+}
+
+export { articlePublishWarnings }
+
 export async function createArticle(
   authorId: string,
   data: {
     titleEn: string
-    titleBn?: string
+    titleBn?: string | null
     bodyEn: string
-    bodyBn?: string
-    categoryId?: string
+    bodyBn?: string | null
+    categoryId?: string | null
     cyclePhases?: string[]
     status?: string
   },
 ) {
+  assertArticleStatus(data.status)
   const slug = slugify(data.titleEn) + '-' + Date.now().toString(36)
 
   const article = await prisma.article.create({
@@ -111,7 +123,7 @@ export async function createArticle(
       titleEn: data.titleEn,
       titleBn: data.titleBn || null,
       bodyEn: sanitizeArticleHtml(data.bodyEn),
-      bodyBn: data.bodyBn ? sanitizeArticleHtml(data.bodyBn) : null,
+      bodyBn: isBlankBody(data.bodyBn) ? null : sanitizeArticleHtml(data.bodyBn!),
       categoryId: data.categoryId || null,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       cyclePhases: (data.cyclePhases as never) || [],
@@ -138,18 +150,24 @@ export async function updateArticle(
   id: string,
   data: {
     titleEn?: string
-    titleBn?: string
+    /** `null` or empty string clears the field. `undefined` leaves it unchanged. */
+    titleBn?: string | null
     bodyEn?: string
-    bodyBn?: string
-    categoryId?: string
+    bodyBn?: string | null
+    categoryId?: string | null
     cyclePhases?: string[]
     status?: string
   },
 ) {
+  assertArticleStatus(data.status)
   const updateData: Record<string, unknown> = { ...data }
 
   if (typeof data.bodyEn === 'string') updateData.bodyEn = sanitizeArticleHtml(data.bodyEn)
-  if (typeof data.bodyBn === 'string') updateData.bodyBn = sanitizeArticleHtml(data.bodyBn)
+  if (data.titleBn !== undefined) updateData.titleBn = data.titleBn?.trim() || null
+  if (data.bodyBn !== undefined) {
+    updateData.bodyBn = isBlankBody(data.bodyBn) ? null : sanitizeArticleHtml(data.bodyBn!)
+  }
+  if (data.categoryId !== undefined) updateData.categoryId = data.categoryId || null
 
   if (data.status === 'PUBLISHED') {
     const existing = await prisma.article.findUnique({ where: { id } })
