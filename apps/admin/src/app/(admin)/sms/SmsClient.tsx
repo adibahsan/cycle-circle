@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useCallback, useState, useTransition, useRef, useEffect } from 'react'
-import { Plus, Send, Trash2, X } from 'lucide-react'
+import { CalendarClock, Pencil, Plus, Send, Trash2, X } from 'lucide-react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
@@ -12,6 +12,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { DateTimePicker } from '@/components/ui/DateTimePicker'
+import { useToast } from '@/components/ui/Toast'
 import {
   createSmsBroadcast,
   createSmsBroadcastsBulk,
@@ -19,6 +20,8 @@ import {
   previewSmsCsv,
   deleteSmsBroadcast,
   sendSmsBroadcast,
+  updateSmsBroadcast,
+  rescheduleSmsBroadcast,
 } from '@/app/actions/sms-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
@@ -37,6 +40,9 @@ type SmsBroadcast = {
   message: string
   messageBn: string | null
   sendLanguage?: SmsSendLanguage
+  active: boolean
+  lastError: string | null
+  sendAttempts: number
   status: string
   scheduledFor: Date | null
   sentAt: Date | null
@@ -57,13 +63,16 @@ interface SmsClientProps {
     page: number
     pageSize: number
     totalPages: number
+    overallTotal: number
   }
   sendHistory: SmsSendHistoryPoint[]
   deliveryBreakdown: SmsDeliveryBreakdownItem[]
   range: string
+  nextSendId: string | null
 }
 
 const STATUS_OPTIONS = [
+  { value: 'queue', label: 'Queue (unsent)' },
   { value: 'all', label: 'All' },
   { value: 'DRAFT', label: 'Draft' },
   { value: 'SCHEDULED', label: 'Scheduled' },
@@ -80,7 +89,7 @@ function statusBadge(status: string) {
     SCHEDULED: { variant: 'warning', label: 'Scheduled' },
     SENDING: { variant: 'warning', label: 'Sending' },
     SENT: { variant: 'success', label: 'Sent' },
-    FAILED: { variant: 'danger', label: 'Failed' },
+    FAILED: { variant: 'danger', label: 'Failed to send' },
   }
   const cfg = map[status] ?? { variant: 'neutral', label: status }
   return <Badge variant={cfg.variant} size="sm">{cfg.label}</Badge>
@@ -95,6 +104,18 @@ function formatDate(d: Date | null) {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+/** Date → `yyyy-MM-ddTHH:mm` in local time, the DateTimePicker's value shape. */
+function toLocalInput(d: Date | null) {
+  if (!d) return ''
+  const x = new Date(d)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${x.getFullYear()}-${p(x.getMonth() + 1)}-${p(x.getDate())}T${p(x.getHours())}:${p(x.getMinutes())}`
+}
+
+function canEdit(status: string) {
+  return status === 'DRAFT' || status === 'SCHEDULED' || status === 'FAILED'
 }
 
 function canDelete(status: string) {
@@ -667,9 +688,244 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
   )
 }
 
+function SendPreview({ broadcast }: { broadcast: SmsBroadcast }) {
+  const language = broadcast.sendLanguage ?? 'BOTH'
+  let text = ''
+  let problem: string | null = null
+  try {
+    text = composeSms(broadcast.message, broadcast.messageBn, language)
+  } catch (e) {
+    problem = e instanceof Error ? e.message : 'Cannot compose this message'
+  }
+  const label = LANGUAGE_OPTIONS.find((o) => o.value === language)?.label ?? language
+  return (
+    <div className="mt-4 space-y-2 text-left">
+      <p className="text-xs text-[var(--color-text-secondary)]">
+        Language: <span className="font-medium">{label}</span>
+      </p>
+      {problem ? (
+        <p className="text-xs text-[var(--color-danger)]" role="alert">{problem}</p>
+      ) : (
+        <>
+          <p lang={language === 'EN' ? 'en' : 'bn'} className="whitespace-pre-wrap rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)]">
+            {text}
+          </p>
+          <PartCounter text={text} />
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── Edit / Reschedule modals ───────────────────────────────────────────────
+
+const TEXTAREA_CLASS =
+  'w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200 resize-none'
+
+function EditBroadcastModal({
+  target,
+  onClose,
+  onSaved,
+}: {
+  target: SmsBroadcast | null
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const toast = useToast()
+  const [message, setMessage] = useState('')
+  const [messageBn, setMessageBn] = useState('')
+  const [language, setLanguage] = useState<SmsSendLanguage>('BOTH')
+  const [saving, setSaving] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (target) {
+      setMessage(target.message)
+      setMessageBn(target.messageBn ?? '')
+      setLanguage(target.sendLanguage ?? 'BOTH')
+    }
+  }, [target])
+
+  let composed = ''
+  let composeError: string | null = null
+  try {
+    composed = composeSms(message.trim(), messageBn.trim() || null, language)
+  } catch (e) {
+    composeError = e instanceof Error ? e.message : null
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!target) return
+    if (!message.trim()) {
+      toast.error('Message cannot be empty.')
+      return
+    }
+    if (composeError) {
+      toast.error(composeError)
+      return
+    }
+    setSaving(true)
+    try {
+      await updateSmsBroadcast(target.id, {
+        message: message.trim(),
+        messageBn: messageBn.trim() || undefined,
+        sendLanguage: language,
+      })
+      toast.success(target.status === 'FAILED' ? 'Broadcast updated and re-queued' : 'Broadcast updated')
+      onSaved()
+      onClose()
+    } catch (err) {
+      toast.error(err instanceof Error && err.message ? err.message : 'Could not update the broadcast')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal
+      open={Boolean(target)}
+      onClose={onClose}
+      titleId="edit-broadcast-title"
+      dismissible={!saving}
+      panelClassName="max-w-lg"
+      initialFocusRef={textareaRef}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
+        <h2 id="edit-broadcast-title" className="text-base font-bold text-[var(--color-text-primary)]">
+          Edit broadcast
+        </h2>
+        <div className="space-y-1.5">
+          <label htmlFor="sms-edit-message" className="block text-sm font-medium text-[var(--color-text-secondary)]">
+            Message (English)
+          </label>
+          <textarea
+            id="sms-edit-message"
+            name="message"
+            ref={textareaRef}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            rows={4}
+            maxLength={480}
+            className={TEXTAREA_CLASS}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="sms-edit-message-bn" className="block text-sm font-medium text-[var(--color-text-secondary)]">
+            Message (Bengali) <span className="font-normal text-[var(--color-text-muted)]">— optional</span>
+          </label>
+          <textarea
+            id="sms-edit-message-bn"
+            name="messageBn"
+            lang="bn"
+            value={messageBn}
+            onChange={(e) => setMessageBn(e.target.value)}
+            rows={3}
+            maxLength={480}
+            className={TEXTAREA_CLASS}
+          />
+        </div>
+        <LanguagePicker value={language} onChange={setLanguage} idPrefix="sms-edit-lang" />
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-[var(--color-text-secondary)]">What handsets receive</p>
+          {composeError ? (
+            <p className="text-xs text-[var(--color-danger)]" role="alert">{composeError}</p>
+          ) : (
+            <>
+              {composed && (
+                <p lang={language === 'EN' ? 'en' : 'bn'} className="whitespace-pre-wrap rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)]">
+                  {composed}
+                </p>
+              )}
+              <PartCounter text={composed} />
+            </>
+          )}
+        </div>
+        <div className="flex gap-3 pt-1">
+          <Button type="button" variant="secondary" fullWidth onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" fullWidth loading={saving}>
+            Save changes
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+function RescheduleModal({
+  target,
+  onClose,
+  onSaved,
+}: {
+  target: SmsBroadcast | null
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const toast = useToast()
+  const [when, setWhen] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (target) setWhen(toLocalInput(target.scheduledFor))
+  }, [target])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!target) return
+    const date = new Date(when)
+    if (!when || Number.isNaN(date.getTime())) {
+      toast.error('Pick a date and time.')
+      return
+    }
+    setSaving(true)
+    try {
+      await rescheduleSmsBroadcast(target.id, date.toISOString())
+      toast.success('Broadcast rescheduled')
+      onSaved()
+      onClose()
+    } catch (err) {
+      toast.error(err instanceof Error && err.message ? err.message : 'Could not reschedule the broadcast')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal open={Boolean(target)} onClose={onClose} titleId="reschedule-broadcast-title" dismissible={!saving} panelClassName="max-w-md">
+      <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
+        <h2 id="reschedule-broadcast-title" className="text-base font-bold text-[var(--color-text-primary)]">
+          Reschedule broadcast
+        </h2>
+        {target && (
+          <p className="truncate text-sm text-[var(--color-text-muted)]" title={target.message}>
+            {target.message}
+          </p>
+        )}
+        <div className="space-y-1.5">
+          <label htmlFor="sms-reschedule" className="block text-sm font-medium text-[var(--color-text-secondary)]">
+            New send time
+          </label>
+          <DateTimePicker id="sms-reschedule" aria-label="New send date and time" value={when} onChange={setWhen} minDate={new Date()} />
+        </div>
+        <div className="flex gap-3 pt-1">
+          <Button type="button" variant="secondary" fullWidth onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" fullWidth loading={saving}>
+            Reschedule
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
 // ─── Main Client ─────────────────────────────────────────────────────────────
 
-export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientProps) {
+export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: SmsClientProps) {
+  const toast = useToast()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -680,9 +936,11 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
   const [deleting, setDeleting] = useState(false)
   const [sendTarget, setSendTarget] = useState<SmsBroadcast | null>(null)
   const [sending, setSending] = useState(false)
+  const [editTarget, setEditTarget] = useState<SmsBroadcast | null>(null)
+  const [rescheduleTarget, setRescheduleTarget] = useState<SmsBroadcast | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
 
-  const currentStatus = searchParams.get('status') ?? 'all'
+  const currentStatus = searchParams.get('status') ?? 'queue'
   const currentPage = data.page
   const currentPageSize = data.pageSize
 
@@ -726,9 +984,10 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
     try {
       await deleteSmsBroadcast(deleteTarget.id)
       setDeleteTarget(null)
+      toast.success('Broadcast deleted')
       router.refresh()
     } catch (err) {
-      console.error(err)
+      toast.error(err instanceof Error && err.message ? err.message : 'Could not delete the broadcast')
     } finally {
       setDeleting(false)
     }
@@ -740,9 +999,11 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
     try {
       await sendSmsBroadcast(sendTarget.id)
       setSendTarget(null)
+      toast.success('Broadcast sent')
       router.refresh()
     } catch (err) {
-      console.error(err)
+      toast.error(err instanceof Error && err.message ? err.message : 'Could not send the broadcast')
+      router.refresh()
     } finally {
       setSending(false)
     }
@@ -770,15 +1031,25 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
     {
       key: 'status',
       header: 'Status',
-      render: (row) => statusBadge(row.status),
+      render: (row) => (
+        <div className="space-y-1">
+          {statusBadge(row.status)}
+          {row.status === 'FAILED' && row.lastError && (
+            <p className="max-w-[220px] text-xs text-[var(--color-danger)]" title={row.lastError}>
+              {row.lastError.length > 80 ? `${row.lastError.slice(0, 80)}…` : row.lastError}
+            </p>
+          )}
+        </div>
+      ),
     },
     {
       key: 'scheduledFor',
       header: 'Scheduled For',
       sortable: true,
       render: (row) => (
-        <span className="text-sm text-[var(--color-text-muted)]">
+        <span className="inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
           {formatDate(row.scheduledFor)}
+          {row.id === nextSendId && <Badge variant="info" size="sm">Next send</Badge>}
         </span>
       ),
     },
@@ -793,31 +1064,14 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
       ),
     },
     {
-      key: 'targetCount',
-      header: 'Target',
-      render: (row) => (
-        <span className="text-sm text-[var(--color-text-secondary)] tabular-nums">
-          {row.targetCount?.toLocaleString() ?? '—'}
-        </span>
-      ),
-    },
-    {
-      key: 'deliveredCount',
-      header: 'Delivered',
-      render: (row) => (
-        <span className="text-sm text-[var(--color-success)] font-medium tabular-nums">
-          {row.deliveredCount?.toLocaleString() ?? '—'}
-        </span>
-      ),
-    },
-    {
-      key: 'failedCount',
-      header: 'Failed',
-      render: (row) => (
-        <span className="text-sm text-[var(--color-danger)] font-medium tabular-nums">
-          {row.failedCount?.toLocaleString() ?? '—'}
-        </span>
-      ),
+      key: 'active',
+      header: 'Active',
+      render: (row) =>
+        row.active && row.status === 'SENT' ? (
+          <Badge variant="success" size="sm">Active</Badge>
+        ) : (
+          <span className="text-sm text-[var(--color-text-muted)]">—</span>
+        ),
     },
     {
       key: 'creator',
@@ -831,9 +1085,35 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
     {
       key: 'actions',
       header: '',
-      width: '80px',
+      width: '120px',
       render: (row) => (
         <div className="flex items-center gap-1">
+          {canEdit(row.status) && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setEditTarget(row)
+                }}
+                className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                aria-label="Edit broadcast"
+                title="Edit"
+              >
+                <Pencil size={15} aria-hidden="true" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setRescheduleTarget(row)
+                }}
+                className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                aria-label="Reschedule broadcast"
+                title="Reschedule"
+              >
+                <CalendarClock size={15} aria-hidden="true" />
+              </button>
+            </>
+          )}
           {canSend(row.status) && (
             <button
               onClick={(e) => {
@@ -937,7 +1217,11 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
       <DataTable
         columns={COLUMNS}
         data={filteredBroadcasts as unknown as SmsBroadcast[]}
-        emptyMessage="No broadcasts match your filters."
+        emptyMessage={
+          data.overallTotal === 0
+            ? 'No broadcasts yet. Create the first one with New Broadcast.'
+            : 'No broadcasts match your filters.'
+        }
         keyExtractor={(row) => row.id}
       />
 
@@ -959,21 +1243,22 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown }: SmsClientPro
         onCreated={handleCreated}
       />
 
+      <EditBroadcastModal target={editTarget} onClose={() => setEditTarget(null)} onSaved={handleCreated} />
+      <RescheduleModal target={rescheduleTarget} onClose={() => setRescheduleTarget(null)} onSaved={handleCreated} />
+
       {/* Send Confirm */}
       <ConfirmModal
         open={Boolean(sendTarget)}
         onClose={() => setSendTarget(null)}
         onConfirm={handleSend}
         title="Send Broadcast Now?"
-        message={
-          sendTarget
-            ? `Send "${sendTarget.message.slice(0, 60)}${sendTarget.message.length > 60 ? '…' : ''}" to all subscribers? This action cannot be undone.`
-            : ''
-        }
+        message="This sends to all subscribers and cannot be undone."
         confirmLabel="Send Now"
         variant="warning"
         loading={sending}
-      />
+      >
+        {sendTarget && <SendPreview broadcast={sendTarget} />}
+      </ConfirmModal>
 
       {/* Delete Confirm */}
       <ConfirmModal

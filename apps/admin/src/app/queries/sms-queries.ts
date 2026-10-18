@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache'
 import { requireAdminUser } from './auth-queries'
 import {
   listBroadcasts,
+  getNextScheduledBroadcastId,
   getSmsSendHistory as svcGetSmsSendHistory,
   getSmsDeliveryBreakdown as svcGetSmsDeliveryBreakdown,
 } from '@vesta/shared/server/services'
@@ -46,6 +47,15 @@ export const getSmsDeliveryBreakdown = cache(async () => {
   return unstable_cache(
     () => svcGetSmsDeliveryBreakdown(),
     ['admin-sms-delivery-breakdown'],
+    { tags: [adminCacheTags.sms], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export const getNextSmsBroadcastId = cache(async () => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => getNextScheduledBroadcastId(),
+    ['admin-sms-next-send'],
     { tags: [adminCacheTags.sms], revalidate: ADMIN_CACHE_TTL }
   )()
 })

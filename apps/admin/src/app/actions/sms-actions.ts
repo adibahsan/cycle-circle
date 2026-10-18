@@ -6,6 +6,8 @@ import {
   createBroadcastsBulk,
   deleteBroadcast,
   sendBroadcast,
+  updateBroadcast,
+  rescheduleBroadcast,
   parseBulkSmsInput,
   parseSmsCsv,
   scheduleDrafts,
@@ -90,4 +92,29 @@ export async function createSmsBroadcastsFromCsv(
 
   revalidateTag(adminCacheTags.sms, { expire: 0 })
   return { count: created.length }
+}
+
+/** Edit the text / language of an unsent broadcast. */
+export async function updateSmsBroadcast(
+  id: string,
+  input: { message: string; messageBn?: string; sendLanguage: SmsSendLanguage },
+) {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  await updateBroadcast(id, admin.id, input)
+
+  revalidateTag(adminCacheTags.sms, { expire: 0 })
+  return { success: true }
+}
+
+/** Move an unsent broadcast to a new send time (`scheduledFor` is an ISO instant). */
+export async function rescheduleSmsBroadcast(id: string, scheduledFor: string) {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  await rescheduleBroadcast(id, admin.id, scheduledFor)
+
+  revalidateTag(adminCacheTags.sms, { expire: 0 })
+  return { success: true }
 }
