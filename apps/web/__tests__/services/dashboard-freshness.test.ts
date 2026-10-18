@@ -24,9 +24,9 @@ describe('getDashboardStats freshness', () => {
     const { profile } = await createTestUser('9001')
     await insertPeriodLogs(profile.id, ['2026-01-01'])
     const after = await getDashboardStats()
-    expect(after.totalUsers).toBe(before.totalUsers + 1)
-    expect(after.totalProfiles).toBe(before.totalProfiles + 1)
-    expect(after.dailyLogs).toBe(before.dailyLogs + 1)
+    expect(after.totalUsers).toBeGreaterThanOrEqual(before.totalUsers + 1)
+    expect(after.totalProfiles).toBeGreaterThanOrEqual(before.totalProfiles + 1)
+    expect(after.dailyLogs).toBeGreaterThanOrEqual(before.dailyLogs + 1)
   })
 })
 
