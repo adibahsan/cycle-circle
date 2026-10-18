@@ -1,12 +1,13 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useState, useTransition } from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 import { Download } from 'lucide-react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { useToast } from '@/components/ui'
 import { Pagination } from '@/components/ui/Pagination'
 import { exportFeedbackCsv } from '@/app/actions/export-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
@@ -45,13 +46,11 @@ const CATEGORY_OPTIONS = [
   { value: 'SATISFACTION', label: 'Satisfaction' },
 ]
 
+// Value encodes mode: `min-N` = at least N stars, `eq-N` = exactly N stars.
 const RATING_OPTIONS = [
   { value: 'all', label: 'All Ratings' },
-  { value: '1', label: '1+ Stars' },
-  { value: '2', label: '2+ Stars' },
-  { value: '3', label: '3+ Stars' },
-  { value: '4', label: '4+ Stars' },
-  { value: '5', label: '5 Stars' },
+  ...[1, 2, 3, 4, 5].map((n) => ({ value: `min-${n}`, label: `${n}+ Stars` })),
+  ...[1, 2, 3, 4, 5].map((n) => ({ value: `eq-${n}`, label: `Exactly ${n}` })),
 ]
 
 type CategoryVariant = 'danger' | 'info' | 'neutral' | 'success'
@@ -133,7 +132,8 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
   const [exporting, setExporting] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+  const toast = useToast()
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') ?? '')
 
   // ── Analytics data transformations ─────────────────────────────────────────
 
@@ -156,7 +156,16 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
   }))
 
   const currentCategory = searchParams.get('category') ?? 'all'
-  const currentMinRating = searchParams.get('minRating') ?? 'all'
+  const ratingParam = searchParams.get('rating')
+  const minRatingParam = searchParams.get('minRating')
+  const currentRating = ratingParam
+    ? `eq-${ratingParam}`
+    : minRatingParam
+      ? `min-${minRatingParam}`
+      : 'all'
+  const currentDateFrom = searchParams.get('dateFrom') ?? ''
+  const currentDateTo = searchParams.get('dateTo') ?? ''
+  const currentQuery = searchParams.get('q') ?? ''
   const currentPage = data.page
   const currentPageSize = data.pageSize
 
@@ -183,8 +192,20 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
   }
 
   function handleRatingChange(value: string) {
-    updateParams({ minRating: value })
+    const [mode, n] = value.split('-')
+    updateParams({
+      rating: mode === 'eq' ? n : '',
+      minRating: mode === 'min' ? n : '',
+    })
   }
+
+  // Server-side search: push the term to the URL after a short pause in typing.
+  useEffect(() => {
+    const term = searchTerm.trim()
+    if (term === currentQuery) return
+    const t = setTimeout(() => updateParams({ q: term }), 300)
+    return () => clearTimeout(t)
+  }, [searchTerm, currentQuery, updateParams])
 
   function handlePageChange(page: number) {
     updateParams({ page })
@@ -201,25 +222,16 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
     [router],
   )
 
-  const filteredItems = searchTerm.trim()
-    ? data.items.filter((item) => {
-        const term = searchTerm.toLowerCase()
-        return (
-          item.message.toLowerCase().includes(term) ||
-          (item.user.fullName ?? '').toLowerCase().includes(term) ||
-          (item.user.email ?? '').toLowerCase().includes(term)
-        )
-      })
-    : data.items
-
   async function handleExport() {
     setExporting(true)
     try {
       const csv = await exportFeedbackCsv({
         category: currentCategory,
-        minRating: currentMinRating === 'all' ? undefined : Number(currentMinRating),
-        dateFrom: searchParams.get('dateFrom') ?? undefined,
-        dateTo: searchParams.get('dateTo') ?? undefined,
+        rating: ratingParam ? Number(ratingParam) : undefined,
+        minRating: minRatingParam ? Number(minRatingParam) : undefined,
+        search: currentQuery || undefined,
+        dateFrom: currentDateFrom || undefined,
+        dateTo: currentDateTo || undefined,
       })
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
       const url = URL.createObjectURL(blob)
@@ -228,6 +240,9 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
       a.download = `feedback-${new Date().toISOString().split('T')[0]}.csv`
       a.click()
       URL.revokeObjectURL(url)
+      toast.success('Feedback CSV exported')
+    } catch (err) {
+      toast.error(err instanceof Error && err.message ? err.message : 'Export failed')
     } finally {
       setExporting(false)
     }
@@ -366,16 +381,43 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
             key: 'minRating',
             label: 'Rating',
             options: RATING_OPTIONS,
-            value: currentMinRating,
+            value: currentRating,
             onChange: handleRatingChange,
           },
         ]}
       />
 
+      {/* Date range */}
+      <div className="flex flex-wrap items-center gap-3">
+        {([
+          ['dateFrom', 'From', currentDateFrom],
+          ['dateTo', 'To', currentDateTo],
+        ] as const).map(([key, label, value]) => (
+          <div key={key} className="flex items-center gap-2">
+            <label htmlFor={`filter-${key}`} className="text-sm text-[var(--color-text-muted)] whitespace-nowrap">
+              {label}:
+            </label>
+            <input
+              id={`filter-${key}`}
+              name={key}
+              type="date"
+              value={value}
+              onChange={(e) => updateParams({ [key]: e.target.value })}
+              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors"
+            />
+          </div>
+        ))}
+        {(currentDateFrom || currentDateTo) && (
+          <Button variant="ghost" size="sm" onClick={() => updateParams({ dateFrom: '', dateTo: '' })}>
+            Clear dates
+          </Button>
+        )}
+      </div>
+
       {/* Table */}
       <DataTable
         columns={COLUMNS}
-        data={filteredItems as unknown as FeedbackItem[]}
+        data={data.items}
         emptyMessage="No feedback matches your filters."
         keyExtractor={(row) => row.id}
         onRowClick={handleRowClick}
