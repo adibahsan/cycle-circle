@@ -50,7 +50,7 @@ describe('review fixes', () => {
   it('does not nest a button inside the calendar day button', () => {
     const src = read(path.join(APPS, 'web/src/app/(main)/calendar/CalendarClient.tsx'))
     const cell = src.slice(src.indexOf('const DayCell'), src.indexOf('// ─── Day Detail'))
-    const open = cell.indexOf('<button\n      onClick')
+    const open = cell.indexOf('<button')
     const close = cell.indexOf('</button>', open)
     expect(cell.slice(open + 8, close)).not.toContain('<button')
   })
