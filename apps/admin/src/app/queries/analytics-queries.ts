@@ -13,14 +13,18 @@ import {
   getLoggingRetention as svcGetLoggingRetention,
   getPredictionAccuracyMae as svcGetPredictionAccuracyMae,
   getSymptomsByPhase as svcGetSymptomsByPhase,
+  type AnalyticsRange,
 } from '@vesta/shared/server/services'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
-export const getCycleLengthDistribution = cache(async () => {
+/** Stable cache key part: UTC day, so a moving `to` doesn't bust the cache every call. */
+const day = (d: Date) => d.toISOString().split('T')[0]
+
+export const getCycleLengthDistribution = cache(async (range: AnalyticsRange) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetCycleLengthDistribution(),
-    ['admin-cycle-length-distribution'],
+    () => svcGetCycleLengthDistribution(range),
+    ['admin-cycle-length-distribution', day(range.from), day(range.to)],
     { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
   )()
 })
@@ -43,11 +47,11 @@ export const getPredictionAccuracy = cache(async () => {
   )()
 })
 
-export const getUserRetention = cache(async () => {
+export const getUserRetention = cache(async (range: AnalyticsRange) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetUserRetention(),
-    ['admin-user-retention'],
+    () => svcGetUserRetention(range),
+    ['admin-user-retention', day(range.from), day(range.to)],
     { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
   )()
 })
@@ -106,11 +110,11 @@ export const getPredictionMae = cache(async () => {
   )()
 })
 
-export const getSymptomsByPhase = cache(async () => {
+export const getSymptomsByPhase = cache(async (range: AnalyticsRange) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetSymptomsByPhase(),
-    ['admin-symptoms-by-phase'],
+    () => svcGetSymptomsByPhase(range),
+    ['admin-symptoms-by-phase', day(range.from), day(range.to)],
     { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
   )()
 })

@@ -15,6 +15,7 @@ import {
   ScrollText,
   Mail,
   ServerCog,
+  Terminal,
   BookOpen,
   Sun,
   Moon,
@@ -38,6 +39,7 @@ const NAV_ITEMS = [
   { href: '/feedback', icon: MessageCircle, label: 'Feedback' },
   { href: '/emails', icon: Mail, label: 'Emails' },
   { href: '/audit-logs', icon: ScrollText, label: 'Audit Logs' },
+  { href: '/logs', icon: Terminal, label: 'Logs' },
   { href: '/system', icon: ServerCog, label: 'System' },
   { href: '/api-docs', icon: BookOpen, label: 'API Docs' },
 ]

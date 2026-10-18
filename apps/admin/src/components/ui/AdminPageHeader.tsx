@@ -4,7 +4,7 @@ import { RefetchButton } from '@/components/ui/RefetchButton'
 
 interface AdminPageHeaderProps {
   title: string
-  description?: string
+  description?: React.ReactNode
   tags: string[]
   actions?: React.ReactNode
 }

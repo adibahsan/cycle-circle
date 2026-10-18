@@ -25,10 +25,9 @@ interface PredictionAccuracy {
 }
 
 interface UserRetention {
-  week: string
-  created: number
-  retained: number
-  rate: number
+  cohortWeek: string
+  size: number
+  weeks: { week: number; active: number; rate: number }[]
 }
 
 interface UserTrendPoint {
@@ -59,7 +58,8 @@ interface FeedbackRatingPoint {
 
 interface SymptomPhasePoint {
   phase: string
-  count: number
+  total: number
+  top: { symptomId: string; count: number }[]
 }
 
 interface AnalyticsClientProps {
@@ -117,29 +117,36 @@ function formatWeek(dateStr: string) {
 }
 
 function RetentionRates({ data }: { data: UserRetention[] }) {
-  if (!data.length) return null
-  const recent = data.slice(-4)
+  const recent = data.filter((c) => c.weeks.some((w) => w.week === 1)).slice(-4)
+  if (!recent.length) return null
   return (
-    <div className="mt-4 grid grid-cols-4 gap-3">
-      {recent.map((d) => (
-        <div
-          key={d.week}
-          className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-3 text-center"
-        >
-          <p className="text-[10px] font-medium text-[var(--color-text-muted)] mb-1">
-            {formatWeek(d.week)}
-          </p>
-          <p
-            className="text-lg font-bold tabular-nums"
-            style={{ color: d.rate >= 50 ? CHART_VAR.good : d.rate >= 25 ? CHART_VAR.mid : CHART_VAR.low }}
+    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {recent.map((c) => {
+        const rate = c.weeks.find((w) => w.week === 1)?.rate ?? 0
+        return (
+          <div
+            key={c.cohortWeek}
+            className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-3 text-center"
           >
-            {d.rate}%
-          </p>
-          <p className="text-[10px] text-[var(--color-text-muted)]">retained</p>
-        </div>
-      ))}
+            <p className="text-[10px] font-medium text-[var(--color-text-muted)] mb-1">
+              {formatWeek(c.cohortWeek)} · {c.size} users
+            </p>
+            <p
+              className="text-lg font-bold tabular-nums"
+              style={{ color: rate >= 50 ? CHART_VAR.good : rate >= 25 ? CHART_VAR.mid : CHART_VAR.low }}
+            >
+              {rate}%
+            </p>
+            <p className="text-[10px] text-[var(--color-text-muted)]">active in week 1</p>
+          </div>
+        )
+      })}
     </div>
   )
+}
+
+function humanizeSymptom(id: string) {
+  return id.replace(/[_-]+/g, ' ')
 }
 
 // ── Root component ─────────────────────────────────────────────────────────
@@ -162,11 +169,22 @@ export function AnalyticsClient({
     count: d.count,
   }))
 
-  // Normalise retention data: format week dates for display
-  const retentionData = retention.map((d) => ({
-    ...d,
-    week: formatWeek(d.week),
+  // Pivot cohorts into one curve per cohort: rows are weeks since signup.
+  const maxWeek = Math.max(-1, ...retention.flatMap((c) => c.weeks.map((w) => w.week)))
+  const retentionSeries = retention.map((c, i) => ({
+    key: `c${i}`,
+    label: `${formatWeek(c.cohortWeek)} cohort (${c.size})`,
   }))
+  const retentionData: Record<string, string | number | null>[] = Array.from(
+    { length: maxWeek + 1 },
+    (_, k) => {
+      const row: Record<string, string | number | null> = { week: `Week ${k}` }
+      retention.forEach((c, i) => {
+        row[`c${i}`] = c.weeks.find((w) => w.week === k)?.rate ?? null
+      })
+      return row
+    },
+  )
 
   // Feedback chart data transformations — mirroring FeedbackClient.tsx
   const feedbackVolumeChartData = feedbackVolume.map((d) => ({
@@ -204,11 +222,11 @@ export function AnalyticsClient({
           title="Cycle Length Distribution"
           data={cycleLengthData}
           xKey="cycleLength"
-          series={[{ key: 'count', label: 'Users', color: CHART_VAR.low }]}
+          series={[{ key: 'count', label: 'Cycles', color: CHART_VAR.low }]}
           kinds={['bar']}
           defaultKind="bar"
           height={240}
-          emptyLabel="No cycle data yet."
+          emptyLabel="Not enough logged periods to measure cycles yet."
         />
 
         {/* 2 — Symptoms by Category */}
@@ -227,7 +245,7 @@ export function AnalyticsClient({
         <div>
           <ChartPanel
             title="Symptom Logs by Cycle Phase"
-            data={symptomsByPhase.map((d) => ({ ...d } as Record<string, string | number | null>))}
+            data={symptomsByPhase.map((d) => ({ phase: d.phase, count: d.total }))}
             xKey="phase"
             series={[{ key: 'count', label: 'Logs', color: CHART_VAR.low }]}
             kinds={['bar', 'pie']}
@@ -235,8 +253,20 @@ export function AnalyticsClient({
             height={240}
             emptyLabel="No symptom data yet."
           />
+          <dl className="mt-3 grid grid-cols-2 gap-3 text-xs">
+            {symptomsByPhase.map((d) => (
+              <div key={d.phase}>
+                <dt className="font-semibold text-[var(--color-text-secondary)]">{d.phase}</dt>
+                <dd className="text-[var(--color-text-muted)]">
+                  {d.top.length
+                    ? d.top.map((t) => `${humanizeSymptom(t.symptomId)} (${t.count})`).join(', ')
+                    : 'No logs'}
+                </dd>
+              </div>
+            ))}
+          </dl>
           <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-            Symptom-log volume grouped by the cycle phase each log fell in (anchored to each profile&apos;s period history).
+            Top symptoms per cycle phase (last 90 days, anchored to each profile&apos;s period history; &quot;all good&quot; excluded).
           </p>
         </div>
 
@@ -297,14 +327,11 @@ export function AnalyticsClient({
         {/* 4 — User Retention */}
         <div>
           <ChartPanel
-            title="Weekly User Retention"
+            title="Retention by Signup Cohort"
             data={retentionData}
             xKey="week"
-            series={[
-              { key: 'created', label: 'Created', color: CHART_VAR.slate },
-              { key: 'retained', label: 'Retained', color: CHART_VAR.good },
-            ]}
-            kinds={['line', 'area', 'bar']}
+            series={retentionSeries}
+            kinds={['line']}
             defaultKind="line"
             height={240}
             emptyLabel="No retention data yet."
