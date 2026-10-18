@@ -396,6 +396,9 @@ model SmsBroadcast {
   targetCount    Int?
   deliveredCount Int?
   failedCount    Int?
+  // Send attempts since last (re)schedule; FAILED once it reaches the retry cap.
+  sendAttempts   Int                @default(0)
+  lastError      String?
   createdBy      String
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
