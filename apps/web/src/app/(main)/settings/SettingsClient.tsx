@@ -13,7 +13,6 @@ import {
   Bell,
   Download,
   User,
-  Shield,
   LogOut,
   ChevronRight,
   Users,
