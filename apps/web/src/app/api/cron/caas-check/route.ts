@@ -4,6 +4,7 @@ import { cacheTags } from '@/lib/cache-tags'
 import { handleApiError } from '@vesta/shared/server/api-error'
 import {
   listBdappsSubscribers,
+  listRevokedSubscribers,
   applyBdappsSubscription,
   isCronEnabled,
 } from '@vesta/shared/server/services'
@@ -59,7 +60,22 @@ const handler = withCronAuth(async (request) => {
       }
     }
 
-    return Response.json({ checked, downgraded, skipped, errors })
+    // Revoked users: a new BDApps subscription ends the admin override (ADR 0006).
+    let reinstated = 0
+    for (const sub of await listRevokedSubscribers()) {
+      try {
+        if ((await getSubscriptionStatus(sub.subscriberId)) === 'REGISTERED') {
+          await applyBdappsSubscription(sub.userId, sub.subscriberId, true, 'nightly-check')
+          revalidateTag(cacheTags.user(sub.userId), { expire: 0 })
+          reinstated++
+        }
+      } catch (err) {
+        errors++
+        logger.cron('caas-check.failed', { userId: sub.userId, subscriberId: sub.subscriberId, error: String(err) }, { level: 'error' })
+      }
+    }
+
+    return Response.json({ checked, downgraded, skipped, errors, reinstated })
   } catch (error) {
     return handleApiError(error)
   }

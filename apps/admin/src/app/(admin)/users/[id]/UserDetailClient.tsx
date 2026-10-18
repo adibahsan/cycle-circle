@@ -3,6 +3,7 @@
 import { useState, useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useToast } from '@/components/ui/Toast'
 import {
   ArrowLeft,
   Phone,
@@ -658,6 +659,7 @@ function FeedbackTab({ feedback }: { feedback: Feedback[] }) {
 export function UserDetailClient({ user }: UserDetailClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const toast = useToast()
   const [activeTab, setActiveTab] = useState<TabKey>('profiles')
   const [modalAction, setModalAction] = useState<ModalAction>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -679,7 +681,10 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
       if (modalAction === 'suspend') await suspendUser(user.id)
       else if (modalAction === 'delete') await softDeleteUser(user.id)
       else if (modalAction === 'setStatus' && pendingStatus) {
-        await setUserSubscriptionStatus(user.id, pendingStatus)
+        const res = await setUserSubscriptionStatus(user.id, pendingStatus)
+        if (res.bdappsError) {
+          toast.error(`Plan changed, but the BDApps unsubscribe failed: ${res.bdappsError}. The user may still be charged.`)
+        }
         setPendingStatus(null)
       }
 
