@@ -272,6 +272,8 @@ export async function softDeleteUser(userId: string, adminId: string) {
     where: { id: userId },
     data: { deletedAt: new Date() },
   })
+  // Existing sessions stop working on their next request.
+  await bumpSessionsValidAfter(userId)
   const bdapps = await unsubscribeUserOnBdapps(userId, adminId)
 
   await prisma.adminAuditLog.create({
