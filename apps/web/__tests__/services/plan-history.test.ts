@@ -43,4 +43,19 @@ describe('getPlanHistory', () => {
       ['plan.change', 'FREE', 'PRO', 'webhook', undefined, true],
     ])
   })
+
+  it('includes BDApps unsubscribe outcomes (unsubscribed / failed / skipped)', async () => {
+    put('2026-10-18', [
+      rec('08:00:00', 'plan.bdapps-unsubscribe', 'u1', { result: 'unsubscribed', subscriberId: 'tel:x', adminId: 'a1' }),
+      rec('09:00:00', 'plan.bdapps-unsubscribe', 'u1', { result: 'failed', adminId: 'a1', error: 'E1351 boom' }),
+      rec('10:00:00', 'plan.bdapps-unsubscribe', 'u1', { result: 'skipped', adminId: 'a2' }),
+      rec('10:30:00', 'plan.bdapps-unsubscribe', 'u2', { result: 'skipped', adminId: 'a2' }),
+    ])
+    const h = await getPlanHistory('u1', { logDir: dir })
+    expect(h.map((e) => [e.event, e.unsubscribe?.result, e.adminId, e.unsubscribe?.error, e.changed])).toEqual([
+      ['plan.bdapps-unsubscribe', 'skipped', 'a2', undefined, false],
+      ['plan.bdapps-unsubscribe', 'failed', 'a1', 'E1351 boom', false],
+      ['plan.bdapps-unsubscribe', 'unsubscribed', 'a1', undefined, false],
+    ])
+  })
 })

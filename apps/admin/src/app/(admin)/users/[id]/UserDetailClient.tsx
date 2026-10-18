@@ -650,7 +650,14 @@ function PlanHistoryTab({ entries }: { entries: PlanHistoryEntry[] }) {
         >
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-primary)]">
-              {e.event === 'plan.override-kept' ? (
+              {e.event === 'plan.bdapps-unsubscribe' ? (
+                <>
+                  <Badge variant={e.unsubscribe?.result === 'failed' ? 'danger' : e.unsubscribe?.result === 'skipped' ? 'warning' : 'success'} size="sm">
+                    {e.unsubscribe?.result ?? 'skipped'}
+                  </Badge>
+                  <span>BDApps unsubscribe</span>
+                </>
+              ) : e.event === 'plan.override-kept' ? (
                 <>
                   <Badge variant="warning" size="sm">{e.to ?? '—'}</Badge>
                   <span>Admin override kept</span>
@@ -668,6 +675,7 @@ function PlanHistoryTab({ entries }: { entries: PlanHistoryEntry[] }) {
             <p className="text-xs text-[var(--color-text-muted)]">
               {CAUSE_LABELS[e.cause] ?? e.cause}
               {e.adminId && <> · by admin <span className="font-mono">{e.adminId}</span></>}
+              {e.unsubscribe?.error && <> · {e.unsubscribe.error}</>}
             </p>
           </div>
           <time dateTime={e.ts} className="text-xs tabular-nums text-[var(--color-text-muted)]">
