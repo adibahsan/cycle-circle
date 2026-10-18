@@ -20,6 +20,7 @@ import { ProfileChip } from '@/components/shell/ProfileChip';
 import {
   SIDEBAR_MENU_ITEMS,
   SIDEBAR_MORE_ITEMS,
+  NAV_ACTIVE,
   isNavActive,
 } from '@/components/shell/nav-config';
 import { LatePeriodFullScreenAlert } from '@/components/modals/LatePeriodFullScreenAlert';
@@ -364,7 +365,7 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ── Desktop Sidebar (md+) ── */}
-      <aside className="hidden md:flex md:flex-col md:w-64 md:sticky md:top-0 md:h-dvh md:shrink-0 glass border-r border-[var(--color-border)] z-40" aria-label={t('nav.sidebarNav')}>
+      <aside className="hidden md:flex md:flex-col md:w-64 md:sticky md:top-0 md:h-dvh md:shrink-0 bg-[var(--color-bg-card)] border-r border-[var(--color-border)] z-40" aria-label={t('nav.sidebarNav')}>
         {/* Sidebar header / branding */}
         <div className="px-5 py-5 flex items-center gap-3">
           <VestaLogo size={28} animate={false} />
@@ -379,7 +380,7 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
             onOpenCompletion={() => setShowCompletionModal(true)}
           />
           {activeGoal && (
-            <div className="mt-1.5 px-1 flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--goal-accent)' }}>
+            <div className="mt-1.5 px-1 flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-secondary)]">
               <span className="inline-flex items-center [&_svg]:w-3.5 [&_svg]:h-3.5" aria-hidden="true">{GOAL_ICON_COMPONENTS[activeGoal]}</span>
               <span className="truncate">{t(GOAL_I18N_KEYS[activeGoal])}</span>
             </div>
@@ -403,22 +404,22 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
                 {...(tourKey ? { 'data-tour': tourKey } : {})}
                 className={`relative flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
                   isActive
-                    ? ''
-                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
+                    ? 'font-bold'
+                    : 'font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]'
                 }`}
-                style={isActive ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 12%, transparent)' } : undefined}
+                style={isActive ? NAV_ACTIVE : undefined}
               >
                 <span className="relative">
-                  <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
+                  <Icon size={18} strokeWidth={isActive ? 2.25 : 1.5} aria-hidden="true" />
                   {showDot && (
                     <span
                       data-testid="symptoms-dot"
                       aria-hidden="true"
-                      className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-[var(--goal-accent)] ring-2 ring-[var(--color-bg-card)]"
+                      className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-[var(--color-primary)] ring-2 ring-[var(--color-bg-card)]"
                     />
                   )}
                 </span>
-                <span className="text-sm font-semibold">{t(labelKey)}</span>
+                <span className="text-sm">{t(labelKey)}</span>
                 {showDot && <span className="sr-only">{t('nav.notLoggedToday')}</span>}
               </Link>
             );
@@ -440,13 +441,13 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
                 aria-current={isActive ? 'page' : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
                   isActive
-                    ? ''
-                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
+                    ? 'font-bold'
+                    : 'font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]'
                 }`}
-                style={isActive ? { color: 'var(--goal-accent)', backgroundColor: 'color-mix(in srgb, var(--goal-accent) 12%, transparent)' } : undefined}
+                style={isActive ? NAV_ACTIVE : undefined}
               >
-                <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} aria-hidden="true" />
-                <span className="text-sm font-semibold">{t(labelKey)}</span>
+                <Icon size={18} strokeWidth={isActive ? 2.25 : 1.5} aria-hidden="true" />
+                <span className="text-sm">{t(labelKey)}</span>
               </Link>
             );
           })}
@@ -458,9 +459,10 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
             <TrialCountdownPill trialUser={trialUser} onPhoneAdded={handlePhoneAdded} />
           )}
           <button
+            type="button"
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? t('nav.switchToLight') : t('nav.switchToDark')}
-            className="flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--color-bg-secondary)] text-sm font-medium hover:bg-[var(--color-bg-primary)] transition-colors w-full"
+            className="flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--color-bg-secondary)] text-sm font-medium hover:bg-[var(--color-bg-primary)] transition-colors w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
           >
             {theme === 'dark' ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
             <span>{theme === 'dark' ? t('settings.lightMode') : t('settings.darkMode')}</span>
