@@ -9,6 +9,8 @@ export const PERSONAS = {
   menopause: { phone: '01700000782' },
   /** Standard goal, no period ever logged: the first-run dashboard. */
   firstRun: { phone: '01700000783' },
+  /** Insights with partial data (set up by ensureInsightsPersona): two completed cycles, no symptom logs. */
+  cyclesOnly: { phone: '01700000784' },
 } as const
 
 export type PersonaName = keyof typeof PERSONAS
