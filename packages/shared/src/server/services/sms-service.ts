@@ -3,32 +3,11 @@ import { logger } from '../log'
 import { smsSend } from '../adapters/bdapps'
 import { createAuditLog } from './audit-service'
 import { env } from '../../utils/env'
+import { composeSms, scheduleDrafts, type SmsDraft, type SmsSendLanguage } from '../../utils/sms'
 
 // ── Pure helpers ───────────────────────────────────────────────────────────────
 
-/**
- * Combine bilingual SMS content for a single tel:all broadcast.
- * If messageBn is absent or blank it is omitted.
- */
-export function combineBilingualSms(messageEn: string, messageBn?: string | null): string {
-  return messageBn && messageBn.trim() ? `${messageEn}\n${messageBn}` : messageEn
-}
-
-/**
- * Parse bulk SMS entry. One message per non-empty line; an optional Bengali
- * translation follows a '|' separator: "English text | Bengali text".
- */
-export function parseBulkSmsInput(text: string): { messageEn: string; messageBn?: string }[] {
-  return text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0)
-    .map((line) => {
-      const [en, bn] = line.split('|').map((s) => s.trim())
-      return bn ? { messageEn: en, messageBn: bn } : { messageEn: en }
-    })
-    .filter((r) => r.messageEn.length > 0)
-}
+export * from '../../utils/sms'
 
 // ── Chart-data helpers ─────────────────────────────────────────────────────────
 
@@ -114,11 +93,14 @@ export async function createBroadcast(
   message: string,
   messageBn?: string,
   scheduledFor?: string,
+  sendLanguage: SmsSendLanguage = 'BOTH',
 ) {
+  composeSms(message, messageBn, sendLanguage) // validates the language/text combination
   return prisma.smsBroadcast.create({
     data: {
       message,
       messageBn: messageBn || null,
+      sendLanguage,
       scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
       status: scheduledFor ? 'SCHEDULED' : 'DRAFT',
       createdBy,
@@ -127,34 +109,32 @@ export async function createBroadcast(
 }
 
 /**
- * Create multiple SCHEDULED broadcasts, one per day starting from startDate
- * (or tomorrow), at 08:00 UTC.
+ * Create multiple SCHEDULED broadcasts from parsed drafts (line parser or CSV).
+ * Dated drafts go out on their own date, undated ones one per day from startDate
+ * (or tomorrow), at 08:00 UTC. All drafts are validated before any row is written.
  */
 export async function createBroadcastsBulk(
   createdBy: string,
-  rows: { messageEn: string; messageBn?: string }[],
+  rows: SmsDraft[],
   startDate?: string,
+  sendLanguage: SmsSendLanguage = 'BOTH',
 ) {
-  const base = startDate ? new Date(startDate) : new Date()
-  if (!startDate) base.setUTCDate(base.getUTCDate() + 1)
-  base.setUTCHours(8, 0, 0, 0)
-  const created = []
-  for (let i = 0; i < rows.length; i++) {
-    const when = new Date(base)
-    when.setUTCDate(base.getUTCDate() + i)
-    created.push(
-      await prisma.smsBroadcast.create({
+  for (const r of rows) composeSms(r.messageEn, r.messageBn, sendLanguage)
+  const dates = scheduleDrafts(rows, startDate)
+  return prisma.$transaction(
+    rows.map((r, i) =>
+      prisma.smsBroadcast.create({
         data: {
-          message: rows[i].messageEn,
-          messageBn: rows[i].messageBn ?? null,
-          scheduledFor: when,
+          message: r.messageEn,
+          messageBn: r.messageBn ?? null,
+          sendLanguage,
+          scheduledFor: dates[i],
           status: 'SCHEDULED',
           createdBy,
         },
       }),
-    )
-  }
-  return created
+    ),
+  )
 }
 
 /**
@@ -215,9 +195,14 @@ export async function listBroadcasts(params: SmsBroadcastListParams = {}) {
  *
  * Called by both manual sendBroadcast and the cron dispatchScheduledBroadcast.
  */
-async function performSend(broadcast: { id: string; message: string; messageBn: string | null }) {
+async function performSend(broadcast: {
+  id: string
+  message: string
+  messageBn: string | null
+  sendLanguage: SmsSendLanguage
+}) {
   const isDevMode = env.DEV_MODE || env.NODE_ENV === 'development'
-  const combined = combineBilingualSms(broadcast.message, broadcast.messageBn)
+  const combined = composeSms(broadcast.message, broadcast.messageBn, broadcast.sendLanguage)
   let providerMessageId: string | null = null
   let deliveredCount = 0
   let targetCount = 0

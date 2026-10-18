@@ -104,6 +104,12 @@ enum SmsBroadcastStatus {
   FAILED
 }
 
+enum SmsSendLanguage {
+  BN
+  EN
+  BOTH
+}
+
 enum EmailType {
   MAGIC_LINK
   PERIOD_ALERT
@@ -377,6 +383,7 @@ model SmsBroadcast {
   id             String             @id @default(cuid())
   message        String
   messageBn      String?
+  sendLanguage   SmsSendLanguage    @default(BOTH)
   scheduledFor   DateTime?
   sentAt         DateTime?
   status         SmsBroadcastStatus @default(DRAFT)
