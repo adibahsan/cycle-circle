@@ -86,36 +86,39 @@ export function CycleDates({ language, lastPeriod, windows }: {
   if (!lastPeriod && !windows) return null
 
   return (
-    <div data-testid="cycle-dates" className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {lastPeriod && (
-        <DatesCard testId="last-period" headingId="last-period-title" tone="peach" Icon={Droplets} title={t('dashboard.datesLastTitle')}>
-          <p className="text-lg font-bold text-[var(--color-text-primary)] tabular-nums">{date(lastPeriod.startDate)}</p>
-          {(lastPeriod.days != null || lastPeriod.flow) && (
-            <p className="text-sm text-[var(--color-text-secondary)] tabular-nums">
-              {[
-                lastPeriod.days != null
-                  ? t('dashboard.datesLastLength', { count: lastPeriod.days, n: formatCount(language, lastPeriod.days) })
-                  : null,
-                lastPeriod.flow ? t('dashboard.datesFlow', { flow: t(FLOW_KEY[lastPeriod.flow]) }) : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
-          )}
-        </DatesCard>
-      )}
-      {windows && (
-        <DatesCard testId="predicted-windows" headingId="predicted-windows-title" tone="mint" Icon={CalendarHeart} title={t('dashboard.datesWindowsTitle')}>
-          <dl>
-            <WindowRow
-              color="var(--color-fertile)"
-              label={t('dashboard.datesFertile')}
-              value={t('dashboard.datesRange', { start: date(windows.fertileStart), end: date(windows.fertileEnd) })}
-            />
-            <WindowRow color="var(--color-ovulation)" label={t('dashboard.datesOvulation')} value={date(windows.ovulationDay)} />
-          </dl>
-        </DatesCard>
-      )}
+    // Sized by its column, not the viewport: two cards side by side in the main column, stacked in the wide-screen rail.
+    <div className="@container">
+      <div data-testid="cycle-dates" className="grid grid-cols-1 gap-4 @lg:grid-cols-2">
+        {lastPeriod && (
+          <DatesCard testId="last-period" headingId="last-period-title" tone="peach" Icon={Droplets} title={t('dashboard.datesLastTitle')}>
+            <p className="text-lg font-bold text-[var(--color-text-primary)] tabular-nums">{date(lastPeriod.startDate)}</p>
+            {(lastPeriod.days != null || lastPeriod.flow) && (
+              <p className="text-sm text-[var(--color-text-secondary)] tabular-nums">
+                {[
+                  lastPeriod.days != null
+                    ? t('dashboard.datesLastLength', { count: lastPeriod.days, n: formatCount(language, lastPeriod.days) })
+                    : null,
+                  lastPeriod.flow ? t('dashboard.datesFlow', { flow: t(FLOW_KEY[lastPeriod.flow]) }) : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+            )}
+          </DatesCard>
+        )}
+        {windows && (
+          <DatesCard testId="predicted-windows" headingId="predicted-windows-title" tone="mint" Icon={CalendarHeart} title={t('dashboard.datesWindowsTitle')}>
+            <dl>
+              <WindowRow
+                color="var(--color-fertile)"
+                label={t('dashboard.datesFertile')}
+                value={t('dashboard.datesRange', { start: date(windows.fertileStart), end: date(windows.fertileEnd) })}
+              />
+              <WindowRow color="var(--color-ovulation)" label={t('dashboard.datesOvulation')} value={date(windows.ovulationDay)} />
+            </dl>
+          </DatesCard>
+        )}
+      </div>
     </div>
   )
 }

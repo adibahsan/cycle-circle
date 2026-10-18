@@ -5,8 +5,8 @@ import path from 'node:path'
 const SRC = path.resolve(__dirname, '../../src')
 const read = (p: string) => fs.readFileSync(path.join(SRC, p), 'utf8')
 
-const PAGES: Record<string, 'default' | 'wide'> = {
-  'app/(main)/dashboard/DashboardClient.tsx': 'wide',
+const PAGES: Record<string, 'default' | 'wide' | 'canvas'> = {
+  'app/(main)/dashboard/DashboardClient.tsx': 'canvas',
   'app/(main)/calendar/CalendarClient.tsx': 'wide',
   'app/(main)/symptoms/SymptomsClient.tsx': 'default',
   'app/(main)/insights/InsightsClient.tsx': 'default',
@@ -36,7 +36,7 @@ describe('page shell scale', () => {
       expect(src).toContain('<PageHeader')
       expect(src).toContain('<PageContainer')
       expect(src).not.toMatch(/<h1[\s>]/)
-      if (width === 'wide') expect(src).toMatch(/<PageContainer[^>]*width="wide"/)
+      if (width !== 'default') expect(src).toMatch(new RegExp(`<PageContainer[^>]*width="${width}"`))
     })
   }
 

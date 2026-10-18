@@ -122,3 +122,18 @@ for (const [label, viewport] of [['desktop', DESKTOP], ['375x667', PHONE_375]] a
     })
   })
 }
+
+test.describe('dashboard layout (1920 wide)', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } })
+
+  test('wide screens fill with a side rail instead of an empty gutter', async ({ page }) => {
+    await gotoQuiet(page, '/dashboard')
+    await expect(page.getByTestId('hero-stats')).toBeVisible({ timeout: 15_000 })
+    const hero = (await page.getByTestId('hero-stats').boundingBox())!
+    const dates = (await page.getByTestId('cycle-dates').boundingBox())!
+    // The dates sit in the rail, to the right of the hero, not below it.
+    expect(dates.x).toBeGreaterThan(hero.x + hero.width)
+    // No wide empty band on the right: the rail ends within the page padding.
+    expect(1920 - (dates.x + dates.width)).toBeLessThanOrEqual(96)
+  })
+})

@@ -61,17 +61,17 @@ export function PhasePatternCard({ phase, pattern, windowDays = 90 }: PhasePatte
       }
 
   return (
-    <Card tone="panel" padding="md" className="h-full">
+    <Card tone="panel" padding="md" className="@container h-full">
       <section aria-labelledby="phase-pattern-title" data-testid={copy.testId}>
         <SectionHeader id="phase-pattern-title" title={copy.title} subtitle={copy.sub} />
         {items.length > 0 ? (
-          <ul data-testid="phase-pattern-list" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <ul data-testid="phase-pattern-list" className="grid grid-cols-1 gap-2 @sm:grid-cols-3">
             {items.map(({ symptomId, count, symptom }, i) => {
               const Icon = symptom.icon
               return (
                 <li
                   key={symptomId}
-                  className={cn('flex items-center gap-3 rounded-2xl p-3 sm:flex-col sm:items-start', TINT_CLASSES[TILE_TINTS[i % TILE_TINTS.length]].surface)}
+                  className={cn('flex items-center gap-3 rounded-2xl p-3 @sm:flex-col @sm:items-start', TINT_CLASSES[TILE_TINTS[i % TILE_TINTS.length]].surface)}
                 >
                   <span
                     className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-card)]', TINT_CLASSES[TILE_TINTS[i % TILE_TINTS.length]].ink)}

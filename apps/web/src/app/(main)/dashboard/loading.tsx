@@ -4,7 +4,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 /** Skeleton in the dashboard's shape: header, hero, journey + ring panels, toolkit grid. */
 export default function DashboardLoading() {
   return (
-    <PageContainer width="wide">
+    <PageContainer width="canvas">
       <div className="space-y-2">
         <Shimmer className="h-8 w-48 rounded-lg" />
         <Shimmer className="h-4 w-32 rounded-lg" />

@@ -197,7 +197,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   // Guard: no profile found
   if (!profile) {
     return (
-      <PageContainer width="wide">
+      <PageContainer width="canvas">
         <PageHeader title={t('nav.dashboard')} />
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <p className="text-[var(--color-text-muted)]">{t('dashboard.noProfileFound')}</p>
@@ -297,53 +297,58 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   return (
     <>
       <PageContainer
-        width="wide"
+        width="canvas"
         style={{ ['--goal-accent' as string]: goalAccentVar(goal) } as React.CSSProperties}
       >
         <PageHeader title={t('nav.dashboard')} subtitle={profile.name} />
         <CompletionRow status={completion} />
 
-        {/* ── Hero: one per state ─────────────────────────────────── */}
-        {heroState === 'pregnancy' ? (
-          <PregnancyHero
-            language={language}
-            lastPeriodStart={lastPeriodDisplay?.startDate ?? null}
-            onLogSymptoms={openQuickSymptom}
-          />
-        ) : heroState === 'menopause' ? (
-          <MenopauseHero
-            name={profile.name}
-            language={language}
-            today={deviceDayString()}
-            lastPeriodStart={lastPeriodDisplay?.startDate ?? null}
-          />
-        ) : heroState === 'no-period' ? (
-          <FirstPeriodHero onLogPeriod={openNewLog} />
-        ) : (
-          <CycleHero
-            name={profile.name}
-            language={language}
-            phase={phase}
-            cycleDay={cycleDay}
-            fertile={fertile}
-            period={period}
-            nextPeriodDate={prediction?.nextPeriodStart ?? null}
-          />
-        )}
+        {/* From 2xl the page splits into a main column and a rail so wide screens fill instead of leaving a gutter.
+            DOM order is the phone order: top, rail, body. */}
+        <div className="flex flex-col gap-5 2xl:grid 2xl:grid-cols-[minmax(0,1fr)_24rem] 2xl:grid-rows-[auto_1fr] 2xl:gap-x-6">
+          <div className="flex flex-col gap-5 2xl:col-start-1 2xl:row-start-1">
+            {/* ── Hero: one per state ─────────────────────────────────── */}
+            {heroState === 'pregnancy' ? (
+              <PregnancyHero
+                language={language}
+                lastPeriodStart={lastPeriodDisplay?.startDate ?? null}
+                onLogSymptoms={openQuickSymptom}
+              />
+            ) : heroState === 'menopause' ? (
+              <MenopauseHero
+                name={profile.name}
+                language={language}
+                today={deviceDayString()}
+                lastPeriodStart={lastPeriodDisplay?.startDate ?? null}
+              />
+            ) : heroState === 'no-period' ? (
+              <FirstPeriodHero onLogPeriod={openNewLog} />
+            ) : (
+              <CycleHero
+                name={profile.name}
+                language={language}
+                phase={phase}
+                cycleDay={cycleDay}
+                fertile={fertile}
+                period={period}
+                nextPeriodDate={prediction?.nextPeriodStart ?? null}
+              />
+            )}
 
-        {/* ── Logging Nudge ──────────────────────────────────────── */}
-        <LoggingNudge
-          profileId={activeProfileId}
-          hasAnyLogs={hasAnyLogs}
-          daysSinceLastLog={daysSinceLastLog}
-          goal={goal}
-          onLogPeriod={openNewLog}
-          phase={blocks.phaseTools ? (dashboardData?.currentPhase ?? null) : null}
-        />
+            {/* ── Logging Nudge ──────────────────────────────────────── */}
+            <LoggingNudge
+              profileId={activeProfileId}
+              hasAnyLogs={hasAnyLogs}
+              daysSinceLastLog={daysSinceLastLog}
+              goal={goal}
+              onLogPeriod={openNewLog}
+              phase={blocks.phaseTools ? (dashboardData?.currentPhase ?? null) : null}
+            />
+          </div>
 
-        {/* ── Streak + Phase pattern (#75 fills the slot; it is the menopause symptom pattern too) ── */}
-        {(engagement || (phasePattern && heroState !== 'pregnancy')) && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* ── Rail: streak, phase pattern (#75; the menopause symptom pattern too), last period + predicted windows.
+              Two across from lg, one stacked column in the 2xl rail. ── */}
+          <div className="grid grid-cols-1 gap-4 empty:hidden lg:grid-cols-2 2xl:col-start-2 2xl:row-span-2 2xl:row-start-1 2xl:grid-cols-1 2xl:content-start 2xl:sticky 2xl:top-6 2xl:self-start">
             {engagement && (
               <TodayCheckInStrip
                 profileId={activeProfileId}
@@ -353,65 +358,68 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               />
             )}
             {heroState !== 'pregnancy' && phasePattern}
-          </div>
-        )}
-
-        {/* ── Cycle journey + progress ring (a dimmed example before the first period) ── */}
-        {blocks.cycle === 'live' && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <CycleJourney position={position} language={language} />
-            <CycleProgressRing
-              position={position}
-              period={period}
-              language={language}
-            >
-              {/* The dashboard's one confidence figure. */}
-              {engagement && (
-                <ProgressToUnlockMeter
-                  className="mt-4"
-                  cyclesLogged={engagement.cyclesLogged}
-                  unlockTarget={engagement.unlockTarget}
-                  confidence={engagement.confidence}
-                  tier={engagement.tier}
-                  periodLogCount={engagement.periodLogCount}
+            {/* Live cycle only, real data only. */}
+            {blocks.cycleDates && (
+              <div className="lg:col-span-2 2xl:col-span-1">
+                <CycleDates
+                  language={language}
+                  lastPeriod={lastPeriodDisplay}
+                  windows={
+                    prediction
+                      ? { fertileStart: prediction.fertileStart, fertileEnd: prediction.fertileEnd, ovulationDay: prediction.ovulationDay }
+                      : null
+                  }
                 />
-              )}
-            </CycleProgressRing>
+              </div>
+            )}
           </div>
-        )}
-        {blocks.cycle === 'example' && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <CycleJourney example position={EXAMPLE_CYCLE} language={language} />
-            <CycleProgressRing
-              example
-              position={EXAMPLE_CYCLE}
-              period={null}
+
+          <div className="flex flex-col gap-5 2xl:col-start-1 2xl:row-start-2">
+            {/* ── Cycle journey + progress ring (a dimmed example before the first period) ── */}
+            {blocks.cycle === 'live' && (
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <CycleJourney position={position} language={language} />
+                <CycleProgressRing
+                  position={position}
+                  period={period}
+                  language={language}
+                >
+                  {/* The dashboard's one confidence figure. */}
+                  {engagement && (
+                    <ProgressToUnlockMeter
+                      className="mt-4"
+                      cyclesLogged={engagement.cyclesLogged}
+                      unlockTarget={engagement.unlockTarget}
+                      confidence={engagement.confidence}
+                      tier={engagement.tier}
+                      periodLogCount={engagement.periodLogCount}
+                    />
+                  )}
+                </CycleProgressRing>
+              </div>
+            )}
+            {blocks.cycle === 'example' && (
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <CycleJourney example position={EXAMPLE_CYCLE} language={language} />
+                <CycleProgressRing
+                  example
+                  position={EXAMPLE_CYCLE}
+                  period={null}
+                  language={language}
+                />
+              </div>
+            )}
+
+            {/* ── Toolkit (check-in, symptoms and articles stay in every mode) ── */}
+            <DashboardToolkit
               language={language}
+              phase={blocks.phaseTools ? phase : null}
+              articles={phaseArticles}
+              onLogPeriod={blocks.logPeriodTool ? openNewLog : null}
+              onLogSymptoms={openQuickSymptom}
             />
           </div>
-        )}
-
-        {/* ── Last period + predicted windows (live cycle only, real data only) ── */}
-        {blocks.cycleDates && (
-          <CycleDates
-            language={language}
-            lastPeriod={lastPeriodDisplay}
-            windows={
-              prediction
-                ? { fertileStart: prediction.fertileStart, fertileEnd: prediction.fertileEnd, ovulationDay: prediction.ovulationDay }
-                : null
-            }
-          />
-        )}
-
-        {/* ── Toolkit (check-in, symptoms and articles stay in every mode) ── */}
-        <DashboardToolkit
-          language={language}
-          phase={blocks.phaseTools ? phase : null}
-          articles={phaseArticles}
-          onLogPeriod={blocks.logPeriodTool ? openNewLog : null}
-          onLogSymptoms={openQuickSymptom}
-        />
+        </div>
       </PageContainer>
 
       {/* ── Period Log Modal ──────────────────────────────────── */}
