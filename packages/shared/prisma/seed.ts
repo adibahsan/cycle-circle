@@ -162,6 +162,20 @@ async function seedDummyUsers() {
     { daysBack: 5, symptomId: 'irritable',   category: SymptomCategory.MOOD,     value: 'present' },
     { daysBack: 6, symptomId: 'backache',    category: SymptomCategory.PHYSICAL, value: 'mild' },
   ])
+  // #75 Phase pattern: one completed past cycle (38 → 10 days ago) with logs
+  // in every phase, so the dashboard has a pattern whatever today's phase is.
+  await seedPeriodLogs(streakerProfile.id, [
+    { idx: 0, startDaysAgo: 38, durationDays: 5, flow: FlowIntensity.MEDIUM },
+  ])
+  await seedSymptomLogs(streakerProfile.id, [
+    { daysBack: 32, symptomId: 'energetic', category: SymptomCategory.MOOD,     value: 'present' },
+    { daysBack: 31, symptomId: 'energetic', category: SymptomCategory.MOOD,     value: 'present' },
+    { daysBack: 31, symptomId: 'acne',      category: SymptomCategory.PHYSICAL, value: 'mild' },
+    { daysBack: 30, symptomId: 'energetic', category: SymptomCategory.MOOD,     value: 'present' },
+    { daysBack: 36, symptomId: 'cramps',    category: SymptomCategory.PHYSICAL, value: 'moderate' },
+    { daysBack: 27, symptomId: 'egg-white', category: SymptomCategory.DISCHARGE, value: 'present' },
+    { daysBack: 19, symptomId: 'bloating',  category: SymptomCategory.PHYSICAL, value: 'mild' },
+  ])
   await seedPred(streakerProfile.id, daysAgo(10), 28)
   await seedNotifPref(streakerProfile.id, 'tracking')
   console.log('  [dummy] 1. Active Streaker: +8801700000001')

@@ -9,6 +9,8 @@ import {
 import { isPregnancy, isMenopause } from '../../utils/goal'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
 import { TIER2_MIN_CYCLES } from '../prediction-calc'
+import { normalizeCyclePhase } from '../../utils/cycle-utils'
+import { loadPhasePattern, type PhasePatternEntry } from './insights-service'
 
 // ── Ownership helpers ──────────────────────────────────────────────────────────
 
@@ -558,6 +560,12 @@ export async function getDashboardData(profileId: string, userId: string) {
 
   const pregnant = mode === 'pregnancy'
 
+  // Phase pattern (#75): only meaningful when a current phase is shown.
+  const phasePattern: PhasePatternEntry[] =
+    mode === 'standard' && lastPeriod
+      ? await loadPhasePattern(profileId, profile.periodLength, normalizeCyclePhase(currentPhase))
+      : []
+
   return {
     mode,
     currentCycleDay,
@@ -566,6 +574,7 @@ export async function getDashboardData(profileId: string, userId: string) {
     lastPeriod: lastPeriodSummary,
     prediction: pregnant ? null : prediction,
     lastSymptomLogDate,
+    phasePattern,
   }
 }
 

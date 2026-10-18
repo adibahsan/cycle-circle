@@ -7,6 +7,7 @@ import { getProfileCompletionStatus } from '@vesta/shared/server/services'
 import { normalizeCyclePhase } from '@vesta/shared/utils/cycle-utils'
 import { DashboardClient } from './DashboardClient'
 import type { PhaseArticle } from './DashboardToolkit'
+import { PhasePatternCard } from './PhasePatternCard'
 
 /** "Read for your phase": published articles tagged with the current phase (standard mode only). */
 async function articlesForPhase(phase: string | null): Promise<PhaseArticle[]> {
@@ -41,6 +42,14 @@ export default async function DashboardPage({
 
   const activeProfile = profiles.find((p) => p.id === profileId) ?? profiles[0]
 
+  const phasePattern =
+    dashboardData?.mode === 'standard' && dashboardData.currentPhase ? (
+      <PhasePatternCard
+        phase={normalizeCyclePhase(dashboardData.currentPhase)}
+        pattern={dashboardData.phasePattern}
+      />
+    ) : null
+
   return (
     <DashboardClient
       profiles={profiles}
@@ -52,6 +61,7 @@ export default async function DashboardPage({
       goal={activeProfile?.goal ?? null}
       engagement={engagement}
       phaseArticles={phaseArticles}
+      phasePattern={phasePattern}
     />
   )
 }

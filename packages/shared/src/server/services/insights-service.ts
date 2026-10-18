@@ -2,6 +2,8 @@ import { differenceInDays, addDays, format } from 'date-fns'
 import { prisma } from '../db'
 import { assertProfileOwnership } from './profile-service'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
+import { getCurrentPhase } from '../../utils/cycle-utils'
+import type { CyclePhase } from '../../types/types'
 
 // ─── Return-shape interfaces ───────────────────────────────────────────────────
 
@@ -241,4 +243,93 @@ export async function getFertileWindowHistory(
   }
 
   return result
+}
+
+// ─── 5. Phase pattern ──────────────────────────────────────────────────────────
+
+export interface PhasePatternEntry {
+  symptomId: string
+  count: number
+}
+
+export interface RankPhasePatternInput {
+  phase: CyclePhase
+  /** Period start dates (ms), ascending. Consecutive starts bound a completed cycle. */
+  periodStartsMsAsc: number[]
+  periodLength: number
+  symptomLogs: { dateMs: number; symptomId: string }[]
+  /** Max symptoms returned. Default 3. */
+  limit?: number
+}
+
+const MS_PER_DAY = 86_400_000
+
+/**
+ * Phase pattern: the symptoms logged most often in `phase` across completed
+ * past cycles, ranked by count (ties by symptom id). A completed cycle runs
+ * from one period start up to the next; its own length sets the phase
+ * boundaries. Logs in the current (open) cycle and "All good" check-ins are
+ * ignored, so this is empty until one cycle has closed with logs in it.
+ */
+export function rankPhasePattern({
+  phase,
+  periodStartsMsAsc,
+  periodLength,
+  symptomLogs,
+  limit = 3,
+}: RankPhasePatternInput): PhasePatternEntry[] {
+  const counts = new Map<string, number>()
+  for (const log of symptomLogs) {
+    if (log.symptomId === ALL_GOOD_SYMPTOM_ID) continue
+    for (let i = 0; i < periodStartsMsAsc.length - 1; i++) {
+      const start = periodStartsMsAsc[i]
+      const next = periodStartsMsAsc[i + 1]
+      if (log.dateMs < start || log.dateMs >= next) continue
+      const cycleLength = Math.round((next - start) / MS_PER_DAY)
+      const cycleDay = Math.floor((log.dateMs - start) / MS_PER_DAY) + 1
+      if (getCurrentPhase(cycleDay, periodLength, cycleLength) === phase) {
+        counts.set(log.symptomId, (counts.get(log.symptomId) ?? 0) + 1)
+      }
+      break
+    }
+  }
+  return [...counts.entries()]
+    .map(([symptomId, count]) => ({ symptomId, count }))
+    .sort((a, b) => b.count - a.count || a.symptomId.localeCompare(b.symptomId))
+    .slice(0, limit)
+}
+
+/** Loads a profile's logs and ranks its Phase pattern. Caller has checked ownership. */
+export async function loadPhasePattern(
+  profileId: string,
+  periodLength: number,
+  phase: CyclePhase,
+): Promise<PhasePatternEntry[]> {
+  const periodLogs = await prisma.periodLog.findMany({
+    where: { profileId },
+    orderBy: { startDate: 'asc' },
+    select: { startDate: true },
+  })
+  if (periodLogs.length < 2) return []
+  const lastStart = periodLogs[periodLogs.length - 1].startDate
+  const symptomLogs = await prisma.symptomLog.findMany({
+    where: { profileId, date: { gte: periodLogs[0].startDate, lt: lastStart } },
+    select: { date: true, symptomId: true },
+  })
+  return rankPhasePattern({
+    phase,
+    periodStartsMsAsc: periodLogs.map((l) => l.startDate.getTime()),
+    periodLength,
+    symptomLogs: symptomLogs.map((l) => ({ dateMs: l.date.getTime(), symptomId: l.symptomId })),
+  })
+}
+
+/** Phase pattern for a profile the user owns. */
+export async function getPhasePattern(
+  profileId: string,
+  userId: string,
+  phase: CyclePhase,
+): Promise<PhasePatternEntry[]> {
+  const profile = await assertProfileOwnership(profileId, userId)
+  return loadPhasePattern(profileId, profile.periodLength, phase)
 }

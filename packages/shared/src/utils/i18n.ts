@@ -113,6 +113,13 @@ const resources = {
       },
       dashboard: {
         periodLateOpenPrompt: 'Period late. Tap to log your period.',
+        // #75 Phase pattern
+        patternTitle: 'Your phase pattern',
+        patternSub: 'Most logged in your {{phase}} phase in past cycles',
+        patternCount_one: 'Logged {{n}} time',
+        patternCount_other: 'Logged {{n}} times',
+        patternEmpty: 'Log your symptoms this cycle to see your pattern next time.',
+        patternLogCta: 'Log symptoms',
         // #71 cycle ring name
         ringLabel: 'Cycle day {{day}} of {{length}}', ringLateLabel: '{{days}} days late',
         day: 'Day', phase: 'Phase', nextPeriod: 'Next period in', days: 'days',
@@ -922,6 +929,13 @@ const resources = {
       },
       dashboard: {
         periodLateOpenPrompt: 'পিরিয়ড দেরি হচ্ছে। লগ করতে ট্যাপ করুন।',
+        // #75 Phase pattern
+        patternTitle: 'আপনার পর্যায়ের ধরন',
+        patternSub: 'আগের চক্রগুলোতে আপনার {{phase}} পর্যায়ে সবচেয়ে বেশি লগ করা',
+        patternCount_one: '{{n}} বার লগ করা হয়েছে',
+        patternCount_other: '{{n}} বার লগ করা হয়েছে',
+        patternEmpty: 'এই চক্রে আপনার উপসর্গ লগ করুন, পরের বার আপনার ধরন দেখতে পাবেন।',
+        patternLogCta: 'উপসর্গ লগ করুন',
         // #71 cycle ring name
         ringLabel: 'চক্রের দিন {{day}} / {{length}}', ringLateLabel: '{{days}} দিন দেরি',
         day: 'দিন', phase: 'পর্যায়', nextPeriod: 'পরবর্তী পিরিয়ড', days: 'দিন',
