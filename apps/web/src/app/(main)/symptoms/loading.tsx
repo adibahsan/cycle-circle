@@ -3,9 +3,9 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function SymptomsLoading() {
   return (
-    <PageContainer width="canvas" fill>
+    <PageContainer width="canvas">
       {/* Split layout */}
-      <div className="flex flex-col xl:flex-1 xl:flex-row gap-3 md:gap-5">
+      <div className="flex flex-col xl:flex-row xl:items-start gap-3 md:gap-5">
         {/* Left Column: Title + Mini Calendar */}
         <div className="xl:w-[400px] 2xl:w-[440px] xl:shrink-0 flex flex-col gap-3">
           {/* Header */}
@@ -32,7 +32,7 @@ export default function SymptomsLoading() {
 
             <div className="grid grid-cols-7 gap-0.5 md:gap-1">
               {Array.from({ length: 35 }).map((_, i) => (
-                <Shimmer key={i} className="h-11 md:h-14 2xl:h-16 w-full rounded-xl" />
+                <Shimmer key={i} className="h-11 md:h-12 2xl:h-16 w-full rounded-xl" />
               ))}
             </div>
           </div>
@@ -65,7 +65,7 @@ export default function SymptomsLoading() {
           {/* Symptom chips grid */}
           <div className="rounded-panel bg-tint-pink p-2 md:p-4 grid grid-cols-3 auto-rows-fr gap-1.5 md:gap-2">
             {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="flex flex-col md:flex-row items-center gap-1 md:gap-2.5 p-1.5 min-h-[72px] md:min-h-12 rounded-2xl md:rounded-xl bg-[var(--color-bg-card)]">
+              <div key={i} className="flex flex-col items-center justify-center gap-1 md:gap-2 p-1.5 min-h-[72px] md:min-h-[88px] rounded-2xl bg-[var(--color-bg-card)]">
                 <Shimmer className="h-8 w-8 rounded-full" />
                 <Shimmer className="h-3 w-14 rounded-md" />
               </div>

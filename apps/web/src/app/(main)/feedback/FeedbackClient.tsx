@@ -246,12 +246,12 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
   }
 
   return (
-    <PageContainer width="canvas" fill>
+    <PageContainer width="canvas">
       {/* ── Page header ── */}
       <PageHeader title={t('feedback.title')} subtitle={t('feedback.helpUs')} />
 
       {/* ── Feedback Form Card + History (side-by-side on desktop) ── */}
-      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:items-stretch xl:flex-1">
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:items-stretch">
         <motion.div custom={1} variants={FADE_UP} initial="hidden" animate="show" className="lg:flex lg:flex-col">
           <Card padding="md" className="lg:flex lg:flex-1 lg:flex-col">
             <AnimatePresence mode="wait">
@@ -263,7 +263,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                   initial="hidden"
                   animate="show"
                   exit="exit"
-                  className="flex flex-col items-center py-8 text-center xl:my-auto"
+                  className="flex flex-col items-center py-8 text-center"
                 >
                   <motion.div
                     initial={{ scale: 0 }}
@@ -286,7 +286,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                 </motion.div>
               ) : (
                 /* ── Form state ── */
-                <motion.div key="form" initial={{ opacity: 1 }} exit={{ opacity: 0 }} className="xl:flex xl:flex-1 xl:flex-col">
+                <motion.div key="form" initial={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   {/* Category selector */}
                   <p className="text-sm font-semibold text-[var(--color-text-secondary)] mb-3">
                     {t('feedback.category')}
@@ -361,14 +361,14 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                   </div>
 
                   {/* Message textarea */}
-                  <div className="mb-5 xl:flex xl:flex-1 xl:flex-col">
+                  <div className="mb-5">
                     <label htmlFor="feedback-message" className="text-sm font-semibold text-[var(--color-text-secondary)] mb-2 block">
                       {t('feedback.messageLabel')}{' '}
                       <span className="text-[var(--color-text-muted)] font-normal">
                         ({t('feedback.optional')})
                       </span>
                     </label>
-                    <div className="relative xl:flex xl:flex-1 xl:flex-col">
+                    <div className="relative">
                       <textarea
                         id="feedback-message"
                         rows={4}
@@ -376,7 +376,7 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
                         value={message}
                         onChange={e => setMessage(e.target.value)}
                         placeholder={t('feedback.message')}
-                        className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] text-sm resize-none xl:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/30 focus-visible:border-[var(--goal-accent)] transition-colors transition-shadow duration-200"
+                        className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] text-sm resize-none 2xl:min-h-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/30 focus-visible:border-[var(--goal-accent)] transition-colors transition-shadow duration-200"
                       />
                       <span
                         className="absolute bottom-2.5 right-3 text-[11px] font-medium"

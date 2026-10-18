@@ -3,14 +3,14 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function SettingsLoading() {
   return (
-    <PageContainer width="canvas" fill>
+    <PageContainer width="canvas">
       {/* Title */}
       <div>
         <Shimmer className="h-8 w-32 rounded-lg" />
       </div>
 
       {/* Two Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 xl:flex-1 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         {/* Left Column */}
         <div className="space-y-4">
           {/* Section 1: Language & Appearance */}

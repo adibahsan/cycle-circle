@@ -50,7 +50,20 @@ export interface MonthGridProps {
   banner?: ReactNode
   /** Under the grid, inside the card (e.g. the colour key). */
   footer?: ReactNode
+  /**
+   * `compact`: a number per day, for a grid beside other work (symptoms).
+   * `roomy`: the page's main grid (calendar). From xl the day is a small tile, number top left and
+   * `dayContent` along the bottom, so its larger size carries information instead of empty space.
+   */
+  size?: 'compact' | 'roomy'
+  /** Roomy days from xl: what the day holds (e.g. logged symptom icons). */
+  dayContent?: (date: Date) => ReactNode
   className?: string
+}
+
+const DAY_HEIGHT = {
+  compact: 'h-11 md:h-12 2xl:h-16',
+  roomy: 'h-11 md:h-14 xl:h-16 2xl:h-24',
 }
 
 const NO_FLAGS: DayStateFlags = { isPeriod: false, isFertile: false, isOvulation: false, isFuturePredicted: false }
@@ -73,11 +86,14 @@ interface DayCellProps {
   onFocusDay: (date: Date) => void
   actionLabel: string | null
   onAction?: (date: Date) => void
+  size: 'compact' | 'roomy'
+  content: ReactNode
 }
 
 const DayCell = memo(function DayCell({
-  date, inMonth, kind, label, isToday, isSelected, isFocusTarget, focusNow, onSelect, onFocusDay, actionLabel, onAction,
+  date, inMonth, kind, label, isToday, isSelected, isFocusTarget, focusNow, onSelect, onFocusDay, actionLabel, onAction, size, content,
 }: DayCellProps) {
+  const roomy = size === 'roomy'
   const style = DAY_STYLES[kind]
   const buttonRef = useRef<HTMLButtonElement>(null)
 
@@ -86,8 +102,7 @@ const DayCell = memo(function DayCell({
   }, [focusNow])
 
   return (
-    // A stretched card makes the rows taller: the day grows with its row, but never taller than it is wide.
-    <div role="gridcell" className={cn('group relative flex items-center w-full', isToday && 'z-[1]')}>
+    <div role="gridcell" className={cn('group relative w-full', DAY_HEIGHT[size], isToday && 'z-[1]')}>
       <button
         ref={buttonRef}
         type="button"
@@ -98,7 +113,10 @@ const DayCell = memo(function DayCell({
         aria-current={isToday ? 'date' : undefined}
         tabIndex={isFocusTarget ? 0 : -1}
         data-date={format(date, 'yyyy-MM-dd')}
-        className="relative flex items-center justify-center w-full h-full min-h-11 md:min-h-14 2xl:min-h-16 max-h-[calc(100cqw/7)] rounded-xl transition-colors duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/60"
+        className={cn(
+          'absolute inset-0 flex items-center justify-center rounded-xl transition-colors duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/60',
+          roomy && 'xl:flex-col xl:items-start xl:justify-between xl:px-3 xl:py-2.5',
+        )}
         style={{
           background: isSelected && kind === 'plain' ? 'var(--color-bg-secondary)' : style.background,
           border: style.border,
@@ -108,6 +126,7 @@ const DayCell = memo(function DayCell({
         <span
           className={cn(
             'text-sm md:text-base leading-none tabular-nums',
+            roomy && 'xl:text-sm',
             actionLabel && 'group-hover:opacity-0 group-focus-within:opacity-0 transition-opacity',
             !inMonth && 'opacity-50',
           )}
@@ -115,6 +134,12 @@ const DayCell = memo(function DayCell({
         >
           {format(date, 'd')}
         </span>
+
+        {roomy && content && (
+          <span aria-hidden="true" className="hidden xl:flex items-center gap-1" style={{ color: inMonth ? style.color : undefined }}>
+            {content}
+          </span>
+        )}
 
         {/* Selected ring, inset so it stays distinct from today's outer glow */}
         {isSelected && (
@@ -146,7 +171,9 @@ const DayCell = memo(function DayCell({
  * The month day grid used by the calendar and symptoms pages: month header with prev/next, an ARIA grid with
  * roving focus (arrows, Home/End, PageUp/PageDown), one look per day state, today's glow and the selected ring.
  */
-export function MonthGrid({ month, onMonthChange, selected, onSelect, dayState, dayAction, banner, footer, className }: MonthGridProps) {
+export function MonthGrid({
+  month, onMonthChange, selected, onSelect, dayState, dayAction, banner, footer, size = 'compact', dayContent, className,
+}: MonthGridProps) {
   const { t } = useTranslation()
   const language = useLanguage()
   const dateLocale = language === 'bn' ? bn : undefined
@@ -204,8 +231,7 @@ export function MonthGrid({ month, onMonthChange, selected, onSelect, dayState, 
 
   return (
     // Narrow side padding on phones keeps each day cell at least 44px wide at 375px.
-    // A flex column, so a card stretched taller than its content grows its week rows instead of leaving a gap.
-    <Card tone="panel" padding="sm" className={cn('@container flex flex-col px-2 py-2 sm:px-4 md:py-4', className)}>
+    <Card tone="panel" padding="sm" className={cn('px-2 py-2 sm:px-4 md:py-4', className)}>
       <div className="flex items-center justify-between mb-1 md:mb-2">
         <button type="button" onClick={() => goMonth(subMonths(monthStart, 1))} aria-label={t('calendar.previousMonth')} className={NAV_BUTTON}>
           <ChevronLeft size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
@@ -229,7 +255,7 @@ export function MonthGrid({ month, onMonthChange, selected, onSelect, dayState, 
 
       {banner}
 
-      <div role="grid" aria-labelledby={headingId} onKeyDown={handleKeyDown} className="flex flex-1 flex-col">
+      <div role="grid" aria-labelledby={headingId} onKeyDown={handleKeyDown}>
         <div role="row" className="grid grid-cols-7 mb-1">
           {DOW.map((d) => (
             <div key={d} role="columnheader" className="flex items-center justify-center">
@@ -246,10 +272,10 @@ export function MonthGrid({ month, onMonthChange, selected, onSelect, dayState, 
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -12 }}
             transition={{ duration: 0.22 }}
-            className="flex flex-1 flex-col gap-0.5 md:gap-1"
+            className="flex flex-col gap-0.5 md:gap-1"
           >
             {weeks.map((week) => (
-              <div key={format(week[0], 'yyyy-MM-dd')} role="row" className="grid flex-1 grid-cols-7 gap-0.5 md:gap-1">
+              <div key={format(week[0], 'yyyy-MM-dd')} role="row" className="grid grid-cols-7 gap-0.5 md:gap-1">
                 {week.map((date) => {
                   const inMonth = isSameMonth(date, monthStart)
                   const isToday = isSameDay(date, today)
@@ -272,6 +298,8 @@ export function MonthGrid({ month, onMonthChange, selected, onSelect, dayState, 
                       onFocusDay={handleFocusDay}
                       actionLabel={inMonth && dayAction?.show(date) ? dayAction.label(date) : null}
                       onAction={dayAction?.onActivate}
+                      size={size}
+                      content={inMonth && size === 'roomy' ? dayContent?.(date) : null}
                     />
                   )
                 })}

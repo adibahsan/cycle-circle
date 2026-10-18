@@ -112,8 +112,7 @@ export function SymptomCategoryTabs({ active, onChange, counts, children, action
       {action && <div className="order-first xl:order-last xl:shrink-0">{action}</div>}
       </div>
 
-      {/* flex-1: fills the column when the page stretches it to the screen bottom */}
-      <Card tone={activeTint} padding="sm" className="p-2 md:p-4 flex-1">
+      <Card tone={activeTint} padding="sm" className="p-2 md:p-4">
         <div role="tabpanel" id={panelId(activeIndex)} aria-labelledby={tabId(activeIndex)}>
           <div role="group" aria-label={t(CATEGORIES[activeIndex].labelKey)}>
             <SymptomTintContext.Provider value={activeTint}>{children}</SymptomTintContext.Provider>

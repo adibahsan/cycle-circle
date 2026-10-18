@@ -447,11 +447,11 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
   return (
     <>
 
-      <PageContainer width="canvas" fill>
+      <PageContainer width="canvas">
         <PageHeader title={t('settings.title')} />
 
         {/* Two columns from lg; from xl an explicit three-column grid: appearance + notifications | account | export + about. */}
-        <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-3 lg:space-y-0 xl:grid-cols-3 xl:grid-rows-[auto_1fr] xl:gap-4 xl:items-stretch xl:flex-1">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-3 lg:space-y-0 xl:grid-cols-3 xl:grid-rows-[auto_1fr] xl:gap-4 xl:items-stretch">
           {/* ── Left column ── */}
           <div className="space-y-3 lg:space-y-4 xl:col-start-1 xl:row-start-1 xl:row-span-2 xl:flex xl:flex-col">
             {/* 1. Language & Appearance */}

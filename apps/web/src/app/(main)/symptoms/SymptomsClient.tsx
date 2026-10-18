@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { format, startOfMonth, parseISO } from 'date-fns';
 import { bn } from 'date-fns/locale/bn';
-import { CheckCircle2, ClipboardList } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { useLanguage } from '@/lib/use-language';
 import { SYMPTOMS_DATA, toDbCategory } from '@/lib/symptoms-data';
@@ -222,16 +222,15 @@ export function SymptomsClient({
   );
 
   return (
-    <PageContainer width="canvas" fill className="gap-3 md:gap-5 pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+5rem)] xl:pb-4">
+    <PageContainer width="canvas" className="gap-3 md:gap-5 pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+5rem)] xl:pb-4">
       <PageHeader
         title={t('symptoms.title')}
         subtitle={format(selectedDate, 'EEEE, MMMM d', { locale: dateLocale })}
       />
       {/* ── Desktop: calendar left, symptoms right ── */}
-      <div className="flex flex-col xl:flex-1 xl:flex-row gap-3 md:gap-5">
+      <div className="flex flex-col xl:flex-row xl:items-start gap-3 md:gap-5">
 
         {/* ── Left: month calendar + summary ── */}
-        {/* Desktop: the calendar, then the day's log filling the column to the bottom of the screen. */}
         <div className="xl:w-[400px] 2xl:w-[440px] xl:shrink-0 flex flex-col gap-2 md:gap-3">
           {/* Full month calendar: the same grid as the calendar page */}
           <MonthGrid
@@ -239,28 +238,16 @@ export function SymptomsClient({
             onMonthChange={setViewMonth}
             selected={selectedDate}
             onSelect={handleDateSelect}
+            size="compact"
           />
 
-          {/* The day's log. Phones: only once something is picked. Desktop: always, filling the column under the calendar. */}
-          <Card
-            tone="panel"
-            padding="sm"
-            className={cn('xl:flex xl:flex-1 xl:flex-col', totalSelected === 0 && !isAllGood && 'hidden')}
-          >
+          {/* The day's log, once something is picked: counts per category, and the picked symptoms by name on desktop. */}
+          <Card tone="panel" padding="sm" className={cn(totalSelected === 0 && !isAllGood && 'hidden')}>
             {isAllGood ? (
-              <p className="flex items-center justify-center gap-2 text-sm font-medium text-accent-mint xl:my-auto">
+              <p className="flex items-center justify-center gap-2 text-sm font-medium text-accent-mint">
                 <CheckCircle2 size={16} aria-hidden="true" />
                 {t('symptoms.allGoodActive')}
               </p>
-            ) : totalSelected === 0 ? (
-              <div className="flex flex-col items-center gap-3 text-center xl:my-auto">
-                <span aria-hidden="true" className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] 2xl:flex">
-                  <ClipboardList size={22} />
-                </span>
-                <p className="text-sm text-[var(--color-text-muted)]">
-                  {t('symptoms.tapToLog', { date: format(selectedDate, 'MMM d', { locale: dateLocale }) })}
-                </p>
-              </div>
             ) : (
               <>
                 <div className="flex items-center justify-center gap-2 xl:justify-between">
@@ -306,7 +293,7 @@ export function SymptomsClient({
           {/* Category tabs + the active category's chips */}
           <SymptomCategoryTabs
             action={allGoodButton}
-            className="xl:flex-1 2xl:hidden"
+            className="2xl:hidden"
             active={activeCategory}
             onChange={setActiveCategory}
             counts={{
@@ -324,7 +311,7 @@ export function SymptomsClient({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -12 }}
                 transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                className="grid grid-cols-3 auto-rows-fr gap-1.5 md:gap-2"
+                className="grid grid-cols-3 xl:grid-cols-4 auto-rows-fr gap-1.5 md:gap-2"
               >
                 {categorySymptoms.map((symptom, i) => {
                   const selected = isSymptomSelected(symptom.id);
@@ -352,19 +339,19 @@ export function SymptomsClient({
           </SymptomCategoryTabs>
 
           {/* 2xl: every category at once, so the wide screen holds the whole list without tab switching */}
-          <div className="hidden 2xl:flex 2xl:flex-1 flex-col gap-3">
+          <div className="hidden 2xl:flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-[var(--color-text-secondary)]">
                 {t('symptoms.tapToLog', { date: format(selectedDate, 'MMM d', { locale: dateLocale }) })}
               </p>
               {allGoodButton}
             </div>
-            <div className="grid flex-1 grid-cols-2 auto-rows-fr gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {CATEGORIES.map(({ key, labelKey }) => {
                 const tint = CATEGORY_TINTS[key];
                 const count = categoryCount(key);
                 return (
-                  <Card key={key} tone={tint} padding="sm" className="@container h-full">
+                  <Card key={key} tone={tint} padding="sm" className="@container">
                     <h2 className="mb-2 flex items-center gap-2 px-1 text-sm font-bold text-[var(--color-text-primary)]">
                       {t(labelKey)}
                       {count > 0 && (

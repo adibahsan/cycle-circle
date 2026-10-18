@@ -129,16 +129,16 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
   const canUnsubscribe = isProUser && Boolean(user.phone)
 
   return (
-    <PageContainer width="canvas" fill>
+    <PageContainer width="canvas">
       <PageHeader
         title={isProUser ? t('subscription.titlePro') : t('subscription.title')}
         subtitle={isProUser ? t('subscription.subtitlePro') : t('subscription.unlockTagline')}
       />
 
       {/* From xl (Pro) / 2xl the plans and the Free vs Pro table sit side by side. */}
-      <div className={`flex flex-col gap-4 xl:flex-1 ${isProUser ? 'xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] xl:items-stretch xl:gap-5' : '2xl:grid 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] 2xl:items-stretch 2xl:gap-6'}`}>
-        {/* ── Current Plan + Upgrade Cards ── */}
-        <div className={`flex flex-col gap-5 ${isProUser ? "" : "lg:grid lg:grid-cols-2"}`}>
+      <div className={`flex flex-col gap-4 ${isProUser ? 'xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] xl:items-stretch xl:gap-5' : '2xl:grid 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] 2xl:items-stretch 2xl:gap-6'}`}>
+        {/* ── Current Plan + Upgrade Cards (Pro: the plan card keeps its own height beside the taller table) ── */}
+        <div className={`flex flex-col gap-5 ${isProUser ? "xl:self-start" : "lg:grid lg:grid-cols-2"}`}>
           {/* ── Current Plan Card ── */}
           <motion.div
             className={isProUser ? 'xl:flex xl:flex-1 xl:flex-col' : undefined}
@@ -294,14 +294,13 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
 
         {/* ── Comparison Table ── */}
         <motion.div
-          className="xl:flex xl:flex-col"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.42, delay: 0.15 }}
         >
           <SectionHeader title={t('subscription.freeVsPro')} />
 
-          <Card tone="panel" className="p-0 overflow-hidden divide-y divide-[var(--color-border)] xl:flex xl:flex-1 xl:flex-col">
+          <Card tone="panel" className="p-0 overflow-hidden divide-y divide-[var(--color-border)]">
             <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3 bg-tint-peach">
               <div className="px-4 sm:px-5 py-2.5 text-xs font-semibold text-[var(--color-text-secondary)] col-span-1">
                 {t('subscription.featureHeader')}
@@ -321,7 +320,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
             {COMPARISON_FEATURE_KEYS.map(({ key, labelKey, free, pro }) => (
               <div
                 key={key}
-                className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3 xl:flex-1 xl:items-center"
+                className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3 xl:min-h-11 2xl:min-h-[52px] xl:items-center"
               >
                 <div className="px-4 sm:px-5 py-2.5 text-sm text-[var(--color-text-secondary)] col-span-1">
                   {t(labelKey)}

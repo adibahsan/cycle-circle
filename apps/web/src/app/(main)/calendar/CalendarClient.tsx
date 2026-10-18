@@ -10,6 +10,7 @@ import {
   endOfMonth,
   eachDayOfInterval,
   isSameDay,
+  isSameMonth,
   parseISO,
   differenceInCalendarDays,
 } from 'date-fns'
@@ -326,9 +327,8 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5, duration: 0.4 }}
-      className="xl:flex-1"
     >
-      <Card tone="pink" padding="md" className="xl:h-full">
+      <Card tone="pink" padding="md">
         <SectionHeader as="h3" title={t('calendar.recentPeriods')} />
 
         {periodLogs.length === 0 ? (
@@ -445,6 +445,12 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
   }, [month])
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  // Desktop opens on today's details (the side panel has room); phones keep the grid alone until a tap.
+  useEffect(() => {
+    if (window.matchMedia('(min-width: 1280px)').matches && isSameMonth(today, currentMonth)) setSelectedDate(today)
+    // Only on arrival; later month changes clear the selection as before.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [editingLog, setEditingLog] = useState<PeriodLog | null>(null)
 
   // ── Ghost-day backfill state ────────────────────────────────────────────────
@@ -538,6 +544,24 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
     setSelectedDate((prev) => (prev && isSameDay(prev, date) ? null : date))
   }, [])
 
+  /** Roomy desktop days show what was logged: up to three symptom icons, then a count. */
+  const dayContent = useCallback((date: Date) => {
+    const logs = symptomsByDate.get(format(date, 'yyyy-MM-dd'))
+    if (!logs?.length) return null
+    const icons = logs
+      .map((l) => SYMPTOMS_DATA.find((d) => d.id === l.symptomId))
+      .filter((d): d is (typeof SYMPTOMS_DATA)[number] => !!d)
+    if (!icons.length) return null
+    return (
+      <>
+        {icons.slice(0, 3).map(({ id, icon: Icon }) => (
+          <Icon key={id} size={14} strokeWidth={2.25} className="opacity-80" />
+        ))}
+        {icons.length > 3 && <span className="text-[11px] font-semibold tabular-nums opacity-80">+{icons.length - 3}</span>}
+      </>
+    )
+  }, [symptomsByDate])
+
   const dayState = useCallback((date: Date): MonthDayState | undefined => {
     const meta = dayMetaMap.get(format(date, 'yyyy-MM-dd'))
     return meta && { flags: meta, phase: meta.phase }
@@ -564,27 +588,28 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
   const fertileWindow = !pregnancy ? selectFertileWindow(windowDays ?? days ?? [], format(new Date(), 'yyyy-MM-dd'), lastPeriodStartIso(periodLogs)) : null
 
   return (
-    <PageContainer width="canvas" fill className="relative overflow-hidden">
+    <PageContainer width="canvas" className="relative overflow-hidden">
 
       {/* ── Page header ── */}
       <PageHeader title={t('nav.calendar')} />
 
       {/* ── Desktop: side-by-side layout (calendar + detail panel) ── */}
-      <div className="flex flex-col gap-3 md:gap-5 xl:flex-1 xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">
+      <div className="flex flex-col gap-3 md:gap-5 xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">
 
         {/* ── Calendar card (fills its column on desktop) ── */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="min-w-0 xl:h-full"
+          className="min-w-0 xl:self-start"
         >
           <MonthGrid
             month={currentMonth}
             onMonthChange={goToMonth}
             selected={selectedDate}
             onSelect={handleDayClick}
-            className="xl:h-full"
+            size="roomy"
+            dayContent={dayContent}
             dayState={dayState}
             dayAction={ghostAction}
             banner={pregnancy && (
@@ -609,8 +634,8 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
           />
         </motion.div>
 
-        {/* ── Right panel: Day Detail + Monthly Summary; on desktop it ends level with the calendar ── */}
-        <div className="flex flex-col gap-3 md:gap-4 min-w-0">
+        {/* ── Right panel: Day Detail + Monthly Summary, at its natural height beside the calendar ── */}
+        <div className="flex flex-col gap-3 md:gap-4 min-w-0 xl:self-start">
 
           {/* Day Detail */}
           <AnimatePresence mode="wait">
