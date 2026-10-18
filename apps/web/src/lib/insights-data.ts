@@ -35,3 +35,51 @@ export function groupInsights(s: InsightsSeries): { present: InsightKey[]; missi
   const keys = Object.keys(has) as InsightKey[]
   return { present: keys.filter((k) => has[k]), missing: keys.filter((k) => !has[k]) }
 }
+
+// ─── Language-aware formatting (Intl, never the browser locale) ───────────────
+
+type Lang = 'en' | 'bn'
+
+/** Intl locale for the app language: Bengali digits and month names in bn. */
+export function insightsLocale(lang: Lang): string {
+  return lang === 'bn' ? 'bn-BD' : 'en-US'
+}
+
+/** 28 → "28" / "২৮"; at most one decimal place. */
+export function formatInsightNumber(n: number, lang: Lang): string {
+  return new Intl.NumberFormat(insightsLocale(lang), { maximumFractionDigits: 1 }).format(n)
+}
+
+/** "2026-01-15" → "Jan 26" / "জানু ২৬". Reads the date as UTC so the month never shifts. */
+export function formatMonthTick(ymd: string, lang: Lang): string {
+  const d = new Date(`${ymd.slice(0, 10)}T00:00:00Z`)
+  const month = new Intl.DateTimeFormat(insightsLocale(lang), { month: 'short', timeZone: 'UTC' }).format(d)
+  const year = new Intl.NumberFormat(insightsLocale(lang), { minimumIntegerDigits: 2, useGrouping: false }).format(
+    d.getUTCFullYear() % 100,
+  )
+  return `${month} ${year}`
+}
+
+/** Text-summary figures for the cycle length chart; null when there are no cycles. */
+export function summarizeCycleLengths(
+  data: CycleLengthPoint[],
+): { count: number; shortest: number; longest: number; latest: number } | null {
+  if (data.length === 0) return null
+  const lengths = data.map((d) => d.cycleLength)
+  return {
+    count: lengths.length,
+    shortest: Math.min(...lengths),
+    longest: Math.max(...lengths),
+    latest: lengths[lengths.length - 1],
+  }
+}
+
+/** Text-summary figures for the symptom chart; null when nothing was logged. */
+export function summarizeSymptoms(
+  data: SymptomFrequencyPoint[],
+): { top: string; topCount: number; total: number } | null {
+  const total = data.reduce((s, d) => s + d.count, 0)
+  if (total === 0) return null
+  const top = data.reduce((a, b) => (b.count > a.count ? b : a))
+  return { top: top.category, topCount: top.count, total }
+}
