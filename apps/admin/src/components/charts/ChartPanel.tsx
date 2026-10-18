@@ -45,6 +45,10 @@ export interface ChartPanelProps {
   height?: number
   emptyLabel?: string
   className?: string
+  /** Per-panel selectors (range, metric) rendered in the header. */
+  controls?: React.ReactNode
+  /** Allow fractional y-axis ticks (e.g. MAE in days). Default: integers only. */
+  decimals?: boolean
 }
 
 // ── Shared axis tick style (matches AnalyticsClient) ──────────────────────
@@ -154,10 +158,12 @@ function BarRenderer({
   data,
   xKey,
   series,
+  decimals = false,
 }: {
   data: ChartPanelProps['data']
   xKey: string
   series: ChartSeries[]
+  decimals?: boolean
 }) {
   const toColor = useChartColors()
   return (
@@ -169,7 +175,7 @@ function BarRenderer({
         strokeOpacity={0.6}
       />
       <XAxis dataKey={xKey} tick={TICK_STYLE} axisLine={false} tickLine={false} />
-      <YAxis tick={TICK_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
+      <YAxis tick={TICK_STYLE} axisLine={false} tickLine={false} allowDecimals={decimals} />
       <Tooltip
         content={<GenericTooltip series={series} />}
         cursor={{ fill: 'var(--color-border)', fillOpacity: 0.4 }}
@@ -211,10 +217,12 @@ function LineRenderer({
   data,
   xKey,
   series,
+  decimals = false,
 }: {
   data: ChartPanelProps['data']
   xKey: string
   series: ChartSeries[]
+  decimals?: boolean
 }) {
   const toColor = useChartColors()
   return (
@@ -226,7 +234,7 @@ function LineRenderer({
         strokeOpacity={0.6}
       />
       <XAxis dataKey={xKey} tick={TICK_STYLE} axisLine={false} tickLine={false} />
-      <YAxis tick={TICK_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
+      <YAxis tick={TICK_STYLE} axisLine={false} tickLine={false} allowDecimals={decimals} />
       <Tooltip
         content={<GenericTooltip series={series} />}
         cursor={{ stroke: 'var(--color-border)', strokeWidth: 1, strokeDasharray: '4 4' }}
@@ -273,10 +281,12 @@ function AreaRenderer({
   data,
   xKey,
   series,
+  decimals = false,
 }: {
   data: ChartPanelProps['data']
   xKey: string
   series: ChartSeries[]
+  decimals?: boolean
 }) {
   const toColor = useChartColors()
   return (
@@ -299,7 +309,7 @@ function AreaRenderer({
         strokeOpacity={0.6}
       />
       <XAxis dataKey={xKey} tick={TICK_STYLE} axisLine={false} tickLine={false} />
-      <YAxis tick={TICK_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
+      <YAxis tick={TICK_STYLE} axisLine={false} tickLine={false} allowDecimals={decimals} />
       <Tooltip
         content={<GenericTooltip series={series} />}
         cursor={{ stroke: 'var(--color-border)', strokeWidth: 1, strokeDasharray: '4 4' }}
@@ -395,6 +405,61 @@ function PieRenderer({
   )
 }
 
+// ── Text alternative ──────────────────────────────────────────────────────
+
+/** Collapsed data table so every chart has a non-visual equivalent. */
+function ChartTable({
+  title,
+  data,
+  xKey,
+  series,
+}: {
+  title: string
+  data: ChartPanelProps['data']
+  xKey: string
+  series: ChartSeries[]
+}) {
+  if (!data.length) return null
+  return (
+    <details className="mt-3 text-xs">
+      <summary className="cursor-pointer rounded font-semibold text-[var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]">
+        View data as table
+      </summary>
+      <div className="mt-2 max-h-56 overflow-auto overscroll-contain">
+        <table className="w-full text-left tabular-nums">
+          <caption className="sr-only">{title}</caption>
+          <thead>
+            <tr>
+              <th scope="col" className="py-1 pr-3 font-semibold text-[var(--color-text-secondary)]">
+                {xKey}
+              </th>
+              {series.map((s) => (
+                <th key={s.key} scope="col" className="py-1 pr-3 font-semibold text-[var(--color-text-secondary)]">
+                  {s.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, i) => (
+              <tr key={i} className="border-t border-[var(--color-border)]">
+                <th scope="row" className="py-1 pr-3 font-normal text-[var(--color-text-muted)]">
+                  {row[xKey]}
+                </th>
+                {series.map((s) => (
+                  <td key={s.key} className="py-1 pr-3 text-[var(--color-text-primary)]">
+                    {row[s.key] ?? 'no data'}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  )
+}
+
 // ── ChartPanel ────────────────────────────────────────────────────────────
 
 export function ChartPanel({
@@ -407,6 +472,8 @@ export function ChartPanel({
   height = 280,
   emptyLabel = 'No data',
   className,
+  controls,
+  decimals = false,
 }: ChartPanelProps): React.JSX.Element {
   const [activeKind, setActiveKind] = useState<ChartKind>(defaultKind ?? kinds[0])
 
@@ -416,11 +483,11 @@ export function ChartPanel({
   function renderChart() {
     switch (activeKind) {
       case 'bar':
-        return <BarRenderer data={data} xKey={xKey} series={series} />
+        return <BarRenderer data={data} xKey={xKey} series={series} decimals={decimals} />
       case 'line':
-        return <LineRenderer data={data} xKey={xKey} series={series} />
+        return <LineRenderer data={data} xKey={xKey} series={series} decimals={decimals} />
       case 'area':
-        return <AreaRenderer data={data} xKey={xKey} series={series} />
+        return <AreaRenderer data={data} xKey={xKey} series={series} decimals={decimals} />
       case 'pie':
         return <PieRenderer data={data} xKey={xKey} series={series} />
     }
@@ -460,6 +527,8 @@ export function ChartPanel({
         )}
       </div>
 
+      {controls && <div className="mb-4 flex flex-wrap items-center gap-2">{controls}</div>}
+
       {/* Chart body */}
       <div style={{ height }} className="tabular-nums">
         {empty ? (
@@ -470,6 +539,8 @@ export function ChartPanel({
           </ResponsiveContainer>
         )}
       </div>
+
+      <ChartTable title={title} data={data} xKey={xKey} series={series} />
     </Card>
   )
 }

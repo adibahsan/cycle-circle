@@ -30,20 +30,20 @@ export const getCycleLengthDistribution = cache(async (range: AnalyticsRange) =>
   )()
 })
 
-export const getSymptomsByCategory = cache(async () => {
+export const getSymptomsByCategory = cache(async (range: AnalyticsRange) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetSymptomsByCategory(),
-    ['admin-symptoms-by-category'],
+    () => svcGetSymptomsByCategory(range),
+    ['admin-symptoms-by-category', day(range.from), day(range.to)],
     { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
   )()
 })
 
-export const getPredictionAccuracy = cache(async () => {
+export const getPredictionAccuracy = cache(async (range: AnalyticsRange) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetPredictionAccuracy(),
-    ['admin-prediction-accuracy'],
+    () => svcGetPredictionAccuracy(range),
+    ['admin-prediction-accuracy', day(range.from), day(range.to)],
     { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
   )()
 })
@@ -62,6 +62,26 @@ export const getUserTrend = cache(async (days: number) => {
   return unstable_cache(
     () => svcGetUserTrend({ days }),
     ['admin-analytics-user-trend', String(days)],
+    { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
+  )()
+})
+
+export type TrendMetric = 'signups' | 'active' | 'logRate'
+
+/** Sign-ups / daily active loggers / share of profiles logging, over the last `days`. */
+export const getTrendMetric = cache(async (metric: TrendMetric, days: number) => {
+  await requireAdminUser()
+  return unstable_cache(
+    async (): Promise<{ date: string; value: number }[]> => {
+      if (metric === 'active') {
+        return (await svcGetDailyActiveLoggers({ days })).map((r) => ({ date: r.date, value: r.count }))
+      }
+      if (metric === 'logRate') {
+        return (await svcGetSymptomLoggingRate({ days })).map((r) => ({ date: r.date, value: r.rate }))
+      }
+      return (await svcGetUserTrend({ days })).map((r) => ({ date: r.date, value: r.count }))
+    },
+    ['admin-analytics-trend-metric', metric, String(days)],
     { tags: [adminCacheTags.analytics], revalidate: ADMIN_CACHE_TTL }
   )()
 })
