@@ -215,8 +215,13 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
   async function handleExport() {
     setExporting(true)
     try {
-      const csv = await exportFeedbackCsv()
-      const blob = new Blob([csv], { type: 'text/csv' })
+      const csv = await exportFeedbackCsv({
+        category: currentCategory,
+        minRating: currentMinRating === 'all' ? undefined : Number(currentMinRating),
+        dateFrom: searchParams.get('dateFrom') ?? undefined,
+        dateTo: searchParams.get('dateTo') ?? undefined,
+      })
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
