@@ -347,16 +347,24 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className="app-shell min-h-screen bg-[var(--color-bg-primary)] flex flex-col md:flex-row relative"
+      className="app-shell min-h-dvh bg-[var(--color-bg-primary)] flex flex-col md:flex-row relative"
       style={{ ['--goal-accent' as string]: goalAccentVar(logging?.goal) } as React.CSSProperties}
     >
+      {/* ── Skip link: first Tab stop, visible on focus ── */}
+      <a
+        href="#main-content"
+        className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-3 focus-visible:left-3 focus-visible:z-[100] focus-visible:px-4 focus-visible:py-3 focus-visible:rounded-xl focus-visible:bg-[var(--color-bg-card)] focus-visible:text-[var(--color-text-primary)] focus-visible:font-semibold focus-visible:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
+      >
+        {t('nav.skipToContent')}
+      </a>
+
       {/* ── Trial expired lock overlay — renders only after auth status resolves ── */}
       {prompt.locked && (
         <TrialExpiredLock />
       )}
 
       {/* ── Desktop Sidebar (md+) ── */}
-      <aside className="hidden md:flex md:flex-col md:w-64 md:sticky md:top-0 md:h-screen md:shrink-0 glass border-r border-[var(--color-border)] z-40" aria-label={t('nav.sidebarNav')}>
+      <aside className="hidden md:flex md:flex-col md:w-64 md:sticky md:top-0 md:h-dvh md:shrink-0 glass border-r border-[var(--color-border)] z-40" aria-label={t('nav.sidebarNav')}>
         {/* Sidebar header / branding */}
         <div className="px-5 py-5 flex items-center gap-3">
           <VestaLogo size={28} animate={false} />
@@ -482,7 +490,7 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+1.5rem)] md:pb-8">
+        <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+1.5rem)] md:pb-8">
           {children}
         </main>
       </div>

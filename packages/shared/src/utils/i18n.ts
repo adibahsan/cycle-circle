@@ -11,7 +11,7 @@ const resources = {
         phoneLabel: 'Phone', phone: '+880 18102 04718',
         addressLabel: 'Address', address: 'AWR U Tower, Plot 35, Road 133, Gulshan 1, Dhaka 1212',
       },
-      nav: { dashboard: 'Dashboard', calendar: 'Calendar', insights: 'Insights', symptoms: 'Symptoms', content: 'Learn', settings: 'Settings', feedback: 'Feedback', profiles: 'Profiles', subscription: 'Subscription', menu: 'Menu', more: 'More', notLoggedToday: 'Nothing logged today', theme: 'Theme', language: 'Language', switchToLight: 'Switch to light mode', switchToDark: 'Switch to dark mode', switchLanguage: 'Switch language', profileSwitcher: 'Profiles — {{name}}', sidebarNav: 'Sidebar navigation', mainNav: 'Main navigation', mobileNav: 'Mobile navigation', footerNav: 'Footer navigation', langShortEn: 'EN', langShortBn: 'BN' },
+      nav: { dashboard: 'Dashboard', calendar: 'Calendar', insights: 'Insights', symptoms: 'Symptoms', content: 'Learn', settings: 'Settings', feedback: 'Feedback', profiles: 'Profiles', subscription: 'Subscription', menu: 'Menu', more: 'More', notLoggedToday: 'Nothing logged today', theme: 'Theme', language: 'Language', switchToLight: 'Switch to light mode', switchToDark: 'Switch to dark mode', switchLanguage: 'Switch language', profileSwitcher: 'Profiles — {{name}}', sidebarNav: 'Sidebar navigation', skipToContent: 'Skip to main content', mainNav: 'Main navigation', mobileNav: 'Mobile navigation', footerNav: 'Footer navigation', langShortEn: 'EN', langShortBn: 'BN' },
       auth: {
         emailLoginTitle: 'Email login',
         emailLoginSub: "We'll email you a magic link — no password needed.",
@@ -113,6 +113,8 @@ const resources = {
       },
       dashboard: {
         periodLateOpenPrompt: 'Period late. Tap to log your period.',
+        // #71 cycle ring name
+        ringLabel: 'Cycle day {{day}} of {{length}}', ringLateLabel: '{{days}} days late',
         day: 'Day', phase: 'Phase', nextPeriod: 'Next period in', days: 'days',
         lastPeriod: 'Last Period', confidence: 'Confidence', logPeriod: 'Log Period',
         tier: 'Prediction Tier', menstrual: 'Menstrual', follicular: 'Follicular',
@@ -764,7 +766,7 @@ const resources = {
         phoneLabel: 'ফোন', phone: '+880 18102 04718',
         addressLabel: 'ঠিকানা', address: 'AWR U Tower, Plot 35, Road 133, Gulshan 1, Dhaka 1212',
       },
-      nav: { dashboard: 'ড্যাশবোর্ড', calendar: 'ক্যালেন্ডার', insights: 'ইনসাইটস', symptoms: 'লক্ষণ', content: 'শিখুন', settings: 'সেটিংস', feedback: 'মতামত', profiles: 'প্রোফাইল', subscription: 'সাবস্ক্রিপশন', menu: 'মেনু', more: 'আরও', notLoggedToday: 'আজ কিছু লগ করা হয়নি', theme: 'থিম', language: 'ভাষা', switchToLight: 'লাইট মোডে যান', switchToDark: 'ডার্ক মোডে যান', switchLanguage: 'ভাষা পরিবর্তন করুন', profileSwitcher: 'প্রোফাইল — {{name}}', sidebarNav: 'সাইডবার নেভিগেশন', mainNav: 'প্রধান নেভিগেশন', mobileNav: 'মোবাইল নেভিগেশন', footerNav: 'ফুটার নেভিগেশন', langShortEn: 'ইং', langShortBn: 'বাং' },
+      nav: { dashboard: 'ড্যাশবোর্ড', calendar: 'ক্যালেন্ডার', insights: 'ইনসাইটস', symptoms: 'লক্ষণ', content: 'শিখুন', settings: 'সেটিংস', feedback: 'মতামত', profiles: 'প্রোফাইল', subscription: 'সাবস্ক্রিপশন', menu: 'মেনু', more: 'আরও', notLoggedToday: 'আজ কিছু লগ করা হয়নি', theme: 'থিম', language: 'ভাষা', switchToLight: 'লাইট মোডে যান', switchToDark: 'ডার্ক মোডে যান', switchLanguage: 'ভাষা পরিবর্তন করুন', profileSwitcher: 'প্রোফাইল — {{name}}', sidebarNav: 'সাইডবার নেভিগেশন', skipToContent: 'মূল কনটেন্টে যান', mainNav: 'প্রধান নেভিগেশন', mobileNav: 'মোবাইল নেভিগেশন', footerNav: 'ফুটার নেভিগেশন', langShortEn: 'ইং', langShortBn: 'বাং' },
       auth: {
         emailLoginTitle: 'ইমেইল লগইন',
         emailLoginSub: 'আমরা আপনাকে একটি ম্যাজিক লিংক ইমেইল করব — পাসওয়ার্ড লাগবে না।',
@@ -866,6 +868,8 @@ const resources = {
       },
       dashboard: {
         periodLateOpenPrompt: 'পিরিয়ড দেরি হচ্ছে। লগ করতে ট্যাপ করুন।',
+        // #71 cycle ring name
+        ringLabel: 'চক্রের দিন {{day}} / {{length}}', ringLateLabel: '{{days}} দিন দেরি',
         day: 'দিন', phase: 'পর্যায়', nextPeriod: 'পরবর্তী পিরিয়ড', days: 'দিন',
         lastPeriod: 'শেষ পিরিয়ড', confidence: 'নির্ভুলতা', logPeriod: 'পিরিয়ড লগ করুন',
         tier: 'পূর্বাভাস স্তর', menstrual: 'ঋতুস্রাব', follicular: 'ফলিকুলার',

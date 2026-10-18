@@ -264,41 +264,6 @@
 .animate-drift { animation: drift 12s ease-in-out infinite; }
 .animate-pulse-soft { animation: pulse-soft 3s ease-in-out infinite; }
 
-@keyframes attn-glow {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 1; }
-}
-.animate-attn-glow {
-  opacity: 0.5;
-  animation: attn-glow 1.6s ease-in-out infinite;
-}
-
-/* Attention "blink" halo — pulsing accent ring for buttons/cards (Log Period
-   when late, profile-completion pill when email missing). Colour via --attn-c
-   (defaults to --goal-accent); the -danger variant uses the menstrual red. */
-@keyframes attn-blink {
-  0%, 100% {
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--attn-c, var(--goal-accent)) 12%, transparent),
-                0 0 10px 1px color-mix(in srgb, var(--attn-c, var(--goal-accent)) 8%, transparent);
-  }
-  50% {
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--attn-c, var(--goal-accent)) 60%, transparent),
-                0 0 16px 4px color-mix(in srgb, var(--attn-c, var(--goal-accent)) 45%, transparent);
-  }
-}
-.animate-attn-blink,
-.animate-attn-blink-danger {
-  animation: attn-blink 1.4s ease-in-out infinite;
-}
-.animate-attn-blink-danger {
-  --attn-c: var(--color-menstrual);
-}
-@media (prefers-reduced-motion: reduce) {
-  .animate-attn-blink,
-  .animate-attn-blink-danger {
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--attn-c, var(--goal-accent)) 40%, transparent);
-  }
-}
 
 /* Glass card hover enhancement */
 .glass-hover {

@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { motion, useReducedMotion } from 'motion/react'
+import { motion } from 'motion/react'
 import { parseISO } from 'date-fns'
 import Link from 'next/link'
 import { CalendarDays, Activity, Droplets, Baby } from 'lucide-react'
@@ -154,7 +154,6 @@ function CycleRing({
   daysLate?: number
 }) {
   const { t } = useTranslation()
-  const prefersReducedMotion = useReducedMotion()
   const SIZE = 220
   const STROKE = 16
   const RADIUS = (SIZE - STROKE) / 2
@@ -164,15 +163,20 @@ function CycleRing({
 
   const ringColor = isLate ? 'var(--color-menstrual)' : phaseColor
   const centerNumber = isLate ? daysLate : cycleDay
-  const centerColor = isLate ? 'var(--color-menstrual)' : phaseColor
+  // Phase colours stay on the ring; the number uses text ink so it reads at 3:1 in every phase.
+  const centerColor = isLate ? 'var(--color-menstrual)' : 'var(--color-text-primary)'
   const centerLabel = isLate ? t('dashboard.late') : t('dashboard.day')
+  const ringName = isLate
+    ? t('dashboard.ringLateLabel', { days: daysLate })
+    : t('dashboard.ringLabel', { day: cycleDay, length: cycleLength })
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: SIZE, height: SIZE }}>
+    <div role="img" aria-label={ringName} className="relative flex items-center justify-center" style={{ width: SIZE, height: SIZE }}>
       {/* Track ring */}
       <svg
         width={SIZE}
         height={SIZE}
+        aria-hidden="true"
         className="absolute rotate-[-90deg]"
       >
         <circle
@@ -193,19 +197,8 @@ function CycleRing({
           strokeLinecap="round"
           strokeDasharray={CIRCUMFERENCE}
           initial={{ strokeDashoffset: CIRCUMFERENCE }}
-          animate={
-            isLate && !prefersReducedMotion
-              ? { strokeDashoffset: offset, opacity: [1, 0.7, 1] }
-              : { strokeDashoffset: offset }
-          }
-          transition={
-            isLate && !prefersReducedMotion
-              ? {
-                  strokeDashoffset: { duration: 1.2, ease: 'easeOut' },
-                  opacity: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
-                }
-              : { duration: 1.2, ease: 'easeOut' }
-          }
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 1.2, ease: 'easeOut' }}
         />
       </svg>
 
@@ -217,7 +210,8 @@ function CycleRing({
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
-          className="text-5xl font-bold"
+          data-ring-number
+          className="text-5xl font-bold tabular-nums"
           style={{ color: centerColor }}
         >
           {centerNumber}
@@ -243,7 +237,6 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   const setActiveProfile = useAppStore((s) => s.setActiveProfile)
   const language = useLanguage()
   const prompt = useAutoPrompt()
-  const prefersReducedMotion = useReducedMotion()
 
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
 
@@ -425,19 +418,10 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               <Card
                 padding="md"
                 className="glass shadow-soft flex flex-col items-center text-center gap-5 py-8 px-6 rounded-2xl"
-                style={{
-                  borderColor: 'var(--goal-accent)',
-                  boxShadow: '0 0 0 1.5px var(--goal-accent), 0 8px 32px color-mix(in srgb, var(--goal-accent) 18%, transparent)',
-                }}
+                style={{ borderColor: 'var(--goal-accent)' }}
               >
-                {/* Animated Baby icon */}
-                <motion.div
-                  animate={
-                    prefersReducedMotion
-                      ? {}
-                      : { scale: [1, 1.07, 1], opacity: [1, 0.85, 1] }
-                  }
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                {/* Baby icon */}
+                <div
                   className="flex items-center justify-center w-16 h-16 rounded-full"
                   style={{ backgroundColor: 'color-mix(in srgb, var(--goal-accent) 14%, transparent)' }}
                 >
@@ -446,7 +430,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     aria-hidden="true"
                     style={{ color: 'var(--goal-accent)' }}
                   />
-                </motion.div>
+                </div>
 
                 <div className="flex flex-col gap-2">
                   <h2
@@ -780,7 +764,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                       size="sm"
                       fullWidth
                       onClick={openNewLog}
-                      className={`text-xs ${isPeriodLate ? 'animate-attn-blink-danger' : ''}`}
+                      className="text-xs"
                       data-tour="log-button"
                     >
                       <Droplets size={14} aria-hidden="true" />

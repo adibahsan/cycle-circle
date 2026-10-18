@@ -91,7 +91,7 @@ function SegmentedControl<T extends string>({
             role="radio"
             aria-checked={active}
             onClick={() => onChange(opt.value)}
-            className={`relative flex-1 py-1.5 px-4 rounded-[10px] text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] ${
+            className={`relative flex-1 min-h-11 py-2 px-4 rounded-[10px] text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] ${
               active
                 ? 'text-[var(--color-on-accent)] shadow-soft'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
@@ -130,16 +130,22 @@ function Toggle({
       aria-checked={checked}
       aria-label={label ?? id}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
-        checked ? 'gradient-primary' : 'bg-[var(--color-border-strong)]'
-      }`}
+      className="group inline-flex h-11 w-14 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
     >
-      <motion.span
-        layout
-        transition={{ type: 'spring', damping: 22, stiffness: 400 }}
-        className="inline-block rounded-full bg-[var(--color-bg-card)] shadow-soft"
-        style={{ width: 18, height: 18, translateX: checked ? 20 : 4 }}
-      />
+      {/* 44px tap area around the 24px visual track */}
+      <span
+        aria-hidden="true"
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+          checked ? 'gradient-primary' : 'bg-[var(--color-border-strong)]'
+        }`}
+      >
+        <motion.span
+          layout
+          transition={{ type: 'spring', damping: 22, stiffness: 400 }}
+          className="inline-block rounded-full bg-[var(--color-bg-card)] shadow-soft"
+          style={{ width: 18, height: 18, translateX: checked ? 20 : 4 }}
+        />
+      </span>
     </button>
   )
 }
@@ -553,7 +559,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                 <p className="text-xs text-[var(--color-text-muted)]">
                   {t('settings.exportDesc')}
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <input
                     type="checkbox"
                     id="export-all-profiles"
@@ -563,7 +569,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   />
                   <label
                     htmlFor="export-all-profiles"
-                    className="text-xs text-[var(--color-text-muted)] cursor-pointer select-none"
+                    className="flex-1 min-h-11 flex items-center text-xs text-[var(--color-text-muted)] cursor-pointer select-none"
                   >
                     {t('settings.exportAllProfiles')}
                   </label>
@@ -627,26 +633,28 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                       {addingEmail ? (
                         <div>
                           <div className="flex items-center gap-2">
+                            <label htmlFor="settings-contact-email" className="sr-only">{t('settings.email')}</label>
                             <input
+                              id="settings-contact-email"
                               type="email"
                               name="email"
                               autoComplete="email"
                               placeholder={t('settings.emailInputPlaceholder')}
                               value={contactEmail}
                               onChange={(e) => { setContactEmail(e.target.value); if (emailError) setEmailError('') }}
-                              className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+                              className="flex-1 min-w-0 min-h-11 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
                               spellCheck={false}
                             />
                             <button
                               onClick={handleAddEmail}
                               disabled={!contactEmail || contactSaving}
-                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[var(--color-on-accent)] bg-[var(--goal-accent)] disabled:opacity-50 transition-opacity"
+                              className="min-h-11 px-3 py-2 rounded-lg text-xs font-semibold text-[var(--color-on-accent)] bg-[var(--goal-accent)] disabled:opacity-50 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                             >
-                              {contactSaving ? '...' : t('common.save')}
+                              {contactSaving ? '…' : t('common.save')}
                             </button>
                             <button
                               onClick={() => { setAddingEmail(false); setContactEmail(''); setEmailError('') }}
-                              className="px-2 py-1.5 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                              className="min-h-11 px-2 py-2 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
                             >
                               {t('common.cancel')}
                             </button>
@@ -660,7 +668,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                       ) : (
                         <button
                           onClick={() => { setAddingEmail(true); setEmailError('') }}
-                          className="flex items-center gap-2 w-full py-1 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                          className="flex items-center gap-2 w-full min-h-11 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
                         >
                           <Mail size={12} aria-hidden="true" />
                           {t('settings.addEmail')}
@@ -675,26 +683,28 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                       {addingPhone ? (
                         <div>
                           <div className="flex items-center gap-2">
+                            <label htmlFor="settings-contact-phone" className="sr-only">{t('settings.phone')}</label>
                             <input
+                              id="settings-contact-phone"
                               type="tel"
                               name="phone"
                               autoComplete="tel"
                               placeholder={t('auth.phonePlaceholder')}
                               value={contactPhone}
                               onChange={(e) => { setContactPhone(e.target.value); if (phoneError) setPhoneError('') }}
-                              className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+                              className="flex-1 min-w-0 min-h-11 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
                               spellCheck={false}
                             />
                             <button
                               onClick={handleAddPhone}
                               disabled={!contactPhone || contactSaving}
-                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[var(--color-on-accent)] bg-[var(--goal-accent)] disabled:opacity-50 transition-opacity"
+                              className="min-h-11 px-3 py-2 rounded-lg text-xs font-semibold text-[var(--color-on-accent)] bg-[var(--goal-accent)] disabled:opacity-50 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                             >
-                              {contactSaving ? '...' : t('common.save')}
+                              {contactSaving ? '…' : t('common.save')}
                             </button>
                             <button
                               onClick={() => { setAddingPhone(false); setContactPhone(''); setPhoneError('') }}
-                              className="px-2 py-1.5 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                              className="min-h-11 px-2 py-2 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
                             >
                               {t('common.cancel')}
                             </button>
@@ -708,7 +718,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                       ) : (
                         <button
                           onClick={() => { setAddingPhone(true); setPhoneError('') }}
-                          className="flex items-center gap-2 w-full py-1 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                          className="flex items-center gap-2 w-full min-h-11 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
                         >
                           <Phone size={12} aria-hidden="true" />
                           {t('settings.addPhone')}
@@ -753,7 +763,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                       sessionStorage.setItem('vesta_replay_tour', '1')
                       router.push('/dashboard')
                     }}
-                    className="flex items-center gap-3 py-3 px-1 w-full group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] rounded-sm"
+                    className="flex items-center gap-3 py-3 px-1 w-full min-h-11 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] rounded-sm"
                   >
                     <Compass
                       size={17}

@@ -84,7 +84,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script dangerouslySetInnerHTML={{ __html: themeBootScript('vesta-store') }} />
         <script dangerouslySetInnerHTML={{ __html: langBootScript('vesta-store') }} />
       </head>
-      <body className="min-h-screen antialiased" suppressHydrationWarning>
+      <body className="min-h-dvh antialiased" suppressHydrationWarning>
         <Providers initialLanguage={lang}>{children}</Providers>
         <Analytics />
         <SpeedInsights />
