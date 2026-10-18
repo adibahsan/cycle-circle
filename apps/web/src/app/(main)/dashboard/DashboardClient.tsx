@@ -18,6 +18,7 @@ import {
   computePrediction,
   normalizeCyclePhase,
   getPhaseColor,
+  getPhaseRanges,
 } from '@vesta/shared/utils/cycle-utils'
 import type { FlowIntensity, ProfileRelation } from '@vesta/shared/types'
 import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
@@ -824,14 +825,8 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                     {t('dashboard.cycleOverview')}
                   </h3>
                   <div className="flex gap-1.5">
-                    {(
-                      [
-                        { ph: 'menstrual', labelKey: 'dashboard.menstrual', days: profile.periodLength },
-                        { ph: 'follicular', labelKey: 'dashboard.follicular', days: profile.cycleLength - 14 - profile.periodLength - 5 },
-                        { ph: 'ovulation', labelKey: 'dashboard.ovulation', days: 6 },
-                        { ph: 'luteal', labelKey: 'dashboard.luteal', days: 14 },
-                      ] as const
-                    ).map(({ ph, labelKey, days }) => {
+                    {getPhaseRanges(profile.cycleLength, profile.periodLength).map(({ phase: ph, days }) => {
+                      const labelKey = `dashboard.${ph}` as const
                       const isActive = ph === phase
                       const color = getPhaseColor(ph)
                       return (
@@ -843,8 +838,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                             outline: isActive ? `2px solid ${color}` : 'none',
                           }}
                         >
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          <PhaseIcon phase={ph as any} size={18} />
+                          <PhaseIcon phase={ph} size={18} />
                           <span className="text-[11px] md:text-xs font-bold text-center leading-tight text-[var(--color-text-primary)] inline-flex items-center gap-1">
                             <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                             {t(labelKey)}
