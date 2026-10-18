@@ -5,7 +5,7 @@ import {
   getFeedbackCategories,
   getFeedbackRatings,
 } from '@/app/queries/feedback-queries'
-import { parseDhakaDay } from '@vesta/shared/utils/dhaka-date'
+import { feedbackFiltersFromParams, toFeedbackQuery } from '@vesta/shared/utils/feedback-filters'
 import { FeedbackClient } from './FeedbackClient'
 
 const RANGE_DAYS: Record<string, number> = {
@@ -29,12 +29,7 @@ export default async function FeedbackPage({
     getFeedbackList({
       page: Number(params.page) || 1,
       pageSize: Number(params.pageSize) || 20,
-      category: params.category,
-      rating: params.rating ? Number(params.rating) : undefined,
-      minRating: params.minRating ? Number(params.minRating) : undefined,
-      search: params.q?.trim() || undefined,
-      dateFrom: parseDhakaDay(params.dateFrom),
-      dateTo: parseDhakaDay(params.dateTo, true),
+      ...toFeedbackQuery(feedbackFiltersFromParams({ get: (k) => params[k] })),
     }),
     getFeedbackVolume(days),
     getFeedbackCategories(days),

@@ -1,27 +1,12 @@
 'use server'
 
 import { requireAdminAuth } from '@vesta/shared/server/auth'
-import { parseDhakaDay } from '@vesta/shared/utils/dhaka-date'
+import { toFeedbackQuery, type FeedbackFilters } from '@vesta/shared/utils/feedback-filters'
 import { generateFeedbackCsv, generateUsersCsv } from '@vesta/shared/server/services'
 
-export async function exportFeedbackCsv(filters?: {
-  category?: string
-  rating?: number
-  minRating?: number
-  search?: string
-  dateFrom?: string
-  dateTo?: string
-}) {
+export async function exportFeedbackCsv(filters: FeedbackFilters = {}) {
   const jwt = await requireAdminAuth()
-  return generateFeedbackCsv(jwt.sub, {
-    category: filters?.category,
-    rating: filters?.rating,
-    minRating: filters?.minRating,
-    search: filters?.search,
-    // Date-only values are inclusive Asia/Dhaka days, matching the list.
-    dateFrom: parseDhakaDay(filters?.dateFrom),
-    dateTo: parseDhakaDay(filters?.dateTo, true),
-  })
+  return generateFeedbackCsv(jwt.sub, toFeedbackQuery(filters))
 }
 
 export async function exportUsersCsv() {
