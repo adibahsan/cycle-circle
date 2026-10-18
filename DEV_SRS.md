@@ -21,7 +21,7 @@
 
 **Rev 4 changes (2026-06-28):** v1.3 feature round (full per-feature log in [`docs/FEATURE-IMPLEMENTATION-2026-06-28.md`](docs/FEATURE-IMPLEMENTATION-2026-06-28.md)). Resolved: Redis-outage resilience (adapter fails open); FR-CMS server-side HTML sanitization; FR-CONTENT current-phase surfacing + locale-fallback indicator; FR-EXPORT per-profile scoping + copy fix; FR-AUTH server-side 60s OTP resend cooldown + ~1-min profile-completion auto-prompt with session re-prompt; FR-NOTIF/FR-SMS goal-based filtering (verified + test-locked); FR-ANALYTICS per-tier prediction MAE + feedback panel + symptoms-by-phase; FR-SMS daily content circulation (bilingual, bulk entry, content-override, scheduled cron broadcast, delivery-report → broadcast counts); FR-NUDGE cross-session frequency cap; FR-INSIGHTS tabular-nums axes. Web test suite repaired (15 failing → 251 passing). Migration `20260628131041_add_sms_circulation_fields` applied. Still deferred: FR-ENC (encryption), Pro grace period (v2), Tiptap→Supabase image upload, BDApps charging analysis (open).
 
-**Rev 5 changes (2026-10-19):** SRS v1.4 reconciliation (admin-portal spec #84). Documentation-only: claims below were corrected to the code as of this date, and v1.4 targets that tickets under #84 have not yet landed are marked "v1.4 target". Corrected: Pro is BDApps `REGISTERED` status (ADR 0002), not CaaS direct debit; CaaS routes and `consecutiveFailures` / `gracePeriodEndsAt` remain in code but are parked and slated for removal, and the grace period is dropped, not deferred; prod scheduling is a host crontab on the VPS (not Vercel Cron); the admin edge proxy currently redirects non-admins to `/login` (v1.4 target: 403 page); the admin JWT is currently the shared 30-day token (v1.4 target: 7 days); shared services layer is 19 modules.
+**Rev 5 changes (2026-10-19):** SRS v1.4 reconciliation (admin-portal spec #84). Documentation-only: claims below were corrected to the code as of this date, and v1.4 targets that tickets under #84 have not yet landed are marked "v1.4 target". Corrected: Pro is BDApps `REGISTERED` status (ADR 0002), not CaaS direct debit; CaaS routes and `consecutiveFailures` / `gracePeriodEndsAt` remain in code but are parked and slated for removal, and the grace period is dropped, not deferred; prod scheduling is a host crontab on the VPS (not Vercel Cron); the admin edge proxy rewrites non-admins to a 403 "Not an admin" page (#86); the admin JWT is 7 days (#86); shared services layer is 19 modules.
 
 ---
 
@@ -583,7 +583,7 @@ Pro means BDApps reports the number as `REGISTERED` (ADR 0002). CaaS direct debi
 
 **Admin App (`apps/admin/`):**
 - Runs on port 3001 (`just a` / `just wa`)
-- Same JWT scheme as the web app on a separate admin cookie (currently the shared 30-day expiry; v1.4 target: 7 days); edge proxy (`apps/admin/src/proxy.ts`) validates JWT **and** enforces `role === ADMIN` before any page renders
+- Same JWT scheme as the web app on a separate admin cookie (7-day expiry); edge proxy (`apps/admin/src/proxy.ts`) validates JWT **and** enforces `role === ADMIN` before any page renders
 - Email/password login for admins (bcrypt-hashed via `verifyAdminLogin()` in `@vesta/shared/server/auth`; no OTP or magic-link)
 - Admin account seeded via `packages/shared/prisma/seed.ts` (env: `ADMIN_EMAIL` / `ADMIN_PASSWORD`, defaults: `admin@vesta.health` / `admin123`)
 - English-only (no i18n overhead)
@@ -591,7 +591,7 @@ Pro means BDApps reports the number as `REGISTERED` (ADR 0002). CaaS direct debi
 - **Beyond SRS scope (implemented):** Email delivery logs (`/emails`), template preview (`/emails/preview`), audit log viewer (`/audit-logs`)
 
 **Files:**
-- `apps/admin/src/proxy.ts` — Edge proxy: JWT decode + role check; redirects to `/login` if unauthenticated or non-admin
+- `apps/admin/src/proxy.ts` — Edge proxy: JWT decode + role check; redirects to `/login` if unauthenticated; rewrites non-admins to the 403 page
 - `apps/admin/src/app/login/page.tsx` — Admin email/password login UI
 - `apps/admin/src/app/api/auth/login/route.ts` — POST handler: calls `verifyAdminLogin()`, issues JWT cookie
 - `apps/admin/src/app/api/auth/logout/route.ts` — POST handler: calls `logoutAndBlacklist()`
@@ -871,7 +871,7 @@ The following security issues were identified and resolved in the current sprint
 7. **`env.local` added to `.gitignore`** — prevents accidental secret commit.
 8. **Security headers added** — `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` set in Next.js config or middleware.
 9. **Auth proxy (`proxy.ts`)** — server-side auth redirect based on cookie presence; unauthenticated requests to protected routes redirected before React renders. Renamed from `middleware.ts` for Next.js 16 compatibility.
-10. **NFR-SEC-05 — Admin role enforcement** — `apps/admin/src/proxy.ts` (edge proxy) validates JWT and checks `role === ADMIN` on every admin route before any page renders. Non-admin JWTs are currently redirected to `/login` (v1.4 target: a 403 "Not an admin" page with log-out-and-switch). `requireAdminAuth()` and `withAdminAuth()` provide the same enforcement at the route-handler level.
+10. **NFR-SEC-05 — Admin role enforcement** — `apps/admin/src/proxy.ts` (edge proxy) validates JWT and checks `role === ADMIN` on every admin route before any page renders. Non-admin JWTs get a 403 "Not an admin" page with log-out-and-switch. `requireAdminAuth()` and `withAdminAuth()` provide the same enforcement at the route-handler level.
 12. **Admin email/password auth** — bcrypt-hashed passwords stored in `User.passwordHash`; `verifyAdminLogin()` in shared auth uses `bcryptjs` (dynamic import). Admin seed uses 12-round bcrypt hash.
 11. **Suspended/deleted user check in `getAuthUser()`** — suspended or soft-deleted users receive HTTP 403 on every authenticated request, even with a valid JWT.
 
