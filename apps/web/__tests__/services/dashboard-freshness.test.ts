@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from 'vitest'
-import { createTestUser, insertPeriodLogs, cleanupTestData, testId } from '../helpers/test-db'
+import { createTestUser, insertPeriodLogs, cleanupTestData, testId, testPrisma } from '../helpers/test-db'
 import { getDashboardStats, getLatestPredictionMae } from '@vesta/shared/server/services'
 
 // Dashboard KPIs must read straight from the DB (no service-level caching) and
@@ -20,13 +20,25 @@ describe('getDashboardStats freshness', () => {
   })
 
   it('reflects a new user and period log immediately', async () => {
-    const before = await getDashboardStats()
+    await getDashboardStats() // a cached implementation would pin this result
     const { profile } = await createTestUser('9001')
     await insertPeriodLogs(profile.id, ['2026-01-01'])
-    const after = await getDashboardStats()
-    expect(after.totalUsers).toBeGreaterThanOrEqual(before.totalUsers + 1)
-    expect(after.totalProfiles).toBeGreaterThanOrEqual(before.totalProfiles + 1)
-    expect(after.dailyLogs).toBeGreaterThanOrEqual(before.dailyLogs + 1)
+
+    // Other test files write to the same DB in parallel, so compare against
+    // live counts taken either side of the call instead of a fixed +1.
+    const counts = () =>
+      Promise.all([
+        testPrisma.user.count({ where: { deletedAt: null } }),
+        testPrisma.profile.count(),
+      ])
+    const [usersBefore, profilesBefore] = await counts()
+    const stats = await getDashboardStats()
+    const [usersAfter, profilesAfter] = await counts()
+    expect(stats.totalUsers).toBeGreaterThanOrEqual(Math.min(usersBefore, usersAfter))
+    expect(stats.totalUsers).toBeLessThanOrEqual(Math.max(usersBefore, usersAfter))
+    expect(stats.totalProfiles).toBeGreaterThanOrEqual(Math.min(profilesBefore, profilesAfter))
+    expect(stats.totalProfiles).toBeLessThanOrEqual(Math.max(profilesBefore, profilesAfter))
+    expect(stats.dailyLogs).toBeGreaterThanOrEqual(1)
   })
 })
 

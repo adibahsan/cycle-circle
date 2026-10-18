@@ -13,7 +13,7 @@ vi.mock('next/headers', () => ({
 }))
 
 const { verifyAuth, isIssuedBeforeMarker, bumpSessionsValidAfter } = await import('@vesta/shared/server/auth')
-const { suspendUser, reactivateUser } = await import('@vesta/shared/server/services/user-service')
+const { suspendUser, reactivateUser, softDeleteUser, restoreUser } = await import('@vesta/shared/server/services/user-service')
 const { env } = await import('@vesta/shared/utils/env')
 
 const { setSessionsValidAfterCache } = await import('@vesta/shared/server/adapters/redis')
@@ -64,7 +64,7 @@ describe('immediate suspension', () => {
 
     await suspendUser(USER, ADMIN, ' Abusive messages ')
     const log = await testPrisma.adminAuditLog.findFirst({ where: { adminId: ADMIN, action: 'USER_SUSPENDED', targetId: USER } })
-    expect(log?.metadata).toEqual({ reason: 'Abusive messages' })
+    expect(log?.metadata).toMatchObject({ reason: 'Abusive messages' })
     await reactivateUser(USER, ADMIN)
   })
 
@@ -98,5 +98,25 @@ describe('immediate suspension', () => {
     expect(await verifyAuth()).toBeNull()
     cookie.token = await tokenIssuedAt(USER, iat + 1)
     expect(await verifyAuth()).not.toBeNull()
+  })
+})
+
+describe('immediate deletion', () => {
+  it('rejects a token issued before delete; restore does not bump the marker', async () => {
+    await testPrisma.user.update({ where: { id: USER }, data: { sessionsValidAfter: null } })
+    await setSessionsValidAfterCache(USER, 0)
+    const now = Math.floor(Date.now() / 1000)
+    cookie.token = await tokenIssuedAt(USER, now - 10)
+    expect(await verifyAuth()).not.toBeNull()
+
+    await softDeleteUser(USER, ADMIN)
+    expect(await verifyAuth()).toBeNull()
+    const marker = (await testPrisma.user.findUniqueOrThrow({ where: { id: USER } })).sessionsValidAfter
+    expect(marker).not.toBeNull()
+
+    await restoreUser(USER, ADMIN)
+    const after = (await testPrisma.user.findUniqueOrThrow({ where: { id: USER } })).sessionsValidAfter
+    expect(after?.getTime()).toBe(marker!.getTime())
+    expect(await verifyAuth()).toBeNull() // old sessions stay dead after restore
   })
 })

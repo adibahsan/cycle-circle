@@ -38,10 +38,12 @@ import {
   suspendUser,
   reactivateUser,
   softDeleteUser,
+  restoreUser,
   setUserSubscriptionStatus,
   setUserNotificationPrefs,
 } from '@/app/actions/user-actions'
 import { sendUserReminders, type CronJobResult } from '@/app/actions/system-actions'
+import { isWithinRestoreWindow } from '@vesta/shared/utils/restore-window'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
 
@@ -177,25 +179,39 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
 // Confirm modal state
 // ─────────────────────────────────────────────────────────────────────────────
 
-type ModalAction = 'suspend' | 'delete' | 'setStatus' | null
+type ModalAction = 'suspend' | 'delete' | 'reactivate' | 'restore' | 'setStatus' | null
 
 const MODAL_CONFIG: Record<
-  'suspend' | 'delete',
+  'suspend' | 'delete' | 'reactivate' | 'restore',
   { title: string; message: string; confirmLabel: string; variant: 'danger' | 'warning' }
 > = {
   suspend: {
     title: 'Suspend User',
     message:
-      'This signs the user out everywhere immediately and prevents them from logging in. They can be reactivated at any time.',
+      'This signs the user out everywhere immediately, prevents them from logging in, and unsubscribes their number on BDApps. They can be reactivated at any time, but reactivating does not re-subscribe them.',
     confirmLabel: 'Suspend',
     variant: 'warning',
   },
   delete: {
     title: 'Delete User',
     message:
-      'This soft-deletes the user account. Their data is retained but the account will be inaccessible.',
+      'This soft-deletes the user account and unsubscribes their number on BDApps. The account can be restored for 30 days, after which it is purged. Restoring does not re-subscribe them.',
     confirmLabel: 'Delete',
     variant: 'danger',
+  },
+  reactivate: {
+    title: 'Reactivate User',
+    message:
+      'This lets the user log in again. It does not re-subscribe their number on BDApps; they subscribe again by logging in with their phone.',
+    confirmLabel: 'Reactivate',
+    variant: 'warning',
+  },
+  restore: {
+    title: 'Restore User',
+    message:
+      'This restores the deleted account. It does not re-subscribe their number on BDApps; they subscribe again by logging in with their phone.',
+    confirmLabel: 'Restore',
+    variant: 'warning',
   },
 }
 
@@ -758,14 +774,23 @@ export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
   const isDeleted = status === 'deleted'
   const userTier = getSubscriptionTier(user)
   const isPro = userTier === 'PRO'
+  const canRestore = isDeleted && !!user.deletedAt && isWithinRestoreWindow(new Date(user.deletedAt))
 
   async function handleConfirm() {
     if (!modalAction) return
     setActionError(null)
 
     try {
-      if (modalAction === 'suspend') await suspendUser(user.id, suspendReason.trim())
-      else if (modalAction === 'delete') await softDeleteUser(user.id)
+      if (modalAction === 'suspend' || modalAction === 'delete') {
+        const res = modalAction === 'suspend'
+          ? await suspendUser(user.id, suspendReason.trim())
+          : await softDeleteUser(user.id)
+        if (res.bdappsError) {
+          toast.error(`${modalAction === 'suspend' ? 'User suspended' : 'User deleted'}, but the BDApps unsubscribe failed: ${res.bdappsError}. The user may still be charged.`)
+        }
+      }
+      else if (modalAction === 'reactivate') await reactivateUser(user.id)
+      else if (modalAction === 'restore') await restoreUser(user.id)
       else if (modalAction === 'setStatus' && pendingStatus) {
         const res = await setUserSubscriptionStatus(user.id, pendingStatus)
         if (res.bdappsError) {
@@ -780,18 +805,6 @@ export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
     }
-  }
-
-  function handleReactivate() {
-    setActionError(null)
-    startTransition(async () => {
-      try {
-        await reactivateUser(user.id)
-        router.refresh()
-      } catch (err) {
-        setActionError(err instanceof Error ? err.message : 'Failed to reactivate user.')
-      }
-    })
   }
 
   function handleStatusSelectChange(value: string) {
@@ -902,8 +915,8 @@ export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={handleReactivate}
-                  loading={isPending}
+                  onClick={() => setModalAction('reactivate')}
+                  disabled={isPending}
                 >
                   <CheckCircle size={14} aria-hidden="true" />
                   Reactivate
@@ -933,9 +946,24 @@ export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
           )}
 
           {isDeleted && (
-            <Badge variant="neutral" className="shrink-0">
-              Deleted {formatDate(user.deletedAt)}
-            </Badge>
+            <div className="flex shrink-0 items-center gap-3">
+              <Badge variant="neutral">Deleted {formatDate(user.deletedAt)}</Badge>
+              {canRestore ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setModalAction('restore')}
+                  disabled={isPending}
+                >
+                  <CheckCircle size={14} aria-hidden="true" />
+                  Restore
+                </Button>
+              ) : (
+                <span className="text-xs text-[var(--color-text-muted)]">
+                  Restore window (30 days) has passed
+                </span>
+              )}
+            </div>
           )}
         </div>
 
