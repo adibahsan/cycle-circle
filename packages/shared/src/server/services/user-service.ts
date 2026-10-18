@@ -2,6 +2,7 @@ import { AuthMethod } from '@prisma/client'
 import { prisma } from '../db'
 import { applyBdappsSubscription } from './subscription-service'
 import { ApiError } from '../api-error'
+import { bumpSessionsValidAfter } from '../auth'
 
 /**
  * Throw a typed 409 if a supplied phone/email already belongs to a DIFFERENT
@@ -211,13 +212,18 @@ export async function completeUserProfile(userId: string, data: CompleteUserProf
 }
 
 /**
- * Suspend a user by setting suspendedAt + suspendedBy.
+ * Suspend a user (reason required) and invalidate all their existing sessions.
  */
-export async function suspendUser(userId: string, adminId: string, reason?: string) {
+export async function suspendUser(userId: string, adminId: string, reason: string) {
+  const trimmed = reason?.trim()
+  if (!trimmed) throw new ApiError(400, 'A suspension reason is required', 'REASON_REQUIRED')
+
   await prisma.user.update({
     where: { id: userId },
     data: { suspendedAt: new Date(), suspendedBy: adminId },
   })
+  // Existing sessions stop working on their next request.
+  await bumpSessionsValidAfter(userId)
 
   await prisma.adminAuditLog.create({
     data: {
@@ -225,7 +231,7 @@ export async function suspendUser(userId: string, adminId: string, reason?: stri
       action: 'USER_SUSPENDED',
       targetType: 'User',
       targetId: userId,
-      metadata: reason ? { reason } : undefined,
+      metadata: { reason: trimmed },
     },
   })
 
