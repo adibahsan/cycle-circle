@@ -4,6 +4,7 @@ import {
   getUserTrend,
   getUserSignupTrend,
   getSubscriptionTrend,
+  getPredictionMaeSummary,
 } from '@/app/queries/dashboard-queries'
 import { DashboardClient } from './DashboardClient'
 
@@ -24,16 +25,18 @@ export default async function DashboardPage({
   const range = params.range ?? '30d'
   const days = RANGE_MAP[range] ?? 30
 
-  const [stats, userTrend, signupTrend, subscriptionTrend] = await Promise.all([
+  const [stats, userTrend, signupTrend, subscriptionTrend, mae] = await Promise.all([
     getDashboardStats(),
     getUserTrend(days),
     getUserSignupTrend(days),
     getSubscriptionTrend(days),
+    getPredictionMaeSummary(),
   ])
 
   return (
     <DashboardClient
       stats={stats}
+      mae={mae}
       userTrend={userTrend}
       signupTrend={signupTrend}
       subscriptionTrend={subscriptionTrend}
