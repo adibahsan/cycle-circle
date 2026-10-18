@@ -38,7 +38,7 @@ test.describe('page shell (desktop)', () => {
   })
 
   test('container width follows the scale', async ({ page }) => {
-    const wide = new Set(['/dashboard', '/calendar'])
+    const wide = new Set(['/dashboard', '/calendar', '/symptoms', '/insights', '/content'])
     for (const route of ROUTES) {
       await gotoQuiet(page, route)
       const w = await page.locator('main h1').evaluate((el) => {
@@ -46,6 +46,20 @@ test.describe('page shell (desktop)', () => {
         return container.getBoundingClientRect().width
       })
       expect(w, `${route} container width`).toBeLessThanOrEqual(wide.has(route) ? 1024 : 896)
+    }
+  })
+
+  test('canvas pages fill a 1920px screen; form pages stay at reading width', async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 })
+    const canvas = new Set(['/dashboard', '/calendar', '/symptoms', '/insights', '/content'])
+    for (const route of ROUTES) {
+      await gotoQuiet(page, route)
+      const box = await page.locator('main h1').evaluate((el) => {
+        const r = (el.closest('header')!.parentElement as HTMLElement).getBoundingClientRect()
+        return { right: r.right, width: r.width }
+      })
+      if (canvas.has(route)) expect(1920 - box.right, `${route} right gutter`).toBeLessThanOrEqual(96)
+      else expect(box.width, `${route} container width`).toBeLessThanOrEqual(896)
     }
   })
 

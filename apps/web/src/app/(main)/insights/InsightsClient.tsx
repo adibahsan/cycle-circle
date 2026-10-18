@@ -382,7 +382,7 @@ export function InsightsClient({
   return (
     // tabular-nums on Recharts numeric axis ticks (FR-INSIGHTS NFR) — applied
     // to the tick value text so chart axes line up digit-for-digit.
-    <PageContainer className="[&_.recharts-cartesian-axis-tick-value]:[font-variant-numeric:tabular-nums]">
+    <PageContainer width="canvas" className="[&_.recharts-cartesian-axis-tick-value]:[font-variant-numeric:tabular-nums]">
       {/* ── Page header ──────────────────────────────────────────────────── */}
       <PageHeader
         title={t('insights.title')}
@@ -426,130 +426,133 @@ export function InsightsClient({
         </div>
       </motion.div>
 
-      {/* ── Cycle Length Trend ─────────────────────────────────────────────── */}
-      {shows('cycleLengthTrend') && (
-        <motion.div
-        initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15, duration: 0.4 }}
-      >
-        <Card tone="panel" padding="md">
-          <div className="flex flex-col gap-3">
-            <SectionHeader
-              variant="inline"
-              title={t('insights.cycleLengthTrend')}
-              subtitle={t(RANGE_LABEL_KEYS[dateRange])}
-            />
-            <ChartTypeControl value={chartType} onChange={setChartType} />
-            {cycleStats && (
-              <ChartSummary id="cycle-length-summary">
-                {t('insights.cycleSummary', {
-                  n: num(cycleStats.count),
-                  shortest: num(cycleStats.shortest),
-                  longest: num(cycleStats.longest),
-                  latest: num(cycleStats.latest),
-                })}
-              </ChartSummary>
-            )}
-            <CycleLengthTrendChart
-              data={filteredCycleLengthTrend}
-              chartType={chartType}
-              cycleLengthLabel={t('insights.cycleLengthLabel')}
-              daysLabel={t('insights.days')}
-              animate={shouldAnimate}
-              formatDate={monthTick}
-              formatNumber={num}
-            />
-            <DataTable
-              caption={`${t('insights.cycleLengthTrend')} — ${t('insights.dataTable')}`}
-              headers={[t('insights.dateColumn'), t('insights.cycleLengthLabel')]}
-              rows={filteredCycleLengthTrend.map((d) => [monthTick(d.date), num(d.cycleLength)])}
-            />
-          </div>
-        </Card>
-      </motion.div>
-      )}
+      {/* From 2xl the charts sit two across so wide screens fill; an odd last chart spans the row. */}
+      <div className="flex flex-col gap-5 2xl:grid 2xl:grid-cols-2 2xl:items-start 2xl:[&>*:last-child:nth-child(odd)]:col-span-2">
+        {/* ── Cycle Length Trend ─────────────────────────────────────────────── */}
+        {shows('cycleLengthTrend') && (
+          <motion.div
+          initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.4 }}
+        >
+          <Card tone="panel" padding="md">
+            <div className="flex flex-col gap-3">
+              <SectionHeader
+                variant="inline"
+                title={t('insights.cycleLengthTrend')}
+                subtitle={t(RANGE_LABEL_KEYS[dateRange])}
+              />
+              <ChartTypeControl value={chartType} onChange={setChartType} />
+              {cycleStats && (
+                <ChartSummary id="cycle-length-summary">
+                  {t('insights.cycleSummary', {
+                    n: num(cycleStats.count),
+                    shortest: num(cycleStats.shortest),
+                    longest: num(cycleStats.longest),
+                    latest: num(cycleStats.latest),
+                  })}
+                </ChartSummary>
+              )}
+              <CycleLengthTrendChart
+                data={filteredCycleLengthTrend}
+                chartType={chartType}
+                cycleLengthLabel={t('insights.cycleLengthLabel')}
+                daysLabel={t('insights.days')}
+                animate={shouldAnimate}
+                formatDate={monthTick}
+                formatNumber={num}
+              />
+              <DataTable
+                caption={`${t('insights.cycleLengthTrend')} — ${t('insights.dataTable')}`}
+                headers={[t('insights.dateColumn'), t('insights.cycleLengthLabel')]}
+                rows={filteredCycleLengthTrend.map((d) => [monthTick(d.date), num(d.cycleLength)])}
+              />
+            </div>
+          </Card>
+        </motion.div>
+        )}
 
-      {/* ── Symptom Frequency ──────────────────────────────────────────────── */}
-      {shows('symptomFrequency') && (
-        <motion.div
-        initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.22, duration: 0.4 }}
-      >
-        <Card tone="panel" padding="md">
-          <div className="flex flex-col gap-3">
-            <SectionHeader
-              variant="inline"
-              title={t('insights.symptomFrequency')}
-              subtitle={t('insights.allTime')}
-            />
-            <ChartSummary id="symptom-range-note">{t('insights.symptomAllTime')}</ChartSummary>
-            {symptomStats && (
-              <ChartSummary id="symptom-summary">
-                {t('insights.symptomSummary', {
-                  top: categoryLabel(symptomStats.top),
-                  topCount: num(symptomStats.topCount),
-                  total: num(symptomStats.total),
-                })}
-              </ChartSummary>
-            )}
-            <SymptomFrequencyChart
-              data={filteredSymptomFrequency}
-              countLabel={t('insights.count')}
-              categoryLabel={categoryLabel}
-              animate={shouldAnimate}
-              formatNumber={num}
-            />
-            <DataTable
-              caption={`${t('insights.symptomFrequency')} — ${t('insights.dataTable')}`}
-              headers={[t('insights.categoryColumn'), t('insights.count')]}
-              rows={filteredSymptomFrequency.map((d) => [categoryLabel(d.category), num(d.count)])}
-            />
-          </div>
-        </Card>
-      </motion.div>
-      )}
+        {/* ── Symptom Frequency ──────────────────────────────────────────────── */}
+        {shows('symptomFrequency') && (
+          <motion.div
+          initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.22, duration: 0.4 }}
+        >
+          <Card tone="panel" padding="md">
+            <div className="flex flex-col gap-3">
+              <SectionHeader
+                variant="inline"
+                title={t('insights.symptomFrequency')}
+                subtitle={t('insights.allTime')}
+              />
+              <ChartSummary id="symptom-range-note">{t('insights.symptomAllTime')}</ChartSummary>
+              {symptomStats && (
+                <ChartSummary id="symptom-summary">
+                  {t('insights.symptomSummary', {
+                    top: categoryLabel(symptomStats.top),
+                    topCount: num(symptomStats.topCount),
+                    total: num(symptomStats.total),
+                  })}
+                </ChartSummary>
+              )}
+              <SymptomFrequencyChart
+                data={filteredSymptomFrequency}
+                countLabel={t('insights.count')}
+                categoryLabel={categoryLabel}
+                animate={shouldAnimate}
+                formatNumber={num}
+              />
+              <DataTable
+                caption={`${t('insights.symptomFrequency')} — ${t('insights.dataTable')}`}
+                headers={[t('insights.categoryColumn'), t('insights.count')]}
+                rows={filteredSymptomFrequency.map((d) => [categoryLabel(d.category), num(d.count)])}
+              />
+            </div>
+          </Card>
+        </motion.div>
+        )}
 
-      {/* ── Period Regularity ──────────────────────────────────────────────── */}
-      {shows('periodRegularity') && (
-        <motion.div
-        initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.29, duration: 0.4 }}
-      >
-        <Card tone="panel" padding="md">
-          <div className="flex flex-col gap-3">
-            <SectionHeader
-              variant="inline"
-              title={t('insights.periodRegularity')}
-              subtitle={t('insights.sampleSize', { n: num(periodRegularity.sampleSize) })}
-            />
-            <PeriodRegularityCard data={periodRegularity} lang={language} />
-          </div>
-        </Card>
-      </motion.div>
-      )}
+        {/* ── Period Regularity ──────────────────────────────────────────────── */}
+        {shows('periodRegularity') && (
+          <motion.div
+          initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.29, duration: 0.4 }}
+        >
+          <Card tone="panel" padding="md">
+            <div className="flex flex-col gap-3">
+              <SectionHeader
+                variant="inline"
+                title={t('insights.periodRegularity')}
+                subtitle={t('insights.sampleSize', { n: num(periodRegularity.sampleSize) })}
+              />
+              <PeriodRegularityCard data={periodRegularity} lang={language} />
+            </div>
+          </Card>
+        </motion.div>
+        )}
 
-      {/* ── Fertile Window History ─────────────────────────────────────────── */}
-      {shows('fertileWindowHistory') && (
-        <motion.div
-        initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.36, duration: 0.4 }}
-      >
-        <Card tone="panel" padding="md">
-          <div className="flex flex-col gap-3">
-            <SectionHeader
-              variant="inline"
-              title={t('insights.fertileWindowHistory')}
-              subtitle={t(RANGE_LABEL_KEYS[dateRange])}
-            />
-            <FertileWindowHistoryList data={filteredFertileWindowHistory} lang={language} />
-          </div>
-        </Card>
-      </motion.div>
-      )}
+        {/* ── Fertile Window History ─────────────────────────────────────────── */}
+        {shows('fertileWindowHistory') && (
+          <motion.div
+          initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.36, duration: 0.4 }}
+        >
+          <Card tone="panel" padding="md">
+            <div className="flex flex-col gap-3">
+              <SectionHeader
+                variant="inline"
+                title={t('insights.fertileWindowHistory')}
+                subtitle={t(RANGE_LABEL_KEYS[dateRange])}
+              />
+              <FertileWindowHistoryList data={filteredFertileWindowHistory} lang={language} />
+            </div>
+          </Card>
+        </motion.div>
+        )}
+      </div>
       {grouped.missing.length > 0 && (
         <p
           role="note"

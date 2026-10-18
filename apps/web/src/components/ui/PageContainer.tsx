@@ -4,10 +4,11 @@ import { twMerge } from 'tailwind-merge';
 interface PageContainerProps {
   children: React.ReactNode;
   /**
-   * 'default' = max-w-4xl, 'wide' = max-w-5xl (calendar).
-   * 'canvas' = max-w-5xl, growing to 100rem from 2xl for a page that recomposes into a side rail there (dashboard).
+   * 'default' = max-w-4xl: forms and reading (settings, profiles, subscription, feedback, an open article).
+   * 'canvas' = max-w-5xl, growing to 100rem from 2xl, for pages that recompose to fill wide screens
+   * (dashboard rail, calendar, symptoms, insights, the article list).
    */
-  width?: 'default' | 'wide' | 'canvas';
+  width?: 'default' | 'canvas';
   className?: string;
   style?: React.CSSProperties;
 }
@@ -23,7 +24,7 @@ export function PageContainer({ children, width = 'default', className, style }:
       className={twMerge(
         clsx(
           'w-full flex flex-col gap-5 px-4 md:px-8 py-4',
-          width === 'canvas' ? 'max-w-5xl 2xl:max-w-[100rem]' : width === 'wide' ? 'max-w-5xl' : 'max-w-4xl',
+          width === 'canvas' ? 'max-w-5xl 2xl:max-w-[100rem]' : 'max-w-4xl',
           className,
         ),
       )}

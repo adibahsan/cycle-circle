@@ -274,7 +274,7 @@ function DayDetail({ date, meta, symptoms, onClose, onAddLog }: DayDetailProps) 
   return (
     <motion.div
       ref={ref}
-      className="scroll-mb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+1.5rem)]"
+      className="scroll-mb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+1.5rem)] 2xl:col-span-2"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
@@ -701,7 +701,7 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
   ]
 
   return (
-    <PageContainer width="wide" className="relative overflow-hidden">
+    <PageContainer width="canvas" className="relative overflow-hidden">
 
       {/* ── Page header ── */}
       <PageHeader
@@ -717,7 +717,7 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="xl:w-[480px] xl:shrink-0"
+          className="xl:w-[480px] 2xl:w-[600px] xl:shrink-0"
         >
           {/* Narrower side padding on phones keeps each day cell at least 44px wide at 375px. */}
           <Card tone="panel" padding="md" className="px-2 sm:px-5">
@@ -829,8 +829,8 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
           </Card>
         </motion.div>
 
-        {/* ── Right panel: Day Detail + Monthly Summary (sticky on desktop) ── */}
-        <div className="flex-1 flex flex-col gap-4 xl:sticky xl:top-4 xl:self-start min-w-0">
+        {/* ── Right panel: Day Detail + Monthly Summary (sticky on desktop; on 2xl the day spans the top, summary and recent periods sit two across) ── */}
+        <div className="flex-1 flex flex-col gap-4 xl:sticky xl:top-4 xl:self-start min-w-0 2xl:grid 2xl:grid-cols-2 2xl:items-start">
 
           {/* Day Detail */}
           <AnimatePresence mode="wait">
@@ -902,12 +902,13 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
             </motion.div>
           )}
 
-          {/* Empty state when no day selected */}
+          {/* Empty state when no day selected; on 2xl it takes the day detail's full-width top slot. */}
           {!selectedDate && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.3 }}
+              className="2xl:order-first 2xl:col-span-2"
             >
               <Card tone="panel" padding="md">
                 <p className="text-sm text-[var(--color-text-muted)] text-center py-4">

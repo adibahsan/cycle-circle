@@ -216,7 +216,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
   }
 
   return (
-    <PageContainer>
+    <PageContainer width="canvas">
       <PageHeader title={t('content.title')} subtitle={t('content.subtitle')} />
 
       {/* Phase filter tabs */}
@@ -284,7 +284,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2 2xl:grid-cols-3">
           {displayedArticles.map(article => {
             const isForCurrentPhase = isSurfacing && article.cyclePhases.includes(currentPhase!)
             // EN chip: shown when a BN user's article falls back to English for its

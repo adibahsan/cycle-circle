@@ -314,7 +314,7 @@ export function SymptomsClient({
   }
 
   return (
-    <PageContainer className="pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+5rem)]">
+    <PageContainer width="canvas" className="pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+5rem)]">
       <PageHeader
         title={t('symptoms.title')}
         subtitle={format(selectedDate, 'EEEE, MMMM d', { locale: dateLocale })}
@@ -323,7 +323,7 @@ export function SymptomsClient({
       <div className="flex flex-col xl:flex-row gap-5">
 
         {/* ── Left: month calendar + summary ── */}
-        <div className="xl:w-[440px] xl:shrink-0 xl:sticky xl:top-4 xl:self-start flex flex-col gap-3">
+        <div className="xl:w-[440px] 2xl:w-[480px] xl:shrink-0 xl:sticky xl:top-4 xl:self-start flex flex-col gap-3">
           {/* Full month calendar */}
           <MiniCalendar
             selectedDate={selectedDate}
@@ -396,7 +396,7 @@ export function SymptomsClient({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -12 }}
                 transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2"
+                className="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-2"
               >
                 {categorySymptoms.map((symptom, i) => {
                   const selected = isSymptomSelected(symptom.id);

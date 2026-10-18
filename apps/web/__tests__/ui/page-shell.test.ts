@@ -5,12 +5,12 @@ import path from 'node:path'
 const SRC = path.resolve(__dirname, '../../src')
 const read = (p: string) => fs.readFileSync(path.join(SRC, p), 'utf8')
 
-const PAGES: Record<string, 'default' | 'wide' | 'canvas'> = {
+const PAGES: Record<string, 'default' | 'canvas'> = {
   'app/(main)/dashboard/DashboardClient.tsx': 'canvas',
-  'app/(main)/calendar/CalendarClient.tsx': 'wide',
-  'app/(main)/symptoms/SymptomsClient.tsx': 'default',
-  'app/(main)/insights/InsightsClient.tsx': 'default',
-  'app/(main)/content/ContentClient.tsx': 'default',
+  'app/(main)/calendar/CalendarClient.tsx': 'canvas',
+  'app/(main)/symptoms/SymptomsClient.tsx': 'canvas',
+  'app/(main)/insights/InsightsClient.tsx': 'canvas',
+  'app/(main)/content/ContentClient.tsx': 'canvas',
   'app/(main)/profiles/ProfilesClient.tsx': 'default',
   'app/(main)/settings/SettingsClient.tsx': 'default',
   'app/(main)/subscription/SubscriptionClient.tsx': 'default',

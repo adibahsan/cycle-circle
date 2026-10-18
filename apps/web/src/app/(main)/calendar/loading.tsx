@@ -3,7 +3,7 @@ import { Shimmer } from '@/components/ui/Shimmer';
 
 export default function CalendarLoading() {
   return (
-    <PageContainer width="wide">
+    <PageContainer width="canvas">
       {/* Page Header */}
       <div>
         <Shimmer className="h-7 w-28 rounded-lg" />
