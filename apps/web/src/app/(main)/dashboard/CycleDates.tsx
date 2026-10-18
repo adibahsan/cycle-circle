@@ -90,7 +90,7 @@ export function CycleDates({ language, lastPeriod, windows }: {
     <div className="@container">
       <div data-testid="cycle-dates" className="grid grid-cols-1 gap-4 @lg:grid-cols-2">
         {lastPeriod && (
-          <DatesCard testId="last-period" headingId="last-period-title" tone="peach" Icon={Droplets} title={t('dashboard.datesLastTitle')}>
+          <DatesCard testId="last-period" headingId="last-period-title" tone="pink" Icon={Droplets} title={t('dashboard.datesLastTitle')}>
             <p className="text-lg font-bold text-[var(--color-text-primary)] tabular-nums">{date(lastPeriod.startDate)}</p>
             {(lastPeriod.days != null || lastPeriod.flow) && (
               <p className="text-sm text-[var(--color-text-secondary)] tabular-nums">

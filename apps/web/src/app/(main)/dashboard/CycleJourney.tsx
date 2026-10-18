@@ -13,8 +13,8 @@ import { formatCount } from './format'
 
 /** Tint behind the current step. */
 const CURRENT_TINT: Record<CyclePhase, CardTint> = {
-  menstrual: 'peach',
-  follicular: 'pink',
+  menstrual: 'pink',
+  follicular: 'sky',
   ovulation: 'mint',
   luteal: 'lavender',
 }

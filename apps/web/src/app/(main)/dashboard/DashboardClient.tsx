@@ -300,8 +300,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         width="canvas"
         style={{ ['--goal-accent' as string]: goalAccentVar(goal) } as React.CSSProperties}
       >
-        <PageHeader title={t('nav.dashboard')} subtitle={profile.name} />
-        <CompletionRow status={completion} />
+        <PageHeader title={t('nav.dashboard')} actions={<CompletionRow status={completion} variant="pill" />} className="flex-wrap sm:flex-nowrap" />
 
         {/* From 2xl the page splits into a main column and a rail so wide screens fill instead of leaving a gutter.
             DOM order is the phone order: top, rail, body. */}

@@ -335,3 +335,38 @@
 }
 
 
+
+/* ── Desktop sidebar collapse (#sidebar) ──
+   Keyed off data-collapsed on the aside: "true" = 72px rail, "false" = 240px, "auto" = rail below xl,
+   full from xl. CSS-only so the first paint never flashes before the stored choice is read. */
+@media (min-width: 768px) {
+  aside[data-sidebar] { width: 240px; transition: width 200ms ease-out; }
+  aside[data-sidebar] .sb-rail-only { display: none; }
+}
+@media (min-width: 768px) and (prefers-reduced-motion: reduce) { aside[data-sidebar] { transition: none; } }
+@media (min-width: 768px) {
+aside[data-sidebar][data-collapsed="true"]{width:72px}
+aside[data-sidebar][data-collapsed="true"] .sb-hide{display:none}
+aside[data-sidebar][data-collapsed="true"] .sb-head{flex-direction:column;padding-inline:12px;gap:4px}
+aside[data-sidebar][data-collapsed="true"] .sb-toggle{margin-left:0}
+aside[data-sidebar][data-collapsed="true"] .sb-pad{padding-inline:12px}
+aside[data-sidebar][data-collapsed="true"] .sb-item{justify-content:center;padding-inline:0;gap:0;min-height:44px}
+aside[data-sidebar][data-collapsed="true"] .sb-chip{width:44px;height:44px;justify-content:center;position:relative;padding:0}
+aside[data-sidebar][data-collapsed="true"] .sb-chip-link{position:absolute;inset:0;padding:0;font-size:0;border-radius:9999px}
+aside[data-sidebar][data-collapsed="true"] .sb-ring ~ .sb-chip-link{display:none}
+aside[data-sidebar][data-collapsed="true"] .sb-foot-btn{justify-content:center;padding-inline:0;gap:0;min-height:44px}
+aside[data-sidebar][data-collapsed="true"] .sb-rail-only{display:flex}
+}
+@media (min-width: 768px) and (max-width: 1279.98px) {
+aside[data-sidebar][data-collapsed="auto"]{width:72px}
+aside[data-sidebar][data-collapsed="auto"] .sb-hide{display:none}
+aside[data-sidebar][data-collapsed="auto"] .sb-head{flex-direction:column;padding-inline:12px;gap:4px}
+aside[data-sidebar][data-collapsed="auto"] .sb-toggle{margin-left:0}
+aside[data-sidebar][data-collapsed="auto"] .sb-pad{padding-inline:12px}
+aside[data-sidebar][data-collapsed="auto"] .sb-item{justify-content:center;padding-inline:0;gap:0;min-height:44px}
+aside[data-sidebar][data-collapsed="auto"] .sb-chip{width:44px;height:44px;justify-content:center;position:relative;padding:0}
+aside[data-sidebar][data-collapsed="auto"] .sb-chip-link{position:absolute;inset:0;padding:0;font-size:0;border-radius:9999px}
+aside[data-sidebar][data-collapsed="auto"] .sb-ring ~ .sb-chip-link{display:none}
+aside[data-sidebar][data-collapsed="auto"] .sb-foot-btn{justify-content:center;padding-inline:0;gap:0;min-height:44px}
+aside[data-sidebar][data-collapsed="auto"] .sb-rail-only{display:flex}
+}

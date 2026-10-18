@@ -13,6 +13,9 @@ import type { ProfileCompletionStatus } from '@/lib/profile-completion';
 import type { TourStep } from '@/components/onboarding/OnboardingTour';
 import { completeOnboardingTour } from '@/app/actions/user-actions';
 import { Sun, Moon } from 'lucide-react';
+import { SidebarToggle } from '@/components/shell/SidebarToggle';
+import { SidebarLanguageButton } from '@/components/shell/SidebarLanguageButton';
+import { useSidebarCollapsed } from '@/components/shell/sidebar-collapsed';
 import { NAV_ICONS } from '@/components/shell/nav-icons';
 import { BottomNav } from '@/components/shell/BottomNav';
 import { MoreSheet } from '@/components/shell/MoreSheet';
@@ -342,6 +345,8 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
   const profileModalOpen = !prompt.locked && (showCompletionModal || prompt.isActive('profile'));
   const tourIsOpen = !prompt.locked && (tourOpen || prompt.isActive('tour'));
 
+  const sidebar = useSidebarCollapsed();
+
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
@@ -365,22 +370,29 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ── Desktop Sidebar (md+) ── */}
-      <aside className="hidden md:flex md:flex-col md:w-64 md:sticky md:top-0 md:h-dvh md:shrink-0 bg-[var(--color-bg-card)] border-r border-[var(--color-border)] z-40" aria-label={t('nav.sidebarNav')}>
+      <aside
+        id="app-sidebar"
+        data-sidebar
+        data-collapsed={sidebar.pref}
+        className="hidden md:flex md:flex-col md:w-60 md:sticky md:top-0 md:h-dvh md:shrink-0 md:overflow-x-hidden motion-reduce:transition-none bg-[var(--color-bg-card)] border-r border-[var(--color-border)] z-40"
+        aria-label={t('nav.sidebarNav')}
+      >
         {/* Sidebar header / branding */}
-        <div className="px-5 py-5 flex items-center gap-3">
+        <div className="sb-head pl-4 pr-2 py-4 flex items-center gap-2">
           <VestaLogo size={28} animate={false} />
-          <span className="text-xl font-extrabold text-[var(--color-text-primary)]">Cycle Circle</span>
+          <span className="sb-hide text-lg font-extrabold text-[var(--color-text-primary)] whitespace-nowrap">Cycle Circle</span>
+          <SidebarToggle collapsed={sidebar.collapsed} onToggle={sidebar.toggle} controlsId="app-sidebar" />
         </div>
 
         {/* Profile chip */}
-        <div className="px-4 mb-4">
+        <div className="sb-pad px-4 mb-4 flex flex-col items-start">
           <ProfileChip
             name={activeProfileName}
             status={completionStatus}
             onOpenCompletion={() => setShowCompletionModal(true)}
           />
           {activeGoal && (
-            <div className="mt-1.5 px-1 flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-secondary)]">
+            <div className="sb-hide mt-1.5 px-1 flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-secondary)] min-w-0 max-w-full">
               <span className="inline-flex items-center [&_svg]:w-3.5 [&_svg]:h-3.5" aria-hidden="true">{GOAL_ICON_COMPONENTS[activeGoal]}</span>
               <span className="truncate">{t(GOAL_I18N_KEYS[activeGoal])}</span>
             </div>
@@ -388,21 +400,24 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Main navigation */}
-        <nav className="flex-1 px-3 space-y-1 overflow-y-auto" aria-label={t('nav.mainNav')}>
-          <p className="px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden" aria-label={t('nav.mainNav')}>
+          <p className="sb-hide px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
             {t('nav.menu')}
           </p>
           {SIDEBAR_MENU_ITEMS.map(({ href, icon, labelKey, tourKey }) => {
             const Icon = NAV_ICONS[icon];
             const isActive = isNavActive(href, pathname);
             const showDot = href === '/symptoms' && logging?.loggedToday === false;
+            const label = t(labelKey);
             return (
               <Link
                 key={href}
                 href={href}
+                title={label}
+                aria-label={showDot ? `${label}, ${t('nav.notLoggedToday')}` : label}
                 aria-current={isActive ? 'page' : undefined}
                 {...(tourKey ? { 'data-tour': tourKey } : {})}
-                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
+                className={`sb-item relative flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
                   isActive
                     ? 'font-bold'
                     : 'font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]'
@@ -419,27 +434,30 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
                     />
                   )}
                 </span>
-                <span className="text-sm">{t(labelKey)}</span>
+                <span className="sb-hide text-sm truncate">{label}</span>
                 {showDot && <span className="sr-only">{t('nav.notLoggedToday')}</span>}
               </Link>
             );
           })}
 
-          {/* Divider */}
+          {/* Divider (stands in for the section label on the rail) */}
           <div className="my-3 border-t border-[var(--color-border)]" />
 
-          <p className="px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
+          <p className="sb-hide px-3 mb-2 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
             {t('nav.more')}
           </p>
           {SIDEBAR_MORE_ITEMS.map(({ href, icon, labelKey }) => {
             const Icon = NAV_ICONS[icon];
             const isActive = isNavActive(href, pathname);
+            const label = t(labelKey);
             return (
               <Link
                 key={href}
                 href={href}
+                title={label}
+                aria-label={label}
                 aria-current={isActive ? 'page' : undefined}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
+                className={`sb-item flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] ${
                   isActive
                     ? 'font-bold'
                     : 'font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]'
@@ -447,27 +465,31 @@ function MainLayoutInner({ children }: { children: React.ReactNode }) {
                 style={isActive ? NAV_ACTIVE : undefined}
               >
                 <Icon size={18} strokeWidth={isActive ? 2.25 : 1.5} aria-hidden="true" />
-                <span className="text-sm">{t(labelKey)}</span>
+                <span className="sb-hide text-sm truncate">{label}</span>
               </Link>
             );
           })}
         </nav>
 
         {/* Sidebar footer — theme + language toggles */}
-        <div className="px-4 py-4 border-t border-[var(--color-border)] flex flex-col gap-2">
+        <div className="sb-pad px-4 py-4 border-t border-[var(--color-border)] flex flex-col gap-2">
           {authStatusLoaded && (
-            <TrialCountdownPill trialUser={trialUser} onPhoneAdded={handlePhoneAdded} />
+            <div className="sb-hide">
+              <TrialCountdownPill trialUser={trialUser} onPhoneAdded={handlePhoneAdded} />
+            </div>
           )}
           <button
             type="button"
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? t('nav.switchToLight') : t('nav.switchToDark')}
-            className="flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--color-bg-secondary)] text-sm font-medium hover:bg-[var(--color-bg-primary)] transition-colors w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
+            title={theme === 'dark' ? t('nav.switchToLight') : t('nav.switchToDark')}
+            className="sb-foot-btn flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--color-bg-secondary)] text-sm font-medium hover:bg-[var(--color-bg-primary)] transition-colors w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
           >
             {theme === 'dark' ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
-            <span>{theme === 'dark' ? t('settings.lightMode') : t('settings.darkMode')}</span>
+            <span className="sb-hide">{theme === 'dark' ? t('settings.lightMode') : t('settings.darkMode')}</span>
           </button>
-          <LanguageToggle />
+          <div className="sb-hide"><LanguageToggle /></div>
+          <div className="sb-rail-only"><SidebarLanguageButton /></div>
         </div>
       </aside>
 

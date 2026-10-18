@@ -119,10 +119,11 @@ export function LoggingNudge({
   const content = (
     <Card
       className={[
-        'relative overflow-hidden surface-peach !border-0 shadow-none',
+        'relative overflow-hidden',
         className ?? '',
       ].join(' ').trim()}
-      padding="md"
+      tone="panel"
+      padding="sm"
       style={{
         ['--goal-accent']: accentVar,
       } as React.CSSProperties}
@@ -153,7 +154,7 @@ export function LoggingNudge({
         <X size={16} aria-hidden="true" />
       </button>
 
-      <div className="flex items-start gap-3 pr-10">
+      <div className="flex items-start gap-3 px-2 py-1 pr-10">
         {/* Accent icon */}
         <div
           className="relative shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
@@ -170,7 +171,7 @@ export function LoggingNudge({
           <p className="text-sm font-bold text-[var(--color-text-primary)] leading-snug">
             {title}
           </p>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 leading-relaxed">
+          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 leading-relaxed text-pretty max-w-prose">
             {description}
           </p>
 
@@ -182,7 +183,7 @@ export function LoggingNudge({
           )}
 
           {/* CTAs */}
-          <div className="flex flex-wrap items-center gap-2 mt-3">
+          <div className="flex flex-wrap items-center gap-2 mt-2">
             {isEmptyState ? (
               <>
                 {/* Empty-state: Primary CTA — Log first period */}
