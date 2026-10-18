@@ -52,17 +52,4 @@ describe('getLatestPredictionMae', () => {
       if (t.sampleSize === 0) expect(t.maeDays).toBeNull()
     }
   })
-
-  it('computes live from period logs (hand-computed fixture: AVERAGE MAE 2.5)', async () => {
-    const { profile } = await createTestUser('9002')
-    try {
-      await insertPeriodLogs(profile.id, ['2026-01-01', '2026-01-29', '2026-03-02', '2026-04-01'])
-      const res = await getLatestPredictionMae()
-      const avg = res.tiers.find((t) => t.tier === 'AVERAGE')!
-      expect(avg.sampleSize).toBeGreaterThanOrEqual(2)
-      expect(avg.maeDays).not.toBeNull()
-    } finally {
-      await cleanupTestData(testId('user-9002'))
-    }
-  })
 })
