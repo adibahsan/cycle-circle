@@ -410,6 +410,7 @@ Run these as the `vesta` user (sudo where noted). Assumes §2's artifacts exist 
     sed "s/CRON_SECRET_PLACEHOLDER/$(grep ^CRON_SECRET= /opt/vesta/.env.web.production | cut -d= -f2-)/" ops/deploy/vesta-crontab | crontab -u vesta -
     chmod +x /opt/vesta/ops/deploy/scripts/backup-db.sh
     sudo mkdir -p /var/log/vesta && sudo chown vesta:vesta /var/log/vesta
+    sudo mkdir -p /var/lib/vesta/uploads   # article images (see 05-operations.md §4)
     crontab -u vesta -l   # confirm it installed
     ```
 

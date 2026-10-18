@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@vesta/shared'],
   experimental: {
+    // Article image uploads go through a server action (5 MB image cap + multipart overhead).
+    serverActions: { bodySizeLimit: '6mb' },
     // Tree-shake heavy barrel imports. @tiptap/* and motion are not on Next's
     // default optimized list, so list them explicitly alongside the rest.
     optimizePackageImports: [

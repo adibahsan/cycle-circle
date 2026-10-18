@@ -13,6 +13,8 @@ export function slugify(text: string): string {
 
 // Tiptap StarterKit produces a small, known set of tags. Allow those, drop
 // everything else (script/style/iframe/event-handlers are stripped).
+const UPLOAD_SRC_RE = /^\/uploads\/[A-Za-z0-9][A-Za-z0-9._-]*$/
+
 const ARTICLE_SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: [
     'p', 'br', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -28,6 +30,8 @@ const ARTICLE_SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
   transformTags: {
     a: sanitizeHtml.simpleTransform('a', { rel: 'noopener noreferrer' }, true),
   },
+  // Images may only come from our own uploads path (ADR: article images).
+  exclusiveFilter: (frame) => frame.tag === 'img' && !UPLOAD_SRC_RE.test(frame.attribs.src ?? ''),
 }
 
 /** Sanitise rich-text article HTML before persistence (strips script/unsafe tags + event handlers). */

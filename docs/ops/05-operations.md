@@ -179,6 +179,23 @@ Pick the cron time deliberately relative to the server's timezone (see
 [02-server-setup.md §1](./02-server-setup.md#1-base-packages-locale-timezone)) —
 `0 3 * * *` is 03:00 in whatever timezone the server clock is set to.
 
+### Article images (uploads directory)
+
+Images the Super Admin uploads into articles live on the host at
+`/var/lib/vesta/uploads` (bind-mounted into `admin` read-write and `web` read-only as
+`UPLOAD_DIR`). They are **not** in Postgres, so a DB dump does not cover them.
+`ops/deploy/scripts/backup-db.sh` also writes `uploads-<timestamp>.tar.gz` next to each
+dump (same 14-day retention), so the off-box copy below picks them up too. To restore:
+`tar -xzf uploads-<timestamp>.tar.gz -C /var/lib/vesta/uploads`.
+
+One-time host setup (before the first deploy that includes this change):
+
+```bash
+sudo mkdir -p /var/lib/vesta/uploads
+```
+
+If the apps' container user is not root, `chown` the directory to that user so `admin` can write.
+
 ### Off-box copy (required — backups on the same disk as the DB don't survive a
 disk failure)
 

@@ -12,6 +12,13 @@ cd /opt/vesta
 sg docker -c "docker compose -f ops/deploy/compose.prod.yml exec -T postgres sh -c \
   'pg_dump -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" --format=plain --no-acl --no-owner'" | gzip > "$FILE"
 
+# Article images (host dir bind-mounted into admin/web as UPLOAD_DIR)
+UPLOADS_DIR=/var/lib/vesta/uploads
+if [ -d "$UPLOADS_DIR" ]; then
+  tar -czf "$BACKUP_DIR/uploads-$TIMESTAMP.tar.gz" -C "$UPLOADS_DIR" .
+fi
+
 find "$BACKUP_DIR" -name 'vesta-*.sql.gz' -mtime "+$RETENTION_DAYS" -delete
+find "$BACKUP_DIR" -name 'uploads-*.tar.gz' -mtime "+$RETENTION_DAYS" -delete
 
 echo "Backup written: $FILE ($(du -h "$FILE" | cut -f1))"
