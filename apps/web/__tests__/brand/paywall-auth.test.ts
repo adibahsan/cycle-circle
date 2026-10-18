@@ -46,11 +46,13 @@ describe('Pro badge contrast (accent 18% into card fill)', () => {
     return (x + 0.05) / (y + 0.05);
   };
 
-  it('badges use text-primary on the tinted fill (gold-ink fails AA in light)', () => {
+  it('Pro badges use the peach tint ink, never gold-ink (gold-ink fails AA in light)', () => {
+    // #81: badges moved from the accent_18% fill to the peach tint / card with accent-peach ink.
     const src = readFileSync(join(app, '(main)/subscription/SubscriptionClient.tsx'), 'utf8');
-    const badges = src.match(/[^"]*var\(--color-accent\)_18%[^"]*/g) ?? [];
+    const badges = src.match(/[^"]*rounded-full[^"]*text-accent-peach[^"]*|[^"]*text-accent-peach[^"]*rounded-full[^"]*/g) ?? [];
     expect(badges.length).toBeGreaterThan(0);
     for (const b of badges) expect(b).not.toContain('gold-ink');
+    expect(src).not.toMatch(/var\(--color-accent\)_18%/);
   });
 
   it('gold-ink on the fill is AA in dark (documented: not in light)', () => {

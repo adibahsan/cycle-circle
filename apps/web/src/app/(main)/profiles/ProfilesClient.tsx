@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { useHeld } from '@/lib/use-held';
+import { cn } from '@/lib/cn';
 import { deviceDayString } from '@/lib/local-date';
 import '@vesta/shared/utils/i18n';
 import { PageContainer } from '@/components/ui/PageContainer'
@@ -135,25 +136,12 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
       transition={{ type: 'spring', stiffness: 400, damping: 35 }}
     >
       <div
-        className="w-full rounded-2xl border transition-[color,background-color,border-color,box-shadow] duration-200 relative overflow-hidden"
-        style={{
-          background: isActive
-            ? 'linear-gradient(135deg, color-mix(in srgb, var(--goal-accent) 7%, transparent) 0%, color-mix(in srgb, var(--color-secondary) 7%, transparent) 100%)'
-            : 'var(--color-bg-card)',
-          borderColor: isActive ? 'var(--goal-accent)' : 'var(--color-border)',
-          boxShadow: isActive
-            ? '0 0 0 2px color-mix(in srgb, var(--goal-accent) 20%, transparent), 0 4px 16px color-mix(in srgb, var(--goal-accent) 8%, transparent)'
-            : '0 2px 8px color-mix(in srgb, var(--color-brand-navy) 4%, transparent)',
-        }}
-      >
-        {/* Active glow line */}
-        {isActive && (
-          <motion.div
-            layoutId="active-line"
-            className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl"
-            style={{ background: 'linear-gradient(180deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
-          />
+        className={cn(
+          'w-full rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel transition-[box-shadow] duration-200 relative overflow-hidden',
+          // The active profile wears the goal-colour ring (spec #66: goal accent = profile ring).
+          isActive && 'ring-2 ring-[var(--goal-accent)]',
         )}
+      >
 
         <div className="flex items-center gap-1">
           {/* Switch control: avatar + info */}
@@ -163,11 +151,11 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
             disabled={isSwitching}
             aria-label={`${t('profiles.switchTo')} ${profile.name}`}
             aria-current={isActive ? 'true' : undefined}
-            className="flex flex-1 min-w-0 items-center gap-3 text-left p-4 pr-2 min-h-11 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--goal-accent)]"
+            className="flex flex-1 min-w-0 items-center gap-3 text-left p-4 pr-2 min-h-11 rounded-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--goal-accent)]"
           >
           {/* Avatar */}
           <div
-            className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+            className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
             style={{ background: colors.bg, border: `1.5px solid ${colors.border}` }}
           >
             {React.createElement(RELATION_ICONS[relation], { size: 20, 'aria-hidden': true, style: { color: colors.text } })}
@@ -180,13 +168,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
                 {profile.name}
               </span>
               {isActive && (
-                <span
-                  className="text-[11px] font-bold px-1.5 py-0.5 rounded-full uppercase"
-                  style={{
-                    background: 'var(--goal-accent)',
-                    color: 'var(--color-on-accent)',
-                  }}
-                >
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full uppercase bg-tint-pink text-accent-pink">
                   {t('profiles.active')}
                 </span>
               )}
@@ -209,11 +191,8 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
           {/* Active checkmark or chevron */}
           <div className="flex items-center flex-shrink-0">
             {isActive ? (
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center"
-                style={{ background: 'var(--goal-accent)' }}
-              >
-                <Check size={14} color="var(--color-on-accent)" strokeWidth={2.5} aria-hidden="true" />
+              <div className="w-7 h-7 rounded-full flex items-center justify-center bg-tint-pink text-accent-pink">
+                <Check size={14} strokeWidth={2.5} aria-hidden="true" />
               </div>
             ) : (
               <ChevronRight size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
@@ -325,12 +304,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 16 }}
       transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-      className="rounded-2xl border overflow-hidden"
-      style={{
-        background: 'var(--color-bg-card)',
-        borderColor: 'var(--goal-accent)',
-        boxShadow: '0 0 0 2px color-mix(in srgb, var(--goal-accent) 15%, transparent), 0 8px 32px color-mix(in srgb, var(--goal-accent) 10%, transparent)',
-      }}
+      className="rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel overflow-hidden"
     >
       {/* Form header */}
       <div
@@ -338,23 +312,22 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
         style={{ borderColor: 'var(--color-border)' }}
       >
         <div className="flex items-center gap-2">
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
-          >
-            <UserPlus aria-hidden="true" size={15} color="var(--color-on-accent)" />
+          <div aria-hidden="true" className="w-8 h-8 rounded-full flex items-center justify-center bg-tint-pink text-accent-pink">
+            <UserPlus size={15} />
           </div>
-          <h3 className="font-bold text-[var(--color-text-primary)] text-base">
+          <h2 className="font-bold text-[var(--color-text-primary)] text-base">
             {t('profiles.add')}
-          </h3>
+          </h2>
         </div>
         <button
+          type="button"
           onClick={onClose}
-          className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
-          style={{ background: 'var(--color-bg-secondary)' }}
+          className="group -mr-2 min-w-11 min-h-11 rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]"
           aria-label={t('common.cancel')}
         >
-          <X aria-hidden="true" size={14} className="text-[var(--color-text-muted)]" />
+          <span aria-hidden="true" className="w-8 h-8 rounded-full flex items-center justify-center bg-[var(--color-bg-secondary)] group-hover:bg-[var(--color-border)] transition-colors">
+            <X size={14} className="text-[var(--color-text-muted)]" />
+          </span>
         </button>
       </div>
 
@@ -387,7 +360,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
                 <button
                   key={rel}
                   onClick={() => setRelation(rel)}
-                  className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                  className="flex flex-col items-center gap-1 min-h-11 py-2.5 px-2 rounded-xl border text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                   style={{
                     background: isSelected ? colors.bg : 'var(--color-bg-secondary)',
                     borderColor: isSelected ? colors.border : 'var(--color-border)',
@@ -423,7 +396,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
                   type="button"
                   onClick={() => setGoal(g)}
                   aria-pressed={isSelected}
-                  className="flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-xl border text-center transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                  className="flex flex-col items-center gap-1 min-h-11 py-2.5 px-1.5 rounded-xl border text-center transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                   style={
                     {
                       '--goal-accent': accentVar,
@@ -550,10 +523,10 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
           {serverError || '\u00A0'}
         </p>
         <div className="flex gap-2 pt-1">
-          <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
+          <Button variant="outline" size="sm" onClick={onClose} className="flex-1 min-h-11">
             {t('common.cancel')}
           </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={disabled} className="flex-1">
+          <Button size="sm" onClick={handleSubmit} disabled={disabled} className="flex-1 min-h-11">
             {t('profiles.createProfile')}
           </Button>
         </div>
@@ -616,11 +589,8 @@ function EditProfileForm({ open, profile, onClose, onSubmit, serverError, disabl
           className="flex items-center gap-2 px-5 py-4 pr-14 border-b"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)' }}
-          >
-            <Pencil size={15} color="var(--color-on-accent)" aria-hidden="true" />
+          <div aria-hidden="true" className="w-8 h-8 rounded-full flex items-center justify-center bg-tint-pink text-accent-pink">
+            <Pencil size={15} />
           </div>
           <h2 id="edit-profile-dialog-title" className="font-bold text-[var(--color-text-primary)] text-base">
             {t('profiles.editProfile')}
@@ -641,10 +611,10 @@ function EditProfileForm({ open, profile, onClose, onSubmit, serverError, disabl
             {serverError || '\u00A0'}
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onClose} className="flex-1">
+            <Button variant="outline" size="sm" onClick={onClose} className="flex-1 min-h-11">
               {t('common.cancel')}
             </Button>
-            <Button size="sm" onClick={handleSubmit} disabled={disabled} className="flex-1">
+            <Button size="sm" onClick={handleSubmit} disabled={disabled} className="flex-1 min-h-11">
         {t('profiles.saveChanges')}
       </Button>
     </div>
@@ -679,7 +649,7 @@ function EditProfileForm({ open, profile, onClose, onSubmit, serverError, disabl
                   <button
                     key={rel}
                     onClick={() => setRelation(rel)}
-                    className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                    className="flex flex-col items-center gap-1 min-h-11 py-2.5 px-2 rounded-xl border text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                     style={{
                       background: isSelected ? colors.bg : 'var(--color-bg-secondary)',
                       borderColor: isSelected ? colors.border : 'var(--color-border)',
@@ -737,7 +707,7 @@ function EditProfileForm({ open, profile, onClose, onSubmit, serverError, disabl
                     type="button"
                     onClick={() => setGoal(g)}
                     aria-pressed={isSelected}
-                    className="flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-xl border text-center transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                    className="flex flex-col items-center gap-1 min-h-11 py-2.5 px-1.5 rounded-xl border text-center transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                     style={
                       {
                         '--goal-accent': accentVar,
@@ -810,14 +780,14 @@ function DeleteDialog({ open, profileName, error, onConfirm, onCancel, disabled 
           {error || '\u00A0'}
         </p>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={onCancel} className="flex-1" data-autofocus>
+          <Button variant="outline" size="sm" onClick={onCancel} className="flex-1 min-h-11" data-autofocus>
             {t('common.cancel')}
           </Button>
           <button
             type="button"
             onClick={onConfirm}
             disabled={disabled}
-            className="flex-1 py-2 rounded-xl text-sm font-bold text-[var(--color-on-action)] transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+            className="flex-1 min-h-11 py-2 rounded-full text-sm font-bold text-[var(--color-on-action)] transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
             style={{ background: 'var(--color-error)' }}
           >
             {t('common.delete')}
@@ -1024,8 +994,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                 >
                   {atMax ? (
                     <div
-                      className="rounded-2xl border border-dashed p-4 flex flex-col items-center gap-1.5 text-center"
-                      style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-secondary)' }}
+                      className="rounded-panel border border-dashed border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-5 flex flex-col items-center gap-1.5 text-center"
                     >
                       <Lock size={24} className="text-[var(--color-text-muted)]" aria-hidden="true" />
                       <p className="text-sm font-semibold text-[var(--color-text-secondary)]">
@@ -1041,25 +1010,16 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
                         setAddError('');
                         setShowForm(true);
                       }}
-                      className="w-full rounded-2xl border border-dashed p-4 flex items-center justify-center gap-2.5 transition-colors duration-200 group hover:border-[var(--goal-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
-                      style={{
-                        borderColor: 'var(--color-border)',
-                        background: 'var(--color-bg-secondary)',
-                      }}
+                      className="w-full rounded-panel border border-dashed border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-5 flex items-center justify-center gap-3 transition-colors duration-200 group hover:border-[var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                     >
                       <div
-                        className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
-                        style={{
-                          background: 'linear-gradient(135deg, var(--goal-accent) 0%, var(--color-secondary) 100%)',
-                        }}
+                        aria-hidden="true"
+                        className="w-10 h-10 rounded-full flex items-center justify-center bg-tint-pink text-accent-pink transition-transform duration-200 group-hover:scale-105"
                       >
-                        <Plus aria-hidden="true" size={18} color="var(--color-on-accent)" strokeWidth={2.5} />
+                        <Plus size={18} strokeWidth={2.5} />
                       </div>
                       <div className="text-left">
-                        <p
-                          className="font-semibold text-sm group-hover:text-[var(--goal-accent)] transition-colors"
-                          style={{ color: 'var(--color-text-secondary)' }}
-                        >
+                        <p className="font-semibold text-sm text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] transition-colors">
                           {t('profiles.add')}
                         </p>
                         <p className="text-xs text-[var(--color-text-muted)]">
@@ -1078,15 +1038,14 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.4 }}
-            className="lg:col-span-2 rounded-2xl p-4 flex items-start gap-3"
-            style={{ background: 'color-mix(in srgb, var(--color-secondary) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--color-secondary) 20%, transparent)' }}
+            className="lg:col-span-2 rounded-panel bg-tint-sage p-5 flex items-start gap-3"
           >
-            <LockKeyhole size={20} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--color-secondary)' }} aria-hidden="true" />
+            <LockKeyhole size={20} className="flex-shrink-0 mt-0.5 text-accent-sage" aria-hidden="true" />
             <div>
-              <p className="text-sm font-semibold" style={{ color: 'var(--color-secondary)' }}>
+              <p className="text-sm font-semibold text-accent-sage">
                 {t('profiles.isolationTitle')}
               </p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+              <p className="text-xs mt-0.5 text-[var(--color-text-secondary)]">
                 {t('profiles.isolationBody')}
               </p>
             </div>
