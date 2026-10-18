@@ -27,9 +27,9 @@ function Stat({ icon, title, sub, testId }: { icon: React.ReactNode; title: stri
   return (
     <li
       data-testid={testId}
-      className="flex min-w-0 items-center gap-3 rounded-full bg-[var(--color-bg-card)] py-2 pl-2 pr-5"
+      className="flex min-w-0 items-center gap-2.5 rounded-full bg-[var(--color-bg-card)] py-1.5 pl-1.5 pr-4"
     >
-      <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-secondary)]">
+      <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-secondary)]">
         {icon}
       </span>
       <span className="flex min-w-0 flex-col">
@@ -79,27 +79,27 @@ export function CycleHero({ name, language, phase, cycleDay, fertile, period, ne
         : undefined
 
   return (
-    <Card tone="pink" padding="md" className="relative overflow-hidden sm:p-6">
+    <Card tone="pink" padding="md" className="relative overflow-hidden sm:px-6 sm:py-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="font-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[var(--color-text-primary)] break-words">
+          <p className="font-heading text-2xl lg:text-3xl font-extrabold tracking-tight text-[var(--color-text-primary)] break-words">
             {t('dashboard.heroHello', { name })}
           </p>
-          <p className="mt-1.5 text-sm md:text-base text-[var(--color-text-secondary)]">{t('dashboard.heroSub')}</p>
+          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{t('dashboard.heroSub')}</p>
         </div>
         {/* Illustration placeholder until the illustration set (#77) lands. */}
         <span
           aria-hidden="true"
-          className="hidden sm:flex h-14 w-14 shrink-0 items-center justify-center rounded-panel bg-[var(--color-bg-card)] text-accent-pink"
+          className="hidden sm:flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-bg-card)] text-accent-pink"
         >
-          <Sparkles size={26} strokeWidth={1.75} />
+          <Sparkles size={22} strokeWidth={1.75} />
         </span>
       </div>
 
       <ul
         data-testid="hero-stats"
         aria-label={t('dashboard.statsLabel')}
-        className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3"
+        className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3"
       >
         <Stat
           testId="stat-cycle-day"
@@ -143,21 +143,21 @@ function HeroFrame({
   children?: React.ReactNode
 }) {
   return (
-    <Card tone={tone} padding="md" className="relative overflow-hidden sm:p-6">
+    <Card tone={tone} padding="md" className="relative overflow-hidden sm:px-6 sm:py-5">
       <section data-testid={testId} aria-labelledby={headingId}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 id={headingId} className="font-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[var(--color-text-primary)] break-words">
+            <h2 id={headingId} className="font-heading text-2xl lg:text-3xl font-extrabold tracking-tight text-[var(--color-text-primary)] break-words">
               {title}
             </h2>
-            <p className="mt-1.5 text-sm md:text-base text-[var(--color-text-secondary)]">{sub}</p>
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{sub}</p>
           </div>
           {/* Illustration placeholder until the illustration set (#77) lands. */}
           <span
             aria-hidden="true"
-            className={`hidden sm:flex h-14 w-14 shrink-0 items-center justify-center rounded-panel bg-[var(--color-bg-card)] ${TINT_CLASSES[tone].ink}`}
+            className={`hidden sm:flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-bg-card)] ${TINT_CLASSES[tone].ink}`}
           >
-            <Icon size={26} strokeWidth={1.75} />
+            <Icon size={22} strokeWidth={1.75} />
           </span>
         </div>
         {children}
@@ -183,7 +183,7 @@ export function PregnancyHero({ language, lastPeriodStart, onLogSymptoms }: {
       title={t('dashboard.pregnancyHeroTitle')}
       sub={t('dashboard.pregnancyHeroBody')}
     >
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="mt-3 flex flex-wrap items-center gap-3">
         <Button variant="primary" onClick={onLogSymptoms} aria-haspopup="dialog" className="min-h-11">
           <HeartPulse size={16} aria-hidden="true" />
           {t('dashboard.logSymptoms')}
@@ -217,7 +217,7 @@ export function MenopauseHero({ name, language, today, lastPeriodStart }: {
       title={t('dashboard.heroHello', { name })}
       sub={t('dashboard.menopauseHeroSub')}
     >
-      <ul aria-label={t('dashboard.statsLabel')} className="mt-4 grid gap-2 sm:grid-cols-2">
+      <ul aria-label={t('dashboard.statsLabel')} className="mt-3 grid gap-2 sm:grid-cols-2">
         <Stat
           testId="stat-days-since"
           icon={<CalendarClock size={20} aria-hidden="true" className="text-accent-sage" />}
@@ -245,7 +245,7 @@ export function FirstPeriodHero({ onLogPeriod }: { onLogPeriod: () => void }) {
       title={t('dashboard.firstPeriodQuestion')}
       sub={t('dashboard.firstPeriodBody')}
     >
-      <Button variant="primary" onClick={onLogPeriod} aria-haspopup="dialog" className="mt-4 min-h-11" data-tour="log-button">
+      <Button variant="primary" onClick={onLogPeriod} aria-haspopup="dialog" className="mt-3 min-h-11" data-tour="log-button">
         {t('dashboard.logPeriod')}
       </Button>
     </HeroFrame>

@@ -137,3 +137,35 @@ test.describe('dashboard layout (1920 wide)', () => {
     expect(1920 - (dates.x + dates.width)).toBeLessThanOrEqual(96)
   })
 })
+
+// The toolkit is the dashboard's actions: it must sit in the first view on common laptop and desktop screens.
+for (const viewport of [
+  { width: 1366, height: 657 },
+  { width: 1440, height: 789 },
+  { width: 1920, height: 969 },
+]) {
+  test.describe(`dashboard first view (${viewport.width}x${viewport.height})`, () => {
+    test.use({ viewport })
+
+    test('the whole toolkit is visible without scrolling', async ({ page }) => {
+      await gotoQuiet(page, '/dashboard')
+      const toolkit = page.locator('section[aria-labelledby="toolkit-title"]')
+      await expect(toolkit).toBeVisible({ timeout: 15_000 })
+      const box = await toolkit.boundingBox()
+      expect(box, 'toolkit box').not.toBeNull()
+      expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height)
+    })
+
+    test('the streak card keeps its contents inside', async ({ page }) => {
+      await gotoQuiet(page, '/dashboard')
+      const badge = page.locator('[aria-atomic="true"][aria-live="polite"]').first()
+      await expect(badge).toBeVisible({ timeout: 15_000 })
+      const overflow = await badge.evaluate((el) => {
+        const row = el.parentElement!
+        const card = row.parentElement!.getBoundingClientRect()
+        return [...row.querySelectorAll('*')].some((c) => c.getBoundingClientRect().right > card.right + 0.5)
+      })
+      expect(overflow).toBe(false)
+    })
+  })
+}

@@ -19,8 +19,8 @@ interface CycleProgressRingProps {
   children?: React.ReactNode
 }
 
-const SIZE = 200
-const STROKE = 16
+const SIZE = 148
+const STROKE = 13
 const RADIUS = (SIZE - STROKE) / 2
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
@@ -39,11 +39,12 @@ export function CycleProgressRing({ position, period, language, example = false,
   const caption = !c ? null : c.key === 'ringToNext' ? t('dashboard.ringToNext', { count: c.days, n: n(c.days) }) : t('dashboard.ringExpected')
 
   return (
-    <Card tone="panel" padding="md" className="h-full">
+    <Card tone="panel" padding="md" className="@container h-full">
       <section aria-labelledby="progress-title" aria-describedby={example ? 'progress-example-note' : undefined} className="flex h-full flex-col">
         <SectionHeader id="progress-title" title={t('dashboard.progressTitle')} />
         {example && <ExampleNote id="progress-example-note" />}
-        <div className="flex flex-1 flex-col items-center justify-center gap-3">
+        {/* Ring beside its caption and the confidence meter once the card is wide enough; stacked when narrow. */}
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 @sm:flex-row @sm:gap-6">
           <div
             role="img"
             aria-label={ringLabel}
@@ -68,7 +69,7 @@ export function CycleProgressRing({ position, period, language, example = false,
               />
             </svg>
             <div aria-hidden="true" className="flex flex-col items-center">
-              <span data-ring-number className="font-heading text-5xl font-extrabold tracking-tight tabular-nums text-[var(--color-text-primary)]">
+              <span data-ring-number className="font-heading text-4xl font-extrabold tracking-tight tabular-nums text-[var(--color-text-primary)]">
                 {n(cycleDay)}
               </span>
               <span className="text-sm font-medium text-[var(--color-text-secondary)]">
@@ -76,9 +77,13 @@ export function CycleProgressRing({ position, period, language, example = false,
               </span>
             </div>
           </div>
-          {caption && <p className="text-sm text-[var(--color-text-secondary)] text-center tabular-nums">{caption}</p>}
+          {(caption || children) && (
+            <div className="flex w-full min-w-0 flex-col gap-3 text-center @sm:flex-1 @sm:text-left">
+              {caption && <p className="text-base font-semibold text-[var(--color-text-primary)] tabular-nums">{caption}</p>}
+              {children}
+            </div>
+          )}
         </div>
-        {children}
       </section>
     </Card>
   )

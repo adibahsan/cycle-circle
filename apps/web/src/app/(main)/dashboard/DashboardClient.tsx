@@ -305,7 +305,8 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, profil
         <PageHeader title={t('nav.dashboard')} actions={<CompletionRow status={completion} variant="pill" />} className="flex-wrap sm:flex-nowrap" />
 
         {/* From 2xl the page splits into a main column and a rail so wide screens fill instead of leaving a gutter.
-            DOM order is the phone order: top, rail, body. */}
+            DOM order is the phone order: top, rail, body. From lg to 2xl the rail moves under the body so the
+            toolkit stays in the first view. */}
         <div className="flex flex-col gap-5 2xl:grid 2xl:grid-cols-[minmax(0,1fr)_24rem] 2xl:grid-rows-[auto_1fr] 2xl:gap-x-6">
           <div className="flex flex-col gap-5 2xl:col-start-1 2xl:row-start-1">
             {/* ── Hero: one per state ─────────────────────────────────── */}
@@ -349,7 +350,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, profil
 
           {/* ── Rail: streak, phase pattern (#75; the menopause symptom pattern too), last period + predicted windows.
               Two across from lg, one stacked column in the 2xl rail. ── */}
-          <div className="grid grid-cols-1 gap-4 empty:hidden lg:grid-cols-2 2xl:col-start-2 2xl:row-span-2 2xl:row-start-1 2xl:grid-cols-1 2xl:content-start 2xl:sticky 2xl:top-6 2xl:self-start">
+          <div className="grid grid-cols-1 gap-4 empty:hidden lg:order-last lg:grid-cols-2 2xl:order-none 2xl:col-start-2 2xl:row-span-2 2xl:row-start-1 2xl:grid-cols-1 2xl:content-start 2xl:sticky 2xl:top-6 2xl:self-start">
             {engagement && (
               <TodayCheckInStrip
                 profileId={activeProfileId}
@@ -388,7 +389,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, profil
                   {/* The dashboard's one confidence figure. */}
                   {engagement && (
                     <ProgressToUnlockMeter
-                      className="mt-4"
+                      className="border-t border-[var(--color-border)] pt-3 text-left"
                       cyclesLogged={engagement.cyclesLogged}
                       unlockTarget={engagement.unlockTarget}
                       confidence={engagement.confidence}
@@ -411,8 +412,10 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, profil
               </div>
             )}
 
-            {/* ── Toolkit (check-in, symptoms and articles stay in every mode) ── */}
+            {/* ── Toolkit (check-in, symptoms and articles stay in every mode). From lg to 2xl, where height is
+                the limit, it comes before the cycle cards so the actions are in the first view. ── */}
             <DashboardToolkit
+              className="lg:-order-1 2xl:order-none"
               language={language}
               phase={blocks.phaseTools ? phase : null}
               articles={phaseArticles}

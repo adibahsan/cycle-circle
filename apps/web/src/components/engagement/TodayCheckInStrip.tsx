@@ -66,7 +66,7 @@ export function TodayCheckInStrip({
         <StreakBadge
           streak={engagement.streak}
           streakAtRisk={engagement.streakAtRisk}
-          className="shrink-0"
+          className="flex-1"
         />
 
         {engagement.loggedToday ? (

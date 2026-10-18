@@ -77,7 +77,7 @@ export function StreakBadge({ streak, streakAtRisk, className }: StreakBadgeProp
 
   return (
     <div
-      className={`inline-flex items-center gap-2 ${className ?? ''}`}
+      className={`inline-flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 ${className ?? ''}`}
       aria-live="polite"
       aria-atomic="true"
     >
@@ -113,7 +113,8 @@ export function StreakBadge({ streak, streakAtRisk, className }: StreakBadgeProp
       {/* At-risk helper text */}
       {streakAtRisk && hasStreak && (
         <span
-          className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
+          // Wraps under the count in a narrow card instead of pushing the Check in button out of it.
+          className="min-w-0 text-[11px] font-semibold leading-snug px-2 py-0.5 rounded-lg"
           style={{
             color: 'var(--color-gold-ink)',
             backgroundColor: 'color-mix(in srgb, var(--color-accent) 12%, transparent)',
