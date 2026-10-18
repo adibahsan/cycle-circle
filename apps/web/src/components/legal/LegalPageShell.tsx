@@ -3,7 +3,7 @@
 import type React from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { VestaLogoSVG } from '@/components/ui/VestaLogo';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { LandingFooter } from '@/app/(marketing)/welcome/sections/LandingFooter';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -33,7 +33,7 @@ export function LegalPageShell({ title, dateLabel, intro, children }: LegalPageS
             aria-label={t('app.name')}
             className="inline-flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded-xl"
           >
-            <VestaLogoSVG size={28} />
+            <BrandLogo size={36} alt="" />
             <span className="font-extrabold text-[var(--color-text-primary)] text-lg">
               {t('app.name')}
             </span>

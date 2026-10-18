@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { LANDING_CONTAINER, LANDING_FOOTER } from './landing-layout';
-import { VestaLogoSVG } from '@/components/ui/VestaLogo';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { ContactBlock } from '@/components/legal/ContactBlock';
 
 export function LandingFooter() {
@@ -14,7 +14,7 @@ export function LandingFooter() {
       <div className={`${LANDING_CONTAINER} flex flex-col sm:flex-row items-center justify-between gap-5`}>
         {/* Logo + wordmark */}
         <div className="flex items-center gap-2.5">
-          <VestaLogoSVG size={28} />
+          <BrandLogo size={36} alt="" />
           <span className="font-extrabold text-[var(--color-text-primary)] text-lg">
             {t('app.name')}
           </span>

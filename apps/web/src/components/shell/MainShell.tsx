@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppStore } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
-import VestaLogo from '@/components/ui/VestaLogo';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import type { ProfileCompletionStatus } from '@/lib/profile-completion';
 import type { TourStep } from '@/components/onboarding/OnboardingTour';
 import { completeOnboardingTour } from '@/app/actions/user-actions';
@@ -418,7 +418,7 @@ function MainLayoutInner({ children, initial }: { children: React.ReactNode; ini
       >
         {/* Sidebar header / branding */}
         <div className="sb-head pl-4 pr-2 py-4 flex items-center gap-2">
-          <VestaLogo size={28} animate={false} />
+          <BrandLogo size={40} alt="" className="shrink-0" />
           <span className="sb-hide text-lg font-extrabold text-[var(--color-text-primary)] whitespace-nowrap">Cycle Circle</span>
           <SidebarToggle collapsed={sidebar.collapsed} onToggle={sidebar.toggle} controlsId="app-sidebar" />
         </div>
@@ -539,7 +539,7 @@ function MainLayoutInner({ children, initial }: { children: React.ReactNode; ini
         {/* Opaque, not .glass: Tailwind v4 (Lightning CSS) compiles .glass to only -webkit-backdrop-filter, so Chromium gets no blur and content shows through. */}
         <header className="sticky top-0 z-40 bg-[var(--color-bg-card)] dark:bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)] px-4 py-2.5 flex items-center justify-between gap-3 md:hidden">
           <div className="flex min-w-0 items-center gap-2.5">
-            <VestaLogo size={26} animate={false} />
+            <BrandLogo size={34} alt={t('app.name')} className="shrink-0" />
             <ProfileChip
               name={chipName}
               pending={chipPending}

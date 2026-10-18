@@ -1,81 +1,94 @@
 import { PageContainer } from '@/components/ui/PageContainer'
-import { Shimmer } from '@/components/ui/Shimmer';
+import { Shimmer } from '@/components/ui/Shimmer'
 
+const PANEL = 'rounded-panel bg-[var(--color-bg-card)] border border-transparent shadow-panel'
+const WIDE_CARDS = [
+  { tint: 'bg-tint-pink', height: 'h-[300px]' },
+  { tint: 'bg-tint-lavender', height: 'h-[300px]' },
+  { tint: 'bg-tint-sky', height: 'h-[236px]' },
+  { tint: 'bg-tint-sage', height: 'h-[236px]' },
+]
+
+/**
+ * Skeleton in the symptoms page's shape: header, month grid on the left, then on the right the category tabs
+ * and chip grid (below 2xl) or all four category cards (2xl and up).
+ */
 export default function SymptomsLoading() {
   return (
-    <PageContainer width="canvas">
-      {/* Split layout */}
-      <div className="flex flex-col xl:flex-row xl:items-start gap-3 md:gap-5">
-        {/* Left Column: Title + Mini Calendar */}
-        <div className="xl:w-[400px] 2xl:w-[440px] xl:shrink-0 flex flex-col gap-3">
-          {/* Header */}
-          <div>
-            <Shimmer className="h-7 w-40 rounded-lg" />
-            <Shimmer className="h-4 w-48 rounded-md mt-1.5" />
-          </div>
+    <PageContainer width="canvas" className="gap-3 pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+5rem)] md:gap-5 xl:pb-4">
+      <div>
+        <Shimmer className="h-8 w-36 rounded-lg md:h-9" />
+        <Shimmer className="mt-1.5 h-4 w-44 rounded-md" />
+      </div>
 
-          {/* Mini Calendar Card */}
-          <div className="rounded-panel bg-[var(--color-bg-card)] shadow-panel px-2 py-2 sm:px-4 md:py-4 space-y-2">
-            <div className="flex justify-between items-center">
-              <Shimmer className="h-8 w-8 rounded-xl" />
+      <div className="flex flex-col gap-3 md:gap-5 xl:flex-row xl:items-start">
+        {/* Month grid */}
+        <div className="flex flex-col gap-2 md:gap-3 xl:w-[400px] xl:shrink-0 2xl:w-[440px]">
+          <div className={`${PANEL} px-2 py-2 sm:px-4 md:py-4`}>
+            <div className="mb-1 flex items-center justify-between md:mb-2">
+              <Shimmer className="h-11 w-11 rounded-xl" />
               <Shimmer className="h-5 w-32 rounded-md" />
-              <Shimmer className="h-8 w-8 rounded-xl" />
+              <Shimmer className="h-11 w-11 rounded-xl" />
             </div>
-
-            <div className="grid grid-cols-7 gap-2 text-center pb-2">
+            <div className="mb-1 grid grid-cols-7">
               {Array.from({ length: 7 }).map((_, i) => (
                 <div key={i} className="flex justify-center">
                   <Shimmer className="h-3 w-6 rounded-md" />
                 </div>
               ))}
             </div>
-
             <div className="grid grid-cols-7 gap-0.5 md:gap-1">
               {Array.from({ length: 35 }).map((_, i) => (
-                <Shimmer key={i} className="h-11 md:h-12 2xl:h-16 w-full rounded-xl" />
+                <Shimmer key={i} className="h-11 w-full rounded-xl md:h-12 2xl:h-16" />
               ))}
             </div>
           </div>
-
-          {/* Summary Card */}
-          <div className="rounded-panel bg-[var(--color-bg-card)] shadow-panel p-4">
-            <div className="flex flex-col items-center gap-2">
-              <Shimmer className="h-4 w-32 rounded-md" />
-              <div className="flex gap-1">
-                <Shimmer className="h-5 w-8 rounded-full" />
-                <Shimmer className="h-5 w-8 rounded-full" />
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Right Column: Tab selector + Symptom Chips grid */}
-        <div className="flex-1 flex flex-col gap-4">
-          {/* Toolbar: All good (first below xl, right on xl+) + category tabs */}
-          <div className="flex flex-col gap-4 xl:flex-row xl:flex-wrap xl:items-center xl:justify-between xl:gap-3">
-            <Shimmer className="h-11 w-full rounded-full order-first xl:order-last xl:w-40" />
-            <div className="rounded-full p-1 bg-[var(--color-bg-secondary)] flex gap-1 xl:w-fit">
-              <Shimmer className="h-11 flex-1 rounded-full xl:w-24 xl:flex-none" />
-              <Shimmer className="h-11 flex-1 rounded-full xl:w-24 xl:flex-none" />
-              <Shimmer className="h-11 flex-1 rounded-full xl:w-24 xl:flex-none" />
-              <Shimmer className="h-11 flex-1 rounded-full xl:w-24 xl:flex-none" />
+        <div className="flex min-w-0 flex-1 flex-col gap-2 md:gap-4">
+          {/* Tabs + chip grid (below 2xl) */}
+          <div className="flex flex-col gap-2 md:gap-3 2xl:hidden">
+            <div className="flex flex-col gap-2 md:gap-4 xl:flex-row xl:flex-wrap xl:items-center xl:justify-between xl:gap-3">
+              <div className="flex gap-1 rounded-full bg-[var(--color-bg-secondary)] p-1 xl:w-fit">
+                {[0, 1, 2, 3].map((i) => (
+                  <Shimmer key={i} className="h-10 flex-1 rounded-full md:h-11 xl:w-[89px] xl:flex-none" />
+                ))}
+              </div>
+              <Shimmer className="order-first h-11 w-full rounded-full xl:order-last xl:w-[207px] xl:shrink-0" />
+            </div>
+            <div className="rounded-panel bg-tint-pink p-2 md:p-4">
+              <div className="grid auto-rows-fr grid-cols-3 gap-1.5 md:gap-2 xl:grid-cols-4">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className="flex h-[85px] flex-col items-center justify-center gap-2 rounded-2xl bg-[var(--color-bg-card)] p-1.5 md:h-[89px]">
+                    <Shimmer className="h-8 w-8 rounded-full" />
+                    <Shimmer className="h-3 w-14 rounded-md" />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Symptom chips grid */}
-          <div className="rounded-panel bg-tint-pink p-2 md:p-4 grid grid-cols-3 auto-rows-fr gap-1.5 md:gap-2">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="flex flex-col items-center justify-center gap-1 md:gap-2 p-1.5 min-h-[72px] md:min-h-[88px] rounded-2xl bg-[var(--color-bg-card)]">
-                <Shimmer className="h-8 w-8 rounded-full" />
-                <Shimmer className="h-3 w-14 rounded-md" />
-              </div>
-            ))}
+          {/* Every category at once (2xl and up) */}
+          <div className="hidden flex-col gap-3 2xl:flex">
+            <div className="flex items-center justify-between gap-3">
+              <Shimmer className="h-4 w-48 rounded-md" />
+              <Shimmer className="h-11 w-[207px] rounded-full" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {WIDE_CARDS.map(({ tint, height }, i) => (
+                <div key={i} className={`${height} rounded-panel p-3 ${tint}`}>
+                  <Shimmer className="mx-1 mb-3 mt-0.5 h-4 w-24 rounded-md" />
+                  <div className="grid grid-cols-3 gap-2">
+                    {Array.from({ length: 6 }).map((_, j) => (
+                      <Shimmer key={j} className="h-[72px] rounded-2xl" />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-
-          {/* Save button placeholder */}
-          <Shimmer className="h-12 w-full rounded-full mt-2" />
         </div>
       </div>
     </PageContainer>
-  );
+  )
 }
