@@ -1,5 +1,6 @@
 import { prisma } from '../db'
 import { createAuditLog } from './audit-service'
+import { buildFeedbackWhere, type FeedbackFilters } from './feedback-service'
 
 type CsvCell = string | number | boolean | Date | null | undefined
 
@@ -22,29 +23,16 @@ export function toCsv(header: string[], rows: CsvCell[][]): string {
   return BOM + lines.join('\r\n')
 }
 
-export type FeedbackExportFilters = {
-  category?: string
-  minRating?: number
-  dateFrom?: Date
-  dateTo?: Date
-}
+export type FeedbackExportFilters = FeedbackFilters
 
 /** CSV of feedback entries (all fields), honouring the admin's current filters. Audit-logged. */
 export async function generateFeedbackCsv(
   adminId: string,
   filters: FeedbackExportFilters = {},
 ): Promise<string> {
-  const { category, minRating, dateFrom, dateTo } = filters
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = {}
-  if (category && category !== 'all') where.category = category
-  if (minRating) where.rating = { gte: minRating }
-  if (dateFrom || dateTo) {
-    where.createdAt = {
-      ...(dateFrom ? { gte: dateFrom } : {}),
-      ...(dateTo ? { lte: dateTo } : {}),
-    }
-  }
+  const { category, rating, minRating, dateFrom, dateTo } = filters
+  const search = filters.search?.trim()
+  const where = buildFeedbackWhere(filters)
 
   const items = await prisma.feedback.findMany({
     where,
@@ -56,7 +44,9 @@ export async function generateFeedbackCsv(
     rows: items.length,
     filters: {
       category: category ?? null,
+      rating: rating ?? null,
       minRating: minRating ?? null,
+      search: search || null,
       dateFrom: dateFrom?.toISOString() ?? null,
       dateTo: dateTo?.toISOString() ?? null,
     },
