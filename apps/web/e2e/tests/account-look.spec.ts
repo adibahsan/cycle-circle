@@ -54,7 +54,8 @@ for (const [vpName, viewport] of [['desktop', DESKTOP], ['phone', PHONE_375]] as
     test('settings section headers are the shared h2 with a decorative tinted icon', async ({ page }) => {
       await gotoQuiet(page, '/settings')
       const h2s = page.locator('main h2')
-      expect(await h2s.count()).toBeGreaterThanOrEqual(5)
+      // Wait for the client-rendered sections before counting (count() does not retry).
+      await expect(h2s.nth(4)).toBeVisible()
       for (const h of await h2s.all()) {
         await expect(h.locator('[aria-hidden="true"]').first()).toBeAttached()
         expect((await h.innerText()).trim()).not.toBe('')
