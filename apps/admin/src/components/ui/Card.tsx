@@ -9,6 +9,7 @@ interface CardProps {
   hover?: boolean;
   /** Renders the card as a link (keyboard focusable) instead of a plain div. */
   href?: string;
+  /** Accessible name for the link; ignored without `href` (a plain div has no role to name). */
   'aria-label'?: string;
 }
 
@@ -35,7 +36,7 @@ export function Card({ children, className, padding = 'md', hover, href, 'aria-l
   }
 
   return (
-    <div aria-label={ariaLabel} className={classes}>
+    <div className={classes}>
       {children}
     </div>
   );

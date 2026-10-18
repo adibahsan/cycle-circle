@@ -43,7 +43,7 @@ import {
   setUserNotificationPrefs,
 } from '@/app/actions/user-actions'
 import { sendUserReminders, type CronJobResult } from '@/app/actions/system-actions'
-import { isWithinRestoreWindow } from '@vesta/shared/utils/restore-window'
+import { isWithinRestoreWindow, RESTORE_WINDOW_DAYS } from '@vesta/shared/utils/restore-window'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
 
@@ -195,7 +195,7 @@ const MODAL_CONFIG: Record<
   delete: {
     title: 'Delete User',
     message:
-      'This soft-deletes the user account and unsubscribes their number on BDApps. The account can be restored for 30 days, after which it is purged. Restoring does not re-subscribe them.',
+      `This soft-deletes the user account and unsubscribes their number on BDApps. The account can be restored for ${RESTORE_WINDOW_DAYS} days, after which it is purged. Restoring does not re-subscribe them.`,
     confirmLabel: 'Delete',
     variant: 'danger',
   },
@@ -968,7 +968,7 @@ export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
                 </Button>
               ) : (
                 <span className="text-xs text-[var(--color-text-muted)]">
-                  Restore window (30 days) has passed
+                  Restore window ({RESTORE_WINDOW_DAYS} days) has passed
                 </span>
               )}
             </div>

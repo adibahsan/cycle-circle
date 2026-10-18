@@ -3,7 +3,7 @@
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
-import { DateRangeControl } from '@/components/charts/DateRangeControl'
+import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { CHART_VAR } from '@/lib/chart-palette'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -100,7 +100,7 @@ export function EngagementClient({
 
       {/* Date range control — drives time-series panels via ?range= query param */}
       <div className="flex justify-end">
-        <DateRangeControl />
+        <UrlSegmentedControl />
       </div>
 
       {/* Charts grid — 2 columns on lg+, single column on mobile */}

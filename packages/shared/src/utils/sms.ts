@@ -10,6 +10,13 @@ export interface SmsDraft {
   scheduledDate?: string
 }
 
+// ── Status guards ──────────────────────────────────────────────────────────────
+
+/** What an admin may do with a broadcast in each status; the service guards and the UI both use these. */
+export const canEditBroadcast = (status: string) => status === 'DRAFT' || status === 'SCHEDULED' || status === 'FAILED'
+export const canDeleteBroadcast = canEditBroadcast
+export const canSendBroadcast = (status: string) => status === 'DRAFT' || status === 'SCHEDULED'
+
 // ── Composition ────────────────────────────────────────────────────────────────
 
 export function combineBilingualSms(messageEn: string, messageBn?: string | null): string {

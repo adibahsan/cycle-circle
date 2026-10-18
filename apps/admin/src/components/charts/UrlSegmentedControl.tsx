@@ -10,7 +10,7 @@ export interface DateRangeOption {
   days?: number
 }
 
-export interface DateRangeControlProps {
+export interface UrlSegmentedControlProps {
   paramKey?: string
   /** Accessible group name; also used for non-date selectors such as a metric picker. */
   label?: string
@@ -29,15 +29,15 @@ const DEFAULT_OPTIONS: DateRangeOption[] = [
   { value: '1y',  label: '1y',  days: 365 },
 ]
 
-// ── DateRangeControl ──────────────────────────────────────────────────────
+// ── UrlSegmentedControl ──────────────────────────────────────────────────────
 
-export function DateRangeControl({
+export function UrlSegmentedControl({
   paramKey = 'range',
   label = 'Date range',
   defaultValue,
   options = DEFAULT_OPTIONS,
   className,
-}: DateRangeControlProps): React.JSX.Element {
+}: UrlSegmentedControlProps): React.JSX.Element {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()

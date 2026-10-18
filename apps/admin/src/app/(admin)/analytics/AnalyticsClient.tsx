@@ -3,7 +3,7 @@
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
-import { DateRangeControl } from '@/components/charts/DateRangeControl'
+import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { CHART_VAR } from '@/lib/chart-palette'
 import {
   ACCURACY_METRICS,
@@ -97,7 +97,7 @@ interface AnalyticsClientProps {
 function PanelRange({ panel }: { panel: PanelKey }) {
   const cfg = PANEL_RANGES[panel]
   return (
-    <DateRangeControl
+    <UrlSegmentedControl
       paramKey={cfg.param}
       options={[...cfg.options]}
       defaultValue={cfg.defaultValue}
@@ -108,7 +108,7 @@ function PanelRange({ panel }: { panel: PanelKey }) {
 
 function MetricPicker<T extends string>({ cfg, label }: { cfg: MetricConfig<T>; label: string }) {
   return (
-    <DateRangeControl
+    <UrlSegmentedControl
       paramKey={cfg.param}
       options={cfg.options}
       defaultValue={cfg.defaultValue}

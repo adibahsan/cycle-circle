@@ -3,7 +3,15 @@ import { logger } from '../log'
 import { smsSend } from '../adapters/bdapps'
 import { createAuditLog } from './audit-service'
 import { env } from '../../utils/env'
-import { composeSms, scheduleDrafts, type SmsDraft, type SmsSendLanguage } from '../../utils/sms'
+import {
+  composeSms,
+  scheduleDrafts,
+  canEditBroadcast,
+  canDeleteBroadcast,
+  canSendBroadcast,
+  type SmsDraft,
+  type SmsSendLanguage,
+} from '../../utils/sms'
 
 // ── Pure helpers ───────────────────────────────────────────────────────────────
 
@@ -142,7 +150,7 @@ export async function createBroadcastsBulk(
  */
 export async function deleteBroadcast(id: string) {
   const broadcast = await prisma.smsBroadcast.findUnique({ where: { id } })
-  if (!broadcast || broadcast.status === 'SENT' || broadcast.status === 'SENDING') {
+  if (!broadcast || !canDeleteBroadcast(broadcast.status)) {
     throw new Error('Cannot delete a sent or in-progress broadcast')
   }
 
@@ -176,12 +184,10 @@ async function smsSendWithRetries(message: string, backoffMs: number) {
   throw lastError
 }
 
-const EDITABLE_STATUSES = ['DRAFT', 'SCHEDULED', 'FAILED'] as const
-
 async function loadEditable(id: string) {
   const b = await prisma.smsBroadcast.findUnique({ where: { id } })
   if (!b) throw new Error('Broadcast not found')
-  if (!(EDITABLE_STATUSES as readonly string[]).includes(b.status)) {
+  if (!canEditBroadcast(b.status)) {
     throw new Error(
       b.status === 'SENT' ? 'A sent broadcast cannot be changed' : 'A broadcast that is sending cannot be changed',
     )
@@ -375,7 +381,7 @@ export async function sendBroadcast(broadcastId: string, adminUserId: string, op
   if (!broadcast) {
     throw new Error('Broadcast not found')
   }
-  if (broadcast.status !== 'DRAFT' && broadcast.status !== 'SCHEDULED') {
+  if (!canSendBroadcast(broadcast.status)) {
     throw new Error(`Cannot send a broadcast with status ${broadcast.status}`)
   }
 

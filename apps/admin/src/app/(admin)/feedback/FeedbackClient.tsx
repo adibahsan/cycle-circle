@@ -19,7 +19,7 @@ import {
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
-import { DateRangeControl } from '@/components/charts/DateRangeControl'
+import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 
 type FeedbackItem = {
   id: string
@@ -289,7 +289,7 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
           <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
             Analytics
           </h2>
-          <DateRangeControl paramKey="range" />
+          <UrlSegmentedControl paramKey="range" />
         </div>
 
         {/* Chart grid */}
