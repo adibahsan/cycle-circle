@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { journeySteps, currentJourneyPhase, periodStatus, fertileStatus, dashboardHeroState, dashboardBlocks, daysSince, calendarDay } from '@/app/(main)/dashboard/dashboard-model'
+import { journeySteps, currentJourneyPhase, periodStatus, fertileStatus, dashboardHeroState, dashboardBlocks, daysSince, calendarDay, ringCaption } from '@/app/(main)/dashboard/dashboard-model'
 
 const shape = (cycle: number, period: number) => journeySteps(cycle, period).map((s) => [s.phase, s.start, s.end])
 
@@ -137,5 +137,24 @@ describe('calendarDay (dates from the cached dashboard data)', () => {
 
   it('gives daysSince a whole number for a cached timestamp', () => {
     expect(daysSince('2026-10-18', calendarDay('2026-09-28T02:11:17.637Z'))).toBe(20)
+  })
+})
+
+describe('ringCaption (progress ring caption, #66 S7)', () => {
+  it('counts down while the period is ahead', () => {
+    expect(ringCaption({ kind: 'in', days: 9 })).toEqual({ key: 'ringToNext', days: 9 })
+  })
+  it('says the period is expected, without a day count, when it is due or late', () => {
+    expect(ringCaption({ kind: 'due' })).toEqual({ key: 'ringExpected' })
+    expect(ringCaption({ kind: 'late', days: 4 })).toEqual({ key: 'ringExpected' })
+  })
+  it('has no caption without a countdown', () => {
+    expect(ringCaption(null)).toBeNull()
+  })
+  it('the expected caption is neutral in both languages', async () => {
+    const { default: i18n } = await import('@vesta/shared/utils/i18n')
+    expect(i18n.getResource('en', 'translation', 'dashboard.ringExpected')).toBe('Period expected')
+    expect(i18n.getResource('bn', 'translation', 'dashboard.ringExpected')).toBeTruthy()
+    expect(i18n.getResource('en', 'translation', 'dashboard.ringDueSoon')).toBeUndefined()
   })
 })

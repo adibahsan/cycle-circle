@@ -25,6 +25,17 @@ export function periodStatus(daysUntilNext: number | null): PeriodStatus | null 
   return { kind: 'late', days: -daysUntilNext }
 }
 
+export type RingCaption = { key: 'ringToNext'; days: number } | { key: 'ringExpected' }
+
+/**
+ * The progress ring's caption: a countdown while the period is ahead, otherwise a neutral
+ * "period expected". The late day count stays in the hero's next-period stat only.
+ */
+export function ringCaption(period: PeriodStatus | null): RingCaption | null {
+  if (!period) return null
+  return period.kind === 'in' ? { key: 'ringToNext', days: period.days } : { key: 'ringExpected' }
+}
+
 export type FertileStatus = { kind: 'open'; until: string } | { kind: 'opens'; days: number; on: string } | { kind: 'closed' }
 
 const dayNumber = (ymd: string) => {

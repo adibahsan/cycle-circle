@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/Card'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { cn } from '@/lib/cn'
 import { ExampleNote } from './CycleJourney'
-import type { PeriodStatus } from './dashboard-model'
+import { ringCaption, type PeriodStatus } from './dashboard-model'
 import { formatCount } from './format'
 
 interface CycleProgressRingProps {
@@ -28,8 +28,8 @@ const RADIUS = (SIZE - STROKE) / 2
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
 /**
- * Progress through this cycle. When the period is overdue the ring is full and says the period is
- * due, without the late day count: the hero's next-period stat is that number's only home.
+ * Progress through this cycle. When the period is due or overdue the ring is full and says the period is
+ * expected, without the late day count: the hero's next-period stat is that number's only home.
  */
 export function CycleProgressRing({ cycleDay, cycleLength, phase, period, language, example = false, children }: CycleProgressRingProps) {
   const { t } = useTranslation()
@@ -37,13 +37,8 @@ export function CycleProgressRing({ cycleDay, cycleLength, phase, period, langua
   const progress = Math.min(1, Math.max(0, cycleDay / cycleLength))
   const ringValues = { day: n(cycleDay), length: n(cycleLength) }
   const ringLabel = example ? t('dashboard.exampleRingLabel', ringValues) : t('dashboard.ringLabel', ringValues)
-  const caption = example
-    ? null
-    : period?.kind === 'in'
-      ? t('dashboard.ringToNext', { count: period.days, n: n(period.days) })
-      : period
-        ? t('dashboard.ringDueSoon')
-        : null
+  const c = example ? null : ringCaption(period)
+  const caption = !c ? null : c.key === 'ringToNext' ? t('dashboard.ringToNext', { count: c.days, n: n(c.days) }) : t('dashboard.ringExpected')
 
   return (
     <Card tone="panel" padding="md" className="h-full">
