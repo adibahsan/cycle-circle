@@ -6,6 +6,7 @@
  */
 import { test, expect, type Page } from '@playwright/test'
 import i18n from '@vesta/shared/utils/i18n'
+import { statePath } from '../support/auth'
 import { gotoQuiet, expectNoHorizontalOverflow, DESKTOP, PHONE_375 } from '../guards/helpers'
 
 const en = i18n.getFixedT('en')
@@ -26,8 +27,8 @@ async function tokenColor(page: Page, token: string): Promise<string> {
   }, token)
 }
 
-// The seed persona has symptom logs but no complete cycle, so only the symptom chart renders;
-// the cycle length line is checked when that persona has one.
+// Symptom bars are checked on the seed persona (it has symptom logs). The cycle length line needs at
+// least two completed cycles to draw a curve, so it is checked on the cyclesOnly persona, which has exactly two.
 for (const theme of ['light', 'dark'] as const) {
   test(`${theme}: symptom bars use the lavender accent token`, async ({ page }) => {
     await page.setViewportSize(DESKTOP)
@@ -38,19 +39,25 @@ for (const theme of ['light', 'dark'] as const) {
     const fill = await bar.evaluate((el) => getComputedStyle(el).fill)
     expect(fill).toBe(await tokenColor(page, '--color-accent-lavender'))
   })
-
-  test(`${theme}: the cycle length line uses the pink accent token`, async ({ page }) => {
-    await page.setViewportSize(DESKTOP)
-    await gotoQuiet(page, '/insights')
-    const heading = page.getByRole('heading', { name: en('insights.cycleLengthTrend') })
-    test.skip((await heading.count()) === 0, 'persona has no completed cycle')
-    await setTheme(page, theme)
-    const line = page.locator('.recharts-line-curve').first()
-    await expect(line).toBeVisible()
-    const stroke = await line.evaluate((el) => getComputedStyle(el).stroke)
-    expect(stroke).toBe(await tokenColor(page, '--color-accent-pink'))
-  })
 }
+
+test.describe('cycle length line', () => {
+  test.use({ storageState: statePath('cyclesOnly') })
+  for (const theme of ['light', 'dark'] as const) {
+    test(`${theme}: the cycle length line uses the pink accent token`, async ({ page }) => {
+      await page.setViewportSize(DESKTOP)
+      await gotoQuiet(page, '/insights')
+      await expect(page.getByRole('heading', { name: en('insights.cycleLengthTrend') })).toBeVisible()
+      await setTheme(page, theme)
+      const pink = await tokenColor(page, '--color-accent-pink')
+      const line = page.locator('.recharts-line-curve').first()
+      await expect(line).toBeVisible()
+      expect(await line.evaluate((el) => getComputedStyle(el).stroke)).toBe(pink)
+      const dot = page.locator('.recharts-line-dot').first()
+      expect(await dot.evaluate((el) => getComputedStyle(el).fill)).toBe(pink)
+    })
+  }
+})
 
 test('section headings carry a subtitle on the same row', async ({ page }) => {
   await page.setViewportSize(DESKTOP)

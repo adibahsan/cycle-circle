@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test'
+import i18n from '@vesta/shared/utils/i18n'
 import { statePath } from '../support/auth'
 import { gotoQuiet, expectNoHorizontalOverflow, expectWithinViewport, PHONE_375, DESKTOP } from '../guards/helpers'
+
+const en = i18n.getFixedT('en')
 
 /** No half-width card may sit alone in its row (a lone half-width card beside empty space). */
 async function expectNoHalfWidthPair(page: import('@playwright/test').Page, containerSel: string) {
@@ -36,10 +39,17 @@ test.describe('desktop', () => {
     await expectNoHalfWidthPair(page, 'main .lg\\:grid')
   })
 
-  test('insights with partial data collapses empty charts into one note', async ({ page }) => {
-    await gotoQuiet(page, '/insights')
-    await expect(page.getByText(/not enough data yet/i)).toHaveCount(1)
-    await expect(page.getByTestId('insights-missing-note')).toHaveCount(1)
+  test.describe('partial data', () => {
+    // cyclesOnly: two completed cycles and no symptom logs, so only symptom frequency lacks data.
+    test.use({ storageState: statePath('cyclesOnly') })
+    test('insights with partial data collapses empty charts into one note', async ({ page }) => {
+      await gotoQuiet(page, '/insights')
+      await expect(page.getByText(/not enough data yet/i)).toHaveCount(1)
+      await expect(page.getByTestId('insights-missing-note')).toHaveCount(1)
+      await expect(page.getByTestId('insights-missing-note')).toContainText(en('insights.symptomFrequency'))
+      // The charts with data still render: three panels, no empty card per missing chart.
+      await expect(page.getByRole('heading', { level: 2 })).toHaveCount(3)
+    })
   })
 
   test.describe('empty account', () => {

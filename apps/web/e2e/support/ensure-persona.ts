@@ -89,3 +89,36 @@ export async function ensureModePersonas(): Promise<void> {
     }
   }
 }
+
+/**
+ * Idempotent setup for the `cyclesOnly` persona (+8801700000784 only): one SELF profile with exactly three
+ * periods (two completed cycles, 28 and 32 days, so the cycle length line has two points) and no symptom
+ * logs, so Insights shows every chart except symptom frequency. Re-dated on every run.
+ */
+export async function ensureInsightsPersona(): Promise<void> {
+  const digits = PERSONAS.cyclesOnly.phone
+  if (digits !== '01700000784') throw new Error('ensureInsightsPersona only manages 01700000784')
+  loadEnvLocal()
+  const { prisma } = await import('@vesta/shared')
+  const user = await prisma.user.findUnique({ where: { phone: '+88' + digits } })
+  if (!user) throw new Error('cyclesOnly persona user missing: dev-login must run first')
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { onboardingTourCompletedAt: user.onboardingTourCompletedAt ?? new Date(), profileCompleted: true, fullName: user.fullName ?? 'E2E Cycles Only' },
+  })
+  // Cycles of 28 and 32 days: unequal, so the line is not flat (a flat path has a zero-height box).
+  const starts = [74, 46, 14].map((d) => new Date(Date.now() - d * DAY))
+  const lastPeriodStart = starts[starts.length - 1]
+  let profile = await prisma.profile.findFirst({ where: { userId: user.id } })
+  if (!profile) {
+    profile = await prisma.profile.create({
+      data: { userId: user.id, name: 'E2E Cycles Only', relation: 'SELF', goal: 'tracking', cycleLength: 28, periodLength: 5, lastPeriodStart },
+    })
+  }
+  await prisma.profile.update({ where: { id: profile.id }, data: { goal: 'tracking', lastPeriodStart } })
+  await prisma.symptomLog.deleteMany({ where: { profileId: profile.id } })
+  await prisma.periodLog.deleteMany({ where: { profileId: profile.id } })
+  await prisma.periodLog.createMany({
+    data: starts.map((startDate) => ({ profileId: profile.id, startDate, endDate: new Date(startDate.getTime() + 4 * DAY), flowIntensity: 'MEDIUM' as const })),
+  })
+}
