@@ -18,8 +18,5 @@ export * from './cron-settings-service'
 export { recalculatePrediction } from '../prediction-calc'
 export * from './app-otp-service'
 export * from './log-reader-service'
-<<<<<<< HEAD
 export * from './upload-service'
-=======
 export * from './plan-history-service'
->>>>>>> feat/admin-srs-v1.4
