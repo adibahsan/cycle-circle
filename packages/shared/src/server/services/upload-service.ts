@@ -55,3 +55,26 @@ export function resolveUploadFile(name: string): { filePath: string; contentType
   const ext = name.slice(name.lastIndexOf('.') + 1) as ImageExt
   return { filePath: path.join(uploadsDir(), name), contentType: TYPES[ext] }
 }
+
+/**
+ * `GET /uploads/[name]` handler shared by the web and admin apps (both serve the same volume):
+ * article images, immutable because generated names are never reused.
+ */
+export async function serveUpload(_req: Request, { params }: { params: Promise<{ name: string }> }) {
+  const { name } = await params
+  const file = resolveUploadFile(name)
+  if (!file) return new Response('Not found', { status: 404 })
+  try {
+    const data = await fs.readFile(file.filePath)
+    return new Response(new Uint8Array(data), {
+      headers: {
+        'Content-Type': file.contentType,
+        'Content-Length': String(data.length),
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    })
+  } catch {
+    return new Response('Not found', { status: 404 })
+  }
+}

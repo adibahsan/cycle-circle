@@ -31,6 +31,11 @@ export type BdappsUnsubscribeResult =
   | { status: 'skipped'; reason: 'no-subscriber-id' }
   | { status: 'failed'; error: string }
 
+/** The failure text to show an admin, or null when the unsubscribe worked, was skipped or did not run. */
+export function bdappsFailureText(result: BdappsUnsubscribeResult | null | undefined): string | null {
+  return result?.status === 'failed' ? result.error : null
+}
+
 /**
  * Unsubscribe a user's number on BDApps so they stop being charged. Needs the masked
  * subscriber id stored at OTP verify; legacy phone ids are rejected by BDApps (E1951) so
