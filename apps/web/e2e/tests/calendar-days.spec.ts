@@ -48,6 +48,19 @@ test.describe('accessible days', () => {
     expect(names.some((n) => /, (Period|Predicted period|Fertile|Ovulation)\b/.test(n))).toBe(true)
   })
 
+  test('follicular and luteal days are tinted, named, and in the legend (#78)', async ({ page }) => {
+    await gotoQuiet(page, '/calendar?month=2026-10')
+    const names = await grid(page)
+      .getByRole('button')
+      .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? ''))
+    expect(names.some((n) => /, (Follicular|Luteal) phase\b/.test(n))).toBe(true)
+    const tinted = grid(page).getByRole('button', { name: /, (Follicular|Luteal) phase\b/ }).first()
+    await expect(tinted).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+    const legend = page.getByRole('group', { name: 'Colour key' })
+    await expect(legend.getByText('Follicular phase')).toBeVisible()
+    await expect(legend.getByText('Luteal phase')).toBeVisible()
+  })
+
   test('arrow keys move focus within the grid; only one day is tabbable', async ({ page }) => {
     await gotoQuiet(page, '/calendar?month=2026-10')
     await expect(grid(page).locator('button[tabindex="0"]')).toHaveCount(1)

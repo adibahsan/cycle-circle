@@ -13,7 +13,7 @@ export default function CalendarLoading() {
       {/* Main split layout */}
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Calendar Grid Card */}
-        <div className="lg:w-[480px] lg:shrink-0 rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] p-6 space-y-4">
+        <div className="lg:w-[480px] lg:shrink-0 rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel p-6 space-y-4">
           {/* Header controls (Month / Navs) */}
           <div className="flex justify-between items-center">
             <Shimmer className="h-9 w-9 rounded-xl" />
@@ -49,7 +49,7 @@ export default function CalendarLoading() {
         {/* Right Detail/Summary panels */}
         <div className="flex-1 flex flex-col gap-4">
           {/* Detailed Selected Day Sheet */}
-          <div className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] p-6 space-y-4">
+          <div className="rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel p-6 space-y-4">
             <div className="flex justify-between items-center">
               <Shimmer className="h-5 w-44 rounded-lg" />
               <Shimmer className="h-6 w-6 rounded-full" />
@@ -68,7 +68,7 @@ export default function CalendarLoading() {
           </div>
 
           {/* Monthly Cycle Prediction Summary Card */}
-          <div className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] p-6 space-y-3">
+          <div className="rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel p-6 space-y-3">
             <Shimmer className="h-4.5 w-24 rounded-md" />
             <div className="space-y-2">
               <div className="flex justify-between items-center">

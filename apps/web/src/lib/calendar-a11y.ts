@@ -1,19 +1,22 @@
 /**
  * Calendar accessibility: what a day button announces.
- * Every visual state (period, predicted period, fertile, ovulation, today) is also spoken,
+ * Every visual state (period, predicted period, fertile, ovulation, follicular/luteal tint, today) is also spoken,
  * so nothing on the calendar is colour-only.
  */
 import { addDays, addMonths, startOfWeek } from 'date-fns'
-import type { DayStateFlags } from './calendar-day-style'
+import type { CyclePhase } from '@vesta/shared/types'
+import { dayStyleKind, type DayStateFlags } from './calendar-day-style'
 
 export interface DayNameInput {
   date: Date
   flags: DayStateFlags
+  /** From `cyclePhaseOn`; announced when it is what the day shows (the follicular/luteal tint). */
+  phase?: CyclePhase | null
   isToday: boolean
   language: string
 }
 
-export function dayAccessibleName({ date, flags, isToday, language }: DayNameInput, t: (key: string) => string): string {
+export function dayAccessibleName({ date, flags, phase, isToday, language }: DayNameInput, t: (key: string) => string): string {
   const fullDate = new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : 'en-US', {
     weekday: 'long',
     month: 'long',
@@ -24,6 +27,8 @@ export function dayAccessibleName({ date, flags, isToday, language }: DayNameInp
   if (flags.isPeriod) states.push(t(flags.isFuturePredicted ? 'calendar.predictedPeriod' : 'calendar.period'))
   if (flags.isFertile) states.push(t('calendar.fertile'))
   if (flags.isOvulation) states.push(t('calendar.ovulationDay'))
+  const kind = dayStyleKind(flags, phase)
+  if (kind === 'follicular' || kind === 'luteal') states.push(t(`calendar.${kind}Phase`))
   if (isToday) states.push(t('calendar.today'))
   return [fullDate, ...states].join(', ')
 }

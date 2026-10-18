@@ -13,7 +13,6 @@ import {
   Bell,
   Download,
   User,
-  Shield,
   LogOut,
   ChevronRight,
   Users,
@@ -30,7 +29,8 @@ import {
 import { useAppStore } from '@/lib/store'
 import { useLanguage } from '@/lib/use-language'
 import { Button } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
+import { Card, type CardTint } from '@/components/ui/Card'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 import { updateNotificationPrefs, exportUserDataCsv, exportUserDataRows, updateProfileReminderOptOut } from '@/app/actions/settings-actions'
 import { updateContactInfo } from '@/app/actions/user-actions'
 import type { AuthUser } from '@vesta/shared/server/auth'
@@ -82,7 +82,7 @@ function SegmentedControl<T extends string>({
   onChange: (v: T) => void
 }) {
   return (
-    <div role="radiogroup" className="flex items-center gap-0.5 p-0.5 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+    <div role="radiogroup" className="flex items-center gap-0.5 p-1 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
       {options.map(opt => {
         const active = opt.value === value
         return (
@@ -91,16 +91,16 @@ function SegmentedControl<T extends string>({
             role="radio"
             aria-checked={active}
             onClick={() => onChange(opt.value)}
-            className={`relative flex-1 min-h-11 py-2 px-4 rounded-[10px] text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] ${
+            className={`relative flex-1 min-h-11 py-2 px-4 rounded-full text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] ${
               active
-                ? 'text-[var(--color-on-accent)] shadow-soft'
+                ? 'text-[var(--color-text-primary)]'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
             }`}
           >
             {active && (
               <motion.span
                 layoutId={`seg-${options.map(o => o.value).join('-')}`}
-                className="absolute inset-0 rounded-[10px] bg-[var(--goal-accent)]"
+                className="absolute inset-0 rounded-full bg-[var(--color-bg-card)] shadow-soft"
                 transition={{ type: 'spring', damping: 22, stiffness: 300 }}
               />
             )}
@@ -150,16 +150,25 @@ function Toggle({
   )
 }
 
-function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
+// Full literal class strings so Tailwind can see them.
+const TINT_BADGE: Record<CardTint, string> = {
+  peach: 'bg-tint-peach text-accent-peach',
+  pink: 'bg-tint-pink text-accent-pink',
+  mint: 'bg-tint-mint text-accent-mint',
+  lavender: 'bg-tint-lavender text-accent-lavender',
+  sky: 'bg-tint-sky text-accent-sky',
+  sage: 'bg-tint-sage text-accent-sage',
+}
+
+/** Section title with a drawn icon on a pastel tint, for the shared SectionHeader. */
+function SectionTitle({ icon: Icon, tint, children }: { icon: React.ElementType; tint: CardTint; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 mb-3">
-      <div className="w-7 h-7 rounded-lg bg-[var(--goal-accent)] flex items-center justify-center shrink-0">
-        <Icon size={14} className="text-[var(--color-on-accent)]" aria-hidden="true" />
-      </div>
-      <h2 className="text-base font-bold text-[var(--color-text-primary)]">
-        {title}
-      </h2>
-    </div>
+    <span className="flex items-center gap-2.5">
+      <span aria-hidden="true" className={`w-8 h-8 rounded-full ${TINT_BADGE[tint]} flex items-center justify-center shrink-0`}>
+        <Icon size={15} />
+      </span>
+      {children}
+    </span>
   )
 }
 
@@ -175,16 +184,17 @@ function AccountRow({
   badge?: string
 }) {
   return (
-    <Link href={href} className="flex items-center gap-3 py-3 px-1 group">
+    <Link href={href} className="flex items-center gap-3 py-3 px-1 min-h-11 rounded-sm group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]">
       <Icon
         size={17}
-        className="text-[var(--color-text-muted)] group-hover:text-[var(--goal-accent)] transition-colors shrink-0"
+        aria-hidden="true"
+        className="text-[var(--color-text-muted)] group-hover:text-[var(--color-text-primary)] transition-colors shrink-0"
       />
       <span className="flex-1 text-sm text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] transition-colors">
         {label}
       </span>
       {badge && (
-        <span className="flex items-center gap-1 text-xs font-bold text-[var(--color-on-accent)] px-2 py-0.5 rounded-full bg-[var(--goal-accent)]">
+        <span className="flex items-center gap-1 text-xs font-bold text-accent-peach px-2.5 py-0.5 rounded-full bg-tint-peach">
           {badge}
         </span>
       )}
@@ -441,8 +451,8 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader icon={Globe} title={t('settings.languageAndAppearance')} />
-              <Card padding="md" className="space-y-5">
+              <SectionHeader title={<SectionTitle icon={Globe} tint="sky">{t('settings.languageAndAppearance')}</SectionTitle>} />
+              <Card tone="panel" padding="md" className="space-y-5">
                 {/* Language */}
                 <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
@@ -490,8 +500,8 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader icon={Bell} title={t('settings.notifications')} />
-              <Card padding="md" className="divide-y divide-[var(--color-border)]">
+              <SectionHeader title={<SectionTitle icon={Bell} tint="pink">{t('settings.notifications')}</SectionTitle>} />
+              <Card tone="panel" padding="md" className="divide-y divide-[var(--color-border)]">
                 {[
                   {
                     key: 'periodAlert' as const,
@@ -554,8 +564,8 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader icon={Download} title={t('settings.export')} />
-              <Card padding="md" className="space-y-3">
+              <SectionHeader title={<SectionTitle icon={Download} tint="mint">{t('settings.export')}</SectionTitle>} />
+              <Card tone="panel" padding="md" className="space-y-3">
                 <p className="text-xs text-[var(--color-text-muted)]">
                   {t('settings.exportDesc')}
                 </p>
@@ -578,20 +588,20 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   <button
                     onClick={handleExportCsv}
                     disabled={exporting}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--goal-accent)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                    className="flex flex-col items-center gap-2 rounded-2xl border border-transparent bg-tint-sky p-4 hover:border-[var(--color-accent-sky)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                   >
-                    <FileText size={22} className="text-[var(--color-secondary)]" aria-hidden="true" />
-                    <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                    <FileText size={22} className="text-accent-sky" aria-hidden="true" />
+                    <span className="text-xs font-semibold text-[var(--color-text-primary)]">
                       {t('settings.exportCsv')}
                     </span>
                   </button>
                   <button
                     onClick={handleExportExcel}
                     disabled={exporting}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4 hover:border-[var(--goal-accent)] hover:bg-[var(--color-bg-primary)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                    className="flex flex-col items-center gap-2 rounded-2xl border border-transparent bg-tint-mint p-4 hover:border-[var(--color-accent-mint)] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 transition-[color,background-color,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
                   >
-                    <FileSpreadsheet size={22} className="text-[var(--goal-accent)]" aria-hidden="true" />
-                    <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                    <FileSpreadsheet size={22} className="text-accent-mint" aria-hidden="true" />
+                    <span className="text-xs font-semibold text-[var(--color-text-primary)]">
                       {t('settings.exportExcel')}
                     </span>
                   </button>
@@ -606,10 +616,10 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader icon={User} title={t('settings.account')} />
-              <Card padding="md" className="space-y-2">
+              <SectionHeader title={<SectionTitle icon={User} tint="lavender">{t('settings.account')}</SectionTitle>} />
+              <Card tone="panel" padding="md" className="space-y-2">
                 {/* Account info */}
-                <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-3 space-y-1.5">
+                <div className="rounded-2xl bg-[var(--color-bg-secondary)] p-4 space-y-1.5">
                   {user.phone && (
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[var(--color-text-muted)]">{t('settings.phone')}</span>
@@ -735,7 +745,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                         <span
                           className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                             planTier === 'PRO'
-                              ? 'bg-[var(--goal-accent)] text-[var(--color-on-accent)]'
+                              ? 'bg-tint-peach text-accent-peach'
                               : planTier === 'LAPSED'
                               ? 'bg-[color-mix(in_srgb,var(--color-accent)_16%,var(--color-bg-card))] border border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] text-[var(--color-text-primary)]'
                               : 'bg-[var(--color-border)] text-[var(--color-text-muted)]'
@@ -808,16 +818,16 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
               initial="hidden"
               animate="visible"
             >
-              <SectionHeader icon={Info} title={t('settings.about')} />
-              <Card padding="md" className="space-y-3">
+              <SectionHeader title={<SectionTitle icon={Info} tint="sage">{t('settings.about')}</SectionTitle>} />
+              <Card tone="panel" padding="md" className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-[var(--color-text-secondary)]">{t('settings.appVersion')}</span>
                   <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t('settings.versionName', { version: '2.0' })}</span>
                 </div>
 
-                <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-3 py-2.5 flex items-start gap-2">
-                  <Lock aria-hidden="true" size={14} className="text-[var(--color-secondary)] mt-0.5 shrink-0" />
-                  <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                <div className="rounded-2xl bg-tint-sage px-4 py-3 flex items-start gap-2">
+                  <Lock aria-hidden="true" size={14} className="text-accent-sage mt-0.5 shrink-0" />
+                  <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
                     {t('settings.encryptionNote')}
                   </p>
                 </div>

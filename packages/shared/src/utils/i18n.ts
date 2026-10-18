@@ -234,6 +234,10 @@ const resources = {
         previousMonth: 'Previous month',
         nextMonth: 'Next month',
         pregnancyComingSoon: 'Pregnancy mode — predictions are paused. Full tracking coming soon.',
+        // #78
+        follicularPhase: 'Follicular phase',
+        lutealPhase: 'Luteal phase',
+        legend: 'Colour key',
       },
       insights: {
         title: 'Cycle Insights',
@@ -277,7 +281,7 @@ const resources = {
         fertileColumn: 'Fertile window',
       },
       symptoms: {
-        title: 'Log Symptoms', physical: 'Physical', mood: 'Mood',
+        title: 'Symptoms', physical: 'Physical', mood: 'Mood',
         discharge: 'Discharge', lifestyle: 'Lifestyle', selectDate: 'Select date',
         saved: 'Symptoms saved!',
         tapToLog: 'Tap symptoms to log them for {{date}}',
@@ -1039,6 +1043,10 @@ const resources = {
         previousMonth: 'পূর্ববর্তী মাস',
         nextMonth: 'পরবর্তী মাস',
         pregnancyComingSoon: 'গর্ভাবস্থা মোড — পূর্বাভাস সাময়িকভাবে বন্ধ। সম্পূর্ণ ট্র্যাকিং শীঘ্রই আসছে।',
+        // #78
+        follicularPhase: 'ফলিকুলার পর্যায়',
+        lutealPhase: 'লুটিয়াল পর্যায়',
+        legend: 'রঙের অর্থ',
       },
       insights: {
         title: 'চক্র ইনসাইটস',
@@ -1082,7 +1090,7 @@ const resources = {
         fertileColumn: 'উর্বর সময়',
       },
       symptoms: {
-        title: 'লক্ষণ লগ করুন', physical: 'শারীরিক', mood: 'মেজাজ',
+        title: 'লক্ষণ', physical: 'শারীরিক', mood: 'মেজাজ',
         discharge: 'স্রাব', lifestyle: 'জীবনযাত্রা', selectDate: 'তারিখ নির্বাচন করুন',
         saved: 'লক্ষণ সংরক্ষিত!',
         tapToLog: '{{date}} এর জন্য লক্ষণ লগ করতে ট্যাপ করুন',

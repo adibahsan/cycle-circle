@@ -13,7 +13,7 @@ export default function SubscriptionLoading() {
       {/* Current Plan + Upgrade card split row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Current Plan Card */}
-        <div className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] p-6 space-y-4">
+        <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 space-y-4">
           <div className="flex justify-between items-start">
             <div className="space-y-2">
               <Shimmer className="h-3 w-20 rounded-md" />
@@ -30,7 +30,7 @@ export default function SubscriptionLoading() {
         </div>
 
         {/* Pro Upgrade Card */}
-        <div className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6 space-y-5">
+        <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 space-y-5">
           <div className="flex items-center gap-2">
             <Shimmer className="h-6 w-6 rounded-full" />
             <Shimmer className="h-6 w-20 rounded-md" />
@@ -54,7 +54,7 @@ export default function SubscriptionLoading() {
       {/* Comparison table */}
       <div className="space-y-3">
         <Shimmer className="h-5 w-32 rounded-lg" />
-        <div className="rounded-2xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-card)]">
+        <div className="rounded-panel overflow-hidden border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)]">
           {/* Header Row */}
           <div className="grid grid-cols-3 bg-[var(--color-bg-secondary)] p-3">
             <Shimmer className="h-4 w-16 rounded-md col-span-1" />
