@@ -1,6 +1,7 @@
 'use server'
 
 import { requireAdminAuth } from '@vesta/shared/server/auth'
+import { parseDhakaDay } from '@vesta/shared/utils/dhaka-date'
 import { generateFeedbackCsv, generateUsersCsv } from '@vesta/shared/server/services'
 
 export async function exportFeedbackCsv(filters?: {
@@ -17,9 +18,9 @@ export async function exportFeedbackCsv(filters?: {
     rating: filters?.rating,
     minRating: filters?.minRating,
     search: filters?.search,
-    // Date-only values (YYYY-MM-DD): from = start of day, to = end of day (UTC), matching the list.
-    dateFrom: filters?.dateFrom ? new Date(`${filters.dateFrom.slice(0, 10)}T00:00:00.000Z`) : undefined,
-    dateTo: filters?.dateTo ? new Date(`${filters.dateTo.slice(0, 10)}T23:59:59.999Z`) : undefined,
+    // Date-only values are inclusive Asia/Dhaka days, matching the list.
+    dateFrom: parseDhakaDay(filters?.dateFrom),
+    dateTo: parseDhakaDay(filters?.dateTo, true),
   })
 }
 
