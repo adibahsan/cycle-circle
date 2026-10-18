@@ -14,6 +14,13 @@ const RANGE_DAYS: Record<string, number> = {
   '1y': 365,
 }
 
+/** `YYYY-MM-DD` from the date inputs; dateTo covers the whole day (UTC). */
+function parseDate(value: string | undefined, endOfDay = false): Date | undefined {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined
+  const d = new Date(`${value}T${endOfDay ? '23:59:59.999' : '00:00:00.000'}Z`)
+  return Number.isNaN(d.getTime()) ? undefined : d
+}
+
 export default async function FeedbackPage({
   searchParams,
 }: {
@@ -29,7 +36,11 @@ export default async function FeedbackPage({
       page: Number(params.page) || 1,
       pageSize: Number(params.pageSize) || 20,
       category: params.category,
+      rating: params.rating ? Number(params.rating) : undefined,
       minRating: params.minRating ? Number(params.minRating) : undefined,
+      search: params.q?.trim() || undefined,
+      dateFrom: parseDate(params.dateFrom),
+      dateTo: parseDate(params.dateTo, true),
     }),
     getFeedbackVolume(days),
     getFeedbackCategories(days),

@@ -14,7 +14,9 @@ interface FeedbackListParams {
   page?: number
   pageSize?: number
   category?: string
+  rating?: number
   minRating?: number
+  search?: string
   dateFrom?: Date
   dateTo?: Date
 }
@@ -25,7 +27,9 @@ function feedbackCacheKey(params: FeedbackListParams) {
     String(params.page ?? 1),
     String(params.pageSize ?? 20),
     params.category ?? '',
+    String(params.rating ?? ''),
     String(params.minRating ?? ''),
+    params.search ?? '',
     params.dateFrom?.toISOString() ?? '',
     params.dateTo?.toISOString() ?? '',
   ]
