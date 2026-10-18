@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useTransition } from 'react'
+import { useState, useRef, useTransition, type KeyboardEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -22,12 +22,15 @@ import {
   Clock,
   Activity,
   Bell,
+  History,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { RefetchButton } from '@/components/ui/RefetchButton'
+import { useUrlTab } from '@/lib/use-url-tab'
+import type { PlanHistoryEntry } from '@vesta/shared/server/services'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { Select } from '@/components/ui/Select'
 import {
@@ -116,6 +119,8 @@ interface UserDetail {
 
 interface UserDetailClientProps {
   user: UserDetail
+  /** Loaded server-side only while the Plan history tab is open. */
+  planHistory: PlanHistoryEntry[] | null
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -156,11 +161,14 @@ function StatusBadge({ status }: { status: UserStatus }) {
   return <Badge variant="neutral">Deleted</Badge>
 }
 
-type TabKey = 'profiles' | 'subscription' | 'feedback'
+type TabKey = 'profiles' | 'subscription' | 'plan' | 'feedback'
+
+const TAB_KEYS = ['profiles', 'subscription', 'plan', 'feedback'] as const satisfies readonly TabKey[]
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'profiles', label: 'Profiles', icon: <Heart size={15} aria-hidden="true" /> },
   { key: 'subscription', label: 'Subscription', icon: <CreditCard size={15} aria-hidden="true" /> },
+  { key: 'plan', label: 'Plan history', icon: <History size={15} aria-hidden="true" /> },
   { key: 'feedback', label: 'Feedback', icon: <MessageSquare size={15} aria-hidden="true" /> },
 ]
 
@@ -592,6 +600,69 @@ function SubscriptionTab({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Plan history Tab (translog lines for this user)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CAUSE_LABELS: Record<string, string> = {
+  'otp-verify': 'OTP sign-in',
+  'phone-verify': 'Phone verified',
+  'dev-login': 'Dev login',
+  webhook: 'BDApps webhook',
+  'nightly-check': 'Nightly check',
+  unsubscribe: 'Unsubscribed',
+  admin: 'Admin',
+  unknown: 'Unknown',
+}
+
+function PlanHistoryTab({ entries }: { entries: PlanHistoryEntry[] }) {
+  if (entries.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-12 text-[var(--color-text-muted)]">
+        <History size={36} aria-hidden="true" className="opacity-30" />
+        <p className="text-sm">No plan changes recorded for this user.</p>
+      </div>
+    )
+  }
+
+  return (
+    <ol className="space-y-3">
+      {entries.map((e, i) => (
+        <li
+          key={`${e.ts}-${i}`}
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 shadow-soft"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-primary)]">
+              {e.event === 'plan.override-kept' ? (
+                <>
+                  <Badge variant="warning" size="sm">{e.to ?? '—'}</Badge>
+                  <span>Admin override kept</span>
+                </>
+              ) : (
+                <>
+                  <Badge variant="neutral" size="sm">{e.from ?? 'None'}</Badge>
+                  <span aria-hidden="true">→</span>
+                  <span className="sr-only">to</span>
+                  <Badge variant={e.to === 'PRO' ? 'success' : 'neutral'} size="sm">{e.to ?? '—'}</Badge>
+                  {!e.changed && <span className="text-xs text-[var(--color-text-muted)]">(no change)</span>}
+                </>
+              )}
+            </div>
+            <p className="text-xs text-[var(--color-text-muted)]">
+              {CAUSE_LABELS[e.cause] ?? e.cause}
+              {e.adminId && <> · by admin <span className="font-mono">{e.adminId}</span></>}
+            </p>
+          </div>
+          <time dateTime={e.ts} className="text-xs tabular-nums text-[var(--color-text-muted)]">
+            {formatDateTime(new Date(e.ts))}
+          </time>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Feedback Tab
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -655,16 +726,30 @@ function FeedbackTab({ feedback }: { feedback: Feedback[] }) {
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function UserDetailClient({ user }: UserDetailClientProps) {
+export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [activeTab, setActiveTab] = useState<TabKey>('profiles')
+  const [activeTab, setActiveTab] = useUrlTab(TAB_KEYS, 'profiles')
   const [modalAction, setModalAction] = useState<ModalAction>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [suspendReason, setSuspendReason] = useState('')
 
   // Subscription status selector state
   const [pendingStatus, setPendingStatus] = useState<'PRO' | 'FREE' | 'LAPSED' | null>(null)
+
+  function handleTabKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const i = TAB_KEYS.indexOf(activeTab)
+    const next =
+      e.key === 'ArrowRight' ? (i + 1) % TAB_KEYS.length
+      : e.key === 'ArrowLeft' ? (i - 1 + TAB_KEYS.length) % TAB_KEYS.length
+      : e.key === 'Home' ? 0
+      : e.key === 'End' ? TAB_KEYS.length - 1
+      : -1
+    if (next < 0) return
+    e.preventDefault()
+    setActiveTab(TAB_KEYS[next])
+    document.getElementById(`tab-${TAB_KEYS[next]}`)?.focus()
+  }
 
   const status = getUserStatus(user)
   const isSuspended = status === 'suspended'
@@ -888,12 +973,23 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
       {!isDeleted && <SendRemindersCard userId={user.id} />}
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-[var(--color-bg-secondary)] p-1 w-fit">
+      <div
+        role="tablist"
+        aria-label="User details"
+        className="flex gap-1 rounded-xl bg-[var(--color-bg-secondary)] p-1 w-fit max-w-full overflow-x-auto"
+        onKeyDown={handleTabKeyDown}
+      >
         {TABS.map((tab) => (
           <button
             key={tab.key}
+            type="button"
+            role="tab"
+            id={`tab-${tab.key}`}
+            aria-selected={activeTab === tab.key}
+            aria-controls={`tabpanel-${tab.key}`}
+            tabIndex={activeTab === tab.key ? 0 : -1}
             onClick={() => setActiveTab(tab.key)}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] ${
+            className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] ${
               activeTab === tab.key
                 ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-soft'
                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
@@ -906,7 +1002,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
       </div>
 
       {/* Tab content */}
-      <div>
+      <div role="tabpanel" id={`tabpanel-${activeTab}`} aria-labelledby={`tab-${activeTab}`} tabIndex={0} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] rounded-xl">
         {activeTab === 'profiles' && <ProfilesTab profiles={user.profiles} userId={user.id} />}
         {activeTab === 'subscription' && (
           <SubscriptionTab
@@ -914,6 +1010,7 @@ export function UserDetailClient({ user }: UserDetailClientProps) {
             userStatus={userTier}
           />
         )}
+        {activeTab === 'plan' && <PlanHistoryTab entries={planHistory ?? []} />}
         {activeTab === 'feedback' && <FeedbackTab feedback={user.feedback} />}
       </div>
 
