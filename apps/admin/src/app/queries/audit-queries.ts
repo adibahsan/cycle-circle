@@ -9,6 +9,7 @@ interface AuditLogListParams {
   pageSize?: number
   action?: string
   targetType?: string
+  search?: string
 }
 
 function auditLogsCacheKey(params: AuditLogListParams) {
@@ -18,6 +19,7 @@ function auditLogsCacheKey(params: AuditLogListParams) {
     String(params.pageSize ?? 20),
     params.action ?? '',
     params.targetType ?? '',
+    params.search ?? '',
   ]
 }
 

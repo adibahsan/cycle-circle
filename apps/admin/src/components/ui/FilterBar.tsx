@@ -1,6 +1,9 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { Select } from './Select';
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 interface FilterOption {
   value: string;
@@ -30,6 +33,29 @@ export function FilterBar({
   showSearch = true,
   filters,
 }: FilterBarProps) {
+  // Keep typing instant; only notify the parent (which may hit the server) after a pause.
+  const [draft, setDraft] = useState(searchValue);
+  const lastEmitted = useRef(searchValue);
+  const onChangeRef = useRef(onSearchChange);
+  onChangeRef.current = onSearchChange;
+
+  // Adopt external changes (e.g. back/forward navigation, cleared filters).
+  useEffect(() => {
+    if (searchValue !== lastEmitted.current) {
+      lastEmitted.current = searchValue;
+      setDraft(searchValue);
+    }
+  }, [searchValue]);
+
+  useEffect(() => {
+    if (draft === lastEmitted.current) return;
+    const t = setTimeout(() => {
+      lastEmitted.current = draft;
+      onChangeRef.current(draft);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [draft]);
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       {/* Search input */}
@@ -50,8 +76,8 @@ export function FilterBar({
           </svg>
           <input
             type="search"
-            value={searchValue}
-            onChange={(e) => onSearchChange(e.target.value)}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
             placeholder={searchPlaceholder}
             aria-label="Search"
             name="search"

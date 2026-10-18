@@ -14,6 +14,7 @@ export default async function AuditLogsPage({
     pageSize: Number(params.pageSize) || 20,
     action: params.action || undefined,
     targetType: params.targetType || undefined,
+    search: params.search || undefined,
   })
   return <AuditLogClient data={data} />
 }
