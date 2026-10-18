@@ -1,8 +1,8 @@
 # DEV_SRS — Implementation Tracker
 
 > Developer-facing tracker mapping SRS requirements to codebase implementation.
-> Last updated: 2026-06-28 (rev 4)
-> SRS version: 1.3 (SRS-VESTA-001)
+> Last updated: 2026-10-19 (rev 5)
+> SRS version: 1.4 (SRS-VESTA-001)
 > Related: [`TESTING.md`](TESTING.md) — manual QA guide for testers;
 > [`docs/FEATURE-IMPLEMENTATION-2026-06-28.md`](docs/FEATURE-IMPLEMENTATION-2026-06-28.md) — readable log of the 2026-06-28 feature round
 
@@ -20,6 +20,8 @@
 **Rev 3 changes (2026-05-31):** Live codebase audit of `apps/web` (18 user routes, 38 API handlers) and `apps/admin` (16 page routes, 10 query modules, 8 action modules). Corrected FR-AUTH (modal wired), FR-SMS (`tel:all` via `sms-service`), FR-EXPORT (CSV Server Action live). Documented admin Emails + Audit Logs sections and operational endpoints (health checks, simulator, Resend webhook).
 
 **Rev 4 changes (2026-06-28):** v1.3 feature round (full per-feature log in [`docs/FEATURE-IMPLEMENTATION-2026-06-28.md`](docs/FEATURE-IMPLEMENTATION-2026-06-28.md)). Resolved: Redis-outage resilience (adapter fails open); FR-CMS server-side HTML sanitization; FR-CONTENT current-phase surfacing + locale-fallback indicator; FR-EXPORT per-profile scoping + copy fix; FR-AUTH server-side 60s OTP resend cooldown + ~1-min profile-completion auto-prompt with session re-prompt; FR-NOTIF/FR-SMS goal-based filtering (verified + test-locked); FR-ANALYTICS per-tier prediction MAE + feedback panel + symptoms-by-phase; FR-SMS daily content circulation (bilingual, bulk entry, content-override, scheduled cron broadcast, delivery-report → broadcast counts); FR-NUDGE cross-session frequency cap; FR-INSIGHTS tabular-nums axes. Web test suite repaired (15 failing → 251 passing). Migration `20260628131041_add_sms_circulation_fields` applied. Still deferred: FR-ENC (encryption), Pro grace period (v2), Tiptap→Supabase image upload, BDApps charging analysis (open).
+
+**Rev 5 changes (2026-10-19):** SRS v1.4 reconciliation (admin-portal spec #84). Documentation-only: claims below were corrected to the code as of this date, and v1.4 targets that tickets under #84 have not yet landed are marked "v1.4 target". Corrected: Pro is BDApps `REGISTERED` status (ADR 0002), not CaaS direct debit; CaaS routes and `consecutiveFailures` / `gracePeriodEndsAt` remain in code but are parked and slated for removal, and the grace period is dropped, not deferred; prod scheduling is a host crontab on the VPS (not Vercel Cron); the admin edge proxy rewrites non-admins to a 403 "Not an admin" page (#86); the admin JWT is 7 days (#86); shared services layer is 19 modules.
 
 ---
 
@@ -39,7 +41,7 @@ The app uses a **RSC + Server Actions** pattern throughout:
 
 ### Shared Services Layer
 
-All Prisma queries and business logic are centralised in `packages/shared/src/server/services/` (11 service modules). Both `apps/web/` and `apps/admin/` consume these modules through thin wrappers that handle auth, validation, caching, and Next.js-specific concerns.
+All Prisma queries and business logic are centralised in `packages/shared/src/server/services/` (19 service modules). Both `apps/web/` and `apps/admin/` consume these modules through thin wrappers that handle auth, validation, caching, and Next.js-specific concerns.
 
 | Service module | Responsibility |
 |---|---|
@@ -48,8 +50,8 @@ All Prisma queries and business logic are centralised in `packages/shared/src/se
 | `content-service` | Article and category CRUD, draft/publish lifecycle |
 | `feedback-service` | Feedback submission and filtered listing |
 | `notification-service` | Email/SMS dispatch and per-profile preference evaluation |
-| `user-service` | User lookup, profile-completion, suspend/reactivate/soft-delete |
-| `subscription-service` | Pro grant/revoke, CAAS balance checks, admin overrides |
+| `user-service` | User lookup, profile-completion, suspend/reactivate/soft-delete (v1.4 target: also unsubscribe on BDApps, 30-day restore and purge) |
+| `subscription-service` | BDApps status application (REGISTERED = Pro), Pro grant/revoke, admin overrides (v1.4 target: revoke unsubscribes on BDApps; override ends on a new subscription) |
 | `audit-service` | Admin action audit trail (AdminAuditLog writes) |
 | `analytics-service` | Population health aggregations, prediction accuracy, retention |
 | `sms-service` | SMS broadcast CRUD, scheduling, and send history |
@@ -123,7 +125,7 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 |----|------|-------------|
 | FR-EXPORT | ✅ (rev 4) Excel button now emits real `.xlsx`; export scoped to the active profile by default with a labelled all-profiles opt-in; UI copy corrected (EN+BN). Remaining: no `/api/export` REST route (Server Action only); symptom values plaintext until FR-ENC | `settings-actions.ts`, `SettingsClient.tsx` |
 | FR-CMS | ✅ (rev 4) HTML sanitized server-side on save (`sanitizeArticleHtml`). Remaining: Tiptap image upload to Supabase not wired (needs storage creds) | `content-service.ts`, `TiptapEditor.tsx` |
-| FR-ANALYTICS | ✅ (rev 4) Per-tier prediction MAE (backtested, on-demand — a 3rd nightly cron isn't allowed under the 2-job Hobby budget), feedback panel on the analytics dashboard, and symptom-logs-by-cycle-phase chart all added | `analytics-service.ts`, `analytics/AnalyticsClient.tsx` |
+| FR-ANALYTICS | ✅ (rev 4) Per-tier prediction MAE (backtested, on-demand; v1.4 target: nightly snapshot from a third host-cron entry, since prod uses a host crontab with no job limit), feedback panel on the analytics dashboard, and symptom-logs-by-cycle-phase chart all added | `analytics-service.ts`, `analytics/AnalyticsClient.tsx` |
 | FR-ADMIN | No automated admin test suite; subscription list has no detail route | `apps/admin/` |
 | UI/A11y | ~190 findings in `review/WEB-UI-REVIEW.md`, `review/ADMIN-UI-REVIEW.md` | Both apps |
 
@@ -401,36 +403,34 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 
 ---
 
-### FR-BILL — Pro Subscription via BDApps CAAS
+### FR-BILL — Pro Subscription via BDApps Subscription (SRS v1.4)
 **Priority:** P0
 **Status:** In Progress
 
-**Files:**
-- `apps/web/src/app/(main)/subscription/page.tsx` — Subscription RSC
-- `apps/web/src/app/(main)/subscription/SubscriptionClient.tsx` — Client island for upgrade flow
-- `apps/web/src/app/api/billing/subscribe/route.ts` — `POST`: creates `CaasTransaction` with PENDING status before CAAS call, calls `caasDirectDebit`, upserts `Subscription` record on success, updates `User.subscriptionStatus = PRO`
-- `apps/web/src/app/api/cron/caas-check/route.ts` — Daily CAAS balance check: queries all PRO subscriptions, resets `consecutiveFailures` on success, increments on failure, sets `LAPSED` at 3 failures
-- `packages/shared/src/server/adapters/bdapps.ts` — `caasDirectDebit`, `caasGetBalance`
-- `packages/shared/prisma/schema.prisma` — `Subscription`, `CaasTransaction` models; `consecutiveFailures`, `gracePeriodEndsAt` fields
+Pro means BDApps reports the number as `REGISTERED` (ADR 0002). CaaS direct debit is parked: CaaS endpoints return 404 for our app. The grace period is removed from the SRS (not deferred).
 
-**API Routes:**
-- `POST /api/billing/subscribe`
-- `POST /api/cron/caas-check` (cron-protected)
+**Files:**
+- `apps/web/src/app/(main)/subscription/page.tsx`, `SubscriptionClient.tsx` — Subscription RSC and client island
+- `apps/web/src/app/api/billing/unsubscribe/route.ts` — in-app Unsubscribe (`/subscription/send`, action `0`)
+- `packages/shared/src/server/services/subscription-service.ts` — applies BDApps status to a user; grant/revoke and admin overrides
+- `packages/shared/src/server/adapters/bdapps.ts` — BDApps OTP, subscription and SMS calls (also still holds `caasDirectDebit`, `caasGetBalance`)
+- `apps/web/src/app/api/webhooks/subscription/notify/route.ts` — real-time status updates
+
+**Parked, still in the code (slated for removal):**
+- `apps/web/src/app/api/billing/subscribe/route.ts` (CaaS direct debit) and `apps/web/src/app/api/cron/caas-check/route.ts` (CaaS balance check, `vercel.json` cron entry)
+- `CaasTransaction` model and `Subscription.consecutiveFailures` / `gracePeriodEndsAt`
 
 **What's implemented:**
-- CAAS direct-debit call with unique `externalTrxId` (UUID) for idempotency
-- Charge-before-record fix: `CaasTransaction` created with PENDING status before CAAS call (prevents silent double-charge)
-- Subscription record created/updated on success
-- `CaasTransaction` audit record created
-- `subscriptionStatus` on User updated to PRO
-- Billing amount hard-coded server-side (`SUBSCRIPTION_AMOUNT_BDT = 5`) — not user-controllable
-- Error handling fixed: catch block no longer shows success UI on failure
-- Daily CAAS balance cron: checks all PRO subscribers, increments failure counter, marks LAPSED at ≥3 consecutive failures (grace-period flow itself deferred to v2)
+- Phone OTP verify subscribes the number and makes the user Pro; `UNREGISTERED` (webhook, nightly check, in-app Unsubscribe) makes the user Free with data kept
+- Admin grant/revoke with `adminOverride` flags on `Subscription`
 
-**What's missing:**
-- Grace-period countdown / warning notifications — deferred to v2 per SRS
-- Auto-disable Pro and final revocation email at grace-period expiry — deferred to v2
-- Grace-period warning messaging to user — deferred to v2
+**v1.4 targets (not yet built):**
+- Revoke, Suspend and Delete also unsubscribe the number on BDApps (ADR 0006); Reactivate and Restore do not re-subscribe
+- Admin override ends when BDApps reports a new subscription
+- Nightly status check runs from the host crontab; CaaS route, cron entry and grace-period fields are removed
+
+**Removed from scope:**
+- Grace-period countdown, warning notifications and auto-disable (previously "deferred to v2")
 
 ---
 
@@ -583,7 +583,7 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 
 **Admin App (`apps/admin/`):**
 - Runs on port 3001 (`just a` / `just wa`)
-- Same JWT/cookie auth as the web app; edge proxy (`apps/admin/src/proxy.ts`) validates JWT **and** enforces `role === ADMIN` before any page renders
+- Same JWT scheme as the web app on a separate admin cookie (7-day expiry); edge proxy (`apps/admin/src/proxy.ts`) validates JWT **and** enforces `role === ADMIN` before any page renders
 - Email/password login for admins (bcrypt-hashed via `verifyAdminLogin()` in `@vesta/shared/server/auth`; no OTP or magic-link)
 - Admin account seeded via `packages/shared/prisma/seed.ts` (env: `ADMIN_EMAIL` / `ADMIN_PASSWORD`, defaults: `admin@vesta.health` / `admin123`)
 - English-only (no i18n overhead)
@@ -591,14 +591,14 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 - **Beyond SRS scope (implemented):** Email delivery logs (`/emails`), template preview (`/emails/preview`), audit log viewer (`/audit-logs`)
 
 **Files:**
-- `apps/admin/src/proxy.ts` — Edge proxy: JWT decode + role check; redirects to `/login` if unauthenticated or non-admin
+- `apps/admin/src/proxy.ts` — Edge proxy: JWT decode + role check; redirects to `/login` if unauthenticated; rewrites non-admins to the 403 page
 - `apps/admin/src/app/login/page.tsx` — Admin email/password login UI
 - `apps/admin/src/app/api/auth/login/route.ts` — POST handler: calls `verifyAdminLogin()`, issues JWT cookie
 - `apps/admin/src/app/api/auth/logout/route.ts` — POST handler: calls `logoutAndBlacklist()`
 - `apps/admin/src/app/(admin)/page.tsx` — Dashboard: KPI stat cards (total users, active subscribers, DAU, NPS) + 30-day signup trend chart (Recharts)
 - `apps/admin/src/app/(admin)/users/page.tsx` — User list: search, status/role filters, pagination
 - `apps/admin/src/app/(admin)/users/[id]/page.tsx` — User detail: profiles tab, subscriptions tab, feedback tab; admin action buttons (suspend, reactivate, soft-delete)
-- `apps/admin/src/app/(admin)/subscriptions/page.tsx` — Pro subscriber management: grant Pro, revoke Pro, CAAS override history
+- `apps/admin/src/app/(admin)/subscriptions/page.tsx` — Pro subscriber management: grant Pro, revoke Pro, override history (v1.4: "recent CAAS results" and "grace-period users" views dropped; a Logs page replaces them)
 - `apps/admin/src/app/(admin)/content/page.tsx` — Article list CMS with publish/draft toggle
 - `apps/admin/src/app/(admin)/content/new/page.tsx` — Article create with Tiptap 3.x editor, EN/BN side-by-side
 - `apps/admin/src/app/(admin)/content/[id]/page.tsx` — Article edit; category CRUD, phase tags, draft/publish lifecycle
@@ -867,11 +867,11 @@ The following security issues were identified and resolved in the current sprint
 3. **OTP verify rate-limited** — max 5 attempts per `referenceNo` enforced server-side (brute-force protection).
 4. **Billing amount server-side only** — `SUBSCRIPTION_AMOUNT_BDT` is a server constant; users cannot influence the charge amount via request body.
 5. **Magic-link trial not reset on re-login** — `emailTrialExpiresAt` is set only on user creation, not on every magic-link callback.
-6. **Charge-before-record fix** — `CaasTransaction` created with PENDING status before the CAAS network call; prevents silent double-charge on retry.
+6. **Charge-before-record fix** — `CaasTransaction` created with PENDING status before the CAAS network call; prevents silent double-charge on retry. (Parked in v1.4: CaaS is not the Pro gate.)
 7. **`env.local` added to `.gitignore`** — prevents accidental secret commit.
 8. **Security headers added** — `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` set in Next.js config or middleware.
 9. **Auth proxy (`proxy.ts`)** — server-side auth redirect based on cookie presence; unauthenticated requests to protected routes redirected before React renders. Renamed from `middleware.ts` for Next.js 16 compatibility.
-10. **NFR-SEC-05 — Admin role enforcement** — `apps/admin/src/proxy.ts` (edge proxy) validates JWT and checks `role === ADMIN` on every admin route before any page renders. Non-admin JWTs are redirected to `/login`. `requireAdminAuth()` and `withAdminAuth()` provide the same enforcement at the route-handler level.
+10. **NFR-SEC-05 — Admin role enforcement** — `apps/admin/src/proxy.ts` (edge proxy) validates JWT and checks `role === ADMIN` on every admin route before any page renders. Non-admin JWTs get a 403 "Not an admin" page with log-out-and-switch. `requireAdminAuth()` and `withAdminAuth()` provide the same enforcement at the route-handler level.
 12. **Admin email/password auth** — bcrypt-hashed passwords stored in `User.passwordHash`; `verifyAdminLogin()` in shared auth uses `bcryptjs` (dynamic import). Admin seed uses 12-round bcrypt hash.
 11. **Suspended/deleted user check in `getAuthUser()`** — suspended or soft-deleted users receive HTTP 403 on every authenticated request, even with a valid JWT.
 
