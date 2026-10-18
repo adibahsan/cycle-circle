@@ -312,6 +312,7 @@ function DayDetail({ date, meta, symptoms, onClose, onAddLog }: DayDetailProps) 
               const symptomDef = SYMPTOMS_DATA.find((s) => s.id === log.symptomId)
               if (!symptomDef) return null
               const name = language === 'bn' ? symptomDef.nameBn : symptomDef.nameEn
+              const Icon = symptomDef.icon
               return (
                 <div
                   key={log.id}
@@ -322,7 +323,7 @@ function DayDetail({ date, meta, symptoms, onClose, onAddLog }: DayDetailProps) 
                     color: 'var(--color-text-secondary)',
                   }}
                 >
-                  <span aria-hidden="true">{symptomDef.icon}</span>
+                  <Icon size={12} aria-hidden="true" className="shrink-0" />
                   <span>{name}</span>
                 </div>
               )

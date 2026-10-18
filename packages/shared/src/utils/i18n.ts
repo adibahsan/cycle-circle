@@ -227,6 +227,9 @@ const resources = {
         forDate: 'for {{date}}',
         allGood: 'All good — no issues',
         allGoodActive: 'No issues logged for this day',
+        // #68
+        saveError: 'Couldn’t save your symptoms. Please try again.',
+        categoriesLabel: 'Symptom categories',
       },
       content: {
         currentPhase: 'Your current phase',
@@ -966,6 +969,9 @@ const resources = {
         forDate: '{{date}} এর জন্য',
         allGood: 'সব ঠিকঠাক — কোনো সমস্যা নেই',
         allGoodActive: 'এই দিনে কোনো সমস্যা লগ করা হয়নি',
+        // #68
+        saveError: 'লক্ষণ সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।',
+        categoriesLabel: 'লক্ষণের ধরন',
       },
       content: {
         currentPhase: 'আপনার বর্তমান পর্যায়',
