@@ -49,7 +49,7 @@ function RetentionRates({ data }: { data: RetentionPoint[] }) {
   if (!data.length) return null
   const recent = data.slice(-4)
   return (
-    <div className="mt-4 grid grid-cols-4 gap-3">
+    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
       {recent.map((d) => (
         <div
           key={d.week}

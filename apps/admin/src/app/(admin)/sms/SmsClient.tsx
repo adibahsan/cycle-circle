@@ -358,7 +358,7 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
           <button
             onClick={() => !submitting && onClose()}
             disabled={submitting}
-            className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-40"
+            className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
             aria-label="Close dialog"
           >
             <X size={16} aria-hidden="true" />
@@ -377,7 +377,7 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
               type="button"
               onClick={() => { setMode('single'); setError(null) }}
               className={[
-                'flex-1 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors',
+                'flex-1 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]',
                 mode === 'single'
                   ? 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] shadow-sm'
                   : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
@@ -390,7 +390,7 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
               type="button"
               onClick={() => { setMode('bulk'); setError(null) }}
               className={[
-                'flex-1 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors',
+                'flex-1 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]',
                 mode === 'bulk'
                   ? 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] shadow-sm'
                   : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
@@ -403,7 +403,7 @@ function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
               type="button"
               onClick={() => { setMode('csv'); setError(null) }}
               className={[
-                'flex-1 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors',
+                'flex-1 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]',
                 mode === 'csv'
                   ? 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] shadow-sm'
                   : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
@@ -1120,7 +1120,7 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
                 e.stopPropagation()
                 setSendTarget(row)
               }}
-              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors"
+              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
               aria-label="Send broadcast"
               title="Send Now"
             >
@@ -1133,7 +1133,7 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
                 e.stopPropagation()
                 setDeleteTarget(row)
               }}
-              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)] transition-colors"
+              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
               aria-label="Delete broadcast"
               title="Delete"
             >

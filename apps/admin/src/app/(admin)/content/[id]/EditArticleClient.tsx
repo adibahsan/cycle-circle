@@ -317,7 +317,7 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
                       type="checkbox"
                       checked={checked}
                       onChange={() => togglePhase(phase.value)}
-                      className="h-3.5 w-3.5 rounded border-[var(--color-border)] accent-[var(--color-primary)] cursor-pointer"
+                      className="h-3.5 w-3.5 rounded border-[var(--color-border)] accent-[var(--color-primary)] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                     />
                     <span className={`text-sm font-medium ${checked ? phase.color : 'text-[var(--color-text-secondary)]'}`}>
                       {phase.label}
@@ -330,7 +330,7 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
               <button
                 type="button"
                 onClick={() => { setCyclePhases([]); setIsDirty(true) }}
-                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
+                className="rounded text-xs text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
               >
                 Clear all
               </button>

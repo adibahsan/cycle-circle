@@ -187,6 +187,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-primary)] flex">
+      <a
+        href="#main-content"
+        className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-[100] focus-visible:rounded-xl focus-visible:bg-[var(--color-action)] focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-semibold focus-visible:text-[var(--color-on-action)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)]"
+      >
+        Skip to main content
+      </a>
       {/* ── Desktop Sidebar ── */}
       <aside
         className={`hidden md:flex md:flex-col md:sticky md:top-0 md:h-screen md:shrink-0 glass border-r border-[var(--color-border)] z-40 transition-[width] duration-300 ${
@@ -284,7 +290,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </header>
 
-        <main className="flex-1 flex flex-col p-6 md:p-8 page-enter">
+        <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col p-4 sm:p-6 md:p-8 page-enter focus:outline-none">
           {children}
         </main>
       </div>
