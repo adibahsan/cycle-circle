@@ -87,13 +87,13 @@ export function TiptapEditor({
       onChange(editor.getHTML())
     },
     editorProps: {
-      handlePaste: (view, event) => {
+      handlePaste: (_view, event) => {
         const file = Array.from(event.clipboardData?.files ?? []).find((f) => f.type.startsWith('image/'))
         if (!file || !editorRef.current) return false
         void uploadAndInsert(editorRef.current, file, setUploadError)
         return true
       },
-      handleDrop: (view, event) => {
+      handleDrop: (_view, event) => {
         const file = Array.from(event.dataTransfer?.files ?? []).find((f) => f.type.startsWith('image/'))
         if (!file || !editorRef.current) return false
         event.preventDefault()

@@ -1,3 +1,4 @@
+import type { FeedbackCategory, Prisma } from '@prisma/client'
 import { prisma } from '../db'
 
 // ── Create ─────────────────────────────────────────────────────────────────────
@@ -34,28 +35,45 @@ export async function listUserFeedback(userId: string, take = 20) {
 
 // ── Admin list ─────────────────────────────────────────────────────────────────
 
-export async function listFeedback(
-  params: {
-    page?: number
-    pageSize?: number
-    category?: string
-    minRating?: number
-    dateFrom?: Date
-    dateTo?: Date
-  } = {},
-) {
-  const { page = 1, pageSize = 20, category, minRating, dateFrom, dateTo } = params
+export type FeedbackFilters = {
+  category?: string
+  /** Exact rating; wins over minRating when both are set. */
+  rating?: number
+  /** At-least rating. */
+  minRating?: number
+  dateFrom?: Date
+  dateTo?: Date
+  /** Case-insensitive match on message, user name or user email. */
+  search?: string
+}
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = {}
-  if (category && category !== 'all') where.category = category
-  if (minRating) where.rating = { gte: minRating }
+/** Single source of truth for the admin list and CSV export filters. */
+export function buildFeedbackWhere(filters: FeedbackFilters = {}): Prisma.FeedbackWhereInput {
+  const { category, rating, minRating, dateFrom, dateTo } = filters
+  const search = filters.search?.trim()
+  const where: Prisma.FeedbackWhereInput = {}
+  if (category && category !== 'all') where.category = category as FeedbackCategory
+  if (rating) where.rating = rating
+  else if (minRating) where.rating = { gte: minRating }
   if (dateFrom || dateTo) {
     where.createdAt = {
       ...(dateFrom ? { gte: dateFrom } : {}),
       ...(dateTo ? { lte: dateTo } : {}),
     }
   }
+  if (search) {
+    where.OR = [
+      { message: { contains: search, mode: 'insensitive' } },
+      { user: { fullName: { contains: search, mode: 'insensitive' } } },
+      { user: { email: { contains: search, mode: 'insensitive' } } },
+    ]
+  }
+  return where
+}
+
+export async function listFeedback(params: FeedbackFilters & { page?: number; pageSize?: number } = {}) {
+  const { page = 1, pageSize = 20 } = params
+  const where = buildFeedbackWhere(params)
 
   const [items, total] = await Promise.all([
     prisma.feedback.findMany({
