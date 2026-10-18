@@ -121,7 +121,7 @@ Vesta v1 shall deliver phone-number-based account management (verified via BDApp
 | **ARIMA**          | AutoRegressive Integrated Moving Average — Tier 2 statistical model for cycle prediction, unlocked automatically once a profile has 6 logged cycles.                |
 | **BDApps**         | The Robi Axiata developer platform that exposes OTP, subscription and SMS APIs used by Vesta for verification, Pro billing and messaging. *(v1.4)*                  |
 | **CAAS**           | Carrier Aggregated Application Services — BDApps direct-debit API. Parked: CaaS endpoints return 404 for our app; BDApps subscription charging bills Pro instead (ADR 0002). *(v1.4)* |
-| **CRON_SECRET**    | Shared secret in the `Authorization` (or custom) header that authenticates Vercel Cron requests to internal endpoints.                                              |
+| **CRON_SECRET**    | Shared secret in the `Authorization` (or custom) header that authenticates cron requests (host crontab on the production VPS) to internal endpoints.                                              |
 | **DoD**            | Definition of Done — the formal acceptance gates that shall pass before production release.                                                                         |
 | **Email Trial Window** | A 24-hour limited-access period granted to users who authenticate via the email fallback method. During this window the platform collects required user data; after expiry, premium features are locked until subscription. *(v1.2)* |
 | **Grace Period**   | Removed in v1.4. BDApps, not CaaS, bills Pro, so there are no balance-check failures to count (ADR 0002 amendment 2026-10-19). *(v1.4)*                              |
@@ -285,7 +285,7 @@ The system provides the following major capabilities. Each item below is expande
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | **End User**       | Individual tracking her own cycle. Primary persona. Uses a phone-number account on the free tier. Assumed literacy in either Bengali or English; comfortable with smartphone web apps. | Onboarding, period logging, dashboard, calendar, symptom logging                              |
 | **Family Manager** | A user who manages profiles for family members (wife, sister, mother, daughter, girlfriend). Up to six profiles per account.                                                           | Profile switcher, per-profile data isolation                                                  |
-| **Pro Subscriber** | A user whose number BDApps reports as subscribed (`REGISTERED`); logging in by phone subscribes the number (ADR 0002). *(v1.4)* The subscription field is persisted in v1 even though feature gating is deferred.                                         | Subscription flow; grace-period notifications                                                 |
+| **Pro Subscriber** | A user whose number BDApps reports as subscribed (`REGISTERED`); logging in by phone subscribes the number (ADR 0002). *(v1.4)* The subscription field is persisted in v1 even though feature gating is deferred.                                         | Subscription flow                                                 |
 | **Email Trial User** *(v1.2)* | A transient user class — a user who authenticated via email fallback (OTP unavailable). Has a 24-hour limited-access window to explore basic features and complete profile data. After 24 hours, premium features are locked until subscription. | Profile completion, basic feature exploration, data collection |
 | **Super Admin**    | Technical owner with full system access — user management, subscription management, analytics, and bilingual content publishing. (v1 has no separate Content Admin role.)              | Admin panel, session management, KPIs, Tiptap CMS, article publish/edit, phase-tag assignment |
 
@@ -1107,12 +1107,12 @@ The database shall be PostgreSQL 16 on Supabase with Row Level Security enabled 
 | Frontend + API      | Vercel Hobby   | 100 GB bandwidth, 10 s timeout, 1 M invocations/month | Team seats needed, > 100 GB BW, or functions > 10 s |
 | Database            | Supabase Free  | 500 MB, pauses after 7 days inactivity                | > 500 MB or pause-avoidance becomes critical        |
 | Sessions / cache    | Upstash Redis  | 10,000 commands/day, 256 MB                           | > 10,000 commands/day                               |
-| Cron jobs           | Vercel Cron    | 2 jobs, daily minimum frequency                       | Need > 2 crons or sub-daily scheduling              |
+| Cron jobs           | VPS host crontab | No job limit (Vercel Cron limits apply only to Vercel deployments) | Move scheduling off the host           |
 | Job queue           | Upstash QStash | 500 messages/day                                      | > 500 async jobs/day                                |
 | Transactional email | Resend Free    | 3,000 emails/month, 100/day                           | > 3,000 emails/month                                |
 
 
-**Backend deployment model.** Backend endpoints shall be implemented as Next.js route handlers and deployed on Vercel. Shared middleware (JWT validation, RLS header injection, rate limiting) shall be enforced via Next.js middleware and route-level guards. BullMQ is replaced by Vercel Cron (scheduled jobs) and Upstash QStash (on-demand async jobs). The 10-second Hobby timeout is sufficient for all synchronous API routes; prediction recalculation is offloaded to QStash.
+**Backend deployment model.** Backend endpoints shall be implemented as Next.js route handlers and deployed on Vercel. Shared middleware (JWT validation, RLS header injection, rate limiting) shall be enforced via Next.js middleware and route-level guards. BullMQ is replaced by the VPS host crontab (scheduled jobs; Vercel Cron applies only to Vercel deployments) and Upstash QStash (on-demand async jobs). The 10-second Hobby timeout is sufficient for all synchronous API routes; prediction recalculation is offloaded to QStash.
 
 **Cron schedule.**
 
