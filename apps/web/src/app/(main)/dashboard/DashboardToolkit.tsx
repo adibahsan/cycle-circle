@@ -16,7 +16,8 @@ export interface PhaseArticle {
 
 interface DashboardToolkitProps {
   language: string
-  phase: CyclePhase
+  /** Null outside a live cycle (pregnancy, menopause, no period): the read card links to all articles. */
+  phase: CyclePhase | null
   /** Published articles tagged with the current phase (already filtered on the server). */
   articles: PhaseArticle[]
   onLogPeriod: () => void
@@ -102,9 +103,11 @@ export function DashboardToolkit({ language, phase, articles, onLogPeriod, onLog
         <ToolCard
           tone="mint"
           Icon={BookOpen}
-          title={t('dashboard.toolReadTitle')}
+          title={phase ? t('dashboard.toolReadTitle') : t('dashboard.toolReadAllTitle')}
           body={
-            shown.length > 0 ? (
+            !phase ? (
+              t('dashboard.toolReadAllBody')
+            ) : shown.length > 0 ? (
               <ul data-testid="phase-articles" className="flex flex-col gap-1">
                 {shown.map((a) => (
                   <li key={a.id} className="line-clamp-2 font-medium text-[var(--color-text-primary)]">
@@ -117,7 +120,7 @@ export function DashboardToolkit({ language, phase, articles, onLogPeriod, onLog
             )
           }
         >
-          <Link href={`/content?phase=${phase.toUpperCase()}`} className={ACTION}>
+          <Link href={phase ? `/content?phase=${phase.toUpperCase()}` : '/content'} className={ACTION}>
             {t('dashboard.toolReadAction')}
           </Link>
         </ToolCard>

@@ -3,10 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { motion } from 'motion/react'
-import { parseISO } from 'date-fns'
 import Link from 'next/link'
-import { Activity, Droplets, Baby } from 'lucide-react'
 
 import { useAppStore } from '@/lib/store'
 import { useLanguage } from '@/lib/use-language'
@@ -20,14 +17,10 @@ import {
 } from '@vesta/shared/utils/cycle-utils'
 import type { FlowIntensity, ProfileRelation } from '@vesta/shared/types'
 import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
-import { Button } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
-import { FlowIcon } from '@/components/ui/PhaseIcon'
-import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
+import { PeriodLogModal } from '@/components/PeriodLogModal'
 import { setActiveProfileCookie } from '@/app/actions/profile-actions'
 import type { ProfileCompletionStatus } from '@/lib/profile-completion'
 import { CompletionRow } from '@/components/prompts/CompletionRow'
-import { formatShortDate } from '@/lib/format-date'
 import { checkInCandidateState, daysSinceLastLog as daysSinceLastLogFor } from '@/lib/prompt-rules'
 import { LoggingNudge } from '@/components/nudge/LoggingNudge'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
@@ -39,11 +32,11 @@ import dynamic from 'next/dynamic'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { deviceDayString } from '@/lib/local-date'
-import { CycleHero } from './CycleHero'
+import { CycleHero, FirstPeriodHero, MenopauseHero, PregnancyHero } from './CycleHero'
 import { CycleJourney } from './CycleJourney'
 import { CycleProgressRing } from './CycleProgressRing'
 import { DashboardToolkit, type PhaseArticle } from './DashboardToolkit'
-import { dashboardHeroState, fertileStatus, periodStatus } from './dashboard-model'
+import { EXAMPLE_CYCLE, dashboardBlocks, dashboardHeroState, fertileStatus, periodStatus } from './dashboard-model'
 
 const TodayCheckInModal = dynamic(
   () => import('@/components/engagement/TodayCheckInModal').then((m) => m.TodayCheckInModal),
@@ -129,10 +122,6 @@ interface Props {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
 
 function toDateString(d: Date | string): string {
   if (typeof d === 'string') return d
@@ -307,8 +296,8 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
   )
 
   const fertile = prediction ? fertileStatus(deviceDayString(), prediction.fertileStart, prediction.fertileEnd) : null
-  // Pregnancy keeps its own panel; menopause and no-period still use the cycle layout until #76.
   const heroState = dashboardHeroState(dashboardData?.mode ?? 'standard', !!lastPeriodDisplay, pregnancy)
+  const blocks = dashboardBlocks(heroState)
 
   return (
     <>
@@ -318,64 +307,48 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
       >
         <PageHeader title={t('nav.dashboard')} subtitle={profile.name} />
         <CompletionRow status={completion} />
+
+        {/* ── Hero: one per state ─────────────────────────────────── */}
         {heroState === 'pregnancy' ? (
-          <>
-            {/* ── Pregnancy: Coming Soon Panel ───────────────────── */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              style={
-                {
-                  ['--goal-accent' as string]: goalAccentVar(goal),
-                } as React.CSSProperties
-              }
-            >
-              <Card
-                padding="md"
-                className="glass shadow-soft flex flex-col items-center text-center gap-5 py-8 px-6 rounded-2xl"
-                style={{ borderColor: 'var(--goal-accent)' }}
-              >
-                {/* Baby icon */}
-                <div
-                  className="flex items-center justify-center w-16 h-16 rounded-full"
-                  style={{ backgroundColor: 'color-mix(in srgb, var(--goal-accent) 14%, transparent)' }}
-                >
-                  <Baby
-                    size={36}
-                    aria-hidden="true"
-                    style={{ color: 'var(--goal-accent)' }}
-                  />
-                </div>
+          <PregnancyHero
+            language={language}
+            lastPeriodStart={lastPeriodDisplay?.startDate ?? null}
+            onLogSymptoms={openQuickSymptom}
+          />
+        ) : heroState === 'menopause' ? (
+          <MenopauseHero
+            name={profile.name}
+            language={language}
+            today={deviceDayString()}
+            lastPeriodStart={lastPeriodDisplay?.startDate ?? null}
+          />
+        ) : heroState === 'no-period' ? (
+          <FirstPeriodHero onLogPeriod={openNewLog} />
+        ) : (
+          <CycleHero
+            name={profile.name}
+            language={language}
+            phase={phase}
+            cycleDay={cycleDay}
+            fertile={fertile}
+            period={period}
+            nextPeriodDate={prediction?.nextPeriodStart ?? null}
+          />
+        )}
 
-                <div className="flex flex-col gap-2">
-                  <h2
-                    className="text-lg font-bold"
-                    style={{ color: 'var(--goal-accent)' }}
-                  >
-                    {t('dashboard.pregnancyComingSoonTitle')}
-                  </h2>
-                  <p className="text-sm text-[var(--color-text-muted)] max-w-xs">
-                    {t('dashboard.pregnancyComingSoonBody')}
-                  </p>
-                </div>
+        {/* ── Logging Nudge ──────────────────────────────────────── */}
+        <LoggingNudge
+          profileId={activeProfileId}
+          hasAnyLogs={hasAnyLogs}
+          daysSinceLastLog={daysSinceLastLog}
+          goal={goal}
+          onLogPeriod={openNewLog}
+          phase={blocks.phaseTools ? (dashboardData?.currentPhase ?? null) : null}
+        />
 
-                <Link
-                  href="/symptoms"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border font-semibold text-sm transition-colors focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)] focus-visible:outline-none"
-                  style={{
-                    borderColor: 'var(--goal-accent)',
-                    color: 'var(--goal-accent)',
-                    backgroundColor: 'color-mix(in srgb, var(--goal-accent) 10%, transparent)',
-                  }}
-                >
-                  <Activity size={14} aria-hidden="true" />
-                  {t('dashboard.logSymptoms')}
-                </Link>
-              </Card>
-            </motion.div>
-
-            {/* ── Today Check-In Strip (pregnancy) ──────────────── */}
+        {/* ── Streak + Phase pattern (#75 fills the slot; it is the menopause symptom pattern too) ── */}
+        {(engagement || (phasePattern && heroState !== 'pregnancy')) && (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {engagement && (
               <TodayCheckInStrip
                 profileId={activeProfileId}
@@ -384,158 +357,70 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
                 onOpenCheckIn={() => setCheckInOpen(true)}
               />
             )}
+            {heroState !== 'pregnancy' && phasePattern}
+          </div>
+        )}
 
-            {/* ── Logging Nudge (kept in pregnancy) ──────────────── */}
-            <LoggingNudge
-              profileId={activeProfileId}
-              hasAnyLogs={hasAnyLogs}
-              daysSinceLastLog={daysSinceLastLog}
-              goal={goal}
-              onLogPeriod={openNewLog}
-              phase={dashboardData?.currentPhase ?? null}
-            />
-
-            {/* ── Last Period Card (history — kept in pregnancy) ── */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 100, damping: 20 }}
-            >
-              <Card padding="md" className="!border-0 shadow-soft">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <Droplets size={14} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
-                    <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-                      {t('dashboard.lastPeriod')}
-                    </span>
-                  </div>
-                  {lastPeriodDisplay ? (
-                    <>
-                      <p className="text-sm font-bold text-[var(--color-text-primary)]">
-                        {formatShortDate(language, parseISO(lastPeriodDisplay.startDate))}
-                      </p>
-                      <p className="text-xs text-[var(--color-text-muted)]">
-                        {t('dashboard.durationDays', { count: lastPeriodDisplay.duration })}
-                      </p>
-                      <div
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold self-start"
-                        style={{ backgroundColor: FLOW_COLORS[lastPeriodDisplay.flowIntensity], color: FLOW_TEXT[lastPeriodDisplay.flowIntensity] }}
-                      >
-                        <FlowIcon flow={lastPeriodDisplay.flowIntensity} size={12} />
-                        {t(`dashboard.flow${capitalize(lastPeriodDisplay.flowIntensity)}`)}
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-xs text-[var(--color-text-muted)] mt-1">{t('dashboard.noLogsYet')}</p>
-                  )}
-                </div>
-              </Card>
-            </motion.div>
-
-            {/* ── Quick Log button (kept in pregnancy) ─────────── */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, type: 'spring', stiffness: 100, damping: 20 }}
-            >
-              <Card padding="md" className="!border-0 shadow-soft">
-                <div className="flex flex-col gap-2.5">
-                  <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-                    {t('dashboard.quickActions')}
-                  </span>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    fullWidth
-                    onClick={openNewLog}
-                    className="text-xs"
-                    data-tour="log-button"
-                  >
-                    <Droplets size={14} aria-hidden="true" />
-                    {t('dashboard.logPeriod')}
-                  </Button>
-                </div>
-              </Card>
-            </motion.div>
-          </>
-        ) : (
-          <>
-            {/* ── Hero: split by state; #76 adds the menopause and no-period heroes ── */}
-            <CycleHero
-              name={profile.name}
-              language={language}
+        {/* ── Cycle journey + progress ring (a dimmed example before the first period) ── */}
+        {blocks.cycle === 'live' && (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <CycleJourney
+              cycleLength={profile.cycleLength}
+              periodLength={profile.periodLength}
               phase={phase}
               cycleDay={cycleDay}
-              fertile={fertile}
-              period={period}
-              nextPeriodDate={prediction?.nextPeriodStart ?? null}
-            />
-
-            {/* ── Logging Nudge ──────────────────────────────────────── */}
-            <LoggingNudge
-              profileId={activeProfileId}
-              hasAnyLogs={hasAnyLogs}
-              daysSinceLastLog={daysSinceLastLog}
-              goal={goal}
-              onLogPeriod={openNewLog}
-              phase={dashboardData?.currentPhase ?? null}
-            />
-
-            {/* ── Streak + Phase pattern (#75 fills the slot) ─────────── */}
-            {(engagement || phasePattern) && (
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {engagement && (
-                  <TodayCheckInStrip
-                    profileId={activeProfileId}
-                    engagement={engagement}
-                    goal={goal}
-                    onOpenCheckIn={() => setCheckInOpen(true)}
-                  />
-                )}
-                {phasePattern}
-              </div>
-            )}
-
-            {/* ── Cycle journey + progress ring ─────────────────────── */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <CycleJourney
-                cycleLength={profile.cycleLength}
-                periodLength={profile.periodLength}
-                phase={phase}
-                cycleDay={cycleDay}
-                language={language}
-              />
-              <CycleProgressRing
-                cycleDay={cycleDay}
-                cycleLength={profile.cycleLength}
-                phase={phase}
-                period={period}
-                language={language}
-              >
-                {/* The dashboard's one confidence figure. */}
-                {engagement && (
-                  <ProgressToUnlockMeter
-                    className="mt-4"
-                    cyclesLogged={engagement.cyclesLogged}
-                    unlockTarget={engagement.unlockTarget}
-                    confidence={engagement.confidence}
-                    tier={engagement.tier}
-                    periodLogCount={engagement.periodLogCount}
-                  />
-                )}
-              </CycleProgressRing>
-            </div>
-
-            {/* ── Toolkit ─────────────────────────────────────────────── */}
-            <DashboardToolkit
               language={language}
-              phase={phase}
-              articles={phaseArticles}
-              onLogPeriod={openNewLog}
-              onLogSymptoms={openQuickSymptom}
             />
-          </>
+            <CycleProgressRing
+              cycleDay={cycleDay}
+              cycleLength={profile.cycleLength}
+              phase={phase}
+              period={period}
+              language={language}
+            >
+              {/* The dashboard's one confidence figure. */}
+              {engagement && (
+                <ProgressToUnlockMeter
+                  className="mt-4"
+                  cyclesLogged={engagement.cyclesLogged}
+                  unlockTarget={engagement.unlockTarget}
+                  confidence={engagement.confidence}
+                  tier={engagement.tier}
+                  periodLogCount={engagement.periodLogCount}
+                />
+              )}
+            </CycleProgressRing>
+          </div>
         )}
+        {blocks.cycle === 'example' && (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <CycleJourney
+              example
+              cycleLength={EXAMPLE_CYCLE.cycleLength}
+              periodLength={EXAMPLE_CYCLE.periodLength}
+              phase="follicular"
+              cycleDay={EXAMPLE_CYCLE.cycleDay}
+              language={language}
+            />
+            <CycleProgressRing
+              example
+              cycleDay={EXAMPLE_CYCLE.cycleDay}
+              cycleLength={EXAMPLE_CYCLE.cycleLength}
+              phase="follicular"
+              period={null}
+              language={language}
+            />
+          </div>
+        )}
+
+        {/* ── Toolkit (check-in, symptoms and articles stay in every mode) ── */}
+        <DashboardToolkit
+          language={language}
+          phase={blocks.phaseTools ? phase : null}
+          articles={phaseArticles}
+          onLogPeriod={openNewLog}
+          onLogSymptoms={openQuickSymptom}
+        />
       </PageContainer>
 
       {/* ── Period Log Modal ──────────────────────────────────── */}
@@ -572,8 +457,8 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
           profileId={activeProfileId}
           goal={goal}
           engagement={engagement}
-          cycleDay={pregnancy ? null : cycleDay}
-          phase={pregnancy ? null : phase}
+          cycleDay={blocks.phaseTools ? cycleDay : null}
+          phase={blocks.phaseTools ? phase : null}
         />
       )}
 
