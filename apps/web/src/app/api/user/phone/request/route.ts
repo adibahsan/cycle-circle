@@ -10,6 +10,7 @@ import { withAuth } from '@vesta/shared/server/middleware'
 import { prisma } from '@vesta/shared'
 import { logger } from '@vesta/shared/server/log'
 import { logCustomerRefusal } from '@/app/api/auth/log-failure'
+import { assertOtpIpLimit } from '@/app/api/auth/client-ip'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -50,6 +51,7 @@ export const POST = withAuth(async (request, { user }) => {
     if (!rl.allowed) {
       throw new ApiError(429, 'Too many OTP requests. Try again in a minute.', 'RATE_LIMITED')
     }
+    await assertOtpIpLimit(request)
 
     let referenceNo: string
 

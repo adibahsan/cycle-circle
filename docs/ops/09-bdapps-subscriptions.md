@@ -94,11 +94,15 @@ A masked id is only valid while that subscription is active and changes with eve
 |---|---|---|
 | `S1000` | Success | — |
 | `E1303` | Caller IP not allowlisted | Call from the VPS (62.171.155.231) |
+| `E1312` | `sms/send` asked for a delivery report; reports are not enabled on our SMS plan, nothing is sent | Send with `deliveryStatusRequest: 0` (BDApps support can enable reports) |
 | `E1313` | Wrong app id / password | Check `.env.web.production` |
 | `E1324` | Subscription over HTTP disabled for the app | BDApps support (fixed for `APP_140389` on 2026-10-15) |
 | `E1325` | Address format invalid (masked id sent without `tel:`) | Always prefix `tel:` |
+| `E1351` | `otp/request` for a number that is already subscribed; no OTP is sent | Login falls back to an App OTP sent by SMS to the stored masked id (ADR 0002 amendment) |
 | `E1854` | OTP not found / expired | User requests a new code |
 | `E1951` | Invalid address **or** not subscribed | Masked id: treat as unregistered. Raw phone: ambiguous, never downgrade |
+
+App OTP codes are written to the logs on purpose, so support can read a user's code: the `customer` channel's `auth.otp.request` line has `appOtp: true` and `code`, and the `merchant` channel's `sms/send` line has the full SMS text. A login that falls back logs `auth.otp.request` at warn with `code: ALREADY_SUBSCRIBED` and `reason` (`no-account`, `no-masked-id` or `unregistered`).
 
 CaaS (`/caas/*`) returns HTTP 404 for our app: parked, Pro is billed by the subscription itself.
 

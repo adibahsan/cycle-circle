@@ -37,6 +37,13 @@ function logBdappsCall(url: string, body: Record<string, unknown>, status: numbe
   logger.merchant(op, { request, httpStatus: status, response }, { level })
 }
 
+/** BDApps codes caused by the user, not by us: reported as 4xx so they don't log as server errors. */
+const USER_ERRORS: Record<string, { status: number; message: string; code: string }> = {
+  E1850: { status: 400, message: 'Invalid OTP code', code: 'INVALID_OTP' },
+  E1854: { status: 400, message: 'Invalid OTP code', code: 'INVALID_OTP' },
+  E1351: { status: 409, message: 'This number is already subscribed', code: 'ALREADY_SUBSCRIBED' },
+}
+
 async function fetchWithRetry(
   url: string,
   body: Record<string, unknown>,
@@ -70,12 +77,15 @@ async function fetchWithRetry(
       const statusCode = data.statusCode as string | undefined
       if (statusCode !== undefined && statusCode !== 'S1000') {
         // A well-formed BDApps error (wrong OTP, unregistered user, …) is final
+        const known = USER_ERRORS[statusCode]
         throw new NonRetryable(
-          new ApiError(
-            502,
-            `BDApps error: ${statusCode}${data.statusDetail ? ` (${data.statusDetail})` : ''}`,
-            `BDAPPS_${statusCode}`,
-          ),
+          known
+            ? new ApiError(known.status, known.message, known.code)
+            : new ApiError(
+                502,
+                `BDApps error: ${statusCode}${data.statusDetail ? ` (${data.statusDetail})` : ''}`,
+                `BDAPPS_${statusCode}`,
+              ),
         )
       }
 
@@ -352,12 +362,13 @@ export interface SmsSendResult {
 /**
  * Send an SMS to one or more destination addresses.
  *
- * @param deliveryStatusRequest 1 = request delivery report, 0 = no report
+ * @param deliveryStatusRequest 1 = request delivery report, 0 = no report. Defaults to 0:
+ *   our SMS plan has delivery reports disabled and BDApps rejects the whole send with E1312.
  */
 export async function smsSend(
   message: string,
   destinationAddresses: string[],
-  deliveryStatusRequest = 1,
+  deliveryStatusRequest = 0,
 ): Promise<SmsSendResult> {
   // Dev: the BDApps simulator usually isn't running locally — log the message to
   // the console instead of POSTing to it (avoids ECONNREFUSED + retry backoff).

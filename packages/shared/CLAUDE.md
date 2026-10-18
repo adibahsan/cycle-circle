@@ -1,6 +1,6 @@
 ## Shared Services Layer
 
-11 pure async service modules in `packages/shared/src/server/services/` — no Next.js dependencies. Both apps use thin wrappers (auth + validation + revalidatePath/cache).
+12 pure async service modules in `packages/shared/src/server/services/` — no Next.js dependencies. Both apps use thin wrappers (auth + validation + revalidatePath/cache).
 
 | Service | Scope |
 |---------|-------|
@@ -15,6 +15,7 @@
 | `analytics-service` | Dashboard stats, trends, distributions, retention |
 | `sms-service` | Broadcast CRUD |
 | `export-service` | CSV generation (feedback, users) |
+| `app-otp-service` | Phone login OTP request; App OTP for existing subscribers (ADR 0002) |
 
 Import via `@vesta/shared/server/services`.
 

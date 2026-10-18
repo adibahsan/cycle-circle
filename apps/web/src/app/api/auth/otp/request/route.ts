@@ -3,11 +3,13 @@ import { parseBody } from '@vesta/shared/server/validation'
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
 import { validateMsisdn } from '@vesta/shared/server/auth'
 import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
-import { requestOtp } from '@vesta/shared/server/adapters/bdapps'
-import { createOtpChallenge, getOtpResendCooldownRemaining } from '@vesta/shared/server/services'
+import { getOtpResendCooldownRemaining, requestLoginOtp } from '@vesta/shared/server/services'
 import { isDevModeEnabled } from '@vesta/shared/server/dev'
 import { withRequestContext, logger } from '@vesta/shared/server/log'
 import { logCustomerRefusal } from '@/app/api/auth/log-failure'
+import { assertOtpIpLimit } from '@/app/api/auth/client-ip'
+import { cookies } from 'next/headers'
+import { LANG_COOKIE, parseLang } from '@/lib/language'
 
 const bodySchema = z.object({
   phone: z.string().min(1, 'Phone is required'),
@@ -37,21 +39,32 @@ export async function POST(request: Request): Promise<Response> {
     if (!rl.allowed) {
       throw new ApiError(429, 'Too many OTP requests. Try again in a minute.', 'RATE_LIMITED')
     }
+    await assertOtpIpLimit(request)
 
-    let referenceNo: string
+    const lang = parseLang((await cookies()).get(LANG_COOKIE)?.value)
+    const otp = await requestLoginOtp(normalizedPhone, lang)
 
-    if (isDevModeEnabled()) {
-      referenceNo = `dev-${crypto.randomUUID()}`
-    } else {
-      const result = await requestOtp(normalizedPhone)
-      referenceNo = result.referenceNo
+    if (otp.kind === 'fallback') {
+      // Existing subscriber we can't SMS (ADR 0002): the client offers email login or unsubscribe-and-retry.
+      logger.customer(
+        'auth.otp.request',
+        { phone: normalizedPhone, ok: false, status: 409, code: 'ALREADY_SUBSCRIBED', reason: otp.reason, hasEmail: otp.hasEmail },
+        { level: 'warn' },
+      )
+      return Response.json(
+        { error: { message: 'This number is already subscribed', code: 'ALREADY_SUBSCRIBED', hasEmail: otp.hasEmail } },
+        { status: 409 },
+      )
     }
 
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
-    await createOtpChallenge(normalizedPhone, referenceNo, expiresAt)
-
-    logger.customer('auth.otp.request', { phone: normalizedPhone, referenceNo, ok: true, dev: isDevModeEnabled() })
-    return Response.json({ referenceNo, message: 'OTP sent' })
+    logger.customer('auth.otp.request', {
+      phone: normalizedPhone,
+      referenceNo: otp.referenceNo,
+      ok: true,
+      dev: isDevModeEnabled(),
+      ...(otp.kind === 'sent' ? { appOtp: true, code: otp.code } : {}),
+    })
+    return Response.json({ referenceNo: otp.referenceNo, message: 'OTP sent' })
   } catch (error) {
     logCustomerRefusal('auth.otp.request', error, { phone })
     return handleApiError(error)

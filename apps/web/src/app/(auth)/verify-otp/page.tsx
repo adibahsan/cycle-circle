@@ -68,9 +68,12 @@ export default function VerifyOtpPage() {
   }, [endsAt]);
   const countdown = secondsLeft;
 
-  function errorMessage(body: { error?: string | { message?: string; code?: string } }, fallbackKey: string) {
+  function errorMessage(body: { error?: string | { message?: string; code?: string; hasEmail?: boolean } }, fallbackKey: string) {
     const err = body.error;
     const code = typeof err === 'object' ? err?.code : undefined;
+    if (code === 'ALREADY_SUBSCRIBED' && typeof err === 'object') {
+      return t(err.hasEmail ? 'auth.alreadySubscribedEmail' : 'auth.alreadySubscribedNoEmail');
+    }
     const known: Record<string, string> = {
       INVALID_OTP: 'trial.err.invalidCode',
       CHALLENGE_EXPIRED: 'trial.err.invalidCode',
@@ -78,6 +81,7 @@ export default function VerifyOtpPage() {
       ALREADY_VERIFIED: 'trial.err.invalidCode',
       RATE_LIMITED: 'trial.err.rateLimited',
       OTP_COOLDOWN: 'trial.err.cooldown',
+      OTP_LOCKED: 'trial.err.codeLocked',
     };
     if (code && known[code]) return t(known[code]);
     return t(fallbackKey);
@@ -136,7 +140,7 @@ export default function VerifyOtpPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
       });
-      const body = await res.json().catch(() => ({})) as { referenceNo?: string; error?: string | { message?: string; code?: string } };
+      const body = await res.json().catch(() => ({})) as { referenceNo?: string; error?: string | { message?: string; code?: string; hasEmail?: boolean } };
       if (!res.ok || !body.referenceNo) {
         setError(errorMessage(body, 'auth.resendFailed'));
         return;

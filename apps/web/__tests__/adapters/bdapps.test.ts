@@ -67,10 +67,20 @@ describe('BDApps subscription adapter', () => {
     expect(res.subscriptionStatus).toBe('REGISTERED')
   })
 
-  it('does not retry a well-formed BDApps error (e.g. wrong OTP)', async () => {
-    reply({ statusCode: 'E1850', statusDetail: 'Invalid OTP' })
-    await expect(verifyOtp('REF1', '000000')).rejects.toMatchObject({ code: 'BDAPPS_E1850' })
+  it('does not retry a well-formed BDApps error', async () => {
+    reply({ statusCode: 'E1313', statusDetail: 'Authentication failed' })
+    await expect(verifyOtp('REF1', '000000')).rejects.toMatchObject({ code: 'BDAPPS_E1313' })
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['E1850', 'E1854'])('reports a wrong or expired BDApps OTP (%s) as 400 INVALID_OTP', async (code) => {
+    reply({ statusCode: code, statusDetail: 'Invalid OTP' })
+    await expect(verifyOtp('REF1', '000000')).rejects.toMatchObject({ statusCode: 400, code: 'INVALID_OTP' })
+  })
+
+  it('reports an OTP request for an already-subscribed number (E1351) as 409 ALREADY_SUBSCRIBED', async () => {
+    reply({ statusCode: 'E1351', statusDetail: 'user already registered' })
+    await expect(requestOtp('+8801805718862')).rejects.toMatchObject({ statusCode: 409, code: 'ALREADY_SUBSCRIBED' })
   })
 
   it('does not retry an HTTP 4xx', async () => {
@@ -111,6 +121,12 @@ describe('BDApps subscription adapter', () => {
     const res = await smsSend('hi', ['+8801805718862', 'tel:all'])
     expect(sentBody().destinationAddresses).toEqual(['tel:8801805718862', 'tel:all'])
     expect(res).toMatchObject({ requestId: 'REQ1', messageId: 'MSG1' })
+  })
+
+  it('sends SMS without a delivery report by default (our SMS plan rejects reports with E1312)', async () => {
+    reply({ statusCode: 'S1000', destinationResponses: [{ messageId: 'MSG1', statusCode: 'S1000' }] })
+    await smsSend('hi', ['tel:masked'])
+    expect(sentBody().deliveryStatusRequest).toBe('0')
   })
 })
 
