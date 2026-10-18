@@ -43,8 +43,11 @@ services:
     env_file: ${VESTA_WEB_ENV_FILE:-/opt/vesta/.env.web.production}
     environment:
       LOG_DIR: /var/log/vesta/app
+      UPLOAD_DIR: /var/lib/vesta/uploads
     volumes:
       - /var/log/vesta/app:/var/log/vesta/app
+      # Article images: admin writes, web serves at /uploads (read-only here).
+      - /var/lib/vesta/uploads:/var/lib/vesta/uploads:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,8 +63,10 @@ services:
     environment:
       PORT: "3001"
       LOG_DIR: /var/log/vesta/app
+      UPLOAD_DIR: /var/lib/vesta/uploads
     volumes:
       - /var/log/vesta/app:/var/log/vesta/app
+      - /var/lib/vesta/uploads:/var/lib/vesta/uploads
     depends_on:
       postgres:
         condition: service_healthy

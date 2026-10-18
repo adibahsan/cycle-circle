@@ -210,7 +210,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
 
             {!isBodyLoading && !bodyError && resolvedBodyHtml && (
               <div
-                className="prose prose-sm max-w-[70ch] text-[var(--color-text-secondary)] [&_h2]:text-[var(--color-text-primary)] [&_h3]:text-[var(--color-text-primary)] [&_strong]:text-[var(--color-text-primary)] [&_a]:text-[var(--goal-accent)]"
+                className="prose prose-sm max-w-[70ch] text-[var(--color-text-secondary)] [&_h2]:text-[var(--color-text-primary)] [&_h3]:text-[var(--color-text-primary)] [&_strong]:text-[var(--color-text-primary)] [&_a]:text-[var(--goal-accent)] [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg"
                 dangerouslySetInnerHTML={{ __html: resolvedBodyHtml }}
               />
             )}
