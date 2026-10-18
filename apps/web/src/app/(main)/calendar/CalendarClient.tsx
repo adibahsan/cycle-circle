@@ -33,6 +33,8 @@ import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
 import { selectFertileWindow } from '@vesta/shared/utils/fertile-window'
 import '@vesta/shared/utils/i18n'
 import { DAY_STYLES, dayStyleKind, type DayStyleKind } from '@/lib/calendar-day-style'
+import { dayAccessibleName, gridKeyTarget } from '@/lib/calendar-a11y'
+import { toDeviceDay } from '@/lib/local-date'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
 
@@ -135,6 +137,8 @@ function Legend({ pregnancy }: { pregnancy: boolean }) {
 
 // ─── Day Cell ──────────────────────────────────────────────────────────────────
 
+const NO_STATE = { isPeriod: false, isFertile: false, isOvulation: false, isFuturePredicted: false }
+
 interface DayCellProps {
   meta: DayMeta
   isCurrentMonth: boolean
@@ -142,9 +146,13 @@ interface DayCellProps {
   onSelect: (date: Date) => void
   isGhostDay?: boolean
   onGhostTap?: (dateStr: string) => void
+  /** Roving tabindex: the one day in the tab order. */
+  isFocusTarget: boolean
+  /** Move DOM focus here (set after a keyboard move in the grid). */
+  focusNow: boolean
 }
 
-const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSelect, isGhostDay = false, onGhostTap }: DayCellProps) {
+const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSelect, isGhostDay = false, onGhostTap, isFocusTarget, focusNow }: DayCellProps) {
   const { t } = useTranslation()
   const language = useLanguage()
   const { date } = meta
@@ -152,12 +160,23 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
   const kind = isCurrentMonth ? dayStyleKind(meta) : 'plain'
   const style = DAY_STYLES[kind]
   const showAdd = isGhostDay && isCurrentMonth
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (focusNow) buttonRef.current?.focus()
+  }, [focusNow])
 
   return (
-    <div className="group relative aspect-square w-full">
+    <div role="gridcell" className="group relative aspect-square w-full">
       <button
-      onClick={() => onSelect(date)}
+        ref={buttonRef}
+        type="button"
+        onClick={() => onSelect(date)}
         aria-pressed={isSelected}
+        aria-label={dayAccessibleName({ date, flags: isCurrentMonth ? meta : NO_STATE, isToday, language }, t)}
+        aria-current={isToday ? 'date' : undefined}
+        tabIndex={isFocusTarget ? 0 : -1}
+        data-date={format(date, 'yyyy-MM-dd')}
         className="absolute inset-0 flex flex-col items-center justify-center w-full h-full rounded-xl transition-colors duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/60"
         style={{
           background: isSelected && kind === 'plain' ? 'var(--color-bg-secondary)' : style.background,
@@ -177,6 +196,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
         {/* Today ring */}
         {isToday && (
           <div
+            aria-hidden="true"
             className="absolute inset-0.5 rounded-[10px] border-2 pointer-events-none"
             style={{ borderColor: 'var(--color-text-primary)' }}
           />
@@ -185,6 +205,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
         {/* Selected ring */}
         {isSelected && (
           <div
+            aria-hidden="true"
             className="absolute inset-0 rounded-xl border-2 pointer-events-none"
             style={{ borderColor: 'var(--goal-accent)' }}
           />
@@ -196,6 +217,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
       {showAdd && (
         <button
           type="button"
+          tabIndex={-1}
           onClick={(e) => { e.stopPropagation(); onGhostTap?.(format(date, 'yyyy-MM-dd')) }}
           aria-label={t('calendar.addLogFor', { date: format(date, 'MMMM d', { locale: language === 'bn' ? bn : undefined }) })}
           className="absolute inset-0 z-10 hidden [@media(hover:hover)]:flex items-center justify-center rounded-xl text-[var(--color-text-secondary)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/60"
@@ -495,6 +517,9 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
   }, [month])
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  // Roving focus in the day grid; keyboardMove is true only while arrow/page keys drive focus.
+  const [focusedDate, setFocusedDate] = useState<Date | null>(null)
+  const [keyboardMove, setKeyboardMove] = useState(false)
   const [editingLog, setEditingLog] = useState<PeriodLog | null>(null)
 
   // ── Ghost-day backfill state ────────────────────────────────────────────────
@@ -577,23 +602,43 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
     : []
 
   // Month navigation — update the URL so the RSC re-fetches data
-  const prevMonth = () => {
+  const goToMonth = (d: Date) => {
     setSelectedDate(null)
-    const prev = subMonths(currentMonth, 1)
-    const newMonth = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`
-    router.push(`/calendar?month=${newMonth}`)
+    router.push(`/calendar?month=${format(d, 'yyyy-MM')}`)
   }
-
+  const prevMonth = () => {
+    setKeyboardMove(false)
+    goToMonth(subMonths(currentMonth, 1))
+  }
   const nextMonth = () => {
-    setSelectedDate(null)
-    const next = addMonths(currentMonth, 1)
-    const newMonth = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`
-    router.push(`/calendar?month=${newMonth}`)
+    setKeyboardMove(false)
+    goToMonth(addMonths(currentMonth, 1))
   }
 
   const handleDayClick = useCallback((date: Date) => {
+    setKeyboardMove(false)
+    setFocusedDate(date)
     setSelectedDate((prev) => (prev && isSameDay(prev, date) ? null : date))
   }, [])
+
+  /** The one tabbable day: the last focused day in this month, else the selected day, today, or the 1st. */
+  const focusDay =
+    [focusedDate, selectedDate, today].find((d): d is Date => !!d && isSameMonth(d, currentMonth)) ?? currentMonth
+
+  const handleGridKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const target = gridKeyTarget(focusDay, e.key)
+    if (!target) return
+    e.preventDefault()
+    setKeyboardMove(true)
+    setFocusedDate(target)
+    if (!isSameMonth(target, currentMonth)) goToMonth(target)
+  }
+
+  const weeks = useMemo(() => {
+    const rows: Date[][] = []
+    for (let i = 0; i < gridDays.length; i += 7) rows.push(gridDays.slice(i, i + 7))
+    return rows
+  }, [gridDays])
 
   const handleGhostTap = useCallback((d: string) => setBackfillDate(d), [])
   /** Unlogged past day inside the 30-day backfill window. */
@@ -634,7 +679,8 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
           transition={{ duration: 0.4 }}
           className="xl:w-[480px] xl:shrink-0"
         >
-          <Card padding="md">
+          {/* Narrower side padding on phones keeps each day cell at least 44px wide at 375px. */}
+          <Card padding="md" className="px-2 sm:px-5">
             <div className="flex items-center justify-between mb-4">
               <button
                 onClick={prevMonth}
@@ -645,6 +691,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
               </button>
 
               <motion.h2
+                id="calendar-month-heading"
                 key={format(currentMonth, 'yyyy-MM')}
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -662,6 +709,10 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                 <ChevronRight size={20} className="text-[var(--color-text-secondary)]" aria-hidden="true" />
               </button>
             </div>
+            {/* Announces month changes (the heading remounts per month, so it can't be the live region). */}
+            <p className="sr-only" aria-live="polite">
+              {format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}
+            </p>
 
             {/* Pregnancy coming-soon banner */}
             {pregnancy && (
@@ -688,47 +739,56 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
               </motion.div>
             )}
 
-            {/* Day-of-week headers */}
-            <div className="grid grid-cols-7 mb-1 md:mb-2">
-              {DOW.map((d) => (
-                <div key={d} className="flex items-center justify-center">
-                  <span className="text-[11px] md:text-xs font-bold text-[var(--color-text-muted)]">
-                    {d}
-                  </span>
-                </div>
-              ))}
+            {/* Day grid: ARIA grid with roving focus (arrows, Home/End, PageUp/PageDown). */}
+            <div role="grid" aria-labelledby="calendar-month-heading" onKeyDown={handleGridKeyDown}>
+              <div role="row" className="grid grid-cols-7 mb-1 md:mb-2">
+                {DOW.map((d) => (
+                  <div key={d} role="columnheader" className="flex items-center justify-center">
+                    <span className="text-[11px] md:text-xs font-bold text-[var(--color-text-muted)]">
+                      {d}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={format(currentMonth, 'yyyy-MM')}
+                  role="rowgroup"
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -12 }}
+                  transition={{ duration: 0.22 }}
+                  className="flex flex-col gap-0.5 md:gap-1"
+                >
+                  {weeks.map((week) => (
+                    <div key={format(week[0], 'yyyy-MM-dd')} role="row" className="grid grid-cols-7 gap-0.5 md:gap-1">
+                      {week.map((date) => {
+                        const dateStr = format(date, 'yyyy-MM-dd')
+                        const meta = dayMetaMap.get(dateStr)!
+                        const inMonth = isSameMonth(date, currentMonth)
+                        const isSelected = selectedDate ? isSameDay(date, selectedDate) : false
+                        const isFocusTarget = inMonth && isSameDay(date, focusDay)
+
+                        return (
+                          <DayCell
+                            key={dateStr}
+                            meta={meta}
+                            isCurrentMonth={inMonth}
+                            isSelected={isSelected}
+                            onSelect={handleDayClick}
+                            isGhostDay={inMonth && isGhostDate(dateStr)}
+                            onGhostTap={handleGhostTap}
+                            isFocusTarget={isFocusTarget}
+                            focusNow={keyboardMove && isFocusTarget && !!focusedDate && isSameDay(date, focusedDate)}
+                          />
+                        )
+                      })}
+                    </div>
+                  ))}
+                </motion.div>
+              </AnimatePresence>
             </div>
-
-            {/* Calendar grid */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={format(currentMonth, 'yyyy-MM')}
-                initial={{ opacity: 0, x: 12 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -12 }}
-                transition={{ duration: 0.22 }}
-                className="grid grid-cols-7 gap-0.5 md:gap-1"
-              >
-                {gridDays.map((date) => {
-                  const dateStr = format(date, 'yyyy-MM-dd')
-                  const meta = dayMetaMap.get(dateStr)!
-                  const inMonth = isSameMonth(date, currentMonth)
-                  const isSelected = selectedDate ? isSameDay(date, selectedDate) : false
-
-                  return (
-                    <DayCell
-                      key={dateStr}
-                      meta={meta}
-                      isCurrentMonth={inMonth}
-                      isSelected={isSelected}
-                      onSelect={handleDayClick}
-                      isGhostDay={inMonth && isGhostDate(dateStr)}
-                      onGhostTap={handleGhostTap}
-                    />
-                  )
-                })}
-              </motion.div>
-            </AnimatePresence>
 
             {/* Legend — inside the calendar card on desktop */}
             <div className="mt-4 pt-3 border-t border-[var(--color-border)]">
@@ -837,8 +897,8 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
         open={editingLog !== null}
         profileId={editingLog?.profileId ?? activeProfileId}
         existingLogId={editingLog?.id}
-        initialStart={editingLog ? toDateStr(editingLog.startDate) : undefined}
-        initialEnd={editingLog ? toDateStr(editingLog.endDate) : undefined}
+        initialStart={editingLog ? toDeviceDay(editingLog.startDate) : undefined}
+        initialEnd={editingLog ? toDeviceDay(editingLog.endDate) : undefined}
         initialFlow={editingLog ? (editingLog.flowIntensity.toLowerCase() as FlowIntensity) : undefined}
         onClose={() => setEditingLog(null)}
         onSaved={() => {
@@ -862,9 +922,4 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
       />
     </PageContainer>
   )
-}
-
-function toDateStr(d: Date | string): string {
-  if (typeof d === 'string') return d.includes('T') ? d.slice(0, 10) : d
-  return d.toISOString().slice(0, 10)
 }
