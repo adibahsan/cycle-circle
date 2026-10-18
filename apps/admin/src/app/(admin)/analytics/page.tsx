@@ -37,6 +37,10 @@ export default async function AnalyticsPage({
   const range = rawRange in RANGE_TO_DAYS ? rawRange : '30d'
   const days = RANGE_TO_DAYS[range]
 
+  // Fixed windows until #103 adds per-panel ranges; day-aligned so cache keys are stable.
+  const DAY_MS = 24 * 60 * 60 * 1000
+  const dayEnd = new Date(Math.floor(Date.now() / DAY_MS) * DAY_MS + DAY_MS - 1)
+
   const [
     cycleLengths,
     symptoms,
@@ -49,16 +53,16 @@ export default async function AnalyticsPage({
     feedbackRatings,
     symptomsByPhase,
   ] = await Promise.all([
-    getCycleLengthDistribution(),
+    getCycleLengthDistribution({ from: new Date(0), to: dayEnd }),
     getSymptomsByCategory(),
     getPredictionAccuracy(),
-    getUserRetention(),
+    getUserRetention({ from: new Date(dayEnd.getTime() - 8 * 7 * DAY_MS), to: dayEnd }),
     getUserTrend(days),
     getPredictionMae(),
     getFeedbackVolume(days),
     getFeedbackCategories(days),
     getFeedbackRatings(days),
-    getSymptomsByPhase(),
+    getSymptomsByPhase({ from: new Date(dayEnd.getTime() - 90 * DAY_MS), to: dayEnd }),
   ])
 
   return (
