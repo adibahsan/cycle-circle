@@ -17,6 +17,8 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
+import { Card } from '@/components/ui/Card'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 import { AddPhoneDialog } from '@/components/AddPhoneDialog'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { SubscriptionStatus } from '@vesta/shared/types'
@@ -141,7 +143,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.38, delay: 0.05 }}
         >
-          <div className="surface-wash rounded-3xl border border-[var(--color-border)] shadow-soft p-6">
+          <Card tone="panel" padding="lg" className="h-full">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-[var(--color-text-muted)]">
@@ -169,15 +171,15 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               </div>
 
               {tier === 'PRO' ? (
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-bg-card))] text-[var(--color-text-primary)] text-xs font-bold">
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-tint-peach text-accent-peach text-xs font-bold">
                   <Crown size={12} aria-hidden="true" /> <span className="uppercase">{t('subscription.pro')}</span>
                 </span>
               ) : tier === 'LAPSED' ? (
-                <span className="px-3 py-1.5 rounded-full bg-[var(--color-bg-peach)] border border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] text-[var(--color-gold-ink)] text-xs font-semibold">
+                <span className="px-3 py-1.5 rounded-full bg-tint-peach text-accent-peach text-xs font-semibold">
                   {t('subscription.planLapsed')}
                 </span>
               ) : (
-                <span className="px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-muted)] text-xs font-semibold">
+                <span className="px-3 py-1.5 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] text-xs font-semibold">
                   <span className="uppercase">{t('subscription.free')}</span>
                 </span>
               )}
@@ -190,7 +192,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                     key={labelKey}
                     className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
                   >
-                    <Check aria-hidden="true" size={14} className="text-[var(--goal-accent)] shrink-0" />
+                    <Check aria-hidden="true" size={14} className="text-accent-mint shrink-0" />
                     {t(labelKey)}
                   </div>
                 ))
@@ -229,7 +231,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                 </p>
               )}
             </div>
-          </div>
+          </Card>
         </motion.div>
 
         {/* ── Pro Plan Upgrade Card ── */}
@@ -240,13 +242,13 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
           >
-            <div className="relative rounded-3xl overflow-hidden shadow-soft h-full surface-wash border border-[color-mix(in_srgb,var(--color-accent)_45%,var(--color-border))]">
-              <div className="relative p-6 space-y-5">
+            <Card tone="peach" padding="lg" className="h-full">
+              <div className="space-y-5">
                 <div className="flex items-center gap-2.5">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-bg-card))] text-[var(--color-text-primary)] text-xs font-bold">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--color-bg-card)] text-accent-peach text-xs font-bold">
                     <Crown size={12} aria-hidden="true" /> <span className="uppercase">{t('subscription.pro')}</span>
                   </span>
-                  <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{t('subscription.title')}</h2>
+                  <h2 className="text-xl font-bold text-accent-peach">{t('subscription.title')}</h2>
                 </div>
 
                 <div>
@@ -265,8 +267,8 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                       key={labelKey}
                       className="flex items-center gap-2.5 text-[var(--color-text-secondary)] text-sm"
                     >
-                      <div className="w-5 h-5 rounded-full bg-[var(--color-accent)]/25 flex items-center justify-center shrink-0">
-                        <Check size={12} className="text-[var(--color-gold-ink)]" aria-hidden="true" />
+                      <div className="w-5 h-5 rounded-full bg-[var(--color-bg-card)] flex items-center justify-center shrink-0">
+                        <Check size={12} className="text-accent-peach" aria-hidden="true" />
                       </div>
                       {t(labelKey)}
                     </div>
@@ -276,13 +278,13 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                 <button
                   onClick={() => setAddPhoneOpen(true)}
                   className={`w-full bg-[var(--color-action)] text-[var(--color-on-action)] font-bold rounded-full text-base hover:opacity-90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-action)] ${
-                    trial === 'expired' ? 'py-4 text-lg motion-safe:animate-pulse' : 'py-3.5'
+                    trial === 'expired' ? 'py-4 text-lg' : 'py-3.5'
                   }`}
                 >
                   {t('subscription.upgradeButton')}
                 </button>
               </div>
-            </div>
+            </Card>
           </motion.div>
         )}
       </div>
@@ -293,13 +295,11 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.42, delay: 0.15 }}
       >
-        <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
-          {t('subscription.freeVsPro')}
-        </h2>
+        <SectionHeader title={t('subscription.freeVsPro')} />
 
-        <div className="rounded-3xl overflow-hidden bg-[var(--color-bg-card)] shadow-soft divide-y divide-[var(--color-border)]">
-          <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3 surface-peach">
-            <div className="px-3 sm:px-4 py-3 text-xs font-semibold text-[var(--color-text-muted)] col-span-1">
+        <Card tone="panel" className="p-0 overflow-hidden divide-y divide-[var(--color-border)]">
+          <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3 bg-tint-peach">
+            <div className="px-4 sm:px-5 py-3 text-xs font-semibold text-[var(--color-text-secondary)] col-span-1">
               {t('subscription.featureHeader')}
             </div>
             <div className="px-1 sm:px-2 py-3 text-center">
@@ -308,7 +308,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               </span>
             </div>
             <div className="px-1 sm:px-2 py-3 text-center">
-              <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-bg-card))] text-[var(--color-text-primary)]">
+              <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-[var(--color-bg-card)] text-accent-peach">
                 <Crown size={10} aria-hidden="true" /> {t('subscription.pro')}
               </span>
             </div>
@@ -319,7 +319,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               key={key}
               className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3"
             >
-              <div className="px-3 sm:px-4 py-3 text-sm md:text-base text-[var(--color-text-secondary)] col-span-1">
+              <div className="px-4 sm:px-5 py-3 text-sm md:text-base text-[var(--color-text-secondary)] col-span-1">
                 {t(labelKey)}
               </div>
               <div className="px-1 sm:px-2 py-3 flex justify-center items-center">
@@ -331,14 +331,14 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               </div>
               <div className="px-1 sm:px-2 py-3 flex justify-center items-center">
                 {pro ? (
-                  <Check size={16} strokeWidth={2.5} className="text-[var(--color-primary)]" aria-hidden="true" />
+                  <Check size={16} strokeWidth={2.5} className="text-accent-mint" aria-hidden="true" />
                 ) : (
                   <X size={16} className="text-[var(--color-border)]" aria-hidden="true" />
                 )}
               </div>
             </div>
           ))}
-        </div>
+        </Card>
       </motion.div>
 
       {/* ── Footer note ── */}
