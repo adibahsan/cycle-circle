@@ -69,9 +69,10 @@ for (const [vpName, viewport] of [['desktop', DESKTOP], ['phone', PHONE_375]] as
       await expect(page.locator('main h2').first()).toBeVisible()
       const levels = await headingLevels(page)
       for (let i = 1; i < levels.length; i++) expect(levels[i] - levels[i - 1]).toBeLessThanOrEqual(1)
+      // Layout height (ignores in-flight entrance transforms); tolerate sub-pixel rounding of 2.75rem.
       for (const c of await page.locator('main button:visible').all()) {
-        const h = await c.evaluate((el) => el.getBoundingClientRect().height)
-        expect(h, `${await c.evaluate((el) => el.outerHTML.slice(0, 90))} tap height`).toBeGreaterThanOrEqual(44)
+        const h = await c.evaluate((el) => parseFloat(getComputedStyle(el).height))
+        expect(h, `${await c.evaluate((el) => el.outerHTML.slice(0, 90))} tap height`).toBeGreaterThanOrEqual(43.5)
       }
     })
   })
