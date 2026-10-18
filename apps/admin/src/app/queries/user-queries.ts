@@ -11,7 +11,7 @@ import {
   type ListUsersParams,
 } from '@vesta/shared/server/services'
 import { requireAdminUser } from './auth-queries'
-import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
+import { adminCacheTags, ADMIN_CACHE_TTL, KPI_CACHE_TTL } from '@/lib/admin-cache-tags'
 
 function usersCacheKey(params: ListUsersParams) {
   return [
@@ -51,7 +51,7 @@ export const getUserSignupTrendQuery = cache(async (days: number) => {
   return unstable_cache(
     () => getUserSignupTrend({ days }),
     ['admin-users-signup-trend', String(days)],
-    { tags: [adminCacheTags.users], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.users], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -60,7 +60,7 @@ export const getAuthMethodDistributionQuery = cache(async () => {
   return unstable_cache(
     () => getAuthMethodDistribution(),
     ['admin-user-auth-method-dist'],
-    { tags: [adminCacheTags.users], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.users], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -69,7 +69,7 @@ export const getSubscriptionStatusDistributionQuery = cache(async () => {
   return unstable_cache(
     () => getSubscriptionStatusDistribution(),
     ['admin-user-subscription-dist'],
-    { tags: [adminCacheTags.users], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.users], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -78,7 +78,7 @@ export const getLanguageDistributionQuery = cache(async () => {
   return unstable_cache(
     () => getLanguageDistribution(),
     ['admin-user-language-dist'],
-    { tags: [adminCacheTags.users], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.users], revalidate: KPI_CACHE_TTL }
   )()
 })
 
@@ -87,6 +87,6 @@ export const getUserStatusBreakdownQuery = cache(async () => {
   return unstable_cache(
     () => getUserStatusBreakdown(),
     ['admin-user-status-breakdown'],
-    { tags: [adminCacheTags.users], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.users], revalidate: KPI_CACHE_TTL }
   )()
 })

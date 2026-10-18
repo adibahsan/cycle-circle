@@ -1,6 +1,7 @@
 export const ADMIN_CACHE_TTL = 300
-/** Dashboard KPIs must reflect the database within a minute (SRS v1.4). */
-export const DASHBOARD_CACHE_TTL = 60
+/** Dashboard and every other KPI/stat view must reflect the database within a minute (SRS v1.4). */
+export const KPI_CACHE_TTL = 60
+export const DASHBOARD_CACHE_TTL = KPI_CACHE_TTL
 
 export const adminCacheTags = {
   dashboard: 'admin:dashboard',
