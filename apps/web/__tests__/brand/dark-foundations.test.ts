@@ -54,8 +54,11 @@ for (const app of ['web', 'admin'] as const) {
     })
 
     it('dark surfaces step apart: card lifts off the page, nested panel off the card', () => {
-      expect(contrast(dark['--color-bg-card'], dark['--color-bg-primary'])).toBeGreaterThanOrEqual(1.25)
-      expect(contrast(dark['--color-bg-card'], dark['--color-bg-secondary'])).toBeGreaterThanOrEqual(1.15)
+      // Web's near-black "Night blush" takes a smaller lightness step; its cards also carry a top highlight
+      // and a deep shadow (--shadow-panel), so the step alone does not have to separate them.
+      const [cardPage, cardNested] = app === 'web' ? [1.12, 1.08] : [1.25, 1.15]
+      expect(contrast(dark['--color-bg-card'], dark['--color-bg-primary'])).toBeGreaterThanOrEqual(cardPage)
+      expect(contrast(dark['--color-bg-card'], dark['--color-bg-secondary'])).toBeGreaterThanOrEqual(cardNested)
       expect(contrast(dark['--color-border'], dark['--color-bg-card'])).toBeGreaterThanOrEqual(1.4)
     })
 

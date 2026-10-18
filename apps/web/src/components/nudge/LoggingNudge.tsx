@@ -119,7 +119,7 @@ export function LoggingNudge({
   const content = (
     <Card
       className={[
-        'relative overflow-hidden',
+        '@container relative overflow-hidden',
         className ?? '',
       ].join(' ').trim()}
       tone="panel"
@@ -166,24 +166,26 @@ export function LoggingNudge({
           <Icon size={18} className="text-[var(--color-on-accent)]" aria-hidden="true" />
         </div>
 
-        {/* Text */}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-[var(--color-text-primary)] leading-snug">
-            {title}
-          </p>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 leading-relaxed text-pretty max-w-prose">
-            {description}
-          </p>
-
-          {/* Phase-aware enrichment (only when phase provided) */}
-          {phase && (
-            <p className="text-xs text-[var(--color-text-muted)] mt-0.5 opacity-80 leading-relaxed">
-              {t('nudge.phaseAwareBody', { phase: t(`dashboard.${phase.toLowerCase()}`) })}
+        {/* Text, then the actions: stacked when narrow, one row when the card is wide. */}
+        <div className="flex min-w-0 flex-1 flex-col @2xl:flex-row @2xl:items-center @2xl:gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-[var(--color-text-primary)] leading-snug">
+              {title}
             </p>
-          )}
+            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 leading-relaxed text-pretty max-w-prose">
+              {description}
+            </p>
+
+            {/* Phase-aware enrichment (only when phase provided) */}
+            {phase && (
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5 opacity-80 leading-relaxed">
+                {t('nudge.phaseAwareBody', { phase: t(`dashboard.${phase.toLowerCase()}`) })}
+              </p>
+            )}
+          </div>
 
           {/* CTAs */}
-          <div className="flex flex-wrap items-center gap-2 mt-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2 @2xl:mt-0 @2xl:shrink-0">
             {isEmptyState ? (
               <>
                 {/* Empty-state: Primary CTA — Log first period */}

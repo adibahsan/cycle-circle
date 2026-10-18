@@ -46,7 +46,7 @@ describe('DAY_STYLES', () => {
     expect(DAY_STYLES.predictedPeriod).toMatchObject({ background: 'transparent', border: '1.5px dashed var(--color-menstrual)', color: 'var(--color-text-primary)' })
   })
   it('fertile tint is mixed over the card surface, has no border, uses normal text', () => {
-    expect(DAY_STYLES.fertile.background).toMatch(/color-mix\(in (?:srgb|oklab), var\(--color-fertile\) \d+%, var\(--color-bg-card\)\)/)
+    expect(DAY_STYLES.fertile.background).toMatch(/color-mix\(in (?:srgb|oklab), var\(--color-fertile\) var\(--day-mix-fertile\), var\(--color-bg-card\)\)/)
     expect(DAY_STYLES.fertile.border).toBe('none')
     expect(DAY_STYLES.fertile.color).toBe('var(--color-text-primary)')
   })
@@ -89,9 +89,11 @@ describe('CalendarClient wiring', () => {
     expect(src).toContain("from '@/components/ui/SectionHeader'")
     expect(src).not.toContain('shadow-glow')
   })
-  it('shows the add plus on hover and focus', () => {
-    expect(src).toMatch(/group-hover/)
-    expect(src).toMatch(/group-focus-within/)
+  it('shows the add plus on hover and focus (drawn by the shared month grid)', () => {
+    const grid = fs.readFileSync(path.resolve(__dirname, '../../src/components/calendar/MonthGrid.tsx'), 'utf8')
+    expect(src).toContain("from '@/components/calendar/MonthGrid'")
+    expect(grid).toMatch(/group-hover/)
+    expect(grid).toMatch(/group-focus-within/)
   })
 })
 
@@ -131,9 +133,9 @@ describe('fertile tint (mint, spec #66)', () => {
   const css = fs.readFileSync(path.resolve(__dirname, '../../src/app/globals.css'), 'utf8')
   const light = cssBlock(css, '@theme')
   const themes = [['light', light], ['dark', { ...light, ...cssBlock(css, '.dark') }]] as const
-  const pct = Number(/fertile\) (\d+)%/.exec(DAY_STYLES.fertile.background)![1])
-
   for (const [name, t] of themes) {
+    // The mix strength is a per-theme token (stronger on dark).
+    const pct = Number(t['--day-mix-fertile'].replace('%', ''))
     const card = hex(t['--color-bg-card'])
     const tint = mix(hex(t['--color-fertile']), pct, card)
     it(`${name}: keeps day numbers at 4.5:1 or better`, () => {
@@ -154,12 +156,13 @@ describe('phase tints (follicular pink, luteal lavender)', () => {
   for (const phase of ['follicular', 'luteal'] as const) {
     const s = DAY_STYLES[phase]
     it(`${phase} is mixed over the card surface with no border and normal text`, () => {
-      expect(s.background).toMatch(new RegExp(`color-mix\\(in oklab, var\\(--color-${phase}\\) \\d+%, var\\(--color-bg-card\\)\\)`))
+      expect(s.background).toMatch(new RegExp(`color-mix\\(in oklab, var\\(--color-${phase}\\) var\\(--day-mix-phase\\), var\\(--color-bg-card\\)\\)`))
       expect(s.border).toBe('none')
       expect(s.color).toBe('var(--color-text-primary)')
     })
-    const pct = Number(new RegExp(`${phase}\\) (\\d+)%`).exec(s.background)![1])
     for (const [name, t] of themes) {
+      // The mix strength is a per-theme token (stronger on dark).
+      const pct = Number(t['--day-mix-phase'].replace('%', ''))
       const card = hex(t['--color-bg-card'])
       const tint = mix(hex(t[`--color-${phase}`]), pct, card)
       it(`${name} ${phase}: day numbers stay at 4.5:1, tint is visible but lighter than solid period`, () => {
@@ -172,9 +175,9 @@ describe('phase tints (follicular pink, luteal lavender)', () => {
   it('follicular and luteal tints are told apart (pink is redder, lavender bluer)', () => {
     for (const [, t] of themes) {
       const card = hex(t['--color-bg-card'])
-      const pct = (p: string) => Number(new RegExp(`${p}\\) (\\d+)%`).exec(DAY_STYLES[p as 'luteal'].background)![1])
-      const f = mix(hex(t['--color-follicular']), pct('follicular'), card)
-      const l = mix(hex(t['--color-luteal']), pct('luteal'), card)
+      const pct = Number(t['--day-mix-phase'].replace('%', ''))
+      const f = mix(hex(t['--color-follicular']), pct, card)
+      const l = mix(hex(t['--color-luteal']), pct, card)
       expect(f[0] - f[2]).toBeGreaterThan(l[0] - l[2])
     }
   })

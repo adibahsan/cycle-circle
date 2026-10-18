@@ -1,46 +1,47 @@
 import { PageContainer } from '@/components/ui/PageContainer'
 import { Shimmer } from '@/components/ui/Shimmer'
 
-const CARD = 'rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel p-5 space-y-3'
+const CARD = 'flex flex-col gap-3 rounded-panel bg-[var(--color-bg-card)] border border-transparent shadow-panel p-4 md:p-5'
 
-/** Skeleton in the insights page's shape: header + range control, then the chart cards. */
+/** Skeleton in the insights page's shape: header with the range chips, then the four chart cards (two across from xl). */
 export default function InsightsLoading() {
   return (
     <PageContainer width="canvas">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <Shimmer className="h-8 w-40 rounded-lg" />
-          <Shimmer className="h-4 w-56 rounded-lg" />
+        <div>
+          <Shimmer className="h-8 w-56 rounded-lg md:h-9" />
+          <Shimmer className="mt-1.5 h-4 w-72 max-w-full rounded-md" />
         </div>
-        <Shimmer className="h-9 w-full sm:w-64 rounded-xl" />
+        <div className="flex items-center gap-1 sm:shrink-0">
+          <Shimmer className="h-9 flex-1 rounded-full sm:w-[105px] sm:flex-none" />
+          <Shimmer className="h-9 flex-1 rounded-full sm:w-[105px] sm:flex-none" />
+          <Shimmer className="h-9 flex-1 rounded-full sm:w-[76px] sm:flex-none" />
+          <Shimmer className="h-9 flex-1 rounded-full sm:w-[67px] sm:flex-none" />
+        </div>
       </div>
 
-      <div className="flex flex-col gap-5 2xl:grid 2xl:grid-cols-2 2xl:items-start">
-        <div className={CARD}>
+      <div className="flex flex-col gap-3 xl:grid xl:grid-cols-2">
+        <div className={`${CARD} h-[296px] xl:h-[346px] 2xl:h-[406px]`}>
           <Shimmer className="h-5 w-40 rounded-md" />
-          <Shimmer className="h-8 w-44 rounded-xl" />
-          <Shimmer className="h-[180px] w-full rounded-2xl" />
+          <Shimmer className="h-8 w-44 rounded-full" />
+          <Shimmer className="w-full flex-1 rounded-2xl" />
         </div>
-        <div className={CARD}>
+        <div className={`${CARD} h-[282px] xl:h-[346px] 2xl:h-[406px]`}>
           <Shimmer className="h-5 w-44 rounded-md" />
           <Shimmer className="h-4 w-48 rounded-md" />
-          <Shimmer className="h-[160px] w-full rounded-2xl" />
+          <Shimmer className="w-full flex-1 rounded-2xl" />
         </div>
-        <div className={CARD}>
+        <div className={`${CARD} h-[217px] xl:h-[161px]`}>
           <Shimmer className="h-5 w-36 rounded-md" />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Shimmer className="h-[88px] w-full rounded-panel" />
-            <Shimmer className="h-[88px] w-full rounded-panel" />
-            <Shimmer className="h-[88px] w-full rounded-panel" />
+          <div className="grid flex-1 grid-cols-1 gap-3 xl:grid-cols-3">
+            <div className="rounded-panel bg-tint-pink" />
+            <div className="rounded-panel bg-tint-lavender" />
+            <div className="rounded-panel bg-tint-mint" />
           </div>
         </div>
-        <div className={CARD}>
+        <div className={`${CARD} h-[138px] xl:h-[161px]`}>
           <Shimmer className="h-5 w-40 rounded-md" />
-          <div className="space-y-2">
-            <Shimmer className="h-12 w-full rounded-2xl" />
-            <Shimmer className="h-12 w-full rounded-2xl" />
-            <Shimmer className="h-12 w-full rounded-2xl" />
-          </div>
+          <Shimmer className="w-full flex-1 rounded-2xl" />
         </div>
       </div>
     </PageContainer>

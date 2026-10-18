@@ -24,10 +24,11 @@ describe('review fixes', () => {
     expect(bad).toEqual([])
   })
 
-  it('BrandLogo adds its light backplate only under dark:', () => {
+  it('BrandLogo swaps to the light-lettered logo in dark (no light backplate)', () => {
     const src = read(path.join(APPS, 'web/src/components/ui/BrandLogo.tsx'))
-    expect(src).toMatch(/dark:bg-\[#FFF7F8\]/)
-    expect(src).not.toMatch(/(?<!dark:)bg-\[#FFF7F8\]/)
+    expect(src).toContain('/brand/cycle-circle-logo-dark.svg')
+    expect(src).toMatch(/hidden dark:block/)
+    expect(src).not.toMatch(/bg-\[#FFF7F8\]/)
   })
 
   it('renders the full logo only through BrandLogo', () => {

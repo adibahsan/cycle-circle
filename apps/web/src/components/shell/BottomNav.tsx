@@ -43,7 +43,7 @@ export function BottomNav({
     <nav
       data-bottom-nav
       aria-label={t('nav.mobileNav')}
-      className="fixed bottom-0 left-0 right-0 bg-[var(--color-bg-card)] border-t border-[var(--color-border)] z-40 md:hidden"
+      className="fixed bottom-0 left-0 right-0 bg-[var(--color-bg-card)] dark:bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] z-40 md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="grid grid-cols-5 gap-0.5 px-1 py-1" style={{ height: 'var(--bottom-nav-h)' }}>

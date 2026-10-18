@@ -37,14 +37,13 @@ test.describe('page shell (desktop)', () => {
     }
   })
 
-  test('container width follows the scale', async ({ page }) => {
+  test('every page fills a 1366px laptop beside the sidebar (no empty band on the right)', async ({ page }) => {
     for (const route of ROUTES) {
       await gotoQuiet(page, route)
-      const w = await page.locator('main h1').evaluate((el) => {
-        const container = el.closest('header')!.parentElement as HTMLElement
-        return container.getBoundingClientRect().width
+      const right = await page.locator('main h1').evaluate((el) => {
+        return (el.closest('header')!.parentElement as HTMLElement).getBoundingClientRect().right
       })
-      expect(w, `${route} container width`).toBeLessThanOrEqual(1024)
+      expect(1366 - right, `${route} right gutter`).toBeLessThanOrEqual(48)
     }
   })
 

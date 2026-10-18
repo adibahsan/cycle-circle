@@ -1,31 +1,24 @@
 import { PageContainer } from '@/components/ui/PageContainer';
 import { Shimmer } from '@/components/ui/Shimmer';
 
+/** Generic fallback for a (main) route without its own skeleton: the standard page header and one panel. */
 export default function MainFallbackLoading() {
   return (
-    <PageContainer>
-      {/* Header skeleton */}
-      <div className="space-y-2">
-        <Shimmer className="h-8 w-40 rounded-lg" />
-        <Shimmer className="h-4 w-60 rounded-lg" />
+    <PageContainer width="canvas">
+      <div>
+        <Shimmer className="h-8 w-48 rounded-lg md:h-9" />
+        <Shimmer className="mt-1.5 h-4 w-64 max-w-full rounded-md" />
       </div>
 
-      {/* Generic content card skeleton */}
-      <div className="rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border)] p-6 space-y-6">
+      <div className="space-y-5 rounded-panel border border-transparent bg-[var(--color-bg-card)] p-5 shadow-panel">
         <div className="space-y-3">
           <Shimmer className="h-6 w-1/4 rounded-lg" />
           <Shimmer className="h-4 w-full rounded-md" />
           <Shimmer className="h-4 w-5/6 rounded-md" />
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Shimmer className="h-32 rounded-2xl" />
-          <Shimmer className="h-32 rounded-2xl" />
-        </div>
-
-        <div className="space-y-2">
-          <Shimmer className="h-10 w-full rounded-xl" />
-          <Shimmer className="h-10 w-32 rounded-xl" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Shimmer className="h-32 rounded-panel" />
+          <Shimmer className="h-32 rounded-panel" />
         </div>
       </div>
     </PageContainer>

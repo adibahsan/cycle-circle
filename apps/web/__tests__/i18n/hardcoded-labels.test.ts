@@ -23,7 +23,6 @@ const IGNORED_DIRS = ['app/internal/']
  * Keep this list short; every entry needs a reason.
  */
 const ALLOWED: Record<string, string> = {
-  'components/ui/VestaLogo.tsx::Cycle Circle': 'Brand name on the logo mark, identical in both languages',
   'components/ui/BrandLogo.tsx::Cycle Circle': 'Brand name as the logo alt text, identical in both languages',
 }
 

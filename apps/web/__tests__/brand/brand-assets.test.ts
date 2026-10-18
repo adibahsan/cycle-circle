@@ -24,9 +24,31 @@ describe.each(['web', 'admin'])('brand assets (%s)', (app) => {
     expect(png.readUInt32BE(16)).toBe(480);
   });
 
-  it('VestaLogo is labelled Cycle Circle', () => {
-    expect(read(`${app}/src/components/ui/VestaLogo.tsx`).toString()).toContain('aria-label="Cycle Circle"');
+  if (app === 'admin') {
+    it('VestaLogo is labelled Cycle Circle', () => {
+      expect(read(`${app}/src/components/ui/VestaLogo.tsx`).toString()).toContain('aria-label="Cycle Circle"');
+    });
+  }
+});
+
+describe('web uses the full circular logo everywhere (never the drop mark)', () => {
+  it('has no drop-mark component left', () => {
+    expect(existsSync(resolve(apps, 'web/src/components/ui/VestaLogo.tsx'))).toBe(false);
   });
+  it('ships a dark variant whose navy lettering turns light (gold and red unchanged)', () => {
+    const dark = read('web/public/brand/cycle-circle-logo-dark.svg').toString('utf8');
+    expect(dark.startsWith('<svg')).toBe(true);
+    expect(dark).not.toMatch(/fill="#1a232c"/i);
+    expect(dark).toContain('#c2993f');
+    expect(dark).toContain('#d4151e');
+    expect(read('web/src/components/ui/BrandLogo.tsx').toString()).toContain('/brand/cycle-circle-logo-dark.svg');
+  });
+  it.each(['web/src/components/shell/MainShell.tsx', 'web/src/components/legal/LegalPageShell.tsx', 'web/src/app/(marketing)/welcome/sections/LandingFooter.tsx'])(
+    '%s renders BrandLogo',
+    (file) => {
+      expect(read(file).toString()).toContain('<BrandLogo');
+    },
+  );
 });
 
 describe('Open Graph image', () => {

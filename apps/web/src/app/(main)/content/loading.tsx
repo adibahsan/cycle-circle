@@ -1,53 +1,40 @@
 import { PageContainer } from '@/components/ui/PageContainer'
-import { Shimmer } from '@/components/ui/Shimmer';
+import { Shimmer } from '@/components/ui/Shimmer'
 
+const PILL_WIDTHS = ['w-[125px]', 'w-[122px]', 'w-[114px]', 'w-[119px]', 'w-[107px]']
+
+/** Skeleton in the articles page's shape: header, phase filter pills, then the article card grid (one, two, three columns). */
 export default function ContentLoading() {
   return (
-    <PageContainer width="canvas">
-      {/* Page Header */}
+    <PageContainer width="canvas" fill>
       <div>
-        <Shimmer className="h-7 w-40 rounded-lg" />
-        <Shimmer className="h-4 w-64 rounded-md mt-1.5" />
+        <Shimmer className="h-8 w-64 rounded-lg md:h-9" />
+        <Shimmer className="mt-1.5 h-4 w-64 max-w-full rounded-md" />
       </div>
 
-      {/* Horizontal Category Filter Pills */}
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-        <Shimmer className="h-8 w-24 rounded-full shrink-0" />
-        <Shimmer className="h-8 w-28 rounded-full shrink-0" />
-        <Shimmer className="h-8 w-26 rounded-full shrink-0" />
-        <Shimmer className="h-8 w-26 rounded-full shrink-0" />
-        <Shimmer className="h-8 w-24 rounded-full shrink-0" />
+      <div className="-mx-4 mb-5 px-4">
+        <div className="flex gap-2 overflow-hidden pb-1">
+          {PILL_WIDTHS.map((w) => (
+            <Shimmer key={w} className={`h-11 shrink-0 rounded-full ${w}`} />
+          ))}
+        </div>
       </div>
 
-      {/* Article Cards Stack */}
-      <div className="space-y-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 flex justify-between items-start gap-4"
-          >
-            <div className="flex-1 space-y-2">
-              {/* Category tag */}
-              <Shimmer className="h-4 w-16 rounded-full" />
-              {/* Article Title */}
-              <Shimmer className="h-5 w-3/4 rounded-lg" />
-              {/* Article Excerpt */}
-              <div className="space-y-1.5 pt-1">
-                <Shimmer className="h-3.5 w-full rounded-md" />
-                <Shimmer className="h-3.5 w-5/6 rounded-md" />
+      <div>
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2 2xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className={`${i >= 3 ? 'hidden sm:flex' : 'flex'} h-[132px] items-start justify-between gap-3 rounded-2xl bg-[var(--color-bg-card)] p-4 shadow-soft`}>
+              <div className="min-w-0 flex-1 space-y-2">
+                <Shimmer className="h-5 w-16 rounded-full" />
+                <Shimmer className="h-4 w-3/4 rounded-md" />
+                <Shimmer className="h-3 w-full rounded-md" />
+                <Shimmer className="h-3 w-5/6 rounded-md" />
               </div>
-              {/* Phase badges */}
-              <div className="flex gap-1.5 pt-2">
-                <Shimmer className="h-4 w-12 rounded" />
-                <Shimmer className="h-4 w-14 rounded" />
-              </div>
+              <Shimmer className="mt-1 h-5 w-5 shrink-0 rounded-md" />
             </div>
-            
-            {/* Chevron placeholder */}
-            <Shimmer className="h-5 w-5 rounded-md mt-1.5" />
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </PageContainer>
-  );
+  )
 }

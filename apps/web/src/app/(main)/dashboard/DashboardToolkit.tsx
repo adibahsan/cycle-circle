@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card'
 import { TINT_CLASSES, type CardTint } from '@/components/ui/tints'
 import { PILL_ACTION } from '@/components/ui/action-styles'
 import { SectionHeader } from '@/components/ui/SectionHeader'
+import { cn } from '@/lib/cn'
 
 export interface PhaseArticle {
   id: string
@@ -25,36 +26,47 @@ interface DashboardToolkitProps {
   /** Null hides the Log period card (the first-run hero holds the only Log period button). */
   onLogPeriod: (() => void) | null
   onLogSymptoms: () => void
+  className?: string
 }
 
-const ACTION = `${PILL_ACTION} self-start`
+const ACTION = `${PILL_ACTION} ml-auto shrink-0 whitespace-nowrap px-4`
 
 function ToolCard({
   tone,
   Icon,
   title,
   body,
+  keepBody = false,
   children,
 }: {
   tone: CardTint
   Icon: LucideIcon
   title: string
   body?: React.ReactNode
+  /** Body is content, not a description: shown at every width. */
+  keepBody?: boolean
   /** The card's single action: one link or one button. */
   children: React.ReactNode
 }) {
   return (
-    <li data-testid="toolkit-card" className="list-none">
-      <Card tone={tone} padding="md" className="flex h-full flex-col gap-3">
+    <li data-testid="toolkit-card" className="@container list-none">
+      {/* One compact row: icon, what it is, the action. Keeps the whole toolkit in the first view. */}
+      <Card tone={tone} padding="sm" className="flex h-full flex-wrap items-center gap-x-3 gap-y-2 pr-3.5">
         <span
           aria-hidden="true"
-          className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-bg-card)] ${TINT_CLASSES[tone].ink}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-bg-card)] ${TINT_CLASSES[tone].ink}`}
         >
-          <Icon size={24} strokeWidth={1.75} />
+          <Icon size={20} strokeWidth={1.75} />
         </span>
-        <div className="flex-1">
-          <h3 className="text-base font-bold text-[var(--color-text-primary)]">{title}</h3>
-          {body ? <div className="mt-1 text-sm text-[var(--color-text-secondary)]">{body}</div> : null}
+        {/* The title keeps room to read; a long action label (Bengali) wraps to its own line instead of covering it. */}
+        <div className="min-w-[4rem] flex-1">
+          <h3 className="text-sm font-bold text-[var(--color-text-primary)]">{title}</h3>
+          {/* A plain description only where the tile has room for it; title and action carry it otherwise. */}
+          {body ? (
+            <div className={cn('mt-0.5 text-xs text-[var(--color-text-secondary)]', keepBody ? 'line-clamp-3' : 'hidden @[20rem]:line-clamp-2')}>
+              {body}
+            </div>
+          ) : null}
         </div>
         {children}
       </Card>
@@ -62,19 +74,19 @@ function ToolCard({
   )
 }
 
-export function DashboardToolkit({ language, phase, articles, onLogPeriod, onLogSymptoms }: DashboardToolkitProps) {
+export function DashboardToolkit({ language, phase, articles, onLogPeriod, onLogSymptoms, className }: DashboardToolkitProps) {
   const { t } = useTranslation()
   // Bengali shows only translated titles, so no English slips onto a Bengali page.
   const shown = articles.filter((a) => language !== 'bn' || !!a.titleBn).slice(0, 3)
   const title = (a: PhaseArticle) => (language === 'bn' && a.titleBn ? a.titleBn : a.titleEn)
 
   return (
-    <section aria-labelledby="toolkit-title">
+    <section aria-labelledby="toolkit-title" className={className}>
       <SectionHeader id="toolkit-title" title={t('dashboard.toolkitTitle')} subtitle={t('dashboard.toolkitSub')} variant="inline" />
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {onLogPeriod && (
           <ToolCard tone="pink" Icon={Droplets} title={t('dashboard.toolLogPeriodTitle')} body={t('dashboard.toolLogPeriodBody')}>
-            <Button variant="primary" onClick={onLogPeriod} className="min-h-11 self-start" data-tour="log-button">
+            <Button variant="primary" size="sm" onClick={onLogPeriod} className="ml-auto min-h-11 shrink-0 whitespace-nowrap px-4" data-tour="log-button">
               {t('dashboard.logPeriod')}
             </Button>
           </ToolCard>
@@ -98,13 +110,14 @@ export function DashboardToolkit({ language, phase, articles, onLogPeriod, onLog
           tone="mint"
           Icon={BookOpen}
           title={phase ? t('dashboard.toolReadTitle') : t('dashboard.toolReadAllTitle')}
+          keepBody={!!phase}
           body={
             !phase ? (
               t('dashboard.toolReadAllBody')
             ) : shown.length > 0 ? (
-              <ul data-testid="phase-articles" className="flex flex-col gap-1">
+              <ul data-testid="phase-articles" className="flex flex-col gap-0.5">
                 {shown.map((a) => (
-                  <li key={a.id} className="line-clamp-2 font-medium text-[var(--color-text-primary)]">
+                  <li key={a.id} className="truncate font-medium text-[var(--color-text-primary)]">
                     {title(a)}
                   </li>
                 ))}

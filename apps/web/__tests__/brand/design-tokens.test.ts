@@ -67,6 +67,12 @@ const WEB_LIGHT_PHASES: Record<string, string> = {
   '--color-ovulation': '#0D7F69', '--color-on-ovulation': '#FFFFFF',
   '--color-fertile': '#BDEBDC', '--color-on-fertile': '#1A232C',
 }
+/* Web dark "Night blush" surfaces (web portal only; admin keeps the #18 slate): near-black plum neutrals. */
+const WEB_DARK_SURFACES: Record<string, string> = {
+  '--color-bg-primary': '#08060A', '--color-bg-secondary': '#110D12', '--color-bg-card': '#1C161E', '--color-bg-peach': '#251B22',
+  '--color-text-primary': '#FBF1F4', '--color-text-secondary': '#DDCDD4', '--color-text-muted': '#B4A3AD',
+  '--color-border': '#40343F',
+}
 const WEB_DARK_PHASES: Record<string, string> = {
   '--color-follicular': '#FFB3C4', '--color-on-follicular': '#1A232C',
   '--color-ovulation': '#6FD9BC', '--color-on-ovulation': '#1A232C',
@@ -81,7 +87,7 @@ for (const app of ['web', 'admin'] as const) {
 
     const themes = [
       ['light', light, app === 'web' ? { ...LIGHT_SPEC, ...WEB_LIGHT_PHASES } : LIGHT_SPEC, '--color-on-accent', '#FFFFFF'],
-      ['dark', dark, app === 'web' ? { ...DARK_SPEC, ...WEB_DARK_PHASES } : DARK_SPEC, '--color-on-accent', '#1A232C'],
+      ['dark', dark, app === 'web' ? { ...DARK_SPEC, ...WEB_DARK_SURFACES, ...WEB_DARK_PHASES } : DARK_SPEC, '--color-on-accent', '#1A232C'],
     ] as const
 
     for (const [name, tokens, spec, onAccent, onAccentVal] of themes) {

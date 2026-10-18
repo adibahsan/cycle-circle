@@ -75,6 +75,11 @@
   --color-tint-sage: #EAF1E4;
   --color-accent-sage: #4C6B35;
 
+  /* How much phase colour a calendar day mixes into the card: subtle on light, stronger on dark,
+     where a thin mix over a dark card reads as grey. Used by DAY_STYLES. */
+  --day-mix-phase: 16%;
+  --day-mix-fertile: 38%;
+
 
   /* Fonts — Manrope + Noto Sans Bengali only */
   --font-display: "Manrope", sans-serif;
@@ -108,29 +113,32 @@
 }
 
 .dark {
-  --color-bg-primary: #10151B;
-  --color-bg-secondary: #171F28;
-  --color-bg-card: #222C38;
-  --color-bg-peach: #2A2433;
-  --color-text-primary: #F7EEF0;
-  --color-text-secondary: #D6CBD0;
-  --color-text-muted: #B9B0BE;
-  --color-border: #3A4756;
-  --color-border-strong: #7A8899;
-  --color-ring-offset: #222C38;
-  --color-scrollbar-thumb: #4A5868;
-  --color-tint-peach: #3A2A22;
-  --color-accent-peach: #FFB98F;
-  --color-tint-pink: #3D2330;
-  --color-accent-pink: #FF9EB5;
-  --color-tint-mint: #1D3530;
-  --color-accent-mint: #7FE0C0;
-  --color-tint-lavender: #2E2640;
-  --color-accent-lavender: #CDB4F2;
-  --color-tint-sky: #1C2D40;
-  --color-accent-sky: #8EC5F5;
-  --color-tint-sage: #26321F;
-  --color-accent-sage: #B5D49A;
+  /* "Night blush": near-black plum neutrals under the rose brand (never cold slate). Cards sit a small
+     lightness step above the page and are lifted by a top highlight and a deep shadow, never an outline. */
+  --color-bg-primary: #08060A;
+  --color-bg-secondary: #110D12;
+  --color-bg-card: #1C161E;
+  --color-bg-peach: #251B22;
+  --color-text-primary: #FBF1F4;
+  --color-text-secondary: #DDCDD4;
+  --color-text-muted: #B4A3AD;
+  --color-border: #40343F;
+  --color-border-strong: #8C7A88;
+  --color-ring-offset: #1C161E;
+  --color-scrollbar-thumb: #40343F;
+  /* Jewel tints: deep, saturated surfaces so tinted cards read as colour, not mud. */
+  --color-tint-peach: #452410;
+  --color-accent-peach: #FFC29A;
+  --color-tint-pink: #4A1631;
+  --color-accent-pink: #FFA8BE;
+  --color-tint-mint: #0E3B30;
+  --color-accent-mint: #86E6C6;
+  --color-tint-lavender: #30204F;
+  --color-accent-lavender: #D5BFF8;
+  --color-tint-sky: #122E4D;
+  --color-accent-sky: #9ACDF8;
+  --color-tint-sage: #1F3716;
+  --color-accent-sage: #C0DEA4;
   --color-action: #FF7A99;
   --color-on-action: #1A232C;
   --color-on-accent: #1A232C;
@@ -155,7 +163,10 @@
   --color-on-fertile: #FFFFFF;
   --color-luteal: #C9A3EC;
   --color-on-luteal: #1A232C;
-  --shadow-panel: 0 0 0 1px rgb(255 255 255 / 0.04), 0 12px 32px -16px rgb(0 0 0 / 0.7);
+  --day-mix-phase: 30%;
+  --day-mix-fertile: 65%;
+  /* A faint top highlight lifts the card edge; a deep soft shadow carries the elevation. */
+  --shadow-panel: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px rgb(255 255 255 / 0.025), 0 20px 44px -18px rgb(0 0 0 / 0.95), 0 2px 8px -2px rgb(0 0 0 / 0.6);
 }
 
 /* Bengali: no negative tracking on headlines or the display step (unlayered, so it beats tracking-* utilities). */
@@ -211,7 +222,7 @@
     box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.06);
   }
   .dark .glass {
-    background: rgba(20, 26, 33, 0.88);
+    background: rgba(17, 13, 18, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
   .shadow-soft {

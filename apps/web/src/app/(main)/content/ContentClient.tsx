@@ -243,7 +243,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
   }
 
   return (
-    <PageContainer width="canvas">
+    <PageContainer width="canvas" fill>
       <PageHeader title={t('content.title')} subtitle={t('content.subtitle')} />
 
       {/* Phase filter tabs */}
@@ -299,7 +299,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
 
       {/* Article list */}
       {displayedArticles.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="flex flex-col items-center justify-center py-16 text-center xl:flex-1">
           <div className="w-14 h-14 rounded-2xl bg-[var(--color-bg-secondary)] flex items-center justify-center mb-3">
             <BookOpen size={24} className="text-[var(--color-text-muted)]" aria-hidden="true" />
           </div>

@@ -4,7 +4,6 @@ import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useReducedMotion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { Card } from '@/components/ui/Card';
 import { useHasMounted } from '@/components/motion/useHasMounted';
 import '@vesta/shared/utils/i18n';
 
@@ -185,15 +184,16 @@ export function ProgressToUnlockMeter({
   const displayConfidence = useCountUp(confidencePercent, countUpEnabled);
 
   const cardContent = (
-    <Card padding="md" className={className}>
-      <div aria-live="polite" className="flex items-start gap-4">
+    // A plain block: it sits inside the dashboard's Cycle progress card, so no card of its own.
+    <div className={className}>
+      <div aria-live="polite" className="flex items-center gap-3">
         {/* Progress ring — decorative, aria-hidden */}
         <div aria-hidden="true" className="shrink-0">
           <ProgressRing
             percent={ringPercent}
             displayPercent={displayConfidence}
-            size={72}
-            stroke={7}
+            size={52}
+            stroke={6}
             prefersReducedMotion={prm}
             mounted={mounted}
           />
@@ -225,7 +225,7 @@ export function ProgressToUnlockMeter({
           </p>
         </div>
       </div>
-    </Card>
+    </div>
   );
 
   if (prm || !mounted) {

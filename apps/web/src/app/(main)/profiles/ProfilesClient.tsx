@@ -137,7 +137,7 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
     >
       <div
         className={cn(
-          'w-full rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel transition-[box-shadow] duration-200 relative overflow-hidden',
+          'w-full rounded-panel bg-[var(--color-bg-card)] border border-transparent shadow-panel transition-[box-shadow] duration-200 relative overflow-hidden',
           // The active profile wears the goal-colour ring (spec #66: goal accent = profile ring).
           isActive && 'ring-2 ring-[var(--goal-accent)]',
         )}
@@ -304,7 +304,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 16 }}
       transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-      className="rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel overflow-hidden"
+      className="rounded-panel bg-[var(--color-bg-card)] border border-transparent shadow-panel overflow-hidden"
     >
       {/* Form header */}
       <div

@@ -94,7 +94,7 @@ test.describe('phone shell (375px)', () => {
   test('symptoms save bar sits above the bottom nav', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 })
     await gotoQuiet(page, '/symptoms')
-    const tile = page.locator('main .grid button[aria-pressed="false"]').first()
+    const tile = page.getByRole('group', { name: 'Physical', exact: true }).locator('button[aria-pressed="false"]').first()
     await tile.click()
     const bar = page.getByRole('button', { name: /^Save \d+ changes/ })
     await expect(bar).toBeVisible()

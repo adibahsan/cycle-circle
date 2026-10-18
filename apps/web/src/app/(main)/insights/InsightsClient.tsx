@@ -33,16 +33,16 @@ import {
 import type { ChartType } from './InsightsCharts'
 
 // Recharts loads only when a chart renders (never on the empty state).
-function ChartPlaceholder({ height }: { height: number }) {
-  return <div aria-hidden="true" className="w-full rounded-2xl bg-[var(--color-bg-secondary)]" style={{ height }} />
+function ChartPlaceholder({ className }: { className: string }) {
+  return <div aria-hidden="true" className={`w-full rounded-2xl bg-[var(--color-bg-secondary)] ${className}`} />
 }
 const CycleLengthTrendChart = dynamic(() => import('./InsightsCharts').then((m) => m.CycleLengthTrendChart), {
   ssr: false,
-  loading: () => <ChartPlaceholder height={180} />,
+  loading: () => <ChartPlaceholder className="h-[150px] sm:h-[190px]" />,
 })
 const SymptomFrequencyChart = dynamic(() => import('./InsightsCharts').then((m) => m.SymptomFrequencyChart), {
   ssr: false,
-  loading: () => <ChartPlaceholder height={160} />,
+  loading: () => <ChartPlaceholder className="h-[140px] sm:h-[170px]" />,
 })
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -74,7 +74,7 @@ const RANGE_LABEL_KEYS: Record<DateRange, string> = {
 
 /** Pill toggle: neutral ink when on (the goal accent is kept for primary buttons). */
 const TOGGLE_BASE =
-  'min-h-9 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-card)] focus-visible:ring-[var(--color-primary)]'
+  'min-h-9 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-card)] focus-visible:ring-[var(--color-primary)]'
 const TOGGLE_ON = 'bg-[var(--color-text-primary)] text-[var(--color-bg-card)]'
 const TOGGLE_OFF =
   'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
@@ -220,29 +220,29 @@ function PeriodRegularityCard({ data, lang }: { data: PeriodRegularity; lang: La
   const badgeLabel = data.regular ? t('insights.regularityStable') : t('insights.regularityVariable')
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-hidden="true">
-        <Card tone="pink" padding="sm" className="px-4 py-4">
+    <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" aria-hidden="true">
+        <Card tone="pink" padding="sm" className="px-3 py-3">
           <span className="text-xs font-semibold text-accent-pink">{t('insights.regularityLabel')}</span>
           <div className="mt-1 flex items-baseline gap-1">
-            <span className="font-display font-extrabold text-4xl tabular-nums leading-none text-[var(--color-text-primary)]">
+            <span className="font-display font-extrabold text-3xl tabular-nums leading-none text-[var(--color-text-primary)]">
               {num(data.mean)}
             </span>
             <span className="text-sm text-[var(--color-text-secondary)]">{daysLabel}</span>
           </div>
         </Card>
 
-        <Card tone="lavender" padding="sm" className="px-4 py-4">
+        <Card tone="lavender" padding="sm" className="px-3 py-3">
           <span className="text-xs font-semibold text-accent-lavender">{t('insights.variationLabel')}</span>
           <div className="mt-1 flex items-baseline gap-1">
-            <span className="font-display font-extrabold text-4xl tabular-nums leading-none text-[var(--color-text-primary)]">
+            <span className="font-display font-extrabold text-3xl tabular-nums leading-none text-[var(--color-text-primary)]">
               ±{num(data.stdDev)}
             </span>
             <span className="text-sm text-[var(--color-text-secondary)]">{daysLabel}</span>
           </div>
         </Card>
 
-        <Card tone={data.regular ? 'mint' : 'peach'} padding="sm" className="flex items-center px-4 py-4">
+        <Card tone={data.regular ? 'mint' : 'peach'} padding="sm" className="col-span-2 flex items-center px-3 py-3 sm:col-span-1">
           <span
             className={`font-display font-extrabold text-2xl leading-none ${data.regular ? 'text-accent-mint' : 'text-accent-peach'}`}
           >
@@ -277,13 +277,13 @@ function FertileWindowHistoryList({ data, lang }: { data: FertileWindowPoint[]; 
   }))
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5">
       <ChartSummary id="fertile-summary">{t('insights.fertileSummary', { n: num(visible.length) })}</ChartSummary>
-      <ul className="flex flex-col gap-2" aria-hidden="true">
+      <ul className="flex flex-col gap-1.5" aria-hidden="true">
         {rows.map(({ entry, index, span }) => (
           <li
             key={entry.cycleStart}
-            className="flex items-center gap-3 py-2.5 px-3 rounded-2xl bg-[var(--color-bg-secondary)]"
+            className="flex items-center gap-3 py-1.5 px-3 rounded-2xl bg-[var(--color-bg-secondary)]"
           >
             <span className="text-xs font-bold text-[var(--color-text-muted)] w-6 tabular-nums shrink-0">{num(index)}</span>
             <div className="flex-1 flex flex-col gap-1">
@@ -412,8 +412,9 @@ export function InsightsClient({
         </Card>
       ) : (
         <>
-      {/* From 2xl the charts sit two across so wide screens fill; an odd last chart spans the row. */}
-      <div className="flex flex-col gap-5 2xl:grid 2xl:grid-cols-2 2xl:items-start 2xl:[&>*:last-child:nth-child(odd)]:col-span-2">
+      {/* From xl the charts sit two across so wide screens fill; cards in a row share its height, and an odd
+          last chart spans the row. */}
+      <div className="flex flex-col gap-3 xl:grid xl:grid-cols-2 xl:[&>*>*]:h-full xl:[&>*:last-child:nth-child(odd)]:col-span-2">
         {/* ── Cycle Length Trend ─────────────────────────────────────────────── */}
         {shows('cycleLengthTrend') && (
           <motion.div
@@ -421,8 +422,8 @@ export function InsightsClient({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.4 }}
         >
-          <Card tone="panel" padding="md">
-            <div className="flex flex-col gap-3">
+          <Card tone="panel" padding="sm" className="p-4">
+            <div className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
                 variant="inline"
                 title={t('insights.cycleLengthTrend')}
@@ -465,8 +466,8 @@ export function InsightsClient({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.22, duration: 0.4 }}
         >
-          <Card tone="panel" padding="md">
-            <div className="flex flex-col gap-3">
+          <Card tone="panel" padding="sm" className="p-4">
+            <div className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
                 variant="inline"
                 title={t('insights.symptomFrequency')}
@@ -506,8 +507,8 @@ export function InsightsClient({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.29, duration: 0.4 }}
         >
-          <Card tone="panel" padding="md">
-            <div className="flex flex-col gap-3">
+          <Card tone="panel" padding="sm" className="p-4">
+            <div className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
                 variant="inline"
                 title={t('insights.periodRegularity')}
@@ -526,8 +527,8 @@ export function InsightsClient({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.36, duration: 0.4 }}
         >
-          <Card tone="panel" padding="md">
-            <div className="flex flex-col gap-3">
+          <Card tone="panel" padding="sm" className="p-4">
+            <div className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
                 variant="inline"
                 title={t('insights.fertileWindowHistory')}

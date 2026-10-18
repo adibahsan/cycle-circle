@@ -4,6 +4,23 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
+## 2026-10-19 — Compact desktop layouts, Night blush dark mode, full logo (PR #83, tag 2.1.0)
+
+**Shipped:**
+
+- Dashboard compacted so the toolkit is in the first view at 1366×657 and up; the streak at-risk note stays inside its card.
+- Every signed-in page fits one desktop screen with components sized to their content (no stretching): Insights, Settings, Subscription, Feedback, Calendar, Symptoms recomposed; pages use the full width beside the sidebar from xl.
+- One shared month grid (`MonthGrid`) for Calendar and Symptoms; calendar days show logged-symptom icons from xl and the desktop calendar opens on today's details; Symptoms shows all four categories at once from 2xl.
+- "Night blush" dark mode: near-black plum surfaces, jewel tints, cards lifted by a highlight and shadow instead of grey outlines; stronger calendar phase tints in dark.
+- The full circular Cycle Circle logo replaces the drop mark in the shell, legal pages and landing footer, with a light-lettered dark variant (`public/brand/cycle-circle-logo-dark.svg`).
+- Route skeletons rebuilt to mirror their pages.
+
+**Pre-deploy steps on the VPS:** none. No schema migrations and no new env vars.
+
+**Deploy:** `git push origin origin/main:production` → GitHub Actions *Production* workflow.
+
+---
+
 ## 2026-10-18 — Portal redesign, wide screens, faster sign-in (PR #82)
 
 **Shipped:**

@@ -36,7 +36,7 @@ export function CycleJourney({ position, language, example = false }: CycleJourn
   const current = example ? null : currentJourneyPhase(steps, phase, cycleDay)
 
   return (
-    <Card tone="panel" padding="md" className="h-full">
+    <Card tone="panel" padding="md" className="@container h-full">
       <section aria-labelledby="journey-title" aria-describedby={example ? 'journey-example-note' : undefined}>
         <SectionHeader
           id="journey-title"
@@ -45,7 +45,13 @@ export function CycleJourney({ position, language, example = false }: CycleJourn
           variant="inline"
         />
         {example && <ExampleNote id="journey-example-note" />}
-        <ol data-testid="cycle-journey" data-example={example || undefined} className="flex flex-col">
+        {/* Vertical when narrow; one row of phases once the card is wide enough. */}
+        <ol
+          data-testid="cycle-journey"
+          data-example={example || undefined}
+          className="flex flex-col @md:grid @md:grid-cols-[repeat(var(--steps),minmax(0,1fr))] @md:gap-2"
+          style={{ ['--steps' as string]: steps.length } as React.CSSProperties}
+        >
           {steps.map((s, i) => {
             const isCurrent = s.phase === current
             const last = i === steps.length - 1
@@ -54,19 +60,21 @@ export function CycleJourney({ position, language, example = false }: CycleJourn
                 key={s.phase}
                 aria-current={isCurrent ? 'step' : undefined}
                 data-days={s.days}
-                className="relative flex gap-3 pb-2 last:pb-0"
+                className="relative flex gap-3 pb-1.5 last:pb-0 @md:flex-col @md:items-center @md:gap-2 @md:pb-0"
               >
                 {/* Rail: phase dot and the line to the next step. */}
                 {/* Example: only the graphics dim, so the text keeps its contrast. */}
-                <span aria-hidden="true" className={cn('relative flex w-10 shrink-0 justify-center', example && 'opacity-40 grayscale')}>
-                  <span className="z-10 mt-2 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-bg-card)] border-2" style={{ borderColor: getPhaseColor(s.phase) }}>
-                    <PhaseIcon phase={s.phase} size={18} />
+                <span aria-hidden="true" className={cn('relative flex w-9 shrink-0 justify-center @md:w-full', example && 'opacity-40 grayscale')}>
+                  <span className="z-10 mt-1.5 @md:mt-0 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-bg-card)] border-2" style={{ borderColor: getPhaseColor(s.phase) }}>
+                    <PhaseIcon phase={s.phase} size={16} />
                   </span>
-                  {!last && <span className="absolute top-12 bottom-0 w-0.5 bg-[var(--color-border)]" />}
+                  {!last && (
+                    <span className="absolute top-[2.875rem] bottom-0 w-0.5 bg-[var(--color-border)] @md:top-[1.0625rem] @md:bottom-auto @md:left-[calc(50%+1.375rem)] @md:right-[calc(-50%+0.875rem)] @md:h-0.5 @md:w-auto" />
+                  )}
                 </span>
                 <div
                   className={cn(
-                    'flex flex-1 items-center justify-between gap-3 rounded-2xl px-4 py-3',
+                    'flex flex-1 items-center justify-between gap-3 rounded-2xl px-3.5 py-2 @md:w-full @md:flex-col @md:justify-start @md:gap-1.5 @md:px-2 @md:text-center',
                     isCurrent && TINT_CLASSES[CURRENT_TINT[s.phase]].surface,
                   )}
                 >

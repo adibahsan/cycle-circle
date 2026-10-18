@@ -135,17 +135,18 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
         subtitle={isProUser ? t('subscription.subtitlePro') : t('subscription.unlockTagline')}
       />
 
-      {/* From 2xl the plans and the Free vs Pro table sit side by side. */}
-      <div className={`flex flex-col gap-5 2xl:grid 2xl:items-start 2xl:gap-6 ${isProUser ? '2xl:grid-cols-2' : '2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'}`}>
-        {/* ── Current Plan + Upgrade Cards ── */}
-        <div className={`flex flex-col gap-5 ${isProUser ? "" : "lg:grid lg:grid-cols-2"}`}>
+      {/* From xl (Pro) / 2xl the plans and the Free vs Pro table sit side by side. */}
+      <div className={`flex flex-col gap-4 ${isProUser ? 'xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] xl:items-stretch xl:gap-5' : '2xl:grid 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] 2xl:items-stretch 2xl:gap-6'}`}>
+        {/* ── Current Plan + Upgrade Cards (Pro: the plan card keeps its own height beside the taller table) ── */}
+        <div className={`flex flex-col gap-5 ${isProUser ? "xl:self-start" : "lg:grid lg:grid-cols-2"}`}>
           {/* ── Current Plan Card ── */}
           <motion.div
+            className={isProUser ? 'xl:flex xl:flex-1 xl:flex-col' : undefined}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.38, delay: 0.05 }}
           >
-            <Card tone="panel" padding="lg" className="h-full">
+            <Card tone="panel" padding="md" className="h-full xl:flex xl:flex-1 xl:flex-col">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <p className="text-sm font-semibold text-[var(--color-text-muted)]">
@@ -187,7 +188,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                 )}
               </div>
 
-              <div className="mt-4 space-y-1.5">
+              <div className="mt-3 space-y-1.5">
                 {isProUser ? (
                   PRO_FEATURE_KEYS.map(({ icon: Icon, labelKey }) => (
                     <div
@@ -212,8 +213,8 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               </div>
 
               {canUnsubscribe && (
-                <div className="mt-5">
-                  <Button variant="outline" fullWidth onClick={() => { setUnsubResult(null); setConfirmOpen(true) }}>
+                <div className="mt-4 xl:mt-auto xl:pt-4">
+                  <Button variant="outline" fullWidth className="min-h-11" onClick={() => { setUnsubResult(null); setConfirmOpen(true) }}>
                     {t('subscription.unsubscribeButton')}
                   </Button>
                 </div>
@@ -245,7 +246,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               transition={{ duration: 0.4, delay: 0.1 }}
             >
               <Card tone="peach" padding="lg" className="h-full">
-                <div className="space-y-5">
+                <div className="space-y-5 xl:flex xl:h-full xl:flex-col">
                   <div className="flex items-center gap-2.5">
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--color-bg-card)] text-accent-peach text-xs font-bold">
                       <Crown size={12} aria-hidden="true" /> <span className="uppercase">{t('subscription.pro')}</span>
@@ -279,7 +280,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
 
                   <button
                     onClick={() => setAddPhoneOpen(true)}
-                    className={`w-full bg-[var(--color-action)] text-[var(--color-on-action)] font-bold rounded-full text-base hover:opacity-90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-action)] ${
+                    className={`w-full xl:mt-auto bg-[var(--color-action)] text-[var(--color-on-action)] font-bold rounded-full text-base hover:opacity-90 active:scale-[0.98] transition-colors duration-200 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-action)] ${
                       trial === 'expired' ? 'py-4 text-lg' : 'py-3.5'
                     }`}
                   >
@@ -301,15 +302,15 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
 
           <Card tone="panel" className="p-0 overflow-hidden divide-y divide-[var(--color-border)]">
             <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3 bg-tint-peach">
-              <div className="px-4 sm:px-5 py-3 text-xs font-semibold text-[var(--color-text-secondary)] col-span-1">
+              <div className="px-4 sm:px-5 py-2.5 text-xs font-semibold text-[var(--color-text-secondary)] col-span-1">
                 {t('subscription.featureHeader')}
               </div>
-              <div className="px-1 sm:px-2 py-3 text-center">
+              <div className="px-1 sm:px-2 py-2.5 text-center">
                 <span className="text-xs font-semibold text-[var(--color-text-muted)]">
                   {t('subscription.free')}
                 </span>
               </div>
-              <div className="px-1 sm:px-2 py-3 text-center">
+              <div className="px-1 sm:px-2 py-2.5 text-center">
                 <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-[var(--color-bg-card)] text-accent-peach">
                   <Crown size={10} aria-hidden="true" /> {t('subscription.pro')}
                 </span>
@@ -319,19 +320,19 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
             {COMPARISON_FEATURE_KEYS.map(({ key, labelKey, free, pro }) => (
               <div
                 key={key}
-                className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3"
+                className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3 xl:min-h-11 2xl:min-h-[52px] xl:items-center"
               >
-                <div className="px-4 sm:px-5 py-3 text-sm md:text-base text-[var(--color-text-secondary)] col-span-1">
+                <div className="px-4 sm:px-5 py-2.5 text-sm text-[var(--color-text-secondary)] col-span-1">
                   {t(labelKey)}
                 </div>
-                <div className="px-1 sm:px-2 py-3 flex justify-center items-center">
+                <div className="px-1 sm:px-2 py-2.5 flex justify-center items-center">
                   {free ? (
                     <Check size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
                   ) : (
                     <X size={16} className="text-[var(--color-border)]" aria-hidden="true" />
                   )}
                 </div>
-                <div className="px-1 sm:px-2 py-3 flex justify-center items-center">
+                <div className="px-1 sm:px-2 py-2.5 flex justify-center items-center">
                   {pro ? (
                     <Check size={16} strokeWidth={2.5} className="text-accent-mint" aria-hidden="true" />
                   ) : (

@@ -1,118 +1,80 @@
 import { PageContainer } from '@/components/ui/PageContainer'
-import { Shimmer } from '@/components/ui/Shimmer';
+import { Shimmer } from '@/components/ui/Shimmer'
 
+const CARD = 'flex-1 rounded-panel border border-transparent shadow-panel bg-[var(--color-bg-card)] p-4'
+
+function Section({ title, className, children }: { title: string; className: string; children: React.ReactNode }) {
+  return (
+    <div className={`flex flex-col gap-2 ${className}`}>
+      <div className="flex items-center gap-3">
+        <Shimmer className="h-8 w-8 rounded-full" />
+        <Shimmer className={`h-4 rounded-md ${title}`} />
+      </div>
+      <div className={CARD}>{children}</div>
+    </div>
+  )
+}
+
+function Row({ withSub = true }: { withSub?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-2">
+      <div className="space-y-1.5">
+        <Shimmer className="h-4 w-28 rounded-md" />
+        {withSub && <Shimmer className="h-3 w-40 rounded-md" />}
+      </div>
+      <Shimmer className="h-8 w-14 shrink-0 rounded-full" />
+    </div>
+  )
+}
+
+/**
+ * Skeleton in the settings page's shape: title, then the same grid as SettingsClient
+ * (appearance + notifications | account | export + about from xl).
+ */
 export default function SettingsLoading() {
   return (
     <PageContainer width="canvas">
-      {/* Title */}
-      <div>
-        <Shimmer className="h-8 w-32 rounded-lg" />
-      </div>
+      <Shimmer className="h-8 w-32 rounded-lg md:h-9" />
 
-      {/* Two Column Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Left Column */}
-        <div className="space-y-6">
-          {/* Section 1: Language & Appearance */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Shimmer className="h-8 w-8 rounded-full" />
-              <Shimmer className="h-4 w-44 rounded-md" />
-            </div>
-            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 space-y-5">
-              <div className="flex justify-between items-center">
-                <div className="space-y-1.5 flex-1">
-                  <Shimmer className="h-4.5 w-24 rounded-md" />
-                  <Shimmer className="h-3 w-36 rounded-md" />
-                </div>
-                <Shimmer className="h-11 w-24 rounded-full" />
-              </div>
-              <div className="h-px bg-[var(--color-border)]" />
-              <div className="flex justify-between items-center">
-                <div className="space-y-1.5 flex-1">
-                  <Shimmer className="h-4.5 w-16 rounded-md" />
-                  <Shimmer className="h-3 w-28 rounded-md" />
-                </div>
-                <Shimmer className="h-11 w-28 rounded-full" />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 2: Notifications */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Shimmer className="h-8 w-8 rounded-full" />
-              <Shimmer className="h-4 w-28 rounded-md" />
-            </div>
-            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 divide-y divide-[var(--color-border)]">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex justify-between items-center py-3.5 first:pt-0 last:pb-0">
-                  <div className="space-y-1.5 flex-1 pr-4">
-                    <Shimmer className="h-4.5 w-32 rounded-md" />
-                    <Shimmer className="h-3 w-48 rounded-md" />
-                  </div>
-                  <Shimmer className="h-6 w-11 rounded-full" />
-                </div>
-              ))}
-            </div>
-          </div>
+      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0 xl:grid-cols-3 xl:grid-rows-[auto_1fr] xl:items-stretch">
+        <div className="space-y-3 lg:space-y-4 xl:col-start-1 xl:row-span-2 xl:row-start-1 xl:flex xl:flex-col">
+          <Section title="w-44" className="h-[199px] lg:h-[207px]">
+            <Row />
+            <div className="my-2 h-px bg-[var(--color-border)]" />
+            <Row />
+          </Section>
+          <Section title="w-28" className="h-[307px] lg:h-[315px] 2xl:h-[301px]">
+            <Row />
+            <Row />
+            <Row />
+            <Row />
+          </Section>
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Section 3: Data Export */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Shimmer className="h-8 w-8 rounded-full" />
-              <Shimmer className="h-4 w-28 rounded-md" />
+        <div className="space-y-3 lg:space-y-4 xl:contents">
+          <Section title="w-28" className="h-[228px] xl:col-start-3 xl:row-start-1 xl:h-[236px] 2xl:h-[220px]">
+            <Shimmer className="h-4 w-full rounded-md" />
+            <Shimmer className="mt-4 h-4 w-40 rounded-md" />
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="h-[70px] rounded-panel bg-tint-sky" />
+              <div className="h-[70px] rounded-panel bg-tint-mint" />
             </div>
-            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 space-y-4">
-              <Shimmer className="h-3 w-48 rounded-md" />
-              <div className="grid grid-cols-2 gap-3">
-                <Shimmer className="h-20 rounded-xl" />
-                <Shimmer className="h-20 rounded-xl" />
-              </div>
+          </Section>
+          <Section title="w-24" className="h-[430px] xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:h-auto">
+            <div className="h-[120px] rounded-panel bg-tint-pink" />
+            <div className="mt-3 space-y-2">
+              <Shimmer className="h-9 w-full rounded-xl" />
+              <Shimmer className="h-9 w-full rounded-xl" />
+              <Shimmer className="h-9 w-full rounded-xl" />
+              <Shimmer className="h-9 w-full rounded-xl" />
             </div>
-          </div>
-
-          {/* Section 4: Account */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Shimmer className="h-8 w-8 rounded-full" />
-              <Shimmer className="h-4 w-24 rounded-md" />
-            </div>
-            <div className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-6 space-y-4">
-              {/* Account info card */}
-              <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-3 space-y-2">
-                <div className="flex justify-between">
-                  <Shimmer className="h-3 w-12 rounded-md" />
-                  <Shimmer className="h-3 w-24 rounded-md" />
-                </div>
-                <div className="flex justify-between">
-                  <Shimmer className="h-3 w-10 rounded-md" />
-                  <Shimmer className="h-3 w-16 rounded-md" />
-                </div>
-              </div>
-
-              {/* Account navigation list */}
-              <div className="space-y-3.5 pt-2">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <Shimmer className="h-4.5 w-4.5 rounded-full" />
-                      <Shimmer className="h-4 w-28 rounded-md" />
-                    </div>
-                    <Shimmer className="h-3.5 w-3.5 rounded" />
-                  </div>
-                ))}
-              </div>
-
-              {/* Logout button */}
-              <Shimmer className="h-10 w-full rounded-xl mt-2" />
-            </div>
-          </div>
+          </Section>
+          <Section title="w-20" className="h-[185px] xl:col-start-3 xl:row-start-2 xl:h-auto">
+            <Shimmer className="h-5 w-full rounded-md" />
+            <div className="mt-3 h-14 rounded-2xl bg-tint-sage" />
+          </Section>
         </div>
       </div>
     </PageContainer>
-  );
+  )
 }
