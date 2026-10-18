@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Select } from '@/components/ui/Select'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
-import { articlePublishWarnings } from '@vesta/shared/server/services'
+import { articlePublishWarnings, articleWarningMessages, isBlankBody } from '@vesta/shared/utils/article-warnings'
 import { createArticle } from '@/app/actions/content-actions'
 
 type CategoryOption = {
@@ -80,7 +80,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
       setError('English title is required.')
       return
     }
-    if (!bodyEn.trim() || bodyEn === '<p></p>') {
+    if (isBlankBody(bodyEn)) {
       setError('English body is required.')
       return
     }
@@ -88,7 +88,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
 
     const warnings = articlePublishWarnings({ status, titleBn, bodyBn, cyclePhases })
     if (warnings.length > 0) {
-      setPublishWarnings(warnings.map((w) => (w === 'bengali' ? 'no Bengali translation (title and body)' : 'no cycle phase tag')))
+      setPublishWarnings(articleWarningMessages(warnings))
       return
     }
     save()
@@ -102,7 +102,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
           titleEn: titleEn.trim(),
           titleBn: titleBn.trim() || null,
           bodyEn,
-          bodyBn: bodyBn.trim() && bodyBn !== '<p></p>' ? bodyBn : null,
+          bodyBn: isBlankBody(bodyBn) ? null : bodyBn,
           categoryId: categoryId || null,
           cyclePhases,
           status,
