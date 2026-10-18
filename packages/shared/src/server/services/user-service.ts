@@ -1,8 +1,9 @@
 import { AuthMethod } from '@prisma/client'
 import { prisma } from '../db'
-import { applyBdappsSubscription } from './subscription-service'
+import { applyBdappsSubscription, unsubscribeUserOnBdapps } from './subscription-service'
 import { ApiError } from '../api-error'
 import { bumpSessionsValidAfter } from '../auth'
+import { RESTORE_WINDOW_DAYS, isWithinRestoreWindow } from '../../utils/restore-window'
 
 /**
  * Throw a typed 409 if a supplied phone/email already belongs to a DIFFERENT
@@ -212,7 +213,8 @@ export async function completeUserProfile(userId: string, data: CompleteUserProf
 }
 
 /**
- * Suspend a user (reason required) and invalidate all their existing sessions.
+ * Suspend a user (reason required), invalidate their sessions and unsubscribe their
+ * number on BDApps (ADR 0006). A BDApps failure is returned, never thrown; the suspension applies.
  */
 export async function suspendUser(userId: string, adminId: string, reason: string) {
   const trimmed = reason?.trim()
@@ -224,6 +226,7 @@ export async function suspendUser(userId: string, adminId: string, reason: strin
   })
   // Existing sessions stop working on their next request.
   await bumpSessionsValidAfter(userId)
+  const bdapps = await unsubscribeUserOnBdapps(userId, adminId)
 
   await prisma.adminAuditLog.create({
     data: {
@@ -231,15 +234,16 @@ export async function suspendUser(userId: string, adminId: string, reason: strin
       action: 'USER_SUSPENDED',
       targetType: 'User',
       targetId: userId,
-      metadata: { reason: trimmed },
+      metadata: { reason: trimmed, bdapps: bdapps.status },
     },
   })
 
-  return { success: true }
+  return { success: true, bdapps }
 }
 
 /**
  * Clear suspension fields to reactivate a previously suspended user.
+ * Lifts only our block; never re-subscribes on BDApps (ADR 0006).
  */
 export async function reactivateUser(userId: string, adminId: string) {
   await prisma.user.update({
@@ -260,13 +264,15 @@ export async function reactivateUser(userId: string, adminId: string) {
 }
 
 /**
- * Soft-delete a user by setting deletedAt.
+ * Soft-delete a user by setting deletedAt and unsubscribe their number on BDApps
+ * (ADR 0006). A BDApps failure is returned, never thrown; the deletion applies.
  */
 export async function softDeleteUser(userId: string, adminId: string) {
   await prisma.user.update({
     where: { id: userId },
     data: { deletedAt: new Date() },
   })
+  const bdapps = await unsubscribeUserOnBdapps(userId, adminId)
 
   await prisma.adminAuditLog.create({
     data: {
@@ -274,7 +280,28 @@ export async function softDeleteUser(userId: string, adminId: string) {
       action: 'USER_DELETED',
       targetType: 'User',
       targetId: userId,
+      metadata: { bdapps: bdapps.status },
     },
+  })
+
+  return { success: true, bdapps }
+}
+
+/**
+ * Restore a soft-deleted user within the restore window. Clears deletedAt only;
+ * never re-subscribes on BDApps (ADR 0006). Refused after 30 days.
+ */
+export async function restoreUser(userId: string, adminId: string, now: Date = new Date()) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { deletedAt: true } })
+  if (!user) throw new ApiError(404, 'User not found', 'USER_NOT_FOUND')
+  if (!user.deletedAt) throw new ApiError(409, 'User is not deleted', 'NOT_DELETED')
+  if (!isWithinRestoreWindow(user.deletedAt, now)) {
+    throw new ApiError(409, `Accounts can only be restored within ${RESTORE_WINDOW_DAYS} days of deletion`, 'RESTORE_WINDOW_EXPIRED')
+  }
+
+  await prisma.user.update({ where: { id: userId }, data: { deletedAt: null } })
+  await prisma.adminAuditLog.create({
+    data: { adminId, action: 'USER_RESTORED', targetType: 'User', targetId: userId },
   })
 
   return { success: true }

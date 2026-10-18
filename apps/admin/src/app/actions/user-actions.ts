@@ -5,6 +5,7 @@ import {
   suspendUser as svcSuspendUser,
   reactivateUser as svcReactivateUser,
   softDeleteUser as svcSoftDeleteUser,
+  restoreUser as svcRestoreUser,
   setSubscriptionStatus,
   adminSetNotificationPrefs,
 } from '@vesta/shared/server/services'
@@ -23,11 +24,11 @@ export async function suspendUser(userId: string, reason: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await svcSuspendUser(userId, admin.id, reason)
+  const { bdapps } = await svcSuspendUser(userId, admin.id, reason)
 
   revalidateUserTags(userId)
   await revalidateWebTags([`user:${userId}`])
-  return { success: true }
+  return { success: true, bdappsError: bdapps.status === 'failed' ? bdapps.error : null }
 }
 
 export async function reactivateUser(userId: string) {
@@ -45,7 +46,18 @@ export async function softDeleteUser(userId: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await svcSoftDeleteUser(userId, admin.id)
+  const { bdapps } = await svcSoftDeleteUser(userId, admin.id)
+
+  revalidateUserTags(userId)
+  await revalidateWebTags([`user:${userId}`])
+  return { success: true, bdappsError: bdapps.status === 'failed' ? bdapps.error : null }
+}
+
+export async function restoreUser(userId: string) {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  await svcRestoreUser(userId, admin.id)
 
   revalidateUserTags(userId)
   await revalidateWebTags([`user:${userId}`])

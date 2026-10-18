@@ -64,7 +64,7 @@ describe('immediate suspension', () => {
 
     await suspendUser(USER, ADMIN, ' Abusive messages ')
     const log = await testPrisma.adminAuditLog.findFirst({ where: { adminId: ADMIN, action: 'USER_SUSPENDED', targetId: USER } })
-    expect(log?.metadata).toEqual({ reason: 'Abusive messages' })
+    expect(log?.metadata).toMatchObject({ reason: 'Abusive messages' })
     await reactivateUser(USER, ADMIN)
   })
 
