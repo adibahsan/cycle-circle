@@ -18,6 +18,9 @@ export const LOG_CHANNELS: readonly LogChannel[] = [
   'error',
 ]
 
+/** Channels the admin Logs page may expose (customer, cron and error stay server-side). */
+export const ADMIN_LOG_CHANNELS: readonly LogChannel[] = ['merchant', 'webhook', 'translog']
+
 export interface LogLine {
   ts: string
   level: LogLevel
@@ -62,7 +65,7 @@ const MAX_LIMIT = 500
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/
 const FILE_RE = /^(\d{4}-\d{2}-\d{2})\.log(\.gz)?$/
 const OTP_KEY = /otp|passcode|verification_?code|^pin$/i
-const OTP_IN_TEXT = /(otp[^\d\n]{0,20})(\d{4,8})/gi
+const OTP_IN_TEXT = /((?:otp|code|কোড)[^\d\n]{0,20})(\d{4,8})/gi
 
 /** Mask one-time passwords at any depth: OTP-named fields, digit-only `code`, and "otp: 123456" in text. */
 export function maskOtps(value: unknown, depth = 0): unknown {
