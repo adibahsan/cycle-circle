@@ -72,6 +72,8 @@ export interface DashboardBlocks {
   cycle: 'live' | 'example' | null
   /** Phase-specific copy and links (e.g. articles filtered by the current phase). */
   phaseTools: boolean
+  /** The toolkit's Log period card. Off when the first-run hero already offers the one Log period button. */
+  logPeriodTool: boolean
 }
 
 /**
@@ -81,11 +83,11 @@ export interface DashboardBlocks {
 export function dashboardBlocks(state: DashboardHeroState): DashboardBlocks {
   switch (state) {
     case 'cycle':
-      return { cycle: 'live', phaseTools: true }
+      return { cycle: 'live', phaseTools: true, logPeriodTool: true }
     case 'no-period':
-      return { cycle: 'example', phaseTools: false }
+      return { cycle: 'example', phaseTools: false, logPeriodTool: false }
     default:
-      return { cycle: null, phaseTools: false }
+      return { cycle: null, phaseTools: false, logPeriodTool: true }
   }
 }
 

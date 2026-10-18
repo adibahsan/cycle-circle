@@ -65,6 +65,9 @@ for (const [label, viewport] of [['desktop', DESKTOP], ['375x667', PHONE_375]] a
         const log = hero.getByRole('button', { name: /log period/i })
         await expect(page.getByTestId('hero-stats')).toHaveCount(0)
         await expect(page.getByTestId('stat-fertile')).toHaveCount(0)
+        // Story 19: the hero's button is the page's only Log period button (no toolkit duplicate).
+        await expect(main(page).getByRole('button', { name: /log period/i })).toHaveCount(1)
+        await expect(page.getByTestId('toolkit-card')).toHaveCount(5)
         // The button opens the period log (closed again without saving).
         await log.click()
         await expect(dialog(page)).toBeVisible()

@@ -103,16 +103,16 @@ describe('dashboardHeroState (which hero renders)', () => {
 
 describe('dashboardBlocks (what each mode renders, #76)', () => {
   it('cycle: live stepper and ring, phase tools', () => {
-    expect(dashboardBlocks('cycle')).toEqual({ cycle: 'live', phaseTools: true })
+    expect(dashboardBlocks('cycle')).toEqual({ cycle: 'live', phaseTools: true, logPeriodTool: true })
   })
   it('pregnancy: no stepper, ring or phase tools', () => {
-    expect(dashboardBlocks('pregnancy')).toEqual({ cycle: null, phaseTools: false })
+    expect(dashboardBlocks('pregnancy')).toEqual({ cycle: null, phaseTools: false, logPeriodTool: true })
   })
   it('menopause: no stepper, ring or phase tools', () => {
-    expect(dashboardBlocks('menopause')).toEqual({ cycle: null, phaseTools: false })
+    expect(dashboardBlocks('menopause')).toEqual({ cycle: null, phaseTools: false, logPeriodTool: true })
   })
-  it('no period: the stepper and ring show the example, with no phase tools', () => {
-    expect(dashboardBlocks('no-period')).toEqual({ cycle: 'example', phaseTools: false })
+  it('no period: the stepper and ring show the example, with no phase tools; the hero holds the only Log period button (story 19)', () => {
+    expect(dashboardBlocks('no-period')).toEqual({ cycle: 'example', phaseTools: false, logPeriodTool: false })
   })
 })
 

@@ -251,7 +251,7 @@ export function FirstPeriodHero({ onLogPeriod }: { onLogPeriod: () => void }) {
       title={t('dashboard.firstPeriodQuestion')}
       sub={t('dashboard.firstPeriodBody')}
     >
-      <Button variant="primary" onClick={onLogPeriod} aria-haspopup="dialog" className="mt-6 min-h-11">
+      <Button variant="primary" onClick={onLogPeriod} aria-haspopup="dialog" className="mt-6 min-h-11" data-tour="log-button">
         {t('dashboard.logPeriod')}
       </Button>
     </HeroFrame>

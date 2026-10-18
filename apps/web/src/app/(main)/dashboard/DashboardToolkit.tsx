@@ -20,7 +20,8 @@ interface DashboardToolkitProps {
   phase: CyclePhase | null
   /** Published articles tagged with the current phase (already filtered on the server). */
   articles: PhaseArticle[]
-  onLogPeriod: () => void
+  /** Null hides the Log period card (the first-run hero holds the only Log period button). */
+  onLogPeriod: (() => void) | null
   onLogSymptoms: () => void
 }
 
@@ -80,11 +81,13 @@ export function DashboardToolkit({ language, phase, articles, onLogPeriod, onLog
     <section aria-labelledby="toolkit-title">
       <SectionHeader id="toolkit-title" title={t('dashboard.toolkitTitle')} subtitle={t('dashboard.toolkitSub')} variant="inline" />
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <ToolCard tone="pink" Icon={Droplets} title={t('dashboard.toolLogPeriodTitle')} body={t('dashboard.toolLogPeriodBody')}>
-          <Button variant="primary" onClick={onLogPeriod} className="min-h-11 self-start" data-tour="log-button">
-            {t('dashboard.logPeriod')}
-          </Button>
-        </ToolCard>
+        {onLogPeriod && (
+          <ToolCard tone="pink" Icon={Droplets} title={t('dashboard.toolLogPeriodTitle')} body={t('dashboard.toolLogPeriodBody')}>
+            <Button variant="primary" onClick={onLogPeriod} className="min-h-11 self-start" data-tour="log-button">
+              {t('dashboard.logPeriod')}
+            </Button>
+          </ToolCard>
+        )}
         <ToolCard tone="peach" Icon={HeartPulse} title={t('dashboard.toolCheckInTitle')} body={t('dashboard.toolCheckInBody')}>
           <button type="button" onClick={onLogSymptoms} aria-haspopup="dialog" className={ACTION}>
             {t('dashboard.logSymptoms')}

@@ -414,7 +414,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
           language={language}
           phase={blocks.phaseTools ? phase : null}
           articles={phaseArticles}
-          onLogPeriod={openNewLog}
+          onLogPeriod={blocks.logPeriodTool ? openNewLog : null}
           onLogSymptoms={openQuickSymptom}
         />
       </PageContainer>
