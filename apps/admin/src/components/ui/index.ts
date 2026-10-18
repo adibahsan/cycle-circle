@@ -11,3 +11,4 @@ export type { Column } from './DataTable';
 export { Pagination } from './Pagination';
 export { FilterBar } from './FilterBar';
 export { ConfirmModal } from './ConfirmModal';
+export { ToastProvider, useToast } from './Toast';
