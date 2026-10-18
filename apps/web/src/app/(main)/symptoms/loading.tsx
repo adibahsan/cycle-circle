@@ -15,7 +15,7 @@ export default function SymptomsLoading() {
           </div>
 
           {/* Mini Calendar Card */}
-          <div className="rounded-panel bg-[var(--color-bg-card)] shadow-panel dark:border dark:border-[var(--color-border)] px-2 py-2 sm:px-4 md:py-4 space-y-2">
+          <div className="rounded-panel bg-[var(--color-bg-card)] shadow-panel px-2 py-2 sm:px-4 md:py-4 space-y-2">
             <div className="flex justify-between items-center">
               <Shimmer className="h-8 w-8 rounded-xl" />
               <Shimmer className="h-5 w-32 rounded-md" />
@@ -38,7 +38,7 @@ export default function SymptomsLoading() {
           </div>
 
           {/* Summary Card */}
-          <div className="rounded-panel bg-[var(--color-bg-card)] shadow-panel dark:border dark:border-[var(--color-border)] p-4">
+          <div className="rounded-panel bg-[var(--color-bg-card)] shadow-panel p-4">
             <div className="flex flex-col items-center gap-2">
               <Shimmer className="h-4 w-32 rounded-md" />
               <div className="flex gap-1">

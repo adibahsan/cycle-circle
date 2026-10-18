@@ -1,7 +1,7 @@
 import { PageContainer } from '@/components/ui/PageContainer'
 import { Shimmer } from '@/components/ui/Shimmer'
 
-const CARD = 'rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel p-4 space-y-2'
+const CARD = 'rounded-panel bg-[var(--color-bg-card)] border border-transparent shadow-panel p-4 space-y-2'
 
 /** Skeleton in the insights page's shape: header + range control, then the chart cards. */
 export default function InsightsLoading() {

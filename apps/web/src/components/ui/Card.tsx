@@ -5,7 +5,7 @@ export { CARD_TINTS, type CardTint } from './tints';
 /** `panel`: 28px white panel with the neutral panel shadow. A tint: 28px pastel surface, flat. */
 export type CardTone = 'panel' | CardTint;
 
-const PANEL = 'rounded-panel bg-[var(--color-bg-card)] border border-transparent dark:border-[var(--color-border)] shadow-panel';
+const PANEL = 'rounded-panel bg-[var(--color-bg-card)] border border-transparent shadow-panel';
 const toneClasses = (tone: CardTone) => (tone === 'panel' ? PANEL : `rounded-panel ${TINT_CLASSES[tone].surface}`);
 
 interface CardProps {
@@ -25,7 +25,7 @@ export function Card({ children, className, padding = 'md', tone, hover, style }
       className={cn(
         tone
           ? toneClasses(tone)
-          : 'rounded-lg bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-soft',
+          : 'rounded-lg bg-[var(--color-bg-card)] border border-[var(--color-border)] dark:border-transparent shadow-soft',
         {
           'p-3': padding === 'sm',
           'p-5': padding === 'md',

@@ -15,7 +15,7 @@ export default function ProfilesLoading() {
         {Array.from({ length: 2 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-panel border border-transparent dark:border-[var(--color-border)] shadow-panel bg-[var(--color-bg-card)] p-4 flex items-center justify-between gap-3 relative overflow-hidden"
+            className="rounded-panel border border-transparent shadow-panel bg-[var(--color-bg-card)] p-4 flex items-center justify-between gap-3 relative overflow-hidden"
           >
             <div className="flex items-center gap-3 flex-1 min-w-0">
               {/* Avatar placeholder */}

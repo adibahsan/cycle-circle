@@ -413,7 +413,7 @@ function MainLayoutInner({ children, initial }: { children: React.ReactNode; ini
         id="app-sidebar"
         data-sidebar
         data-collapsed={sidebar.pref}
-        className="hidden md:flex md:flex-col md:w-60 md:sticky md:top-0 md:h-dvh md:shrink-0 md:overflow-x-hidden motion-reduce:transition-none bg-[var(--color-bg-card)] border-r border-[var(--color-border)] z-40"
+        className="hidden md:flex md:flex-col md:w-60 md:sticky md:top-0 md:h-dvh md:shrink-0 md:overflow-x-hidden motion-reduce:transition-none bg-[var(--color-bg-card)] dark:bg-[var(--color-bg-secondary)] border-r border-[var(--color-border)] z-40"
         aria-label={t('nav.sidebarNav')}
       >
         {/* Sidebar header / branding */}
@@ -537,7 +537,7 @@ function MainLayoutInner({ children, initial }: { children: React.ReactNode; ini
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top header — mobile only; sidebar handles desktop navigation */}
         {/* Opaque, not .glass: Tailwind v4 (Lightning CSS) compiles .glass to only -webkit-backdrop-filter, so Chromium gets no blur and content shows through. */}
-        <header className="sticky top-0 z-40 bg-[var(--color-bg-card)] border-b border-[var(--color-border)] px-4 py-2.5 flex items-center justify-between gap-3 md:hidden">
+        <header className="sticky top-0 z-40 bg-[var(--color-bg-card)] dark:bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)] px-4 py-2.5 flex items-center justify-between gap-3 md:hidden">
           <div className="flex min-w-0 items-center gap-2.5">
             <VestaLogo size={26} animate={false} />
             <ProfileChip

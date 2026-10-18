@@ -44,18 +44,18 @@ export const DAY_STYLES: Record<DayStyleKind, DayStyle> = {
     color: 'var(--color-text-primary)',
   },
   fertile: {
-    background: 'color-mix(in oklab, var(--color-fertile) 38%, var(--color-bg-card))',
+    background: 'color-mix(in oklab, var(--color-fertile) var(--day-mix-fertile), var(--color-bg-card))',
     border: 'none',
     color: 'var(--color-text-primary)',
   },
   ovulation: { background: 'var(--color-ovulation)', border: 'none', color: 'var(--color-on-ovulation)' },
   follicular: {
-    background: 'color-mix(in oklab, var(--color-follicular) 16%, var(--color-bg-card))',
+    background: 'color-mix(in oklab, var(--color-follicular) var(--day-mix-phase), var(--color-bg-card))',
     border: 'none',
     color: 'var(--color-text-primary)',
   },
   luteal: {
-    background: 'color-mix(in oklab, var(--color-luteal) 16%, var(--color-bg-card))',
+    background: 'color-mix(in oklab, var(--color-luteal) var(--day-mix-phase), var(--color-bg-card))',
     border: 'none',
     color: 'var(--color-text-primary)',
   },
