@@ -1,9 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const read = (p: string) => readFileSync(resolve(__dirname, '../..', p), 'utf8')
-const dash = read('src/app/(main)/dashboard/DashboardClient.tsx')
+const DASH_DIR = 'src/app/(main)/dashboard'
+const dashFiles = readdirSync(resolve(__dirname, '../..', DASH_DIR), { recursive: true })
+  .map(String)
+  .filter((f) => f.endsWith('.tsx'))
+const dash = read(`${DASH_DIR}/DashboardClient.tsx`)
+/** Every dashboard component's source, joined: the page is split across files. */
+const allDash = dashFiles.map((f) => read(`${DASH_DIR}/${f}`)).join('\n')
+const count = (s: string, needle: string) => s.split(needle).length - 1
 const css = read('src/app/globals.css')
 
 function token(scope: 'light' | 'dark', name: string): string {
@@ -41,31 +48,40 @@ describe('Cycle Overview label contrast', () => {
       })
     }
   }
-  it('labels use neutral text; the phase colour is not applied to label text', () => {
-    const block = dash.slice(dash.indexOf("t('dashboard.cycleOverview')"), dash.indexOf("t('dashboard.predictedWindows')"))
-    expect(block).not.toMatch(/style=\{\{ color \}\}/)
+  it('journey labels use neutral text; the phase colour is not applied to label text', () => {
+    expect(read(`${DASH_DIR}/CycleJourney.tsx`)).not.toMatch(/style=\{\{\s*color/)
   })
 })
 
 describe('dashboard layout sources', () => {
-  it('stat cards share one surface (no tinted override)', () => {
-    expect(dash).not.toMatch(/<Card[^>]*backgroundColor/)
+  it('cards take a tone, not an inline background override', () => {
+    expect(allDash).not.toMatch(/<Card[^>]*backgroundColor/)
   })
   it('no text under 11px', () => {
-    expect(dash).not.toMatch(/text-\[(\d|10)px\]/)
+    expect(allDash).not.toMatch(/text-\[(\d|10)px\]/)
     expect(read('src/components/engagement/StreakBadge.tsx')).not.toMatch(/text-\[(\d|10)px\]/)
   })
-  it('quick actions use the shared Button', () => {
-    const from = dash.lastIndexOf("t('dashboard.quickActions')")
-    const qa = dash.slice(from, dash.indexOf('</Card>', from))
-    expect(qa).toMatch(/variant="secondary"/)
+  it('no link wraps a button (toolkit actions are a single link or button)', () => {
+    expect(allDash).not.toMatch(/<Link[^>]*>\s*<Button/)
+  })
+  it('the late day count has one home: the next-period stat (#74)', () => {
+    expect(count(allDash, "'dashboard.lateBy'")).toBe(1)
+    expect(allDash).not.toMatch(/dashboard\.(daysLate|daysOverdue|ringLateLabel|periodLate)\b/)
+  })
+  it('confidence is not repeated on the dashboard; the unlock meter shows it (#74)', () => {
+    expect(allDash).not.toMatch(/'dashboard\.confidence'/)
+    expect(count(allDash, '<ProgressToUnlockMeter')).toBe(1)
+  })
+  it('the stepper reads phase days from the shared ranges, not hard-coded lengths (#74)', () => {
+    expect(read(`${DASH_DIR}/CycleJourney.tsx`)).toContain('journeySteps(')
+    expect(allDash).not.toMatch(/cycleLength\s*-\s*14/)
   })
   it('uses prompt-rules for days since last log', () => {
     expect(dash).toContain("from '@/lib/prompt-rules'")
     expect(dash).not.toMatch(/86_400_000/)
   })
-  it('hero fills its right half with the phase panel', () => {
-    expect(dash).toContain('data-testid="hero-phase-panel"')
+  it('the hero carries the three stats', () => {
+    expect(allDash).toContain('data-testid="hero-stats"')
   })
   it('layout listens with the shared event constant', () => {
     const layout = read('src/app/(main)/layout.tsx')

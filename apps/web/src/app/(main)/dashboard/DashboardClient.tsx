@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
 import { parseISO } from 'date-fns'
 import Link from 'next/link'
-import { CalendarDays, Activity, Droplets, Baby } from 'lucide-react'
+import { Activity, Droplets, Baby } from 'lucide-react'
 
 import { useAppStore } from '@/lib/store'
 import { useLanguage } from '@/lib/use-language'
@@ -17,14 +17,12 @@ import {
   getDaysUntilNextPeriod,
   computePrediction,
   normalizeCyclePhase,
-  getPhaseColor,
-  getPhaseRanges,
 } from '@vesta/shared/utils/cycle-utils'
 import type { FlowIntensity, ProfileRelation } from '@vesta/shared/types'
 import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { PhaseIcon, FlowIcon } from '@/components/ui/PhaseIcon'
+import { FlowIcon } from '@/components/ui/PhaseIcon'
 import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
 import { setActiveProfileCookie } from '@/app/actions/profile-actions'
 import type { ProfileCompletionStatus } from '@/lib/profile-completion'
@@ -40,6 +38,12 @@ import { ProgressToUnlockMeter } from '@/components/engagement/ProgressToUnlockM
 import dynamic from 'next/dynamic'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { deviceDayString } from '@/lib/local-date'
+import { CycleHero } from './CycleHero'
+import { CycleJourney } from './CycleJourney'
+import { CycleProgressRing } from './CycleProgressRing'
+import { DashboardToolkit, type PhaseArticle } from './DashboardToolkit'
+import { dashboardHeroState, fertileStatus, periodStatus } from './dashboard-model'
 
 const TodayCheckInModal = dynamic(
   () => import('@/components/engagement/TodayCheckInModal').then((m) => m.TodayCheckInModal),
@@ -118,6 +122,10 @@ interface Props {
   goal: string | null
   /** undefined = not loaded yet, null = settled without data. */
   engagement?: EngagementSummary | null
+  /** Published articles tagged with the current phase, for "Read for your phase". */
+  phaseArticles?: PhaseArticle[]
+  /** Slot for the Phase pattern card (#75), shown beside the streak. */
+  phasePattern?: React.ReactNode
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -136,102 +144,9 @@ function normalizeFlow(f: string): FlowIntensity {
   return f.toLowerCase() as FlowIntensity
 }
 
-// ─── Circular Progress ────────────────────────────────────────────────────────
-
-function CycleRing({
-  cycleDay,
-  cycleLength,
-  phase,
-  phaseColor,
-  isLate = false,
-  daysLate = 0,
-}: {
-  cycleDay: number
-  cycleLength: number
-  phase: string
-  phaseColor: string
-  isLate?: boolean
-  daysLate?: number
-}) {
-  const { t } = useTranslation()
-  const SIZE = 220
-  const STROKE = 16
-  const RADIUS = (SIZE - STROKE) / 2
-  const CIRCUMFERENCE = 2 * Math.PI * RADIUS
-  const progress = cycleDay / cycleLength
-  const offset = CIRCUMFERENCE * (1 - progress)
-
-  const ringColor = isLate ? 'var(--color-menstrual)' : phaseColor
-  const centerNumber = isLate ? daysLate : cycleDay
-  // Phase colours stay on the ring; the number uses text ink so it reads at 3:1 in every phase.
-  const centerColor = isLate ? 'var(--color-menstrual)' : 'var(--color-text-primary)'
-  const centerLabel = isLate ? t('dashboard.late') : t('dashboard.day')
-  const ringName = isLate
-    ? t('dashboard.ringLateLabel', { days: daysLate })
-    : t('dashboard.ringLabel', { day: cycleDay, length: cycleLength })
-
-  return (
-    <div role="img" aria-label={ringName} className="relative flex items-center justify-center" style={{ width: SIZE, height: SIZE }}>
-      {/* Track ring */}
-      <svg
-        width={SIZE}
-        height={SIZE}
-        aria-hidden="true"
-        className="absolute rotate-[-90deg]"
-      >
-        <circle
-          cx={SIZE / 2}
-          cy={SIZE / 2}
-          r={RADIUS}
-          fill="none"
-          stroke="color-mix(in srgb, var(--goal-accent) 14%, transparent)"
-          strokeWidth={STROKE}
-        />
-        <motion.circle
-          cx={SIZE / 2}
-          cy={SIZE / 2}
-          r={RADIUS}
-          fill="none"
-          stroke={ringColor}
-          strokeWidth={STROKE}
-          strokeLinecap="round"
-          strokeDasharray={CIRCUMFERENCE}
-          initial={{ strokeDashoffset: CIRCUMFERENCE }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.2, ease: 'easeOut' }}
-        />
-      </svg>
-
-      {/* Center content */}
-      <motion.div
-        className="flex flex-col items-center gap-1"
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-          data-ring-number
-          className="text-5xl font-bold tabular-nums"
-          style={{ color: centerColor }}
-        >
-          {centerNumber}
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="text-sm font-medium text-[var(--color-text-muted)]"
-        >
-          {centerLabel}
-        </motion.div>
-      </motion.div>
-    </div>
-  )
-}
-
 // ─── Dashboard Client ─────────────────────────────────────────────────────────
 
-export function DashboardClient({ profiles, user: _user, activeProfileId, dashboardData, completion, lastSymptomLogDate, goal, engagement }: Props) {
+export function DashboardClient({ profiles, user: _user, activeProfileId, dashboardData, completion, lastSymptomLogDate, goal, engagement, phaseArticles = [], phasePattern }: Props) {
   const { t } = useTranslation()
   const router = useRouter()
   const setActiveProfile = useAppStore((s) => s.setActiveProfile)
@@ -301,8 +216,11 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
         <PageHeader title={t('nav.dashboard')} />
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <p className="text-[var(--color-text-muted)]">{t('dashboard.noProfileFound')}</p>
-          <Link href="/profiles">
-            <Button variant="primary">{t('dashboard.setUpProfile')}</Button>
+          <Link
+            href="/profiles"
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-action)] px-5 font-semibold text-[var(--color-on-action)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+          >
+            {t('dashboard.setUpProfile')}
           </Link>
         </div>
       </PageContainer>
@@ -334,14 +252,12 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
     getCurrentPhase(cycleDay, profile.periodLength, profile.cycleLength)
 
   const phase = normalizeCyclePhase(String(rawPhase ?? 'menstrual'))
-  const phaseColor = getPhaseColor(phase)
 
   const daysUntilNext =
     dashboardData?.countdownToNextPeriod ??
     getDaysUntilNextPeriod(cycleDay, profile.cycleLength)
 
-  const isPeriodLate = (daysUntilNext ?? 0) < 0
-  const daysLate = Math.abs(daysUntilNext ?? 0)
+  const period = periodStatus(daysUntilNext)
 
   // Pregnancy detection — mode flag from service takes priority; goal string is the fallback
   const pregnancy = dashboardData?.mode === 'pregnancy' || isPregnancy(goal)
@@ -390,9 +306,9 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
     [lastPeriodDate, lastSymptomDate].filter((d): d is Date => d !== null),
   )
 
-  // Confidence tier label (only relevant when a prediction exists)
-  const tierLabel = prediction?.tier === 'arima' ? t('dashboard.tierArima') : t('dashboard.tierAverage')
-  const phaseLabel = t(`dashboard.${phase}`)
+  const fertile = prediction ? fertileStatus(deviceDayString(), prediction.fertileStart, prediction.fertileEnd) : null
+  // Pregnancy keeps its own panel; menopause and no-period still use the cycle layout until #76.
+  const heroState = dashboardHeroState(dashboardData?.mode ?? 'standard', !!lastPeriodDisplay, pregnancy)
 
   return (
     <>
@@ -402,7 +318,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
       >
         <PageHeader title={t('nav.dashboard')} subtitle={profile.name} />
         <CompletionRow status={completion} />
-        {pregnancy ? (
+        {heroState === 'pregnancy' ? (
           <>
             {/* ── Pregnancy: Coming Soon Panel ───────────────────── */}
             <motion.div
@@ -544,66 +460,16 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
           </>
         ) : (
           <>
-            {/* ── Hero Section ─────────────────────────────────────── */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="surface-wash rounded-3xl flex flex-col items-center lg:flex-row lg:items-start lg:gap-8 p-5 md:p-6"
-            >
-              <CycleRing
-                cycleDay={cycleDay}
-                cycleLength={profile.cycleLength}
-                phase={phase}
-                phaseColor={phaseColor}
-                isLate={isPeriodLate}
-                daysLate={daysLate}
-              />
-
-              {/* Right column: check-in strip + compact phase/day */}
-              <div className="mt-4 lg:mt-0 w-full lg:flex-1 lg:self-center grid gap-4 xl:grid-cols-2 xl:items-center">
-                {engagement && (
-                  <TodayCheckInStrip
-                    variant="hero"
-                    profileId={activeProfileId}
-                    engagement={engagement}
-                    goal={goal}
-                    onOpenCheckIn={() => setCheckInOpen(true)}
-                  />
-                )}
-                {/* Phase panel (or prominent late button) fills the right half */}
-                {isPeriodLate ? (
-                  <button
-                    type="button"
-                    onClick={openNewLog}
-                    className="self-start flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-menstrual)] cursor-pointer"
-                    style={{ backgroundColor: 'var(--color-menstrual)', color: 'var(--color-on-menstrual)' }}
-                    aria-label={t('dashboard.periodLateOpenPrompt')}
-                  >
-                    <Droplets size={14} aria-hidden="true" />
-                    <span>{t('dashboard.periodLate')} · {t('dashboard.daysOverdue', { count: daysLate })}</span>
-                  </button>
-                ) : (
-                  <div
-                    data-testid="hero-phase-panel"
-                    className="rounded-2xl p-4 flex flex-col gap-2 bg-[var(--color-bg-secondary)]"
-                  >
-                    <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                      <span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: phaseColor }} />
-                      <span>{t('dashboard.dayOf', { day: cycleDay, total: profile.cycleLength })}</span>
-                    </div>
-                    <p className="text-2xl font-bold text-[var(--color-text-primary)]">
-                      <span className="inline-flex items-center gap-2"><PhaseIcon phase={phase} size={22} /> {phaseLabel}</span>
-                    </p>
-                    {daysUntilNext != null && (
-                      <p className="text-sm text-[var(--color-text-secondary)] tabular-nums">
-                        {t('dashboard.nextPeriodCard')} · <span className="font-semibold text-[var(--color-text-primary)]">{Math.abs(daysUntilNext)}</span> {t('dashboard.daysAway', { count: Math.abs(daysUntilNext) })}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </motion.div>
+            {/* ── Hero: split by state; #76 adds the menopause and no-period heroes ── */}
+            <CycleHero
+              name={profile.name}
+              language={language}
+              phase={phase}
+              cycleDay={cycleDay}
+              fertile={fertile}
+              period={period}
+              nextPeriodDate={prediction?.nextPeriodStart ?? null}
+            />
 
             {/* ── Logging Nudge ──────────────────────────────────────── */}
             <LoggingNudge
@@ -615,262 +481,59 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, dashbo
               phase={dashboardData?.currentPhase ?? null}
             />
 
-            {/* ── Cards Grid ─────────────────────────────────────────── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-
-              {/* Countdown Card */}
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}
-              >
-                <Card padding="md" className="h-full !border-0 shadow-soft">
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-1.5">
-                      <CalendarDays
-                        size={14}
-                        style={{ color: isPeriodLate ? 'var(--color-menstrual)' : 'var(--goal-accent)' }}
-                        aria-hidden="true"
-                      />
-                      <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-                        {(daysUntilNext ?? 0) < 0 ? t('dashboard.periodLate') : t('dashboard.nextPeriodCard')}
-                      </span>
-                    </div>
-                    <div
-                      className="text-4xl font-extrabold leading-none tabular-nums"
-                      style={{ color: (daysUntilNext ?? 0) < 0 ? 'var(--color-menstrual)' : 'var(--goal-accent)' }}
-                    >
-                      {Math.abs(daysUntilNext ?? 0)}
-                    </div>
-                    <p className="text-xs text-[var(--color-text-muted)]">
-                      {(daysUntilNext ?? 0) < 0
-                        ? t('dashboard.daysLate', { count: Math.abs(daysUntilNext ?? 0) })
-                        : t('dashboard.daysAway', { count: Math.abs(daysUntilNext ?? 0) })}
-                    </p>
-
-                    {/* Mini bar */}
-                    <div className="h-1.5 rounded-full bg-[var(--color-border)] mt-1 overflow-hidden">
-                      <motion.div
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: (daysUntilNext ?? 0) < 0 ? 'var(--color-menstrual)' : 'var(--goal-accent)' }}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(100, ((profile.cycleLength - Math.max(0, daysUntilNext ?? 0)) / profile.cycleLength) * 100)}%` }}
-                        transition={{ delay: 0.6, duration: 0.8, ease: 'easeOut' }}
-                      />
-                    </div>
-
-                    {prediction && (
-                      <p className="text-xs text-[var(--color-text-muted)]">
-                        {formatShortDate(language, parseISO(prediction.nextPeriodStart))}
-                      </p>
-                    )}
-                  </div>
-                </Card>
-              </motion.div>
-
-              {/* Last Period Card */}
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.18, type: 'spring', stiffness: 100, damping: 20 }}
-              >
-                <Card padding="md" className="h-full !border-0 shadow-soft">
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-1.5">
-                      <Droplets size={14} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
-                      <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-                        {t('dashboard.lastPeriod')}
-                      </span>
-                    </div>
-                    {lastPeriodDisplay ? (
-                      <>
-                        <p className="text-sm font-bold text-[var(--color-text-primary)]">
-                          {formatShortDate(language, parseISO(lastPeriodDisplay.startDate))}
-                        </p>
-                        <p className="text-xs text-[var(--color-text-muted)]">
-                          {t('dashboard.durationDays', { count: lastPeriodDisplay.duration })}
-                        </p>
-                        <div
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold self-start"
-                          style={{ backgroundColor: FLOW_COLORS[lastPeriodDisplay.flowIntensity], color: FLOW_TEXT[lastPeriodDisplay.flowIntensity] }}
-                        >
-                          <FlowIcon flow={lastPeriodDisplay.flowIntensity} size={12} />
-                        {t(`dashboard.flow${capitalize(lastPeriodDisplay.flowIntensity)}`)}
-                        </div>
-                      </>
-                    ) : (
-                      <p className="text-xs text-[var(--color-text-muted)] mt-1">{t('dashboard.noLogsYet')}</p>
-                    )}
-                  </div>
-                </Card>
-              </motion.div>
-
-              {/* Confidence Card */}
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.26, type: 'spring', stiffness: 100, damping: 20 }}
-              >
-                <Card padding="md" className="h-full !border-0 shadow-soft">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-                      {t('dashboard.confidence')}
-                    </span>
-                    <div className="flex items-end gap-1">
-                      <span
-                        className="text-4xl font-extrabold"
-                        style={{ color: 'var(--goal-accent)' }}
-                      >
-                        {prediction?.confidence ?? '—'}
-                      </span>
-                      {prediction && (
-                        <span className="text-lg font-bold text-[var(--color-text-muted)] mb-0.5">%</span>
-                      )}
-                    </div>
-
-                    {/* Confidence arc */}
-                    <div className="h-1.5 rounded-full bg-[var(--color-border)] overflow-hidden">
-                      <motion.div
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: 'var(--goal-accent)' }}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${prediction?.confidence ?? 0}%` }}
-                        transition={{ delay: 0.8, duration: 0.8, ease: 'easeOut' }}
-                      />
-                    </div>
-
-                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] self-start">
-                      <span className="text-[11px] font-semibold" style={{ color: 'var(--goal-accent)' }}>
-                        {tierLabel}
-                      </span>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-
-              {/* Quick Actions Card */}
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.34, type: 'spring', stiffness: 100, damping: 20 }}
-              >
-                <Card padding="md" className="h-full !border-0 shadow-soft">
-                  <div className="flex flex-col gap-2.5 h-full">
-                    <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-                      {t('dashboard.quickActions')}
-                    </span>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      fullWidth
-                      onClick={openNewLog}
-                      className="text-xs"
-                      data-tour="log-button"
-                    >
-                      <Droplets size={14} aria-hidden="true" />
-                    {t('dashboard.logPeriod')}
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      fullWidth
-                      onClick={openQuickSymptom}
-                      aria-haspopup="dialog"
-                      className="text-xs gap-1.5 whitespace-nowrap px-2"
-                    >
-                      <Activity size={12} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
-                      {t('dashboard.logSymptoms')}
-                    </Button>
-                  </div>
-                </Card>
-              </motion.div>
-            </div>
-
-            {/* ── Progress to Unlock Meter ──────────────────────────── */}
-            {engagement && (
-              <ProgressToUnlockMeter
-                cyclesLogged={engagement.cyclesLogged}
-                unlockTarget={engagement.unlockTarget}
-                confidence={engagement.confidence}
-                tier={engagement.tier}
-                periodLogCount={engagement.periodLogCount}
-              />
+            {/* ── Streak + Phase pattern (#75 fills the slot) ─────────── */}
+            {(engagement || phasePattern) && (
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {engagement && (
+                  <TodayCheckInStrip
+                    profileId={activeProfileId}
+                    engagement={engagement}
+                    goal={goal}
+                    onOpenCheckIn={() => setCheckInOpen(true)}
+                  />
+                )}
+                {phasePattern}
+              </div>
             )}
 
-            {/* ── Cycle Phase Overview + Predicted Windows ─────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.45, duration: 0.45 }}
+            {/* ── Cycle journey + progress ring ─────────────────────── */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <CycleJourney
+                cycleLength={profile.cycleLength}
+                periodLength={profile.periodLength}
+                phase={phase}
+                cycleDay={cycleDay}
+                language={language}
+              />
+              <CycleProgressRing
+                cycleDay={cycleDay}
+                cycleLength={profile.cycleLength}
+                phase={phase}
+                period={period}
+                language={language}
               >
-                <Card padding="md" className="h-full !border-0 shadow-soft">
-                  <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
-                    {t('dashboard.cycleOverview')}
-                  </h3>
-                  <div className="flex gap-1.5">
-                    {getPhaseRanges(profile.cycleLength, profile.periodLength).map(({ phase: ph, days }) => {
-                      const labelKey = `dashboard.${ph}` as const
-                      const isActive = ph === phase
-                      const color = getPhaseColor(ph)
-                      return (
-                        <div
-                          key={ph}
-                          className="flex-1 rounded-lg px-1 py-2 md:py-3 flex flex-col items-center gap-1 transition-colors"
-                          style={{
-                            backgroundColor: `color-mix(in srgb, ${color} 13%, transparent)`,
-                            outline: isActive ? `2px solid ${color}` : 'none',
-                          }}
-                        >
-                          <PhaseIcon phase={ph} size={18} />
-                          <span className="text-[11px] md:text-xs font-bold text-center leading-tight text-[var(--color-text-primary)] inline-flex items-center gap-1">
-                            <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                            {t(labelKey)}
-                          </span>
-                          <span className="text-[11px] md:text-xs text-[var(--color-text-secondary)] tabular-nums">{t('common.daysShort', { count: days })}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </Card>
-              </motion.div>
-
-              {prediction && (
-                <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.52, duration: 0.45 }}
-                >
-                  <Card padding="md" className="h-full !border-0 shadow-soft">
-                    <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
-                      {t('dashboard.predictedWindows')}
-                    </h3>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[var(--color-bg-secondary)]">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-fertile)' }} />
-                          <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('dashboard.fertileWindow')}</span>
-                        </div>
-                        <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                          {formatShortDate(language, parseISO(prediction.fertileStart))}
-                          {' – '}
-                          {formatShortDate(language, parseISO(prediction.fertileEnd))}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[var(--color-bg-secondary)]">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-ovulation)' }} />
-                          <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('dashboard.ovulationDay')}</span>
-                        </div>
-                        <span className="text-xs font-bold text-[var(--color-text-primary)]">
-                          {formatShortDate(language, parseISO(prediction.ovulationDay))}
-                        </span>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              )}
+                {/* The dashboard's one confidence figure. */}
+                {engagement && (
+                  <ProgressToUnlockMeter
+                    className="mt-4"
+                    cyclesLogged={engagement.cyclesLogged}
+                    unlockTarget={engagement.unlockTarget}
+                    confidence={engagement.confidence}
+                    tier={engagement.tier}
+                    periodLogCount={engagement.periodLogCount}
+                  />
+                )}
+              </CycleProgressRing>
             </div>
+
+            {/* ── Toolkit ─────────────────────────────────────────────── */}
+            <DashboardToolkit
+              language={language}
+              phase={phase}
+              articles={phaseArticles}
+              onLogPeriod={openNewLog}
+              onLogSymptoms={openQuickSymptom}
+            />
           </>
         )}
       </PageContainer>

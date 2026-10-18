@@ -1,0 +1,123 @@
+'use client'
+
+import { useTranslation } from 'react-i18next'
+import { parseISO } from 'date-fns'
+import { CalendarClock, Flower2, Sparkles } from 'lucide-react'
+import type { CyclePhase } from '@vesta/shared/types'
+import { Card } from '@/components/ui/Card'
+import { PhaseIcon } from '@/components/ui/PhaseIcon'
+import { formatShortDate } from '@/lib/format-date'
+import type { FertileStatus, PeriodStatus } from './dashboard-model'
+import { formatCount } from './format'
+
+interface CycleHeroProps {
+  name: string
+  language: string
+  phase: CyclePhase
+  cycleDay: number
+  fertile: FertileStatus | null
+  period: PeriodStatus | null
+  /** YYYY-MM-DD of the predicted next period, when there is one. */
+  nextPeriodDate: string | null
+}
+
+function Stat({ icon, title, sub, testId }: { icon: React.ReactNode; title: string; sub?: string; testId: string }) {
+  return (
+    <li
+      data-testid={testId}
+      className="flex min-w-0 items-center gap-3 rounded-full bg-[var(--color-bg-card)] py-2 pl-2 pr-5"
+    >
+      <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-secondary)]">
+        {icon}
+      </span>
+      <span className="flex min-w-0 flex-col">
+        <span className="text-sm font-bold leading-tight text-[var(--color-text-primary)] tabular-nums">{title}</span>
+        {sub ? <span className="text-xs leading-tight text-[var(--color-text-secondary)] tabular-nums">{sub}</span> : null}
+      </span>
+    </li>
+  )
+}
+
+/**
+ * Standard-mode hero for a profile with a logged period: greeting plus the three stats.
+ * The next-period stat is the dashboard's only place that states the late day count.
+ */
+export function CycleHero({ name, language, phase, cycleDay, fertile, period, nextPeriodDate }: CycleHeroProps) {
+  const { t } = useTranslation()
+  const n = (v: number) => formatCount(language, v)
+  const date = (ymd: string) => formatShortDate(language, parseISO(ymd))
+
+  const fertileTitle = !fertile
+    ? t('dashboard.fertileUnknown')
+    : fertile.kind === 'open'
+      ? t('dashboard.fertileOpen')
+      : fertile.kind === 'opens'
+        ? t('dashboard.fertileOpens', { count: fertile.days, n: n(fertile.days) })
+        : t('dashboard.fertileClosed')
+  const fertileSub = !fertile
+    ? undefined
+    : fertile.kind === 'open'
+      ? t('dashboard.fertileUntil', { date: date(fertile.until) })
+      : fertile.kind === 'opens'
+        ? t('dashboard.fertileOn', { date: date(fertile.on) })
+        : t('dashboard.fertileClosedSub')
+
+  const periodTitle = !period
+    ? t('dashboard.nextUnknown')
+    : period.kind === 'in'
+      ? t('dashboard.nextIn', { count: period.days, n: n(period.days) })
+      : period.kind === 'due'
+        ? t('dashboard.nextDue')
+        : t('dashboard.lateBy', { count: period.days, n: n(period.days) })
+  const periodSub =
+    period?.kind === 'late'
+      ? t('dashboard.lateSub')
+      : nextPeriodDate
+        ? t('dashboard.expectedOn', { date: date(nextPeriodDate) })
+        : undefined
+
+  return (
+    <Card tone="pink" padding="lg" className="relative overflow-hidden">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="font-heading text-display text-[var(--color-text-primary)] break-words">
+            {t('dashboard.heroHello', { name })}
+          </p>
+          <p className="mt-2 text-sm md:text-base text-[var(--color-text-secondary)]">{t('dashboard.heroSub')}</p>
+        </div>
+        {/* Illustration placeholder until the illustration set (#77) lands. */}
+        <span
+          aria-hidden="true"
+          className="hidden sm:flex h-20 w-20 shrink-0 items-center justify-center rounded-panel bg-[var(--color-bg-card)] text-accent-pink"
+        >
+          <Sparkles size={36} strokeWidth={1.75} />
+        </span>
+      </div>
+
+      <ul
+        data-testid="hero-stats"
+        aria-label={t('dashboard.statsLabel')}
+        className="mt-6 grid gap-2 sm:grid-cols-2 xl:grid-cols-3"
+      >
+        <Stat
+          testId="stat-cycle-day"
+          icon={<PhaseIcon phase={phase} size={20} />}
+          title={t('dashboard.statCycleDay', { n: n(cycleDay) })}
+          sub={t(`dashboard.${phase}`)}
+        />
+        <Stat
+          testId="stat-fertile"
+          icon={<Flower2 size={20} aria-hidden="true" className="text-accent-mint" />}
+          title={fertileTitle}
+          sub={fertileSub}
+        />
+        <Stat
+          testId="stat-next-period"
+          icon={<CalendarClock size={20} aria-hidden="true" className="text-accent-pink" />}
+          title={periodTitle}
+          sub={periodSub}
+        />
+      </ul>
+    </Card>
+  )
+}

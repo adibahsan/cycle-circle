@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { journeySteps, currentJourneyPhase, periodStatus, fertileStatus } from '@/app/(main)/dashboard/dashboard-model'
+import { journeySteps, currentJourneyPhase, periodStatus, fertileStatus, dashboardHeroState } from '@/app/(main)/dashboard/dashboard-model'
 
 const shape = (cycle: number, period: number) => journeySteps(cycle, period).map((s) => [s.phase, s.start, s.end])
 
@@ -82,5 +82,21 @@ describe('fertileStatus (fertile window stat)', () => {
   })
   it('is closed for this cycle after it ends', () => {
     expect(fertileStatus('2026-10-26', start, end)).toEqual({ kind: 'closed' })
+  })
+})
+
+describe('dashboardHeroState (which hero renders)', () => {
+  it('pregnancy mode wins over everything', () => {
+    expect(dashboardHeroState('pregnancy', true)).toBe('pregnancy')
+    expect(dashboardHeroState('standard', true, true)).toBe('pregnancy')
+  })
+  it('menopause mode has its own hero', () => {
+    expect(dashboardHeroState('menopause', true)).toBe('menopause')
+  })
+  it('standard mode without a logged period asks for one', () => {
+    expect(dashboardHeroState('standard', false)).toBe('no-period')
+  })
+  it('standard mode with a period shows the cycle hero', () => {
+    expect(dashboardHeroState('standard', true)).toBe('cycle')
   })
 })
