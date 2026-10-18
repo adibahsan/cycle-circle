@@ -71,6 +71,24 @@ describe('CalendarClient wiring', () => {
   it('scrolls the detail card into view', () => {
     expect(src).toContain('scrollIntoView')
   })
+  it('tints follicular and luteal days from the shared phase ranges', () => {
+    expect(src).toContain("from '@/lib/calendar-phase'")
+    expect(src).toMatch(/cyclePhaseOn\(/)
+    expect(src).toMatch(/periodStarts\(/)
+    expect(src).not.toMatch(/- ?14\b/) // no hard-coded luteal length
+  })
+  it('the legend explains the whole cycle, follicular and luteal included', () => {
+    expect(src).toContain("'calendar.follicularPhase'")
+    expect(src).toContain("'calendar.lutealPhase'")
+    expect(src).toMatch(/kind: 'follicular'/)
+    expect(src).toMatch(/kind: 'luteal'/)
+  })
+  it('uses the new look: panel and tinted cards, shared section headers, no glow', () => {
+    expect(src).toContain('tone="panel"')
+    expect(src).toMatch(/tone="(peach|pink|mint|lavender|sky|sage)"/)
+    expect(src).toContain("from '@/components/ui/SectionHeader'")
+    expect(src).not.toContain('shadow-glow')
+  })
   it('shows the add plus on hover and focus', () => {
     expect(src).toMatch(/group-hover/)
     expect(src).toMatch(/group-focus-within/)

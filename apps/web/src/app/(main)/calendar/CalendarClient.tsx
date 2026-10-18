@@ -28,12 +28,14 @@ import { useLanguage } from '@/lib/use-language'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
 import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
-import type { FlowIntensity } from '@vesta/shared/types'
-import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
+import type { CyclePhase, FlowIntensity } from '@vesta/shared/types'
+import { isPregnancy } from '@vesta/shared/utils/goal'
 import { selectFertileWindow } from '@vesta/shared/utils/fertile-window'
 import '@vesta/shared/utils/i18n'
 import { DAY_STYLES, dayStyleKind, type DayStyleKind } from '@/lib/calendar-day-style'
 import { dayAccessibleName, gridKeyTarget } from '@/lib/calendar-a11y'
+import { cyclePhaseOn, periodStarts } from '@/lib/calendar-phase'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 import { toDeviceDay } from '@/lib/local-date'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -67,6 +69,8 @@ interface DayMeta {
   isFertile: boolean
   isOvulation: boolean
   isFuturePredicted: boolean
+  /** Cycle phase from the shared ranges; drives the follicular/luteal tint. */
+  phase: CyclePhase | null
 }
 
 interface SymptomLog {
@@ -110,15 +114,18 @@ function Legend({ pregnancy }: { pregnancy: boolean }) {
     { kind: 'predictedPeriod', label: t('calendar.predictedPeriod'), predictive: true },
     { kind: 'fertile', label: t('calendar.fertile'), predictive: true },
     { kind: 'ovulation', label: t('calendar.ovulationDay'), predictive: true },
+    // Phase tints come from cycle predictions, so pregnancy hides them with the rest.
+    { kind: 'follicular', label: t('calendar.follicularPhase'), predictive: true },
+    { kind: 'luteal', label: t('calendar.lutealPhase'), predictive: true },
     { kind: 'today', label: t('calendar.today'), predictive: false },
   ]
 
   const items = pregnancy ? allItems.filter((i) => !i.predictive) : allItems
 
   return (
-    <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center">
+    <ul className="flex flex-wrap gap-x-4 gap-y-2 justify-center">
       {items.map(({ kind, label }) => (
-        <div key={kind} className="flex items-center gap-1.5">
+        <li key={kind} className="flex items-center gap-1.5">
           <div
             className="w-4 h-4 rounded-md"
             aria-hidden="true"
@@ -128,16 +135,16 @@ function Legend({ pregnancy }: { pregnancy: boolean }) {
                 : { background: DAY_STYLES[kind].background, border: DAY_STYLES[kind].border }
             }
           />
-          <span className="text-[11px] font-medium text-[var(--color-text-secondary)]">{label}</span>
-        </div>
+          <span className="text-xs font-medium text-[var(--color-text-secondary)]">{label}</span>
+        </li>
       ))}
-    </div>
+    </ul>
   )
 }
 
 // ─── Day Cell ──────────────────────────────────────────────────────────────────
 
-const NO_STATE = { isPeriod: false, isFertile: false, isOvulation: false, isFuturePredicted: false }
+const NO_STATE = { isPeriod: false, isFertile: false, isOvulation: false, isFuturePredicted: false, phase: null }
 
 interface DayCellProps {
   meta: DayMeta
@@ -159,7 +166,8 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
   const language = useLanguage()
   const { date } = meta
   const isToday = isSameDay(date, new Date())
-  const kind = isCurrentMonth ? dayStyleKind(meta) : 'plain'
+  const kind = isCurrentMonth ? dayStyleKind(meta, meta.phase) : 'plain'
+  const shown = isCurrentMonth ? meta : NO_STATE
   const style = DAY_STYLES[kind]
   const showAdd = isGhostDay && isCurrentMonth
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -176,7 +184,7 @@ const DayCell = memo(function DayCell({ meta, isCurrentMonth, isSelected, onSele
         onClick={() => onSelect(date)}
         onFocus={() => onFocusDay(date)}
         aria-pressed={isSelected}
-        aria-label={dayAccessibleName({ date, flags: isCurrentMonth ? meta : NO_STATE, isToday, language }, t)}
+        aria-label={dayAccessibleName({ date, flags: shown, phase: shown.phase, isToday, language }, t)}
         aria-current={isToday ? 'date' : undefined}
         tabIndex={isFocusTarget ? 0 : -1}
         data-date={format(date, 'yyyy-MM-dd')}
@@ -268,7 +276,7 @@ function DayDetail({ date, meta, symptoms, onClose, onAddLog }: DayDetailProps) 
       transition={{ duration: 0.2, ease: 'easeOut' }}
       layout
     >
-      <Card padding="md">
+      <Card tone="panel" padding="md">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
             {format(date, 'EEEE, MMMM d', { locale: dateLocale })}
@@ -314,9 +322,21 @@ function DayDetail({ date, meta, symptoms, onClose, onAddLog }: DayDetailProps) 
             </div>
           )}
           {!meta.isPeriod && !meta.isFertile && !meta.isOvulation && (
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]">
-              {t('calendar.regularDay')}
-            </div>
+            (() => {
+              const kind = dayStyleKind(meta, meta.phase)
+              return kind === 'follicular' || kind === 'luteal' ? (
+                <div
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+                  style={{ background: DAY_STYLES[kind].background, color: DAY_STYLES[kind].color }}
+                >
+                  {t(`calendar.${kind}Phase`)}
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]">
+                  {t('calendar.regularDay')}
+                </div>
+              )
+            })()
           )}
         </div>
 
@@ -405,10 +425,8 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5, duration: 0.4 }}
     >
-      <Card padding="md">
-        <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
-          {t('calendar.recentPeriods')}
-        </h3>
+      <Card tone="pink" padding="md">
+        <SectionHeader as="h3" title={t('calendar.recentPeriods')} />
 
         {periodLogs.length === 0 ? (
           <p className="text-xs text-[var(--color-text-muted)] text-center py-3">
@@ -432,7 +450,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                     transition={{ duration: 0.2 }}
                     onClick={() => onEditLog(log)}
                     aria-label={t('calendar.editLogStarting', { date: fmt.format(start) })}
-                    className="w-full flex items-center justify-between gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0 cursor-pointer hover:bg-[var(--color-bg-secondary)] rounded-lg px-1 -mx-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
+                    className="w-full flex items-center justify-between gap-2 py-1.5 border-b border-[var(--color-border)] last:border-0 cursor-pointer hover:bg-[var(--color-bg-card)]/60 rounded-lg px-1 -mx-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
                   >
                     <div className="flex flex-col gap-0.5 min-w-0 text-left">
                       <span className="text-xs font-semibold text-[var(--color-text-primary)] tabular-nums">
@@ -464,7 +482,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
                   aria-label={t('calendar.prevPage')}
-                  className="flex items-center gap-1 px-3 min-h-11 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
+                  className="flex items-center gap-1 px-3 min-h-11 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-card)]/60 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
                 >
                   <ChevronLeft size={12} aria-hidden="true" />
                   {t('calendar.prev')}
@@ -476,7 +494,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page === totalPages - 1}
                   aria-label={t('calendar.nextPage')}
-                  className="flex items-center gap-1 px-3 min-h-11 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
+                  className="flex items-center gap-1 px-3 min-h-11 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-card)]/60 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/40"
                 >
                   {t('calendar.next')}
                   <ChevronRight size={12} aria-hidden="true" />
@@ -503,7 +521,7 @@ function lastPeriodStartIso(logs: PeriodLog[]): string | null {
   return best
 }
 
-export function CalendarClient({ profiles: _profiles, activeProfileId, month, days, windowDays, symptomLogs, periodLogs, goal, last30 = [] }: Props) {
+export function CalendarClient({ profiles, activeProfileId, month, days, windowDays, symptomLogs, periodLogs, goal, last30 = [] }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const language = useLanguage()
@@ -511,6 +529,9 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
   const prefersReducedMotion = useReducedMotion()
 
   const pregnancy = isPregnancy(goal)
+  const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
+  const cycleLength = activeProfile?.cycleLength ?? 28
+  const periodLength = activeProfile?.periodLength ?? 5
 
   // Stable across renders so dayMetaMap isn't rebuilt (and all DayCells re-rendered)
   // on every unrelated state change, e.g. opening/closing the edit modal.
@@ -566,24 +587,30 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
     return eachDayOfInterval({ start: gridStart, end: gridEnd })
   }, [currentMonth])
 
+  // Cycle starts: logged period starts plus the first day of each period run (logged or predicted).
+  // Pregnancy has no cycle predictions, so no phase tints either.
+  const cycleStarts = useMemo(
+    () => (pregnancy ? [] : periodStarts(periodLogs.map((l) => toDeviceDay(l.startDate)), windowDays ?? days ?? [])),
+    [pregnancy, periodLogs, windowDays, days],
+  )
+
   // Build DayMeta for each grid day from the server-provided calendar data
   const dayMetaMap = useMemo(() => {
     const map = new Map<string, DayMeta>()
     for (const date of gridDays) {
       const dateStr = format(date, 'yyyy-MM-dd')
       const apiDay = apiCalendarMap?.get(dateStr)
-      const isFuture = date > today
-
       map.set(dateStr, {
         date,
         isPeriod: apiDay?.period ?? false,
         isFertile: apiDay?.fertile ?? false,
         isOvulation: apiDay?.ovulation ?? false,
         isFuturePredicted: apiDay?.predicted ?? false,
+        phase: cyclePhaseOn(dateStr, cycleStarts, cycleLength, periodLength),
       })
     }
     return map
-  }, [gridDays, apiCalendarMap, today])
+  }, [gridDays, apiCalendarMap, cycleStarts, cycleLength, periodLength])
 
   // Build a per-date symptom map from server-provided logs
   const symptomsByDate = useMemo(() => {
@@ -688,7 +715,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
           className="xl:w-[480px] xl:shrink-0"
         >
           {/* Narrower side padding on phones keeps each day cell at least 44px wide at 375px. */}
-          <Card padding="md" className="px-2 sm:px-5">
+          <Card tone="panel" padding="md" className="px-2 sm:px-5">
             <div className="flex items-center justify-between mb-4">
               <button
                 onClick={prevMonth}
@@ -728,20 +755,11 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                 initial={prefersReducedMotion ? {} : { opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25 }}
-                className="mb-4 flex items-center gap-2 rounded-xl px-3 py-2.5 border"
-                style={{
-                  ['--goal-accent' as string]: goalAccentVar(goal),
-                  backgroundColor: 'color-mix(in srgb, var(--goal-accent) 8%, var(--color-bg-primary))',
-                  borderColor: 'color-mix(in srgb, var(--goal-accent) 30%, transparent)',
-                }}
+                className="mb-4 flex items-center gap-2 rounded-2xl px-3 py-2.5 bg-tint-sky text-accent-sky"
                 aria-live="polite"
               >
-                <Baby
-                  size={15}
-                  aria-hidden="true"
-                  style={{ color: 'var(--goal-accent)', flexShrink: 0 }}
-                />
-                <p className="text-xs font-medium" style={{ color: 'var(--goal-accent)' }}>
+                <Baby size={15} aria-hidden="true" className="shrink-0" />
+                <p className="text-xs font-medium">
                   {t('calendar.pregnancyComingSoon')}
                 </p>
               </motion.div>
@@ -800,7 +818,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
             </div>
 
             {/* Legend — inside the calendar card on desktop */}
-            <div className="mt-4 pt-3 border-t border-[var(--color-border)]">
+            <div className="mt-4 pt-3 border-t border-[var(--color-border)]" aria-label={t('calendar.legend')} role="group">
               <Legend pregnancy={pregnancy} />
             </div>
           </Card>
@@ -830,15 +848,13 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.4 }}
             >
-              <Card padding="md">
-                <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
-                  {t('calendar.thisCycle')}
-                </h3>
+              <Card tone="lavender" padding="md">
+                <SectionHeader as="h3" title={t('calendar.thisCycle')} />
                 <div className="flex flex-col gap-2">
                   {firstPredictedPeriod && (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-menstrual)' }} />
+                        <div aria-hidden="true" className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-menstrual)' }} />
                         <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.nextPeriod')}</span>
                       </div>
                       {nextPeriodDaysLate > 0 ? (
@@ -855,7 +871,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                   {ovulationDay && (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-ovulation)' }} />
+                        <div aria-hidden="true" className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-ovulation)' }} />
                         <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.ovulationDayLabel')}</span>
                       </div>
                       <span className="text-xs font-bold text-[var(--color-text-primary)]">
@@ -866,7 +882,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
                   {fertileWindow && (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-fertile)' }} />
+                        <div aria-hidden="true" className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--color-fertile)' }} />
                         <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.fertileWindow')}</span>
                       </div>
                       <span className="text-xs font-bold text-[var(--color-text-primary)]">
@@ -888,7 +904,7 @@ export function CalendarClient({ profiles: _profiles, activeProfileId, month, da
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.3 }}
             >
-              <Card padding="md">
+              <Card tone="panel" padding="md">
                 <p className="text-sm text-[var(--color-text-muted)] text-center py-4">
                   {t('calendar.selectDay')}
                 </p>

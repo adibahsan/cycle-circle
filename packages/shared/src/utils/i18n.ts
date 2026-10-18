@@ -190,6 +190,7 @@ const resources = {
         // #78
         follicularPhase: 'Follicular phase',
         lutealPhase: 'Luteal phase',
+        legend: 'Colour key',
       },
       insights: {
         title: 'Cycle Insights',
@@ -951,6 +952,7 @@ const resources = {
         // #78
         follicularPhase: 'ফলিকুলার পর্যায়',
         lutealPhase: 'লুটিয়াল পর্যায়',
+        legend: 'রঙের অর্থ',
       },
       insights: {
         title: 'চক্র ইনসাইটস',
