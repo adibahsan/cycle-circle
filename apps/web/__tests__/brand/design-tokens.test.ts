@@ -60,6 +60,19 @@ const DARK_SPEC: Record<string, string> = {
   '--color-goal-pregnancy': '#C9A3EC', '--color-goal-perimenopause': '#E596B8',
 }
 
+/* Spec #66 phase re-map (web portal only; admin keeps the #18 palette):
+   rose-red period, pink follicular, mint/teal ovulation, light-mint fertile, lavender luteal. */
+const WEB_LIGHT_PHASES: Record<string, string> = {
+  '--color-follicular': '#E65F87', '--color-on-follicular': '#1A232C',
+  '--color-ovulation': '#0D7F69', '--color-on-ovulation': '#FFFFFF',
+  '--color-fertile': '#BDEBDC', '--color-on-fertile': '#1A232C',
+}
+const WEB_DARK_PHASES: Record<string, string> = {
+  '--color-follicular': '#FFB3C4', '--color-on-follicular': '#1A232C',
+  '--color-ovulation': '#6FD9BC', '--color-on-ovulation': '#1A232C',
+  '--color-fertile': '#2F7A66', '--color-on-fertile': '#FFFFFF',
+}
+
 for (const app of ['web', 'admin'] as const) {
   describe(`${app} globals.css design tokens`, () => {
     const css = read(`apps/${app}/src/app/globals.css`)
@@ -67,8 +80,8 @@ for (const app of ['web', 'admin'] as const) {
     const dark = { ...light, ...block(css, '.dark') }
 
     const themes = [
-      ['light', light, LIGHT_SPEC, '--color-on-accent', '#FFFFFF'],
-      ['dark', dark, DARK_SPEC, '--color-on-accent', '#1A232C'],
+      ['light', light, app === 'web' ? { ...LIGHT_SPEC, ...WEB_LIGHT_PHASES } : LIGHT_SPEC, '--color-on-accent', '#FFFFFF'],
+      ['dark', dark, app === 'web' ? { ...DARK_SPEC, ...WEB_DARK_PHASES } : DARK_SPEC, '--color-on-accent', '#1A232C'],
     ] as const
 
     for (const [name, tokens, spec, onAccent, onAccentVal] of themes) {
@@ -107,10 +120,71 @@ for (const app of ['web', 'admin'] as const) {
       expect(css).toContain('.surface-wash')
       expect(css).toContain('.surface-peach')
       expect(css).toMatch(/\.gradient-warm\s*{[^}]*--color-coral/)
-      if (app === 'web') expect(css).toMatch(/\.dark \.app-shell/)
     })
   })
 }
+
+const TINTS = ['peach', 'pink', 'mint', 'lavender', 'sky', 'sage'] as const
+
+describe('web pastel tokens (#72)', () => {
+  const css = read('apps/web/src/app/globals.css')
+  const lightOnly = block(css, '@theme')
+  const darkOnly = block(css, '.dark')
+  const themes = [
+    ['light', lightOnly],
+    ['dark', { ...lightOnly, ...darkOnly }],
+  ] as const
+
+  it('every tint and accent has a light value and its own dark value', () => {
+    for (const h of TINTS)
+      for (const k of [`--color-tint-${h}`, `--color-accent-${h}`]) {
+        expect(lightOnly[k], `light ${k}`).toMatch(/^#[0-9A-F]{6}$/i)
+        expect(darkOnly[k], `dark ${k}`).toMatch(/^#[0-9A-F]{6}$/i)
+        expect(hex(darkOnly[k]), `dark ${k} differs`).not.toBe(hex(lightOnly[k]))
+      }
+  })
+
+  for (const [name, tokens] of themes) {
+    it(`${name}: accent-on-tint and body text on every tint pass 4.5:1`, () => {
+      for (const h of TINTS)
+        for (const fg of [`--color-accent-${h}`, '--color-text-primary', '--color-text-secondary', '--color-text-muted'])
+          expect(contrast(tokens[fg], tokens[`--color-tint-${h}`]), `${name} ${fg} on tint-${h}`).toBeGreaterThanOrEqual(4.5)
+    })
+
+    it(`${name}: phase colours used as text pass 3:1 (large text) on the page and card`, () => {
+      // fertile is a fill only (paired with --color-on-fertile), never text
+      for (const p of ['menstrual', 'follicular', 'ovulation', 'luteal'])
+        for (const s of ['--color-bg-primary', '--color-bg-card'])
+          expect(contrast(tokens[`--color-${p}`], tokens[s]), `${name} ${p} on ${s}`).toBeGreaterThanOrEqual(3)
+    })
+  }
+})
+
+describe('web panel radius, shadow and display step (#72)', () => {
+  const css = read('apps/web/src/app/globals.css')
+  const theme = block(css, '@theme')
+
+  it('defines a 28px panel radius, a display text step and a neutral panel shadow with a dark value', () => {
+    expect(theme['--radius-panel']).toBe('1.75rem')
+    expect(theme['--text-display']).toBeDefined()
+    expect(theme['--shadow-panel']).toBeDefined()
+    expect(block(css, '.dark')['--shadow-panel']).toBeDefined()
+    // Tailwind inlines @theme shadows into the utility, so the dark value must be re-applied explicitly
+    expect(css).toMatch(/\.dark \.shadow-panel\s*{\s*--tw-shadow:\s*var\(--shadow-panel\)/)
+  })
+
+  it('never mixes the goal accent into page surfaces or shadows', () => {
+    // the goal accent stays on primary buttons, the active nav item, the profile ring and focus rings
+    const allowed = new Set(['@theme', ':focus-visible', '.gradient-primary'])
+    const offenders: string[] = []
+    for (const m of css.matchAll(/([^{};]+)\{([^{}]*)\}/g)) {
+      const selector = m[1].trim().split('\n').pop()!.trim()
+      if (m[2].includes('--goal-accent') && !allowed.has(selector)) offenders.push(selector)
+    }
+    expect(offenders).toEqual([])
+    expect(theme['--shadow-panel']).not.toMatch(/goal/)
+  })
+})
 
 describe('web typography', () => {
   const css = read('apps/web/src/app/globals.css')
@@ -118,6 +192,16 @@ describe('web typography', () => {
     expect(css).toContain('font-family: var(--font-display), var(--font-bengali), sans-serif')
     expect(css).toMatch(/h1, h2, h3[^{]*{[^}]*letter-spacing: -0\.02em/)
     expect(css).not.toMatch(/Fraunces/i)
+  })
+
+  it('sets Bengali headlines and the display step to 0 tracking', () => {
+    expect(css).toMatch(/:lang\(bn\)[^{]*h1[^{]*\.text-display[^{]*{\s*letter-spacing:\s*0;?\s*}/)
+  })
+
+  it('loads only the Noto Sans Bengali weights the portal uses (no 800/900)', () => {
+    const layout = read('apps/web/src/app/layout.tsx')
+    const weights = /Noto_Sans_Bengali\(\{[^}]*weight:\s*\[([^\]]*)\]/.exec(layout)![1]
+    expect(weights).not.toMatch(/'(800|900)'/)
   })
 })
 

@@ -33,15 +33,17 @@
   --color-goal-pregnancy: #8E5BC4;
   --color-goal-perimenopause: #B4527A;
 
-  /* Cycle phases, each with a matching on-* text token */
+  /* Cycle phases, each with a matching on-* text token (spec #66): rose-red period,
+     pink follicular, mint/teal ovulation, light-mint fertile (fill only), lavender luteal.
+     Phases other than fertile also pass 3:1 as large text on page + card. */
   --color-menstrual: #D91F45;
-  --color-follicular: #FF8FA8;
-  --color-ovulation: #C2993F;
-  --color-fertile: #F2C46D;
+  --color-follicular: #E65F87;
+  --color-ovulation: #0D7F69;
+  --color-fertile: #BDEBDC;
   --color-luteal: #8E5BC4;
   --color-on-menstrual: #FFFFFF;
   --color-on-follicular: #1A232C;
-  --color-on-ovulation: #1A232C;
+  --color-on-ovulation: #FFFFFF;
   --color-on-fertile: #1A232C;
   --color-on-luteal: #FFFFFF;
 
@@ -58,6 +60,21 @@
   --color-ring-offset: #FFFFFF;        /* equals --color-bg-card; applied as --tw-ring-offset-color */
   --color-scrollbar-thumb: #F6DDE3;
 
+  /* Pastel tints (card/badge surfaces) + accents (icon/headline ink on that tint), spec #66.
+     Body text tokens also pass 4.5:1 on every tint. Dark values live in .dark. */
+  --color-tint-peach: #FDF0E6;
+  --color-accent-peach: #9A4A1C;
+  --color-tint-pink: #FFE8EE;
+  --color-accent-pink: #B0284F;
+  --color-tint-mint: #E3F6EF;
+  --color-accent-mint: #1F7A60;
+  --color-tint-lavender: #EFE8FA;
+  --color-accent-lavender: #6B47A3;
+  --color-tint-sky: #E5F1FB;
+  --color-accent-sky: #2A64A0;
+  --color-tint-sage: #EAF1E4;
+  --color-accent-sage: #4C6B35;
+
 
   /* Fonts — Manrope + Noto Sans Bengali only */
   --font-display: "Manrope", sans-serif;
@@ -71,6 +88,16 @@
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
   --radius-full: 9999px;
+  --radius-panel: 1.75rem;            /* 28px: dashboard panels and tinted cards */
+
+  /* Neutral panel shadow (never goal-tinted); dark value in .dark */
+  --shadow-panel: 0 12px 32px -16px rgb(26 35 44 / 0.14), 0 2px 6px -2px rgb(26 35 44 / 0.06);
+
+  /* Display step: Manrope 800 hero headlines. Bengali resets tracking to 0 (see :lang(bn) below). */
+  --text-display: clamp(2rem, 1.5rem + 2.4vw, 3rem);
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.03em;
+  --text-display--font-weight: 800;
 
   /* Fluid type */
   --text-fluid-sm: clamp(0.95rem, 0.9rem + 0.3vw, 1.05rem);
@@ -92,6 +119,18 @@
   --color-border-strong: #7A8899;
   --color-ring-offset: #222C38;
   --color-scrollbar-thumb: #4A5868;
+  --color-tint-peach: #3A2A22;
+  --color-accent-peach: #FFB98F;
+  --color-tint-pink: #3D2330;
+  --color-accent-pink: #FF9EB5;
+  --color-tint-mint: #1D3530;
+  --color-accent-mint: #7FE0C0;
+  --color-tint-lavender: #2E2640;
+  --color-accent-lavender: #CDB4F2;
+  --color-tint-sky: #1C2D40;
+  --color-accent-sky: #8EC5F5;
+  --color-tint-sage: #26321F;
+  --color-accent-sage: #B5D49A;
   --color-action: #FF7A99;
   --color-on-action: #1A232C;
   --color-on-accent: #1A232C;
@@ -110,21 +149,17 @@
   --color-menstrual: #FF6B7F;
   --color-on-menstrual: #1A232C;
   --color-follicular: #FFB3C4;
-  --color-ovulation: #D4B26A;
-  --color-fertile: #F2C46D;
+  --color-ovulation: #6FD9BC;
+  --color-on-ovulation: #1A232C;
+  --color-fertile: #2F7A66;
+  --color-on-fertile: #FFFFFF;
   --color-luteal: #C9A3EC;
   --color-on-luteal: #1A232C;
+  --shadow-panel: 0 0 0 1px rgb(255 255 255 / 0.04), 0 12px 32px -16px rgb(0 0 0 / 0.7);
 }
 
-.dark .app-shell {
-  --color-bg-primary:     color-mix(in srgb, var(--goal-accent)  3%, #10151B);
-  --color-bg-secondary:   color-mix(in srgb, var(--goal-accent)  5%, #171F28);
-  --color-bg-card:        color-mix(in srgb, var(--goal-accent)  5%, #222C38);
-  --color-border:         color-mix(in srgb, var(--goal-accent) 12%, #3A4756);
-  --color-ring-offset:    var(--color-bg-card);
-  --color-text-primary:   #F7EEF0;
-  --color-text-secondary: #D6CBD0;
-}
+/* Bengali: no negative tracking on headlines or the display step (unlayered, so it beats tracking-* utilities). */
+:lang(bn) :is(h1, h2, h3, .font-heading, .text-display, .text-fluid-xl, .text-fluid-2xl) { letter-spacing: 0; }
 
 /* Phone shell: height of the bottom nav's content row (safe-area inset is added
    separately by the nav and by anything that offsets from it). 0 where the nav is hidden. */
@@ -176,21 +211,19 @@
     box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.06);
   }
   .dark .glass {
-    background: color-mix(in srgb, var(--goal-accent) 3%, rgba(20, 26, 33, 0.88));
+    background: rgba(20, 26, 33, 0.88);
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
   .shadow-soft {
-    box-shadow: 0 10px 30px -12px color-mix(in srgb, var(--goal-accent) 22%, transparent), 0 2px 6px -2px color-mix(in srgb, var(--color-brand-navy) 6%, transparent);
+    box-shadow: var(--shadow-panel);
   }
-  .dark .shadow-soft {
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  /* Tailwind inlines @theme shadow values into shadow-panel, so dark re-points it at the .dark token. */
+  .dark .shadow-panel {
+    --tw-shadow: var(--shadow-panel);
   }
-  /* Raised accent surface: offset, soft-blurred and tinted from the accent (no zero-offset halo). */
+  /* Deprecated (spec #66): the glow is replaced by the neutral panel shadow; kept as an alias until callers move to shadow-panel. */
   .shadow-glow {
-    box-shadow: 0 14px 28px -14px color-mix(in srgb, var(--goal-accent) 45%, transparent), 0 3px 8px -3px color-mix(in srgb, var(--color-brand-navy) 14%, transparent);
-  }
-  .dark .shadow-glow {
-    box-shadow: 0 14px 28px -14px rgb(0 0 0 / 0.7), 0 3px 8px -3px rgb(0 0 0 / 0.5);
+    box-shadow: var(--shadow-panel);
   }
   .gradient-primary {
     background: linear-gradient(135deg, var(--goal-accent) 0%, color-mix(in srgb, var(--goal-accent) 55%, white) 100%);
@@ -201,7 +234,7 @@
   /* Soft blush + coral wash for hero cards and empty states */
   .surface-wash {
     background:
-      radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--goal-accent) 14%, transparent) 0%, transparent 60%),
+      radial-gradient(120% 80% at 0% 0%, var(--color-tint-pink) 0%, transparent 60%),
       radial-gradient(100% 90% at 100% 100%, color-mix(in srgb, var(--color-coral) 16%, transparent) 0%, transparent 55%),
       var(--color-bg-card);
   }
@@ -271,7 +304,7 @@
 }
 .glass-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 32px color-mix(in srgb, var(--goal-accent) 10%, transparent), 0 0 0 1px color-mix(in srgb, var(--goal-accent) 12%, transparent);
+  box-shadow: var(--shadow-panel);
 }
 
 /* Smooth page transition fade */

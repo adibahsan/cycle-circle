@@ -3,7 +3,7 @@
  *   logged period    solid fill
  *   predicted period dashed outline
  *   fertile          soft tint, no border
- *   ovulation        solid gold
+ *   ovulation        solid mint/teal
  *   today            ring (additive, drawn by the cell)
  *   unlogged past    plain number, "+" on hover/focus (drawn by the cell)
  * Tints are mixed over the card surface (not transparent) so dark mode stays clean.

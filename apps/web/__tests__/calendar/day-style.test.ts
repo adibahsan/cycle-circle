@@ -87,16 +87,30 @@ const mix = (fg: number[], pct: number, bg: number[]) => {
 const lum = (rgb: number[]) => { const [r, g, b] = rgb.map(lin); return 0.2126 * r + 0.7152 * g + 0.0722 * b }
 const contrast = (a: number[], b: number[]) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05) }
 
-describe('dark fertile tint', () => {
+function cssBlock(css: string, selector: string): Record<string, string> {
+  const start = css.indexOf(`${selector} {`)
+  const body = css.slice(css.indexOf('{', start) + 1, css.indexOf('\n}', start))
+  const out: Record<string, string> = {}
+  for (const m of body.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) out[m[1]] = m[2].trim()
+  return out
+}
+
+describe('fertile tint (mint, spec #66)', () => {
+  const css = fs.readFileSync(path.resolve(__dirname, '../../src/app/globals.css'), 'utf8')
+  const light = cssBlock(css, '@theme')
+  const themes = [['light', light], ['dark', { ...light, ...cssBlock(css, '.dark') }]] as const
   const pct = Number(/fertile\) (\d+)%/.exec(DAY_STYLES.fertile.background)![1])
-  const card = hex('#222C38')
-  const tint = mix(hex('#F2C46D'), pct, card)
-  it('keeps day numbers at 4.5:1 or better', () => {
-    expect(contrast(hex('#F7EEF0'), tint)).toBeGreaterThanOrEqual(4.5)
-  })
-  it('is warm (red above blue) and distinct from the plain card and from solid ovulation gold', () => {
-    expect(tint[0] - tint[2]).toBeGreaterThan(0.08)
-    expect(contrast(tint, card)).toBeGreaterThan(1.3)
-    expect(contrast(tint, hex('#D4B26A'))).toBeGreaterThan(1.5)
-  })
+
+  for (const [name, t] of themes) {
+    const card = hex(t['--color-bg-card'])
+    const tint = mix(hex(t['--color-fertile']), pct, card)
+    it(`${name}: keeps day numbers at 4.5:1 or better`, () => {
+      expect(contrast(hex(t['--color-text-primary']), tint)).toBeGreaterThanOrEqual(4.5)
+    })
+    it(`${name}: is mint (green above red) and distinct from the plain card and from solid ovulation`, () => {
+      expect(tint[1] - tint[0]).toBeGreaterThan(0.03)
+      expect(contrast(tint, card)).toBeGreaterThan(name === 'light' ? 1.1 : 1.3)
+      expect(contrast(tint, hex(t['--color-ovulation']))).toBeGreaterThan(1.5)
+    })
+  }
 })
