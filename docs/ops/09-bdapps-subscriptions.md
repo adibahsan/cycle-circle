@@ -102,6 +102,8 @@ A masked id is only valid while that subscription is active and changes with eve
 | `E1854` | OTP not found / expired | User requests a new code |
 | `E1951` | Invalid address **or** not subscribed | Masked id: treat as unregistered. Raw phone: ambiguous, never downgrade |
 
+App OTP codes are written to the logs on purpose, so support can read a user's code: the `customer` channel's `auth.otp.request` line has `appOtp: true` and `code`, and the `merchant` channel's `sms/send` line has the full SMS text. A login that falls back logs `auth.otp.request` at warn with `code: ALREADY_SUBSCRIBED` and `reason` (`no-account`, `no-masked-id` or `unregistered`).
+
 CaaS (`/caas/*`) returns HTTP 404 for our app: parked, Pro is billed by the subscription itself.
 
 ## 7. Webhook listener URLs (registered in the BDApps portal)

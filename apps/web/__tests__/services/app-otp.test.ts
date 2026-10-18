@@ -5,13 +5,17 @@ import { testPrisma } from '../helpers/test-db'
 const bdapps = vi.hoisted(() => ({
   getSubscriptionStatus: vi.fn(),
   smsSend: vi.fn(),
+  requestOtp: vi.fn(),
 }))
+// Real BDApps path, not the DEV_MODE shortcut from .env.local.
+vi.mock('@vesta/shared/server/dev', () => ({ isDevModeEnabled: () => false }))
 vi.mock('@vesta/shared/server/adapters/bdapps', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@vesta/shared/server/adapters/bdapps')>()),
   ...bdapps,
 }))
 
-const { startAppOtpLogin, verifyAppOtp } = await import('@vesta/shared/server/services/app-otp-service')
+const { ApiError } = await import('@vesta/shared/server/api-error')
+const { requestLoginOtp, startAppOtpLogin, verifyAppOtp } = await import('@vesta/shared/server/services/app-otp-service')
 
 const P = 'test-appotp'
 const MASKED_ID = 'tel:dGVzdC1hcHAtb3RwOnJvYmk'
@@ -59,6 +63,7 @@ afterAll(cleanup)
 
 beforeEach(async () => {
   bdapps.getSubscriptionStatus.mockReset().mockResolvedValue('REGISTERED')
+  bdapps.requestOtp.mockReset()
   bdapps.smsSend.mockReset().mockResolvedValue({ messageId: 'MSG1', status: 'S1000' })
   await testPrisma.otpChallenge.deleteMany({ where: { phone: { in: Object.values(users).map((u) => u.phone) } } })
 })
@@ -76,26 +81,32 @@ describe('App OTP login for an existing subscriber', () => {
     expect(message).not.toMatch(/https?:/)
     expect(sentCode()).toHaveLength(6)
   })
+
+  it('keeps no challenge when the SMS fails, so the user can ask again at once', async () => {
+    bdapps.smsSend.mockRejectedValueOnce(new Error('BDApps down'))
+    await expect(startAppOtpLogin(users.subscriber.phone, 'en')).rejects.toThrow('BDApps down')
+    expect(await testPrisma.otpChallenge.count({ where: { phone: users.subscriber.phone } })).toBe(0)
+  })
 })
 
 describe('App OTP fallback when we cannot SMS the subscriber', () => {
   it('falls back for a number with no account (subscribed outside the site)', async () => {
-    expect(await startAppOtpLogin(NO_USER_PHONE, 'en')).toEqual({ kind: 'fallback', hasEmail: false })
+    expect(await startAppOtpLogin(NO_USER_PHONE, 'en')).toEqual({ kind: 'fallback', hasEmail: false, reason: 'no-account' })
     expect(bdapps.smsSend).not.toHaveBeenCalled()
   })
 
   it('falls back for a legacy row that holds only the raw phone', async () => {
-    expect(await startAppOtpLogin(users.legacy.phone, 'en')).toEqual({ kind: 'fallback', hasEmail: false })
+    expect(await startAppOtpLogin(users.legacy.phone, 'en')).toEqual({ kind: 'fallback', hasEmail: false, reason: 'no-masked-id' })
     expect(bdapps.smsSend).not.toHaveBeenCalled()
   })
 
   it('offers email login when the account has an email', async () => {
-    expect(await startAppOtpLogin(users.emailOnly.phone, 'en')).toEqual({ kind: 'fallback', hasEmail: true })
+    expect(await startAppOtpLogin(users.emailOnly.phone, 'en')).toMatchObject({ kind: 'fallback', hasEmail: true })
   })
 
   it('falls back without changing the plan when the stored id is no longer registered', async () => {
     bdapps.getSubscriptionStatus.mockResolvedValue('UNREGISTERED')
-    expect(await startAppOtpLogin(users.subscriber.phone, 'en')).toEqual({ kind: 'fallback', hasEmail: false })
+    expect(await startAppOtpLogin(users.subscriber.phone, 'en')).toEqual({ kind: 'fallback', hasEmail: false, reason: 'unregistered' })
     expect(bdapps.smsSend).not.toHaveBeenCalled()
     const user = await testPrisma.user.findUnique({ where: { id: users.subscriber.id } })
     expect(user?.subscriptionStatus).toBe('PRO')
@@ -134,7 +145,7 @@ describe('verifying an App OTP', () => {
     for (let i = 0; i < 5; i++) {
       await expect(verifyAppOtp(referenceNo, wrong)).rejects.toMatchObject({ code: 'INVALID_OTP' })
     }
-    await expect(verifyAppOtp(referenceNo, code)).rejects.toMatchObject({ statusCode: 429, code: 'RATE_LIMITED' })
+    await expect(verifyAppOtp(referenceNo, code)).rejects.toMatchObject({ statusCode: 429, code: 'OTP_LOCKED' })
   })
 
   it('rejects an expired code', async () => {
@@ -149,5 +160,23 @@ describe('App OTP abuse limits', () => {
     for (let i = 0; i < 5; i++) await startAppOtpLogin(users.subscriber.phone, 'en')
     await expect(startAppOtpLogin(users.subscriber.phone, 'en')).rejects.toMatchObject({ statusCode: 429, code: 'RATE_LIMITED' })
     expect(bdapps.smsSend).toHaveBeenCalledTimes(5)
+  })
+})
+
+describe('requesting a login OTP', () => {
+  it('uses the BDApps OTP for a number BDApps accepts', async () => {
+    bdapps.requestOtp.mockResolvedValue({ statusCode: 'S1000', referenceNo: 'BD-REF-1' })
+    expect(await requestLoginOtp(users.subscriber.phone, 'en')).toEqual({ kind: 'bdapps', referenceNo: 'BD-REF-1' })
+    expect(bdapps.smsSend).not.toHaveBeenCalled()
+    expect(await testPrisma.otpChallenge.count({ where: { referenceNo: 'BD-REF-1', codeHash: null } })).toBe(1)
+  })
+
+  it('switches to an App OTP when BDApps says the number is already subscribed (E1351)', async () => {
+    bdapps.requestOtp.mockRejectedValue(new ApiError(409, 'This number is already subscribed', 'ALREADY_SUBSCRIBED'))
+    const res = await requestLoginOtp(users.subscriber.phone, 'bn')
+    expect(res.kind).toBe('sent')
+    const [message, to] = bdapps.smsSend.mock.calls[0]
+    expect(to).toEqual([MASKED_ID])
+    expect(message).toMatch(/সাইকেল সার্কেল/)
   })
 })

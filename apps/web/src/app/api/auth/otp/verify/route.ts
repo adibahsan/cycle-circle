@@ -35,23 +35,24 @@ export async function POST(request: Request): Promise<Response> {
     if (!challenge) {
       throw new ApiError(404, 'OTP challenge not found', 'CHALLENGE_NOT_FOUND')
     }
-    if (challenge.verified) {
-      throw new ApiError(400, 'OTP challenge already verified', 'ALREADY_VERIFIED')
-    }
-    if (new Date() > challenge.expiresAt) {
-      throw new ApiError(400, 'OTP challenge has expired', 'CHALLENGE_EXPIRED')
-    }
-
     phone = challenge.phone
 
+    // App OTP for an existing subscriber: the service checks the code (and expiry, reuse,
+    // lockout), and the plan stays as it is (ADR 0002).
+    const appOtp = Boolean(challenge.codeHash)
     // DEV_MODE fake codes behave like a successful BDApps registration.
     let registered = true
     let subscriberId = challenge.phone
     let user
-    if (challenge.codeHash) {
-      // App OTP for an existing subscriber: we check the code, and the plan stays as it is.
+    if (appOtp) {
       user = await verifyAppOtp(body.referenceNo, body.otp)
     } else {
+      if (challenge.verified) {
+        throw new ApiError(400, 'OTP challenge already verified', 'ALREADY_VERIFIED')
+      }
+      if (new Date() > challenge.expiresAt) {
+        throw new ApiError(400, 'OTP challenge has expired', 'CHALLENGE_EXPIRED')
+      }
       if (isDevModeEnabled()) {
         if (!DEV_OTP_CODES.includes(body.otp)) {
           throw new ApiError(400, 'Invalid OTP code', 'INVALID_OTP')
@@ -79,7 +80,7 @@ export async function POST(request: Request): Promise<Response> {
       phone: challenge.phone,
       referenceNo: body.referenceNo,
       ok: true,
-      ...(challenge.codeHash ? { appOtp: true } : { registered, subscriberId }),
+      ...(appOtp ? { appOtp: true } : { registered, subscriberId }),
       subscriptionStatus: user.subscriptionStatus,
     })
     return Response.json({

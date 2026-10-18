@@ -26,7 +26,6 @@ const ERROR_CODE_MAP: Record<string, string> = {
   CHALLENGE_NOT_FOUND: 'trial.err.invalidCode',
   ALREADY_VERIFIED: 'trial.err.invalidCode',
   INVALID_PHONE: 'trial.err.invalidPhone',
-  // BDApps verify errors: wrong or expired code
 };
 
 function mapErrorCode(code: string | undefined): string {
