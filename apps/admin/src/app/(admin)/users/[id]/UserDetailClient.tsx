@@ -985,7 +985,7 @@ export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="glass rounded-2xl border border-[var(--color-border)] p-4 shadow-soft text-center">
           <p className="text-2xl font-bold tabular-nums text-[var(--color-text-primary)]">{user.profiles.length}</p>
           <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Profiles</p>
