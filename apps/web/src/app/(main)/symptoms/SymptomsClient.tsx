@@ -23,7 +23,9 @@ import { Card } from '@/components/ui/Card';
 import { useLanguage } from '@/lib/use-language';
 import { SYMPTOMS_DATA, toDbCategory } from '@/lib/symptoms-data';
 import { SymptomChip } from '@/components/symptoms/SymptomChip';
-import { SymptomCategoryTabs, CATEGORIES, CATEGORY_COLORS } from '@/components/symptoms/SymptomCategoryTabs';
+import { SymptomCategoryTabs, CATEGORIES, CATEGORY_TINTS } from '@/components/symptoms/SymptomCategoryTabs';
+import { TINT_CLASSES } from '@/components/symptoms/tints';
+import { cn } from '@/lib/cn';
 import { SaveErrorStatus } from '@/components/symptoms/SaveErrorStatus';
 import { ALL_GOOD_SYMPTOM_ID } from '@vesta/shared/utils/symptoms';
 import { toggleSymptom, markAllGoodToday, saveSymptoms } from '@/app/actions/tracking-actions';
@@ -62,7 +64,7 @@ const MiniCalendar = memo(function MiniCalendar({ selectedDate, onDateSelect }: 
   const today = new Date();
 
   return (
-    <Card padding="md">
+    <Card tone="panel" padding="md">
       {/* Month nav */}
       <div className="flex items-center justify-between mb-4">
         <button
@@ -330,7 +332,7 @@ export function SymptomsClient({
 
           {/* Summary card (desktop) */}
           {totalSelected > 0 && (
-            <Card padding="sm">
+            <Card tone="panel" padding="sm">
               <div className="text-center">
                 <p className="text-sm font-medium text-[var(--color-text-secondary)]">
                   {totalSelected} {totalSelected === 1 ? t('symptoms.symptomLabel') : t('symptoms.symptomsLabel')}
@@ -342,8 +344,7 @@ export function SymptomsClient({
                     return (
                       <span
                         key={key}
-                        className="min-w-[20px] h-5 px-1.5 rounded-full text-xs tabular-nums font-bold flex items-center justify-center leading-none"
-                        style={{ background: CATEGORY_COLORS[key].text, color: CATEGORY_COLORS[key].on }}
+                        className={cn('min-w-[20px] h-5 px-1.5 rounded-full text-xs tabular-nums font-bold flex items-center justify-center leading-none', TINT_CLASSES[CATEGORY_TINTS[key]].solid)}
                       >
                         {count}
                       </span>
@@ -364,22 +365,13 @@ export function SymptomsClient({
             onClick={handleToggleAllGood}
             disabled={saving}
             aria-pressed={isAllGood}
-            className={[
-              'w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold',
-              'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2',
-              'focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-60',
+            className={cn(
+              'w-full min-h-[44px] flex items-center justify-center gap-2 py-3 rounded-full border text-sm font-semibold',
+              'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-mint disabled:opacity-60',
               isAllGood
-                ? 'text-[var(--color-on-accent)]'
-                : 'border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:border-[var(--goal-accent)] hover:text-[var(--color-text-primary)]',
-            ].join(' ')}
-            style={
-              isAllGood
-                ? {
-                    background:
-                      'linear-gradient(135deg, var(--goal-accent, var(--color-primary)) 0%, color-mix(in srgb, var(--goal-accent, var(--color-primary)) 70%, var(--color-secondary)) 100%)',
-                  }
-                : undefined
-            }
+                ? 'bg-tint-mint text-accent-mint border-accent-mint'
+                : 'bg-[var(--color-bg-card)] border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
+            )}
           >
             <CheckCircle2 size={16} aria-hidden="true" />
             {isAllGood ? t('symptoms.allGoodActive') : t('symptoms.allGood')}
@@ -444,21 +436,18 @@ export function SymptomsClient({
                 onClick={handleSave}
                 disabled={saving}
                 aria-label={t('symptoms.saveChanges', { count: changeCount })}
-                className="hidden xl:flex w-full rounded-2xl px-5 py-3.5 items-center justify-center gap-3 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-70 transition-colors duration-200"
-                style={{
-                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                }}
+                className="hidden xl:flex w-full min-h-[44px] rounded-full px-5 py-3.5 items-center justify-center gap-3 bg-[var(--color-action)] text-[var(--color-on-action)] shadow-soft hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-action)] disabled:opacity-70 transition-opacity duration-200"
               >
                 {saving ? (
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="animate-spin">
-                    <circle cx="8" cy="8" r="6" stroke="var(--color-on-accent)" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" strokeLinecap="round" />
+                    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" strokeLinecap="round" />
                   </svg>
                 ) : (
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M3 8.5l3.5 3.5L13 4" stroke="var(--color-on-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M3 8.5l3.5 3.5L13 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
-                <span className="text-[var(--color-on-accent)] font-bold text-sm">
+                <span className="font-bold text-sm">
                   {saving
                     ? t('symptoms.saving')
                     : t('symptoms.saveChanges', { count: changeCount })}
@@ -489,21 +478,18 @@ export function SymptomsClient({
                 onClick={handleSave}
                 disabled={saving}
                 aria-label={t('symptoms.saveChanges', { count: changeCount })}
-                className="w-full rounded-2xl px-5 py-3.5 flex items-center justify-center gap-3 shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] disabled:opacity-70 transition-colors duration-200"
-                style={{
-                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
-                }}
+                className="w-full min-h-[44px] rounded-full px-5 py-3.5 flex items-center justify-center gap-3 bg-[var(--color-action)] text-[var(--color-on-action)] shadow-soft hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-action)] disabled:opacity-70 transition-opacity duration-200"
               >
                 {saving ? (
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="animate-spin">
-                    <circle cx="8" cy="8" r="6" stroke="var(--color-on-accent)" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" strokeLinecap="round" />
+                    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" strokeLinecap="round" />
                   </svg>
                 ) : (
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M3 8.5l3.5 3.5L13 4" stroke="var(--color-on-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M3 8.5l3.5 3.5L13 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
-                <span className="text-[var(--color-on-accent)] font-bold text-sm">
+                <span className="font-bold text-sm">
                   {saving
                     ? t('symptoms.saving')
                     : t('symptoms.saveChanges', { count: changeCount })}
@@ -519,7 +505,7 @@ export function SymptomsClient({
                 className="rounded-2xl px-5 py-3 flex items-center justify-center gap-2"
                 style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}
               >
-                <CheckCircle2 size={15} style={{ color: 'var(--goal-accent)' }} aria-hidden="true" />
+                <CheckCircle2 size={15} className="text-accent-mint" aria-hidden="true" />
                 <p className="text-[var(--color-text-muted)] text-sm">
                   {t('symptoms.allGoodActive')}
                 </p>

@@ -3,6 +3,9 @@
 import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SymptomCategory } from '@vesta/shared/types';
+import { Card, type CardTint } from '@/components/ui/Card';
+import { cn } from '@/lib/cn';
+import { SymptomTintContext, TINT_CLASSES } from './tints';
 import '@vesta/shared/utils/i18n';
 
 export const CATEGORIES: { key: SymptomCategory; labelKey: string }[] = [
@@ -12,11 +15,12 @@ export const CATEGORIES: { key: SymptomCategory; labelKey: string }[] = [
   { key: 'lifestyle', labelKey: 'symptoms.lifestyle' },
 ];
 
-export const CATEGORY_COLORS: Record<SymptomCategory, { text: string; on: string }> = {
-  physical: { text: 'var(--color-primary)', on: 'var(--color-on-accent)' },
-  mood: { text: 'var(--color-secondary)', on: 'var(--color-on-luteal)' },
-  discharge: { text: 'var(--color-coral)', on: 'var(--color-on-fertile)' },
-  lifestyle: { text: 'var(--color-accent)', on: 'var(--color-on-ovulation)' },
+/** Each category's pastel tint: its tab, card and chip badges. */
+export const CATEGORY_TINTS: Record<SymptomCategory, CardTint> = {
+  physical: 'pink',
+  mood: 'lavender',
+  discharge: 'sky',
+  lifestyle: 'sage',
 };
 
 interface SymptomCategoryTabsProps {
@@ -53,18 +57,20 @@ export function SymptomCategoryTabs({ active, onChange, counts, children }: Symp
     tabRefs.current[next]?.focus();
   }
 
+  const activeTint = CATEGORY_TINTS[active];
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <div
         role="tablist"
         aria-label={t('symptoms.categoriesLabel')}
         onKeyDown={onKeyDown}
-        className="flex gap-1 rounded-2xl p-1"
-        style={{ background: 'var(--color-bg-secondary)' }}
+        className="flex gap-1 rounded-full p-1 bg-[var(--color-bg-secondary)]"
       >
         {CATEGORIES.map(({ key, labelKey }, i) => {
           const isActive = i === activeIndex;
           const count = counts[key];
+          const c = TINT_CLASSES[CATEGORY_TINTS[key]];
           return (
             <button
               key={key}
@@ -78,18 +84,17 @@ export function SymptomCategoryTabs({ active, onChange, counts, children }: Symp
               aria-controls={panelId(i)}
               tabIndex={isActive ? 0 : -1}
               onClick={() => onChange(key)}
-              className="relative flex-1 min-w-0 min-h-[44px] flex items-center justify-center gap-1 px-1 py-2 rounded-xl text-xs font-semibold leading-tight text-center transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent,var(--color-primary))]"
-              style={{
-                color: isActive ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
-                background: isActive ? 'var(--color-bg-card)' : 'transparent',
-                boxShadow: isActive ? '0 2px 8px color-mix(in srgb, var(--color-brand-navy) 8%, transparent)' : 'none',
-              }}
+              className={cn(
+                'relative flex-1 min-w-0 min-h-[44px] flex items-center justify-center gap-1 px-1 py-2 rounded-full text-xs font-semibold leading-tight text-center',
+                'transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2',
+                c.ring,
+                isActive ? cn(c.surface, c.ink) : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
+              )}
             >
               {t(labelKey)}
               {count > 0 && (
                 <span
-                  className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold flex items-center justify-center leading-none tabular-nums"
-                  style={{ background: CATEGORY_COLORS[key].text, color: CATEGORY_COLORS[key].on }}
+                  className={cn('ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold flex items-center justify-center leading-none tabular-nums', c.solid)}
                 >
                   {count}
                 </span>
@@ -99,11 +104,13 @@ export function SymptomCategoryTabs({ active, onChange, counts, children }: Symp
         })}
       </div>
 
-      <div role="tabpanel" id={panelId(activeIndex)} aria-labelledby={tabId(activeIndex)}>
-        <div role="group" aria-label={t(CATEGORIES[activeIndex].labelKey)}>
-          {children}
+      <Card tone={activeTint} padding="sm" className="md:p-4">
+        <div role="tabpanel" id={panelId(activeIndex)} aria-labelledby={tabId(activeIndex)}>
+          <div role="group" aria-label={t(CATEGORIES[activeIndex].labelKey)}>
+            <SymptomTintContext.Provider value={activeTint}>{children}</SymptomTintContext.Provider>
+          </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

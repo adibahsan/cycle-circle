@@ -234,7 +234,7 @@ const resources = {
         fertileColumn: 'Fertile window',
       },
       symptoms: {
-        title: 'Log Symptoms', physical: 'Physical', mood: 'Mood',
+        title: 'Symptoms', physical: 'Physical', mood: 'Mood',
         discharge: 'Discharge', lifestyle: 'Lifestyle', selectDate: 'Select date',
         saved: 'Symptoms saved!',
         tapToLog: 'Tap symptoms to log them for {{date}}',
@@ -996,7 +996,7 @@ const resources = {
         fertileColumn: 'উর্বর সময়',
       },
       symptoms: {
-        title: 'লক্ষণ লগ করুন', physical: 'শারীরিক', mood: 'মেজাজ',
+        title: 'লক্ষণ', physical: 'শারীরিক', mood: 'মেজাজ',
         discharge: 'স্রাব', lifestyle: 'জীবনযাত্রা', selectDate: 'তারিখ নির্বাচন করুন',
         saved: 'লক্ষণ সংরক্ষিত!',
         tapToLog: '{{date}} এর জন্য লক্ষণ লগ করতে ট্যাপ করুন',
