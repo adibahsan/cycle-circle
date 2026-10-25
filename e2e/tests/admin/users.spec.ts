@@ -12,6 +12,19 @@ async function downloadText(download: import('@playwright/test').Download): Prom
   return Buffer.concat(chunks).toString('utf8')
 }
 
+/** Wait until FilterBar's debounced search (and optional status) have landed in the URL. */
+async function expectUsersFilterUrl(
+  page: import('@playwright/test').Page,
+  opts: { search: string; status?: string },
+) {
+  await expect(page).toHaveURL((url) => {
+    const params = url.searchParams
+    if (params.get('search') !== opts.search) return false
+    if (opts.status !== undefined && params.get('status') !== opts.status) return false
+    return true
+  })
+}
+
 test.describe('Admin users', () => {
   test('search narrows the list to matching users', async ({
     browser,
@@ -52,17 +65,19 @@ test.describe('Admin users', () => {
       await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()
       await page.getByRole('button', { name: 'Refresh data' }).click()
 
-      // Shared prefix: both throwaways visible before narrowing.
+      // FilterBar debounces search → URL; wait for each push before the next fill
+      // so a late emit cannot race the following interaction (see status-filter test).
       await page.getByRole('searchbox', { name: 'Search' }).fill(sharedPrefix)
+      await expectUsersFilterUrl(page, { search: sharedPrefix })
       await expect(page.getByText(hitMarker)).toBeVisible({ timeout: 15_000 })
       await expect(page.getByText(missMarker)).toBeVisible()
 
       // Full marker: only the match remains.
       await page.getByRole('searchbox', { name: 'Search' }).fill(hitMarker)
+      await expectUsersFilterUrl(page, { search: hitMarker })
       await expect(page.getByText(hitMarker)).toBeVisible({ timeout: 15_000 })
       await expect(page.getByText(missMarker)).toHaveCount(0)
       await expect(page.getByText(hitStored)).toBeVisible()
-      await expect(page).toHaveURL(/search=/)
     } finally {
       await admin.context.close()
     }
@@ -115,13 +130,17 @@ test.describe('Admin users', () => {
       await page.getByRole('button', { name: 'Refresh data' }).click()
 
       // Default Status=Active: active visible, suspended hidden.
+      // Must wait for the debounced search URL (not just row text): with pageSize=100 the
+      // active marker can already be on-screen before FilterBar emits, and a late
+      // updateParams({ search }) snapshots status=active and overwrites Suspended.
       await page.getByRole('searchbox', { name: 'Search' }).fill(sharedPrefix)
+      await expectUsersFilterUrl(page, { search: sharedPrefix, status: 'active' })
       await expect(page.getByText(activeMarker)).toBeVisible({ timeout: 15_000 })
       await expect(page.getByText(suspendedMarker)).toHaveCount(0)
 
       await page.getByRole('combobox', { name: 'Status:' }).click()
       await page.getByRole('option', { name: 'Suspended' }).click()
-      await expect(page).toHaveURL(/status=suspended/)
+      await expectUsersFilterUrl(page, { search: sharedPrefix, status: 'suspended' })
       await page.getByRole('button', { name: 'Refresh data' }).click()
       await expect(page.getByText(suspendedMarker)).toBeVisible({ timeout: 15_000 })
       await expect(page.getByText(activeMarker)).toHaveCount(0)
@@ -163,6 +182,7 @@ test.describe('Admin users', () => {
       const { page } = admin
       await page.goto('/users')
       await page.getByRole('searchbox', { name: 'Search' }).fill(marker)
+      await expectUsersFilterUrl(page, { search: marker })
       await expect(page.getByText(marker)).toBeVisible({ timeout: 15_000 })
 
       const [download] = await Promise.all([
@@ -215,6 +235,7 @@ test.describe('Admin users', () => {
       const { page } = admin
       await page.goto('/users')
       await page.getByRole('searchbox', { name: 'Search' }).fill(markerA)
+      await expectUsersFilterUrl(page, { search: markerA })
       await expect(page.getByText(markerA)).toBeVisible({ timeout: 15_000 })
       await expect(page.getByText(markerB)).toHaveCount(0)
 
