@@ -1,0 +1,5 @@
+.results/
+.auth/
+.logs/
+.uploads/
+playwright-report/

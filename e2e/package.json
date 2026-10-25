@@ -1,0 +1,23 @@
+{
+  "name": "@vesta/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "e2e": "tsx scripts/run.ts",
+    "fake-bdapps": "tsx fake-bdapps/main.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@types/node": "^22.14.0",
+    "eslint": "^9",
+    "tsx": "^4.22.3",
+    "typescript": "~5.8.2",
+    "typescript-eslint": "^8.71.0"
+  }
+}
