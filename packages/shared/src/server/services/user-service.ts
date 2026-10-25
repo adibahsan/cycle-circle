@@ -9,7 +9,7 @@ import { RESTORE_WINDOW_DAYS, isWithinRestoreWindow } from '../../utils/restore-
  * Throw a typed 409 if a supplied phone/email already belongs to a DIFFERENT
  * user. Inputs must already be normalized (phone → validateMsisdn, email →
  * normalizeEmail). Best-effort pre-check; the inherent pre-check↔write race is
- * still caught by `mapContactP2002` at write time.
+ * still caught by the unique index at write time (P2002).
  */
 export async function assertContactAvailable(
   userId: string,
@@ -33,27 +33,6 @@ export async function assertContactAvailable(
       throw new ApiError(409, 'Email already registered to another account', 'EMAIL_TAKEN')
     }
   }
-}
-
-/**
- * Map a Prisma P2002 (unique constraint) on phone/email to a typed ApiError so a
- * racing duplicate surfaces the same code as the pre-check. Returns the original
- * error otherwise (to be re-thrown).
- */
-function mapContactP2002(e: unknown): unknown {
-  const err = e as { code?: string; meta?: { target?: string[] | string } }
-  if (err.code === 'P2002') {
-    const target = Array.isArray(err.meta?.target)
-      ? err.meta.target.join(',')
-      : String(err.meta?.target ?? '')
-    if (target.includes('email')) {
-      return new ApiError(409, 'Email already registered to another account', 'EMAIL_TAKEN')
-    }
-    if (target.includes('phone')) {
-      return new ApiError(409, 'Phone already registered to another account', 'PHONE_TAKEN')
-    }
-  }
-  return e
 }
 
 // ---------------------------------------------------------------------------
@@ -187,27 +166,17 @@ export async function listUsers(params: ListUsersParams = {}): Promise<ListUsers
 
 export interface CompleteUserProfileData {
   fullName: string
-  phone?: string
 }
 
 /**
- * Mark a user's profile as completed and update their name/phone.
+ * Mark a user's profile as completed and set their name.
  */
 export async function completeUserProfile(userId: string, data: CompleteUserProfileData) {
-  await assertContactAvailable(userId, { phone: data.phone })
-  let updated
-  try {
-    updated = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        fullName: data.fullName,
-        phone: data.phone,
-        profileCompleted: true,
-      },
-    })
-  } catch (e) {
-    throw mapContactP2002(e)
-  }
+  // Phone and email are never set here: they change only through OTP / email-code verification.
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: { fullName: data.fullName, profileCompleted: true },
+  })
 
   return { id: updated.id, fullName: updated.fullName, profileCompleted: updated.profileCompleted }
 }
@@ -320,24 +289,6 @@ export async function getUserById(userId: string) {
 
 export async function updateUserName(userId: string, fullName: string) {
   return prisma.user.update({ where: { id: userId }, data: { fullName } })
-}
-
-export async function updateUserContact(
-  userId: string,
-  data: { email?: string; phone?: string },
-) {
-  await assertContactAvailable(userId, data)
-  try {
-    return await prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(data.email !== undefined && { email: data.email }),
-        ...(data.phone !== undefined && { phone: data.phone }),
-      },
-    })
-  } catch (e) {
-    throw mapContactP2002(e)
-  }
 }
 
 /**
