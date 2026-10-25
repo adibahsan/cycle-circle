@@ -15,7 +15,7 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 
 | Area | Features | none | look-only | partial | full |
 |---|---|---|---|---|---|
-| Web: login and access | 9 | 3 | 0 | 0 | 6 |
+| Web: login and access | 9 | 1 | 0 | 2 | 6 |
 | Web: onboarding and profiles | 9 | 1 | 2 | 1 | 5 |
 | Web: logging | 9 | 4 | 2 | 3 | 0 |
 | Web: dashboard, calendar, predictions, insights | 12 | 2 | 10 | 0 | 0 |
@@ -23,7 +23,7 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Web: billing | 7 | 2 | 4 | 1 | 0 |
 | Web: landing and public pages | 4 | 0 | 4 | 0 | 0 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 5 | 0 | 0 |
-| **Web total** | 63 | 14 | 32 | 6 | 11 |
+| **Web total** | 63 | 12 | 32 | 8 | 11 |
 | Admin: access and read-only views | 5 | 1 | 0 | 4 | 0 |
 | Admin: user actions | 4 | 3 | 0 | 1 | 0 |
 | Admin: content | 2 | 2 | 0 | 0 | 0 |
@@ -49,8 +49,8 @@ Notes on the tally:
 | W02 | Returning Subscriber login with an App OTP | `/login`, `/verify-otp`, `/api/auth/otp/*` | `e2e/tests/web/login.spec.ts` | full | #120 |
 | W03 | OTP error paths: wrong, expired, 60 s resend cooldown, per-phone rate limit | `/verify-otp`, `/api/auth/otp/*` | `e2e/tests/web/login.spec.ts` | full | #120 |
 | W04 | Brute-force block after repeated wrong codes | `/api/auth/otp/verify` | `e2e/tests/web/login.spec.ts` | full | #120 |
-| W05 | Email magic-link login, lands on 24 h email trial | `/email-login`, `/api/auth/magic-link/request`, `/api/auth/magic-link/callback` | - | none | #119 |
-| W06 | Magic-link security: expired or reused link rejected | `/api/auth/magic-link/callback` | - | none | #119 |
+| W05 | Email magic-link login, lands on 24 h email trial | `/email-login`, `/api/auth/magic-link/request`, `/api/auth/magic-link/callback` | `e2e/tests/web/email-magic-link.spec.ts` | partial | #119 |
+| W06 | Magic-link security: expired or reused link rejected | `/api/auth/magic-link/callback` | `e2e/tests/web/email-magic-link.spec.ts` | partial | #119 |
 | W07 | Logout ends the session | `/api/auth/logout`, settings logout dialog | `e2e/tests/web/login.spec.ts`, `apps/web/e2e/tests/bengali-no-english.spec.ts` | full | #120 |
 | W08 | Route protection: logged-out visitor redirected from every protected page | all `(main)` routes, `/onboarding` | `e2e/tests/web/login.spec.ts` | full | #120 |
 | W09 | Suspended or deleted user session is blocked | `/api/auth/status`, withAuth | - | none | #127 |

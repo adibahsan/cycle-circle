@@ -5,10 +5,11 @@
  * `017000000xx` / `0170000077x-078x`, backend tests use `01700…`, `01805…`, `019x0…`,
  * `0181x…`, `0171x…`; nothing else uses `0136`.
  */
-import { createHash } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import type { APIRequestContext, Browser, BrowserContext, BrowserContextOptions } from '@playwright/test'
 import { FakeBdappsClient } from './fake-bdapps.ts'
-import { URLS } from './slot.ts'
+import { SLOT, URLS } from './slot.ts'
+import { waitForMagicLinkEmail } from './mailpit.ts'
 
 const E2E_PREFIX = '0136'
 // Two digits of Playwright worker + five of a counter seeded from the clock: unique within a
@@ -78,4 +79,73 @@ export async function createThrowawayUser(
   })
   await loginWithOtp(context.request, phone, fake)
   return { phone, context }
+}
+
+export interface EmailTrialUser {
+  email: string
+  context: BrowserContext
+}
+
+export interface EmailTrialOptions {
+  /** Seed a profile so the user lands on the dashboard instead of onboarding. */
+  withProfile?: boolean
+}
+
+/** A unique, throwaway email. The magic-link rate limit is 3/hour per address, and Mailpit is shared. */
+export function newEmail(prefix = 'e2e-trial'): string {
+  return `${prefix}-s${SLOT}-${newPhone()}-${randomBytes(3).toString('hex')}@example.com`
+}
+
+/**
+ * Create an email-trial user with a profile in the slot DB BEFORE their first magic-link
+ * login. The app caches a user's profile list when it first renders `/`, so a profile
+ * added after login would not show; seeding first makes the login land on the dashboard.
+ */
+export async function preseedEmailTrialUser(email: string): Promise<void> {
+  const { db } = await import('./db.ts')
+  await db.user.create({
+    data: {
+      email,
+      authMethod: 'EMAIL',
+      emailTrialExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      profiles: { create: { name: 'E2E Trial', relation: 'SELF', cycleLength: 28, periodLength: 5 } },
+    },
+  })
+}
+
+/**
+ * A brand-new user with a unique email, logged in through the real magic-link flow (a FREE
+ * user on a 24h email trial), in a fresh browser context with the suite's defaults. Never
+ * log seeded users in this way: it burns their per-email rate limit. With
+ * `{ withProfile: true }` the user and a profile are seeded in the slot DB first, so the
+ * login lands on the dashboard. Close the context when done.
+ */
+export async function createEmailTrialUser(
+  browser: Browser,
+  contextOptions: BrowserContextOptions = {},
+  { withProfile = false }: EmailTrialOptions = {},
+): Promise<EmailTrialUser> {
+  const email = newEmail()
+  const context = await browser.newContext({
+    baseURL: URLS.web,
+    timezoneId: 'Asia/Dhaka',
+    locale: 'en-US',
+    ...contextOptions,
+    extraHTTPHeaders: { ...contextOptions.extraHTTPHeaders, 'x-real-ip': ipFor(email) },
+  })
+
+  try {
+    if (withProfile) await preseedEmailTrialUser(email)
+    const since = new Date(Date.now() - 1000)
+    const sent = await context.request.post('/api/auth/magic-link/request', { data: { email } })
+    if (!sent.ok()) throw new Error(`Magic-link request for ${email} failed (${sent.status()}): ${await sent.text()}`)
+    const { callbackUrl } = await waitForMagicLinkEmail(email, { since })
+    const done = await context.request.get(callbackUrl)
+    if (!done.ok()) throw new Error(`Magic-link callback for ${email} failed (${done.status()}): ${await done.text()}`)
+  } catch (e) {
+    await context.close()
+    throw e
+  }
+
+  return { email, context }
 }
