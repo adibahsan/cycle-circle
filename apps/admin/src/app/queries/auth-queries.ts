@@ -1,11 +1,11 @@
 import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
-import { verifyAuth, getAuthUser } from '@vesta/shared/server/auth'
+import { ADMIN_AUDIENCE, verifyAuth, getAuthUser } from '@vesta/shared/server/auth'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
 export const getCurrentAdminUser = cache(async (): Promise<AuthUser | null> => {
-  const jwt = await verifyAuth()
+  const jwt = await verifyAuth(ADMIN_AUDIENCE)
   if (!jwt || jwt.role !== 'ADMIN') return null
   try {
     return await unstable_cache(

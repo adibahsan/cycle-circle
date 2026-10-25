@@ -1,5 +1,5 @@
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
-import { issueJwt, setAuthCookie } from '@vesta/shared/server/auth'
+import { WEB_AUDIENCE, issueJwt, setAuthCookie } from '@vesta/shared/server/auth'
 import { findMagicLink, completeMagicLinkAuth } from '@vesta/shared/server/services'
 import { revalidateTag } from 'next/cache'
 import { cacheTags } from '@/lib/cache-tags'
@@ -36,7 +36,7 @@ export async function GET(request: Request): Promise<Response> {
       sub: user.id,
       email: user.email ?? undefined,
       role: user.role,
-    })
+    }, WEB_AUDIENCE)
     await setAuthCookie(jwtToken)
 
     logger.customer('auth.magic-link.verify', { email: magicLink.email, ok: true })

@@ -20,6 +20,8 @@ services:
       BDAPPS_SIMULATOR_BASE_URL: http://bdapps-simulator:7000
       BDAPPS_SIMULATOR_UI_URL: http://localhost:10001/mchoice-tap-sdk
       JWT_SECRET: local-dev-jwt-secret-minimum-32-characters-long
+      AUTH_COOKIE_NAME: vesta_token
+      APP_ENV: local
       CRON_SECRET: local-cron-secret-min-16
       NODE_ENV: development
       MAILPIT_SMTP_URL: smtp://mailpit:1025

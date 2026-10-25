@@ -100,7 +100,7 @@ Stop: `pnpm docker:monitoring:down`. Verify config in CI/review: `pnpm monitorin
 
 `just setup` copies `.env.example` → `.env.local` for both apps if missing.
 
-**Important:** `JWT_SECRET` must be identical in web and admin `.env.local` (shared auth cookie).
+**Important:** web and admin use *different* `JWT_SECRET`s (the examples already differ), each needs its own `AUTH_COOKIE_NAME` (no default), and `APP_ENV=local` is the token issuer. See ADR 0007.
 
 ### Notable env vars
 
@@ -199,7 +199,7 @@ The official simulator does not implement `/subscription/*`. Use the zero-depend
 
 ### Admin login fails
 
-- Confirm `JWT_SECRET` matches between `apps/web/.env.local` and `apps/admin/.env.local`
+- Confirm `apps/admin/.env.local` has `AUTH_COOKIE_NAME=vesta_admin_token` and `APP_ENV=local`, and that its `JWT_SECRET` differs from web's. After changing `JWT_SECRET` or `APP_ENV`, log in again
 - Re-seed: `just db-reset-force`
 
 ### Apple Silicon / arm64
