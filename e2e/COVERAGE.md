@@ -151,7 +151,7 @@ Notes on the tally:
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
 | A01 | Login with email and password; non-admin sees forbidden page; logout | `/login`, `/forbidden`, `/api/auth/login`, `/api/auth/logout` | `e2e/tests/admin/login.spec.ts` | deep (wrong password, non-admin form error, unauth redirect, forged-token forbidden, logout) | #126 |
-| A02 | Dashboard KPIs and signup trend | `/` | `e2e/tests/admin/dashboard.spec.ts` | partial (Total Users exact display vs DB; today's signup bucket via DB — Recharts SVG has no accessible per-day counts; a11y #135) | #126 |
+| A02 | Dashboard KPIs and signup trend | `/` | `e2e/tests/admin/dashboard.spec.ts` | partial (Total Users UI ≥ before+2 after creates — parallel-safe; today's signup bucket via DB — Recharts SVG has no accessible per-day counts; a11y #135) | #126 |
 | A03 | Users: search and filter | `/users` | `e2e/tests/admin/users.spec.ts` | deep (search narrows; Suspended set up before load; hides active) | #126 |
 | A04 | User detail: profile, plan history, Translog tabs | `/users/[id]` | - | none | #127 |
 | A05 | Subscriptions list with status filter | `/subscriptions` | `e2e/tests/admin/subscriptions.spec.ts` | deep (explicit PRO/FREE via setUserSubscription; pageSize=100; all visible rows match filter) | #126 |
