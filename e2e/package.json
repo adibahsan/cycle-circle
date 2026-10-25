@@ -10,10 +10,13 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@prisma/client": "^6.19.3"
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
+    "jose": "^6.2.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
+    "@types/bcryptjs": "^3.0.0",
     "@types/node": "^22.14.0",
     "eslint": "^9",
     "tsx": "^4.22.3",

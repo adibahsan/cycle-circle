@@ -8,9 +8,11 @@
  */
 import { test as base, expect, type BrowserContext, type Page } from '@playwright/test'
 import { bangladeshDays, type BangladeshDays } from './bangladesh-day.ts'
+import { closeE2eDb } from './db.ts'
 import { FakeBdappsClient } from './fake-bdapps.ts'
 import { createThrowawayUser, ipFor } from './users.ts'
 import { URLS } from './slot.ts'
+import { db, type PrismaClient } from './db.ts'
 
 export interface NewUser {
   phone: string
@@ -22,9 +24,22 @@ interface Fixtures {
   fakeBdapps: FakeBdappsClient
   newUser: () => Promise<NewUser>
   days: BangladeshDays
+  db: PrismaClient
 }
 
-export const test = base.extend<Fixtures>({
+interface WorkerFixtures {
+  _e2eDbTeardown: undefined
+}
+
+export const test = base.extend<Fixtures, WorkerFixtures>({
+  _e2eDbTeardown: [
+    async ({}, use) => {
+      await use(undefined)
+      await closeE2eDb()
+    },
+    { scope: 'worker', auto: true },
+  ],
+
   extraHTTPHeaders: async ({}, use, testInfo) => {
     await use({ 'x-real-ip': ipFor(testInfo.testId) })
   },
@@ -49,6 +64,10 @@ export const test = base.extend<Fixtures>({
 
   days: async ({}, use) => {
     await use(await bangladeshDays())
+  },
+
+  db: async ({}, use) => {
+    await use(db)
   },
 })
 

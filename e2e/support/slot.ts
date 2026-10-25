@@ -58,10 +58,20 @@ function databaseUrl(): string {
     'postgresql://vesta_user:vesta_dev@localhost:5431/vesta_dev'
   const url = new URL(base)
   url.pathname = `/${DB_NAME}`
+  // Parallel slots share one Postgres (max_connections 100); Prisma's default pool per app
+  // would exhaust it with 3+ slots running, so each app process is capped.
+  url.searchParams.set('connection_limit', '5')
   return url.toString()
 }
 
 export const DATABASE_URL = databaseUrl()
+
+/** The URL test workers use for setup and checks: a smaller pool, since every worker opens one. */
+export const TEST_DATABASE_URL = (() => {
+  const url = new URL(DATABASE_URL)
+  url.searchParams.set('connection_limit', '2')
+  return url.toString()
+})()
 
 /** Refuse to touch anything that isn't an E2E database. */
 export function assertE2eDatabase(url: string = DATABASE_URL): void {
@@ -80,7 +90,7 @@ export const SECRETS = {
   adminPassword: 'admin123',
 }
 
-const LOG_ROOT = path.join(E2E_DIR, '.logs', `slot-${SLOT}`)
+export const LOG_ROOT = path.join(E2E_DIR, '.logs', `slot-${SLOT}`)
 const UPLOAD_DIR = path.join(E2E_DIR, '.uploads', `slot-${SLOT}`)
 
 /**
@@ -103,7 +113,7 @@ function appEnv(app: 'web' | 'admin'): Record<string, string> {
     BDAPPS_PASSWORD: SECRETS.bdappsPassword,
     BDAPPS_BASE_URL: URLS.fakeBdapps,
     BDAPPS_SIMULATOR_BASE_URL: '',
-    BDAPPS_SIMULATOR_UI_URL: '',
+    BDAPPS_SIMULATOR_UI_URL: `${URLS.fakeBdapps}/health`,
     BDAPPS_SIMULATOR_CALLBACK_BASE_URL: '',
     ENABLE_BDAPPS_SIMULATOR_CHECKER: 'false',
     // Empty = accept webhooks from any source (the fake BDApps posts from localhost).

@@ -40,6 +40,10 @@ function subscriberAt(state: FakeState, address: unknown) {
   return typeof address === 'string' ? findByMaskedId(state, address) : undefined
 }
 
+function subscriberPhone(state: FakeState, address: unknown): string | undefined {
+  return typeof address === 'string' ? findByMaskedId(state, address)?.phone : undefined
+}
+
 export const merchantRoutes: Record<string, MerchantRoute> = {
   '/subscription/otp/request': (body, state) => {
     const phone = normalizePhone(String(body.subscriberId ?? ''))
@@ -74,7 +78,6 @@ export const merchantRoutes: Record<string, MerchantRoute> = {
     if (String(body.action) === '1') {
       s.status = 'REGISTERED'
     } else {
-      if (s.status !== 'REGISTERED') return E1951()
       s.status = 'UNREGISTERED'
     }
     s.updatedAt = new Date().toISOString()
@@ -105,5 +108,40 @@ export const merchantRoutes: Record<string, MerchantRoute> = {
       }
     })
     return ok({ requestId: `req-${randomInt(1e11, 1e12)}`, destinationResponses })
+  },
+
+  /** CaaS: get chargeable balance for a subscriber. */
+  '/caas/get/balance': (body, state) => {
+    const phone = subscriberPhone(state, body.subscriberId)
+    if (!phone) return E1951()
+    let balance = state.caasBalances.get(phone)
+    if (!balance) {
+      balance = {
+        phone,
+        accountType: 'PREPAID',
+        accountStatus: 'ACTIVE',
+        chargeableBalance: '1000',
+        updatedAt: new Date().toISOString(),
+      }
+      state.caasBalances.set(phone, balance)
+    }
+    return ok({
+      accountType: balance.accountType,
+      accountStatus: balance.accountStatus,
+      chargeableBalance: balance.chargeableBalance,
+    })
+  },
+
+  /** CaaS: direct debit a subscriber's wallet. */
+  '/caas/direct/debit': (body, state) => {
+    const phone = subscriberPhone(state, body.subscriberId)
+    if (!phone) return E1951()
+    const amount = String(body.amount ?? '0')
+    const externalTrxId = String(body.externalTrxId ?? `ext-${randomInt(1e11, 1e12)}`)
+    const internalTrxId = `int-${randomInt(1e11, 1e12)}`
+    const referenceId = `ref-${randomInt(1e11, 1e12)}`
+    const timeStamp = stamp()
+    state.caasDebits.push({ phone, externalTrxId, internalTrxId, referenceId, amount, timeStamp })
+    return ok({ externalTrxId, internalTrxId, referenceId, timeStamp })
   },
 }
