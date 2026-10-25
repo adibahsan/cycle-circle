@@ -51,7 +51,7 @@ export async function waitForEmail(
     listUrl.searchParams.set('limit', '50')
     const listRes = await fetch(listUrl)
     if (!listRes.ok) throw new Error(`Mailpit list failed: ${listRes.status}`)
-    const data = await listRes.json() as { messages: { ID: string; To?: { Address?: string }[]; Created: string }[] }
+    const data = (await listRes.json()) as { messages: { ID: string; To?: { Address?: string }[]; Created: string }[] }
     const messages = data.messages ?? []
 
     const matching = messages.filter((m) => m.To?.some((t) => t.Address?.toLowerCase() === normalizedTo) ?? false)
@@ -81,6 +81,17 @@ export async function waitForEmail(
     }
     await new Promise((r) => setTimeout(r, 500))
   }
+}
+
+/**
+ * Wait for an email addressed to `recipient` in Mailpit and return its content.
+ * Compatible alias for specs using latestEmailFor.
+ */
+export async function latestEmailFor(
+  recipient: string,
+  opts: { since?: Date; timeoutMs?: number; baseUrl?: string } = {},
+): Promise<MailpitMessage> {
+  return waitForEmail(recipient, opts)
 }
 
 /**
