@@ -3,7 +3,7 @@ import { test, expect } from '../../support/fixtures'
 import { createEmailTrialUser, newPhone, toDbPhone } from '../../support/users'
 import { createProfileWithLogs, setUserSubscription } from '../../support/db'
 import { SECRETS, URLS } from '../../support/slot'
-import type { FakeBdapps } from '../../support/fake-bdapps'
+import type { FakeBdappsClient } from '../../support/fake-bdapps'
 import { translogFor } from '../../support/translog'
 
 /** Run the daily-reminders cron for one user (forced), failing on any per-user error. */
@@ -18,7 +18,7 @@ async function runDailyReminders(userId: string): Promise<void> {
 }
 
 /** Count of SMS the app sent through the fake BDApps to this local-format phone. */
-async function smsSentTo(fakeBdapps: FakeBdapps, phone: string): Promise<number> {
+async function smsSentTo(fakeBdapps: FakeBdappsClient, phone: string): Promise<number> {
   return (await fakeBdapps.calls({ path: '/sms/send' })).filter((c) => JSON.stringify(c.body).includes(phone.slice(1))).length
 }
 

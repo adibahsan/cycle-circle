@@ -55,12 +55,12 @@ All slot-derived values (ports, URLs, DB URL, every env var the apps get, test s
 
 ```
 e2e/
-  playwright.config.ts   projects: web-*, admin-*, cross-app-* × desktop (1366×900) / phone (Pixel 7)
+  playwright.config.ts   projects: web-*/admin-*/cross-app-* × desktop/phone, then serial `cron`
   global-setup.ts        checks Mailpit; logs in personas + admin once, saves storage states
   scripts/run.ts         the `pnpm e2e` runner
   fake-bdapps/           the fake BDApps server (see below)
   support/               helpers (below)
-  tests/web/             project web-*       (baseURL = web)
+  tests/web/             project web-* + serial `cron` (baseURL = web)
   tests/admin/           project admin-*     (baseURL = admin)
   tests/cross-app/       project cross-app-* (baseURL = web; open admin with URLS.admin)
   fixtures/              small binary fixtures (e.g. `article-red-1x1.png` for CMS image upload)
@@ -75,6 +75,35 @@ plus a throwaway `newUser()`; article titles are prefixed `E2E128` so they never
 Sanitizer coverage pastes rich HTML into Tiptap and also rewrites the `createArticle` Next-Action
 POST body (raw HTML bypassing the editor) so stored HTML and the web reader can be checked separately.
 Tiptap editors lack accessible names — CSS `.ProseMirror` with a comment pointing at #141.
+
+### Serial `cron` project (CI / full suite)
+
+Some web specs mutate **shared** slot state and must not run beside plan, user-admin, or
+broadcast tests:
+
+| Spec | Why serial |
+|---|---|
+| `cron-daily-reminders.spec.ts` | Even with `userId`, keep broadcast/reminder side-effects out of the parallel wave |
+| `cron-nightly-maintenance.spec.ts` | Purges every soft-deleted user past 30 days |
+| `cron-caas-check.spec.ts` | `getStatus` over every BDApps PRO subscriber (can flip plans) |
+| `webhooks-bdapps.spec.ts` | Shared fake + webhook recording; kept with the cron wave |
+| `health.spec.ts` / `bdapps-health.spec.ts` | `bdapps-health` scripts `/health` with `{ any: true }` |
+
+They live in Playwright project **`cron`**: desktop viewport only, `workers: 1`,
+`fullyParallel: false`, and `dependencies` on every `web-*` / `admin-*` / `cross-app-*`
+project so a bare `pnpm e2e` still runs everything and the serial group finishes **last**.
+`--project=web-desktop` (etc.) still works: those projects `testIgnore` the serial files.
+
+**Add a spec to the serial group:** append its basename to `CRON_SERIAL_SPECS` in
+`playwright.config.ts` (same regex used for `cron` `testMatch` and web `testIgnore`). Keep
+the file under `tests/web/`. Viewport-independent cron/health specs do not need a phone
+project twin.
+
+**Run only the serial group** (still waits on dependencies unless you pass `--no-deps`):
+
+```bash
+E2E_SLOT=13 E2E_SKIP_RESET=1 E2E_SKIP_BUILD=1 pnpm e2e -- --project=cron --workers=2
+```
 
 ## Helpers
 
@@ -130,10 +159,14 @@ plus `setUserSubscription`, `createArticle()`, `createProfileWithLogs()` and `cl
 `assertE2eDatabase()` (`TEST_DATABASE_URL` is the slot DB with a small `connection_limit`);
 don't import `@vesta/shared`'s `prisma`, which reads `DATABASE_URL` from the env and would hit
 `vesta_dev`. The shared client is disconnected in worker teardown (`closeE2eDb` via
-`support/fixtures.ts`). Write dates with the `days` helper.
+`support/fixtures.ts`). Write dates with the `days` helper (`days.startOf(...)`).
 Only set up state this way; check results through the UI or HTTP. Admin users for the suite are
 created with `createAdminUser` in that same DB — not by reusing seeded web personas.
 `createLoggedInAdmin` closes the browser context if HTTP login fails so contexts do not leak.
+- `ensureUserProfile(phone, options)`: updates or creates a profile and dismisses onboarding tour.
+- `setPeriodLogs(profileId, logs)`: replaces period logs for a profile.
+- `setSymptomLogs(profileId, logs)`: adds symptom logs in a transaction.
+- `setPrediction(profileId, prediction)`: sets or updates predictions (tier, confidence, windows).
 
 ## Fake BDApps (`fake-bdapps/`)
 
@@ -169,11 +202,15 @@ answers 400 for a missing/empty `match` or a bad mode field.
 `match` is **required** and scopes the failure to a call, so parallel tests (and the desktop and phone
 projects) can script the same path without stealing each other's failure: `{ subscriberId }` (masked id
 or phone, matched against `body.subscriberId`), `{ destinationAddress }` (against `body.destinationAddress`
-or any `body.destinationAddresses`), `{ phone }` (either, after normalisation); all given fields must match.
+or any `body.destinationAddresses`), `{ phone }` (either, after normalisation), `{ messageContains }`
+(substring of `body.message` — use this when many tests share `destinationAddresses: ['tel:all']`);
+all given fields must match.
 `{ any: true }` matches every call to the path and is **exclusive**: only for a path nobody else uses,
 i.e. GET `/health`, which carries no subscriber. Those tests run on the desktop project only
 (`bdapps-health.spec.ts`). Typed webhook bodies: `SubscriptionNotifyPayload`, `SmsReceivePayload`,
 `SmsReportPayload`, `UssdReceivePayload` in `support/fake-bdapps.ts`.
+`messageContains` is covered by a small unit file (`pnpm exec tsx --test fake-bdapps/state.unit.test.ts`)
+and by `bdapps-fake.spec.ts` (two `tel:all` sends; only the matching message fails).
 
 **Health**: the fake answers `GET /health` (200, `{status:'ok'}`). The apps' env sets
 `BDAPPS_SIMULATOR_UI_URL` to it, which is the only URL `/api/health/bdapps` fetches (up for any

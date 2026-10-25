@@ -350,6 +350,9 @@ test.describe('Admin content authoring (seen on web)', () => {
       const uploadSrc = await uploadImg.getAttribute('src')
       expect(uploadSrc).toMatch(/^\/uploads\//)
 
+      // Clear the upload-seed so paste is the only body (otherwise the same /uploads
+      // src remains + appears again in the pasted HTML → flaky img count 2).
+      await fillEditor(editors.nth(0), '')
       const unsafeHtml = buildSanitizePayload({ safeMarker, runId, uploadSrc: uploadSrc! })
       await pasteHtmlIntoEditor(adminPage, editors.nth(0), unsafeHtml)
       await expect(editors.nth(0).getByText(safeMarker)).toBeVisible()
