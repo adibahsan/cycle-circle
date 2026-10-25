@@ -27,7 +27,7 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Admin: access and read-only views | 5 | 0 | 0 | 4 | 1 |
 | Admin: user actions | 4 | 0 | 0 | 1 | 3 |
 | Admin: content | 2 | 0 | 0 | 0 | 2 |
-| Admin: analytics and engagement | 2 | 2 | 0 | 0 | 0 |
+| Admin: analytics and engagement | 2 | 0 | 0 | 2 | 0 |
 | Admin: SMS | 2 | 0 | 0 | 0 | 2 |
 | Admin: feedback, emails, audit, logs, system | 6 | 0 | 0 | 1 | 5 |
 | **Admin total** | 21 | 2 | 0 | 6 | 13 |
@@ -176,8 +176,8 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A12 | Analytics: population panels, per-tier MAE, symptoms by phase, date ranges in Bangladesh days | `/analytics` | - | none | #130 |
-| A13 | Engagement panels | `/engagement` | - | none | #130 |
+| A12 | Analytics: population panels, per-tier MAE, symptoms by phase, date ranges in Bangladesh days | `/analytics` | `e2e/tests/admin/analytics.spec.ts` | partial (per-panel tests: phase N−1/boundary/N+1 + PanelRange; distinct per-tier MAE desktop-only with snapshot restore; cycle-length, symptoms-by-category, prediction confidence+metric, retention, feedback volume/category/rating, trend signups/logRate/1y; empty feedback when no rows; BD day keys `test.fail` #146; SVG a11y still #135. Remaining: true Bangladesh-day range windows once #146 lands; retention cohort value assertions beyond range clicks) | #130 |
+| A13 | Engagement panels | `/engagement` | `e2e/tests/admin/engagement.spec.ts` | partial (7d loggers/rate N−1/boundary/N+1; rate vs loggers + outside absent; streak exact +1 desktop-only; Weekly Logging Retention + Logging Rate Over Time; 90d/1y range; empty unreachable on busy slot noted; BD keys #146 + streak local-midnight #147 `test.fail`. Remaining: BD-day bucketing after #146/#147; empty-state when slot is quiet) | #130 |
 
 ### Admin: SMS
 
