@@ -7,8 +7,10 @@
  */
 import { createHash } from 'node:crypto'
 import type { APIRequestContext, Browser, BrowserContext, BrowserContextOptions } from '@playwright/test'
+import { expect } from '@playwright/test'
 import { FakeBdappsClient } from './fake-bdapps.ts'
 import { URLS } from './slot.ts'
+import { requestMagicLinkAndWait } from './mailpit.ts'
 
 const E2E_PREFIX = '0136'
 // Two digits of Playwright worker + five of a counter seeded from the clock: unique within a
@@ -71,4 +73,39 @@ export async function createThrowawayUser(
   })
   await loginWithOtp(context.request, phone, fake)
   return { phone, context }
+}
+
+export interface EmailTrialUser {
+  email: string
+  context: BrowserContext
+}
+
+/**
+ * A brand-new user with a unique email, logged in through the real magic-link flow
+ * (so a FREE user with a 24h email trial, no profile yet), in a fresh browser context
+ * with the suite's defaults. Close the context when done.
+ */
+export async function createEmailTrialUser(
+  browser: Browser,
+  contextOptions: BrowserContextOptions = {},
+): Promise<EmailTrialUser> {
+  const email = `e2e-trial-${newPhone()}@example.com`
+  const context = await browser.newContext({
+    baseURL: URLS.web,
+    timezoneId: 'Asia/Dhaka',
+    locale: 'en-US',
+    ...contextOptions,
+    extraHTTPHeaders: { ...contextOptions.extraHTTPHeaders, 'x-real-ip': ipFor(email) },
+  })
+
+  // Request magic link and wait for email
+  const { callbackUrl } = await requestMagicLinkAndWait(email, { baseUrl: URLS.web })
+
+  // Visit the magic link to complete login
+  const page = await context.newPage()
+  await page.goto(callbackUrl)
+  await expect(page).toHaveURL(/\/dashboard|\/onboarding/)
+  await page.close()
+
+  return { email, context }
 }
