@@ -27,10 +27,10 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Admin: access and read-only views | 5 | 1 | 0 | 4 | 0 |
 | Admin: user actions | 4 | 3 | 0 | 1 | 0 |
 | Admin: content | 2 | 2 | 0 | 0 | 0 |
-| Admin: analytics and engagement | 2 | 2 | 0 | 0 | 0 |
+| Admin: analytics and engagement | 2 | 0 | 0 | 2 | 0 |
 | Admin: SMS | 2 | 2 | 0 | 0 | 0 |
 | Admin: feedback, emails, audit, logs, system | 6 | 6 | 0 | 0 | 0 |
-| **Admin total** | 21 | 16 | 0 | 5 | 0 |
+| **Admin total** | 21 | 14 | 0 | 7 | 0 |
 | Server-only (not counted) | 10 | 9 | 0 | 1 | 0 |
 
 Notes on the tally:
@@ -176,8 +176,8 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A12 | Analytics: population panels, per-tier MAE, symptoms by phase, date ranges in Bangladesh days | `/analytics` | - | none | #130 |
-| A13 | Engagement panels | `/engagement` | - | none | #130 |
+| A12 | Analytics: population panels, per-tier MAE, symptoms by phase, date ranges in Bangladesh days | `/analytics` | `e2e/tests/admin/analytics.spec.ts` | partial (throwaway logs + MAE snapshots; phase dl + chart table; 30d/90d phase inclusion/exclusion; 7d activity-trend edges via `days`; chart values via “View data as table” — a11y gaps for SVG still #135) | #130 |
+| A13 | Engagement panels | `/engagement` | `e2e/tests/admin/engagement.spec.ts` | partial (7d loggers/rate inclusion/exclusion via Bangladesh-day edges; streak 3-6 ≥ before+1 after consecutive seeds; range control) | #130 |
 
 ### Admin: SMS
 
