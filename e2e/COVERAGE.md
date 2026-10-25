@@ -203,13 +203,13 @@ Cron routes, BDApps webhooks, the Resend webhook and health endpoints have no sc
 
 | # | Path | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| S01 | Daily-reminders cron: email (Mailpit) and SMS (fake BDApps) to due users, skips opted-out | `/api/cron/daily-reminders` | - | none | #132 |
-| S02 | Nightly-maintenance cron: accuracy snapshot, purge past restore window | `/api/cron/nightly-maintenance` | - | none | #132 |
-| S03 | CaaS-check cron reads balances from fake BDApps | `/api/cron/caas-check` | - | none | #132 |
-| S04 | Cron-secret auth: routes reject calls without the secret | all `/api/cron/*` | - | none | #132 |
-| S05 | BDApps webhook: subscription notify (subscribed, unsubscribed) | `/api/webhooks/subscription/notify` | - | none | #132 (plan effect: #125) |
-| S06 | BDApps webhook: SMS received, recorded as Webhook event, duplicates ignored | `/api/webhooks/sms/receive` | - | none | #132 |
-| S07 | BDApps webhook: USSD, recorded, duplicates ignored | `/api/webhooks/ussd/receive` | - | none | #132 |
-| S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | - | none | #132 (admin counts: #129) |
-| S09 | Resend webhook updates email log delivery status | `/api/webhooks/resend` | - | none | #132 |
-| S10 | Health endpoints up; BDApps reported down when fake BDApps fails | `/api/health/{db,redis,mailpit,bdapps,worker}` | `e2e/tests/web/bdapps-health.spec.ts` | partial (BDApps endpoint only) | #132 |
+| S01 | Daily-reminders cron: email (Mailpit) and SMS (fake BDApps) to due users, skips opted-out | `/api/cron/daily-reminders` | `e2e/tests/web/cron-daily-reminders.spec.ts` | full | #132 |
+| S02 | Nightly-maintenance cron: accuracy snapshot, purge past restore window | `/api/cron/nightly-maintenance` | `e2e/tests/web/cron-nightly-maintenance.spec.ts` | full | #132 |
+| S03 | CaaS-check cron reads balances from fake BDApps | `/api/cron/caas-check` | `e2e/tests/web/cron-caas-check.spec.ts` | partial (asserts `/subscription/getStatus`; route does not call CaaS balance today) | #132 |
+| S04 | Cron-secret auth: routes reject calls without the secret | all `/api/cron/*` | `e2e/tests/web/cron-auth.spec.ts` | full | #132 |
+| S05 | BDApps webhook: subscription notify (subscribed, unsubscribed) | `/api/webhooks/subscription/notify` | `e2e/tests/web/webhooks-bdapps.spec.ts` (subscribed record); `bdapps-webhook-unsubscribe.spec.ts` (plan) | partial | #132 (plan effect: #125) |
+| S06 | BDApps webhook: SMS received, recorded as Webhook event, duplicates ignored | `/api/webhooks/sms/receive` | `e2e/tests/web/webhooks-bdapps.spec.ts` | full | #132 |
+| S07 | BDApps webhook: USSD, recorded, duplicates ignored | `/api/webhooks/ussd/receive` | `e2e/tests/web/webhooks-bdapps.spec.ts` | full | #132 |
+| S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | `e2e/tests/web/webhooks-bdapps.spec.ts` | full (route-level; admin counts: #129) | #132 |
+| S09 | Resend webhook updates email log delivery status | `/api/webhooks/resend` | `e2e/tests/web/webhooks-resend.spec.ts` | full | #132 |
+| S10 | Health endpoints up; BDApps reported down when fake BDApps fails | `/api/health/{db,redis,mailpit,bdapps,worker}` | `e2e/tests/web/health.spec.ts`; `e2e/tests/web/bdapps-health.spec.ts` | full | #132 |
