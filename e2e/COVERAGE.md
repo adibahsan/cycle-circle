@@ -18,12 +18,12 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Web: login and access | 9 | 8 | 0 | 1 | 0 |
 | Web: onboarding and profiles | 9 | 3 | 6 | 0 | 0 |
 | Web: logging | 9 | 4 | 2 | 3 | 0 |
-| Web: dashboard, calendar, predictions, insights | 12 | 2 | 10 | 0 | 0 |
+| Web: dashboard, calendar, predictions, insights | 12 | 0 | 1 | 0 | 11 |
 | Web: content, feedback, settings | 8 | 2 | 5 | 1 | 0 |
 | Web: billing | 7 | 3 | 4 | 0 | 0 |
 | Web: landing and public pages | 4 | 0 | 4 | 0 | 0 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 5 | 0 | 0 |
-| **Web total** | 63 | 22 | 36 | 5 | 0 |
+| **Web total** | 63 | 20 | 27 | 5 | 11 |
 | Admin: access and read-only views | 5 | 5 | 0 | 0 | 0 |
 | Admin: user actions | 4 | 4 | 0 | 0 | 0 |
 | Admin: content | 2 | 2 | 0 | 0 | 0 |
@@ -87,17 +87,17 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W28 | Dashboard standard mode: hero, cycle ring, cards, layout | `/dashboard`, `/api/tracking/dashboard` | `apps/web/e2e/tests/smoke.spec.ts`, `apps/web/e2e/tests/dashboard-layout.spec.ts`, `apps/web/e2e/tests/card-rows.spec.ts`, `apps/web/e2e/tests/shell-initial.spec.ts` | look-only | #123 |
-| W29 | Dashboard pregnancy mode | `/dashboard` | `apps/web/e2e/tests/dashboard-modes.spec.ts` | look-only | #123 |
-| W30 | Dashboard menopause mode | `/dashboard` | `apps/web/e2e/tests/dashboard-modes.spec.ts` | look-only | #123 |
-| W31 | Dashboard first-run state (no period ever logged) | `/dashboard` | `apps/web/e2e/tests/dashboard-modes.spec.ts` | look-only | #123 |
-| W32 | Late-period alert with day count | `/dashboard`, late alert dialog | `apps/web/e2e/tests/auto-prompts.spec.ts`, `apps/web/e2e/tests/dashboard-popups.spec.ts` | look-only | #123 |
-| W33 | Prediction tier and confidence recalculate as cycles are logged | `/api/predictions`, dashboard | - | none | #123 |
-| W34 | Streak badge and engagement tracking over consecutive Bangladesh days | `/api/tracking/engagement`, dashboard | - | none | #123 |
-| W35 | Calendar: logged, predicted and fertile-window colours; tap a day for its logs | `/calendar`, `/api/tracking/calendar` | `apps/web/e2e/tests/calendar-days.spec.ts` | look-only | #123 |
-| W36 | Insights charts with enough data | `/insights` | `apps/web/e2e/tests/insights-look.spec.ts`, `apps/web/e2e/tests/insights-a11y.spec.ts` | look-only | #123 |
-| W37 | Insights empty and partial states | `/insights` | `apps/web/e2e/tests/insights-look.spec.ts` | look-only | #123 |
-| W38 | Phase pattern card (most-logged symptoms in the current phase) | `/dashboard` | `apps/web/e2e/tests/phase-pattern.spec.ts` | look-only | #123 |
+| W28 | Dashboard standard mode: hero, cycle ring, cards, layout | `/dashboard`, `/api/tracking/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
+| W29 | Dashboard pregnancy mode | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
+| W30 | Dashboard menopause mode | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
+| W31 | Dashboard first-run state (no period ever logged) | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
+| W32 | Late-period alert with day count | `/dashboard`, late alert dialog | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
+| W33 | Prediction tier and confidence recalculate as cycles are logged | `/api/predictions`, dashboard | `e2e/tests/web/predictions.spec.ts` | full | #123 |
+| W34 | Streak badge and engagement tracking over consecutive Bangladesh days | `/api/tracking/engagement`, dashboard | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
+| W35 | Calendar: logged, predicted and fertile-window colours; tap a day for its logs | `/calendar`, `/api/tracking/calendar` | `e2e/tests/web/calendar.spec.ts` | full | #123 |
+| W36 | Insights charts with enough data | `/insights` | `e2e/tests/web/insights.spec.ts` | full | #123 |
+| W37 | Insights empty and partial states | `/insights` | `e2e/tests/web/insights.spec.ts` | full | #123 |
+| W38 | Phase pattern card (most-logged symptoms in the current phase) | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
 | W39 | Dashboard pop-ups and celebration toast | `/dashboard` | `apps/web/e2e/tests/dashboard-popups.spec.ts` | look-only | #123 |
 
 ### Web: content, feedback, settings

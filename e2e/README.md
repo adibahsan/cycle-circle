@@ -96,11 +96,14 @@ Import `test` and `expect` from `support/fixtures.ts` (not `@playwright/test`).
 | `failNext(path, { mode, statusCode?, httpStatus?, delayMs?, times? })` | `await fakeBdapps.failNext('/subscription/send', { mode: 'error', statusCode: 'E1601' })` |
 | `sendWebhook(appPath, body)` → the app's `{ status, body }` | `await fakeBdapps.sendWebhook('/api/webhooks/subscription/notify', {...})` |
 
-DB setup for states the UI can't reach in time: no helper yet (the first ticket that needs one
-adds `support/db.ts`). Build it as `new PrismaClient({ datasourceUrl: DATABASE_URL })` from
-`@prisma/client` (a dependency of this package) after `assertE2eDatabase()`; don't import
-`@vesta/shared`'s `prisma`, which reads `DATABASE_URL` from the env and would hit `vesta_dev`.
-Write dates with the `days` helper. Only set up state this way; check results through the UI or HTTP.
+DB setup for states the UI can't reach in time (`support/db.ts`):
+Built as `new PrismaClient({ datasourceUrl: dbUrl })` from `@prisma/client` after `assertE2eDatabase()`.
+Never imports from `@vesta/shared`'s `prisma` (which reads `DATABASE_URL` from `.env` and would hit `vesta_dev`).
+Setup dates must come from the `days` fixture (`days.startOf(...)`).
+- `ensureUserProfile(phone, options)`: updates or creates a profile and dismisses onboarding tour.
+- `setPeriodLogs(profileId, logs)`: replaces period logs for a profile.
+- `setSymptomLogs(profileId, logs)`: adds symptom logs in a transaction.
+- `setPrediction(profileId, prediction)`: sets or updates predictions (tier, confidence, windows).
 
 ## Fake BDApps (`fake-bdapps/`)
 
