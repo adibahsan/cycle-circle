@@ -16,11 +16,11 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Area | Features | none | look-only | partial | full |
 |---|---|---|---|---|---|
 | Web: login and access | 9 | 0 | 0 | 2 | 7 |
-| Web: onboarding and profiles | 9 | 1 | 2 | 1 | 5 |
+| Web: onboarding and profiles | 9 | 1 | 1 | 1 | 6 |
 | Web: logging | 9 | 4 | 2 | 3 | 0 |
 | Web: dashboard, calendar, predictions, insights | 12 | 0 | 1 | 0 | 11 |
 | Web: content, feedback, settings | 8 | 0 | 0 | 0 | 8 |
-| Web: billing | 7 | 2 | 4 | 1 | 0 |
+| Web: billing | 7 | 0 | 0 | 2 | 5 |
 | Web: landing and public pages | 4 | 0 | 0 | 0 | 4 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 5 | 0 | 0 |
 | **Web total** | 63 | 7 | 14 | 7 | 35 |
@@ -66,7 +66,7 @@ Notes on the tally:
 | W14 | Profile isolation: switching changes dashboard, calendar, insights data | profile chip, `/dashboard`, `/calendar`, `/insights` | `e2e/tests/web/profiles.spec.ts` | full | #121 |
 | W15 | Profile completion: details form, ring, auto-prompt update | `/api/profile/completion`, completion modal | `e2e/tests/web/profiles.spec.ts` | partial | #121 |
 | W16 | Phone user adds and verifies an email | `/api/user/email/request`, `/api/user/email/verify` | - | none | #121 |
-| W17 | Email-trial user adds and verifies a phone via BDApps OTP | `/api/user/phone/request`, `/api/user/phone/verify`, add-number dialog | `apps/web/e2e/tests/popup-shell.spec.ts` (dialog shell only) | look-only | #121 |
+| W17 | Email-trial user adds and verifies a phone via BDApps OTP | `/api/user/phone/request`, `/api/user/phone/verify`, add-number dialog | `e2e/tests/web/billing.spec.ts` | full (Settings dialog, BDApps OTP, Pro after reload, trial cleared) | #121 |
 | W18 | Auto-prompt arbiter: one prompt at a time, priority order | `/dashboard`, all shell pages | `apps/web/e2e/tests/auto-prompts.spec.ts`, `apps/web/e2e/tests/one-home-prompts.spec.ts`, `apps/web/e2e/tests/popup-contract.spec.ts` (mocked states) | look-only | #122 |
 
 ### Web: logging
@@ -117,13 +117,13 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W48 | Upgrade Free to Pro through BDApps; Pro features unlock | `/subscription`, `/api/billing/subscribe` | `apps/web/e2e/tests/account-popups.spec.ts` (paywall dialog, faked state) | look-only | #125 |
-| W49 | Unsubscribe: BDApps records it, user returns to Free | `/subscription`, `/api/billing/unsubscribe` | `apps/web/e2e/tests/account-popups.spec.ts` (dialog only) | look-only | #125 |
-| W50 | Subscription-notify webhook changes plan and writes a Translog entry | `/api/webhooks/subscription/notify` | `e2e/tests/web/bdapps-webhook-unsubscribe.spec.ts` | partial | #125 (route-level: #132) |
-| W51 | Trial lock for an expired email trial (only upgrade or logout gets past) | trial lock, `withAuth` 402 | `apps/web/e2e/tests/auto-prompts.spec.ts` (mocked expiry) | look-only | #125 |
-| W52 | Pro-only features gated for Free users | Pro-gated routes and UI | - | none | #125 |
-| W53 | BDApps failure during subscribe: clear error, plan unchanged | `/api/billing/subscribe` | - | none | #125 (fake failures: #118) |
-| W54 | Subscription page: status, plan, trial pill | `/subscription` | `apps/web/e2e/tests/account-look.spec.ts`, `apps/web/e2e/tests/page-shell.spec.ts` | look-only | #125 |
+| W48 | Upgrade Free to Pro through BDApps; Pro features unlock | `/subscription`, phone OTP request/verify (`/api/billing/subscribe` is CAAS_DISABLED) | `e2e/tests/web/billing.spec.ts` | full (OTP verify call and REGISTERED subscriber on the fake; Pro after reload and /api/auth/status; reminder SMS sent) | #125 |
+| W49 | Unsubscribe: BDApps records it, user returns to Free | `/subscription`, `/api/billing/unsubscribe` | `e2e/tests/web/billing.spec.ts` | full (unsubscribe merchant call recorded; fake UNREGISTERED; Free after reload) | #125 |
+| W50 | Subscription-notify webhook changes plan and writes a Translog entry | `/api/webhooks/subscription/notify` | `e2e/tests/web/bdapps-webhook-unsubscribe.spec.ts` (UNREGISTERED, story 56, #118), `e2e/tests/web/billing.spec.ts` (REGISTERED) | full | #118, #125 (route-level: #132) |
+| W51 | Trial lock for an expired email trial (only upgrade or logout gets past) | trial lock, `withAuth` 402 | `e2e/tests/web/billing.spec.ts` | full (lock persists across /dashboard, /calendar, /insights, /settings, /symptoms, /content; 402 TRIAL_EXPIRED; no dismiss; upgrade and logout paths) | #125 |
+| W52 | Pro-only features gated for Free users | Pro-gated routes and UI | `e2e/tests/web/billing.spec.ts` | partial (SMS alerts gated via cron, proven; Data Export and Advanced Predictions ungated, asserted as current behaviour, deferred by FR-GATE; Ad-free has no UI) | #125 |
+| W53 | BDApps failure during subscribe: clear error, plan unchanged | phone OTP request (`/api/billing/subscribe` is CAAS_DISABLED) | `e2e/tests/web/billing.spec.ts` | full (scoped E1601 failure: error shown, plan Free after reload) | #125 (fake failures: #118) |
+| W54 | Subscription page: status, plan, trial pill | `/subscription` | `e2e/tests/web/billing.spec.ts` | partial (Free and Pro plan card, upgrade/unsubscribe buttons, Free vs Pro table; table unnamed, a11y #153) | #125 |
 
 ### Web: landing and public pages
 
@@ -207,7 +207,7 @@ Cron routes, BDApps webhooks, the Resend webhook and health endpoints have no sc
 | S02 | Nightly-maintenance cron: accuracy snapshot, purge past restore window | `/api/cron/nightly-maintenance` | `e2e/tests/web/cron-nightly-maintenance.spec.ts` (`cron`; sampleSize/mae + purged≥1) | full | #132 |
 | S03 | CaaS-check cron reads balances from fake BDApps | `/api/cron/caas-check` | `e2e/tests/web/cron-caas-check.spec.ts` (`cron`; asserts `/subscription/getStatus` + UNREGISTERED→Free; no CaaS balance call today) | partial | #132 |
 | S04 | Cron-secret auth: routes reject calls without the secret | all `/api/cron/*` | `e2e/tests/web/cron-auth.spec.ts` (desktop; POST+GET, empty Bearer, Basic) | full | #132 |
-| S05 | BDApps webhook: subscription notify (subscribed, unsubscribed) | `/api/webhooks/subscription/notify` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`; subscribed record); `bdapps-webhook-unsubscribe.spec.ts` (plan) | partial | #132 (plan effect: #125) |
+| S05 | BDApps webhook: subscription notify (subscribed, unsubscribed) | `/api/webhooks/subscription/notify` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`; subscribed record); `bdapps-webhook-unsubscribe.spec.ts` (UNREGISTERED plan effect, #118); `billing.spec.ts` (REGISTERED: Free to Pro, translog) | full | #118, #125, #132 |
 | S06 | BDApps webhook: SMS received, recorded as Webhook event, duplicates ignored | `/api/webhooks/sms/receive` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`) | full | #132 |
 | S07 | BDApps webhook: USSD, recorded, duplicates ignored | `/api/webhooks/ussd/receive` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`) | full | #132 |
 | S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`), `e2e/tests/admin/sms.spec.ts` (admin counts) | full (route-level; UI counts: #144; unknown requestId: #145) | #132, #129 |
