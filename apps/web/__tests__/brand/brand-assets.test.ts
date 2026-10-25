@@ -6,7 +6,7 @@ const apps = resolve(__dirname, '../../..');
 const read = (p: string) => readFileSync(resolve(apps, p));
 
 describe.each(['web', 'admin'])('brand assets (%s)', (app) => {
-  it.each(['public/brand/cycle-circle-logo.svg', 'public/brand/drop.svg', 'src/app/icon.svg', 'src/app/apple-icon.svg'])(
+  it.each(['public/brand/cycle-circle-logo.svg', 'public/brand/drop.svg'])(
     '%s is a well-formed SVG',
     (file) => {
       const path = `${app}/${file}`;
@@ -17,6 +17,18 @@ describe.each(['web', 'admin'])('brand assets (%s)', (app) => {
       expect(svg).not.toContain('>V</text>');
     },
   );
+
+  // Favicons are the full logo rendered to PNG (#106): 512px tab icon, 180px apple icon.
+  it.each([
+    ['src/app/icon.png', 512],
+    ['src/app/apple-icon.png', 180],
+  ])('%s is a square %ipx PNG of the full logo', (file, size) => {
+    expect(existsSync(resolve(apps, `${app}/src/app/icon.svg`))).toBe(false);
+    const png = read(`${app}/${file}`);
+    expect(png.subarray(1, 4).toString()).toBe('PNG');
+    expect(png.readUInt32BE(16)).toBe(size);
+    expect(png.readUInt32BE(20)).toBe(size);
+  });
 
   it('ships a PNG logo for email', () => {
     const png = read(`${app}/public/brand/cycle-circle-logo.png`);
