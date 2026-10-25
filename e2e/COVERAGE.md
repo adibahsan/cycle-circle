@@ -16,14 +16,14 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Area | Features | none | look-only | partial | full |
 |---|---|---|---|---|---|
 | Web: login and access | 9 | 8 | 0 | 1 | 0 |
-| Web: onboarding and profiles | 9 | 1 | 2 | 0 | 6 |
+| Web: onboarding and profiles | 9 | 1 | 2 | 1 | 5 |
 | Web: logging | 9 | 4 | 2 | 3 | 0 |
 | Web: dashboard, calendar, predictions, insights | 12 | 2 | 10 | 0 | 0 |
 | Web: content, feedback, settings | 8 | 2 | 5 | 1 | 0 |
 | Web: billing | 7 | 3 | 4 | 0 | 0 |
 | Web: landing and public pages | 4 | 0 | 4 | 0 | 0 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 5 | 0 | 0 |
-| **Web total** | 63 | 20 | 32 | 5 | 6 |
+| **Web total** | 63 | 20 | 32 | 6 | 5 |
 | Admin: access and read-only views | 5 | 5 | 0 | 0 | 0 |
 | Admin: user actions | 4 | 4 | 0 | 0 | 0 |
 | Admin: content | 2 | 2 | 0 | 0 | 0 |
@@ -64,7 +64,7 @@ Notes on the tally:
 | W12 | Profiles: add, rename, switch, delete (persist after reload) | `/profiles`, `/api/profiles`, `/api/profiles/[id]` | `e2e/tests/web/profiles.spec.ts` | full | #121 |
 | W13 | Six-profile limit (seventh rejected) | `/profiles`, `/api/profiles` | `e2e/tests/web/profiles.spec.ts` | full | #121 |
 | W14 | Profile isolation: switching changes dashboard, calendar, insights data | profile chip, `/dashboard`, `/calendar`, `/insights` | `e2e/tests/web/profiles.spec.ts` | full | #121 |
-| W15 | Profile completion: details form, ring, auto-prompt update | `/api/profile/completion`, completion modal | `e2e/tests/web/profiles.spec.ts` | full | #121 |
+| W15 | Profile completion: details form, ring, auto-prompt update | `/api/profile/completion`, completion modal | `e2e/tests/web/profiles.spec.ts` | partial | #121 |
 | W16 | Phone user adds and verifies an email | `/api/user/email/request`, `/api/user/email/verify` | - | none | #121 |
 | W17 | Email-trial user adds and verifies a phone via BDApps OTP | `/api/user/phone/request`, `/api/user/phone/verify`, add-number dialog | `apps/web/e2e/tests/popup-shell.spec.ts` (dialog shell only) | look-only | #121 |
 | W18 | Auto-prompt arbiter: one prompt at a time, priority order | `/dashboard`, all shell pages | `apps/web/e2e/tests/auto-prompts.spec.ts`, `apps/web/e2e/tests/one-home-prompts.spec.ts`, `apps/web/e2e/tests/popup-contract.spec.ts` (mocked states) | look-only | #122 |

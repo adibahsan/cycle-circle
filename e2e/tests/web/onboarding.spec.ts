@@ -35,21 +35,50 @@ test.describe('Onboarding wizard and tour', () => {
     await page.getByRole('button', { name: 'Go to Dashboard' }).click()
     await expect(page).toHaveURL(/\/dashboard/)
 
+    // The first-run tour opens automatically; skip it so it doesn't overlay assertions
+    const tourHeading = page.getByRole('heading', { name: 'Welcome to Cycle Circle' })
+    await expect(tourHeading).toBeVisible()
+    await page.getByRole('button', { name: 'Skip' }).click()
+    await expect(tourHeading).not.toBeVisible()
+
     // Dashboard reflects the answers: active profile name, greeting, and cycle day
     await expect(page.getByRole('link', { name: /Farhana/i })).toBeVisible()
     await expect(page.getByText('Hello, Farhana')).toBeVisible()
     await expect(page.getByText(/Cycle day 11/i)).toBeVisible()
     if (!testInfo.project.name.endsWith('-phone')) {
       await expect(page.getByText('Trying to Conceive')).toBeVisible()
+    } else {
+      // On phone, sidebar is hidden; verify the goal answer on /profiles edit modal
+      await page.goto('/profiles')
+      await expect(page.getByRole('heading', { name: 'My Profiles' })).toBeVisible()
+      await expect(page.getByText('Active')).toBeVisible()
+      await page.getByRole('button', { name: /Edit Profile Farhana/i }).click()
+      const editModal = page.getByRole('dialog', { name: 'Edit Profile' })
+      await expect(editModal).toBeVisible()
+      await expect(editModal.getByRole('button', { name: /Trying to Conceive/i })).toHaveAttribute('aria-pressed', 'true')
+      await editModal.getByRole('button', { name: 'Cancel' }).click()
+      await expect(editModal).not.toBeVisible()
+      await page.goto('/dashboard')
     }
 
-    // Verify it survives a reload
+    // Verify it survives a reload and tour remains absent
     await page.reload()
+    await expect(tourHeading).not.toBeVisible()
     await expect(page.getByRole('link', { name: /Farhana/i })).toBeVisible()
     await expect(page.getByText('Hello, Farhana')).toBeVisible()
     await expect(page.getByText(/Cycle day 11/i)).toBeVisible()
     if (!testInfo.project.name.endsWith('-phone')) {
       await expect(page.getByText('Trying to Conceive')).toBeVisible()
+    } else {
+      await page.goto('/profiles')
+      await expect(page.getByRole('heading', { name: 'My Profiles' })).toBeVisible()
+      await expect(page.getByText('Active')).toBeVisible()
+      await page.getByRole('button', { name: /Edit Profile Farhana/i }).click()
+      const editModal = page.getByRole('dialog', { name: 'Edit Profile' })
+      await expect(editModal).toBeVisible()
+      await expect(editModal.getByRole('button', { name: /Trying to Conceive/i })).toHaveAttribute('aria-pressed', 'true')
+      await editModal.getByRole('button', { name: 'Cancel' }).click()
+      await expect(editModal).not.toBeVisible()
     }
   })
 
