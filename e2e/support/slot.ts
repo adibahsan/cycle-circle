@@ -58,10 +58,20 @@ function databaseUrl(): string {
     'postgresql://vesta_user:vesta_dev@localhost:5431/vesta_dev'
   const url = new URL(base)
   url.pathname = `/${DB_NAME}`
+  // Parallel slots share one Postgres (max_connections 100); Prisma's default pool per app
+  // would exhaust it with 3+ slots running, so each app process is capped.
+  url.searchParams.set('connection_limit', '5')
   return url.toString()
 }
 
 export const DATABASE_URL = databaseUrl()
+
+/** The URL test workers use for setup and checks: a smaller pool, since every worker opens one. */
+export const TEST_DATABASE_URL = (() => {
+  const url = new URL(DATABASE_URL)
+  url.searchParams.set('connection_limit', '2')
+  return url.toString()
+})()
 
 /** Refuse to touch anything that isn't an E2E database. */
 export function assertE2eDatabase(url: string = DATABASE_URL): void {

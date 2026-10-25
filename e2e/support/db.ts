@@ -4,15 +4,15 @@
  * Never import `@vesta/shared` prisma directly, which targets vesta_dev.
  */
 import { PrismaClient } from '@prisma/client'
-import { DATABASE_URL, assertE2eDatabase } from './slot.ts'
+import { TEST_DATABASE_URL, assertE2eDatabase } from './slot.ts'
 
-assertE2eDatabase(DATABASE_URL)
+assertE2eDatabase(TEST_DATABASE_URL)
 
 let client: PrismaClient | undefined
 
 export function getE2eDb(): PrismaClient {
   if (!client) {
-    client = new PrismaClient({ datasourceUrl: DATABASE_URL })
+    client = new PrismaClient({ datasourceUrl: TEST_DATABASE_URL })
   }
   return client
 }
