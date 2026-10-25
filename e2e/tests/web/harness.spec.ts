@@ -21,4 +21,9 @@ test.describe('Harness', () => {
     expect(days.daysAgo(1) < days.today && days.today < days.daysFromNow(1)).toBe(true)
     expect(days.startOf(days.today).toISOString()).toBe(new Date(`${days.today}T00:00:00+06:00`).toISOString())
   })
+
+  test('db fixture can query the slot database', async ({ db }) => {
+    const adminCount = await db.user.count({ where: { role: 'ADMIN' } })
+    expect(adminCount).toBeGreaterThan(0)
+  })
 })
