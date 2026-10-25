@@ -15,7 +15,7 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 
 | Area | Features | none | look-only | partial | full |
 |---|---|---|---|---|---|
-| Web: login and access | 9 | 3 | 0 | 0 | 6 |
+| Web: login and access | 9 | 2 | 0 | 0 | 7 |
 | Web: onboarding and profiles | 9 | 3 | 6 | 0 | 0 |
 | Web: logging | 9 | 4 | 2 | 3 | 0 |
 | Web: dashboard, calendar, predictions, insights | 12 | 2 | 10 | 0 | 0 |
@@ -23,21 +23,21 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Web: billing | 7 | 2 | 4 | 1 | 0 |
 | Web: landing and public pages | 4 | 0 | 4 | 0 | 0 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 5 | 0 | 0 |
-| **Web total** | 63 | 16 | 36 | 5 | 6 |
-| Admin: access and read-only views | 5 | 1 | 0 | 4 | 0 |
-| Admin: user actions | 4 | 3 | 0 | 1 | 0 |
+| **Web total** | 63 | 15 | 36 | 5 | 7 |
+| Admin: access and read-only views | 5 | 0 | 0 | 4 | 1 |
+| Admin: user actions | 4 | 0 | 0 | 1 | 3 |
 | Admin: content | 2 | 2 | 0 | 0 | 0 |
 | Admin: analytics and engagement | 2 | 2 | 0 | 0 | 0 |
 | Admin: SMS | 2 | 2 | 0 | 0 | 0 |
 | Admin: feedback, emails, audit, logs, system | 6 | 6 | 0 | 0 | 0 |
-| **Admin total** | 21 | 16 | 0 | 5 | 0 |
+| **Admin total** | 21 | 12 | 0 | 5 | 4 |
 | Server-only (not counted) | 10 | 9 | 0 | 1 | 0 |
 
 Notes on the tally:
 - Web login/access W01–W04, W07, W08 are `full` via `e2e/tests/web/login.spec.ts` (#120). Older look-only rows that aborted saves stay look-only/partial.
 - Terms follow `GLOSSARY.md`: Bangladesh day, Subscriber, BDApps OTP, App OTP, Check-in, Logging nudge, Auto-prompt, Trial lock, Translog, Webhook event, Merchant call, Phase pattern, Profile completion.
 - Dev-only pages (`/internal/*`, `/api/simulator-check/*`, `/api/internal/revalidate`, `/api/auth/dev-login`) are not product features and are not listed.
-- Admin A01–A03, A05 and A09 land in #126 (login helper + read-only views + CSV). A04 user-detail tabs stay for a later pass; A06–A08 mutating actions are #127.
+- Admin A01–A03, A05 and A09 land in #126 (login helper + read-only views + CSV). A04 + A06–A08 (user detail tabs + mutating actions) and web W09 (session blocked) land in #127.
 
 ## Web (63)
 
@@ -53,7 +53,7 @@ Notes on the tally:
 | W06 | Magic-link security: expired or reused link rejected | `/api/auth/magic-link/callback` | - | none | #119 |
 | W07 | Logout ends the session | `/api/auth/logout`, settings logout dialog | `e2e/tests/web/login.spec.ts`, `apps/web/e2e/tests/bengali-no-english.spec.ts` | full | #120 |
 | W08 | Route protection: logged-out visitor redirected from every protected page | all `(main)` routes, `/onboarding` | `e2e/tests/web/login.spec.ts` | full | #120 |
-| W09 | Suspended or deleted user session is blocked | `/api/auth/status`, withAuth | - | none | #127 |
+| W09 | Suspended or deleted user session is blocked | `/api/auth/status`, withAuth | `e2e/tests/admin/user-actions.spec.ts` | full (suspend + delete bump sessionsValidAfter → auth/status 401) | #127 |
 
 ### Web: onboarding and profiles
 
@@ -153,16 +153,16 @@ Notes on the tally:
 | A01 | Login with email and password; non-admin sees forbidden page; logout | `/login`, `/forbidden`, `/api/auth/login`, `/api/auth/logout` | `e2e/tests/admin/login.spec.ts` | deep (wrong password, non-admin form error, unauth redirect, forged-token forbidden, logout) | #126 |
 | A02 | Dashboard KPIs and signup trend | `/` | `e2e/tests/admin/dashboard.spec.ts` | partial (Total Users UI ≥ before+2 after creates — parallel-safe; today's signup bucket via DB — Recharts SVG has no accessible per-day counts; a11y #135) | #126 |
 | A03 | Users: search and filter | `/users` | `e2e/tests/admin/users.spec.ts` | deep (search narrows; Suspended set up before load; hides active) | #126 |
-| A04 | User detail: profile, plan history, Translog tabs | `/users/[id]` | - | none | #127 |
+| A04 | User detail: profile, plan history, Translog tabs | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (Profiles empty state; Plan history after grant/revoke; Translog via `translogFor(..., { app: 'admin' })` — no Translog tab in UI) | #127 |
 | A05 | Subscriptions list with status filter | `/subscriptions` | `e2e/tests/admin/subscriptions.spec.ts` | deep (explicit PRO/FREE via setUserSubscription; pageSize=100; all visible rows match filter) | #126 |
 
 ### Admin: user actions
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A06 | Suspend and reactivate (ends or keeps BDApps billing) | `/users/[id]` | - | none | #127 |
-| A07 | Delete and restore within 30 days; no restore after the window | `/users/[id]` | - | none | #127 |
-| A08 | Grant and revoke Pro (admin override) | `/users/[id]` | - | none | #127 |
+| A06 | Suspend and reactivate (ends or keeps BDApps billing) | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (suspend → BDApps UNREGISTERED + session 401; reactivate → OTP login) | #127 |
+| A07 | Delete and restore within 30 days; no restore after the window | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (delete/restore UI; aged deletedAt via `days` shows window passed) | #127 |
+| A08 | Grant and revoke Pro (admin override) | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (Set FREE/PRO; plan history + admin translog + web subscription) | #127 |
 | A09 | Users CSV export | `/users` | `e2e/tests/admin/users.spec.ts` | partial (filtered-only export expected-to-fail #134) | #126 |
 
 ### Admin: content

@@ -176,8 +176,10 @@ status below 500; down for 5xx, a network error or a 4s timeout). It is not a me
 Only subscription-notify changes a user; the other three are stored. Idempotency keys must be
 unique per event.
 
-**Translog** has no screen: `translogFor(userId)` from `support/translog.ts` reads the web app's
-translog lines for that user (`plan.change` with `cause`).
+**Translog** has no screen: `translogFor(userId)` from `support/translog.ts` reads today's
+translog lines for that user (`plan.change` with `cause`). Defaults to the **web** app's
+`LOG_DIR` (OTP signup, webhooks). Admin grant/revoke/suspend lines are under the **admin**
+app: `translogFor(userId, { app: 'admin' })`, or merge both with `{ apps: ['web', 'admin'] }`.
 
 ## Conventions
 
