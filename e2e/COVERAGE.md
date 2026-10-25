@@ -19,11 +19,11 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Web: onboarding and profiles | 9 | 1 | 2 | 1 | 5 |
 | Web: logging | 9 | 4 | 2 | 3 | 0 |
 | Web: dashboard, calendar, predictions, insights | 12 | 2 | 10 | 0 | 0 |
-| Web: content, feedback, settings | 8 | 2 | 5 | 1 | 0 |
+| Web: content, feedback, settings | 8 | 0 | 0 | 0 | 8 |
 | Web: billing | 7 | 2 | 4 | 1 | 0 |
-| Web: landing and public pages | 4 | 0 | 4 | 0 | 0 |
+| Web: landing and public pages | 4 | 0 | 0 | 0 | 4 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 5 | 0 | 0 |
-| **Web total** | 63 | 11 | 32 | 8 | 12 |
+| **Web total** | 63 | 9 | 23 | 7 | 24 |
 | Admin: access and read-only views | 5 | 0 | 0 | 4 | 1 |
 | Admin: user actions | 4 | 0 | 0 | 1 | 3 |
 | Admin: content | 2 | 2 | 0 | 0 | 0 |
@@ -104,14 +104,14 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W40 | Learn: filter articles by phase, open the reader, English and Bengali | `/content` | `apps/web/e2e/tests/page-shell.spec.ts`, `apps/web/e2e/tests/card-rows.spec.ts` (layout only) | look-only | #124 |
-| W41 | Draft article never shown to users | `/content` | - | none | #124 (authoring side: #128) |
-| W42 | Feedback: submit and see it in history | `/feedback` | `apps/web/e2e/tests/page-leftovers.spec.ts` (layout only) | look-only | #124 |
-| W43 | Notification preferences and reminder opt-out (cron skips the user) | `/settings` | `apps/web/e2e/tests/account-look.spec.ts` (layout only) | look-only | #124 (cron side: #132) |
-| W44 | Data export: CSV and XLSX contain logged entries | `/settings` | - | none | #124 |
-| W45 | Account editing: name and contact details persist | `/settings`, edit-profile dialog | `apps/web/e2e/tests/account-popups.spec.ts` (dialog shell only) | look-only | #124 |
-| W46 | Theme toggle (light, dark, remembered) | shell header, `/settings` | `apps/web/e2e/tests/shell-look.spec.ts`, `apps/web/e2e/tests/insights-look.spec.ts` (screenshots in both themes) | look-only | #124 |
-| W47 | Language switch (English, Bengali) writes the cookie; server renders it | shell, `/welcome`, `/settings` | `apps/web/e2e/tests/language-ssr.spec.ts` | partial | #124 (logged-in shell: extend) |
+| W40 | Learn: filter articles by phase, open the reader, English and Bengali | `/content` | `e2e/tests/web/content.spec.ts` | full | #124 |
+| W41 | Draft article never shown to users | `/content` | `e2e/tests/web/content.spec.ts` | full | #124 (authoring side: #128) |
+| W42 | Feedback: submit and see it in history | `/feedback` | `e2e/tests/web/feedback.spec.ts` | full | #124 |
+| W43 | Notification preferences and reminder opt-out (cron skips the user) | `/settings` | `e2e/tests/web/settings.spec.ts` | full | #124 (cron side: #132) |
+| W44 | Data export: CSV and XLSX contain logged entries | `/settings` | `e2e/tests/web/settings.spec.ts` | full | #124 |
+| W45 | Account editing: name and contact details persist | `/settings`, edit-profile dialog | `e2e/tests/web/settings.spec.ts` | full | #124 |
+| W46 | Theme toggle (light, dark, remembered) | shell header, `/settings` | `e2e/tests/web/settings.spec.ts` | full | #124 |
+| W47 | Language switch (English, Bengali) writes the cookie; server renders it | shell, `/welcome`, `/settings` | `e2e/tests/web/settings.spec.ts`, `apps/web/e2e/tests/language-ssr.spec.ts` | full | #124 (logged-in shell: extend) |
 
 ### Web: billing
 
@@ -129,10 +129,10 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W55 | Welcome page (landing) | `/welcome`, `/` | `apps/web/e2e/tests/landing.spec.ts` | look-only | #124 |
-| W56 | Privacy page | `/privacy` | `apps/web/e2e/tests/bengali-no-english.spec.ts` (no-English scan only) | look-only | #124 |
-| W57 | Terms page | `/terms` | `apps/web/e2e/tests/bengali-no-english.spec.ts` (no-English scan only) | look-only | #124 |
-| W58 | Get-started page leads into login | `/get-started`, `/login` | `apps/web/e2e/tests/bengali-no-english.spec.ts` (no-English scan only) | look-only | #124 |
+| W55 | Welcome page (landing) | `/welcome`, `/` | `e2e/tests/web/public-pages.spec.ts`, `apps/web/e2e/tests/landing.spec.ts` | full | #124 |
+| W56 | Privacy page | `/privacy` | `e2e/tests/web/public-pages.spec.ts` | full | #124 |
+| W57 | Terms page | `/terms` | `e2e/tests/web/public-pages.spec.ts` | full | #124 |
+| W58 | Get-started page leads into login | `/get-started`, `/login` | `e2e/tests/web/public-pages.spec.ts` | full | #124 |
 
 ### Web: shell, phone and Bengali (cross-cutting)
 
