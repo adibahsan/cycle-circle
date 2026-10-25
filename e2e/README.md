@@ -93,7 +93,11 @@ Import `test` and `expect` from `support/fixtures.ts` (not `@playwright/test`).
 | `days` fixture (`support/bangladesh-day.ts`) | Bangladesh days from the **server's** clock (HTTP `Date`): `today`, `daysAgo(n)`, `daysFromNow(n)` (`YYYY-MM-DD`), `startOf(day)` (the `Date` to write to the DB), `now`. No fake clock. | `const start = days.startOf(days.daysAgo(35))` |
 | `fakeBdapps` fixture (`support/fake-bdapps.ts`) | Control client for the fake BDApps. | see below |
 | `db` fixture (`support/db.ts`) | Direct Prisma client for the slot database (`assertE2eDatabase` checked). Use only for test setup state the UI cannot reach in time (e.g. aging an OTP challenge). | `const count = await db.user.count()` |
-| `assertMailpit()` (`support/mailpit.ts`) | Mailpit reachability. A "wait for email to X" client arrives with the magic-link ticket. | `await assertMailpit()` |
+| `assertMailpit()` (`support/mailpit.ts`) | Mailpit reachability. | `await assertMailpit()` |
+| `waitForEmail(to, { since?, timeoutMs? })` (`support/mailpit.ts`) | Wait for newest email to `to` since `since`; returns subject, text, HTML, links. | `const { links } = await waitForEmail(email, { since })` |
+| `waitForMagicLinkEmail(email, { since })` (`support/mailpit.ts`) | Wait for a magic-link email already sent (e.g. by UI); returns callback URL. | `const { callbackUrl } = await waitForMagicLinkEmail(email, { since })` |
+| `requestMagicLinkAndWait(email, { language?, baseUrl?, since?, timeoutMs? })` (`support/mailpit.ts`) | POST `/api/auth/magic-link/request` then wait for email; returns callback URL. | `const { callbackUrl } = await requestMagicLinkAndWait(email)` |
+| `createEmailTrialUser(browser, opts?)` (`support/users.ts`) | Throwaway email-trial user via the real magic-link flow, unique address (limit 3 requests/hour/email: never log seeded users in this way). `{ withProfile: true }` seeds user + profile first so it lands on the dashboard. Also `newEmail()` and `preseedEmailTrialUser(email)`. Returns `{ email, context }`. | `const { context, email } = await createEmailTrialUser(browser)` |
 | `URLS`, `PORTS`, `SECRETS`, `DATABASE_URL` (`support/slot.ts`) | Slot-aware URLs (`URLS.web/admin/fakeBdapps/mailpit`), the cron secret, admin credentials, DB URL. | `` request.get(`${URLS.web}/api/cron/x`, { headers: { authorization: `Bearer ${SECRETS.cronSecret}` } }) `` |
 
 Admin helpers (`support/admin.ts`) — typed for tickets #127–#131:
