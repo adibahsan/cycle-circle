@@ -13,6 +13,7 @@ import {
   isSameMonth,
   parseISO,
   differenceInCalendarDays,
+  subDays,
 } from 'date-fns'
 import { bn } from 'date-fns/locale/bn'
 import { CalendarDays, ChevronLeft, ChevronRight, X, Pencil, Baby, Plus, Droplets, Flower2, Sprout, ArrowRight } from 'lucide-react'
@@ -23,7 +24,6 @@ import { formatShortDate } from '@/lib/format-date'
 import { useLanguage } from '@/lib/use-language'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
 import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
-import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal'
 import type { CyclePhase, FlowIntensity } from '@vesta/shared/types'
 import { isPregnancy } from '@vesta/shared/utils/goal'
 import { selectFertileWindow } from '@vesta/shared/utils/fertile-window'
@@ -33,6 +33,7 @@ import { MonthGrid, type MonthDayAction, type MonthDayState } from '@/components
 import { cyclePhaseOn, periodStarts } from '@/lib/calendar-phase'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { toDeviceDay } from '@/lib/local-date'
+import { canLogPastPeriod } from './period-backfill'
 import { appLocale } from '@/lib/language'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -103,7 +104,6 @@ interface Props {
   symptomLogs: SymptomLog[]
   periodLogs: PeriodLog[]
   goal: string | null
-  last30?: { date: string; logged: boolean }[]
 }
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
@@ -150,7 +150,7 @@ interface DayDetailProps {
   meta: DayMeta
   symptoms: SymptomLog[]
   onClose: () => void
-  /** Set for unlogged past days in the backfill window. */
+  /** Set for past days outside every logged period. */
   onAddLog?: () => void
 }
 
@@ -250,7 +250,7 @@ function DayDetail({ date, meta, symptoms, onClose, onAddLog }: DayDetailProps) 
             {onAddLog && (
               <Button variant="secondary" size="sm" onClick={onAddLog} className="min-h-11">
                 <Plus size={14} aria-hidden="true" />
-                {t('calendar.addLogFor', { date: format(date, 'MMMM d', { locale: dateLocale }) })}
+                {t('calendar.logPeriodFrom', { date: format(date, 'MMMM d', { locale: dateLocale }) })}
               </Button>
             )}
           </div>
@@ -424,7 +424,7 @@ function lastPeriodStartIso(logs: PeriodLog[]): string | null {
   return best
 }
 
-export function CalendarClient({ profiles, activeProfileId, month, days, windowDays, symptomLogs, periodLogs, goal, last30 = [] }: Props) {
+export function CalendarClient({ profiles, activeProfileId, month, days, windowDays, symptomLogs, periodLogs, goal }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const language = useLanguage()
@@ -453,26 +453,15 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
   }, [])
   const [editingLog, setEditingLog] = useState<PeriodLog | null>(null)
 
-  // ── Ghost-day backfill state ────────────────────────────────────────────────
-  const [backfillDate, setBackfillDate] = useState<string | null>(null)
+  // Past day the user is logging a period from (opens PeriodLogModal in create mode)
+  const [logFromDate, setLogFromDate] = useState<string | null>(null)
 
-  // Build a Set of logged dates from the last-30 engagement data
-  const loggedDatesSet = useMemo(() => {
-    const s = new Set<string>()
-    for (const entry of last30) {
-      if (entry.logged) s.add(entry.date)
-    }
-    return s
-  }, [last30])
-
-  // Build a Set of all dates in the last-30 window for quick lookup
-  const last30WindowSet = useMemo(() => {
-    const s = new Set<string>()
-    for (const entry of last30) {
-      s.add(entry.date)
-    }
-    return s
-  }, [last30])
+  const todayStr = format(today, 'yyyy-MM-dd')
+  const thirtyDaysAgoStr = format(subDays(today, 30), 'yyyy-MM-dd')
+  const loggedRanges = useMemo(
+    () => periodLogs.map((l) => ({ startDate: toDeviceDay(l.startDate), endDate: toDeviceDay(l.endDate) })),
+    [periodLogs],
+  )
 
   // Build the API calendar lookup map
   const apiCalendarMap = useMemo(() => {
@@ -567,14 +556,16 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
     return meta && { flags: meta, phase: meta.phase }
   }, [dayMetaMap])
 
-  const handleGhostTap = useCallback((d: string) => setBackfillDate(d), [])
-  /** Unlogged past day inside the 30-day backfill window. */
-  const isGhostDate = (dateStr: string) =>
-    last30WindowSet.has(dateStr) && !loggedDatesSet.has(dateStr) && dateStr < format(today, 'yyyy-MM-dd')
-  const ghostAction: MonthDayAction = {
-    show: (date) => isGhostDate(format(date, 'yyyy-MM-dd')),
-    label: (date) => t('calendar.addLogFor', { date: format(date, 'MMMM d', { locale: dateLocale }) }),
-    onActivate: (date) => handleGhostTap(format(date, 'yyyy-MM-dd')),
+  /** Any past day outside a logged period can start a new period log. */
+  const canLogFrom = (dateStr: string) => canLogPastPeriod(dateStr, todayStr, loggedRanges)
+  const logPeriodAction: MonthDayAction = {
+    // The overlay covers the whole cell on desktop, so limit it to recent days; older days go through the DayDetail button.
+    show: (date) => {
+      const d = format(date, 'yyyy-MM-dd')
+      return canLogFrom(d) && d >= thirtyDaysAgoStr
+    },
+    label: (date) => t('calendar.logPeriodFrom', { date: format(date, 'MMMM d', { locale: dateLocale }) }),
+    onActivate: (date) => setLogFromDate(format(date, 'yyyy-MM-dd')),
   }
 
   // Extract prediction summary from calendar data for the monthly summary card.
@@ -611,7 +602,7 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
             size="roomy"
             dayContent={dayContent}
             dayState={dayState}
-            dayAction={ghostAction}
+            dayAction={logPeriodAction}
             banner={pregnancy && (
               <motion.div
                 initial={prefersReducedMotion ? {} : { opacity: 0, y: -4 }}
@@ -646,7 +637,7 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
                 meta={selectedMeta}
                 symptoms={selectedSymptoms}
                 onClose={() => setSelectedDate(null)}
-                onAddLog={isGhostDate(format(selectedDate, 'yyyy-MM-dd')) ? () => handleGhostTap(format(selectedDate, 'yyyy-MM-dd')) : undefined}
+                onAddLog={canLogFrom(format(selectedDate, 'yyyy-MM-dd')) ? () => setLogFromDate(format(selectedDate, 'yyyy-MM-dd')) : undefined}
               />
             )}
           </AnimatePresence>
@@ -743,15 +734,15 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
         }}
       />
 
-      {/* ── Ghost-day backfill modal ── */}
-      <QuickSymptomModal
-        open={backfillDate !== null}
-        onClose={() => setBackfillDate(null)}
+      {/* ── Log a past period (create mode, starts on the tapped day) ── */}
+      <PeriodLogModal
+        open={logFromDate !== null}
         profileId={activeProfileId}
-        goal={goal}
-        initialDate={backfillDate ?? undefined}
+        initialStart={logFromDate ?? undefined}
+        initialEnd={logFromDate ?? undefined}
+        initialFlow="medium"
+        onClose={() => setLogFromDate(null)}
         onSaved={() => {
-          setBackfillDate(null)
           router.refresh()
           window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
         }}

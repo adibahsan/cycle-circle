@@ -170,6 +170,7 @@ const resources = {
         flowMedium: 'Medium',
         flowHeavy: 'Heavy',
         logPeriodMotivation: 'One quick log keeps your predictions sharp',
+        periodOverlap: 'This overlaps a period you already logged. Change the dates or edit that period.',
         // #76 dashboard modes: pregnancy, menopause and first-run heroes, example cycle
         pregnancyHeroTitle: 'Pregnancy tracking is coming soon',
         pregnancyHeroBody: 'Predictions are paused while you are pregnant. Keep checking in and logging your symptoms.',
@@ -256,7 +257,7 @@ const resources = {
         fertileWindow: 'Fertile Window',
         predicted: 'Predicted',
         predictedPeriod: 'Predicted period',
-        addLogFor: 'Add log for {{date}}',
+        logPeriodFrom: 'Log period from {{date}}',
         periodDay: 'Period day',
         ovulationLabel: 'Ovulation',
         fertileWindowLabel: 'Fertile window',
@@ -1020,6 +1021,7 @@ const resources = {
         flowMedium: 'মাঝারি',
         flowHeavy: 'ভারী',
         logPeriodMotivation: 'একটি দ্রুত লগ আপনার পূর্বাভাস নিখুঁত রাখে',
+        periodOverlap: 'এটি আগে লগ করা একটি পিরিয়ডের সাথে মিলে যাচ্ছে। তারিখ বদলান বা সেই পিরিয়ডটি সম্পাদনা করুন।',
         // #76 dashboard modes: pregnancy, menopause and first-run heroes, example cycle
         pregnancyHeroTitle: 'গর্ভাবস্থা ট্র্যাকিং শীঘ্রই আসছে',
         pregnancyHeroBody: 'গর্ভাবস্থায় পূর্বাভাস বন্ধ থাকে। চেক-ইন আর লক্ষণ লগ করা চালিয়ে যান।',
@@ -1106,7 +1108,7 @@ const resources = {
         fertileWindow: 'উর্বর উইন্ডো',
         predicted: 'পূর্বাভাসিত',
         predictedPeriod: 'পূর্বাভাসিত পিরিয়ড',
-        addLogFor: '{{date}} এর জন্য লগ যোগ করুন',
+        logPeriodFrom: '{{date}} থেকে পিরিয়ড লগ করুন',
         periodDay: 'পিরিয়ডের দিন',
         ovulationLabel: 'ডিম্বস্ফোটন',
         fertileWindowLabel: 'উর্বর উইন্ডো',

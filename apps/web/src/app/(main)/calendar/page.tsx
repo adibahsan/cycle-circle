@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/app/queries/auth-queries'
 import { getProfiles, getActiveProfileId } from '@/app/queries/profile-queries'
-import { getCalendarData, getPeriodLogs, getEngagementSummary } from '@/app/queries/tracking-queries'
+import { getCalendarData, getPeriodLogs } from '@/app/queries/tracking-queries'
 import { getSymptomLogs } from '@/app/queries/symptom-queries'
 import { CalendarClient } from './CalendarClient'
 
@@ -30,13 +30,12 @@ export default async function CalendarPage({
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   }
 
-  const [calendarDays, prevDays, nextDays, symptomLogs, periodLogs, engagement] = await Promise.all([
+  const [calendarDays, prevDays, nextDays, symptomLogs, periodLogs] = await Promise.all([
     getCalendarData(profileId, month),
     getCalendarData(profileId, adjacent(-1)),
     getCalendarData(profileId, adjacent(1)),
     getSymptomLogs(profileId),
     getPeriodLogs(profileId),
-    getEngagementSummary(profileId),
   ])
 
   const activeProfile = profiles.find((p) => p.id === profileId) ?? profiles[0]
@@ -51,7 +50,6 @@ export default async function CalendarPage({
       symptomLogs={symptomLogs}
       periodLogs={periodLogs}
       goal={activeProfile?.goal ?? null}
-      last30={engagement?.last30 ?? []}
     />
   )
 }
