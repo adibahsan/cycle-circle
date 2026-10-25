@@ -163,10 +163,14 @@ plus `setUserSubscription`, `createArticle()`, `createProfileWithLogs()` and `cl
 `assertE2eDatabase()` (`TEST_DATABASE_URL` is the slot DB with a small `connection_limit`);
 don't import `@vesta/shared`'s `prisma`, which reads `DATABASE_URL` from the env and would hit
 `vesta_dev`. The shared client is disconnected in worker teardown (`closeE2eDb` via
-`support/fixtures.ts`). Write dates with the `days` helper.
+`support/fixtures.ts`). Write dates with the `days` helper (`days.startOf(...)`).
 Only set up state this way; check results through the UI or HTTP. Admin users for the suite are
 created with `createAdminUser` in that same DB — not by reusing seeded web personas.
 `createLoggedInAdmin` closes the browser context if HTTP login fails so contexts do not leak.
+- `ensureUserProfile(phone, options)`: updates or creates a profile and dismisses onboarding tour.
+- `setPeriodLogs(profileId, logs)`: replaces period logs for a profile.
+- `setSymptomLogs(profileId, logs)`: adds symptom logs in a transaction.
+- `setPrediction(profileId, prediction)`: sets or updates predictions (tier, confidence, windows).
 
 ## Fake BDApps (`fake-bdapps/`)
 
@@ -202,11 +206,15 @@ answers 400 for a missing/empty `match` or a bad mode field.
 `match` is **required** and scopes the failure to a call, so parallel tests (and the desktop and phone
 projects) can script the same path without stealing each other's failure: `{ subscriberId }` (masked id
 or phone, matched against `body.subscriberId`), `{ destinationAddress }` (against `body.destinationAddress`
-or any `body.destinationAddresses`), `{ phone }` (either, after normalisation); all given fields must match.
+or any `body.destinationAddresses`), `{ phone }` (either, after normalisation), `{ messageContains }`
+(substring of `body.message` — use this when many tests share `destinationAddresses: ['tel:all']`);
+all given fields must match.
 `{ any: true }` matches every call to the path and is **exclusive**: only for a path nobody else uses,
 i.e. GET `/health`, which carries no subscriber. Those tests run on the desktop project only
 (`bdapps-health.spec.ts`). Typed webhook bodies: `SubscriptionNotifyPayload`, `SmsReceivePayload`,
 `SmsReportPayload`, `UssdReceivePayload` in `support/fake-bdapps.ts`.
+`messageContains` is covered by a small unit file (`pnpm exec tsx --test fake-bdapps/state.unit.test.ts`)
+and by `bdapps-fake.spec.ts` (two `tel:all` sends; only the matching message fails).
 
 **Health**: the fake answers `GET /health` (200, `{status:'ok'}`). The apps' env sets
 `BDAPPS_SIMULATOR_UI_URL` to it, which is the only URL `/api/health/bdapps` fetches (up for any

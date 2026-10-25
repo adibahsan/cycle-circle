@@ -18,20 +18,20 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Web: login and access | 9 | 0 | 0 | 2 | 7 |
 | Web: onboarding and profiles | 9 | 1 | 2 | 1 | 5 |
 | Web: logging | 9 | 4 | 2 | 3 | 0 |
-| Web: dashboard, calendar, predictions, insights | 12 | 2 | 10 | 0 | 0 |
+| Web: dashboard, calendar, predictions, insights | 12 | 0 | 1 | 0 | 11 |
 | Web: content, feedback, settings | 8 | 0 | 0 | 0 | 8 |
 | Web: billing | 7 | 2 | 4 | 1 | 0 |
 | Web: landing and public pages | 4 | 0 | 0 | 0 | 4 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 5 | 0 | 0 |
-| **Web total** | 63 | 9 | 23 | 7 | 24 |
+| **Web total** | 63 | 7 | 14 | 7 | 35 |
 | Admin: access and read-only views | 5 | 0 | 0 | 4 | 1 |
 | Admin: user actions | 4 | 0 | 0 | 1 | 3 |
 | Admin: content | 2 | 0 | 0 | 0 | 2 |
 | Admin: analytics and engagement | 2 | 2 | 0 | 0 | 0 |
-| Admin: SMS | 2 | 2 | 0 | 0 | 0 |
+| Admin: SMS | 2 | 0 | 0 | 0 | 2 |
 | Admin: feedback, emails, audit, logs, system | 6 | 6 | 0 | 0 | 0 |
-| **Admin total** | 21 | 10 | 0 | 5 | 6 |
-| Server-only (not counted) | 10 | 9 | 0 | 1 | 0 |
+| **Admin total** | 21 | 8 | 0 | 5 | 8 |
+| Server-only (not counted) | 10 | 8 | 0 | 2 | 0 |
 
 Notes on the tally:
 - Web login/access W01–W04, W07, W08 are `full` via `e2e/tests/web/login.spec.ts` (#120); onboarding and profiles W10–W14 are `full`, W15 is `partial` via `e2e/tests/web/onboarding.spec.ts` and `profiles.spec.ts` (#121). Older look-only rows that aborted saves stay look-only/partial.
@@ -87,17 +87,17 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W28 | Dashboard standard mode: hero, cycle ring, cards, layout | `/dashboard`, `/api/tracking/dashboard` | `apps/web/e2e/tests/smoke.spec.ts`, `apps/web/e2e/tests/dashboard-layout.spec.ts`, `apps/web/e2e/tests/card-rows.spec.ts`, `apps/web/e2e/tests/shell-initial.spec.ts` | look-only | #123 |
-| W29 | Dashboard pregnancy mode | `/dashboard` | `apps/web/e2e/tests/dashboard-modes.spec.ts` | look-only | #123 |
-| W30 | Dashboard menopause mode | `/dashboard` | `apps/web/e2e/tests/dashboard-modes.spec.ts` | look-only | #123 |
-| W31 | Dashboard first-run state (no period ever logged) | `/dashboard` | `apps/web/e2e/tests/dashboard-modes.spec.ts` | look-only | #123 |
-| W32 | Late-period alert with day count | `/dashboard`, late alert dialog | `apps/web/e2e/tests/auto-prompts.spec.ts`, `apps/web/e2e/tests/dashboard-popups.spec.ts` | look-only | #123 |
-| W33 | Prediction tier and confidence recalculate as cycles are logged | `/api/predictions`, dashboard | - | none | #123 |
-| W34 | Streak badge and engagement tracking over consecutive Bangladesh days | `/api/tracking/engagement`, dashboard | - | none | #123 |
-| W35 | Calendar: logged, predicted and fertile-window colours; tap a day for its logs | `/calendar`, `/api/tracking/calendar` | `apps/web/e2e/tests/calendar-days.spec.ts` | look-only | #123 |
-| W36 | Insights charts with enough data | `/insights` | `apps/web/e2e/tests/insights-look.spec.ts`, `apps/web/e2e/tests/insights-a11y.spec.ts` | look-only | #123 |
-| W37 | Insights empty and partial states | `/insights` | `apps/web/e2e/tests/insights-look.spec.ts` | look-only | #123 |
-| W38 | Phase pattern card (most-logged symptoms in the current phase) | `/dashboard` | `apps/web/e2e/tests/phase-pattern.spec.ts` | look-only | #123 |
+| W28 | Dashboard standard mode: hero, cycle ring, cards, layout | `/dashboard`, `/api/tracking/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
+| W29 | Dashboard pregnancy mode | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
+| W30 | Dashboard menopause mode | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
+| W31 | Dashboard first-run state (no period ever logged) | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
+| W32 | Late-period alert with day count | `/dashboard`, late alert dialog | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
+| W33 | Prediction tier and confidence recalculate as cycles are logged | `/api/predictions`, dashboard | `e2e/tests/web/predictions.spec.ts` | full | #123 |
+| W34 | Streak badge and engagement tracking over consecutive Bangladesh days | `/api/tracking/engagement`, dashboard | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
+| W35 | Calendar: logged, predicted and fertile-window colours; tap a day for its logs | `/calendar`, `/api/tracking/calendar` | `e2e/tests/web/calendar.spec.ts` | full | #123 |
+| W36 | Insights charts with enough data | `/insights` | `e2e/tests/web/insights.spec.ts` | full | #123 |
+| W37 | Insights empty and partial states | `/insights` | `e2e/tests/web/insights.spec.ts` | full | #123 |
+| W38 | Phase pattern card (most-logged symptoms in the current phase) | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
 | W39 | Dashboard pop-ups and celebration toast | `/dashboard` | `apps/web/e2e/tests/dashboard-popups.spec.ts` | look-only | #123 |
 
 ### Web: content, feedback, settings
@@ -183,8 +183,8 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A14 | SMS broadcast: bilingual create, schedule, send, right language per user | `/sms` | - | none | #129 |
-| A15 | SMS queue: failed send retried, delivery report updates counts | `/sms` | - | none | #129 |
+| A14 | SMS broadcast: bilingual create, schedule, send; one composed body by send language (`tel:all`) | `/sms` | `e2e/tests/admin/sms.spec.ts` | full | #129 (wording: #143) |
+| A15 | SMS queue: failed send retried; delivery-report webhook updates counts (webhook path; prod E1312) | `/sms` | `e2e/tests/admin/sms.spec.ts` | full (counts via DB + reload; UI counts: #144) | #129 |
 
 ### Admin: feedback, emails, audit, logs, system
 
@@ -210,6 +210,6 @@ Cron routes, BDApps webhooks, the Resend webhook and health endpoints have no sc
 | S05 | BDApps webhook: subscription notify (subscribed, unsubscribed) | `/api/webhooks/subscription/notify` | - | none | #132 (plan effect: #125) |
 | S06 | BDApps webhook: SMS received, recorded as Webhook event, duplicates ignored | `/api/webhooks/sms/receive` | - | none | #132 |
 | S07 | BDApps webhook: USSD, recorded, duplicates ignored | `/api/webhooks/ussd/receive` | - | none | #132 |
-| S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | - | none | #132 (admin counts: #129) |
+| S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | `e2e/tests/admin/sms.spec.ts` (webhook-path counts; prod E1312) | partial (counts: #129; UI: #144; unknown requestId: #145; idempotency: #132) | #132 (admin counts: #129) |
 | S09 | Resend webhook updates email log delivery status | `/api/webhooks/resend` | - | none | #132 |
 | S10 | Health endpoints up; BDApps reported down when fake BDApps fails | `/api/health/{db,redis,mailpit,bdapps,worker}` | `e2e/tests/web/bdapps-health.spec.ts` | partial (BDApps endpoint only) | #132 |
