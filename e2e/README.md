@@ -28,8 +28,10 @@ E2E_SLOT=2 pnpm e2e                                   # another worktree at the 
 | `E2E_SKIP_RESET=1` | Don't wipe the DB: apply pending migrations (`migrate deploy`), and seed only a DB that is new. Faster reruns; throwaway phones stay unique. **AI agents must use this**: Prisma refuses `migrate reset` when it detects an AI agent. |
 | `E2E_REUSE_SERVERS=1` | Reuse already-running fake BDApps / web / admin on the slot's ports. |
 | `E2E_SERVER_LOGS=1` | Pipe the servers' stdout into the test output. |
-| `E2E_DATABASE_URL` | Postgres server to use (db name is replaced); default from `packages/shared/.env.local`. |
+| `E2E_DATABASE_URL` | Postgres server to use (db name is replaced); default from `packages/shared/.env.local`, then Compose `localhost:5431`. **Required in CI** (no `.env.local`). |
 | `E2E_MAILPIT_URL`, `E2E_MAILPIT_SMTP_URL` | Mailpit API / SMTP (default `http://localhost:8025`, `smtp://localhost:1025`). |
+| `E2E_SUITE=desktop\|full\|all` | Which Playwright projects to run (see CI). Default `all`. |
+| `CI_PROJECTS` | Override: comma-separated project names, or the aliases `desktop` / `full` / `all` (same as `E2E_SUITE`). |
 
 `pnpm e2e` = `scripts/run.ts`: build web + admin (sequentially, with the E2E env) → `prisma migrate
 reset --force` on the slot DB (creates it, applies migrations, seeds; or the `E2E_SKIP_RESET` path) → check Mailpit →
@@ -55,7 +57,7 @@ All slot-derived values (ports, URLs, DB URL, every env var the apps get, test s
 
 ```
 e2e/
-  playwright.config.ts   projects: web-*/admin-*/cross-app-* × desktop/phone, then serial `cron`
+  playwright.config.ts   projects: web-*/admin-*/cross-app-* × desktop/phone; web-bengali (#133); then serial `cron`
   global-setup.ts        checks Mailpit; logs in personas + admin once, saves storage states
   scripts/run.ts         the `pnpm e2e` runner
   fake-bdapps/           the fake BDApps server (see below)
@@ -63,12 +65,43 @@ e2e/
   tests/web/             project web-* + serial `cron` (baseURL = web)
   tests/admin/           project admin-*     (baseURL = admin)
   tests/cross-app/       project cross-app-* (baseURL = web; open admin with URLS.admin)
+  tests/bengali/         project web-bengali (full suite only; filled by #133)
   fixtures/              small binary fixtures (e.g. `article-red-1x1.png` for CMS image upload)
   COVERAGE.md            feature → spec → depth
 ```
 
 Name specs after the feature (`tests/web/period-logging.spec.ts`). Every spec runs at desktop and
 phone width; use `test.skip(testInfo.project.name.endsWith('-phone'), 'why')` only with a reason.
+
+## CI (GitHub Actions)
+
+Workflow: [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml).
+
+| Trigger | Suite (`E2E_SUITE`) | What runs |
+|---|---|---|
+| `pull_request` → `main` | `desktop` | All projects that are **not** `*-phone` and not full-only (`web-bengali`). New `*-desktop` or serial projects (e.g. cron in #132) are picked up automatically — **do not** list `--project` in the workflow. |
+| Nightly schedule, `workflow_dispatch`, or PR labelled `e2e-full` | `full` | Every project, including `*-phone` and `web-bengali`. |
+
+The job starts **Postgres**, **Redis** and **Mailpit** as service containers, sets `E2E_DATABASE_URL` /
+Mailpit URLs (no `packages/shared/.env.local`), runs `pnpm install`, `pnpm db:generate`, caches
+Playwright browsers + Next.js `.next/cache`, installs Chromium, then `pnpm e2e` with a full
+`migrate reset` on `vesta_e2e` only (`assertE2eDatabase`). Worker count is **4 in CI** from
+`playwright.config.ts` (`workers: ci ? 4`) — do not also pass `--workers` in the workflow.
+Redis is present to match Compose; the suite still sets `REDIS_URL=''` so rate limits stay
+in-process. On non-cancelled runs it uploads the HTML report (`e2e/playwright-report/`), traces
+(`e2e/.results/`; `trace: 'retain-on-failure'`), and server logs (`e2e/.logs/` via
+`E2E_SERVER_LOGS=1`). **Never** upload `e2e/.auth/` (session cookies).
+
+**Runtime target:** desktop PR job `timeout-minutes: 15` (acceptance: under 10 minutes once the
+suite is green — confirm on the first CI run). Full suite keeps `timeout-minutes: 45`.
+
+**Serial projects** (e.g. cron in #132): set `workers: 1` and `fullyParallel: false` on that
+project in `playwright.config.ts`. Global CI workers stay at 4 for parallel projects; only the
+serial project overrides.
+
+**Bengali pass (#133):** project `web-bengali` points at `tests/bengali/` (see that folder's README).
+Add specs there (and/or tag with `@bengali` and adjust `testMatch` / grep); the full suite already
+includes the project — no workflow edit.
 
 Cross-app admin→web content (#128): `tests/cross-app/admin-content.spec.ts` uses `createLoggedInAdmin`
 plus a throwaway `newUser()`; article titles are prefixed `E2E128` so they never collide with #124.

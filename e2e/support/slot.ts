@@ -48,8 +48,9 @@ function readDotenv(file: string): Record<string, string> {
 }
 
 /**
- * The E2E database URL: the local dev Postgres server (from `E2E_DATABASE_URL`, else
- * packages/shared/.env.local), with the database swapped for this slot's `vesta_e2e*`.
+ * The E2E database URL: the Postgres server from `E2E_DATABASE_URL`, else
+ * packages/shared/.env.local, else the local Compose default — then the database name
+ * is swapped for this slot's `vesta_e2e*`. CI must set `E2E_DATABASE_URL` (no `.env.local`).
  */
 function databaseUrl(): string {
   const base =
