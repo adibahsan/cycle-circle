@@ -17,13 +17,13 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 |---|---|---|---|---|---|
 | Web: login and access | 9 | 0 | 0 | 2 | 7 |
 | Web: onboarding and profiles | 9 | 1 | 1 | 1 | 6 |
-| Web: logging | 9 | 4 | 2 | 3 | 0 |
+| Web: logging | 9 | 0 | 0 | 4 | 5 |
 | Web: dashboard, calendar, predictions, insights | 12 | 0 | 1 | 0 | 11 |
 | Web: content, feedback, settings | 8 | 0 | 0 | 0 | 8 |
 | Web: billing | 7 | 0 | 0 | 2 | 5 |
 | Web: landing and public pages | 4 | 0 | 0 | 0 | 4 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 5 | 0 | 0 |
-| **Web total** | 63 | 7 | 14 | 7 | 35 |
+| **Web total** | 63 | 3 | 12 | 8 | 40 |
 | Admin: access and read-only views | 5 | 0 | 0 | 4 | 1 |
 | Admin: user actions | 4 | 0 | 0 | 1 | 3 |
 | Admin: content | 2 | 0 | 0 | 0 | 2 |
@@ -73,15 +73,15 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W19 | Log a period; dashboard, calendar and prediction update after reload | `/calendar`, `/dashboard`, `/api/tracking/period-logs` | - | none | #122 |
-| W20 | Edit and delete a past period | `/calendar`, `/api/tracking/period-logs/[id]` | `apps/web/e2e/tests/calendar-days.spec.ts` (form opens on tapped date; no save) | look-only | #122 |
-| W21 | Period date validation: end before start, future date | period log form, `/api/tracking/period-logs` | - | none | #122 |
-| W22 | Symptom logging across four categories (save, reload, still selected) | `/symptoms`, `/api/tracking/symptoms` | `apps/web/e2e/tests/symptoms-save.spec.ts`, `apps/web/e2e/tests/symptoms-look.spec.ts` (real clicks; every save POST aborted, only the failed-save path runs) | partial | #122 |
-| W23 | Back-dated symptom logging with the date picker | `/symptoms` | - | none | #122 |
-| W24 | Daily Check-in, including "all good" (recorded, not offered again that Bangladesh day) | dashboard check-in dialog | `apps/web/e2e/tests/symptoms-save.spec.ts`, `apps/web/e2e/tests/dashboard-popups.spec.ts` (save aborted) | partial | #122 |
-| W25 | Quick-symptom pop-up saves a log | dashboard quick-symptom dialog | `apps/web/e2e/tests/symptoms-save.spec.ts`, `apps/web/e2e/tests/dashboard-popups.spec.ts` (save aborted) | partial | #122 |
-| W26 | Logging nudge: appears after 3 days without a log, clears after logging | `/api/tracking/logging-status`, nudge banner | `apps/web/e2e/tests/auto-prompts.spec.ts` (mocked logging-status) | look-only | #122 |
-| W27 | Default log date is the Bangladesh day, not the device day (expected-to-fail, bug) | log forms, date pickers | - | none | #122 |
+| W19 | Log a period; dashboard last-period card and calendar update after reload (prediction values not asserted; future dates accepted: #139; Bangladesh default day: #115) | `/calendar`, `/dashboard`, `/api/tracking/period-logs` | `e2e/tests/web/period-logging.spec.ts` | partial | #122 |
+| W20 | Edit and delete a past period | `/calendar`, `/api/tracking/period-logs/[id]` | `e2e/tests/web/period-logging.spec.ts` (delete missing affordance: #136), `apps/web/e2e/tests/calendar-days.spec.ts` | partial | #122 |
+| W21 | Period date validation: end before start, future date | period log form, `/api/tracking/period-logs` | `e2e/tests/web/period-logging.spec.ts` (future date accepted: #139) | partial | #122 |
+| W22 | Symptom logging across four categories (save, reload, still selected) | `/symptoms`, `/api/tracking/symptoms` | `e2e/tests/web/symptom-logging.spec.ts`, `apps/web/e2e/tests/symptoms-save.spec.ts`, `apps/web/e2e/tests/symptoms-look.spec.ts` | full | #122 |
+| W23 | Back-dated symptom logging with the date picker | `/symptoms` | `e2e/tests/web/symptom-logging.spec.ts` | full | #122 |
+| W24 | Daily Check-in, including "all good" (recorded, not offered again that Bangladesh day) | dashboard check-in dialog | `e2e/tests/web/symptom-logging.spec.ts`, `apps/web/e2e/tests/dashboard-popups.spec.ts` | full | #122 |
+| W25 | Quick-symptom pop-up saves a log | dashboard quick-symptom dialog | `e2e/tests/web/symptom-logging.spec.ts`, `apps/web/e2e/tests/dashboard-popups.spec.ts` | full | #122 |
+| W26 | Logging nudge: appears after 3 days without a log, clears after logging | `/api/tracking/logging-status`, nudge banner | `e2e/tests/web/symptom-logging.spec.ts` | full | #122 |
+| W27 | Default log date is the Bangladesh day, not the device day (expected-to-fail, bug) | log forms, date pickers | `e2e/tests/web/period-logging.spec.ts` (expected failure: #115) | partial | #122 |
 
 ### Web: dashboard, calendar, predictions, insights
 
