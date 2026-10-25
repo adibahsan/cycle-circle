@@ -17,6 +17,14 @@ export function e2eDb(): PrismaClient {
   return client
 }
 
+/** Disconnect the shared client (worker teardown). Safe to call when unused. */
+export async function closeE2eDb(): Promise<void> {
+  if (!client) return
+  const toClose = client
+  client = null
+  await toClose.$disconnect()
+}
+
 export type CreateSubscriptionOpts = {
   userId: string
   status: SubscriptionStatus

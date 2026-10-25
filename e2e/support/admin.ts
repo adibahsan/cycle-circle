@@ -164,6 +164,11 @@ export async function createLoggedInAdmin(
     locale: 'en-US',
     ...contextOptions,
   })
-  await loginAsAdmin(context.request, admin)
-  return { ...admin, context, page: await context.newPage() }
+  try {
+    await loginAsAdmin(context.request, admin)
+    return { ...admin, context, page: await context.newPage() }
+  } catch (err) {
+    await context.close()
+    throw err
+  }
 }

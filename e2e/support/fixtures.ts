@@ -8,6 +8,7 @@
  */
 import { test as base, expect, type BrowserContext, type Page } from '@playwright/test'
 import { bangladeshDays, type BangladeshDays } from './bangladesh-day.ts'
+import { closeE2eDb } from './db.ts'
 import { FakeBdappsClient } from './fake-bdapps.ts'
 import { createThrowawayUser, ipFor } from './users.ts'
 import { URLS } from './slot.ts'
@@ -24,7 +25,19 @@ interface Fixtures {
   days: BangladeshDays
 }
 
-export const test = base.extend<Fixtures>({
+interface WorkerFixtures {
+  _e2eDbTeardown: undefined
+}
+
+export const test = base.extend<Fixtures, WorkerFixtures>({
+  _e2eDbTeardown: [
+    async ({}, use) => {
+      await use(undefined)
+      await closeE2eDb()
+    },
+    { scope: 'worker', auto: true },
+  ],
+
   extraHTTPHeaders: async ({}, use, testInfo) => {
     await use({ 'x-real-ip': ipFor(testInfo.testId) })
   },

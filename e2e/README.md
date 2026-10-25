@@ -82,7 +82,7 @@ Import `test` and `expect` from `support/fixtures.ts` (not `@playwright/test`).
 | `ipFor(key)` | Stable fake `x-real-ip` for a key. Each test already gets its own (OTP sends are capped at 10/hour/IP). Set it yourself only to test the IP limit. | `extraHTTPHeaders: { 'x-real-ip': ipFor('x') }` |
 | Personas (`support/personas.ts`) | Seeded read-only **web** users, logged in once by global setup: `streaker`, `allGood`, `stale`, `power`, `newUser`, `proMulti` (all Pro); `admin` = seeded super admin storage state. **Never save data as a persona.** Do not treat web personas as admins. | `test.use({ storageState: statePath('power') })` |
 | Admin helpers (`support/admin.ts`) | Create throwaway admins in the E2E DB and log in with email/password. Prefer these for admin mutating flows (#127–#131); never promote a seeded web persona. | see below |
-| `e2eDb()` / `setUserSubscription` (`support/db.ts`) | Prisma against this slot's `vesta_e2e*` (setup only). | `await setUserSubscription({ userId, status: 'FREE' })` |
+| `e2eDb()` / `closeE2eDb()` / `setUserSubscription` (`support/db.ts`) | Prisma against this slot's `vesta_e2e*` (setup only). `closeE2eDb` runs automatically via a worker-scoped fixture teardown. | `await setUserSubscription({ userId, status: 'FREE' })` |
 | `days` fixture (`support/bangladesh-day.ts`) | Bangladesh days from the **server's** clock (HTTP `Date`): `today`, `daysAgo(n)`, `daysFromNow(n)` (`YYYY-MM-DD`), `startOf(day)` (the `Date` to write to the DB), `now`. No fake clock. | `const start = days.startOf(days.daysAgo(35))` |
 | `fakeBdapps` fixture (`support/fake-bdapps.ts`) | Control client for the fake BDApps. | see below |
 | `assertMailpit()` (`support/mailpit.ts`) | Mailpit reachability. A "wait for email to X" client arrives with the magic-link ticket. | `await assertMailpit()` |
@@ -110,11 +110,13 @@ Admin helpers (`support/admin.ts`) — typed for tickets #127–#131:
 | `sendWebhook(appPath, body)` → the app's `{ status, body }` | `await fakeBdapps.sendWebhook('/api/webhooks/subscription/notify', {...})` |
 
 DB setup for states the UI can't reach in time lives in `support/db.ts` (`e2eDb()`,
-`setUserSubscription`). It uses `new PrismaClient({ datasourceUrl: DATABASE_URL })`
+`setUserSubscription`, `closeE2eDb`). It uses `new PrismaClient({ datasourceUrl: DATABASE_URL })`
 from `@prisma/client` after `assertE2eDatabase()`; don't import `@vesta/shared`'s `prisma`, which
-reads `DATABASE_URL` from the env and would hit `vesta_dev`. Write dates with the `days` helper.
+reads `DATABASE_URL` from the env and would hit `vesta_dev`. The shared client is disconnected in
+worker teardown (`closeE2eDb` via `support/fixtures.ts`). Write dates with the `days` helper.
 Only set up state this way; check results through the UI or HTTP. Admin users for the suite are
 created with `createAdminUser` in that same DB — not by reusing seeded web personas.
+`createLoggedInAdmin` closes the browser context if HTTP login fails so contexts do not leak.
 
 ## Fake BDApps (`fake-bdapps/`)
 
