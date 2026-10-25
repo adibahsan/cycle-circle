@@ -472,12 +472,12 @@ test.describe('Admin SMS broadcasting', () => {
       expect(afterFailed.targetCount).toBe(2)
       expect(afterFailed.deliveredCount).toBe(1)
 
-      // Reload: Sent / Active are visible. Per-row delivered/failed counts are not rendered (#144).
+      // Reload: Sent stays visible. Per-row delivered/failed counts are not rendered (#144).
+      // Do not assert Active — content-override clears it when a parallel worker sends later.
       await page.goto('/sms?status=SENT&pageSize=100')
       await expect(page.getByRole('heading', { name: 'SMS Broadcasts' })).toBeVisible()
       await expect(broadcastRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
       await expect(broadcastRow(page, enMarker).getByText('Sent', { exact: true })).toBeVisible()
-      await expect(broadcastRow(page, enMarker).getByText('Active', { exact: true })).toBeVisible()
     } finally {
       await admin.context.close()
     }
