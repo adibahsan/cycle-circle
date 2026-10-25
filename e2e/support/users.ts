@@ -23,6 +23,13 @@ export function newPhone(): string {
   return `${E2E_PREFIX}${String(worker).padStart(2, '0')}${String(counter).padStart(5, '0')}`
 }
 
+/** Typed `01…` / `+8801…` → DB storage form `+8801…` (same rules as `validateMsisdn`). */
+export function toDbPhone(phone: string): string {
+  const m = phone.replace(/\s+/g, '').match(/^(?:\+?88)?0?(1[3-9]\d{8})$/)
+  if (!m) throw new Error(`not a Bangladeshi MSISDN: ${phone}`)
+  return `+880${m[1]}`
+}
+
 /**
  * A stable fake client IP for a key (a phone or a test id). The web app rate-limits OTP
  * sends per IP (10 an hour) and trusts `x-real-ip`, so each user/test gets its own bucket.
