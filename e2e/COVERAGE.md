@@ -15,29 +15,29 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 
 | Area | Features | none | look-only | partial | full |
 |---|---|---|---|---|---|
-| Web: login and access | 9 | 3 | 0 | 0 | 6 |
-| Web: onboarding and profiles | 9 | 3 | 6 | 0 | 0 |
+| Web: login and access | 9 | 0 | 0 | 2 | 7 |
+| Web: onboarding and profiles | 9 | 1 | 2 | 1 | 5 |
 | Web: logging | 9 | 4 | 2 | 3 | 0 |
 | Web: dashboard, calendar, predictions, insights | 12 | 0 | 1 | 0 | 11 |
-| Web: content, feedback, settings | 8 | 2 | 5 | 1 | 0 |
+| Web: content, feedback, settings | 8 | 0 | 0 | 0 | 8 |
 | Web: billing | 7 | 2 | 4 | 1 | 0 |
-| Web: landing and public pages | 4 | 0 | 4 | 0 | 0 |
+| Web: landing and public pages | 4 | 0 | 0 | 0 | 4 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 5 | 0 | 0 |
-| **Web total** | 63 | 14 | 27 | 5 | 17 |
-| Admin: access and read-only views | 5 | 1 | 0 | 4 | 0 |
-| Admin: user actions | 4 | 3 | 0 | 1 | 0 |
-| Admin: content | 2 | 2 | 0 | 0 | 0 |
+| **Web total** | 63 | 7 | 14 | 7 | 35 |
+| Admin: access and read-only views | 5 | 0 | 0 | 4 | 1 |
+| Admin: user actions | 4 | 0 | 0 | 1 | 3 |
+| Admin: content | 2 | 0 | 0 | 0 | 2 |
 | Admin: analytics and engagement | 2 | 2 | 0 | 0 | 0 |
-| Admin: SMS | 2 | 2 | 0 | 0 | 0 |
+| Admin: SMS | 2 | 0 | 0 | 0 | 2 |
 | Admin: feedback, emails, audit, logs, system | 6 | 6 | 0 | 0 | 0 |
-| **Admin total** | 21 | 16 | 0 | 5 | 0 |
-| Server-only (not counted) | 10 | 9 | 0 | 1 | 0 |
+| **Admin total** | 21 | 8 | 0 | 5 | 8 |
+| Server-only (not counted) | 10 | 8 | 0 | 2 | 0 |
 
 Notes on the tally:
-- Web login/access W01–W04, W07, W08 are `full` via `e2e/tests/web/login.spec.ts` (#120). Older look-only rows that aborted saves stay look-only/partial.
+- Web login/access W01–W04, W07, W08 are `full` via `e2e/tests/web/login.spec.ts` (#120); onboarding and profiles W10–W14 are `full`, W15 is `partial` via `e2e/tests/web/onboarding.spec.ts` and `profiles.spec.ts` (#121). Older look-only rows that aborted saves stay look-only/partial.
 - Terms follow `GLOSSARY.md`: Bangladesh day, Subscriber, BDApps OTP, App OTP, Check-in, Logging nudge, Auto-prompt, Trial lock, Translog, Webhook event, Merchant call, Phase pattern, Profile completion.
 - Dev-only pages (`/internal/*`, `/api/simulator-check/*`, `/api/internal/revalidate`, `/api/auth/dev-login`) are not product features and are not listed.
-- Admin A01–A03, A05 and A09 land in #126 (login helper + read-only views + CSV). A04 user-detail tabs stay for a later pass; A06–A08 mutating actions are #127.
+- Admin A01–A03, A05 and A09 land in #126 (login helper + read-only views + CSV). A04 + A06–A08 (user detail tabs + mutating actions) and web W09 (session blocked) land in #127.
 
 ## Web (63)
 
@@ -49,22 +49,22 @@ Notes on the tally:
 | W02 | Returning Subscriber login with an App OTP | `/login`, `/verify-otp`, `/api/auth/otp/*` | `e2e/tests/web/login.spec.ts` | full | #120 |
 | W03 | OTP error paths: wrong, expired, 60 s resend cooldown, per-phone rate limit | `/verify-otp`, `/api/auth/otp/*` | `e2e/tests/web/login.spec.ts` | full | #120 |
 | W04 | Brute-force block after repeated wrong codes | `/api/auth/otp/verify` | `e2e/tests/web/login.spec.ts` | full | #120 |
-| W05 | Email magic-link login, lands on 24 h email trial | `/email-login`, `/api/auth/magic-link/request`, `/api/auth/magic-link/callback` | - | none | #119 |
-| W06 | Magic-link security: expired or reused link rejected | `/api/auth/magic-link/callback` | - | none | #119 |
+| W05 | Email magic-link login, lands on 24 h email trial | `/email-login`, `/api/auth/magic-link/request`, `/api/auth/magic-link/callback` | `e2e/tests/web/email-magic-link.spec.ts` | partial | #119 |
+| W06 | Magic-link security: expired or reused link rejected | `/api/auth/magic-link/callback` | `e2e/tests/web/email-magic-link.spec.ts` | partial | #119 |
 | W07 | Logout ends the session | `/api/auth/logout`, settings logout dialog | `e2e/tests/web/login.spec.ts`, `apps/web/e2e/tests/bengali-no-english.spec.ts` | full | #120 |
 | W08 | Route protection: logged-out visitor redirected from every protected page | all `(main)` routes, `/onboarding` | `e2e/tests/web/login.spec.ts` | full | #120 |
-| W09 | Suspended or deleted user session is blocked | `/api/auth/status`, withAuth | - | none | #127 |
+| W09 | Suspended or deleted user session is blocked | `/api/auth/status`, withAuth | `e2e/tests/admin/user-actions.spec.ts` | full (baseline 200; after suspend/delete → auth/status 401 + /dashboard → /login) | #127 |
 
 ### Web: onboarding and profiles
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W10 | Onboarding wizard (goal, cycle answers) and dashboard reflects it | `/onboarding` | `apps/web/e2e/tests/page-leftovers.spec.ts` (layout only) | look-only | #121 |
-| W11 | Onboarding tour: finish, replay, not shown again | shell tour, `/dashboard` | `apps/web/e2e/tests/bengali-no-english.spec.ts` (tour armed via sessionStorage, no-English scan) | look-only | #121 |
-| W12 | Profiles: add, rename, switch, delete (persist after reload) | `/profiles`, `/api/profiles`, `/api/profiles/[id]` | `apps/web/e2e/tests/account-look.spec.ts`, `apps/web/e2e/tests/account-popups.spec.ts`, `apps/web/e2e/tests/page-leftovers.spec.ts` | look-only | #121 |
-| W13 | Six-profile limit (seventh rejected) | `/profiles`, `/api/profiles` | - | none | #121 |
-| W14 | Profile isolation: switching changes dashboard, calendar, insights data | profile chip, `/dashboard`, `/calendar`, `/insights` | - | none | #121 |
-| W15 | Profile completion: details form, ring, auto-prompt update | `/api/profile/completion`, completion modal | `apps/web/e2e/tests/account-popups.spec.ts`, `apps/web/e2e/tests/auto-prompts.spec.ts` (mocked completion) | look-only | #121 |
+| W10 | Onboarding wizard (goal, cycle answers) and dashboard reflects it | `/onboarding` | `e2e/tests/web/onboarding.spec.ts` | full | #121 |
+| W11 | Onboarding tour: finish, replay, not shown again | shell tour, `/dashboard` | `e2e/tests/web/onboarding.spec.ts` | full | #121 |
+| W12 | Profiles: add, rename, switch, delete (persist after reload) | `/profiles`, `/api/profiles`, `/api/profiles/[id]` | `e2e/tests/web/profiles.spec.ts` | full | #121 |
+| W13 | Six-profile limit (seventh rejected) | `/profiles`, `/api/profiles` | `e2e/tests/web/profiles.spec.ts` | full | #121 |
+| W14 | Profile isolation: switching changes dashboard, calendar, insights data | profile chip, `/dashboard`, `/calendar`, `/insights` | `e2e/tests/web/profiles.spec.ts` | full | #121 |
+| W15 | Profile completion: details form, ring, auto-prompt update | `/api/profile/completion`, completion modal | `e2e/tests/web/profiles.spec.ts` | partial | #121 |
 | W16 | Phone user adds and verifies an email | `/api/user/email/request`, `/api/user/email/verify` | - | none | #121 |
 | W17 | Email-trial user adds and verifies a phone via BDApps OTP | `/api/user/phone/request`, `/api/user/phone/verify`, add-number dialog | `apps/web/e2e/tests/popup-shell.spec.ts` (dialog shell only) | look-only | #121 |
 | W18 | Auto-prompt arbiter: one prompt at a time, priority order | `/dashboard`, all shell pages | `apps/web/e2e/tests/auto-prompts.spec.ts`, `apps/web/e2e/tests/one-home-prompts.spec.ts`, `apps/web/e2e/tests/popup-contract.spec.ts` (mocked states) | look-only | #122 |
@@ -104,14 +104,14 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W40 | Learn: filter articles by phase, open the reader, English and Bengali | `/content` | `apps/web/e2e/tests/page-shell.spec.ts`, `apps/web/e2e/tests/card-rows.spec.ts` (layout only) | look-only | #124 |
-| W41 | Draft article never shown to users | `/content` | - | none | #124 (authoring side: #128) |
-| W42 | Feedback: submit and see it in history | `/feedback` | `apps/web/e2e/tests/page-leftovers.spec.ts` (layout only) | look-only | #124 |
-| W43 | Notification preferences and reminder opt-out (cron skips the user) | `/settings` | `apps/web/e2e/tests/account-look.spec.ts` (layout only) | look-only | #124 (cron side: #132) |
-| W44 | Data export: CSV and XLSX contain logged entries | `/settings` | - | none | #124 |
-| W45 | Account editing: name and contact details persist | `/settings`, edit-profile dialog | `apps/web/e2e/tests/account-popups.spec.ts` (dialog shell only) | look-only | #124 |
-| W46 | Theme toggle (light, dark, remembered) | shell header, `/settings` | `apps/web/e2e/tests/shell-look.spec.ts`, `apps/web/e2e/tests/insights-look.spec.ts` (screenshots in both themes) | look-only | #124 |
-| W47 | Language switch (English, Bengali) writes the cookie; server renders it | shell, `/welcome`, `/settings` | `apps/web/e2e/tests/language-ssr.spec.ts` | partial | #124 (logged-in shell: extend) |
+| W40 | Learn: filter articles by phase, open the reader, English and Bengali | `/content` | `e2e/tests/web/content.spec.ts` | full | #124 |
+| W41 | Draft article never shown to users | `/content` | `e2e/tests/web/content.spec.ts`, `e2e/tests/cross-app/admin-content.spec.ts` | full | #124, #128 |
+| W42 | Feedback: submit and see it in history | `/feedback` | `e2e/tests/web/feedback.spec.ts` | full | #124 |
+| W43 | Notification preferences and reminder opt-out (cron skips the user) | `/settings` | `e2e/tests/web/settings.spec.ts` | full | #124 (cron side: #132) |
+| W44 | Data export: CSV and XLSX contain logged entries | `/settings` | `e2e/tests/web/settings.spec.ts` | full | #124 |
+| W45 | Account editing: name and contact details persist | `/settings`, edit-profile dialog | `e2e/tests/web/settings.spec.ts` | full | #124 |
+| W46 | Theme toggle (light, dark, remembered) | shell header, `/settings` | `e2e/tests/web/settings.spec.ts` | full | #124 |
+| W47 | Language switch (English, Bengali) writes the cookie; server renders it | shell, `/welcome`, `/settings` | `e2e/tests/web/settings.spec.ts`, `apps/web/e2e/tests/language-ssr.spec.ts` | full | #124 (logged-in shell: extend) |
 
 ### Web: billing
 
@@ -129,10 +129,10 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W55 | Welcome page (landing) | `/welcome`, `/` | `apps/web/e2e/tests/landing.spec.ts` | look-only | #124 |
-| W56 | Privacy page | `/privacy` | `apps/web/e2e/tests/bengali-no-english.spec.ts` (no-English scan only) | look-only | #124 |
-| W57 | Terms page | `/terms` | `apps/web/e2e/tests/bengali-no-english.spec.ts` (no-English scan only) | look-only | #124 |
-| W58 | Get-started page leads into login | `/get-started`, `/login` | `apps/web/e2e/tests/bengali-no-english.spec.ts` (no-English scan only) | look-only | #124 |
+| W55 | Welcome page (landing) | `/welcome`, `/` | `e2e/tests/web/public-pages.spec.ts`, `apps/web/e2e/tests/landing.spec.ts` | full | #124 |
+| W56 | Privacy page | `/privacy` | `e2e/tests/web/public-pages.spec.ts` | full | #124 |
+| W57 | Terms page | `/terms` | `e2e/tests/web/public-pages.spec.ts` | full | #124 |
+| W58 | Get-started page leads into login | `/get-started`, `/login` | `e2e/tests/web/public-pages.spec.ts` | full | #124 |
 
 ### Web: shell, phone and Bengali (cross-cutting)
 
@@ -153,24 +153,24 @@ Notes on the tally:
 | A01 | Login with email and password; non-admin sees forbidden page; logout | `/login`, `/forbidden`, `/api/auth/login`, `/api/auth/logout` | `e2e/tests/admin/login.spec.ts` | deep (wrong password, non-admin form error, unauth redirect, forged-token forbidden, logout) | #126 |
 | A02 | Dashboard KPIs and signup trend | `/` | `e2e/tests/admin/dashboard.spec.ts` | partial (Total Users UI ≥ before+2 after creates — parallel-safe; today's signup bucket via DB — Recharts SVG has no accessible per-day counts; a11y #135) | #126 |
 | A03 | Users: search and filter | `/users` | `e2e/tests/admin/users.spec.ts` | deep (search narrows; Suspended set up before load; hides active) | #126 |
-| A04 | User detail: profile, plan history, Translog tabs | `/users/[id]` | - | none | #127 |
+| A04 | User detail: profile, plan history, Translog tabs | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (Profiles empty state; Plan history after grant/revoke; Translog via `translogFor(..., { app: 'admin' })` — no Translog tab in UI) | #127 |
 | A05 | Subscriptions list with status filter | `/subscriptions` | `e2e/tests/admin/subscriptions.spec.ts` | deep (explicit PRO/FREE via setUserSubscription; pageSize=100; all visible rows match filter) | #126 |
 
 ### Admin: user actions
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A06 | Suspend and reactivate (ends or keeps BDApps billing) | `/users/[id]` | - | none | #127 |
-| A07 | Delete and restore within 30 days; no restore after the window | `/users/[id]` | - | none | #127 |
-| A08 | Grant and revoke Pro (admin override) | `/users/[id]` | - | none | #127 |
+| A06 | Suspend and reactivate (ends or keeps BDApps billing) | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (suspend → BDApps UNREGISTERED + session 401; reactivate leaves BDApps unsubscribed; /login UI BDApps OTP) | #127 |
+| A07 | Delete and restore within 30 days; no restore after the window | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (delete/restore UI + session block; daysAgo(29) restore; daysAgo(31) window passed) | #127 |
+| A08 | Grant and revoke Pro (admin override) | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (Set FREE unsubscribes BDApps; Set PRO leaves BDApps; scoped plan-history rows + admin translog + web) | #127 |
 | A09 | Users CSV export | `/users` | `e2e/tests/admin/users.spec.ts` | partial (filtered-only export expected-to-fail #134) | #126 |
 
 ### Admin: content
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A10 | Content authoring: bilingual article, phase tags, image upload, draft, publish, seen on web | `/content`, `/content/new`, `/content/[id]`, `/uploads/[name]` | - | none | #128 |
-| A11 | Content sanitizing: unsafe HTML removed before it reaches web | `/content/new`, `/content/[id]` | - | none | #128 |
+| A10 | Content authoring: bilingual article, phase tags, image upload, draft, publish, seen on web | `/content`, `/content/new`, `/content/[id]`, `/uploads/[name]` | `e2e/tests/cross-app/admin-content.spec.ts` | full (draft hidden on settled Follicular list; publish → same URL; wrong-phase MENSTRUAL+OVULATION; EN loaded `/uploads/` img; BN text-only) | #128 |
+| A11 | Content sanitizing: unsafe HTML removed before it reaches web | `/content/new`, `/content/[id]` | `e2e/tests/cross-app/admin-content.spec.ts` | full (rich paste + raw Next-Action body bypass; stored HTML + scoped reader; script/iframe/style/js-href/evil attrs stripped; safe link/strong/uploads kept on server path) | #128 |
 
 ### Admin: analytics and engagement
 
@@ -183,8 +183,8 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A14 | SMS broadcast: bilingual create, schedule, send, right language per user | `/sms` | - | none | #129 |
-| A15 | SMS queue: failed send retried, delivery report updates counts | `/sms` | - | none | #129 |
+| A14 | SMS broadcast: bilingual create, schedule, send; one composed body by send language (`tel:all`) | `/sms` | `e2e/tests/admin/sms.spec.ts` | full | #129 (wording: #143) |
+| A15 | SMS queue: failed send retried; delivery-report webhook updates counts (webhook path; prod E1312) | `/sms` | `e2e/tests/admin/sms.spec.ts` | full (counts via DB + reload; UI counts: #144) | #129 |
 
 ### Admin: feedback, emails, audit, logs, system
 
@@ -210,6 +210,6 @@ Cron routes, BDApps webhooks, the Resend webhook and health endpoints have no sc
 | S05 | BDApps webhook: subscription notify (subscribed, unsubscribed) | `/api/webhooks/subscription/notify` | - | none | #132 (plan effect: #125) |
 | S06 | BDApps webhook: SMS received, recorded as Webhook event, duplicates ignored | `/api/webhooks/sms/receive` | - | none | #132 |
 | S07 | BDApps webhook: USSD, recorded, duplicates ignored | `/api/webhooks/ussd/receive` | - | none | #132 |
-| S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | - | none | #132 (admin counts: #129) |
+| S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | `e2e/tests/admin/sms.spec.ts` (webhook-path counts; prod E1312) | partial (counts: #129; UI: #144; unknown requestId: #145; idempotency: #132) | #132 (admin counts: #129) |
 | S09 | Resend webhook updates email log delivery status | `/api/webhooks/resend` | - | none | #132 |
 | S10 | Health endpoints up; BDApps reported down when fake BDApps fails | `/api/health/{db,redis,mailpit,bdapps,worker}` | `e2e/tests/web/bdapps-health.spec.ts` | partial (BDApps endpoint only) | #132 |
