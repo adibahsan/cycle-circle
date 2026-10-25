@@ -12,6 +12,7 @@ import { closeE2eDb } from './db.ts'
 import { FakeBdappsClient } from './fake-bdapps.ts'
 import { createThrowawayUser, ipFor } from './users.ts'
 import { URLS } from './slot.ts'
+import { db, type PrismaClient } from './db.ts'
 
 export interface NewUser {
   phone: string
@@ -23,6 +24,7 @@ interface Fixtures {
   fakeBdapps: FakeBdappsClient
   newUser: () => Promise<NewUser>
   days: BangladeshDays
+  db: PrismaClient
 }
 
 interface WorkerFixtures {
@@ -62,6 +64,10 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
 
   days: async ({}, use) => {
     await use(await bangladeshDays())
+  },
+
+  db: async ({}, use) => {
+    await use(db)
   },
 })
 

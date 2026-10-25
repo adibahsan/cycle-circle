@@ -6,16 +6,25 @@
 import { PrismaClient, type Prisma, type SubscriptionStatus } from '@prisma/client'
 import { assertE2eDatabase, DATABASE_URL } from './slot.ts'
 
+assertE2eDatabase(DATABASE_URL)
+
 let client: PrismaClient | null = null
 
 /** Shared Prisma client for this process, locked to the E2E database. */
 export function e2eDb(): PrismaClient {
-  assertE2eDatabase()
   if (!client) {
     client = new PrismaClient({ datasourceUrl: DATABASE_URL })
   }
   return client
 }
+
+/** Alias used by web login specs / the `db` fixture (#120). */
+export function getE2eDb(): PrismaClient {
+  return e2eDb()
+}
+
+export const db = getE2eDb()
+export type { PrismaClient }
 
 /** Disconnect the shared client (worker teardown). Safe to call when unused. */
 export async function closeE2eDb(): Promise<void> {
@@ -34,17 +43,20 @@ export type CreateSubscriptionOpts = {
 
 /** Upsert a Subscription row and sync `user.subscriptionStatus` (setup only). */
 export async function setUserSubscription(opts: CreateSubscriptionOpts): Promise<void> {
-  const db = e2eDb()
-  const existing = await db.subscription.findFirst({ where: { userId: opts.userId }, orderBy: { createdAt: 'desc' } })
+  const prisma = e2eDb()
+  const existing = await prisma.subscription.findFirst({
+    where: { userId: opts.userId },
+    orderBy: { createdAt: 'desc' },
+  })
   const data: Prisma.SubscriptionUpdateInput = {
     status: opts.status,
     adminOverride: opts.adminOverride ?? false,
     ...(opts.bdappsSubscriberId !== undefined ? { bdappsSubscriberId: opts.bdappsSubscriberId } : {}),
   }
   if (existing) {
-    await db.subscription.update({ where: { id: existing.id }, data })
+    await prisma.subscription.update({ where: { id: existing.id }, data })
   } else {
-    await db.subscription.create({
+    await prisma.subscription.create({
       data: {
         userId: opts.userId,
         status: opts.status,
@@ -53,5 +65,5 @@ export async function setUserSubscription(opts: CreateSubscriptionOpts): Promise
       },
     })
   }
-  await db.user.update({ where: { id: opts.userId }, data: { subscriptionStatus: opts.status } })
+  await prisma.user.update({ where: { id: opts.userId }, data: { subscriptionStatus: opts.status } })
 }

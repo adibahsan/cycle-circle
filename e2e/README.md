@@ -85,6 +85,7 @@ Import `test` and `expect` from `support/fixtures.ts` (not `@playwright/test`).
 | `e2eDb()` / `closeE2eDb()` / `setUserSubscription` (`support/db.ts`) | Prisma against this slot's `vesta_e2e*` (setup only). `closeE2eDb` runs automatically via a worker-scoped fixture teardown. | `await setUserSubscription({ userId, status: 'FREE' })` |
 | `days` fixture (`support/bangladesh-day.ts`) | Bangladesh days from the **server's** clock (HTTP `Date`): `today`, `daysAgo(n)`, `daysFromNow(n)` (`YYYY-MM-DD`), `startOf(day)` (the `Date` to write to the DB), `now`. No fake clock. | `const start = days.startOf(days.daysAgo(35))` |
 | `fakeBdapps` fixture (`support/fake-bdapps.ts`) | Control client for the fake BDApps. | see below |
+| `db` fixture (`support/db.ts`) | Direct Prisma client for the slot database (`assertE2eDatabase` checked). Use only for test setup state the UI cannot reach in time (e.g. aging an OTP challenge). | `const count = await db.user.count()` |
 | `assertMailpit()` (`support/mailpit.ts`) | Mailpit reachability. A "wait for email to X" client arrives with the magic-link ticket. | `await assertMailpit()` |
 | `URLS`, `PORTS`, `SECRETS`, `DATABASE_URL` (`support/slot.ts`) | Slot-aware URLs (`URLS.web/admin/fakeBdapps/mailpit`), the cron secret, admin credentials, DB URL. | `` request.get(`${URLS.web}/api/cron/x`, { headers: { authorization: `Bearer ${SECRETS.cronSecret}` } }) `` |
 
@@ -109,10 +110,12 @@ Admin helpers (`support/admin.ts`) — typed for tickets #127–#131:
 | `failNext(path, { mode, statusCode?, httpStatus?, delayMs?, times? })` | `await fakeBdapps.failNext('/subscription/send', { mode: 'error', statusCode: 'E1601' })` |
 | `sendWebhook(appPath, body)` → the app's `{ status, body }` | `await fakeBdapps.sendWebhook('/api/webhooks/subscription/notify', {...})` |
 
-DB setup for states the UI can't reach in time lives in `support/db.ts` (`e2eDb()`,
-`setUserSubscription`, `closeE2eDb`). It uses `new PrismaClient({ datasourceUrl: DATABASE_URL })`
-from `@prisma/client` after `assertE2eDatabase()`; don't import `@vesta/shared`'s `prisma`, which
-reads `DATABASE_URL` from the env and would hit `vesta_dev`. The shared client is disconnected in
+DB setup for states the UI can't reach in time lives in `support/db.ts`: one shared
+`PrismaClient` via `e2eDb()` / `getE2eDb()` / the `db` export (and the `db` test fixture),
+plus `setUserSubscription` and `closeE2eDb`. Built as
+`new PrismaClient({ datasourceUrl: DATABASE_URL })` from `@prisma/client` after
+`assertE2eDatabase()`; don't import `@vesta/shared`'s `prisma`, which reads
+`DATABASE_URL` from the env and would hit `vesta_dev`. The shared client is disconnected in
 worker teardown (`closeE2eDb` via `support/fixtures.ts`). Write dates with the `days` helper.
 Only set up state this way; check results through the UI or HTTP. Admin users for the suite are
 created with `createAdminUser` in that same DB — not by reusing seeded web personas.

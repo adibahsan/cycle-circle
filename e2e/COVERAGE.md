@@ -15,7 +15,7 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 
 | Area | Features | none | look-only | partial | full |
 |---|---|---|---|---|---|
-| Web: login and access | 9 | 8 | 0 | 1 | 0 |
+| Web: login and access | 9 | 3 | 0 | 0 | 6 |
 | Web: onboarding and profiles | 9 | 3 | 6 | 0 | 0 |
 | Web: logging | 9 | 4 | 2 | 3 | 0 |
 | Web: dashboard, calendar, predictions, insights | 12 | 2 | 10 | 0 | 0 |
@@ -23,7 +23,7 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Web: billing | 7 | 3 | 4 | 0 | 0 |
 | Web: landing and public pages | 4 | 0 | 4 | 0 | 0 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 5 | 0 | 0 |
-| **Web total** | 63 | 22 | 36 | 5 | 0 |
+| **Web total** | 63 | 17 | 36 | 4 | 6 |
 | Admin: access and read-only views | 5 | 1 | 0 | 4 | 0 |
 | Admin: user actions | 4 | 3 | 0 | 1 | 0 |
 | Admin: content | 2 | 2 | 0 | 0 | 0 |
@@ -34,7 +34,7 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Server-only (not counted) | 10 | 10 | 0 | 0 | 0 |
 
 Notes on the tally:
-- The audit counted 4 web features as `full`. Read against the definition above, none qualifies: the real flows in the existing suite (symptom and check-in clicks) abort every save request, and the language switch only checks the cookie. They are counted `partial` here. The only new-suite row is W01, `partial` until the error paths land in #120.
+- Web login/access W01–W04, W07, W08 are `full` via `e2e/tests/web/login.spec.ts` (#120). Older look-only rows that aborted saves stay look-only/partial.
 - Terms follow `GLOSSARY.md`: Bangladesh day, Subscriber, BDApps OTP, App OTP, Check-in, Logging nudge, Auto-prompt, Trial lock, Translog, Webhook event, Merchant call, Phase pattern, Profile completion.
 - Dev-only pages (`/internal/*`, `/api/simulator-check/*`, `/api/internal/revalidate`, `/api/auth/dev-login`) are not product features and are not listed.
 - Admin A01–A03, A05 and A09 land in #126 (login helper + read-only views + CSV). A04 user-detail tabs stay for a later pass; A06–A08 mutating actions are #127.
@@ -45,15 +45,15 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W01 | Phone signup: new number, BDApps OTP, verify, onboarding as Pro (subscribe recorded at fake BDApps) | `/login`, `/verify-otp`, `/onboarding`, `/api/auth/otp/request`, `/api/auth/otp/verify` | `e2e/tests/web/phone-signup.spec.ts` | partial | #116 (errors: #120) |
-| W02 | Returning Subscriber login with an App OTP | `/login`, `/verify-otp`, `/api/auth/otp/*` | - | none | #120 |
-| W03 | OTP error paths: wrong, expired, 60 s resend cooldown, per-phone rate limit | `/verify-otp`, `/api/auth/otp/*` | - | none | #120 |
-| W04 | Brute-force block after repeated wrong codes | `/api/auth/otp/verify` | - | none | #120 |
+| W01 | Phone signup: new number, BDApps OTP, verify, onboarding as Pro (subscribe recorded at fake BDApps) | `/login`, `/verify-otp`, `/onboarding`, `/api/auth/otp/request`, `/api/auth/otp/verify` | `e2e/tests/web/phone-signup.spec.ts`, `e2e/tests/web/login.spec.ts` | full | #116 (errors: #120) |
+| W02 | Returning Subscriber login with an App OTP | `/login`, `/verify-otp`, `/api/auth/otp/*` | `e2e/tests/web/login.spec.ts` | full | #120 |
+| W03 | OTP error paths: wrong, expired, 60 s resend cooldown, per-phone rate limit | `/verify-otp`, `/api/auth/otp/*` | `e2e/tests/web/login.spec.ts` | full | #120 |
+| W04 | Brute-force block after repeated wrong codes | `/api/auth/otp/verify` | `e2e/tests/web/login.spec.ts` | full | #120 |
 | W05 | Email magic-link login, lands on 24 h email trial | `/email-login`, `/api/auth/magic-link/request`, `/api/auth/magic-link/callback` | - | none | #119 |
 | W06 | Magic-link security: expired or reused link rejected | `/api/auth/magic-link/callback` | - | none | #119 |
-| W07 | Logout ends the session | `/api/auth/logout`, settings logout dialog | `apps/web/e2e/tests/bengali-no-english.spec.ts` (dialog text only) | none | #120 |
-| W08 | Route protection: logged-out visitor redirected from every protected page | all `(main)` routes, `/onboarding` | - | none | #120 |
-| W09 | Suspended or deleted user session is blocked | `/api/auth/status`, withAuth | - | none | #120 (admin side: #127) |
+| W07 | Logout ends the session | `/api/auth/logout`, settings logout dialog | `e2e/tests/web/login.spec.ts`, `apps/web/e2e/tests/bengali-no-english.spec.ts` | full | #120 |
+| W08 | Route protection: logged-out visitor redirected from every protected page | all `(main)` routes, `/onboarding` | `e2e/tests/web/login.spec.ts` | full | #120 |
+| W09 | Suspended or deleted user session is blocked | `/api/auth/status`, withAuth | - | none | #127 |
 
 ### Web: onboarding and profiles
 
