@@ -24,20 +24,20 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Web: landing and public pages | 4 | 0 | 4 | 0 | 0 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 5 | 0 | 0 |
 | **Web total** | 63 | 22 | 36 | 5 | 0 |
-| Admin: access and read-only views | 5 | 5 | 0 | 0 | 0 |
-| Admin: user actions | 4 | 4 | 0 | 0 | 0 |
+| Admin: access and read-only views | 5 | 1 | 0 | 4 | 0 |
+| Admin: user actions | 4 | 3 | 0 | 1 | 0 |
 | Admin: content | 2 | 2 | 0 | 0 | 0 |
 | Admin: analytics and engagement | 2 | 2 | 0 | 0 | 0 |
 | Admin: SMS | 2 | 2 | 0 | 0 | 0 |
 | Admin: feedback, emails, audit, logs, system | 6 | 6 | 0 | 0 | 0 |
-| **Admin total** | 21 | 21 | 0 | 0 | 0 |
+| **Admin total** | 21 | 16 | 0 | 5 | 0 |
 | Server-only (not counted) | 10 | 10 | 0 | 0 | 0 |
 
 Notes on the tally:
 - The audit counted 4 web features as `full`. Read against the definition above, none qualifies: the real flows in the existing suite (symptom and check-in clicks) abort every save request, and the language switch only checks the cookie. They are counted `partial` here. The only new-suite row is W01, `partial` until the error paths land in #120.
 - Terms follow `GLOSSARY.md`: Bangladesh day, Subscriber, BDApps OTP, App OTP, Check-in, Logging nudge, Auto-prompt, Trial lock, Translog, Webhook event, Merchant call, Phase pattern, Profile completion.
 - Dev-only pages (`/internal/*`, `/api/simulator-check/*`, `/api/internal/revalidate`, `/api/auth/dev-login`) are not product features and are not listed.
-- No admin spec exists yet, so all 21 admin rows are `none`.
+- Admin A01–A03, A05 and A09 land in #126 (login helper + read-only views + CSV). A04 user-detail tabs stay for a later pass; A06–A08 mutating actions are #127.
 
 ## Web (63)
 
@@ -150,11 +150,11 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A01 | Login with email and password; non-admin sees forbidden page; logout | `/login`, `/forbidden`, `/api/auth/login`, `/api/auth/logout` | - | none | #126 |
-| A02 | Dashboard KPIs and signup trend | `/` | - | none | #126 |
-| A03 | Users: search and filter | `/users` | - | none | #126 |
-| A04 | User detail: profile, plan history, Translog tabs | `/users/[id]` | - | none | #126 |
-| A05 | Subscriptions list with status filter | `/subscriptions` | - | none | #126 |
+| A01 | Login with email and password; non-admin sees forbidden page; logout | `/login`, `/forbidden`, `/api/auth/login`, `/api/auth/logout` | `e2e/tests/admin/login.spec.ts` | partial (logout not covered) | #126 |
+| A02 | Dashboard KPIs and signup trend | `/` | `e2e/tests/admin/dashboard.spec.ts` | partial | #126 |
+| A03 | Users: search and filter | `/users` | `e2e/tests/admin/users.spec.ts` | partial | #126 |
+| A04 | User detail: profile, plan history, Translog tabs | `/users/[id]` | - | none | #127 |
+| A05 | Subscriptions list with status filter | `/subscriptions` | `e2e/tests/admin/subscriptions.spec.ts` | partial | #126 |
 
 ### Admin: user actions
 
@@ -163,7 +163,7 @@ Notes on the tally:
 | A06 | Suspend and reactivate (ends or keeps BDApps billing) | `/users/[id]` | - | none | #127 |
 | A07 | Delete and restore within 30 days; no restore after the window | `/users/[id]` | - | none | #127 |
 | A08 | Grant and revoke Pro (admin override) | `/users/[id]` | - | none | #127 |
-| A09 | Users CSV export | `/users` | - | none | #127 |
+| A09 | Users CSV export | `/users` | `e2e/tests/admin/users.spec.ts` | partial (export ignores UI filters; asserts filtered user is present) | #126 |
 
 ### Admin: content
 
