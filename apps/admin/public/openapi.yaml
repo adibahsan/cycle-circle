@@ -921,8 +921,8 @@ paths:
   /api/cron/caas-check:
     get:
       tags: [Cron]
-      summary: CAAS keep-alive + subscription balance check
-      description: Runs a Supabase keep-alive query and checks PRO subscriptions' CAAS balance. Invoked by Vercel Cron via GET (identical handler on POST).
+      summary: Daily subscription check (BDApps subscriber status) + keep-alive
+      description: Runs a keep-alive query, then asks BDApps for each Pro subscriber's subscriber status (getStatus). Downgrades numbers reported UNREGISTERED and restores revoked users reported REGISTERED. Makes no CaaS calls. Invoked by Vercel Cron via GET (identical handler on POST).
       security: [{ cronBearer: [] }]
       responses:
         '200':
@@ -938,7 +938,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
     post:
       tags: [Cron]
-      summary: CAAS keep-alive + subscription balance check (POST alias)
+      summary: Daily subscription check + keep-alive (POST alias)
       security: [{ cronBearer: [] }]
       responses:
         '200':

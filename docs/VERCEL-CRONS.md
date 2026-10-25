@@ -18,7 +18,7 @@ Declared in `apps/web/vercel.json` (web project only — admin has no crons):
 | Job | Schedule (UTC) | What it does |
 |---|---|---|
 | `daily-reminders` | `0 8 * * *` (08:00) | Period/fertile/logging/profile reminders, then dispatches the scheduled daily SMS broadcast. |
-| `caas-check` | `0 2 * * *` (02:00) | Supabase keep-alive ping + re-checks each PRO subscription's CAAS balance, marks lapses. |
+| `caas-check` | `0 2 * * *` (02:00) | Supabase keep-alive ping + daily subscription check: asks BDApps for each Pro subscriber's status, downgrades UNREGISTERED numbers and restores re-subscribed ones (no CaaS calls; slug is historical). |
 
 Both routes: `runtime = 'nodejs'`, `dynamic = 'force-dynamic'`, `maxDuration = 60`,
 and export **both `GET` and `POST`** (Vercel Cron calls `GET`; `POST` is for manual /
