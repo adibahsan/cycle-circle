@@ -53,7 +53,7 @@ Notes on the tally:
 | W06 | Magic-link security: expired or reused link rejected | `/api/auth/magic-link/callback` | - | none | #119 |
 | W07 | Logout ends the session | `/api/auth/logout`, settings logout dialog | `e2e/tests/web/login.spec.ts`, `apps/web/e2e/tests/bengali-no-english.spec.ts` | full | #120 |
 | W08 | Route protection: logged-out visitor redirected from every protected page | all `(main)` routes, `/onboarding` | `e2e/tests/web/login.spec.ts` | full | #120 |
-| W09 | Suspended or deleted user session is blocked | `/api/auth/status`, withAuth | - | none | #120 (admin side: #127) |
+| W09 | Suspended or deleted user session is blocked | `/api/auth/status`, withAuth | - | none | #127 |
 
 ### Web: onboarding and profiles
 

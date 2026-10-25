@@ -19,11 +19,12 @@ test.describe('Web login and access', () => {
     // 2. Returning subscriber requests login OTP
     await page.goto('/login')
     await page.getByLabel('Phone Number').fill(phone)
+    const since = new Date()
     await page.getByRole('button', { name: 'Send OTP' }).click()
     await expect(page).toHaveURL(/\/verify-otp/)
 
     // 3. Fake BDApps sent an App OTP by SMS (kind = 'app')
-    const otp = await fakeBdapps.latestOtp(phone, { since: new Date(Date.now() - 5000) })
+    const otp = await fakeBdapps.latestOtp(phone, { since })
     expect(otp.kind).toBe('app')
 
     // 4. Fill the 6-digit code (auto-submits)
@@ -45,10 +46,21 @@ test.describe('Web login and access', () => {
     const subscriber = await fakeBdapps.subscriber(phone)
     expect(subscriber).toBeDefined()
     const newCalls = await fakeBdapps.calls({ sinceSeq })
+    // The call log is shared by parallel workers, so scope to this subscriber: subscribe requests
+    // carry the phone (tel:880...) or the masked id. (otp/verify carries only a referenceNo issued
+    // by an otp/request, so no subscribe request for this phone also rules out its verify.)
+    const digits = phone.slice(1)
+    const mine = (c: { body?: Record<string, unknown> }) => {
+      const id = String(c.body?.subscriberId ?? '')
+      return id.includes(digits) || id === subscriber?.maskedId
+    }
+    // The app probes otp/request first; for a registered user BDApps answers E1351 and it falls back
+    // to an App OTP. So a probe rejected with E1351 is fine; an accepted one (new subscribe OTP) is not.
     const subscribeCalls = newCalls.filter(
       (c) =>
-        (c.path === '/subscription/send' && c.body?.subscriberId === subscriber?.maskedId) ||
-        (c.path === '/subscription/otp/verify' && c.body?.referenceNo === otp.referenceNo),
+        mine(c) &&
+        (c.path === '/subscription/send' ||
+          (c.path === '/subscription/otp/request' && c.response?.statusCode !== 'E1351')),
     )
     expect(subscribeCalls).toHaveLength(0)
 
@@ -132,21 +144,30 @@ test.describe('Web login and access', () => {
   })
 
   test('the per-phone rate limit is enforced and shown after exceeding 3 requests in 60s', async ({ page, db }) => {
+    test.setTimeout(90_000)
     const phone = newPhone()
-
-    // First 3 requests: succeed (bypassing cooldown by removing the previous DB challenge)
-    for (let i = 1; i <= 3; i++) {
+    const start = Date.now()
+    const send = async () => {
       await page.goto('/login')
       await page.getByLabel('Phone Number').fill(phone)
       await page.getByRole('button', { name: 'Send OTP' }).click()
-      await expect(page).toHaveURL(/\/verify-otp/)
-      await db.otpChallenge.deleteMany({ where: { phone: { contains: phone.slice(1) } } })
     }
 
+    // First 3 requests succeed; age each challenge past the 60s cooldown so the next request reaches the rate limiter
+    for (let i = 1; i <= 3; i++) {
+      await send()
+      await expect(page).toHaveURL(/\/verify-otp/)
+      await db.otpChallenge.updateMany({
+        where: { phone: { contains: phone.slice(1) } },
+        data: { createdAt: new Date(Date.now() - 70_000) },
+      })
+    }
+
+    // Fail fast if the setup consumed too much of the 60s rate-limit window
+    expect(Date.now() - start, 'setup must finish well inside the 60s window').toBeLessThan(50_000)
+
     // 4th request: rate limiter blocks it (3 requests per 60s per phone)
-    await page.goto('/login')
-    await page.getByLabel('Phone Number').fill(phone)
-    await page.getByRole('button', { name: 'Send OTP' }).click()
+    await send()
 
     const alert = page.getByRole('alert').filter({ hasText: /Too many attempts/ })
     await expect(alert).toBeVisible()
