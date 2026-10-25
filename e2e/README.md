@@ -63,11 +63,18 @@ e2e/
   tests/web/             project web-* + serial `cron` (baseURL = web)
   tests/admin/           project admin-*     (baseURL = admin)
   tests/cross-app/       project cross-app-* (baseURL = web; open admin with URLS.admin)
+  fixtures/              small binary fixtures (e.g. `article-red-1x1.png` for CMS image upload)
   COVERAGE.md            feature → spec → depth
 ```
 
 Name specs after the feature (`tests/web/period-logging.spec.ts`). Every spec runs at desktop and
 phone width; use `test.skip(testInfo.project.name.endsWith('-phone'), 'why')` only with a reason.
+
+Cross-app admin→web content (#128): `tests/cross-app/admin-content.spec.ts` uses `createLoggedInAdmin`
+plus a throwaway `newUser()`; article titles are prefixed `E2E128` so they never collide with #124.
+Sanitizer coverage pastes rich HTML into Tiptap and also rewrites the `createArticle` Next-Action
+POST body (raw HTML bypassing the editor) so stored HTML and the web reader can be checked separately.
+Tiptap editors lack accessible names — CSS `.ProseMirror` with a comment pointing at #141.
 
 ### Serial `cron` project (CI / full suite)
 
@@ -114,9 +121,9 @@ Import `test` and `expect` from `support/fixtures.ts` (not `@playwright/test`).
 | `e2eDb()` / `closeE2eDb()` / `setUserSubscription` (`support/db.ts`) | Prisma against this slot's `vesta_e2e*` (setup only). `closeE2eDb` runs automatically via a worker-scoped fixture teardown. | `await setUserSubscription({ userId, status: 'FREE' })` |
 | `days` fixture (`support/bangladesh-day.ts`) | Bangladesh days from the **server's** clock (HTTP `Date`): `today`, `daysAgo(n)`, `daysFromNow(n)` (`YYYY-MM-DD`), `startOf(day)` (the `Date` to write to the DB), `now`. No fake clock. | `const start = days.startOf(days.daysAgo(35))` |
 | `fakeBdapps` fixture (`support/fake-bdapps.ts`) | Control client for the fake BDApps. | see below |
-| `db` fixture (`support/db.ts`) | Direct Prisma client for the slot database (`assertE2eDatabase` checked). Use only for test setup state the UI cannot reach in time (e.g. aging an OTP challenge). | `const count = await db.user.count()` |
+| `db` fixture / `db` / `getDb()` (`support/db.ts`) | Direct Prisma client for the slot database (`assertE2eDatabase` checked) and helpers for preconditions the UI cannot reach in time (draft articles, historical logs for export: `createArticle()`, `createProfileWithLogs()`, `setUserSubscription()`). | `const db = getDb()` |
 | `assertMailpit()` (`support/mailpit.ts`) | Mailpit reachability. | `await assertMailpit()` |
-| `waitForEmail(to, { since?, timeoutMs? })` (`support/mailpit.ts`) | Wait for newest email to `to` since `since`; returns subject, text, HTML, links. | `const { links } = await waitForEmail(email, { since })` |
+| `waitForEmail(to, { since?, timeoutMs? })` / `latestEmailFor` (`support/mailpit.ts`) | Wait for newest email to `to` since `since`; returns subject, text, HTML, links. | `const { links } = await waitForEmail(email, { since })` |
 | `waitForMagicLinkEmail(email, { since })` (`support/mailpit.ts`) | Wait for a magic-link email already sent (e.g. by UI); returns callback URL. | `const { callbackUrl } = await waitForMagicLinkEmail(email, { since })` |
 | `requestMagicLinkAndWait(email, { language?, baseUrl?, since?, timeoutMs? })` (`support/mailpit.ts`) | POST `/api/auth/magic-link/request` then wait for email; returns callback URL. | `const { callbackUrl } = await requestMagicLinkAndWait(email)` |
 | `createEmailTrialUser(browser, opts?)` (`support/users.ts`) | Throwaway email-trial user via the real magic-link flow, unique address (limit 3 requests/hour/email: never log seeded users in this way). `{ withProfile: true }` seeds user + profile first so it lands on the dashboard. Also `newEmail()` and `preseedEmailTrialUser(email)`. Returns `{ email, context }`. | `const { context, email } = await createEmailTrialUser(browser)` |
@@ -146,8 +153,8 @@ Admin helpers (`support/admin.ts`) — typed for tickets #127–#131:
 | `sendWebhook(appPath, body)` → the app's `{ status, body }` | `await fakeBdapps.sendWebhook('/api/webhooks/subscription/notify', {...})` |
 
 DB setup for states the UI can't reach in time lives in `support/db.ts`: one shared
-`PrismaClient` via `e2eDb()` / `getE2eDb()` / the `db` export (and the `db` test fixture),
-plus `setUserSubscription` and `closeE2eDb`. Built as
+`PrismaClient` via `e2eDb()` / `getE2eDb()` / `getDb()` / the `db` export (and the `db` test fixture),
+plus `setUserSubscription`, `createArticle()`, `createProfileWithLogs()` and `closeE2eDb`. Built as
 `new PrismaClient({ datasourceUrl: TEST_DATABASE_URL })` from `@prisma/client` after
 `assertE2eDatabase()` (`TEST_DATABASE_URL` is the slot DB with a small `connection_limit`);
 don't import `@vesta/shared`'s `prisma`, which reads `DATABASE_URL` from the env and would hit
@@ -209,8 +216,10 @@ status below 500; down for 5xx, a network error or a 4s timeout). It is not a me
 Only subscription-notify changes a user; the other three are stored. Idempotency keys must be
 unique per event.
 
-**Translog** has no screen: `translogFor(userId)` from `support/translog.ts` reads the web app's
-translog lines for that user (`plan.change` with `cause`).
+**Translog** has no screen: `translogFor(userId)` from `support/translog.ts` reads today's
+translog lines for that user (`plan.change` with `cause`). Defaults to the **web** app's
+`LOG_DIR` (OTP signup, webhooks). Admin grant/revoke/suspend lines are under the **admin**
+app: `translogFor(userId, { app: 'admin' })`, or merge both with `{ apps: ['web', 'admin'] }`.
 
 ## Conventions
 
