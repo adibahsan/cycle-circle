@@ -83,7 +83,8 @@ Import `test` and `expect` from `support/fixtures.ts` (not `@playwright/test`).
 | Personas (`support/personas.ts`) | Seeded read-only users, logged in once by global setup: `streaker`, `allGood`, `stale`, `power`, `newUser`, `proMulti` (all Pro); `admin` = seeded super admin. **Never save data as a persona.** | `test.use({ storageState: statePath('power') })` |
 | `days` fixture (`support/bangladesh-day.ts`) | Bangladesh days from the **server's** clock (HTTP `Date`): `today`, `daysAgo(n)`, `daysFromNow(n)` (`YYYY-MM-DD`), `startOf(day)` (the `Date` to write to the DB), `now`. No fake clock. | `const start = days.startOf(days.daysAgo(35))` |
 | `fakeBdapps` fixture (`support/fake-bdapps.ts`) | Control client for the fake BDApps. | see below |
-| `assertMailpit()` (`support/mailpit.ts`) | Mailpit reachability. A "wait for email to X" client arrives with the magic-link ticket. | `await assertMailpit()` |
+| `assertMailpit()`, `latestEmailFor(recipient, opts)` (`support/mailpit.ts`) | Mailpit reachability and waiting for emails to a recipient. | `const msg = await latestEmailFor(email, { since })` |
+| `getDb()`, `createArticle()`, `createProfileWithLogs()` (`support/db.ts`) | Slot-isolated DB helper for preconditions UI can't reach in time (draft articles, historical logs for export). | `const db = getDb()` |
 | `URLS`, `PORTS`, `SECRETS`, `DATABASE_URL` (`support/slot.ts`) | Slot-aware URLs (`URLS.web/admin/fakeBdapps/mailpit`), the cron secret, admin credentials, DB URL. | `` request.get(`${URLS.web}/api/cron/x`, { headers: { authorization: `Bearer ${SECRETS.cronSecret}` } }) `` |
 
 `fakeBdapps` methods:
@@ -96,11 +97,7 @@ Import `test` and `expect` from `support/fixtures.ts` (not `@playwright/test`).
 | `failNext(path, { mode, statusCode?, httpStatus?, delayMs?, times? })` | `await fakeBdapps.failNext('/subscription/send', { mode: 'error', statusCode: 'E1601' })` |
 | `sendWebhook(appPath, body)` → the app's `{ status, body }` | `await fakeBdapps.sendWebhook('/api/webhooks/subscription/notify', {...})` |
 
-DB setup for states the UI can't reach in time: no helper yet (the first ticket that needs one
-adds `support/db.ts`). Build it as `new PrismaClient({ datasourceUrl: DATABASE_URL })` from
-`@prisma/client` (a dependency of this package) after `assertE2eDatabase()`; don't import
-`@vesta/shared`'s `prisma`, which reads `DATABASE_URL` from the env and would hit `vesta_dev`.
-Write dates with the `days` helper. Only set up state this way; check results through the UI or HTTP.
+DB setup for states the UI can't reach in time: use `getDb()` from `support/db.ts` (a singleton PrismaClient connected to the slot's DB). It exports helpers like `createArticle()` and `createProfileWithLogs()`. Only set up state this way; check results through the UI or HTTP.
 
 ## Fake BDApps (`fake-bdapps/`)
 
