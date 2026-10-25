@@ -9,6 +9,8 @@ import {
 import { isPregnancy, isMenopause } from '../../utils/goal'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
 import { TIER2_MIN_CYCLES } from '../prediction-calc'
+import { ApiError } from '../api-error'
+import { findOverlappingPeriod, periodDayKey } from '../../utils/period-overlap'
 import { getCurrentPhase, MS_PER_DAY } from '../../utils/cycle-utils'
 import type { CyclePhase } from '../../types/types'
 import { loadPhasePattern, loadRecentSymptomPattern, type PhasePatternEntry } from './insights-service'
@@ -22,6 +24,26 @@ async function verifyProfileOwnership(profileId: string, userId: string) {
 }
 
 // ── Period log mutations ───────────────────────────────────────────────────────
+
+/** Throws 409 PERIOD_OVERLAP if the inclusive day range shares a day with another log of the profile. */
+async function assertNoPeriodOverlap(profileId: string, start: Date, end: Date, excludeId?: string) {
+  const others = await prisma.periodLog.findMany({
+    where: {
+      profileId,
+      ...(excludeId && { id: { not: excludeId } }),
+      // Widen by a day each side so the exact day-string comparison decides, not time-of-day.
+      startDate: { lte: new Date(end.getTime() + 86_400_000) },
+      endDate: { gte: new Date(start.getTime() - 86_400_000) },
+    },
+    select: { id: true, startDate: true, endDate: true },
+  })
+  const hit = findOverlappingPeriod(
+    { startDate: periodDayKey(start), endDate: periodDayKey(end) },
+    others.map((o) => ({ id: o.id, startDate: periodDayKey(o.startDate), endDate: periodDayKey(o.endDate) })),
+    excludeId,
+  )
+  if (hit) throw new ApiError(409, 'This period overlaps another logged period', 'PERIOD_OVERLAP')
+}
 
 export async function createPeriodLog(
   profileId: string,
@@ -37,6 +59,7 @@ export async function createPeriodLog(
   if (end < start) throw new Error('End date must be on or after start date')
 
   await verifyProfileOwnership(profileId, userId)
+  await assertNoPeriodOverlap(profileId, start, end)
 
   const log = await prisma.periodLog.create({
     data: {
@@ -65,11 +88,18 @@ export async function updatePeriodLog(
   })
   if (!existing || existing.profile.userId !== userId) throw new Error('Period log not found')
 
+  const newStart = data.startDate !== undefined ? new Date(data.startDate) : existing.startDate
+  const newEnd = data.endDate !== undefined ? new Date(data.endDate) : existing.endDate
+  if (newEnd < newStart) throw new Error('End date must be on or after start date')
+  if (data.startDate !== undefined || data.endDate !== undefined) {
+    await assertNoPeriodOverlap(existing.profileId, newStart, newEnd, logId)
+  }
+
   const log = await prisma.periodLog.update({
     where: { id: logId },
     data: {
-      ...(data.startDate !== undefined && { startDate: new Date(data.startDate) }),
-      ...(data.endDate !== undefined && { endDate: new Date(data.endDate) }),
+      ...(data.startDate !== undefined && { startDate: newStart }),
+      ...(data.endDate !== undefined && { endDate: newEnd }),
       ...(data.flowIntensity !== undefined && { flowIntensity: data.flowIntensity }),
     },
   })
