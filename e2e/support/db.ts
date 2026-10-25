@@ -11,6 +11,7 @@ import {
   type SymptomCategory,
 } from '@prisma/client'
 import { TEST_DATABASE_URL, DATABASE_URL, assertE2eDatabase, SECRETS } from './slot.ts'
+import { bangladeshDays, type BangladeshDays } from './bangladesh-day.ts'
 
 const dbUrl = TEST_DATABASE_URL ?? DATABASE_URL
 assertE2eDatabase(dbUrl)
@@ -112,6 +113,7 @@ export async function createProfileWithLogs(opts: {
   symptomDate?: Date
   symptomCategory?: SymptomCategory
   symptomId?: string
+  days?: BangladeshDays
 }) {
   const db = getDb()
   const name = opts.profileName ?? 'Primary'
@@ -132,8 +134,9 @@ export async function createProfileWithLogs(opts: {
     },
   })
 
-  const start = opts.startDate ?? new Date(Date.now() - 10 * 86400000)
-  const end = opts.endDate ?? new Date(Date.now() - 6 * 86400000)
+  const d = opts.days ?? (await bangladeshDays())
+  const start = opts.startDate ?? d.startOf(d.daysAgo(10))
+  const end = opts.endDate ?? d.startOf(d.daysAgo(6))
 
   const periodLog = await db.periodLog.create({
     data: {
@@ -144,7 +147,7 @@ export async function createProfileWithLogs(opts: {
     },
   })
 
-  const symDate = opts.symptomDate ?? new Date(Date.now() - 5 * 86400000)
+  const symDate = opts.symptomDate ?? d.startOf(d.daysAgo(5))
   const symptomLog = await db.symptomLog.create({
     data: {
       profileId: profile.id,

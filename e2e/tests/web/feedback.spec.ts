@@ -16,7 +16,7 @@ test.describe('In-App Feedback', () => {
 
     // Type feedback message
     const feedbackMsg = `E2E automated test feedback ${Date.now()}`
-    await page.getByPlaceholder('Your message...').fill(feedbackMsg)
+    await page.getByLabel(/Message/).fill(feedbackMsg)
 
     // Submit
     await page.getByRole('button', { name: 'Submit Feedback' }).click()

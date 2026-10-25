@@ -4,6 +4,7 @@ import { test, expect } from '../../support/fixtures.ts'
 import { createProfileWithLogs, getDb } from '../../support/db.ts'
 import { latestEmailFor } from '../../support/mailpit.ts'
 import { SECRETS, URLS } from '../../support/slot.ts'
+import { newPhone } from '../../support/users.ts'
 
 test.describe('Settings and Account', () => {
   test('the theme toggle switches and remembers light and dark', async ({ newUser }) => {
@@ -61,15 +62,67 @@ test.describe('Settings and Account', () => {
     await expect(page.getByRole('radio', { name: /^(EN|ইং)$/ })).toBeChecked()
   })
 
-  test('change notification preferences and opt out of reminders; choice survives reload and cron skips user', async ({ newUser }) => {
+  test('change notification preferences and opt out of reminders; choice survives reload and cron skips user', async ({ newUser, days, fakeBdapps }) => {
     const { page, phone } = await newUser()
 
-    // Seed profile with notification preferences
     const db = getDb()
     const dbUser = await db.user.findFirstOrThrow({
       where: { phone: { contains: phone.slice(1) } },
     })
-    await createProfileWithLogs({ userId: dbUser.id, profileName: 'Reminder Test Profile' })
+    const optedOutEmail = `opted-out-${Date.now()}@example.com`
+    await db.user.update({
+      where: { id: dbUser.id },
+      data: { email: optedOutEmail },
+    })
+
+    // Seed profile with notification preferences and due prediction/log for opted-out user
+    const { profile: optedOutProfile } = await createProfileWithLogs({
+      userId: dbUser.id,
+      profileName: 'Reminder Opt-Out Profile',
+      days,
+    })
+    await db.prediction.create({
+      data: {
+        profileId: optedOutProfile.id,
+        tier: 'AVERAGE',
+        nextPeriodStart: days.startOf(days.daysFromNow(1)),
+        ovulationDay: days.startOf(days.daysFromNow(14)),
+        fertileStart: days.startOf(days.daysFromNow(10)),
+        fertileEnd: days.startOf(days.daysFromNow(15)),
+        confidence: 0.85,
+      },
+    })
+
+    // Seed a due CONTROL throwaway user (not opted out) with the exact same due data
+    const controlPhone = newPhone()
+    const controlEmail = `control-${Date.now()}@example.com`
+    const controlUser = await db.user.create({
+      data: {
+        phone: `+880${controlPhone.slice(1)}`,
+        email: controlEmail,
+        fullName: 'Control Due User',
+        authMethod: 'OTP',
+        subscriptionStatus: 'PRO',
+        profileCompleted: true,
+        profileReminderOptOut: false,
+      },
+    })
+    const { profile: controlProfile } = await createProfileWithLogs({
+      userId: controlUser.id,
+      profileName: 'Control Due Profile',
+      days,
+    })
+    await db.prediction.create({
+      data: {
+        profileId: controlProfile.id,
+        tier: 'AVERAGE',
+        nextPeriodStart: days.startOf(days.daysFromNow(1)),
+        ovulationDay: days.startOf(days.daysFromNow(14)),
+        fertileStart: days.startOf(days.daysFromNow(10)),
+        fertileEnd: days.startOf(days.daysFromNow(15)),
+        confidence: 0.85,
+      },
+    })
 
     await page.goto('/settings')
 
@@ -95,9 +148,24 @@ test.describe('Settings and Account', () => {
     await expect(loggingToggle).not.toBeChecked()
     await expect(completionToggle).not.toBeChecked()
 
-    // Wait for debounce and toast save to server
-    await expect(page.getByText('Preferences saved').first()).toBeVisible()
-    await page.waitForTimeout(1000)
+    // Wait for debounced save (600ms) to persist to the database before reloading
+    await expect.poll(async () => {
+      const pref = await db.notificationPreference.findFirst({
+        where: { profileId: optedOutProfile.id },
+      })
+      const user = await db.user.findUnique({ where: { id: dbUser.id } })
+      return {
+        periodAlert: pref?.periodAlert,
+        fertileWindow: pref?.fertileWindow,
+        loggingReminder: pref?.loggingReminder,
+        optOut: user?.profileReminderOptOut,
+      }
+    }).toEqual({
+      periodAlert: false,
+      fertileWindow: false,
+      loggingReminder: false,
+      optOut: true,
+    })
 
     // Reload and verify choices survived
     await page.reload()
@@ -106,14 +174,11 @@ test.describe('Settings and Account', () => {
     await expect(page.getByRole('switch', { name: 'Logging Reminders' })).not.toBeChecked()
     await expect(page.getByRole('switch', { name: 'Profile-completion reminders' })).not.toBeChecked()
 
-    // Verify DB state
-    const updatedUser = await db.user.findUniqueOrThrow({ where: { id: dbUser.id } })
-    expect(updatedUser.profileReminderOptOut).toBe(true)
-
-    // Invoke daily reminders cron with CRON_SECRET for this opted-out user
+    // Invoke daily reminders cron with CRON_SECRET for the entire system
+    const cronStartTime = new Date()
     const cronRes = await page.request.post(`${URLS.web}/api/cron/daily-reminders`, {
       headers: { authorization: `Bearer ${SECRETS.cronSecret}` },
-      data: { userId: dbUser.id, force: true },
+      data: { force: true },
     })
     expect(cronRes.ok()).toBe(true)
     const result = (await cronRes.json()) as {
@@ -123,17 +188,41 @@ test.describe('Settings and Account', () => {
       completionReminders: number
       errors: number
     }
-
-    // Skipped: 0 reminders sent to this user
-    expect(result.periodAlerts).toBe(0)
-    expect(result.fertileAlerts).toBe(0)
-    expect(result.reminders).toBe(0)
-    expect(result.completionReminders).toBe(0)
     expect(result.errors).toBe(0)
 
-    // No emails logged in database for this user
-    const emails = await db.emailLog.findMany({ where: { userId: dbUser.id } })
-    expect(emails).toHaveLength(0)
+    // Control user: received email in Mailpit
+    const controlEmailMessage = await latestEmailFor(controlEmail, { since: cronStartTime })
+    expect(controlEmailMessage).toBeDefined()
+    expect(controlEmailMessage.subject).toBeTruthy()
+
+    // Control user: received SMS recorded in fake BDApps
+    const calls = await fakeBdapps.calls({ path: '/sms/send' })
+    const controlCalls = calls.filter((c) =>
+      JSON.stringify(c.body).includes(controlPhone.slice(1)),
+    )
+    expect(controlCalls.length).toBeGreaterThanOrEqual(1)
+
+    // Control user: emails logged in database
+    const controlDbEmails = await db.emailLog.findMany({ where: { userId: controlUser.id } })
+    expect(controlDbEmails.length).toBeGreaterThanOrEqual(1)
+
+    // Opted-out user: zero emails logged in database
+    const optedOutDbEmails = await db.emailLog.findMany({ where: { userId: dbUser.id } })
+    expect(optedOutDbEmails).toHaveLength(0)
+
+    // Opted-out user: zero SMS recorded in fake BDApps
+    const optedOutCalls = calls.filter((c) =>
+      JSON.stringify(c.body).includes(phone.slice(1)),
+    )
+    expect(optedOutCalls).toHaveLength(0)
+
+    // Opted-out user: zero emails in Mailpit
+    const searchRes = await fetch(
+      new URL(`/api/v1/search?query=${encodeURIComponent(optedOutEmail)}`, URLS.mailpit),
+    )
+    expect(searchRes.ok).toBe(true)
+    const searchData = (await searchRes.json()) as { messages?: unknown[] }
+    expect(searchData.messages ?? []).toHaveLength(0)
   })
 
   test('export data as CSV and XLSX; both files contain the logged entries', async ({ newUser }) => {
@@ -236,7 +325,7 @@ test.describe('Settings and Account', () => {
     await expect(page.getByRole('dialog')).toBeVisible()
 
     const updatedName = `Renamed-${Date.now()}`
-    await page.locator('#edit-profile-name').fill(updatedName)
+    await page.getByRole('dialog').getByLabel('Name').fill(updatedName)
     await page.getByRole('button', { name: 'Save Changes' }).click()
     await expect(page.getByRole('dialog')).toBeHidden()
 

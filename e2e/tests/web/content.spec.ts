@@ -39,7 +39,12 @@ test.describe('Content (Learn)', () => {
     const { page } = await newUser()
     await page.goto('/content')
     await expect(page.getByRole('heading', { name: 'Health Articles' })).toBeVisible()
-    await expect(page.getByText('Secret Unpublished Draft Guide')).toBeHidden()
+    await expect(page.getByText('Secret Unpublished Draft Guide')).toHaveCount(0)
+
+    // Under the phase filter where a leaked draft would appear (Menstrual)
+    await page.getByRole('button', { name: 'Menstrual', exact: true }).click()
+    await expect(page).toHaveURL(/phase=MENSTRUAL/)
+    await expect(page.getByText('Secret Unpublished Draft Guide')).toHaveCount(0)
   })
 
   test('filter articles by phase and open one in the reader in English', async ({ newUser }) => {

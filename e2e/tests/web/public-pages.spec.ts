@@ -10,8 +10,7 @@ test.describe('Public Marketing and Onboarding Pages', () => {
     await expect(page).toHaveURL(/\/welcome/)
 
     // 2. Hero elements are visible
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-    await expect(page.getByText('Your cycle, understood')).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Your cycle, understood' })).toBeVisible()
 
     // 3. CTA to Get Started works
     const getStartedLink = page.getByRole('link', { name: 'Get Started' }).first()
@@ -25,13 +24,17 @@ test.describe('Public Marketing and Onboarding Pages', () => {
     await expect(loginLink).toBeVisible()
     await loginLink.click()
     await expect(page).toHaveURL(/\/login/)
-    await expect(page.locator('#phone-input')).toBeVisible()
+    await expect(page.getByLabel('Phone Number')).toBeVisible()
 
     // 5. Footer links to /privacy and /terms work
     await page.goto('/welcome')
     const footerNav = page.locator('footer')
-    await expect(footerNav.getByRole('link', { name: 'Privacy' })).toBeVisible()
-    await expect(footerNav.getByRole('link', { name: 'Terms' })).toBeVisible()
+    await footerNav.getByRole('link', { name: 'Privacy' }).click()
+    await expect(page).toHaveURL(/\/privacy/)
+
+    await page.goto('/welcome')
+    await footerNav.getByRole('link', { name: 'Terms' }).click()
+    await expect(page).toHaveURL(/\/terms/)
   })
 
   test('privacy page loads with legal sections, contact info, and navigation links (W56)', async ({ page }) => {
@@ -131,7 +134,7 @@ test.describe('Public Marketing and Onboarding Pages', () => {
     await expect(finalCta).toBeVisible()
     await finalCta.click()
     await expect(page).toHaveURL(/\/login/)
-    await expect(page.locator('#phone-input')).toBeVisible()
+    await expect(page.getByLabel('Phone Number')).toBeVisible()
 
     // Test Skip link from get-started leads directly to /login
     await page.goto('/get-started')
@@ -140,6 +143,6 @@ test.describe('Public Marketing and Onboarding Pages', () => {
     await expect(skipLink).toBeVisible()
     await skipLink.click()
     await expect(page).toHaveURL(/\/login/)
-    await expect(page.locator('#phone-input')).toBeVisible()
+    await expect(page.getByLabel('Phone Number')).toBeVisible()
   })
 })
