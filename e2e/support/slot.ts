@@ -48,8 +48,9 @@ function readDotenv(file: string): Record<string, string> {
 }
 
 /**
- * The E2E database URL: the local dev Postgres server (from `E2E_DATABASE_URL`, else
- * packages/shared/.env.local), with the database swapped for this slot's `vesta_e2e*`.
+ * The E2E database URL: the Postgres server from `E2E_DATABASE_URL`, else
+ * packages/shared/.env.local, else the local Compose default — then the database name
+ * is swapped for this slot's `vesta_e2e*`. CI must set `E2E_DATABASE_URL` (no `.env.local`).
  */
 function databaseUrl(): string {
   const base =
@@ -84,6 +85,8 @@ export const SECRETS = {
   bdappsAppId: 'APP_E2E',
   bdappsPassword: 'e2e-bdapps-password',
   cronSecret: 'e2e-cron-secret-0123456789abcdef',
+  /** Svix-style `whsec_` + base64 key bytes; required so Resend webhook tests exercise HMAC verify. */
+  resendWebhookSecret: `whsec_${Buffer.from('e2e-resend-webhook-secret-01234567').toString('base64')}`,
   webJwt: 'local-dev-e2e-web-jwt-secret-0123456789abcdef',
   adminJwt: 'local-dev-e2e-admin-jwt-secret-0123456789abcdef',
   adminEmail: 'admin@vesta.health',
@@ -122,9 +125,10 @@ function appEnv(app: 'web' | 'admin'): Record<string, string> {
     AUTH_COOKIE_NAME: app === 'web' ? 'vesta_token' : 'vesta_admin_token',
     APP_URL: URLS.web,
     CRON_SECRET: SECRETS.cronSecret,
-    // No Resend key: email goes to Mailpit over SMTP.
+    // No Resend key: outbound email goes to Mailpit over SMTP. Webhook secret is set so
+    // `/api/webhooks/resend` verifies Svix HMAC (see webhooks-resend.spec.ts).
     RESEND_API_KEY: '',
-    RESEND_WEBHOOK_SECRET: '',
+    RESEND_WEBHOOK_SECRET: SECRETS.resendWebhookSecret,
     MAILPIT_SMTP_URL: process.env.E2E_MAILPIT_SMTP_URL ?? 'smtp://localhost:1025',
     MAILPIT_UI_URL: URLS.mailpit,
     LOG_DIR: path.join(LOG_ROOT, app),

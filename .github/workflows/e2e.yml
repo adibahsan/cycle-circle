@@ -1,0 +1,130 @@
+name: E2E
+
+# PR to main → desktop suite (fast). Nightly and PRs labelled `e2e-full` → full matrix
+# (phone + Bengali hook). Project lists live in e2e/playwright.config.ts via E2E_SUITE —
+# add a new *-desktop / serial project without editing this file.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled]
+  schedule:
+    # 02:00 UTC nightly
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Playwright
+    runs-on: ubuntu-latest
+    # Only re-run on label events when the label is e2e-full (avoids cancel storms from other labels).
+    if: github.event.action != 'labeled' || github.event.label.name == 'e2e-full'
+    # Desktop PRs: 15 min budget (10-min target to confirm on first green run). Full matrix: more headroom.
+    timeout-minutes: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'e2e-full')) && 45 || 15 }}
+    services:
+      postgres:
+        image: postgres:17.10-alpine
+        env:
+          POSTGRES_USER: vesta_ci
+          POSTGRES_PASSWORD: vesta_ci
+          POSTGRES_DB: vesta_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U vesta_ci -d vesta_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7.4.9-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      mailpit:
+        image: axllent/mailpit:v1.30.1
+        ports: ['1025:1025', '8025:8025']
+    env:
+      CI: '1'
+      # Harness must not depend on packages/shared/.env.local — all values from the job.
+      E2E_DATABASE_URL: postgresql://vesta_ci:vesta_ci@localhost:5432/vesta_ci
+      E2E_MAILPIT_URL: http://localhost:8025
+      E2E_MAILPIT_SMTP_URL: smtp://localhost:1025
+      # Slot 0 → DB name vesta_e2e (assertE2eDatabase); migrate reset only touches that DB.
+      E2E_SLOT: '0'
+      # Capture app stdout into e2e/.logs for the artifact upload below.
+      E2E_SERVER_LOGS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Resolve E2E_SUITE
+        id: suite
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HAS_E2E_FULL: ${{ contains(github.event.pull_request.labels.*.name, 'e2e-full') }}
+        run: |
+          if [ "$EVENT_NAME" = "schedule" ] || [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$HAS_E2E_FULL" = "true" ]; then
+            echo "suite=full" >> "$GITHUB_OUTPUT"
+          else
+            echo "suite=desktop" >> "$GITHUB_OUTPUT"
+          fi
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/package.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+      - name: Cache Next.js build caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/.next/cache
+            apps/admin/.next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/web/package.json', 'apps/admin/package.json') }}
+          restore-keys: |
+            next-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            next-${{ runner.os }}-
+      - name: Install Playwright Chromium
+        run: pnpm --filter @vesta/e2e exec playwright install chromium --with-deps
+      - name: Run E2E suite
+        # Full reset path (no E2E_SKIP_RESET): CI is not an AI agent.
+        # Workers come from playwright.config.ts (CI → 4). Do not pass --project lists —
+        # E2E_SUITE selects projects in playwright.config.ts.
+        env:
+          E2E_SUITE: ${{ steps.suite.outputs.suite }}
+        run: pnpm e2e
+      - name: Upload Playwright HTML report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report-${{ steps.suite.outputs.suite }}-${{ github.run_id }}
+          path: e2e/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload Playwright traces
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-traces-${{ steps.suite.outputs.suite }}-${{ github.run_id }}
+          path: e2e/.results/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload server logs
+        # App stdout under e2e/.logs/ (E2E_SERVER_LOGS=1). Never upload e2e/.auth/ (session cookies).
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-logs-${{ steps.suite.outputs.suite }}-${{ github.run_id }}
+          path: e2e/.logs/
+          if-no-files-found: ignore
+          retention-days: 14
