@@ -150,7 +150,7 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A01 | Login with email and password; non-admin sees forbidden page; logout | `/login`, `/forbidden`, `/api/auth/login`, `/api/auth/logout` | `e2e/tests/admin/login.spec.ts` | partial (logout not covered) | #126 |
+| A01 | Login with email and password; non-admin sees forbidden page; logout | `/login`, `/forbidden`, `/api/auth/login`, `/api/auth/logout` | `e2e/tests/admin/login.spec.ts` | partial | #126 |
 | A02 | Dashboard KPIs and signup trend | `/` | `e2e/tests/admin/dashboard.spec.ts` | partial | #126 |
 | A03 | Users: search and filter | `/users` | `e2e/tests/admin/users.spec.ts` | partial | #126 |
 | A04 | User detail: profile, plan history, Translog tabs | `/users/[id]` | - | none | #127 |
@@ -163,7 +163,7 @@ Notes on the tally:
 | A06 | Suspend and reactivate (ends or keeps BDApps billing) | `/users/[id]` | - | none | #127 |
 | A07 | Delete and restore within 30 days; no restore after the window | `/users/[id]` | - | none | #127 |
 | A08 | Grant and revoke Pro (admin override) | `/users/[id]` | - | none | #127 |
-| A09 | Users CSV export | `/users` | `e2e/tests/admin/users.spec.ts` | partial (export ignores UI filters; asserts filtered user is present) | #126 |
+| A09 | Users CSV export | `/users` | `e2e/tests/admin/users.spec.ts` | partial (filtered-only export expected-to-fail #134) | #126 |
 
 ### Admin: content
 

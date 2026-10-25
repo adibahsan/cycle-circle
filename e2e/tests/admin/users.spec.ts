@@ -103,4 +103,59 @@ test.describe('Admin users', () => {
       await admin.context.close()
     }
   })
+
+  // Spec story 67 / #126: export must contain *the filtered users* only.
+  // handleExport calls exportUsersCsv() with no filter args — see #134.
+  test('users CSV export excludes users outside the active search filter', async ({
+    browser,
+    newUser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/134')
+
+    const userA = await newUser()
+    const userB = await newUser()
+    const storedA = toDbPhone(userA.phone)
+    const storedB = toDbPhone(userB.phone)
+    const markerA = `E2E CsvA ${userA.phone.slice(-6)}`
+    const markerB = `E2E CsvB ${userB.phone.slice(-6)}`
+    await e2eDb().user.update({ where: { phone: storedA }, data: { fullName: markerA } })
+    await e2eDb().user.update({ where: { phone: storedB }, data: { fullName: markerB } })
+
+    const admin = await createLoggedInAdmin(browser, {
+      viewport,
+      userAgent,
+      isMobile,
+      hasTouch,
+      deviceScaleFactor,
+      locale,
+      timezoneId,
+    })
+
+    try {
+      const { page } = admin
+      await page.goto('/users')
+      await page.getByRole('searchbox', { name: 'Search' }).fill(markerA)
+      await expect(page.getByText(markerA)).toBeVisible({ timeout: 15_000 })
+      await expect(page.getByText(markerB)).toHaveCount(0)
+
+      const [download] = await Promise.all([
+        page.waitForEvent('download'),
+        page.getByRole('button', { name: 'Export CSV' }).click(),
+      ])
+      const csv = await downloadText(download)
+      expect(csv).toContain(markerA)
+      expect(csv).toContain(storedA)
+      expect(csv).not.toContain(markerB)
+      expect(csv).not.toContain(storedB)
+    } finally {
+      await admin.context.close()
+    }
+  })
 })
