@@ -286,7 +286,8 @@ server {
 # to match apps/web/vercel.json's schedule (08:00 / 02:00 UTC = 14:00 / 08:00 Asia/Dhaka).
 # If the server stays on Europe/Berlin, these fire 1–2 h earlier in UTC terms (DST-dependent).
 
-# Mirrors apps/web/vercel.json crons: daily-reminders 08:00 UTC, caas-check 02:00 UTC.
+# Mirrors apps/web/vercel.json crons: daily-reminders 08:00 UTC, caas-check 02:00 UTC
+# (caas-check is the daily subscription check: BDApps subscriber status only; the slug is historical).
 # apps/web/worker/index.ts (BullMQ) is a LOCAL DEV alternative only — do not run it in prod.
 0 8 * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/daily-reminders >> /var/log/vesta/cron-daily-reminders.log 2>&1
 0 2 * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/caas-check >> /var/log/vesta/cron-caas-check.log 2>&1

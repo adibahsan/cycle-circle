@@ -109,7 +109,7 @@ const API_SECTIONS = [
     icon: '💳',
     endpoints: [
       { method: 'POST', path: '/api/billing/subscribe', desc: 'Initiate BDApps CAAS subscription charge' },
-      { method: 'POST', path: '/api/cron/caas-check', desc: 'Daily cron — check and renew subscriptions' },
+      { method: 'POST', path: '/api/cron/caas-check', desc: 'Daily subscription check — BDApps subscriber status; downgrades unsubscribed Pro users' },
     ],
   },
   {
