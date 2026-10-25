@@ -1,126 +1,90 @@
+import type { Page } from '@playwright/test'
 import { test, expect } from '../../support/fixtures'
-import { requestMagicLinkAndWait, waitForMagicLinkEmail } from '../../support/mailpit'
-import { newPhone } from '../../support/users'
-import { URLS } from '../../support/slot'
+import { waitForMagicLinkEmail } from '../../support/mailpit'
+import { createEmailTrialUser, newEmail, preseedEmailTrialUser } from '../../support/users'
+
+/** Ask for a magic link through the /email-login form and return the callback URL from Mailpit. */
+async function requestLinkViaUi(page: Page, email: string): Promise<string> {
+  const since = new Date(Date.now() - 1000)
+  await page.goto('/email-login')
+  await page.getByLabel('Email address').fill(email)
+  await page.getByRole('button', { name: 'Send Magic Link' }).click()
+  await expect(page.getByText('Check your inbox!')).toBeVisible()
+  await expect(page.getByText(email)).toBeVisible()
+  const { callbackUrl } = await waitForMagicLinkEmail(email, { since })
+  return callbackUrl
+}
 
 test.describe('Email magic-link login', () => {
-  test('request a magic link via UI, open it from Mailpit, logged in on email trial', async ({ page }) => {
-    // Use a unique email per test (Mailpit is shared)
-    const email = `e2e-magic-${newPhone()}@example.com`
-    const beforeRequest = new Date(Date.now() - 1000)
+  test('a new email gets a 24h email trial and is sent to onboarding', async ({ page, db }) => {
+    const email = newEmail('e2e-magic')
+    const callbackUrl = await requestLinkViaUi(page, email)
 
-    // Request the magic link via UI
-    await page.goto('/email-login')
-    await page.getByLabel('Email address').fill(email)
-    await page.getByRole('button', { name: 'Send Magic Link' }).click()
-
-    // Wait for success state
-    await expect(page.getByText('Check your inbox!')).toBeVisible()
-    await expect(page.getByText(email)).toBeVisible()
-
-    // Fetch the email from Mailpit and extract the callback URL
-    const { callbackUrl } = await waitForMagicLinkEmail(email, { since: beforeRequest })
-
-    // Open the magic link
     await page.goto(callbackUrl)
+    await expect(page).toHaveURL(/\/onboarding/)
 
-    // Should redirect to dashboard (or onboarding for new users)
-    await expect(page).toHaveURL(/\/dashboard|\/onboarding/)
-
-    // Verify the user is logged in with email auth and has a trial
     const status = await page.request.get('/api/auth/status')
     expect(status.ok()).toBe(true)
     const { user } = await status.json()
     expect(user.authMethod).toBe('EMAIL')
     expect(user.subscriptionStatus).toBe('FREE')
     expect(user.emailTrialExpiresAt).toBeTruthy()
+    expect(await db.user.count({ where: { email } })).toBe(1)
   })
 
-  test('expired magic link is rejected with a visible message', async ({ page }) => {
-    const email = `e2e-expired-${newPhone()}@example.com`
-    const beforeRequest = new Date(Date.now() - 1000)
+  test('request a link in the UI, open it from Mailpit, see the trial pill on the dashboard', async ({ page }) => {
+    const email = newEmail('e2e-pill')
+    await preseedEmailTrialUser(email) // profile first, so the login lands past onboarding
+    const callbackUrl = await requestLinkViaUi(page, email)
 
-    // Request the magic link via UI
-    await page.goto('/email-login')
-    await page.getByLabel('Email address').fill(email)
-    await page.getByRole('button', { name: 'Send Magic Link' }).click()
-    await expect(page.getByText('Check your inbox!')).toBeVisible()
-
-    // Fetch the email and callback URL
-    const { callbackUrl } = await waitForMagicLinkEmail(email, { since: beforeRequest })
-
-    // Manually expire the magic link in the database by updating its expiresAt
-    // (We do this by calling the callback with a token that's already expired)
-    // Since we can't easily manipulate the DB from here, we'll test by using
-    // a token that doesn't exist - the error is the same
-    const expiredUrl = callbackUrl.replace(/token=[^&]+/, 'token=expired-token-that-does-not-exist')
-
-    await page.goto(expiredUrl)
-
-    // Should show error page or redirect with error
-    await expect(page.getByText(/Invalid or expired magic link/)).toBeVisible({ timeout: 10000 })
+    await page.goto(callbackUrl)
+    await expect(page).toHaveURL(/\/dashboard/)
+    // Sidebar on desktop, mobile header on phone: take the visible one.
+    const pill = page.locator('button[aria-label*="Trial ends"]:visible').first()
+    await expect(pill).toBeVisible({ timeout: 15_000 })
+    await expect(pill).toHaveAttribute('aria-label', /Trial ends in \d{2}:\d{2}:\d{2}/)
   })
 
-  test('reused magic link is rejected with a visible message', async ({ page }) => {
-    const email = `e2e-reused-${newPhone()}@example.com`
-    const beforeRequest = new Date(Date.now() - 1000)
+  test('an expired magic link is rejected with a visible message', async ({ page, db }) => {
+    const email = newEmail('e2e-expired')
+    const callbackUrl = await requestLinkViaUi(page, email)
 
-    // Request the magic link via UI
-    await page.goto('/email-login')
-    await page.getByLabel('Email address').fill(email)
-    await page.getByRole('button', { name: 'Send Magic Link' }).click()
-    await expect(page.getByText('Check your inbox!')).toBeVisible()
+    const token = new URL(callbackUrl).searchParams.get('token')!
+    await db.magicLink.update({ where: { token }, data: { expiresAt: new Date(Date.now() - 60_000) } })
 
-    // Fetch the email and callback URL
-    const { callbackUrl } = await waitForMagicLinkEmail(email, { since: beforeRequest })
-
-    // First use - should succeed
     await page.goto(callbackUrl)
-    await expect(page).toHaveURL(/\/dashboard|\/onboarding/)
+    await expect(page.getByText(/Magic link has expired/)).toBeVisible()
+    const status = await page.request.get('/api/auth/status')
+    expect(status.ok()).toBe(false)
+  })
 
-    // Second use - should fail
+  test('a reused magic link is rejected with a visible message', async ({ page }) => {
+    const email = newEmail('e2e-reused')
+    const callbackUrl = await requestLinkViaUi(page, email)
+
     await page.goto(callbackUrl)
-    await expect(page.getByText(/Magic link has already been used/)).toBeVisible({ timeout: 10000 })
+    await expect(page).toHaveURL(/\/onboarding|\/dashboard|\/\?auth=success/)
+
+    await page.goto(callbackUrl)
+    await expect(page.getByText(/Magic link has already been used/)).toBeVisible()
+  })
+
+  test('an unknown token is rejected with a visible message', async ({ page }) => {
+    await page.goto('/api/auth/magic-link/callback?token=not-a-real-token')
+    await expect(page.getByText(/Invalid or expired magic link/)).toBeVisible()
   })
 })
 
-test.describe('Email trial pill visibility', () => {
-  test('seeded email-trial user has trial pill visible on dashboard', async ({ page }) => {
-    // Use the seeded email trial user which has a profile and lands on dashboard
-    const email = 'trial@vesta.test'
-    const beforeRequest = new Date(Date.now() - 1000)
-
-    // Request magic link for seeded user via API
-    const { callbackUrl } = await requestMagicLinkAndWait(email, { baseUrl: URLS.web, since: beforeRequest })
-
-    // Open the magic link
-    await page.goto(callbackUrl)
-
-    // Should redirect to dashboard (user has a profile)
-    await expect(page).toHaveURL('/dashboard')
-
-    // Trial pill should be visible on dashboard (in sidebar on desktop, mobile header on phone)
-    // Use :visible to find only the visible one (sidebar on desktop, mobile header on phone)
-    const trialPill = page.locator('button[aria-label*="Trial ends"]:visible').first()
-    await expect(trialPill).toBeVisible({ timeout: 15000 })
-    await expect(trialPill).toHaveAttribute('aria-label', /Trial ends in \d{2}:\d{2}:\d{2}/)
-  })
-})
-
-test.describe('Email trial helper', () => {
-  test('createEmailTrialUser returns a logged-in email-trial user', async ({ browser }) => {
-    const { createEmailTrialUser } = await import('../../support/users')
-    const context = (await createEmailTrialUser(browser)).context
+test.describe('createEmailTrialUser helper', () => {
+  test('returns a logged-in email-trial context that lands on the dashboard with the trial pill', async ({ browser }) => {
+    const { context, email } = await createEmailTrialUser(browser, {}, { withProfile: true })
     const page = await context.newPage()
-
-    // Verify the user is on an email trial via API
-    const status = await page.request.get('/api/auth/status')
-    expect(status.ok()).toBe(true)
-    const { user } = await status.json()
+    await page.goto('/dashboard')
+    await expect(page).toHaveURL(/\/dashboard/)
+    await expect(page.locator('button[aria-label*="Trial ends"]:visible').first()).toBeVisible({ timeout: 15_000 })
+    const { user } = await (await page.request.get('/api/auth/status')).json()
+    expect(user.email).toBe(email)
     expect(user.authMethod).toBe('EMAIL')
-    expect(user.subscriptionStatus).toBe('FREE')
-    expect(user.emailTrialExpiresAt).toBeTruthy()
-
     await context.close()
   })
 })

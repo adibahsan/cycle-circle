@@ -15,15 +15,15 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 
 | Area | Features | none | look-only | partial | full |
 |---|---|---|---|---|---|
-| Web: login and access | 9 | 6 | 0 | 3 | 0 |
+| Web: login and access | 9 | 1 | 0 | 2 | 6 |
 | Web: onboarding and profiles | 9 | 3 | 6 | 0 | 0 |
 | Web: logging | 9 | 4 | 2 | 3 | 0 |
 | Web: dashboard, calendar, predictions, insights | 12 | 2 | 10 | 0 | 0 |
 | Web: content, feedback, settings | 8 | 2 | 5 | 1 | 0 |
-| Web: billing | 7 | 3 | 4 | 0 | 0 |
+| Web: billing | 7 | 2 | 4 | 1 | 0 |
 | Web: landing and public pages | 4 | 0 | 4 | 0 | 0 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 5 | 0 | 0 |
-| **Web total** | 63 | 20 | 36 | 7 | 0 |
+| **Web total** | 63 | 14 | 36 | 7 | 6 |
 | Admin: access and read-only views | 5 | 5 | 0 | 0 | 0 |
 | Admin: user actions | 4 | 4 | 0 | 0 | 0 |
 | Admin: content | 2 | 2 | 0 | 0 | 0 |
@@ -31,7 +31,7 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Admin: SMS | 2 | 2 | 0 | 0 | 0 |
 | Admin: feedback, emails, audit, logs, system | 6 | 6 | 0 | 0 | 0 |
 | **Admin total** | 21 | 21 | 0 | 0 | 0 |
-| Server-only (not counted) | 10 | 10 | 0 | 0 | 0 |
+| Server-only (not counted) | 10 | 9 | 0 | 1 | 0 |
 
 Notes on the tally:
 - The audit counted 4 web features as `full`. Read against the definition above, none qualifies: the real flows in the existing suite (symptom and check-in clicks) abort every save request, and the language switch only checks the cookie. They are counted `partial` here. The only new-suite row is W01, `partial` until the error paths land in #120.
@@ -45,15 +45,15 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W01 | Phone signup: new number, BDApps OTP, verify, onboarding as Pro (subscribe recorded at fake BDApps) | `/login`, `/verify-otp`, `/onboarding`, `/api/auth/otp/request`, `/api/auth/otp/verify` | `e2e/tests/web/phone-signup.spec.ts` | partial | #116 (errors: #120) |
-| W02 | Returning Subscriber login with an App OTP | `/login`, `/verify-otp`, `/api/auth/otp/*` | - | none | #120 |
-| W03 | OTP error paths: wrong, expired, 60 s resend cooldown, per-phone rate limit | `/verify-otp`, `/api/auth/otp/*` | - | none | #120 |
-| W04 | Brute-force block after repeated wrong codes | `/api/auth/otp/verify` | - | none | #120 |
+| W01 | Phone signup: new number, BDApps OTP, verify, onboarding as Pro (subscribe recorded at fake BDApps) | `/login`, `/verify-otp`, `/onboarding`, `/api/auth/otp/request`, `/api/auth/otp/verify` | `e2e/tests/web/phone-signup.spec.ts`, `e2e/tests/web/login.spec.ts` | full | #116 (errors: #120) |
+| W02 | Returning Subscriber login with an App OTP | `/login`, `/verify-otp`, `/api/auth/otp/*` | `e2e/tests/web/login.spec.ts` | full | #120 |
+| W03 | OTP error paths: wrong, expired, 60 s resend cooldown, per-phone rate limit | `/verify-otp`, `/api/auth/otp/*` | `e2e/tests/web/login.spec.ts` | full | #120 |
+| W04 | Brute-force block after repeated wrong codes | `/api/auth/otp/verify` | `e2e/tests/web/login.spec.ts` | full | #120 |
 | W05 | Email magic-link login, lands on 24 h email trial | `/email-login`, `/api/auth/magic-link/request`, `/api/auth/magic-link/callback` | `e2e/tests/web/email-magic-link.spec.ts` | partial | #119 |
 | W06 | Magic-link security: expired or reused link rejected | `/api/auth/magic-link/callback` | `e2e/tests/web/email-magic-link.spec.ts` | partial | #119 |
-| W07 | Logout ends the session | `/api/auth/logout`, settings logout dialog | `apps/web/e2e/tests/bengali-no-english.spec.ts` (dialog text only) | none | #120 |
-| W08 | Route protection: logged-out visitor redirected from every protected page | all `(main)` routes, `/onboarding` | - | none | #120 |
-| W09 | Suspended or deleted user session is blocked | `/api/auth/status`, withAuth | - | none | #120 (admin side: #127) |
+| W07 | Logout ends the session | `/api/auth/logout`, settings logout dialog | `e2e/tests/web/login.spec.ts`, `apps/web/e2e/tests/bengali-no-english.spec.ts` | full | #120 |
+| W08 | Route protection: logged-out visitor redirected from every protected page | all `(main)` routes, `/onboarding` | `e2e/tests/web/login.spec.ts` | full | #120 |
+| W09 | Suspended or deleted user session is blocked | `/api/auth/status`, withAuth | - | none | #127 |
 
 ### Web: onboarding and profiles
 
@@ -119,7 +119,7 @@ Notes on the tally:
 |---|---|---|---|---|---|
 | W48 | Upgrade Free to Pro through BDApps; Pro features unlock | `/subscription`, `/api/billing/subscribe` | `apps/web/e2e/tests/account-popups.spec.ts` (paywall dialog, faked state) | look-only | #125 |
 | W49 | Unsubscribe: BDApps records it, user returns to Free | `/subscription`, `/api/billing/unsubscribe` | `apps/web/e2e/tests/account-popups.spec.ts` (dialog only) | look-only | #125 |
-| W50 | Subscription-notify webhook changes plan and writes a Translog entry | `/api/webhooks/subscription/notify` | - | none | #125 (route-level: #132) |
+| W50 | Subscription-notify webhook changes plan and writes a Translog entry | `/api/webhooks/subscription/notify` | `e2e/tests/web/bdapps-webhook-unsubscribe.spec.ts` | partial | #125 (route-level: #132) |
 | W51 | Trial lock for an expired email trial (only upgrade or logout gets past) | trial lock, `withAuth` 402 | `apps/web/e2e/tests/auto-prompts.spec.ts` (mocked expiry) | look-only | #125 |
 | W52 | Pro-only features gated for Free users | Pro-gated routes and UI | - | none | #125 |
 | W53 | BDApps failure during subscribe: clear error, plan unchanged | `/api/billing/subscribe` | - | none | #125 (fake failures: #118) |
@@ -212,4 +212,4 @@ Cron routes, BDApps webhooks, the Resend webhook and health endpoints have no sc
 | S07 | BDApps webhook: USSD, recorded, duplicates ignored | `/api/webhooks/ussd/receive` | - | none | #132 |
 | S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | - | none | #132 (admin counts: #129) |
 | S09 | Resend webhook updates email log delivery status | `/api/webhooks/resend` | - | none | #132 |
-| S10 | Health endpoints up; BDApps reported down when fake BDApps fails | `/api/health/{db,redis,mailpit,bdapps,worker}` | - | none | #132 |
+| S10 | Health endpoints up; BDApps reported down when fake BDApps fails | `/api/health/{db,redis,mailpit,bdapps,worker}` | `e2e/tests/web/bdapps-health.spec.ts` | partial (BDApps endpoint only) | #132 |
