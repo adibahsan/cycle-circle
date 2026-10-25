@@ -1,3 +1,8 @@
+/**
+ * Database client for the slot's E2E database.
+ * Use ONLY for test setup states the UI cannot reach in time (e.g. aging an OTP challenge, draft articles).
+ * Never import `@vesta/shared` prisma directly, which targets vesta_dev.
+ */
 import {
   PrismaClient,
   type ArticleStatus,
@@ -5,21 +10,26 @@ import {
   type FlowIntensity,
   type SymptomCategory,
 } from '@prisma/client'
-import { DATABASE_URL, assertE2eDatabase, SECRETS } from './slot.ts'
+import { TEST_DATABASE_URL, DATABASE_URL, assertE2eDatabase, SECRETS } from './slot.ts'
 
-let dbClient: PrismaClient | null = null
+const dbUrl = TEST_DATABASE_URL ?? DATABASE_URL
+assertE2eDatabase(dbUrl)
 
-/**
- * Returns a PrismaClient connected to the slot's E2E database.
- * Never connects to `vesta_dev`.
- */
-export function getDb(): PrismaClient {
-  if (!dbClient) {
-    assertE2eDatabase(DATABASE_URL)
-    dbClient = new PrismaClient({ datasourceUrl: DATABASE_URL })
+let client: PrismaClient | undefined
+
+export function getE2eDb(): PrismaClient {
+  if (!client) {
+    client = new PrismaClient({ datasourceUrl: dbUrl })
   }
-  return dbClient
+  return client
 }
+
+export function getDb(): PrismaClient {
+  return getE2eDb()
+}
+
+export const db = getE2eDb()
+export type { PrismaClient }
 
 /**
  * Creates an article in the slot database for content tests.

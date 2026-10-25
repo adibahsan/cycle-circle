@@ -11,6 +11,7 @@ import { bangladeshDays, type BangladeshDays } from './bangladesh-day.ts'
 import { FakeBdappsClient } from './fake-bdapps.ts'
 import { createThrowawayUser, ipFor } from './users.ts'
 import { URLS } from './slot.ts'
+import { db, type PrismaClient } from './db.ts'
 
 export interface NewUser {
   phone: string
@@ -22,6 +23,7 @@ interface Fixtures {
   fakeBdapps: FakeBdappsClient
   newUser: () => Promise<NewUser>
   days: BangladeshDays
+  db: PrismaClient
 }
 
 export const test = base.extend<Fixtures>({
@@ -49,6 +51,10 @@ export const test = base.extend<Fixtures>({
 
   days: async ({}, use) => {
     await use(await bangladeshDays())
+  },
+
+  db: async ({}, use) => {
+    await use(db)
   },
 })
 
