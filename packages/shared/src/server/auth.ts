@@ -1,7 +1,13 @@
-import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import { prisma } from './db'
 import { env } from '../utils/env'
+import {
+  ADMIN_AUDIENCE,
+  WEB_AUDIENCE,
+  signAuthToken,
+  verifyAuthToken,
+  type AuthAudience,
+} from '../utils/auth-token'
 import { ApiError } from './api-error'
 import {
   blacklistJti,
@@ -14,9 +20,7 @@ const COOKIE_NAME = env.AUTH_COOKIE_NAME
 const JWT_EXPIRY_SECONDS = 60 * 60 * 24 * 30 // 30 days (web app)
 export const ADMIN_JWT_EXPIRY_SECONDS = 60 * 60 * 24 * 7 // 7 days (admin app)
 
-function secret() {
-  return new TextEncoder().encode(env.JWT_SECRET)
-}
+export { ADMIN_AUDIENCE, WEB_AUDIENCE, type AuthAudience }
 
 export interface JwtPayload {
   sub: string
@@ -28,26 +32,17 @@ export interface JwtPayload {
   exp?: number
 }
 
+/**
+ * Signs a session token for one app. `audience` is required: the caller (web login
+ * routes vs admin login) decides which app may accept the token.
+ */
 export async function issueJwt(payload: {
   sub: string
   phone?: string
   email?: string
   role?: string
-}, expirySeconds: number = JWT_EXPIRY_SECONDS): Promise<string> {
-  const jti = crypto.randomUUID()
-  const token = await new SignJWT({
-    phone: payload.phone,
-    email: payload.email,
-    role: payload.role ?? 'USER',
-  })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setSubject(payload.sub)
-    .setJti(jti)
-    .setIssuedAt()
-    .setExpirationTime(`${expirySeconds}s`)
-    .sign(secret())
-
-  return token
+}, audience: AuthAudience, expirySeconds: number = JWT_EXPIRY_SECONDS): Promise<string> {
+  return signAuthToken(payload, audience, expirySeconds)
 }
 
 export async function setAuthCookie(token: string, maxAgeSeconds: number = JWT_EXPIRY_SECONDS): Promise<void> {
@@ -66,13 +61,18 @@ export async function clearAuthCookie(): Promise<void> {
   cookieStore.delete(COOKIE_NAME)
 }
 
-export async function verifyAuth(): Promise<JwtPayload | null> {
+/**
+ * Verifies the session cookie for one app. Defaults to the web audience; the admin app
+ * must pass ADMIN_AUDIENCE (requireAdminAuth does). A token for the other app, from
+ * another environment, or without `aud`/`iss` is rejected.
+ */
+export async function verifyAuth(audience: AuthAudience = WEB_AUDIENCE): Promise<JwtPayload | null> {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get(COOKIE_NAME)?.value
     if (!token) return null
 
-    const { payload } = await jwtVerify(token, secret())
+    const payload = await verifyAuthToken(token, audience)
     const jti = payload.jti as string | undefined
     if (jti && (await isJtiBlacklisted(jti))) return null
     if (payload.sub && (await isIssuedBeforeSessionsValidAfter(payload.sub, payload.iat))) return null
@@ -119,20 +119,20 @@ export async function bumpSessionsValidAfter(userId: string): Promise<Date> {
   return now
 }
 
-export async function requireAuth(): Promise<JwtPayload> {
-  const payload = await verifyAuth()
+export async function requireAuth(audience: AuthAudience = WEB_AUDIENCE): Promise<JwtPayload> {
+  const payload = await verifyAuth(audience)
   if (!payload) {
     throw new ApiError(401, 'Unauthorized', 'UNAUTHORIZED')
   }
   return payload
 }
 
-export async function logoutAndBlacklist(): Promise<void> {
+export async function logoutAndBlacklist(audience: AuthAudience = WEB_AUDIENCE): Promise<void> {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get(COOKIE_NAME)?.value
     if (token) {
-      const { payload } = await jwtVerify(token, secret())
+      const payload = await verifyAuthToken(token, audience)
       const jti = payload.jti as string | undefined
       const exp = payload.exp as number | undefined
       if (jti && exp) {
@@ -201,7 +201,7 @@ export async function verifyAdminLogin(email: string, password: string): Promise
 }
 
 export async function requireAdminAuth(): Promise<JwtPayload> {
-  const payload = await requireAuth()
+  const payload = await requireAuth(ADMIN_AUDIENCE)
   if (payload.role !== 'ADMIN') {
     throw new ApiError(403, 'Admin access required', 'FORBIDDEN')
   }

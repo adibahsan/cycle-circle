@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { parseBody } from '@vesta/shared/server/validation'
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
-import { issueJwt, setAuthCookie, validateMsisdn } from '@vesta/shared/server/auth'
+import { WEB_AUDIENCE, issueJwt, setAuthCookie, validateMsisdn } from '@vesta/shared/server/auth'
 import { upsertUserByPhone } from '@vesta/shared/server/services'
 import { isDevModeEnabled } from '@vesta/shared/server/dev'
 import { withRequestContext, setRequestUser, logger } from '@vesta/shared/server/log'
@@ -46,7 +46,7 @@ export async function POST(request: Request): Promise<Response> {
       sub: user.id,
       phone: user.phone ?? undefined,
       role: user.role,
-    })
+    }, WEB_AUDIENCE)
     await setAuthCookie(token)
 
     const mapped = mapPartialAuthUser({

@@ -1,7 +1,7 @@
-import { jwtVerify } from 'jose'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { env } from '@vesta/shared/utils/env'
+import { ADMIN_AUDIENCE, verifyAuthToken } from '@vesta/shared/utils/auth-token'
 import { decideAdminAccess } from '@vesta/shared/utils/admin-access'
 
 const PUBLIC_PATHS = ['/login', '/api/']
@@ -14,8 +14,7 @@ export async function proxy(request: NextRequest) {
   let payload: Record<string, unknown> | null = null
   if (token) {
     try {
-      const secret = new TextEncoder().encode(env.JWT_SECRET)
-      payload = (await jwtVerify(token, secret)).payload
+      payload = await verifyAuthToken(token, ADMIN_AUDIENCE)
     } catch {
       payload = null
     }

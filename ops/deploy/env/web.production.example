@@ -8,8 +8,11 @@ DATABASE_URL=postgresql://vesta:POSTGRES_PASSWORD_HERE@postgres:5432/vesta
 DIRECT_URL=postgresql://vesta:POSTGRES_PASSWORD_HERE@postgres:5432/vesta
 REDIS_URL=redis://redis:6379
 
+# Must differ from the admin file's JWT_SECRET (ADR 0007).
 JWT_SECRET=GENERATE-WITH-openssl-rand-hex-32
 AUTH_COOKIE_NAME=vesta_token
+# production, or staging on the staging box. Same value in the admin file. Becomes the token issuer.
+APP_ENV=production
 CRON_SECRET=GENERATE-WITH-openssl-rand-hex-16
 
 RESEND_API_KEY=

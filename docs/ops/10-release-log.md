@@ -4,6 +4,21 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
+## Pending — Auth tokens scoped per app and environment (branch `fix/auth-app-env-isolation`)
+
+**Effect:** every existing session (web and admin) is invalidated once on deploy, because old tokens carry no audience or issuer. Users log in again. See [ADR 0007](../adr/0007-auth-tokens-scoped-per-app-and-environment.md).
+
+**Pre-deploy steps on the VPS** (to be done by a human; nothing here has been run)
+
+1. In both `/opt/vesta/.env.web.production` and `/opt/vesta/.env.admin.production` add `APP_ENV=production` (staging box: `APP_ENV=staging`).
+2. Generate a new, distinct admin secret and put it in `.env.admin.production` as `JWT_SECRET`: `openssl rand -hex 32`. Web keeps its current `JWT_SECRET` (it must not start with `local-dev`). Do not reuse web's value.
+3. Confirm `AUTH_COOKIE_NAME` is set in both files (`vesta_token` web, `vesta_admin_token` admin); the apps no longer start without it.
+4. Check the two secrets differ: see the `diff` check in [04-env-reference.md](./04-env-reference.md).
+
+**Post-deploy:** log in to web and to admin; expect to be asked once. A start-up error naming `JWT_SECRET`, `AUTH_COOKIE_NAME` or `APP_ENV` means step 1-3 was missed.
+
+---
+
 ## 2026-10-19 — Admin portal to SRS v1.4 (PR #105, tag 2.2.0)
 
 **Shipped** (spec #84, tickets #85–#104):

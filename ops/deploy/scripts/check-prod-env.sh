@@ -39,6 +39,15 @@ if [[ -f $ADMIN_ENV ]]; then
   fake_app_id "$(val "$ADMIN_ENV" BDAPPS_APP_ID)" && problems+=("BDAPPS_APP_ID in $ADMIN_ENV is empty or a placeholder ($(val "$ADMIN_ENV" BDAPPS_APP_ID)); admin SMS broadcasts use it")
   [[ $(val "$ADMIN_ENV" DEV_MODE) == true ]] && problems+=("DEV_MODE=true in $ADMIN_ENV")
 fi
+# Auth tokens are scoped per app and environment (ADR 0007).
+for f in "$WEB_ENV" "$ADMIN_ENV"; do
+  [[ -f $f ]] || continue
+  [[ -z $(val "$f" APP_ENV) ]] && problems+=("APP_ENV is not set in $f (production: APP_ENV=production)")
+  [[ $(val "$f" JWT_SECRET) == local-dev* ]] && problems+=("JWT_SECRET in $f is a local-dev value")
+done
+if [[ -f $WEB_ENV && -f $ADMIN_ENV && -n $(val "$WEB_ENV" JWT_SECRET) && $(val "$WEB_ENV" JWT_SECRET) == "$(val "$ADMIN_ENV" JWT_SECRET)" ]]; then
+  problems+=("JWT_SECRET is the same in web and admin env files (they must differ)")
+fi
 # The web image bakes NEXT_PUBLIC_DEV_MODE at build time from this compose build arg.
 [[ $(val "$BUILD_ENV" NEXT_PUBLIC_DEV_MODE) == true ]] && problems+=("NEXT_PUBLIC_DEV_MODE=true in $BUILD_ENV (web build arg)")
 

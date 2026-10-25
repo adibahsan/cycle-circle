@@ -22,6 +22,9 @@ try {
   // .env.local not found — rely on environment variables
 }
 
+// AUTH_COOKIE_NAME has no schema default; tests run as the web app.
+process.env.AUTH_COOKIE_NAME ??= 'vesta_token'
+
 // Server logs (ADR 0004): keep test runs out of ./logs and off stdout.
 process.env.LOG_DIR ??= join(tmpdir(), 'vesta-test-logs')
 process.env.LOG_STDOUT ??= 'false'

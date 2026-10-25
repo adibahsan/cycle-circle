@@ -1,7 +1,7 @@
-import { jwtVerify } from 'jose'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { env } from '@vesta/shared/utils/env'
+import { WEB_AUDIENCE, verifyAuthToken } from '@vesta/shared/utils/auth-token'
 
 const PUBLIC_PATHS = ['/login', '/verify-otp', '/email-login', '/welcome', '/get-started', '/terms', '/privacy', '/api/', '/internal/']
 
@@ -19,8 +19,7 @@ export async function proxy(request: NextRequest) {
   }
 
   try {
-    const secret = new TextEncoder().encode(env.JWT_SECRET)
-    const { payload } = await jwtVerify(token, secret)
+    const payload = await verifyAuthToken(token, WEB_AUDIENCE)
     // A foreign/admin token (e.g. leaked via a shared cookie) is not a valid web session
     if (payload.role === 'ADMIN') {
       return NextResponse.redirect(new URL('/login', request.url))

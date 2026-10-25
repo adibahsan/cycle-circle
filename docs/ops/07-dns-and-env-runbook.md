@@ -83,14 +83,15 @@ If files were created empty earlier, replace contents from the examples above in
 
 | Rule | How to verify on VPS |
 |---|---|
-| `JWT_SECRET` identical in web and admin env files | `diff <(grep ^JWT_SECRET= .env.web.production) <(grep ^JWT_SECRET= .env.admin.production)` (no output = match) |
+| `JWT_SECRET` **different** in web and admin env files | `cmp -s <(grep ^JWT_SECRET= .env.web.production) <(grep ^JWT_SECRET= .env.admin.production) && echo SAME-FIX-IT` (no output = different, correct) |
+| `APP_ENV=production` (staging: `staging`) in both files | `grep ^APP_ENV= .env.web.production .env.admin.production` |
 | `CRON_SECRET` identical in web and admin | Same pattern with `CRON_SECRET` |
 | Postgres password aligned | `POSTGRES_PASSWORD` in `.env.postgres.production` must equal the password embedded in `DATABASE_URL` / `DIRECT_URL` in **both** app files (`postgresql://vesta:<password>@postgres:5432/vesta`) |
 
-Full variable meanings: [04-env-reference.md](./04-env-reference.md). Generate new shared secrets with:
+Full variable meanings: [04-env-reference.md](./04-env-reference.md). Generate new secrets with:
 
 ```bash
-openssl rand -hex 32   # JWT_SECRET (both app files)
+openssl rand -hex 32   # JWT_SECRET (run twice: one per app file, never the same value)
 openssl rand -hex 16   # CRON_SECRET (both app files)
 openssl rand -hex 20   # POSTGRES_PASSWORD (postgres file + DATABASE_URL)
 ```
@@ -148,7 +149,7 @@ Do **not** run `docker compose up` in this ticket — that is ticket 04.
 | A records for apex, www, **admin** → VPS IP | Client DNS + verify with §2 |
 | External resolver check (`@1.1.1.1`) | `pnpm vps:preflight` |
 | Three `.env.*.production` files from examples, `600`, owner `vesta` | Human on VPS |
-| `JWT_SECRET` / `CRON_SECRET` match across web + admin | Human on VPS |
+| `CRON_SECRET` matches across web + admin; `JWT_SECRET` differs; `APP_ENV` set in both | Human on VPS |
 | Postgres password matches `DATABASE_URL` | Human on VPS |
 | Staging flags documented | This doc + [ops/deploy/README.md](../../ops/deploy/README.md) |
 
