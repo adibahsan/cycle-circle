@@ -89,8 +89,7 @@ test.describe('Admin audit logs', () => {
     timezoneId,
   }) => {
     // Bug: filter options use SUSPEND_USER, the service writes USER_SUSPENDED.
-    // https://github.com/adibahsan/cycle-circle/issues/152
-    test.fail()
+    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/152')
     const user = await newUser()
     const dbUser = await e2eDb().user.findUniqueOrThrow({ where: { phone: toDbPhone(user.phone) } })
     const admin = await createLoggedInAdmin(browser, {

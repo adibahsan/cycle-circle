@@ -99,9 +99,12 @@ suite is green — confirm on the first CI run). Full suite keeps `timeout-minut
 project in `playwright.config.ts`. Global CI workers stay at 4 for parallel projects; only the
 serial project overrides.
 
-**Bengali pass (#133):** project `web-bengali` points at `tests/bengali/` (see that folder's README).
-Add specs there (and/or tag with `@bengali` and adjust `testMatch` / grep); the full suite already
-includes the project — no workflow edit.
+**Bengali pass (#133):** project `web-bengali` runs `tests/bengali/no-english.spec.ts` (BN cookie +
+latin-scan allow-list in `support/latin-scan.ts`). Included only when `E2E_SUITE=full`. Leftover
+English → `needs-triage` issue + `test.fail()` per page/area. Admin has no Bengali UI.
+
+**Coverage gate:** `pnpm --dir e2e coverage:check` recomputes `COVERAGE.md` tallies and fails on any
+`none` / `look-only` row.
 
 Cross-app admin→web content (#128): `tests/cross-app/admin-content.spec.ts` uses `createLoggedInAdmin`
 plus a throwaway `newUser()`; article titles are prefixed `E2E128` so they never collide with #124.

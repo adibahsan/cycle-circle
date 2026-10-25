@@ -1,6 +1,6 @@
 # E2E coverage map
 
-Living map of every product feature to the Playwright spec(s) that cover it and how deeply. Update it in every E2E ticket's PR (spec #114): change the Spec(s) and Depth columns for the rows the PR touches, and the tallies below. Last audit: 2026-10-25.
+Living map of every product feature to the Playwright spec(s) that cover it and how deeply. Update it in every E2E ticket's PR (spec #114): change the Spec(s) and Depth columns for the rows the PR touches, and the tallies below. Last audit: 2026-10-26 (#133).
 
 ## Depth
 
@@ -16,28 +16,28 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Area | Features | none | look-only | partial | full |
 |---|---|---|---|---|---|
 | Web: login and access | 9 | 0 | 0 | 2 | 7 |
-| Web: onboarding and profiles | 9 | 1 | 1 | 1 | 6 |
+| Web: onboarding and profiles | 9 | 0 | 0 | 1 | 8 |
 | Web: logging | 9 | 0 | 0 | 4 | 5 |
-| Web: dashboard, calendar, predictions, insights | 12 | 0 | 1 | 0 | 11 |
+| Web: dashboard, calendar, predictions, insights | 12 | 0 | 0 | 0 | 12 |
 | Web: content, feedback, settings | 8 | 0 | 0 | 0 | 8 |
 | Web: billing | 7 | 0 | 0 | 2 | 5 |
 | Web: landing and public pages | 4 | 0 | 0 | 0 | 4 |
-| Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 5 | 0 | 0 |
-| **Web total** | 63 | 3 | 12 | 8 | 40 |
-| Admin: access and read-only views | 5 | 0 | 0 | 4 | 1 |
+| Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 0 | 0 | 5 |
+| **Web total** | 63 | 0 | 0 | 9 | 54 |
+| Admin: access and read-only views | 5 | 0 | 0 | 1 | 4 |
 | Admin: user actions | 4 | 0 | 0 | 1 | 3 |
 | Admin: content | 2 | 0 | 0 | 0 | 2 |
 | Admin: analytics and engagement | 2 | 0 | 0 | 2 | 0 |
 | Admin: SMS | 2 | 0 | 0 | 0 | 2 |
 | Admin: feedback, emails, audit, logs, system | 6 | 0 | 0 | 1 | 5 |
-| **Admin total** | 21 | 2 | 0 | 6 | 13 |
-| Server-only (not counted) | 10 | 8 | 0 | 2 | 0 |
+| **Admin total** | 21 | 0 | 0 | 5 | 16 |
+| Server-only (not counted) | 10 | 0 | 0 | 1 | 9 |
 
 Notes on the tally:
-- Web login/access W01–W04, W07, W08 are `full` via `e2e/tests/web/login.spec.ts` (#120); onboarding and profiles W10–W14 are `full`, W15 is `partial` via `e2e/tests/web/onboarding.spec.ts` and `profiles.spec.ts` (#121). Older look-only rows that aborted saves stay look-only/partial.
+- Depths are recomputed by `pnpm --dir e2e coverage:check` (fails on any `none` / `look-only` row). Admin `deep` counts as `full` in the summary.
+- #133 closed the last `none`/`look-only` product rows (W16, W18, W39, W59–W63) and filled `web-bengali`.
 - Terms follow `GLOSSARY.md`: Bangladesh day, Subscriber, BDApps OTP, App OTP, Check-in, Logging nudge, Auto-prompt, Trial lock, Translog, Webhook event, Merchant call, Phase pattern, Profile completion.
 - Dev-only pages (`/internal/*`, `/api/simulator-check/*`, `/api/internal/revalidate`, `/api/auth/dev-login`) are not product features and are not listed.
-- Admin A01–A03, A05 and A09 land in #126 (login helper + read-only views + CSV). A04 + A06–A08 (user detail tabs + mutating actions) and web W09 (session blocked) land in #127.
 
 ## Web (63)
 
@@ -65,9 +65,9 @@ Notes on the tally:
 | W13 | Six-profile limit (seventh rejected) | `/profiles`, `/api/profiles` | `e2e/tests/web/profiles.spec.ts` | full | #121 |
 | W14 | Profile isolation: switching changes dashboard, calendar, insights data | profile chip, `/dashboard`, `/calendar`, `/insights` | `e2e/tests/web/profiles.spec.ts` | full | #121 |
 | W15 | Profile completion: details form, ring, auto-prompt update | `/api/profile/completion`, completion modal | `e2e/tests/web/profiles.spec.ts` | partial | #121 |
-| W16 | Phone user adds and verifies an email | `/api/user/email/request`, `/api/user/email/verify` | - | none | #121 |
+| W16 | Phone user adds and verifies an email | `/api/user/email/request`, `/api/user/email/verify` | `e2e/tests/web/add-email.spec.ts` | full | #133 (gap from #121) |
 | W17 | Email-trial user adds and verifies a phone via BDApps OTP | `/api/user/phone/request`, `/api/user/phone/verify`, add-number dialog | `e2e/tests/web/billing.spec.ts` | full (Settings dialog, BDApps OTP, Pro after reload, trial cleared) | #121 |
-| W18 | Auto-prompt arbiter: one prompt at a time, priority order | `/dashboard`, all shell pages | `apps/web/e2e/tests/auto-prompts.spec.ts`, `apps/web/e2e/tests/one-home-prompts.spec.ts`, `apps/web/e2e/tests/popup-contract.spec.ts` (mocked states) | look-only | #122 |
+| W18 | Auto-prompt arbiter: one prompt at a time, priority order | `/dashboard`, all shell pages | `e2e/tests/web/auto-prompts.spec.ts` (real late-alert vs check-in; dismiss; trial lock); look-only guards remain in `apps/web/e2e` | full | #133 (gap from #122) |
 
 ### Web: logging
 
@@ -98,7 +98,7 @@ Notes on the tally:
 | W36 | Insights charts with enough data | `/insights` | `e2e/tests/web/insights.spec.ts` | full | #123 |
 | W37 | Insights empty and partial states | `/insights` | `e2e/tests/web/insights.spec.ts` | full | #123 |
 | W38 | Phase pattern card (most-logged symptoms in the current phase) | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
-| W39 | Dashboard pop-ups and celebration toast | `/dashboard` | `apps/web/e2e/tests/dashboard-popups.spec.ts` | look-only | #123 |
+| W39 | Dashboard pop-ups and celebration toast | `/dashboard` | `e2e/tests/web/dashboard-popups.spec.ts` (period/quick dialogs + celebration toast); look-only: `apps/web/e2e/tests/dashboard-popups.spec.ts` | full | #133 (gap from #123) |
 
 ### Web: content, feedback, settings
 
@@ -138,11 +138,11 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W59 | Signed-in shell: sidebar, header, skip link, one h1, page widths | all `(main)` routes | `apps/web/e2e/tests/page-shell.spec.ts`, `apps/web/e2e/tests/shell-look.spec.ts`, `apps/web/e2e/tests/shell-initial.spec.ts`, `apps/web/e2e/tests/card-rows.spec.ts`, `apps/web/e2e/tests/no-emoji.spec.ts` | look-only | #133 |
-| W60 | Phone shell: bottom nav, More sheet, no sideways scroll | all `(main)` routes at phone width | `apps/web/e2e/tests/phone-shell.spec.ts` | look-only | #133 |
-| W61 | Pop-up shell contract: dialog semantics, ESC, focus trap, inert background | all dialogs | `apps/web/e2e/tests/popup-shell.spec.ts`, `apps/web/e2e/tests/popup-contract.spec.ts`, `apps/web/e2e/tests/account-popups.spec.ts`, `apps/web/e2e/tests/dashboard-popups.spec.ts` | look-only | #133 |
-| W62 | Bengali: no English left on any page or pop-up | all pages and pop-ups | `apps/web/e2e/tests/bengali-no-english.spec.ts`, `apps/web/e2e/tests/language-ssr.spec.ts` | look-only | #133 |
-| W63 | Error and not-found states | not-found page, failed-save errors | `apps/web/e2e/tests/page-shell.spec.ts`, `apps/web/e2e/tests/symptoms-save.spec.ts` | look-only | #133 |
+| W59 | Signed-in shell: sidebar, header, skip link, one h1, page widths | all `(main)` routes | `e2e/tests/web/shell.spec.ts`; look-only: `apps/web/e2e/tests/page-shell.spec.ts`, `shell-look.spec.ts`, `shell-initial.spec.ts`, `card-rows.spec.ts`, `no-emoji.spec.ts` | full | #133 |
+| W60 | Phone shell: bottom nav, More sheet, no sideways scroll | all `(main)` routes at phone width | `e2e/tests/web/phone-shell.spec.ts` (phone project only); look-only: `apps/web/e2e/tests/phone-shell.spec.ts` | full | #133 |
+| W61 | Pop-up shell contract: dialog semantics, ESC, focus trap, inert background | all dialogs | `e2e/tests/web/popup-shell.spec.ts`; look-only: `apps/web/e2e/tests/popup-shell.spec.ts`, `popup-contract.spec.ts`, `account-popups.spec.ts` | full | #133 |
+| W62 | Bengali: no English left on any page or pop-up | all pages and pop-ups | `e2e/tests/bengali/no-english.spec.ts` (`web-bengali`); look-only: `apps/web/e2e/tests/bengali-no-english.spec.ts`, `language-ssr.spec.ts` | full | #133 |
+| W63 | Error and not-found states | not-found page, failed-save errors | `e2e/tests/web/errors.spec.ts`; look-only: `apps/web/e2e/tests/page-shell.spec.ts`, `symptoms-save.spec.ts` | full | #133 |
 
 ## Admin (21)
 

@@ -1,7 +1,11 @@
 # Bengali pass (`web-bengali`)
 
-Placeholder for issue **#133**. The Playwright project `web-bengali` is already wired in
-`playwright.config.ts` and included when `E2E_SUITE=full` (nightly / PRs labelled `e2e-full`).
+Issue **#133**. Playwright project `web-bengali` (`E2E_SUITE=full` / nightly / `e2e-full`).
 
-Until #133 adds specs here (or retargets `testMatch` / `@bengali` grep), this directory is empty
-and the project contributes zero tests. No workflow change is required when the pass lands.
+Specs here set `vesta_lang=bn` (and the Zustand language) on a throwaway user, visit every
+web page and open every pop-up the flows reach, then scan visible text/accessible attributes
+for leftover Latin letters (`support/latin-scan.ts`). Brand names, numbers, units, and
+documented third-party identifiers are allow-listed.
+
+Admin is English-only and out of scope. Each real leftover is a `needs-triage` GitHub issue
+plus `test.fail()` on that page/area.

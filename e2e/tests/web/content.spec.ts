@@ -2,7 +2,9 @@ import { test, expect } from '../../support/fixtures.ts'
 import { createArticle } from '../../support/db.ts'
 
 test.describe('Content (Learn)', () => {
-  test.beforeAll(async () => {
+  // beforeEach (not beforeAll): with E2E_SKIP_RESET and parallel workers, a cold
+  // beforeAll can race the first test; re-upsert is cheap and keeps titles findable.
+  test.beforeEach(async () => {
     await createArticle({
       slug: 'e2e-menstrual-article',
       titleEn: 'Understanding Menstrual Cycle Flow',
