@@ -22,13 +22,15 @@ test.describe('Prediction tier and confidence recalculation', () => {
       { startDate: days.startOf(days.daysAgo(30)), endDate: days.startOf(days.daysAgo(26)), flowIntensity: 'MEDIUM' },
     ])
 
-    // Set initial average prediction for 5 cycles: 75% confidence, tier AVERAGE
+    // Set initial average prediction for 5 cycles: 75% confidence, tier AVERAGE.
+    // Seed nextPeriodStart in the future (non-late) so the late-period dialog does not
+    // auto-open and block the asserts (#123 Finding 11).
     await setPrediction(profile.id, {
       tier: 'AVERAGE',
-      nextPeriodStart: days.startOf(days.daysAgo(2)),
-      ovulationDay: days.startOf(days.daysAgo(16)),
-      fertileStart: days.startOf(days.daysAgo(21)),
-      fertileEnd: days.startOf(days.daysAgo(15)),
+      nextPeriodStart: days.startOf(days.daysFromNow(2)),
+      ovulationDay: days.startOf(days.daysAgo(12)),
+      fertileStart: days.startOf(days.daysAgo(17)),
+      fertileEnd: days.startOf(days.daysAgo(11)),
       confidence: 0.75,
     })
 
@@ -42,22 +44,30 @@ test.describe('Prediction tier and confidence recalculation', () => {
     })
     expect(initialJson.tierExplanation).toContain('Tier 1')
 
-    // On dashboard, unlock meter shows 5 of 6 complete cycles
+    // On dashboard, unlock meter shows 5 of 6 complete cycles and 75% confidence
     await page.goto('/dashboard')
     const main = page.locator('main')
     await expect(main.getByText('5 of 6 complete cycles')).toBeVisible()
     await expect(main.getByText('75% confidence')).toBeVisible()
 
-    // Now log the 7th period (completes the 6th cycle) through the real API
-    const logRes = await page.request.post('/api/tracking/period-logs', {
-      data: {
-        profileId: profile.id,
-        startDate: days.daysAgo(2),
-        endDate: days.today,
-        flowIntensity: 'MEDIUM',
-      },
-    })
-    expect(logRes.ok()).toBe(true)
+    // Dismiss check-in prompt if it auto-opens so it does not block the UI
+    const allGoodBtn = page.getByRole('button', { name: /all good/i })
+    try {
+      await allGoodBtn.waitFor({ state: 'visible', timeout: 3_000 })
+      await allGoodBtn.click()
+      await expect(allGoodBtn).toBeHidden()
+    } catch {
+      // Prompt did not appear
+    }
+
+    // Log the 7th period (completing the 6th cycle) through the real UI flow (#123 Finding 5)
+    await page.getByRole('button', { name: /log period/i }).click()
+    const logModal = page.getByRole('dialog').filter({ hasText: 'Log Period' })
+    await expect(logModal).toBeVisible()
+    await logModal.getByLabel(/start date/i).fill(days.daysAgo(2))
+    await logModal.getByLabel(/end date/i).fill(days.today)
+    await logModal.getByRole('button', { name: /save period/i }).click()
+    await expect(logModal).toBeHidden()
 
     // Prediction should have recalculated to ARIMA tier and 80% confidence
     const updatedRes = await page.request.get(`/api/predictions?profileId=${profile.id}`)
@@ -69,9 +79,12 @@ test.describe('Prediction tier and confidence recalculation', () => {
     })
     expect(updatedJson.tierExplanation).toContain('Tier 2: ARIMA')
 
-    // Dashboard after refresh reflects the unlocked status and updated confidence
+    // Dashboard after refresh reflects the unlocked status, updated confidence,
+    // and verifies "75% confidence" and "5 of 6 complete cycles" disappeared (#123 Finding 5)
     await page.reload()
     await expect(main.getByText('Smart predictions unlocked')).toBeVisible()
     await expect(main.getByText('80% confidence')).toBeVisible()
+    await expect(main.getByText('75% confidence')).toBeHidden()
+    await expect(main.getByText('5 of 6 complete cycles')).toBeHidden()
   })
 })

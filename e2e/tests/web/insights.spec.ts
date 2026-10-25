@@ -45,14 +45,28 @@ test.describe('Insights states and charts', () => {
     // Symptom frequency is visible
     await expect(page.getByRole('heading', { name: 'Symptom frequency' })).toBeVisible()
 
-    // Missing note informs user about needing more logged cycles
+    // Full missing note informs user of all missing cycle charts (#123 Finding 8)
     const missingNote = page.getByTestId('insights-missing-note')
     await expect(missingNote).toBeVisible()
-    await expect(missingNote).toContainText(/Not enough data yet for: Cycle Length Trend/i)
+    await expect(missingNote).toContainText(
+      'Not enough data yet for: Cycle Length Trend, Period Regularity, Fertile Window History. Keep logging to unlock them.'
+    )
 
-    // Cycle length trend is missing
+    // Cycle-dependent charts are absent
     await expect(page.getByRole('heading', { name: 'Cycle length trend' })).toHaveCount(0)
     await expect(page.getByRole('heading', { name: 'Period regularity' })).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Fertile window history' })).toHaveCount(0)
+
+    // Symptom frequency chart shows real data (#123 Finding 8)
+    await expect(page.locator('#symptom-summary')).toContainText(/Physical/i)
+    await expect(page.locator('#symptom-summary')).toContainText(/of 3 logs/i)
+    const symptomTable = page.locator('table').filter({ has: page.locator('caption', { hasText: 'Symptom frequency' }) })
+    await expect(symptomTable).toBeAttached()
+    await expect(symptomTable).toContainText('Physical')
+    await expect(symptomTable).toContainText('2')
+    await expect(symptomTable).toContainText('Mood')
+    await expect(symptomTable).toContainText('1')
+    await expect(page.locator('.recharts-bar-rectangle').first()).toBeAttached()
   })
 
   test('full insights dashboard renders all 4 charts when sufficient data exists', async ({ newUser, days }) => {
@@ -90,10 +104,53 @@ test.describe('Insights states and charts', () => {
     // No missing chart note
     await expect(page.getByTestId('insights-missing-note')).toHaveCount(0)
 
-    // Chart type controls (Line, Area, Bar) work
+    // Assert chart content: values and accessible summaries (#123 Finding 7)
+    // 1. Cycle length trend: summary and data table
+    await expect(page.locator('#cycle-length-summary')).toContainText(/3 cycles/i)
+    await expect(page.locator('#cycle-length-summary')).toContainText(/from 28 to 28 days/i)
+    const cycleTable = page.locator('table').filter({ has: page.locator('caption', { hasText: 'Cycle length trend' }) })
+    await expect(cycleTable).toBeAttached()
+    await expect(cycleTable).toContainText('28')
+
+    // 2. Period regularity: mean, variation and stable badge
+    const regularityCard = page.locator('.rounded-panel').filter({ has: page.getByRole('heading', { name: 'Period regularity' }) })
+    await expect(regularityCard.getByText('28', { exact: true })).toBeVisible()
+    await expect(regularityCard.getByText('±0', { exact: true })).toBeVisible()
+    await expect(regularityCard.getByText('Stable', { exact: true })).toBeVisible()
+
+    // 3. Fertile window history: summary and span
+    await expect(page.locator('#fertile-summary')).toContainText('Showing the last 3 fertile windows.')
+    await expect(page.locator('li').filter({ hasText: '7 days' }).first()).toBeVisible()
+
+    // 4. Symptom frequency: summary and data table
+    await expect(page.locator('#symptom-summary')).toContainText(/of 2 logs/i)
+    const symptomTable = page.locator('table').filter({ has: page.locator('caption', { hasText: 'Symptom frequency' }) })
+    await expect(symptomTable).toBeAttached()
+    await expect(symptomTable).toContainText('Physical')
+    await expect(symptomTable).toContainText('Mood')
+
+    // Chart type controls (Line, Area, Bar) toggle and change the chart (#123 Finding 7)
+    const lineBtn = page.getByRole('button', { name: 'Line', exact: true })
     const areaBtn = page.getByRole('button', { name: 'Area', exact: true })
-    await expect(areaBtn).toBeVisible()
+    const barBtn = page.getByRole('button', { name: 'Bar', exact: true })
+
+    await expect(lineBtn).toHaveAttribute('aria-pressed', 'true')
+    // Constant 28-day cycles draw a flat (zero-height) path, which Playwright reports as hidden: assert attached.
+    await expect(page.locator('.recharts-line-curve')).toBeAttached()
+    await expect(page.locator('.recharts-area')).toHaveCount(0)
+
+    // Toggle to Area
     await areaBtn.click()
     await expect(areaBtn).toHaveAttribute('aria-pressed', 'true')
+    await expect(lineBtn).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.locator('.recharts-area-area')).toBeAttached()
+    await expect(page.locator('.recharts-line')).toHaveCount(0)
+
+    // Toggle to Bar
+    await barBtn.click()
+    await expect(barBtn).toHaveAttribute('aria-pressed', 'true')
+    await expect(areaBtn).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.locator('.recharts-bar-rectangle').first()).toBeAttached()
+    await expect(page.locator('.recharts-area')).toHaveCount(0)
   })
 })
