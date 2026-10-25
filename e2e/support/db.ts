@@ -4,23 +4,16 @@
  * `DATABASE_URL` from the process env and would hit `vesta_dev`.
  */
 import { PrismaClient, type Prisma, type SubscriptionStatus } from '@prisma/client'
-import { assertE2eDatabase, DATABASE_URL } from './slot.ts'
+import { assertE2eDatabase, TEST_DATABASE_URL } from './slot.ts'
 
-assertE2eDatabase(DATABASE_URL)
-
-/** One connection per Playwright worker — shared Postgres is also used by Next + other slots. */
-function workerDatasourceUrl(): string {
-  const url = new URL(DATABASE_URL)
-  url.searchParams.set('connection_limit', '1')
-  return url.toString()
-}
+assertE2eDatabase(TEST_DATABASE_URL)
 
 let client: PrismaClient | null = null
 
 /** Shared Prisma client for this process, locked to the E2E database. */
 export function e2eDb(): PrismaClient {
   if (!client) {
-    client = new PrismaClient({ datasourceUrl: workerDatasourceUrl() })
+    client = new PrismaClient({ datasourceUrl: TEST_DATABASE_URL })
   }
   return client
 }
