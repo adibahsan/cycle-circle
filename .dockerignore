@@ -18,7 +18,12 @@ packages/*/node_modules
 **/.turbo
 
 # Logs and local simulator noise (smaller context, reproducible WAR)
-**/logs/**
+# Runtime log output only. Not **/logs/**: Docker versions disagree on it, and
+# the 2026-10-18 prod admin image shipped without the /logs page
+# (apps/admin/src/app/(admin)/logs) -> 404 in prod.
+logs
+apps/*/logs
+packages/*/logs
 **/*.log
 vendor/bdapps/sdk-standalone-1.2.68/**/*.war.bak
 
