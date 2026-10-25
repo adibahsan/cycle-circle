@@ -2,9 +2,12 @@
  * Admin SMS broadcasting (#129).
  *
  * Production send uses BDApps `destinationAddresses: ['tel:all']` (all subscribers),
- * with one composed body from the broadcast's `sendLanguage` — not per-user language.
- * Assertions are scoped to unique message markers and throwaway subscribers we create;
+ * with one composed body from the broadcast's `sendLanguage` — not per-user language
+ * (see #143). Assertions are scoped to unique message markers and throwaway subscribers;
  * other parallel tests may also hit `/sms/send`.
+ *
+ * Delivery-report coverage is the webhook path kept for a plan change; prod sends with
+ * `deliveryStatusRequest: 0` because reports are disabled (E1312).
  */
 import { randomBytes } from 'node:crypto'
 import { test, expect } from '../../support/fixtures'
@@ -46,10 +49,13 @@ async function waitForSmsCalls(
 
 async function triggerDailyRemindersCron(
   request: import('@playwright/test').APIRequestContext,
+  userId: string,
 ): Promise<{ status: number; json: unknown }> {
   const res = await request.post(`${URLS.web}/api/cron/daily-reminders`, {
     headers: { authorization: `Bearer ${SECRETS.cronSecret}` },
-    data: { overrideDisabled: true },
+    // Scope per-user reminders to the throwaway so we do not fan out to every due user.
+    // Scheduled SMS dispatch still runs once per cron call (independent of userId).
+    data: { overrideDisabled: true, userId },
   })
   return { status: res.status(), json: await res.json().catch(() => null) }
 }
@@ -60,9 +66,10 @@ async function dispatchUntilMarker(
   fake: FakeBdappsClient,
   marker: string,
   sinceSeq: number,
+  userId: string,
 ): Promise<RecordedCall[]> {
   for (let i = 0; i < 12; i++) {
-    const cron = await triggerDailyRemindersCron(request)
+    const cron = await triggerDailyRemindersCron(request, userId)
     expect(cron.status).toBe(200)
     const mine = smsCallsWithMarker(await fake.calls({ path: '/sms/send', sinceSeq }), marker)
     if (mine.length >= 1) return mine
@@ -74,7 +81,8 @@ async function dispatchUntilMarker(
 async function openCreateModal(page: import('@playwright/test').Page) {
   const newBtn = page.getByRole('button', { name: 'New Broadcast' })
   await newBtn.scrollIntoViewIfNeeded()
-  // Phone: chart canvases / sticky chrome intercept the first click (button focuses, modal never opens).
+  // Phone layout: sticky chrome / chart canvases sit above the button hit-target, so the
+  // first click focuses without opening the dialog — not an overlay bug in the app.
   await newBtn.click({ force: true })
   const heading = page.getByRole('heading', { name: 'New SMS Broadcast' })
   if (!(await heading.isVisible().catch(() => false))) {
@@ -93,7 +101,7 @@ async function fillBilingualDraft(
   await dialog.getByLabel('Message (English)').fill(en)
   await dialog.getByLabel(/Message \(Bengali\)/).fill(bn)
   if (opts.language && opts.language !== 'Bengali + English') {
-    // Label wraps an sr-only radio; click the visible label (radio itself is intercepted).
+    // Label wraps an sr-only radio; the visible label is the clickable control.
     await dialog.locator('label').filter({ hasText: opts.language }).click()
   }
   if (opts.scheduleLocal) {
@@ -109,7 +117,8 @@ function broadcastRow(page: import('@playwright/test').Page, marker: string) {
 
 /**
  * Action column sits under sticky pagination / overlapping cells on the phone
- * project's narrow horizontal table — force the click after scrolling.
+ * project's narrow horizontal table — force is a viewport layout workaround, not a
+ * missing accessible control.
  */
 async function clickRowAction(page: import('@playwright/test').Page, marker: string, name: string) {
   const btn = broadcastRow(page, marker).getByRole('button', { name })
@@ -126,7 +135,7 @@ async function filterStatusSent(page: import('@playwright/test').Page) {
 }
 
 test.describe('Admin SMS broadcasting', () => {
-  test('bilingual send reaches BDApps as composed BOTH text (tel:all; scoped by marker)', async ({
+  test('BOTH send language reaches BDApps as composed EN+BN text (tel:all; scoped by marker)', async ({
     browser,
     newUser,
     fakeBdapps,
@@ -142,19 +151,8 @@ test.describe('Admin SMS broadcasting', () => {
     const runId = randomBytes(3).toString('hex')
     const enMarker = `E2E SMS EN ${runId}`
     const bnMarker = `E2E SMS BN ${runId}`
-    // Throwaway subscribers so tel:all expansion includes our numbers (other slots/tests also send SMS).
-    const enUser = await newUser()
-    const bnUser = await newUser()
-    await e2eDb().user.update({
-      where: { phone: toDbPhone(enUser.phone) },
-      data: { language: 'EN', fullName: `E2E SMS EN u ${runId}` },
-    })
-    await e2eDb().user.update({
-      where: { phone: toDbPhone(bnUser.phone) },
-      data: { language: 'BN', fullName: `E2E SMS BN u ${runId}` },
-    })
-    expect(await fakeBdapps.subscriber(enUser.phone)).toMatchObject({ status: 'REGISTERED' })
-    expect(await fakeBdapps.subscriber(bnUser.phone)).toMatchObject({ status: 'REGISTERED' })
+    // Throwaway subscriber so tel:all expansion includes at least one REGISTERED number.
+    await newUser()
 
     const sinceSeq = (await fakeBdapps.calls({ path: '/sms/send' })).at(-1)?.seq ?? 0
     const admin = await createLoggedInAdmin(browser, {
@@ -201,6 +199,61 @@ test.describe('Admin SMS broadcasting', () => {
     }
   })
 
+  test('Bengali-only send reaches BDApps as BN body only', async ({
+    browser,
+    newUser,
+    fakeBdapps,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    test.setTimeout(90_000)
+    const runId = randomBytes(3).toString('hex')
+    const enMarker = `E2E SMS BN-only EN ${runId}`
+    const bnMarker = `E2E SMS BN-only BN ${runId}`
+    await newUser()
+
+    const sinceSeq = (await fakeBdapps.calls({ path: '/sms/send' })).at(-1)?.seq ?? 0
+    const admin = await createLoggedInAdmin(browser, {
+      viewport,
+      userAgent,
+      isMobile,
+      hasTouch,
+      deviceScaleFactor,
+      locale,
+      timezoneId,
+    })
+
+    try {
+      const { page } = admin
+      await page.goto('/sms?pageSize=100')
+      await expect(page.getByRole('heading', { name: 'SMS Broadcasts' })).toBeVisible()
+
+      const dialog = await openCreateModal(page)
+      await fillBilingualDraft(dialog, enMarker, bnMarker, { language: 'Bengali only' })
+      await dialog.getByRole('button', { name: 'Save as Draft' }).click()
+      await expect(page.getByRole('heading', { name: 'New SMS Broadcast' })).toHaveCount(0)
+      await expect(broadcastRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
+
+      await clickRowAction(page, enMarker, 'Send broadcast')
+      await page.getByRole('button', { name: 'Send Now', exact: true }).click()
+      await expect(page.getByText('Broadcast sent')).toBeVisible({ timeout: 30_000 })
+
+      const mine = await waitForSmsCalls(fakeBdapps, bnMarker, { sinceSeq })
+      const last = mine[mine.length - 1]
+      expect(last.body.destinationAddresses).toEqual(['tel:all'])
+      expect(last.body.message).toBe(bnMarker)
+      expect(last.body.message).not.toContain(enMarker)
+      expect(last.response).toMatchObject({ statusCode: 'S1000' })
+    } finally {
+      await admin.context.close()
+    }
+  })
+
   test('scheduled broadcast goes out when daily-reminders cron runs after due time', async ({
     browser,
     newUser,
@@ -216,7 +269,11 @@ test.describe('Admin SMS broadcasting', () => {
     const runId = randomBytes(3).toString('hex')
     const enMarker = `E2E SMS Sched ${runId}`
     const bnMarker = `E2E SMS Sched BN ${runId}`
-    await newUser() // ensure at least one REGISTERED subscriber for tel:all
+    const subscriber = await newUser() // ensure at least one REGISTERED subscriber for tel:all
+    const cronUser = await e2eDb().user.findUniqueOrThrow({
+      where: { phone: toDbPhone(subscriber.phone) },
+      select: { id: true },
+    })
 
     const sinceSeq = (await fakeBdapps.calls({ path: '/sms/send' })).at(-1)?.seq ?? 0
     const admin = await createLoggedInAdmin(browser, {
@@ -243,13 +300,21 @@ test.describe('Admin SMS broadcasting', () => {
       await expect(broadcastRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
       await expect(broadcastRow(page, enMarker).getByText('Scheduled')).toBeVisible()
 
-      const mine = await dispatchUntilMarker(context.request, fakeBdapps, enMarker, sinceSeq)
+      const mine = await dispatchUntilMarker(
+        context.request,
+        fakeBdapps,
+        enMarker,
+        sinceSeq,
+        cronUser.id,
+      )
       expect(mine[mine.length - 1].body.message).toBe(`${enMarker}\n${bnMarker}`)
       expect(mine[mine.length - 1].body.destinationAddresses).toEqual(['tel:all'])
 
       await filterStatusSent(page)
       await expect(broadcastRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
     } finally {
+      // Leave no past-due SCHEDULED row for later cron polls in this slot.
+      await e2eDb().smsBroadcast.deleteMany({ where: { message: enMarker } })
       await admin.context.close()
     }
   })
@@ -265,11 +330,7 @@ test.describe('Admin SMS broadcasting', () => {
     deviceScaleFactor,
     locale,
     timezoneId,
-  }, testInfo) => {
-    // failNext match is destinationAddress tel:all — shared by every broadcast send.
-    // Desktop only so the phone worker cannot steal this failure mid-send.
-    test.skip(testInfo.project.name.endsWith('-phone'), 'tel:all failNext is exclusive to one worker')
-
+  }) => {
     const runId = randomBytes(3).toString('hex')
     const enMarker = `E2E SMS Retry ${runId}`
     const bnMarker = `E2E SMS Retry BN ${runId}`
@@ -297,9 +358,9 @@ test.describe('Admin SMS broadcasting', () => {
       await expect(page.getByRole('heading', { name: 'New SMS Broadcast' })).toHaveCount(0)
       await expect(broadcastRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
 
-      // Scoped match — never { any: true }. times:1 → service retries once (backoff ~1s).
+      // messageContains scopes tel:all failures so parallel workers cannot steal this one.
       await fakeBdapps.failNext('/sms/send', {
-        match: { destinationAddress: 'tel:all' },
+        match: { messageContains: enMarker },
         mode: 'error',
         statusCode: 'E1601',
         times: 1,
@@ -323,7 +384,7 @@ test.describe('Admin SMS broadcasting', () => {
     }
   })
 
-  test('delivery-report webhook updates deliveredCount on the active sent broadcast', async ({
+  test('delivery-report webhook updates delivered/failed counts (webhook path; prod E1312)', async ({
     browser,
     newUser,
     fakeBdapps,
@@ -373,16 +434,21 @@ test.describe('Admin SMS broadcasting', () => {
       expect(mine[mine.length - 1].body.message).toBe(enMarker)
       expect(mine[mine.length - 1].body.message).not.toContain(bnMarker)
 
+      const destResponses = mine[mine.length - 1].response.destinationResponses as
+        | Array<{ messageId?: string }>
+        | undefined
+      const fakeMessageId = destResponses?.[0]?.messageId
+      expect(fakeMessageId).toBeTruthy()
+
       const broadcast = await e2eDb().smsBroadcast.findFirstOrThrow({ where: { message: enMarker } })
       expect(broadcast.status).toBe('SENT')
       expect(broadcast.deliveredCount ?? 0).toBe(0)
       // App stores destination messageId as providerMessageId; webhook correlates on requestId.
-      const providerId = broadcast.providerMessageId
-      expect(providerId).toBeTruthy()
+      expect(broadcast.providerMessageId).toBe(fakeMessageId)
 
       const delivered = await fakeBdapps.sendWebhook('/api/webhooks/sms/report', {
         destinationAddress: maskedId,
-        requestId: providerId!,
+        requestId: broadcast.providerMessageId!,
         deliveryStatus: 'DELIVERED',
         timeStamp: stamp(),
       })
@@ -395,7 +461,7 @@ test.describe('Admin SMS broadcasting', () => {
 
       const failed = await fakeBdapps.sendWebhook('/api/webhooks/sms/report', {
         destinationAddress: `${maskedId}-other`,
-        requestId: providerId!,
+        requestId: broadcast.providerMessageId!,
         deliveryStatus: 'FAILED',
         timeStamp: stamp(),
       })
@@ -405,6 +471,83 @@ test.describe('Admin SMS broadcasting', () => {
       expect(afterFailed.failedCount).toBe(1)
       expect(afterFailed.targetCount).toBe(2)
       expect(afterFailed.deliveredCount).toBe(1)
+
+      // Reload: Sent / Active are visible. Per-row delivered/failed counts are not rendered (#144).
+      await page.goto('/sms?status=SENT&pageSize=100')
+      await expect(page.getByRole('heading', { name: 'SMS Broadcasts' })).toBeVisible()
+      await expect(broadcastRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
+      await expect(broadcastRow(page, enMarker).getByText('Sent', { exact: true })).toBeVisible()
+      await expect(broadcastRow(page, enMarker).getByText('Active', { exact: true })).toBeVisible()
+    } finally {
+      await admin.context.close()
+    }
+  })
+
+  // Expected-fail until #145: unknown requestId falls back to the active SENT broadcast.
+  test('a delivery report with an unknown requestId leaves our broadcast counts unchanged', async ({
+    browser,
+    newUser,
+    fakeBdapps,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    test.fail(
+      true,
+      'recordSmsDeliveryReport falls back to any active SENT broadcast when requestId is unknown (#145)',
+    )
+    test.setTimeout(90_000)
+    const runId = randomBytes(3).toString('hex')
+    const enMarker = `E2E SMS Bogus ${runId}`
+    const bnMarker = `E2E SMS Bogus BN ${runId}`
+    const recipient = await newUser()
+    const maskedId = (await fakeBdapps.subscriber(recipient.phone))!.maskedId
+
+    const sinceSeq = (await fakeBdapps.calls({ path: '/sms/send' })).at(-1)?.seq ?? 0
+    const admin = await createLoggedInAdmin(browser, {
+      viewport,
+      userAgent,
+      isMobile,
+      hasTouch,
+      deviceScaleFactor,
+      locale,
+      timezoneId,
+    })
+
+    try {
+      const { page } = admin
+      await page.goto('/sms?pageSize=100')
+      const dialog = await openCreateModal(page)
+      await fillBilingualDraft(dialog, enMarker, bnMarker, { language: 'English only' })
+      await dialog.getByRole('button', { name: 'Save as Draft' }).click()
+      await expect(broadcastRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
+      await clickRowAction(page, enMarker, 'Send broadcast')
+      await page.getByRole('button', { name: 'Send Now', exact: true }).click()
+      await expect(page.getByText('Broadcast sent')).toBeVisible({ timeout: 30_000 })
+      await waitForSmsCalls(fakeBdapps, enMarker, { sinceSeq })
+
+      const broadcast = await e2eDb().smsBroadcast.findFirstOrThrow({ where: { message: enMarker } })
+      const before = {
+        deliveredCount: broadcast.deliveredCount ?? 0,
+        failedCount: broadcast.failedCount ?? 0,
+        targetCount: broadcast.targetCount ?? 0,
+      }
+
+      await fakeBdapps.sendWebhook('/api/webhooks/sms/report', {
+        destinationAddress: maskedId,
+        requestId: `bogus-req-${runId}`,
+        deliveryStatus: 'DELIVERED',
+        timeStamp: stamp(),
+      })
+
+      const after = await e2eDb().smsBroadcast.findUniqueOrThrow({ where: { id: broadcast.id } })
+      expect(after.deliveredCount ?? 0).toBe(before.deliveredCount)
+      expect(after.failedCount ?? 0).toBe(before.failedCount)
+      expect(after.targetCount ?? 0).toBe(before.targetCount)
     } finally {
       await admin.context.close()
     }

@@ -183,8 +183,8 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A14 | SMS broadcast: bilingual create, schedule, send, right language per user | `/sms` | `e2e/tests/admin/sms.spec.ts` | full | #129 |
-| A15 | SMS queue: failed send retried, delivery report updates counts | `/sms` | `e2e/tests/admin/sms.spec.ts` | full | #129 |
+| A14 | SMS broadcast: bilingual create, schedule, send; one composed body by send language (`tel:all`) | `/sms` | `e2e/tests/admin/sms.spec.ts` | full | #129 (wording: #143) |
+| A15 | SMS queue: failed send retried; delivery-report webhook updates counts (webhook path; prod E1312) | `/sms` | `e2e/tests/admin/sms.spec.ts` | full (counts via DB + reload; UI counts: #144) | #129 |
 
 ### Admin: feedback, emails, audit, logs, system
 
@@ -210,6 +210,6 @@ Cron routes, BDApps webhooks, the Resend webhook and health endpoints have no sc
 | S05 | BDApps webhook: subscription notify (subscribed, unsubscribed) | `/api/webhooks/subscription/notify` | - | none | #132 (plan effect: #125) |
 | S06 | BDApps webhook: SMS received, recorded as Webhook event, duplicates ignored | `/api/webhooks/sms/receive` | - | none | #132 |
 | S07 | BDApps webhook: USSD, recorded, duplicates ignored | `/api/webhooks/ussd/receive` | - | none | #132 |
-| S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | `e2e/tests/admin/sms.spec.ts` (admin counts) | partial (counts: #129; idempotency: #132) | #132 (admin counts: #129) |
+| S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | `e2e/tests/admin/sms.spec.ts` (webhook-path counts; prod E1312) | partial (counts: #129; UI: #144; unknown requestId: #145; idempotency: #132) | #132 (admin counts: #129) |
 | S09 | Resend webhook updates email log delivery status | `/api/webhooks/resend` | - | none | #132 |
 | S10 | Health endpoints up; BDApps reported down when fake BDApps fails | `/api/health/{db,redis,mailpit,bdapps,worker}` | `e2e/tests/web/bdapps-health.spec.ts` | partial (BDApps endpoint only) | #132 |

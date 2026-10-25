@@ -24,9 +24,12 @@ export interface RecordedCall {
  * (the exclusive-path escape hatch, e.g. GET `/health`, which carries no subscriber).
  * Otherwise every given field must match: `subscriberId` against `body.subscriberId`
  * (masked id or phone), `destinationAddress` against `body.destinationAddress` or any of
- * `body.destinationAddresses`, `phone` against either after phone normalisation.
+ * `body.destinationAddresses`, `phone` against either after phone normalisation,
+ * `messageContains` against a substring of `body.message` (for shared destinations like `tel:all`).
  */
-export type FailureMatch = { any: true } | { subscriberId?: string; destinationAddress?: string; phone?: string }
+export type FailureMatch =
+  | { any: true }
+  | { subscriberId?: string; destinationAddress?: string; phone?: string; messageContains?: string }
 
 /**
  * A queued failure: the next `times` calls to `path` fail instead of running the route.
@@ -162,6 +165,10 @@ export function failureMatches(state: FakeState, match: FailureMatch, body: Reco
     const want = normalizePhone(match.phone)
     if (!want || ![sub, ...addrs].some((a) => phoneOf(state, a) === want)) return false
   }
+  if (match.messageContains !== undefined) {
+    const msg = typeof body.message === 'string' ? body.message : ''
+    if (!msg.includes(match.messageContains)) return false
+  }
   return true
 }
 
@@ -170,11 +177,13 @@ export function validateFailure(f: Partial<ScriptedFailure> & Record<string, unk
   if (typeof f.path !== 'string' || !f.path) return 'need path'
   if (!f.mode || !['timeout', 'http', 'error'].includes(f.mode)) return 'mode must be timeout, http or error'
   const m = f.match as Record<string, unknown> | undefined
-  if (!m || typeof m !== 'object') return 'need match ({ any: true } or subscriberId/destinationAddress/phone)'
+  if (!m || typeof m !== 'object') {
+    return 'need match ({ any: true } or subscriberId/destinationAddress/phone/messageContains)'
+  }
   if ('any' in m) {
     if (m.any !== true) return 'match.any must be true'
   } else {
-    const keys = ['subscriberId', 'destinationAddress', 'phone'].filter((k) => m[k] !== undefined)
+    const keys = ['subscriberId', 'destinationAddress', 'phone', 'messageContains'].filter((k) => m[k] !== undefined)
     if (keys.length === 0) return 'match is empty'
     if (keys.some((k) => typeof m[k] !== 'string' || !m[k])) return 'match fields must be non-empty strings'
   }

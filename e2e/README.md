@@ -162,11 +162,15 @@ answers 400 for a missing/empty `match` or a bad mode field.
 `match` is **required** and scopes the failure to a call, so parallel tests (and the desktop and phone
 projects) can script the same path without stealing each other's failure: `{ subscriberId }` (masked id
 or phone, matched against `body.subscriberId`), `{ destinationAddress }` (against `body.destinationAddress`
-or any `body.destinationAddresses`), `{ phone }` (either, after normalisation); all given fields must match.
+or any `body.destinationAddresses`), `{ phone }` (either, after normalisation), `{ messageContains }`
+(substring of `body.message` — use this when many tests share `destinationAddresses: ['tel:all']`);
+all given fields must match.
 `{ any: true }` matches every call to the path and is **exclusive**: only for a path nobody else uses,
 i.e. GET `/health`, which carries no subscriber. Those tests run on the desktop project only
 (`bdapps-health.spec.ts`). Typed webhook bodies: `SubscriptionNotifyPayload`, `SmsReceivePayload`,
 `SmsReportPayload`, `UssdReceivePayload` in `support/fake-bdapps.ts`.
+`messageContains` is covered by a small unit file (`pnpm exec tsx --test fake-bdapps/state.unit.test.ts`)
+and by `bdapps-fake.spec.ts` (two `tel:all` sends; only the matching message fails).
 
 **Health**: the fake answers `GET /health` (200, `{status:'ok'}`). The apps' env sets
 `BDAPPS_SIMULATOR_UI_URL` to it, which is the only URL `/api/health/bdapps` fetches (up for any
