@@ -10,8 +10,8 @@ import { test, expect } from '../../support/fixtures'
  * `/health`, and it runs on the desktop project only (desktop and phone would race).
  */
 test.describe('BDApps health endpoint', () => {
-  test('reports up, then down while BDApps is scripted to fail, then up again', async ({ page, fakeBdapps }, testInfo) => {
-    test.skip(testInfo.project.name !== 'web-desktop', 'shares the fake BDApps failure queue; one project only')
+  test('reports up, then down while BDApps is scripted to fail, then up again', async ({ page, fakeBdapps }) => {
+    // Lives in the serial `cron` project (workers=1) so `{ any: true }` cannot race other specs.
     const health = () => page.request.get('/api/health/bdapps')
 
     const up = await health()
