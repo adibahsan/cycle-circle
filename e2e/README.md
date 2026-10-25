@@ -36,7 +36,7 @@ reset --force` on the slot DB (creates it, applies migrations, seeds; or the `E2
 `playwright test`, whose `webServer` starts the fake BDApps and `next start` for both apps.
 Running `pnpm exec playwright test` inside `e2e/` directly also works if the build and DB are ready.
 
-App logs (all six log channels) go to `e2e/.logs/slot-<n>/{web,admin}/`; failures keep a trace in
+App logs (all six log channels) go to `e2e/.logs/slot-<n>/web/` (shared with admin, mirroring the prod bind mount so the `/logs` reader works); failures keep a trace in
 `e2e/.results/` (`pnpm exec playwright show-trace <zip>`).
 
 ## Slots

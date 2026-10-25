@@ -29,8 +29,8 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Admin: content | 2 | 2 | 0 | 0 | 0 |
 | Admin: analytics and engagement | 2 | 2 | 0 | 0 | 0 |
 | Admin: SMS | 2 | 2 | 0 | 0 | 0 |
-| Admin: feedback, emails, audit, logs, system | 6 | 6 | 0 | 0 | 0 |
-| **Admin total** | 21 | 16 | 0 | 5 | 0 |
+| Admin: feedback, emails, audit, logs, system | 6 | 0 | 0 | 1 | 5 |
+| **Admin total** | 21 | 10 | 0 | 6 | 5 |
 | Server-only (not counted) | 10 | 9 | 0 | 1 | 0 |
 
 Notes on the tally:
@@ -190,12 +190,12 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A16 | Feedback triage: filter, detail, CSV export | `/feedback`, `/feedback/[id]` | - | none | #131 |
-| A17 | Emails: log and bilingual template preview | `/emails`, `/emails/[id]`, `/emails/preview` | - | none | #131 |
-| A18 | Audit log search | `/audit-logs` | - | none | #131 |
-| A19 | Log reader with OTPs masked | `/logs` | - | none | #131 |
-| A20 | System: cron settings saved and applied | `/system` | - | none | #131 |
-| A21 | API docs page loads | `/api-docs` | - | none | #131 |
+| A16 | Feedback triage: filter, detail, CSV export | `/feedback`, `/feedback/[id]` | `e2e/tests/admin/feedback.spec.ts` | deep (search + category filter via URL, detail view, CSV contains own marker) | #131 |
+| A17 | Emails: log and bilingual template preview | `/emails`, `/emails/[id]`, `/emails/preview` | `e2e/tests/admin/emails.spec.ts` | deep (magic-link email in log + detail; previews EN/BN real Bengali text) | #131 |
+| A18 | Audit log search | `/audit-logs` | `e2e/tests/admin/audit-logs.spec.ts` | partial (real suspend appears in search + metadata; Action filter expected-to-fail #152) | #131 |
+| A19 | Log reader with OTPs masked | `/logs` | `e2e/tests/admin/logs.spec.ts` | deep (real OTP verify line found, OTP masked, raw code absent) | #131 |
+| A20 | System: cron settings saved and applied | `/system` | `e2e/tests/admin/system.spec.ts` | deep (caas-check toggle saved after reload, cron route skips; restored) | #131 |
+| A21 | API docs page loads | `/api-docs` | `e2e/tests/admin/api-docs.spec.ts` | deep (heading + Swagger UI renders operations) | #131 |
 
 ## Server-only paths (not counted in the 63 / 21)
 

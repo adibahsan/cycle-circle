@@ -127,7 +127,9 @@ function appEnv(app: 'web' | 'admin'): Record<string, string> {
     RESEND_WEBHOOK_SECRET: '',
     MAILPIT_SMTP_URL: process.env.E2E_MAILPIT_SMTP_URL ?? 'smtp://localhost:1025',
     MAILPIT_UI_URL: URLS.mailpit,
-    LOG_DIR: path.join(LOG_ROOT, app),
+    // Admin and web share the log root (mirroring prod bind mount /var/log/vesta/app)
+    // so the admin log reader on /logs can see merchant, webhook and translog lines.
+    LOG_DIR: path.join(LOG_ROOT, 'web'),
     UPLOAD_DIR,
   }
 }
