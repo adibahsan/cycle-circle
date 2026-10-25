@@ -95,7 +95,7 @@ Import `test` and `expect` from `support/fixtures.ts` (not `@playwright/test`).
 | `subscriber(phone)` → `{ phone, maskedId, status }` or `undefined` | `expect(await fakeBdapps.subscriber(phone)).toMatchObject({ status: 'UNREGISTERED' })` |
 | `caasBalance(phone)` → `{ phone, accountType, accountStatus, chargeableBalance, updatedAt }` or `undefined` | `expect(await fakeBdapps.caasBalance(phone)).toMatchObject({ accountStatus: 'ACTIVE' })` |
 | `caasDebits(phone?)` → list of `{ phone, externalTrxId, internalTrxId, referenceId, amount, timeStamp }` | `await fakeBdapps.caasDebits(phone)` |
-| `failNext(path, { mode, statusCode?, httpStatus?, delayMs?, times? })` | `await fakeBdapps.failNext('/subscription/send', { mode: 'error', statusCode: 'E1601' })` |
+| `failNext(path, { match, mode, statusCode?, httpStatus?, delayMs?, times? })` | `await fakeBdapps.failNext('/subscription/send', { match: { subscriberId: maskedId }, mode: 'error', statusCode: 'E1601' })` |
 | `sendWebhook(appPath, body)` → the app's `{ status, body }` | `await fakeBdapps.sendWebhook('/api/webhooks/subscription/notify', {...})` |
 
 DB setup for states the UI can't reach in time: no helper yet (the first ticket that needs one
@@ -129,13 +129,20 @@ Control API (the client wraps it): `GET /_control/health`, `POST /_control/reset
 `GET /_control/caas/balance?phone=`, `GET /_control/caas/debits?phone=`,
 `POST /_control/failures {path, mode, ...}`, `POST /_control/webhook {path, body}`.
 
-**Scripted failures** (`failNext(path, { mode, ... , times })`): the next `times` (default 1) calls to
-`path` fail, then calls succeed again. Modes: `error` (HTTP 200 with a BDApps `statusCode`, default
-`E1601`), `http` (answer `httpStatus`, default 503), `timeout` (never answer; the socket is dropped
-after `delayMs`, default 30s). The failed call is still recorded. **The queue is global per path and
-tests run in parallel**, so a test that scripts failures must be the only user of that path in the
-whole run: keep all phases in one test and `test.skip` the phone project (see `bdapps-health.spec.ts`,
-`bdapps-fake.spec.ts`).
+**Scripted failures** (`failNext(path, { match, mode, ... , times })`): the next `times` (default 1) calls to
+`path` that satisfy `match` fail, then calls succeed again. Modes: `error` (HTTP 200 with a BDApps
+`statusCode`, default `E1601`), `http` (answer `httpStatus`, default 503), `timeout` (never answer; the
+socket is dropped after `delayMs`, default 30s). The failed call is still recorded. The control API
+answers 400 for a missing/empty `match` or a bad mode field.
+
+`match` is **required** and scopes the failure to a call, so parallel tests (and the desktop and phone
+projects) can script the same path without stealing each other's failure: `{ subscriberId }` (masked id
+or phone, matched against `body.subscriberId`), `{ destinationAddress }` (against `body.destinationAddress`
+or any `body.destinationAddresses`), `{ phone }` (either, after normalisation); all given fields must match.
+`{ any: true }` matches every call to the path and is **exclusive**: only for a path nobody else uses,
+i.e. GET `/health`, which carries no subscriber. Those tests run on the desktop project only
+(`bdapps-health.spec.ts`). Typed webhook bodies: `SubscriptionNotifyPayload`, `SmsReceivePayload`,
+`SmsReportPayload`, `UssdReceivePayload` in `support/fake-bdapps.ts`.
 
 **Health**: the fake answers `GET /health` (200, `{status:'ok'}`). The apps' env sets
 `BDAPPS_SIMULATOR_UI_URL` to it, which is the only URL `/api/health/bdapps` fetches (up for any

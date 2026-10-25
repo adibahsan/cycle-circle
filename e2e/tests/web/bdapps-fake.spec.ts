@@ -36,7 +36,7 @@ test.describe('fake BDApps: merchant calls', () => {
     })
     expect(await fakeBdapps.subscriber(phone)).toMatchObject({ status: 'UNREGISTERED' })
     expect((await (await page.request.get('/api/auth/status')).json()).user).toMatchObject({ subscriptionStatus: 'FREE' })
-    expect(translogFor(user.id).some((l) => l.data.cause === 'unsubscribe')).toBe(true)
+    await expect.poll(() => translogFor(user.id).some((l) => l.data.cause === 'unsubscribe')).toBe(true)
   })
 
   // The app's own SMS-send and CaaS-balance paths (login OTP to an existing subscriber, the
@@ -50,7 +50,7 @@ test.describe('fake BDApps: merchant calls', () => {
 
     const sms = await merchant(fake, '/sms/send', { message: 'hello', destinationAddresses: [maskedId] })
     expect(sms.json).toMatchObject({ statusCode: 'S1000' })
-    const bal = await merchant(fake, '/caas/get/balance', { subscriberId: maskedId, paymentInstrumentName: 'Mobile Account', currency: 'BDT' })
+    const bal = await merchant(fake, '/caas/get/balance', { subscriberId: maskedId, paymentInstrumentName: 'MobileAccount', currency: 'BDT' })
     expect(bal.json).toMatchObject({ statusCode: 'S1000', chargeableBalance: '1000' })
 
     const mine = (await fakeBdapps.calls({ sinceSeq: since })).filter((c) => JSON.stringify(c.body).includes(maskedId))
@@ -60,31 +60,65 @@ test.describe('fake BDApps: merchant calls', () => {
 })
 
 test.describe('fake BDApps: scripted failures', () => {
-  // Failure queues are global per path and tests run in parallel, so this is ONE test and
-  // the only user of '/caas/direct/debit' (desktop project only).
-  test('the next N calls fail with a status code, an HTTP status or a timeout, then calls succeed', async ({ newUser, fakeBdapps }, testInfo) => {
-    test.skip(testInfo.project.name !== 'web-desktop', 'shares the failure queue for this path; one project only')
+  // A failure is scoped to the subscriber it names, so tests may script the same path in parallel.
+  test('the next N calls for a subscriber fail with a status code, an HTTP status or a timeout, then calls succeed', async ({ newUser, fakeBdapps }) => {
     const { phone } = await newUser()
     const addr = (await fakeBdapps.subscriber(phone))!.maskedId
     const path = '/caas/direct/debit'
+    const since = (await fakeBdapps.calls()).at(-1)?.seq ?? 0
     const ask = () => merchant(fakeBdapps.baseUrl, path, { subscriberId: addr, amount: '5', externalTrxId: `t-${Date.now()}` })
 
-    await fakeBdapps.failNext(path, { mode: 'error', statusCode: 'E1601', times: 2 })
+    await fakeBdapps.failNext(path, { match: { subscriberId: addr }, mode: 'error', statusCode: 'E1601', times: 2 })
     expect((await ask()).json).toMatchObject({ statusCode: 'E1601' })
     expect((await ask()).json).toMatchObject({ statusCode: 'E1601' })
     expect((await ask()).json).toMatchObject({ statusCode: 'S1000' })
 
-    await fakeBdapps.failNext(path, { mode: 'http', httpStatus: 502, times: 1 })
+    await fakeBdapps.failNext(path, { match: { subscriberId: addr }, mode: 'http', httpStatus: 502, times: 1 })
     expect((await ask()).status).toBe(502)
     expect((await ask()).status).toBe(200)
 
-    await fakeBdapps.failNext(path, { mode: 'timeout', delayMs: 100, times: 1 })
+    await fakeBdapps.failNext(path, { match: { subscriberId: addr }, mode: 'timeout', delayMs: 100, times: 1 })
     await expect(ask()).rejects.toThrow()
     expect((await ask()).json).toMatchObject({ statusCode: 'S1000' })
 
     // Scripted failures are recorded like any call.
-    const failed = (await fakeBdapps.calls({ path })).filter((c) => c.httpStatus !== 200 || c.response.statusCode === 'E1601')
+    const failed = (await fakeBdapps.calls({ path, sinceSeq: since })).filter(
+      (c) => c.body.subscriberId === addr && (c.httpStatus !== 200 || c.response.statusCode === 'E1601'),
+    )
     expect(failed).toHaveLength(4)
+  })
+
+  test("two subscribers' failures on the same path do not steal each other's", async ({ newUser, fakeBdapps }) => {
+    const [a, b] = [await newUser(), await newUser()]
+    const addrA = (await fakeBdapps.subscriber(a.phone))!.maskedId
+    const addrB = (await fakeBdapps.subscriber(b.phone))!.maskedId
+    const path = '/caas/direct/debit'
+    const ask = (addr: string) => merchant(fakeBdapps.baseUrl, path, { subscriberId: addr, amount: '5', externalTrxId: `t-${Date.now()}-${Math.random()}` })
+
+    await fakeBdapps.failNext(path, { match: { subscriberId: addrA }, mode: 'error', statusCode: 'E1601' })
+    await fakeBdapps.failNext(path, { match: { subscriberId: addrB }, mode: 'error', statusCode: 'E1602' })
+
+    // B calls first: gets its own failure, not A's.
+    expect((await ask(addrB)).json).toMatchObject({ statusCode: 'E1602' })
+    expect((await ask(addrA)).json).toMatchObject({ statusCode: 'E1601' })
+    // Both consumed.
+    expect((await ask(addrA)).json).toMatchObject({ statusCode: 'S1000' })
+    expect((await ask(addrB)).json).toMatchObject({ statusCode: 'S1000' })
+
+    // A failure for A leaves a call from B untouched.
+    await fakeBdapps.failNext(path, { match: { subscriberId: addrA }, mode: 'error', statusCode: 'E1601' })
+    expect((await ask(addrB)).json).toMatchObject({ statusCode: 'S1000' })
+    expect((await ask(addrA)).json).toMatchObject({ statusCode: 'E1601' })
+  })
+
+  test('the control API rejects a failure without a match or with missing mode fields', async ({ fakeBdapps }) => {
+    const post = (body: unknown) =>
+      fetch(new URL('/_control/failures', fakeBdapps.baseUrl), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+    expect((await post({ path: '/sms/send', mode: 'error' })).status).toBe(400)
+    expect((await post({ path: '/sms/send', mode: 'error', match: {} })).status).toBe(400)
+    expect((await post({ path: '/sms/send', mode: 'http', httpStatus: 'nope', match: { subscriberId: 'tel:x' } })).status).toBe(400)
+    expect((await post({ path: '/sms/send', mode: 'timeout', delayMs: -1, match: { subscriberId: 'tel:x' } })).status).toBe(400)
+    expect((await post({ path: '/sms/send', mode: 'error', times: 0, match: { subscriberId: 'tel:x' } })).status).toBe(400)
   })
 })
 

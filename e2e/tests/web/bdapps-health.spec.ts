@@ -19,7 +19,7 @@ test.describe('BDApps health endpoint', () => {
     expect(await up.json()).toMatchObject({ status: 'ok' })
 
     // A BDApps status code, for the next 2 calls only.
-    await fakeBdapps.failNext('/health', { mode: 'http', httpStatus: 503, times: 2 })
+    await fakeBdapps.failNext('/health', { match: { any: true }, mode: 'http', httpStatus: 503, times: 2 })
     for (let i = 0; i < 2; i++) {
       const down = await health()
       expect(down.status()).toBe(503)
@@ -28,7 +28,7 @@ test.describe('BDApps health endpoint', () => {
     expect((await health()).status()).toBe(200)
 
     // A timeout (the fake drops the socket), for the next call only.
-    await fakeBdapps.failNext('/health', { mode: 'timeout', delayMs: 100, times: 1 })
+    await fakeBdapps.failNext('/health', { match: { any: true }, mode: 'timeout', delayMs: 100, times: 1 })
     const timedOut = await health()
     expect(timedOut.status()).toBe(503)
     const body = await timedOut.json()

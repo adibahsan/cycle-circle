@@ -15,6 +15,8 @@ import {
   type FakeState,
   type ScriptedFailure,
   createState,
+  failureMatches,
+  validateFailure,
   normalizePhone,
   subscriberView,
 } from './state.ts'
@@ -65,8 +67,11 @@ export function createFakeBdapps(config: FakeConfig): FakeBdapps {
     return { status: res.status, body: json }
   }
 
-  function takeFailure(path: string): ScriptedFailure | undefined {
-    const i = state.failures.findIndex((f) => f.path === path)
+  /** Pending timeout-mode destroy timers, cleared on close so the process can exit. */
+  const timers = new Set<NodeJS.Timeout>()
+
+  function takeFailure(path: string, body: Record<string, unknown>): ScriptedFailure | undefined {
+    const i = state.failures.findIndex((f) => f.path === path && failureMatches(state, f.match, body))
     if (i === -1) return undefined
     const f = state.failures[i]
     f.times -= 1
@@ -79,12 +84,16 @@ export function createFakeBdapps(config: FakeConfig): FakeBdapps {
     const call = { seq: state.calls.length + 1, at: new Date().toISOString(), path, body, httpStatus: 200, response: {} as Record<string, unknown> }
     state.calls.push(call)
 
-    const failure = takeFailure(path)
+    const failure = takeFailure(path, body)
     if (failure?.mode === 'timeout') {
       call.httpStatus = 0
       call.response = { timeout: true }
       // Never answer; the app's fetch gives up (or the socket is destroyed after the delay).
-      setTimeout(() => req.socket.destroy(), failure.delayMs ?? 30_000)
+      const timer = setTimeout(() => {
+        timers.delete(timer)
+        req.socket.destroy()
+      }, failure.delayMs ?? 30_000)
+      timers.add(timer)
       return
     }
     if (failure?.mode === 'http') {
@@ -151,7 +160,8 @@ export function createFakeBdapps(config: FakeConfig): FakeBdapps {
     }
     if (path === '/_control/failures' && method === 'POST') {
       const f = (await readJson(req)) as unknown as ScriptedFailure
-      if (!f.path || !['timeout', 'http', 'error'].includes(f.mode)) return send(res, 400, { error: 'need path and mode' })
+      const invalid = validateFailure(f as unknown as Record<string, unknown>)
+      if (invalid) return send(res, 400, { error: invalid })
       state.failures.push({ ...f, times: f.times ?? 1 })
       return send(res, 200, { ok: true, queued: state.failures.length })
     }
@@ -175,6 +185,8 @@ export function createFakeBdapps(config: FakeConfig): FakeBdapps {
     state,
     listen: (port) => new Promise((resolve) => server.listen(port, () => resolve())),
     close: () => new Promise((resolve) => {
+      for (const t of timers) clearTimeout(t)
+      timers.clear()
       server.closeAllConnections()
       server.close(() => resolve())
     }),
