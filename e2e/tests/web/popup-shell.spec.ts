@@ -46,7 +46,7 @@ test.describe('pop-up shell contract (W61)', () => {
     await ensureUserProfile(phone, { name: 'More Sheet User' })
     await suppressAutoPrompts(page)
     await page.goto('/dashboard')
-    const more = page.locator('nav[data-bottom-nav] button[aria-haspopup="dialog"]').first()
+    const more = page.locator('nav[data-bottom-nav]').getByRole('button', { name: 'More' })
     await openDialog(page, more)
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toHaveCount(0)

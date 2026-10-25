@@ -6,6 +6,8 @@ import { test, expect } from '../../support/fixtures.ts'
 import { db, ensureUserProfile, setPeriodLogs } from '../../support/db.ts'
 import { createEmailTrialUser } from '../../support/users.ts'
 
+const lateAlert = (page: import('@playwright/test').Page) => page.getByRole('dialog', { name: /Your period is running late/ })
+
 const visibleDialogs = (page: import('@playwright/test').Page) =>
   page.locator('[role="dialog"]:visible, [role="alertdialog"]:visible')
 
@@ -24,10 +26,10 @@ test.describe('auto-prompt arbiter (W18)', () => {
     ])
 
     await page.goto('/dashboard')
-    await expect(page.locator('[aria-labelledby="late-alert-title"]')).toBeVisible({ timeout: 20_000 })
-    await page.waitForTimeout(1500)
+    await expect(lateAlert(page)).toBeVisible({ timeout: 20_000 })
+    await page.waitForLoadState('networkidle')
     await expect(visibleDialogs(page)).toHaveCount(1)
-    await expect(page.locator('[aria-labelledby="late-alert-title"]')).toBeVisible()
+    await expect(lateAlert(page)).toBeVisible()
     await expect(page.getByRole('heading', { name: /How are you feeling|আজ কেমন/i })).toHaveCount(0)
   })
 
@@ -44,10 +46,10 @@ test.describe('auto-prompt arbiter (W18)', () => {
     ])
 
     await page.goto('/dashboard')
-    await expect(page.locator('[aria-labelledby="late-alert-title"]')).toBeVisible({ timeout: 20_000 })
+    await expect(lateAlert(page)).toBeVisible({ timeout: 20_000 })
     await page.keyboard.press('Escape')
     await expect(visibleDialogs(page)).toHaveCount(0)
-    await page.waitForTimeout(1500)
+    await page.waitForLoadState('networkidle')
     await expect(visibleDialogs(page)).toHaveCount(0)
   })
 
@@ -60,9 +62,10 @@ test.describe('auto-prompt arbiter (W18)', () => {
         data: { emailTrialExpiresAt: new Date(Date.now() - 60_000), onboardingTourCompletedAt: new Date() },
       })
       await page.goto('/dashboard')
-      const lock = page.locator('[aria-labelledby="trial-expired-title"]')
+      const lock = page.getByRole('dialog', { name: /Your 24-hour trial has ended/ })
       await expect(lock).toBeVisible({ timeout: 20_000 })
-      await page.waitForTimeout(1500)
+      // Settle: the arbiter has decided by the time the page is idle; only the lock may be open.
+      await page.waitForLoadState('networkidle')
       await expect(visibleDialogs(page)).toHaveCount(1)
       await expect(lock).toBeVisible()
     } finally {

@@ -184,7 +184,7 @@ test.describe('symptom logging flows', () => {
     await page.goto('/dashboard')
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 
-    const openBtn = page.locator('button[aria-haspopup="dialog"]', { hasText: 'Log Symptoms' }).first()
+    const openBtn = page.getByRole('button', { name: 'Log Symptoms' }).first()
     await expect(openBtn).toBeVisible()
     await openBtn.click()
 
@@ -264,7 +264,7 @@ test.describe('symptom logging flows', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 
     // Wait for another dashboard element so absence is not just "not rendered yet"
-    await expect(page.locator('button[aria-haspopup="dialog"]', { hasText: 'Log Symptoms' }).first()).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Log Symptoms' }).first()).toBeVisible()
     await expect(page.getByTestId('logging-nudge')).toHaveCount(0)
   })
 })

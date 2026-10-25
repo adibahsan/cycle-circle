@@ -2,41 +2,9 @@ import { randomBytes } from 'node:crypto'
 import type { Locator, Page } from '@playwright/test'
 import { test, expect } from '../../support/fixtures'
 import { createLoggedInAdmin } from '../../support/admin'
+import { chartCard, openChartTable, refreshData, type AdminBrowserOpts } from '../../support/admin-charts'
 import { e2eDb } from '../../support/db'
 import { toDbPhone } from '../../support/users'
-
-type AdminBrowserOpts = {
-  viewport: { width: number; height: number } | null
-  userAgent?: string
-  isMobile?: boolean
-  hasTouch?: boolean
-  deviceScaleFactor?: number
-  locale?: string
-  timezoneId?: string
-}
-
-async function refreshEngagement(page: Page): Promise<void> {
-  const btn = page.getByRole('button', { name: 'Refresh data' })
-  await btn.click()
-  await expect(btn).toBeEnabled({ timeout: 15_000 })
-}
-
-/** ChartPanel Card root (`rounded-2xl`). Empty panels omit the table summary. */
-function chartCard(page: Page, title: string) {
-  return page
-    .getByRole('heading', { name: title, exact: true })
-    .locator('xpath=ancestor::div[contains(@class,"rounded-2xl")][1]')
-}
-
-async function openChartTable(page: Page, title: string) {
-  const card = chartCard(page, title)
-  const table = card.getByRole('table', { name: title })
-  if (!(await table.isVisible().catch(() => false))) {
-    await card.locator('summary', { hasText: 'View data as table' }).click()
-  }
-  await expect(table).toBeVisible({ timeout: 10_000 })
-  return table
-}
 
 /** UTC key matching getDailyActiveLoggers / getSymptomLoggingRate (bug #146). */
 function utcDayKey(d: Date): string {
@@ -127,7 +95,7 @@ test.describe('Admin engagement', () => {
         await expect
           .poll(
             async () => {
-              await refreshEngagement(page)
+              await refreshData(page)
               const table = await openChartTable(page, 'Daily Active Loggers')
               if ((await table.getByRole('row', { name: new RegExp(`^${outsideUtc}\\b`) }).count()) !== 0) {
                 return -2
@@ -149,7 +117,7 @@ test.describe('Admin engagement', () => {
         await expect
           .poll(
             async () => {
-              await refreshEngagement(page)
+              await refreshData(page)
               const rateTable = await openChartTable(page, 'Symptom Logging Rate')
               if ((await rateTable.getByRole('row', { name: new RegExp(`^${outsideUtc}\\b`) }).count()) !== 0) {
                 return -2
@@ -230,7 +198,7 @@ test.describe('Admin engagement', () => {
         await expect
           .poll(
             async () => {
-              await refreshEngagement(page)
+              await refreshData(page)
               try {
                 const table = await openChartTable(page, 'Logging Streak Distribution')
                 before = await readTableRowNumber(table, '3-6')
@@ -266,7 +234,7 @@ test.describe('Admin engagement', () => {
         await expect
           .poll(
             async () => {
-              await refreshEngagement(page)
+              await refreshData(page)
               const table = await openChartTable(page, 'Logging Streak Distribution')
               return readTableRowNumber(table, '3-6')
             },
@@ -341,7 +309,7 @@ test.describe('Admin engagement', () => {
         await expect
           .poll(
             async () => {
-              await refreshEngagement(page)
+              await refreshData(page)
               const rateOverTime = await openChartTable(page, 'Logging Rate Over Time')
               return rateOverTime.getByRole('row').count()
             },

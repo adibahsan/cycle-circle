@@ -338,10 +338,9 @@ test.describe('Phase pattern card', () => {
     await expect(card).toBeVisible()
     await expect(card.getByRole('heading', { name: 'Your phase pattern' })).toBeVisible()
 
-    const empty = page.getByTestId('phase-pattern-empty')
-    await expect(empty).toBeVisible()
-    await expect(empty).toContainText('Log your symptoms this cycle to see your pattern next time.')
-    await expect(empty.getByRole('link', { name: 'Log symptoms' })).toBeVisible()
-    await expect(page.getByTestId('phase-pattern-list')).toHaveCount(0)
+    // The empty-state box has no role or accessible name; scope by the card region and its text/link.
+    await expect(card.getByText('Log your symptoms this cycle to see your pattern next time.')).toBeVisible()
+    await expect(card.getByRole('link', { name: 'Log symptoms' })).toBeVisible()
+    await expect(card.getByRole('list')).toHaveCount(0)
   })
 })

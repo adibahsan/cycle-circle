@@ -155,7 +155,7 @@ for (const c of POPUPS) {
       await expect(trigger).toBeVisible({ timeout: 15_000 })
       await trigger.click()
       if (!c.inline) await expect(page.getByRole('dialog').first()).toBeVisible()
-      await page.waitForTimeout(400)
+      await page.waitForLoadState('networkidle').catch(() => {}) // let lazy content / transitions settle
       await expectNoEnglish(page, `pop-up ${c.id}`)
     })
   })

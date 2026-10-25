@@ -2,48 +2,12 @@ import { randomBytes } from 'node:crypto'
 import type { Page } from '@playwright/test'
 import { test, expect } from '../../support/fixtures'
 import { createLoggedInAdmin } from '../../support/admin'
+import { chartCard, openChartTable, refreshData, type AdminBrowserOpts } from '../../support/admin-charts'
 import { e2eDb } from '../../support/db'
 import { toDbPhone } from '../../support/users'
 import type { BangladeshDays } from '../../support/bangladesh-day'
 
 const DAY_MS = 24 * 60 * 60 * 1000
-
-type AdminBrowserOpts = {
-  viewport: { width: number; height: number } | null
-  userAgent?: string
-  isMobile?: boolean
-  hasTouch?: boolean
-  deviceScaleFactor?: number
-  locale?: string
-  timezoneId?: string
-}
-
-/** Bust unstable_cache via RefetchButton, then wait for the transition to finish. */
-async function refreshAnalytics(page: Page): Promise<void> {
-  const btn = page.getByRole('button', { name: 'Refresh data' })
-  await btn.click()
-  await expect(btn).toBeEnabled({ timeout: 15_000 })
-}
-
-/**
- * ChartPanel Card root (`rounded-2xl`). Empty panels omit the data-table summary,
- * so do not require it here — openChartTable adds that check when needed.
- */
-function chartCard(page: Page, title: string) {
-  return page
-    .getByRole('heading', { name: title, exact: true })
-    .locator('xpath=ancestor::div[contains(@class,"rounded-2xl")][1]')
-}
-
-async function openChartTable(page: Page, title: string) {
-  const card = chartCard(page, title)
-  const table = card.getByRole('table', { name: title })
-  if (!(await table.isVisible().catch(() => false))) {
-    await card.locator('summary', { hasText: 'View data as table' }).click()
-  }
-  await expect(table).toBeVisible({ timeout: 10_000 })
-  return table
-}
 
 /** Phase top-symptoms `<dl>` — scoped to the section that owns the phase heading. */
 function phaseSymptomsDl(page: Page) {
@@ -163,7 +127,7 @@ test.describe('Admin analytics', () => {
         await expect
           .poll(
             async () => {
-              await refreshAnalytics(page)
+              await refreshData(page)
               const text = await phaseSymptomsDl(page).innerText()
               return text.includes(`${nearId} (${copies})`) && !text.includes(outsideId)
             },
@@ -196,7 +160,7 @@ test.describe('Admin analytics', () => {
         await expect
           .poll(
             async () => {
-              await refreshAnalytics(page)
+              await refreshData(page)
               const text = await phaseSymptomsDl(page).innerText()
               return text.includes(`${outsideId} (${copies})`)
             },
@@ -209,7 +173,7 @@ test.describe('Admin analytics', () => {
           .getByRole('button', { name: '30d' })
           .click()
         await expect(page).toHaveURL(/phase=30d/)
-        await refreshAnalytics(page)
+        await refreshData(page)
         const dl30 = phaseSymptomsDl(page)
         await expect(dl30).toContainText(`${nearId} (${copies})`)
         await expect(dl30).not.toContainText(outsideId)
@@ -292,7 +256,7 @@ test.describe('Admin analytics', () => {
               async () => {
                 await upsertTier(latestSnapDate, 'AVERAGE', avgMae, avgSamples)
                 await upsertTier(latestSnapDate, 'ARIMA', arimaMae, arimaSamples)
-                await refreshAnalytics(page)
+                await refreshData(page)
                 const avgPill = page
                   .locator('div')
                   .filter({ hasText: 'AVERAGE' })
@@ -420,7 +384,7 @@ test.describe('Admin analytics', () => {
         await expect
           .poll(
             async () => {
-              await refreshAnalytics(page)
+              await refreshData(page)
               const table = await openChartTable(page, 'User Activity Trend')
               const insideRow = table.getByRole('row', { name: new RegExp(`^${insideUtc}\\b`) })
               if ((await insideRow.count()) === 0) return -1
@@ -506,7 +470,7 @@ test.describe('Admin analytics', () => {
         await expect
           .poll(
             async () => {
-              await refreshAnalytics(page)
+              await refreshData(page)
               const table = await openChartTable(page, 'Cycle Length Distribution')
               return table.getByRole('row', { name: /^33\b/ }).count()
             },
@@ -552,7 +516,7 @@ test.describe('Admin analytics', () => {
         await expect
           .poll(
             async () => {
-              await refreshAnalytics(page)
+              await refreshData(page)
               const table = await openChartTable(page, 'Symptoms by Category')
               const row = table.getByRole('row', { name: /PHYSICAL/i })
               if ((await row.count()) === 0) return -1
@@ -606,7 +570,7 @@ test.describe('Admin analytics', () => {
         await expect
           .poll(
             async () => {
-              await refreshAnalytics(page)
+              await refreshData(page)
               const table = await openChartTable(page, 'Prediction Accuracy by Tier')
               return table.getByRole('row', { name: /^ARIMA\b/ }).count()
             },
@@ -703,6 +667,10 @@ test.describe('Admin analytics', () => {
       browser,
       { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
       async (page) => {
+        // The analytics page's Refresh only busts the analytics cache tag, not the feedback panels'
+        // (cached 5 min, and warmed empty by the check above): bust it from /feedback, then come back.
+        await page.goto('/feedback')
+        await refreshData(page)
         await page.goto('/analytics?fb=7d')
         const fbRange = page
           .locator('section')
@@ -712,7 +680,7 @@ test.describe('Admin analytics', () => {
         await expect
           .poll(
             async () => {
-              await refreshAnalytics(page)
+              await refreshData(page)
               const table = await openChartTable(page, 'Feedback Volume')
               // At least one day row with count ≥ 1 (UTC-keyed).
               const rows = table.getByRole('row')

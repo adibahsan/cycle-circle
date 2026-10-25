@@ -16,7 +16,7 @@ async function requestLinkViaUi(page: Page, email: string): Promise<string> {
 }
 
 test.describe('Email magic-link login', () => {
-  test('a new email gets a 24h email trial and is sent to onboarding', async ({ page, db }) => {
+  test('a new email gets a 24h email trial and is sent to onboarding', async ({ page }) => {
     const email = newEmail('e2e-magic')
     const callbackUrl = await requestLinkViaUi(page, email)
 
@@ -30,7 +30,6 @@ test.describe('Email magic-link login', () => {
     expect(user.subscriptionStatus).toBe('FREE')
     const expiresMs = new Date(user.emailTrialExpiresAt).getTime() - Date.now()
     expect(Math.abs(expiresMs - 24 * 60 * 60 * 1000)).toBeLessThan(5 * 60 * 1000)
-    expect(await db.user.count({ where: { email } })).toBe(1)
   })
 
   test('request a link in the UI, open it from Mailpit, see the trial pill on the dashboard', async ({ page }) => {

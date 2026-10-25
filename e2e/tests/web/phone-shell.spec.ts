@@ -41,20 +41,20 @@ test.describe('phone shell (W60)', () => {
     await expect(nav.locator('a, button')).toHaveCount(5)
     await expect(nav.locator('[aria-current="page"]')).toHaveCount(1)
 
-    const moreBtn = nav.locator('button[aria-haspopup="dialog"]').first()
+    const moreBtn = nav.getByRole('button', { name: 'More' })
     await expect(moreBtn).toBeVisible()
     await moreBtn.click()
     const sheet = page.getByRole('dialog')
     await expect(sheet).toBeVisible()
-    for (const href of ['/content', '/profiles', '/subscription', '/feedback', '/settings']) {
-      await expect(sheet.locator(`a[href="${href}"]`)).toBeVisible()
+    for (const [name, href] of [['Learn', '/content'], ['Profiles', '/profiles'], ['Subscription', '/subscription'], ['Feedback', '/feedback'], ['Settings', '/settings']]) {
+      await expect(sheet.getByRole('link', { name })).toHaveAttribute('href', href)
     }
     await page.keyboard.press('Escape')
     await expect(sheet).toHaveCount(0)
     await expect(moreBtn).toBeFocused()
 
     await moreBtn.click()
-    await sheet.locator('a[href="/settings"]').click()
+    await sheet.getByRole('link', { name: 'Settings' }).click()
     await expect(page).toHaveURL(/\/settings/)
     await expect(page.getByRole('dialog')).toHaveCount(0)
   })

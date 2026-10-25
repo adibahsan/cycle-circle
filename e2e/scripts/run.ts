@@ -73,6 +73,29 @@ async function prepareDatabase() {
   await new FakeBdappsClient().reset().catch(() => {})
 }
 
+/**
+ * Locally, start Mailpit from the dev compose file when it is not reachable and wait for it.
+ * Skipped in CI (a service container provides it) and when E2E_MAILPIT_URL points elsewhere.
+ */
+async function ensureMailpit() {
+  try {
+    await assertMailpit()
+    return
+  } catch (e) {
+    if (process.env.CI || process.env.E2E_MAILPIT_URL) throw e
+  }
+  await run('start mailpit', 'docker', ['compose', '-f', path.join(REPO_DIR, 'ops/docker/compose.yml'), 'up', '-d', 'mailpit'], REPO_DIR)
+  for (let i = 0; i < 30; i++) {
+    try {
+      await assertMailpit()
+      return
+    } catch {
+      await new Promise((r) => setTimeout(r, 1_000))
+    }
+  }
+  await assertMailpit() // throws the actionable "not reachable" error
+}
+
 async function main() {
   const args = process.argv.slice(2)
   if (args[0] === '--') args.shift()
@@ -83,7 +106,7 @@ async function main() {
   assertE2eDatabase(ENV.db.DATABASE_URL)
   await build()
   await prepareDatabase()
-  await assertMailpit()
+  await ensureMailpit()
   await run('playwright', 'pnpm', ['exec', 'playwright', 'test', ...args], E2E_DIR)
 }
 

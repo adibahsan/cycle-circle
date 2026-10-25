@@ -23,7 +23,7 @@ test.describe('dashboard pop-ups and celebration (W39)', () => {
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toHaveCount(0)
 
-    const quick = page.locator('button[aria-haspopup="dialog"]', { hasText: /Log Symptoms/i }).first()
+    const quick = page.getByRole('button', { name: /Log Symptoms/i }).first()
     await quick.click()
     await expect(page.getByRole('dialog')).toBeVisible()
     await page.keyboard.press('Escape')

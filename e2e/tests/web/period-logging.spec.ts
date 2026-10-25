@@ -62,7 +62,7 @@ test.describe('Period logging', () => {
     await expect(page.getByRole('dialog')).toBeHidden()
 
     await page.goto('/dashboard')
-    const lastPeriod = page.getByTestId('last-period')
+    const lastPeriod = page.getByRole('region', { name: 'Last period', exact: true })
     await expect(lastPeriod).toContainText(shortDate(days.daysAgo(4)))
     await expect(lastPeriod).toContainText('Lasted 5 days')
     await expect(lastPeriod).toContainText('Heavy flow')
@@ -190,6 +190,7 @@ test.describe('Period logging', () => {
     try {
       const page = await context.newPage()
       await suppressAutoPrompts(page)
+      // Story 38 needs the BROWSER clock around Bangladesh midnight; only a server clock is out of scope.
       await page.clock.setFixedTime(new Date('2026-10-26T01:30:00+06:00'))
       await setupProfile(page, { name: 'Tz Test User' })
       await page.goto('/dashboard')

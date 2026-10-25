@@ -13,7 +13,8 @@ test.describe('Insights states and charts', () => {
     await page.goto('/insights')
 
     await expect(page.getByRole('heading', { level: 1, name: 'Insights' })).toBeVisible()
-    const emptyState = page.getByTestId('insights-empty')
+    const emptyState = // The empty state is a role=status with no accessible name; match it by role + text.
+    page.getByRole('status').filter({ hasText: 'Not enough data yet' })
     await expect(emptyState).toBeVisible()
     await expect(emptyState.getByText('Not enough data yet')).toBeVisible()
 

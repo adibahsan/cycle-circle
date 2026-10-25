@@ -11,6 +11,8 @@ The old look-only suite in `apps/web/e2e/` (dev server, dev-login) is separate a
 ## Run
 
 Needs the local Compose stack (`pnpm docker:dev`): Postgres on :5431 and Mailpit on :1025/:8025.
+If Mailpit is not reachable, `pnpm e2e` starts it (`docker compose -f ops/docker/compose.yml up -d mailpit`) and
+waits up to 30 s. It does not do this in CI (a service container provides it) or when `E2E_MAILPIT_URL` is set.
 Redis is not used (see Slots).
 
 ```bash
@@ -284,9 +286,19 @@ app: `translogFor(userId, { app: 'admin' })`, or merge both with `{ apps: ['web'
     ...
   })
   ```
+- `tests/web/personas.spec.ts` opens each seeded persona's main pages from its saved state and asserts its
+  own content; it never writes, so no check of the personas' rows is needed.
 - Don't reset the fake BDApps or the DB from a test; other tests share them.
 - Global setup reuses a persona's saved session while the app still accepts it (a second OTP
   within 60 s would hit the resend cooldown). Tests must not log personas out.
 - `tests/web/harness.spec.ts` is the contract for the helpers; keep it green when changing them.
 - `pnpm --filter @vesta/e2e typecheck` and `lint` must pass (root `pnpm typecheck && pnpm lint` covers it).
 - `next build` rewrites `apps/*/next-env.d.ts`; don't commit that change (`git checkout apps/*/next-env.d.ts`).
+
+## Deliberate deviations
+
+- `apps/web/e2e/tests/symptoms-save.spec.ts` is left as is: that suite writes to `vesta_dev`, not `vesta_e2e`, so it is not part of this harness.
+- Pro gating for export and predictions is not covered: it is deferred by FR-GATE.
+- The #155 `test.fail` in `symptom-logging.spec.ts` applies only between 00:00 and 06:00 Bangladesh (UTC 18:00-24:00), by design: the bug shows only then.
+- `E2E_SKIP_RESET=1` is for local agent runs (Prisma refuses `migrate reset` for AI agents). CI always resets.
+- `page.clock` in the #115 test fakes the browser clock only; a server clock is out of scope.

@@ -13,6 +13,10 @@ import { PERSONAS, statePath, type PersonaName } from './support/personas.ts'
 import { AUTH_DIR, SECRETS, URLS } from './support/slot.ts'
 import { ipFor, loginWithOtp } from './support/users.ts'
 
+/** Same zone and locale the specs use (Bangladesh days, not device days: ADR 0007). */
+const TZ = 'Asia/Dhaka'
+const LOCALE = 'en-US'
+
 export default async function globalSetup() {
   await assertMailpit()
   fs.mkdirSync(AUTH_DIR, { recursive: true })
@@ -22,14 +26,14 @@ export default async function globalSetup() {
     for (const name of Object.keys(PERSONAS) as PersonaName[]) {
       const { phone } = PERSONAS[name]
       if (await stillLoggedIn(browser, statePath(name), URLS.web, '/api/auth/status')) continue
-      const context = await browser.newContext({ baseURL: URLS.web, extraHTTPHeaders: { 'x-real-ip': ipFor(phone) } })
+      const context = await browser.newContext({ baseURL: URLS.web, timezoneId: TZ, locale: LOCALE, extraHTTPHeaders: { 'x-real-ip': ipFor(phone) } })
       await loginWithOtp(context.request, phone, fake)
       await context.storageState({ path: statePath(name) })
       await context.close()
     }
 
     if (await stillLoggedIn(browser, statePath('admin'), URLS.admin, '/')) return
-    const admin = await browser.newContext({ baseURL: URLS.admin })
+    const admin = await browser.newContext({ baseURL: URLS.admin, timezoneId: TZ, locale: LOCALE })
     const res = await admin.request.post('/api/auth/login', { data: { email: SECRETS.adminEmail, password: SECRETS.adminPassword } })
     if (!res.ok()) throw new Error(`admin login failed (${res.status()}): ${await res.text()}`)
     await admin.storageState({ path: statePath('admin') })
@@ -42,7 +46,7 @@ export default async function globalSetup() {
 /** True if `file` exists and its session still opens `path` on `baseURL` without a redirect. */
 async function stillLoggedIn(browser: Browser, file: string, baseURL: string, path: string): Promise<boolean> {
   if (!fs.existsSync(file)) return false
-  const context = await browser.newContext({ baseURL, storageState: file })
+  const context = await browser.newContext({ baseURL, storageState: file, timezoneId: TZ, locale: LOCALE })
   try {
     const res = await context.request.get(path, { maxRedirects: 0 })
     return res.status() === 200

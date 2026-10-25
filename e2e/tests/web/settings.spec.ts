@@ -69,7 +69,7 @@ test.describe('Settings and Account', () => {
     const dbUser = await db.user.findFirstOrThrow({
       where: { phone: { contains: phone.slice(1) } },
     })
-    const optedOutEmail = `opted-out-${Date.now()}@example.com`
+    const optedOutEmail = `opted-out-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
     await db.user.update({
       where: { id: dbUser.id },
       data: { email: optedOutEmail },
@@ -95,7 +95,7 @@ test.describe('Settings and Account', () => {
 
     // Seed a due CONTROL throwaway user (not opted out) with the exact same due data
     const controlPhone = newPhone()
-    const controlEmail = `control-${Date.now()}@example.com`
+    const controlEmail = `control-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
     const controlUser = await db.user.create({
       data: {
         phone: `+880${controlPhone.slice(1)}`,
@@ -138,6 +138,13 @@ test.describe('Settings and Account', () => {
     await expect(completionToggle).toBeChecked()
 
     // Opt out of all notifications and reminders
+    // Server-action saves: the completion opt-out (immediate) and the notification prefs
+    // (debounced 600 ms, so a slow click can send a partial set first). Track the bodies.
+    const saves: { body: string; ok: boolean }[] = []
+    page.on('response', (res) => {
+      const req = res.request()
+      if (req.method() === 'POST' && req.headers()['next-action']) saves.push({ body: req.postData() ?? '', ok: res.ok() })
+    })
     await periodToggle.click()
     await fertileToggle.click()
     await loggingToggle.click()
@@ -148,31 +155,19 @@ test.describe('Settings and Account', () => {
     await expect(loggingToggle).not.toBeChecked()
     await expect(completionToggle).not.toBeChecked()
 
-    // Wait for debounced save (600ms) to persist to the database before reloading
-    await expect.poll(async () => {
-      const pref = await db.notificationPreference.findFirst({
-        where: { profileId: optedOutProfile.id },
-      })
-      const user = await db.user.findUnique({ where: { id: dbUser.id } })
-      return {
-        periodAlert: pref?.periodAlert,
-        fertileWindow: pref?.fertileWindow,
-        loggingReminder: pref?.loggingReminder,
-        optOut: user?.profileReminderOptOut,
-      }
-    }).toEqual({
-      periodAlert: false,
-      fertileWindow: false,
-      loggingReminder: false,
-      optOut: true,
-    })
+    // Wait until the final save (all three prefs off) and the completion opt-out have been answered.
+    const allOff = (b: string) => /"periodAlert":false/.test(b) && /"fertileWindow":false/.test(b) && /"loggingReminder":false/.test(b)
+    await expect.poll(() => saves.some((x) => x.ok && allOff(x.body))).toBe(true)
+    await expect.poll(() => saves.some((x) => x.ok && !allOff(x.body) && !/periodAlert/.test(x.body))).toBe(true)
 
-    // Reload and verify choices survived
-    await page.reload()
-    await expect(page.getByRole('switch', { name: 'Period Alerts' })).not.toBeChecked()
-    await expect(page.getByRole('switch', { name: 'Fertile Window Alerts' })).not.toBeChecked()
-    await expect(page.getByRole('switch', { name: 'Logging Reminders' })).not.toBeChecked()
-    await expect(page.getByRole('switch', { name: 'Profile-completion reminders' })).not.toBeChecked()
+    // Reload and verify choices survived (retry the reload in case a save was still in flight)
+    await expect(async () => {
+      await page.reload()
+      await expect(page.getByRole('switch', { name: 'Period Alerts' })).not.toBeChecked({ timeout: 2_000 })
+      await expect(page.getByRole('switch', { name: 'Fertile Window Alerts' })).not.toBeChecked({ timeout: 2_000 })
+      await expect(page.getByRole('switch', { name: 'Logging Reminders' })).not.toBeChecked({ timeout: 2_000 })
+      await expect(page.getByRole('switch', { name: 'Profile-completion reminders' })).not.toBeChecked({ timeout: 2_000 })
+    }).toPass()
 
     // Invoke daily reminders cron with CRON_SECRET for the entire system
     const cronStartTime = new Date()
@@ -320,9 +315,11 @@ test.describe('Settings and Account', () => {
 
     const editBtn = page.getByRole('button', { name: new RegExp(`Edit Profile.*${initialProfileName}`, 'i') })
     await expect(editBtn).toBeVisible()
-    await page.waitForTimeout(500)
-    await editBtn.click()
-    await expect(page.getByRole('dialog')).toBeVisible()
+    // The click can land before hydration; retry until the dialog actually opens.
+    await expect(async () => {
+      await editBtn.click()
+      await expect(page.getByRole('dialog')).toBeVisible({ timeout: 2_000 })
+    }).toPass()
 
     const updatedName = `Renamed-${Date.now()}`
     await page.getByRole('dialog').getByLabel('Name').fill(updatedName)
