@@ -1,10 +1,11 @@
 import { test, expect } from '../../support/fixtures'
 
 /**
- * Happy-path health probes. BDApps up/down scripting lives in `bdapps-health.spec.ts`
- * (desktop-only, `{ any: true }` failure queue).
+ * Happy-path health probes (serial `cron` project). BDApps up/down scripting lives in
+ * `bdapps-health.spec.ts` (same project; `{ any: true }` failure queue).
  *
- * E2E runs without Redis: redis reports `skipped`, worker reports `ok: false`.
+ * E2E runs without Redis (`REDIS_URL=''` in support/slot.ts): redis reports `skipped`,
+ * worker reports `ok: false` / `redis not configured`.
  */
 test.describe('health endpoints', () => {
   test('db, mailpit and bdapps report up; redis is skipped without Redis', async ({ page }) => {

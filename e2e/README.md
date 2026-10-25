@@ -55,12 +55,12 @@ All slot-derived values (ports, URLs, DB URL, every env var the apps get, test s
 
 ```
 e2e/
-  playwright.config.ts   projects: web-*, admin-*, cross-app-* × desktop (1366×900) / phone (Pixel 7)
+  playwright.config.ts   projects: web-*/admin-*/cross-app-* × desktop/phone, then serial `cron`
   global-setup.ts        checks Mailpit; logs in personas + admin once, saves storage states
   scripts/run.ts         the `pnpm e2e` runner
   fake-bdapps/           the fake BDApps server (see below)
   support/               helpers (below)
-  tests/web/             project web-*       (baseURL = web)
+  tests/web/             project web-* + serial `cron` (baseURL = web)
   tests/admin/           project admin-*     (baseURL = admin)
   tests/cross-app/       project cross-app-* (baseURL = web; open admin with URLS.admin)
   COVERAGE.md            feature → spec → depth
@@ -68,6 +68,35 @@ e2e/
 
 Name specs after the feature (`tests/web/period-logging.spec.ts`). Every spec runs at desktop and
 phone width; use `test.skip(testInfo.project.name.endsWith('-phone'), 'why')` only with a reason.
+
+### Serial `cron` project (CI / full suite)
+
+Some web specs mutate **shared** slot state and must not run beside plan, user-admin, or
+broadcast tests:
+
+| Spec | Why serial |
+|---|---|
+| `cron-daily-reminders.spec.ts` | Even with `userId`, keep broadcast/reminder side-effects out of the parallel wave |
+| `cron-nightly-maintenance.spec.ts` | Purges every soft-deleted user past 30 days |
+| `cron-caas-check.spec.ts` | `getStatus` over every BDApps PRO subscriber (can flip plans) |
+| `webhooks-bdapps.spec.ts` | Shared fake + webhook recording; kept with the cron wave |
+| `health.spec.ts` / `bdapps-health.spec.ts` | `bdapps-health` scripts `/health` with `{ any: true }` |
+
+They live in Playwright project **`cron`**: desktop viewport only, `workers: 1`,
+`fullyParallel: false`, and `dependencies` on every `web-*` / `admin-*` / `cross-app-*`
+project so a bare `pnpm e2e` still runs everything and the serial group finishes **last**.
+`--project=web-desktop` (etc.) still works: those projects `testIgnore` the serial files.
+
+**Add a spec to the serial group:** append its basename to `CRON_SERIAL_SPECS` in
+`playwright.config.ts` (same regex used for `cron` `testMatch` and web `testIgnore`). Keep
+the file under `tests/web/`. Viewport-independent cron/health specs do not need a phone
+project twin.
+
+**Run only the serial group** (still waits on dependencies unless you pass `--no-deps`):
+
+```bash
+E2E_SLOT=13 E2E_SKIP_RESET=1 E2E_SKIP_BUILD=1 pnpm e2e -- --project=cron --workers=2
+```
 
 ## Helpers
 

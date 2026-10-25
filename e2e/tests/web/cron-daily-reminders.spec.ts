@@ -77,6 +77,21 @@ async function expectNoEmail(to: string, since: Date, waitMs = 4_000): Promise<v
   expect(mine).toHaveLength(0)
 }
 
+async function runDailyRemindersForUser(
+  request: { post: (url: string, opts: object) => Promise<{ ok: () => boolean; json: () => Promise<Record<string, unknown>> }> },
+  userId: string,
+) {
+  const res = await request.post(`${URLS.web}/api/cron/daily-reminders`, {
+    headers: { authorization: `Bearer ${SECRETS.cronSecret}` },
+    data: { force: true, overrideDisabled: true, userId },
+  })
+  expect(res.ok()).toBe(true)
+  const body = await res.json()
+  expect(body.skipped).not.toBe(true)
+  expect(body.errors ?? 0).toBe(0)
+  return body
+}
+
 test.describe('cron: daily-reminders', () => {
   test('emails and SMSes a due user, and skips the opted-out control', async ({
     newUser,
@@ -112,15 +127,9 @@ test.describe('cron: daily-reminders', () => {
     const sinceSeq = (await fakeBdapps.calls()).at(-1)?.seq ?? 0
     const since = new Date(Date.now() - 1_000)
 
-    // Cron processes every user in the slot DB; assert only on this throwaway pair.
-    const res = await request.post(`${URLS.web}/api/cron/daily-reminders`, {
-      headers: { authorization: `Bearer ${SECRETS.cronSecret}` },
-      data: { force: true, overrideDisabled: true },
-    })
-    expect(res.ok()).toBe(true)
-    const body = await res.json()
-    expect(body.skipped).not.toBe(true)
-    expect(body.errors ?? 0).toBe(0)
+    // Scope to one userId per call so we never email/SMS every eligible user in the slot.
+    await runDailyRemindersForUser(request, dueUserId)
+    await runDailyRemindersForUser(request, outUserId)
 
     const mail = await waitForEmail(dueEmail, { since })
     expect(mail.subject).toMatch(/period is expected in 1 days/i)

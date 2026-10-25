@@ -9,15 +9,26 @@ import { ENV, E2E_DIR, REPO_DIR, SLOT, URLS } from './support/slot.ts'
 const desktop = { ...devices['Desktop Chrome'], viewport: { width: 1366, height: 900 } }
 const phone = devices['Pixel 7']
 
+/**
+ * Specs that mutate shared slot state (every Pro user, every soft-deleted user,
+ * the fake `/health` failure queue, or broadcast dispatch). They run in the
+ * serial `cron` project after all parallel projects finish — see README.
+ */
+export const CRON_SERIAL_SPECS =
+  /(?:^|[/\\])(cron-daily-reminders|cron-nightly-maintenance|cron-caas-check|webhooks-bdapps|health|bdapps-health)\.spec\.ts$/
+
 function pair(name: 'web' | 'admin' | 'cross-app', baseURL: string): Project[] {
+  const ignore = name === 'web' ? { testIgnore: CRON_SERIAL_SPECS } : {}
   return [
-    { name: `${name}-desktop`, testDir: `./tests/${name}`, use: { ...desktop, baseURL } },
-    { name: `${name}-phone`, testDir: `./tests/${name}`, use: { ...phone, baseURL } },
+    { name: `${name}-desktop`, testDir: `./tests/${name}`, use: { ...desktop, baseURL }, ...ignore },
+    { name: `${name}-phone`, testDir: `./tests/${name}`, use: { ...phone, baseURL }, ...ignore },
   ]
 }
 
 const reuse = process.env.E2E_REUSE_SERVERS === '1'
 const serverLogs = process.env.E2E_SERVER_LOGS === '1' ? 'pipe' : 'ignore'
+
+const parallelProjects = [...pair('web', URLS.web), ...pair('admin', URLS.admin), ...pair('cross-app', URLS.web)]
 
 export default defineConfig({
   globalSetup: './global-setup.ts',
@@ -34,7 +45,20 @@ export default defineConfig({
     locale: 'en-US',
     trace: 'retain-on-failure',
   },
-  projects: [...pair('web', URLS.web), ...pair('admin', URLS.admin), ...pair('cross-app', URLS.web)],
+  projects: [
+    ...parallelProjects,
+    {
+      // Desktop-only: cron/health/webhooks-bdapps are viewport-independent and
+      // must not race parallel plan/user/broadcast specs (see README → Serial cron).
+      name: 'cron',
+      testDir: './tests/web',
+      testMatch: CRON_SERIAL_SPECS,
+      dependencies: parallelProjects.map((p) => p.name as string),
+      fullyParallel: false,
+      workers: 1,
+      use: { ...desktop, baseURL: URLS.web },
+    },
+  ],
   webServer: [
     {
       command: 'pnpm exec tsx fake-bdapps/main.ts',
