@@ -116,6 +116,7 @@ enum EmailType {
   FERTILE_ALERT
   LOGGING_REMINDER
   PROFILE_COMPLETION_REMINDER
+  VERIFICATION_CODE
 }
 
 enum EmailStatus {
@@ -169,6 +170,7 @@ model User {
   smsBroadcasts   SmsBroadcast[]
   adminAuditLogs  AdminAuditLog[]
   emailLogs       EmailLog[]
+  emailVerifications EmailVerification[]
 
   @@index([createdAt])
   @@index([lastLoginAt])
@@ -289,6 +291,25 @@ model OtpChallenge {
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([phone])
+}
+
+/// A 6-digit code emailed to a signed-in user to prove they own an address before it is saved on their account.
+model EmailVerification {
+  id        String   @id @default(cuid())
+  userId    String
+  /// Lower-cased, trimmed address the code was sent to.
+  email     String
+  /// HMAC of the code; the code itself is never stored.
+  codeHash  String
+  /// Wrong codes entered so far.
+  attempts  Int      @default(0)
+  verified  Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model MagicLink {

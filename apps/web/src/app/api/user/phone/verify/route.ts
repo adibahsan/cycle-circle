@@ -78,7 +78,7 @@ export const POST = withAuth(async (request, { user }) => {
 
     // Bust the cached user/profiles (getCurrentUser uses unstable_cache with these
     // tags) so the account page + RSC reflect the new phone / PRO status without
-    // waiting for the 5-min TTL. Mirrors updateContactInfo in user-actions.ts.
+    // waiting for the 5-min TTL. Mirrors api/user/email/verify.
     revalidateTag(`user:${user.id}`, { expire: 0 })
     revalidateTag(`profiles:${user.id}`, { expire: 0 })
 
