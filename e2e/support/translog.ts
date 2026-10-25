@@ -20,8 +20,10 @@ function dhakaDate(d = new Date()): string {
   return new Date(d.getTime() + 6 * 3600_000).toISOString().slice(0, 10)
 }
 
-function readAppTranslog(app: TranslogApp, userId: string): TranslogLine[] {
-  const file = path.join(LOG_ROOT, app, 'translog', `${dhakaDate()}.log`)
+// Web and admin share one log dir (slot.ts LOG_DIR, mirroring prod's shared bind mount),
+// so both apps append to the same translog file and lines carry no app field.
+function readTranslog(userId: string): TranslogLine[] {
+  const file = path.join(LOG_ROOT, 'web', 'translog', `${dhakaDate()}.log`)
   if (!fs.existsSync(file)) return []
   return fs
     .readFileSync(file, 'utf8')
@@ -39,8 +41,7 @@ function readAppTranslog(app: TranslogApp, userId: string): TranslogLine[] {
 
 /**
  * Translog lines for one user, oldest first (today's file; the log is written asynchronously).
- * Defaults to the web app (OTP / webhooks). Pass `app: 'admin'` for admin grant/revoke/suspend
- * lines, or `apps: ['web','admin']` to merge both.
+ * Covers both apps (web: OTP / webhooks; admin: grant/revoke/suspend), which share one file.
  * Lines that are not valid JSON are skipped: another worker's app may be mid-append.
  * Edge: the file is named for the Dhaka date, so a run that crosses Dhaka midnight (18:00 UTC)
  * reads only the new day's file; poll for a line written before midnight and it may be missed.
@@ -49,6 +50,7 @@ export function translogFor(
   userId: string,
   opts: { app?: TranslogApp; apps?: TranslogApp[] } = {},
 ): TranslogLine[] {
-  const apps = opts.apps ?? (opts.app ? [opts.app] : ['web'])
-  return apps.flatMap((app) => readAppTranslog(app, userId))
+  // `app`/`apps` are kept for call-site intent; both apps write the same shared file.
+  void opts
+  return readTranslog(userId)
 }
