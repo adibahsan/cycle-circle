@@ -53,7 +53,7 @@ Notes on the tally:
 | W06 | Magic-link security: expired or reused link rejected | `/api/auth/magic-link/callback` | - | none | #119 |
 | W07 | Logout ends the session | `/api/auth/logout`, settings logout dialog | `e2e/tests/web/login.spec.ts`, `apps/web/e2e/tests/bengali-no-english.spec.ts` | full | #120 |
 | W08 | Route protection: logged-out visitor redirected from every protected page | all `(main)` routes, `/onboarding` | `e2e/tests/web/login.spec.ts` | full | #120 |
-| W09 | Suspended or deleted user session is blocked | `/api/auth/status`, withAuth | `e2e/tests/admin/user-actions.spec.ts` | full (suspend + delete bump sessionsValidAfter → auth/status 401) | #127 |
+| W09 | Suspended or deleted user session is blocked | `/api/auth/status`, withAuth | `e2e/tests/admin/user-actions.spec.ts` | full (baseline 200; after suspend/delete → auth/status 401 + /dashboard → /login) | #127 |
 
 ### Web: onboarding and profiles
 
@@ -160,9 +160,9 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A06 | Suspend and reactivate (ends or keeps BDApps billing) | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (suspend → BDApps UNREGISTERED + session 401; reactivate → OTP login) | #127 |
-| A07 | Delete and restore within 30 days; no restore after the window | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (delete/restore UI; aged deletedAt via `days` shows window passed) | #127 |
-| A08 | Grant and revoke Pro (admin override) | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (Set FREE/PRO; plan history + admin translog + web subscription) | #127 |
+| A06 | Suspend and reactivate (ends or keeps BDApps billing) | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (suspend → BDApps UNREGISTERED + session 401; reactivate leaves BDApps unsubscribed; /login UI BDApps OTP) | #127 |
+| A07 | Delete and restore within 30 days; no restore after the window | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (delete/restore UI + session block; daysAgo(29) restore; daysAgo(31) window passed) | #127 |
+| A08 | Grant and revoke Pro (admin override) | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (Set FREE unsubscribes BDApps; Set PRO leaves BDApps; scoped plan-history rows + admin translog + web) | #127 |
 | A09 | Users CSV export | `/users` | `e2e/tests/admin/users.spec.ts` | partial (filtered-only export expected-to-fail #134) | #126 |
 
 ### Admin: content
