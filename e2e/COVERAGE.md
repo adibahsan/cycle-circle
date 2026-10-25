@@ -26,11 +26,11 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | **Web total** | 63 | 10 | 23 | 7 | 23 |
 | Admin: access and read-only views | 5 | 1 | 0 | 4 | 0 |
 | Admin: user actions | 4 | 3 | 0 | 1 | 0 |
-| Admin: content | 2 | 2 | 0 | 0 | 0 |
+| Admin: content | 2 | 0 | 0 | 0 | 2 |
 | Admin: analytics and engagement | 2 | 2 | 0 | 0 | 0 |
 | Admin: SMS | 2 | 2 | 0 | 0 | 0 |
 | Admin: feedback, emails, audit, logs, system | 6 | 6 | 0 | 0 | 0 |
-| **Admin total** | 21 | 16 | 0 | 5 | 0 |
+| **Admin total** | 21 | 14 | 0 | 5 | 2 |
 | Server-only (not counted) | 10 | 9 | 0 | 1 | 0 |
 
 Notes on the tally:
@@ -105,7 +105,7 @@ Notes on the tally:
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
 | W40 | Learn: filter articles by phase, open the reader, English and Bengali | `/content` | `e2e/tests/web/content.spec.ts` | full | #124 |
-| W41 | Draft article never shown to users | `/content` | `e2e/tests/web/content.spec.ts` | full | #124 (authoring side: #128) |
+| W41 | Draft article never shown to users | `/content` | `e2e/tests/web/content.spec.ts`, `e2e/tests/cross-app/admin-content.spec.ts` | full | #124, #128 |
 | W42 | Feedback: submit and see it in history | `/feedback` | `e2e/tests/web/feedback.spec.ts` | full | #124 |
 | W43 | Notification preferences and reminder opt-out (cron skips the user) | `/settings` | `e2e/tests/web/settings.spec.ts` | full | #124 (cron side: #132) |
 | W44 | Data export: CSV and XLSX contain logged entries | `/settings` | `e2e/tests/web/settings.spec.ts` | full | #124 |
@@ -169,8 +169,8 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A10 | Content authoring: bilingual article, phase tags, image upload, draft, publish, seen on web | `/content`, `/content/new`, `/content/[id]`, `/uploads/[name]` | - | none | #128 |
-| A11 | Content sanitizing: unsafe HTML removed before it reaches web | `/content/new`, `/content/[id]` | - | none | #128 |
+| A10 | Content authoring: bilingual article, phase tags, image upload, draft, publish, seen on web | `/content`, `/content/new`, `/content/[id]`, `/uploads/[name]` | `e2e/tests/cross-app/admin-content.spec.ts` | full (draft hidden on settled Follicular list; publish → same URL; wrong-phase MENSTRUAL+OVULATION; EN loaded `/uploads/` img; BN text-only) | #128 |
+| A11 | Content sanitizing: unsafe HTML removed before it reaches web | `/content/new`, `/content/[id]` | `e2e/tests/cross-app/admin-content.spec.ts` | full (rich paste + raw Next-Action body bypass; stored HTML + scoped reader; script/iframe/style/js-href/evil attrs stripped; safe link/strong/uploads kept on server path) | #128 |
 
 ### Admin: analytics and engagement
 
