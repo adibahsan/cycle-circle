@@ -111,6 +111,28 @@ test.describe('fake BDApps: scripted failures', () => {
     expect((await ask(addrA)).json).toMatchObject({ statusCode: 'E1601' })
   })
 
+  // Broadcast sends all use destinationAddresses: ['tel:all']; messageContains scopes the failure.
+  test('a messageContains failure on /sms/send only hits the matching message', async ({ fakeBdapps }) => {
+    const path = '/sms/send'
+    const markerA = `E2E msgContains A ${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const markerB = `E2E msgContains B ${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const ask = (message: string) =>
+      merchant(fakeBdapps.baseUrl, path, { message, destinationAddresses: ['tel:all'] })
+
+    await fakeBdapps.failNext(path, {
+      match: { messageContains: markerA },
+      mode: 'error',
+      statusCode: 'E1601',
+      times: 1,
+    })
+
+    // B is unrelated — must succeed and leave A's scripted failure unconsumed.
+    expect((await ask(markerB)).json).toMatchObject({ statusCode: 'S1000' })
+    expect((await ask(markerA)).json).toMatchObject({ statusCode: 'E1601' })
+    // Consumed — A's next send succeeds.
+    expect((await ask(markerA)).json).toMatchObject({ statusCode: 'S1000' })
+  })
+
   test('the control API rejects a failure without a match or with missing mode fields', async ({ fakeBdapps }) => {
     const post = (body: unknown) =>
       fetch(new URL('/_control/failures', fakeBdapps.baseUrl), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })

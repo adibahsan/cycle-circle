@@ -2,6 +2,9 @@
  * `pnpm e2e [-- <playwright args>]`: build web + admin for production, reset this slot's
  * vesta_e2e database from migrations + seed, check Mailpit, then run Playwright (which
  * starts the fake BDApps and both apps). See e2e/README.md for the env switches.
+ *
+ * CI project selection is owned by playwright.config.ts (`E2E_SUITE` / `CI_PROJECTS`).
+ * This runner only forwards Playwright args; do not list project names in the workflow.
  */
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
@@ -73,7 +76,11 @@ async function prepareDatabase() {
 async function main() {
   const args = process.argv.slice(2)
   if (args[0] === '--') args.shift()
-  console.log(`[e2e] slot ${SLOT}: web :${PORTS.web}, admin :${PORTS.admin}, fake BDApps :${PORTS.fakeBdapps}, db ${DB_NAME}`)
+  const suite = process.env.CI_PROJECTS?.trim() || process.env.E2E_SUITE || 'all'
+  console.log(
+    `[e2e] slot ${SLOT}: web :${PORTS.web}, admin :${PORTS.admin}, fake BDApps :${PORTS.fakeBdapps}, db ${DB_NAME}, suite ${suite}`,
+  )
+  assertE2eDatabase(ENV.db.DATABASE_URL)
   await build()
   await prepareDatabase()
   await assertMailpit()

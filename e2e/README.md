@@ -28,8 +28,10 @@ E2E_SLOT=2 pnpm e2e                                   # another worktree at the 
 | `E2E_SKIP_RESET=1` | Don't wipe the DB: apply pending migrations (`migrate deploy`), and seed only a DB that is new. Faster reruns; throwaway phones stay unique. **AI agents must use this**: Prisma refuses `migrate reset` when it detects an AI agent. |
 | `E2E_REUSE_SERVERS=1` | Reuse already-running fake BDApps / web / admin on the slot's ports. |
 | `E2E_SERVER_LOGS=1` | Pipe the servers' stdout into the test output. |
-| `E2E_DATABASE_URL` | Postgres server to use (db name is replaced); default from `packages/shared/.env.local`. |
+| `E2E_DATABASE_URL` | Postgres server to use (db name is replaced); default from `packages/shared/.env.local`, then Compose `localhost:5431`. **Required in CI** (no `.env.local`). |
 | `E2E_MAILPIT_URL`, `E2E_MAILPIT_SMTP_URL` | Mailpit API / SMTP (default `http://localhost:8025`, `smtp://localhost:1025`). |
+| `E2E_SUITE=desktop\|full\|all` | Which Playwright projects to run (see CI). Default `all`. |
+| `CI_PROJECTS` | Override: comma-separated project names, or the aliases `desktop` / `full` / `all` (same as `E2E_SUITE`). |
 
 `pnpm e2e` = `scripts/run.ts`: build web + admin (sequentially, with the E2E env) → `prisma migrate
 reset --force` on the slot DB (creates it, applies migrations, seeds; or the `E2E_SKIP_RESET` path) → check Mailpit →
@@ -55,19 +57,86 @@ All slot-derived values (ports, URLs, DB URL, every env var the apps get, test s
 
 ```
 e2e/
-  playwright.config.ts   projects: web-*, admin-*, cross-app-* × desktop (1366×900) / phone (Pixel 7)
+  playwright.config.ts   projects: web-*/admin-*/cross-app-* × desktop/phone; web-bengali (#133); then serial `cron`
   global-setup.ts        checks Mailpit; logs in personas + admin once, saves storage states
   scripts/run.ts         the `pnpm e2e` runner
   fake-bdapps/           the fake BDApps server (see below)
   support/               helpers (below)
-  tests/web/             project web-*       (baseURL = web)
+  tests/web/             project web-* + serial `cron` (baseURL = web)
   tests/admin/           project admin-*     (baseURL = admin)
   tests/cross-app/       project cross-app-* (baseURL = web; open admin with URLS.admin)
+  tests/bengali/         project web-bengali (full suite only; filled by #133)
+  fixtures/              small binary fixtures (e.g. `article-red-1x1.png` for CMS image upload)
   COVERAGE.md            feature → spec → depth
 ```
 
 Name specs after the feature (`tests/web/period-logging.spec.ts`). Every spec runs at desktop and
 phone width; use `test.skip(testInfo.project.name.endsWith('-phone'), 'why')` only with a reason.
+
+## CI (GitHub Actions)
+
+Workflow: [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml).
+
+| Trigger | Suite (`E2E_SUITE`) | What runs |
+|---|---|---|
+| `pull_request` → `main` | `desktop` | All projects that are **not** `*-phone` and not full-only (`web-bengali`). New `*-desktop` or serial projects (e.g. cron in #132) are picked up automatically — **do not** list `--project` in the workflow. |
+| Nightly schedule, `workflow_dispatch`, or PR labelled `e2e-full` | `full` | Every project, including `*-phone` and `web-bengali`. |
+
+The job starts **Postgres**, **Redis** and **Mailpit** as service containers, sets `E2E_DATABASE_URL` /
+Mailpit URLs (no `packages/shared/.env.local`), runs `pnpm install`, `pnpm db:generate`, caches
+Playwright browsers + Next.js `.next/cache`, installs Chromium, then `pnpm e2e` with a full
+`migrate reset` on `vesta_e2e` only (`assertE2eDatabase`). Worker count is **4 in CI** from
+`playwright.config.ts` (`workers: ci ? 4`) — do not also pass `--workers` in the workflow.
+Redis is present to match Compose; the suite still sets `REDIS_URL=''` so rate limits stay
+in-process. On non-cancelled runs it uploads the HTML report (`e2e/playwright-report/`), traces
+(`e2e/.results/`; `trace: 'retain-on-failure'`), and server logs (`e2e/.logs/` via
+`E2E_SERVER_LOGS=1`). **Never** upload `e2e/.auth/` (session cookies).
+
+**Runtime target:** desktop PR job `timeout-minutes: 15` (acceptance: under 10 minutes once the
+suite is green — confirm on the first CI run). Full suite keeps `timeout-minutes: 45`.
+
+**Serial projects** (e.g. cron in #132): set `workers: 1` and `fullyParallel: false` on that
+project in `playwright.config.ts`. Global CI workers stay at 4 for parallel projects; only the
+serial project overrides.
+
+**Bengali pass (#133):** project `web-bengali` points at `tests/bengali/` (see that folder's README).
+Add specs there (and/or tag with `@bengali` and adjust `testMatch` / grep); the full suite already
+includes the project — no workflow edit.
+
+Cross-app admin→web content (#128): `tests/cross-app/admin-content.spec.ts` uses `createLoggedInAdmin`
+plus a throwaway `newUser()`; article titles are prefixed `E2E128` so they never collide with #124.
+Sanitizer coverage pastes rich HTML into Tiptap and also rewrites the `createArticle` Next-Action
+POST body (raw HTML bypassing the editor) so stored HTML and the web reader can be checked separately.
+Tiptap editors lack accessible names — CSS `.ProseMirror` with a comment pointing at #141.
+
+### Serial `cron` project (CI / full suite)
+
+Some web specs mutate **shared** slot state and must not run beside plan, user-admin, or
+broadcast tests:
+
+| Spec | Why serial |
+|---|---|
+| `cron-daily-reminders.spec.ts` | Even with `userId`, keep broadcast/reminder side-effects out of the parallel wave |
+| `cron-nightly-maintenance.spec.ts` | Purges every soft-deleted user past 30 days |
+| `cron-caas-check.spec.ts` | `getStatus` over every BDApps PRO subscriber (can flip plans) |
+| `webhooks-bdapps.spec.ts` | Shared fake + webhook recording; kept with the cron wave |
+| `health.spec.ts` / `bdapps-health.spec.ts` | `bdapps-health` scripts `/health` with `{ any: true }` |
+
+They live in Playwright project **`cron`**: desktop viewport only, `workers: 1`,
+`fullyParallel: false`, and `dependencies` on every `web-*` / `admin-*` / `cross-app-*`
+project so a bare `pnpm e2e` still runs everything and the serial group finishes **last**.
+`--project=web-desktop` (etc.) still works: those projects `testIgnore` the serial files.
+
+**Add a spec to the serial group:** append its basename to `CRON_SERIAL_SPECS` in
+`playwright.config.ts` (same regex used for `cron` `testMatch` and web `testIgnore`). Keep
+the file under `tests/web/`. Viewport-independent cron/health specs do not need a phone
+project twin.
+
+**Run only the serial group** (still waits on dependencies unless you pass `--no-deps`):
+
+```bash
+E2E_SLOT=13 E2E_SKIP_RESET=1 E2E_SKIP_BUILD=1 pnpm e2e -- --project=cron --workers=2
+```
 
 ## Helpers
 
@@ -85,9 +154,9 @@ Import `test` and `expect` from `support/fixtures.ts` (not `@playwright/test`).
 | `e2eDb()` / `closeE2eDb()` / `setUserSubscription` (`support/db.ts`) | Prisma against this slot's `vesta_e2e*` (setup only). `closeE2eDb` runs automatically via a worker-scoped fixture teardown. | `await setUserSubscription({ userId, status: 'FREE' })` |
 | `days` fixture (`support/bangladesh-day.ts`) | Bangladesh days from the **server's** clock (HTTP `Date`): `today`, `daysAgo(n)`, `daysFromNow(n)` (`YYYY-MM-DD`), `startOf(day)` (the `Date` to write to the DB), `now`. No fake clock. | `const start = days.startOf(days.daysAgo(35))` |
 | `fakeBdapps` fixture (`support/fake-bdapps.ts`) | Control client for the fake BDApps. | see below |
-| `db` fixture (`support/db.ts`) | Direct Prisma client for the slot database (`assertE2eDatabase` checked). Use only for test setup state the UI cannot reach in time (e.g. aging an OTP challenge). | `const count = await db.user.count()` |
+| `db` fixture / `db` / `getDb()` (`support/db.ts`) | Direct Prisma client for the slot database (`assertE2eDatabase` checked) and helpers for preconditions the UI cannot reach in time (draft articles, historical logs for export: `createArticle()`, `createProfileWithLogs()`, `setUserSubscription()`). | `const db = getDb()` |
 | `assertMailpit()` (`support/mailpit.ts`) | Mailpit reachability. | `await assertMailpit()` |
-| `waitForEmail(to, { since?, timeoutMs? })` (`support/mailpit.ts`) | Wait for newest email to `to` since `since`; returns subject, text, HTML, links. | `const { links } = await waitForEmail(email, { since })` |
+| `waitForEmail(to, { since?, timeoutMs? })` / `latestEmailFor` (`support/mailpit.ts`) | Wait for newest email to `to` since `since`; returns subject, text, HTML, links. | `const { links } = await waitForEmail(email, { since })` |
 | `waitForMagicLinkEmail(email, { since })` (`support/mailpit.ts`) | Wait for a magic-link email already sent (e.g. by UI); returns callback URL. | `const { callbackUrl } = await waitForMagicLinkEmail(email, { since })` |
 | `requestMagicLinkAndWait(email, { language?, baseUrl?, since?, timeoutMs? })` (`support/mailpit.ts`) | POST `/api/auth/magic-link/request` then wait for email; returns callback URL. | `const { callbackUrl } = await requestMagicLinkAndWait(email)` |
 | `createEmailTrialUser(browser, opts?)` (`support/users.ts`) | Throwaway email-trial user via the real magic-link flow, unique address (limit 3 requests/hour/email: never log seeded users in this way). `{ withProfile: true }` seeds user + profile first so it lands on the dashboard. Also `newEmail()` and `preseedEmailTrialUser(email)`. Returns `{ email, context }`. | `const { context, email } = await createEmailTrialUser(browser)` |
@@ -117,16 +186,20 @@ Admin helpers (`support/admin.ts`) — typed for tickets #127–#131:
 | `sendWebhook(appPath, body)` → the app's `{ status, body }` | `await fakeBdapps.sendWebhook('/api/webhooks/subscription/notify', {...})` |
 
 DB setup for states the UI can't reach in time lives in `support/db.ts`: one shared
-`PrismaClient` via `e2eDb()` / `getE2eDb()` / the `db` export (and the `db` test fixture),
-plus `setUserSubscription` and `closeE2eDb`. Built as
+`PrismaClient` via `e2eDb()` / `getE2eDb()` / `getDb()` / the `db` export (and the `db` test fixture),
+plus `setUserSubscription`, `createArticle()`, `createProfileWithLogs()` and `closeE2eDb`. Built as
 `new PrismaClient({ datasourceUrl: TEST_DATABASE_URL })` from `@prisma/client` after
 `assertE2eDatabase()` (`TEST_DATABASE_URL` is the slot DB with a small `connection_limit`);
 don't import `@vesta/shared`'s `prisma`, which reads `DATABASE_URL` from the env and would hit
 `vesta_dev`. The shared client is disconnected in worker teardown (`closeE2eDb` via
-`support/fixtures.ts`). Write dates with the `days` helper.
+`support/fixtures.ts`). Write dates with the `days` helper (`days.startOf(...)`).
 Only set up state this way; check results through the UI or HTTP. Admin users for the suite are
 created with `createAdminUser` in that same DB — not by reusing seeded web personas.
 `createLoggedInAdmin` closes the browser context if HTTP login fails so contexts do not leak.
+- `ensureUserProfile(phone, options)`: updates or creates a profile and dismisses onboarding tour.
+- `setPeriodLogs(profileId, logs)`: replaces period logs for a profile.
+- `setSymptomLogs(profileId, logs)`: adds symptom logs in a transaction.
+- `setPrediction(profileId, prediction)`: sets or updates predictions (tier, confidence, windows).
 
 ## Fake BDApps (`fake-bdapps/`)
 
@@ -162,11 +235,15 @@ answers 400 for a missing/empty `match` or a bad mode field.
 `match` is **required** and scopes the failure to a call, so parallel tests (and the desktop and phone
 projects) can script the same path without stealing each other's failure: `{ subscriberId }` (masked id
 or phone, matched against `body.subscriberId`), `{ destinationAddress }` (against `body.destinationAddress`
-or any `body.destinationAddresses`), `{ phone }` (either, after normalisation); all given fields must match.
+or any `body.destinationAddresses`), `{ phone }` (either, after normalisation), `{ messageContains }`
+(substring of `body.message` — use this when many tests share `destinationAddresses: ['tel:all']`);
+all given fields must match.
 `{ any: true }` matches every call to the path and is **exclusive**: only for a path nobody else uses,
 i.e. GET `/health`, which carries no subscriber. Those tests run on the desktop project only
 (`bdapps-health.spec.ts`). Typed webhook bodies: `SubscriptionNotifyPayload`, `SmsReceivePayload`,
 `SmsReportPayload`, `UssdReceivePayload` in `support/fake-bdapps.ts`.
+`messageContains` is covered by a small unit file (`pnpm exec tsx --test fake-bdapps/state.unit.test.ts`)
+and by `bdapps-fake.spec.ts` (two `tel:all` sends; only the matching message fails).
 
 **Health**: the fake answers `GET /health` (200, `{status:'ok'}`). The apps' env sets
 `BDAPPS_SIMULATOR_UI_URL` to it, which is the only URL `/api/health/bdapps` fetches (up for any
@@ -180,8 +257,10 @@ status below 500; down for 5xx, a network error or a 4s timeout). It is not a me
 Only subscription-notify changes a user; the other three are stored. Idempotency keys must be
 unique per event.
 
-**Translog** has no screen: `translogFor(userId)` from `support/translog.ts` reads the web app's
-translog lines for that user (`plan.change` with `cause`).
+**Translog** has no screen: `translogFor(userId)` from `support/translog.ts` reads today's
+translog lines for that user (`plan.change` with `cause`). Defaults to the **web** app's
+`LOG_DIR` (OTP signup, webhooks). Admin grant/revoke/suspend lines are under the **admin**
+app: `translogFor(userId, { app: 'admin' })`, or merge both with `{ apps: ['web', 'admin'] }`.
 
 ## Conventions
 
