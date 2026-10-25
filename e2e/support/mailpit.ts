@@ -46,7 +46,10 @@ export async function waitForEmail(
   const normalizedTo = toAddress.toLowerCase()
 
   for (;;) {
-    const listRes = await fetch(new URL('/api/v1/messages', baseUrl))
+    const listUrl = new URL('/api/v1/search', baseUrl)
+    listUrl.searchParams.set('query', `to:${toAddress}`)
+    listUrl.searchParams.set('limit', '50')
+    const listRes = await fetch(listUrl)
     if (!listRes.ok) throw new Error(`Mailpit list failed: ${listRes.status}`)
     const data = await listRes.json() as { messages: { ID: string; To?: { Address?: string }[]; Created: string }[] }
     const messages = data.messages ?? []

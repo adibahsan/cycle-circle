@@ -127,13 +127,18 @@ export async function createEmailTrialUser(
     extraHTTPHeaders: { ...contextOptions.extraHTTPHeaders, 'x-real-ip': ipFor(email) },
   })
 
-  if (withProfile) await preseedEmailTrialUser(email)
-  const since = new Date(Date.now() - 1000)
-  const sent = await context.request.post('/api/auth/magic-link/request', { data: { email } })
-  if (!sent.ok()) throw new Error(`Magic-link request for ${email} failed (${sent.status()}): ${await sent.text()}`)
-  const { callbackUrl } = await waitForMagicLinkEmail(email, { since })
-  const done = await context.request.get(callbackUrl)
-  if (!done.ok()) throw new Error(`Magic-link callback for ${email} failed (${done.status()}): ${await done.text()}`)
+  try {
+    if (withProfile) await preseedEmailTrialUser(email)
+    const since = new Date(Date.now() - 1000)
+    const sent = await context.request.post('/api/auth/magic-link/request', { data: { email } })
+    if (!sent.ok()) throw new Error(`Magic-link request for ${email} failed (${sent.status()}): ${await sent.text()}`)
+    const { callbackUrl } = await waitForMagicLinkEmail(email, { since })
+    const done = await context.request.get(callbackUrl)
+    if (!done.ok()) throw new Error(`Magic-link callback for ${email} failed (${done.status()}): ${await done.text()}`)
+  } catch (e) {
+    await context.close()
+    throw e
+  }
 
   return { email, context }
 }
