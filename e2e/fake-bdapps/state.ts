@@ -61,6 +61,23 @@ export interface SentSms {
   phones: string[]
 }
 
+export interface CaasBalance {
+  phone: string
+  accountType: string
+  accountStatus: string
+  chargeableBalance: string
+  updatedAt: string
+}
+
+export interface CaasDebit {
+  phone: string
+  externalTrxId: string
+  internalTrxId: string
+  referenceId: string
+  amount: string
+  timeStamp: string
+}
+
 export interface FakeState {
   config: FakeConfig
   calls: RecordedCall[]
@@ -72,6 +89,10 @@ export interface FakeState {
   /** phone → subscriber. */
   subscribers: Map<string, Subscriber>
   sms: SentSms[]
+  /** phone → CaaS balance. */
+  caasBalances: Map<string, CaasBalance>
+  /** List of CaaS debits. */
+  caasDebits: CaasDebit[]
   reset(): void
 }
 
@@ -84,6 +105,8 @@ export function createState(config: FakeConfig): FakeState {
     otpsByPhone: new Map(),
     subscribers: new Map(),
     sms: [],
+    caasBalances: new Map(),
+    caasDebits: [],
     reset() {
       state.calls.length = 0
       state.failures.length = 0
@@ -91,6 +114,8 @@ export function createState(config: FakeConfig): FakeState {
       state.otpsByPhone.clear()
       state.subscribers.clear()
       state.sms.length = 0
+      state.caasBalances.clear()
+      state.caasDebits.length = 0
     },
   }
   return state

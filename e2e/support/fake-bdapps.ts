@@ -1,8 +1,8 @@
 /** Typed client for the fake BDApps control API (`e2e/fake-bdapps`). */
-import type { IssuedOtp, RecordedCall, ScriptedFailure, Subscriber } from '../fake-bdapps/state.ts'
+import type { IssuedOtp, RecordedCall, ScriptedFailure, Subscriber, CaasBalance, CaasDebit } from '../fake-bdapps/state.ts'
 import { URLS } from './slot.ts'
 
-export type { IssuedOtp, RecordedCall, ScriptedFailure, Subscriber }
+export type { IssuedOtp, RecordedCall, ScriptedFailure, Subscriber, CaasBalance, CaasDebit }
 
 export class FakeBdappsClient {
   constructor(readonly baseUrl: string = URLS.fakeBdapps) {}
@@ -43,6 +43,18 @@ export class FakeBdappsClient {
   async subscriber(phone: string): Promise<Subscriber | undefined> {
     const { status, json } = await this.req<Subscriber>('GET', `/_control/subscribers/${encodeURIComponent(phone)}`)
     return status === 200 ? json : undefined
+  }
+
+  /** CaaS balance for a phone, or undefined if never queried. */
+  async caasBalance(phone: string): Promise<CaasBalance | undefined> {
+    const { status, json } = await this.req<CaasBalance>('GET', `/_control/caas/balance?phone=${encodeURIComponent(phone)}`)
+    return status === 200 ? json : undefined
+  }
+
+  /** CaaS debits, optionally filtered by phone. */
+  async caasDebits(phone?: string): Promise<CaasDebit[]> {
+    const q = phone ? `?phone=${encodeURIComponent(phone)}` : ''
+    return (await this.req<CaasDebit[]>('GET', `/_control/caas/debits${q}`)).json
   }
 
   /** Make the next `times` (default 1) calls to `path` fail. */

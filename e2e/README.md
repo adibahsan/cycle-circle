@@ -93,6 +93,8 @@ Import `test` and `expect` from `support/fixtures.ts` (not `@playwright/test`).
 | `latestOtp(phone, { since?, timeoutMs? })` → `{ kind: 'bdapps'\|'app', code, referenceNo?, at }` | `const { code } = await fakeBdapps.latestOtp(phone)` |
 | `calls({ path?, sinceSeq? })` → merchant calls `{ seq, path, body, httpStatus, response }` | `await fakeBdapps.calls({ path: '/subscription/send' })` |
 | `subscriber(phone)` → `{ phone, maskedId, status }` or `undefined` | `expect(await fakeBdapps.subscriber(phone)).toMatchObject({ status: 'UNREGISTERED' })` |
+| `caasBalance(phone)` → `{ phone, accountType, accountStatus, chargeableBalance, updatedAt }` or `undefined` | `expect(await fakeBdapps.caasBalance(phone)).toMatchObject({ accountStatus: 'ACTIVE' })` |
+| `caasDebits(phone?)` → list of `{ phone, externalTrxId, internalTrxId, referenceId, amount, timeStamp }` | `await fakeBdapps.caasDebits(phone)` |
 | `failNext(path, { mode, statusCode?, httpStatus?, delayMs?, times? })` | `await fakeBdapps.failNext('/subscription/send', { mode: 'error', statusCode: 'E1601' })` |
 | `sendWebhook(appPath, body)` → the app's `{ status, body }` | `await fakeBdapps.sendWebhook('/api/webhooks/subscription/notify', {...})` |
 
@@ -109,20 +111,46 @@ fresh every run.
 
 - `merchant-routes.ts`: route table `path → (body, state) => BDApps JSON`. Implemented:
   `/subscription/otp/request`, `/subscription/otp/verify`, `/subscription/getStatus`,
-  `/subscription/send`, `/sms/send`. Anything else answers 404 (and is still recorded).
+  `/subscription/send`, `/sms/send`, `/caas/get/balance`, `/caas/direct/debit`.
+  Anything else answers 404 (and is still recorded).
   **Add an endpoint = add an entry.**
-- `state.ts`: subscribers (by phone), issued OTPs, sent SMS, recorded calls, failure queue.
+- `state.ts`: subscribers (by phone), issued OTPs, sent SMS, recorded calls, failure queue,
+  CaaS balances and debits.
 - `server.ts`: credential check (`E1313`), call recording, failure queue, `/_control/*` API.
 
 Behaviour mirrors live BDApps for our number-masking app:
 - `otp/request` for a number that is already a Subscriber → `E1351` (the app then sends an App OTP by SMS).
 - `otp/verify` subscribes the number under a **new masked subscriber id** (`tel:<opaque>`).
-- `getStatus`, `send`, `sms/send` accept only the current masked id; raw numbers → `E1951`.
+- `getStatus`, `send`, `sms/send`, `caas/get/balance`, `caas/direct/debit` accept only the current masked id; raw numbers → `E1951`.
 - A 6-digit code in an SMS to a subscriber is kept as that phone's latest (`app`) OTP.
 
 Control API (the client wraps it): `GET /_control/health`, `POST /_control/reset`,
 `GET /_control/otp?phone=`, `GET /_control/calls?path=&sinceSeq=`, `GET /_control/subscribers/:phone`,
+`GET /_control/caas/balance?phone=`, `GET /_control/caas/debits?phone=`,
 `POST /_control/failures {path, mode, ...}`, `POST /_control/webhook {path, body}`.
+
+**Scripted failures** (`failNext(path, { mode, ... , times })`): the next `times` (default 1) calls to
+`path` fail, then calls succeed again. Modes: `error` (HTTP 200 with a BDApps `statusCode`, default
+`E1601`), `http` (answer `httpStatus`, default 503), `timeout` (never answer; the socket is dropped
+after `delayMs`, default 30s). The failed call is still recorded. **The queue is global per path and
+tests run in parallel**, so a test that scripts failures must be the only user of that path in the
+whole run: keep all phases in one test and `test.skip` the phone project (see `bdapps-health.spec.ts`,
+`bdapps-fake.spec.ts`).
+
+**Health**: the fake answers `GET /health` (200, `{status:'ok'}`). The apps' env sets
+`BDAPPS_SIMULATOR_UI_URL` to it, which is the only URL `/api/health/bdapps` fetches (up for any
+status below 500; down for 5xx, a network error or a 4s timeout). It is not a merchant call.
+
+**Webhooks** (`sendWebhook(appPath, body)` posts as BDApps would; the app answers `S1000`):
+`/api/webhooks/subscription/notify` `{applicationId, subscriberId (masked id), status: REGISTERED|UNREGISTERED, timeStamp}`,
+`/api/webhooks/sms/receive` `{sourceAddress, message, messageId, timeStamp}`,
+`/api/webhooks/sms/report` `{destinationAddress, requestId, deliveryStatus, timeStamp}`,
+`/api/webhooks/ussd/receive` `{subscriberId, ussdContent, sessionId, status}`.
+Only subscription-notify changes a user; the other three are stored. Idempotency keys must be
+unique per event.
+
+**Translog** has no screen: `translogFor(userId)` from `support/translog.ts` reads the web app's
+translog lines for that user (`plan.change` with `cause`).
 
 ## Conventions
 

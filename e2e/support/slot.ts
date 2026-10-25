@@ -80,7 +80,7 @@ export const SECRETS = {
   adminPassword: 'admin123',
 }
 
-const LOG_ROOT = path.join(E2E_DIR, '.logs', `slot-${SLOT}`)
+export const LOG_ROOT = path.join(E2E_DIR, '.logs', `slot-${SLOT}`)
 const UPLOAD_DIR = path.join(E2E_DIR, '.uploads', `slot-${SLOT}`)
 
 /**
@@ -103,7 +103,7 @@ function appEnv(app: 'web' | 'admin'): Record<string, string> {
     BDAPPS_PASSWORD: SECRETS.bdappsPassword,
     BDAPPS_BASE_URL: URLS.fakeBdapps,
     BDAPPS_SIMULATOR_BASE_URL: '',
-    BDAPPS_SIMULATOR_UI_URL: '',
+    BDAPPS_SIMULATOR_UI_URL: `${URLS.fakeBdapps}/health`,
     BDAPPS_SIMULATOR_CALLBACK_BASE_URL: '',
     ENABLE_BDAPPS_SIMULATOR_CHECKER: 'false',
     // Empty = accept webhooks from any source (the fake BDApps posts from localhost).

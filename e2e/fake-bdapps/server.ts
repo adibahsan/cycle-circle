@@ -97,6 +97,11 @@ export function createFakeBdapps(config: FakeConfig): FakeBdapps {
       return send(res, 200, call.response)
     }
 
+    // Health endpoint for the app's BDApps health check (GET, no credentials required)
+    if (path === '/health' && req.method === 'GET') {
+      return send(res, 200, { status: 'ok' })
+    }
+
     const route = merchantRoutes[path]
     if (!route) {
       call.httpStatus = 404
@@ -132,6 +137,17 @@ export function createFakeBdapps(config: FakeConfig): FakeBdapps {
       const phone = normalizePhone(decodeURIComponent(path.slice('/_control/subscribers/'.length)))
       const view = phone ? subscriberView(state, phone) : undefined
       return view ? send(res, 200, view) : send(res, 404, { error: `no subscriber ${phone}` })
+    }
+    if (path === '/_control/caas/balance' && method === 'GET') {
+      const phone = normalizePhone(url.searchParams.get('phone') ?? '')
+      if (!phone) return send(res, 400, { error: 'need phone' })
+      const balance = state.caasBalances.get(phone)
+      return balance ? send(res, 200, balance) : send(res, 404, { error: `no CaaS balance for ${phone}` })
+    }
+    if (path === '/_control/caas/debits' && method === 'GET') {
+      const phone = url.searchParams.get('phone') ? normalizePhone(url.searchParams.get('phone')!) : undefined
+      const debits = phone ? state.caasDebits.filter((d) => d.phone === phone) : state.caasDebits
+      return send(res, 200, debits)
     }
     if (path === '/_control/failures' && method === 'POST') {
       const f = (await readJson(req)) as unknown as ScriptedFailure
