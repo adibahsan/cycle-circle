@@ -83,11 +83,21 @@ Workflow: [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml).
 | Nightly schedule, `workflow_dispatch`, or PR labelled `e2e-full` | `full` | Every project, including `*-phone` and `web-bengali`. |
 
 The job starts **Postgres**, **Redis** and **Mailpit** as service containers, sets `E2E_DATABASE_URL` /
-Mailpit URLs (no `packages/shared/.env.local`), runs `pnpm install`, `pnpm db:generate`, installs
-Chromium, then `pnpm e2e -- --workers=4` with a full `migrate reset` on `vesta_e2e` only
-(`assertE2eDatabase`). Redis is present to match Compose; the suite still sets `REDIS_URL=''`
-so rate limits stay in-process. On failure it uploads the HTML report (`e2e/playwright-report/`)
-and traces (`e2e/.results/`; config uses `trace: 'retain-on-failure'`).
+Mailpit URLs (no `packages/shared/.env.local`), runs `pnpm install`, `pnpm db:generate`, caches
+Playwright browsers + Next.js `.next/cache`, installs Chromium, then `pnpm e2e` with a full
+`migrate reset` on `vesta_e2e` only (`assertE2eDatabase`). Worker count is **4 in CI** from
+`playwright.config.ts` (`workers: ci ? 4`) — do not also pass `--workers` in the workflow.
+Redis is present to match Compose; the suite still sets `REDIS_URL=''` so rate limits stay
+in-process. On non-cancelled runs it uploads the HTML report (`e2e/playwright-report/`), traces
+(`e2e/.results/`; `trace: 'retain-on-failure'`), and server logs (`e2e/.logs/` via
+`E2E_SERVER_LOGS=1`). **Never** upload `e2e/.auth/` (session cookies).
+
+**Runtime target:** desktop PR job `timeout-minutes: 15` (acceptance: under 10 minutes once the
+suite is green — confirm on the first CI run). Full suite keeps `timeout-minutes: 45`.
+
+**Serial projects** (e.g. cron in #132): set `workers: 1` and `fullyParallel: false` on that
+project in `playwright.config.ts`. Global CI workers stay at 4 for parallel projects; only the
+serial project overrides.
 
 **Bengali pass (#133):** project `web-bengali` points at `tests/bengali/` (see that folder's README).
 Add specs there (and/or tag with `@bengali` and adjust `testMatch` / grep); the full suite already

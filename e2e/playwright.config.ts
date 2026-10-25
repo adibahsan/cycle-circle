@@ -45,17 +45,8 @@ function allProjects(): Project[] {
   return [...pair('web', URLS.web), ...pair('admin', URLS.admin), ...pair('cross-app', URLS.web), bengaliProject()]
 }
 
-function selectProjects(projects: Project[]): Project[] {
-  const raw = process.env.CI_PROJECTS?.trim()
-  if (raw) {
-    const parts = raw.split(',').map((s) => s.trim()).filter(Boolean)
-    const only = parts[0]
-    if (parts.length === 1 && only && (only === 'desktop' || only === 'full' || only === 'all')) {
-      return selectBySuite(projects, only)
-    }
-    return projects.filter((p) => p.name !== undefined && parts.includes(p.name))
-  }
-  return selectBySuite(projects, process.env.E2E_SUITE ?? 'all')
+function projectNames(projects: Project[]): string {
+  return projects.map((p) => p.name).filter(Boolean).join(', ')
 }
 
 function selectBySuite(projects: Project[], suite: string): Project[] {
@@ -69,13 +60,46 @@ function selectBySuite(projects: Project[], suite: string): Project[] {
   throw new Error(`E2E_SUITE/CI_PROJECTS must be desktop|full|all or a project list, got "${suite}"`)
 }
 
+function selectProjects(projects: Project[]): Project[] {
+  const raw = process.env.CI_PROJECTS?.trim()
+  let selected: Project[]
+  if (raw) {
+    const parts = raw.split(',').map((s) => s.trim()).filter(Boolean)
+    const only = parts[0]
+    if (parts.length === 1 && only && (only === 'desktop' || only === 'full' || only === 'all')) {
+      selected = selectBySuite(projects, only)
+    } else {
+      selected = projects.filter((p) => p.name !== undefined && parts.includes(p.name))
+    }
+  } else {
+    // `||` (not `??`): treat empty string as unset so CI misconfig falls back to all.
+    selected = selectBySuite(projects, process.env.E2E_SUITE || 'all')
+  }
+  if (selected.length === 0) {
+    throw new Error(
+      `No Playwright projects selected (E2E_SUITE=${JSON.stringify(process.env.E2E_SUITE)}, CI_PROJECTS=${JSON.stringify(process.env.CI_PROJECTS)}). Valid names: ${projectNames(projects)}`,
+    )
+  }
+  return selected
+}
+
 const reuse = process.env.E2E_REUSE_SERVERS === '1'
 const serverLogs = process.env.E2E_SERVER_LOGS === '1' ? 'pipe' : 'ignore'
 const ci = Boolean(process.env.CI)
 
+const ALL_PROJECTS = allProjects()
+// Fail fast if the PR desktop suite would be empty (misconfigured FULL_ONLY / naming).
+if (selectBySuite(ALL_PROJECTS, 'desktop').length === 0) {
+  throw new Error(
+    `E2E_SUITE=desktop would select zero projects. Valid names: ${projectNames(ALL_PROJECTS)}`,
+  )
+}
+
 export default defineConfig({
   globalSetup: './global-setup.ts',
   fullyParallel: true,
+  // CI worker count lives here (single source). Serial projects must override with
+  // `workers: 1` and `fullyParallel: false` on that project (see README).
   workers: ci ? 4 : undefined,
   retries: 0,
   forbidOnly: ci,
@@ -91,7 +115,7 @@ export default defineConfig({
     // Always retain traces on failure so CI can upload them without a second run.
     trace: 'retain-on-failure',
   },
-  projects: selectProjects(allProjects()),
+  projects: selectProjects(ALL_PROJECTS),
   webServer: [
     {
       command: 'pnpm exec tsx fake-bdapps/main.ts',
