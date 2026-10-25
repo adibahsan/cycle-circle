@@ -4,7 +4,7 @@ import { initReactI18next } from 'react-i18next';
 const resources = {
   en: {
     translation: {
-      app: { name: 'Cycle Circle', tagline: 'Your cycle, your way' },
+      app: { name: 'Cycle Circle', tagline: 'Smarter Periods, Personalised Care.' },
       contactInfo: {
         heading: 'Contact us',
         emailLabel: 'Email', email: 'info@cycle-circle.com',
@@ -74,7 +74,6 @@ const resources = {
       onboarding: {
         goalDescTracking: 'Track your cycle, log symptoms and get accurate predictions.',
         goalDescConceive: 'Identify fertile windows and maximise conception chances.',
-        goalDescPregnancy: 'Track your pregnancy week by week and monitor your wellbeing.',
         goalDescPerimenopause: 'Monitor irregular cycles and track perimenopause symptoms.',
         stepOf: 'Step {{step}} of {{total}}',
         cycleLengthHint: 'Usually 21–35 days',
@@ -84,7 +83,7 @@ const resources = {
         relativeNamePlaceholder: "{{relation}}'s name",
         welcome: 'Welcome to Cycle Circle', privacy: 'Your data is encrypted & private',
         goal: 'What is your goal?', goalTracking: 'Period Tracking',
-        goalConceive: 'Trying to Conceive', goalPerimenopause: 'Menopause', goalPregnancy: 'Pregnancy',
+        goalConceive: 'Trying to Conceive', goalPerimenopause: 'Menopause',
         cycleLength: 'Typical cycle length', periodLength: 'Typical period length',
         lastPeriod: 'Last period start date', skip: 'Skip for now', next: 'Next', done: 'Get Started',
         personalIntelligence: 'Your personal cycle intelligence — private, bilingual, and built for you.',
@@ -170,9 +169,7 @@ const resources = {
         flowHeavy: 'Heavy',
         logPeriodMotivation: 'One quick log keeps your predictions sharp',
         periodOverlap: 'This overlaps a period you already logged. Change the dates or edit that period.',
-        // #76 dashboard modes: pregnancy, menopause and first-run heroes, example cycle
-        pregnancyHeroTitle: 'Pregnancy tracking is coming soon',
-        pregnancyHeroBody: 'Predictions are paused while you are pregnant. Keep checking in and logging your symptoms.',
+        // #76 dashboard modes: menopause and first-run heroes, example cycle
         menopauseHeroSub: 'Your cycle at a glance, without predictions.',
         daysSince_one: '{{n}} day since your last period',
         daysSince_other: '{{n}} days since your last period',
@@ -274,7 +271,6 @@ const resources = {
         chooseDate: 'Choose a date',
         previousMonth: 'Previous month',
         nextMonth: 'Next month',
-        pregnancyComingSoon: 'Pregnancy mode — predictions are paused. Full tracking coming soon.',
         // #78
         follicularPhase: 'Follicular phase',
         lutealPhase: 'Luteal phase',
@@ -538,8 +534,6 @@ const resources = {
         staleCta: 'Log now',
         conceiveTitle: 'Track every sign that matters',
         conceiveDescription: 'Log symptoms, cervical mucus, and basal temperature to support your TTC journey.',
-        pregnancyTitle: 'Tracking for pregnancy',
-        pregnancyDescription: 'Log how you\'re feeling each day — symptoms, mood, and notes.',
         dismiss: 'Dismiss',
         logSymptomsCta: 'Log symptoms',
         phaseAwareBody: "You're in your {{phase}} phase — many notice changes now. Anything to log?",
@@ -854,7 +848,7 @@ const resources = {
   },
   bn: {
     translation: {
-      app: { name: 'সাইকেল সার্কেল', tagline: 'আপনার চক্র, আপনার পথে' },
+      app: { name: 'সাইকেল সার্কেল', tagline: 'স্মার্ট পিরিয়ড, ব্যক্তিগত যত্ন।' },
       contactInfo: {
         heading: 'যোগাযোগ করুন',
         emailLabel: 'ইমেইল', email: 'info@cycle-circle.com',
@@ -924,7 +918,6 @@ const resources = {
       onboarding: {
         goalDescTracking: 'আপনার চক্র ট্র্যাক করুন, লক্ষণ লিখুন এবং সঠিক পূর্বাভাস পান।',
         goalDescConceive: 'উর্বর সময় চিনুন এবং গর্ভধারণের সম্ভাবনা বাড়ান।',
-        goalDescPregnancy: 'সপ্তাহে সপ্তাহে গর্ভাবস্থা ট্র্যাক করুন এবং আপনার সুস্থতার খেয়াল রাখুন।',
         goalDescPerimenopause: 'অনিয়মিত চক্র এবং পেরিমেনোপজের লক্ষণ পর্যবেক্ষণ করুন।',
         stepOf: 'ধাপ {{step}} / {{total}}',
         cycleLengthHint: 'সাধারণত ২১–৩৫ দিন',
@@ -934,7 +927,7 @@ const resources = {
         relativeNamePlaceholder: '{{relation}}-এর নাম',
         welcome: 'সাইকেল সার্কেলে স্বাগতম', privacy: 'আপনার তথ্য এনক্রিপ্টেড ও ব্যক্তিগত',
         goal: 'আপনার লক্ষ্য কী?', goalTracking: 'পিরিয়ড ট্র্যাকিং',
-        goalConceive: 'গর্ভধারণের চেষ্টা', goalPerimenopause: 'মেনোপজ', goalPregnancy: 'গর্ভাবস্থা',
+        goalConceive: 'গর্ভধারণের চেষ্টা', goalPerimenopause: 'মেনোপজ',
         cycleLength: 'সাধারণ চক্রের দৈর্ঘ্য', periodLength: 'সাধারণ পিরিয়ডের দৈর্ঘ্য',
         lastPeriod: 'শেষ পিরিয়ড শুরুর তারিখ', skip: 'আপাতত বাদ দিন', next: 'পরবর্তী', done: 'শুরু করুন',
         personalIntelligence: 'আপনার ব্যক্তিগত চক্র বুদ্ধিমত্তা — ব্যক্তিগত, দ্বিভাষিক এবং আপনার জন্য তৈরি।',
@@ -1020,9 +1013,7 @@ const resources = {
         flowHeavy: 'ভারী',
         logPeriodMotivation: 'একটি দ্রুত লগ আপনার পূর্বাভাস নিখুঁত রাখে',
         periodOverlap: 'এটি আগে লগ করা একটি পিরিয়ডের সাথে মিলে যাচ্ছে। তারিখ বদলান বা সেই পিরিয়ডটি সম্পাদনা করুন।',
-        // #76 dashboard modes: pregnancy, menopause and first-run heroes, example cycle
-        pregnancyHeroTitle: 'গর্ভাবস্থা ট্র্যাকিং শীঘ্রই আসছে',
-        pregnancyHeroBody: 'গর্ভাবস্থায় পূর্বাভাস বন্ধ থাকে। চেক-ইন আর লক্ষণ লগ করা চালিয়ে যান।',
+        // #76 dashboard modes: menopause and first-run heroes, example cycle
         menopauseHeroSub: 'পূর্বাভাস ছাড়া আপনার চক্র, এক নজরে।',
         daysSince_one: 'শেষ পিরিয়ডের পর {{n}} দিন',
         daysSince_other: 'শেষ পিরিয়ডের পর {{n}} দিন',
@@ -1124,7 +1115,6 @@ const resources = {
         chooseDate: 'একটি তারিখ নির্বাচন করুন',
         previousMonth: 'পূর্ববর্তী মাস',
         nextMonth: 'পরবর্তী মাস',
-        pregnancyComingSoon: 'গর্ভাবস্থা মোড — পূর্বাভাস সাময়িকভাবে বন্ধ। সম্পূর্ণ ট্র্যাকিং শীঘ্রই আসছে।',
         // #78
         follicularPhase: 'ফলিকুলার পর্যায়',
         lutealPhase: 'লুটিয়াল পর্যায়',
@@ -1388,8 +1378,6 @@ const resources = {
         staleCta: 'এখনই লগ করুন',
         conceiveTitle: 'প্রতিটি গুরুত্বপূর্ণ লক্ষণ ট্র্যাক করুন',
         conceiveDescription: 'গর্ভধারণের যাত্রায় সহায়তা করতে লক্ষণ, সার্ভিকাল মিউকাস ও বেসাল তাপমাত্রা লগ করুন।',
-        pregnancyTitle: 'গর্ভাবস্থার জন্য ট্র্যাকিং',
-        pregnancyDescription: 'প্রতিদিন আপনি কেমন অনুভব করছেন তা লগ করুন — উপসর্গ, মেজাজ এবং নোট।',
         dismiss: 'বাদ দিন',
         logSymptomsCta: 'লক্ষণ লগ করুন',
         phaseAwareBody: 'আপনি এখন {{phase}} পর্যায়ে আছেন — অনেকে এই সময়ে পরিবর্তন অনুভব করেন। কিছু লগ করবেন?',

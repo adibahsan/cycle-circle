@@ -16,7 +16,7 @@ import {
   normalizeCyclePhase,
 } from '@vesta/shared/utils/cycle-utils'
 import type { FlowIntensity, ProfileRelation } from '@vesta/shared/types'
-import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
+import { goalAccentVar } from '@vesta/shared/utils/goal'
 import { PeriodLogModal } from '@/components/PeriodLogModal'
 import { setActiveProfileCookie } from '@/app/actions/profile-actions'
 import type { ProfileCompletionStatus } from '@/lib/profile-completion'
@@ -32,7 +32,7 @@ import dynamic from 'next/dynamic'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { deviceDayString } from '@/lib/local-date'
-import { CycleHero, FirstPeriodHero, MenopauseHero, PregnancyHero } from './CycleHero'
+import { CycleHero, FirstPeriodHero, MenopauseHero } from './CycleHero'
 import { CycleDates, type LastPeriodFacts } from './CycleDates'
 import { CycleJourney } from './CycleJourney'
 import { CycleProgressRing } from './CycleProgressRing'
@@ -86,7 +86,7 @@ interface PrismaPrediction {
 }
 
 interface DashboardData {
-  mode: 'standard' | 'pregnancy' | 'menopause'
+  mode: 'standard' | 'menopause'
   currentCycleDay: number
   currentPhase: string | null
   countdownToNextPeriod: number | null
@@ -246,13 +246,11 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, profil
 
   const period = periodStatus(daysUntilNext)
 
-  // Pregnancy detection — mode flag from service takes priority; goal string is the fallback
-  const pregnancy = dashboardData?.mode === 'pregnancy' || isPregnancy(goal)
 
-  // Build prediction object for display (suppressed entirely in pregnancy mode)
+  // Build prediction object for display
   const serverPrediction = dashboardData?.prediction
   // No period on record (first run): nothing to predict from.
-  const localPrediction = pregnancy || !profileForCompute.lastPeriodStart ? null : computePrediction(profileForCompute)
+  const localPrediction = !profileForCompute.lastPeriodStart ? null : computePrediction(profileForCompute)
 
   const prediction = serverPrediction
     ? {
@@ -292,7 +290,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, profil
   )
 
   const fertile = prediction ? fertileStatus(deviceDayString(), prediction.fertileStart, prediction.fertileEnd) : null
-  const heroState = dashboardHeroState(dashboardData?.mode ?? 'standard', !!lastPeriodDisplay, pregnancy)
+  const heroState = dashboardHeroState(dashboardData?.mode ?? 'standard', !!lastPeriodDisplay)
   const blocks = dashboardBlocks(heroState)
   const position: CyclePosition = { cycleLength: profile.cycleLength, periodLength: profile.periodLength, cycleDay, phase }
 
@@ -310,13 +308,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, profil
         <div className="flex flex-col gap-5 2xl:grid 2xl:grid-cols-[minmax(0,1fr)_24rem] 2xl:grid-rows-[auto_1fr] 2xl:gap-x-6">
           <div className="flex flex-col gap-5 2xl:col-start-1 2xl:row-start-1">
             {/* ── Hero: one per state ─────────────────────────────────── */}
-            {heroState === 'pregnancy' ? (
-              <PregnancyHero
-                language={language}
-                lastPeriodStart={lastPeriodDisplay?.startDate ?? null}
-                onLogSymptoms={openQuickSymptom}
-              />
-            ) : heroState === 'menopause' ? (
+            {heroState === 'menopause' ? (
               <MenopauseHero
                 name={profile.name}
                 language={language}
@@ -359,7 +351,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, profil
                 onOpenCheckIn={() => setCheckInOpen(true)}
               />
             )}
-            {heroState !== 'pregnancy' && phasePattern}
+            {phasePattern}
             {/* Live cycle only, real data only. */}
             {blocks.cycleDates && (
               <div className="lg:col-span-2 2xl:col-span-1">

@@ -16,7 +16,7 @@ import {
   subDays,
 } from 'date-fns'
 import { bn } from 'date-fns/locale/bn'
-import { CalendarDays, ChevronLeft, ChevronRight, X, Pencil, Baby, Plus, Droplets, Flower2, Sprout, ArrowRight } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, X, Pencil, Plus, Droplets, Flower2, Sprout, ArrowRight } from 'lucide-react'
 
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -25,7 +25,6 @@ import { useLanguage } from '@/lib/use-language'
 import { SYMPTOMS_DATA } from '@/lib/symptoms-data'
 import { PeriodLogModal, FLOW_COLORS, FLOW_TEXT } from '@/components/PeriodLogModal'
 import type { CyclePhase, FlowIntensity } from '@vesta/shared/types'
-import { isPregnancy } from '@vesta/shared/utils/goal'
 import { selectFertileWindow } from '@vesta/shared/utils/fertile-window'
 import '@vesta/shared/utils/i18n'
 import { DAY_STYLES, TODAY_GLOW_SWATCH, dayStyleKind, type DayStyleKind } from '@/lib/calendar-day-style'
@@ -103,25 +102,21 @@ interface Props {
   windowDays?: CalendarDay[]
   symptomLogs: SymptomLog[]
   periodLogs: PeriodLog[]
-  goal: string | null
 }
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
 
-function Legend({ pregnancy }: { pregnancy: boolean }) {
+function Legend() {
   const { t } = useTranslation()
-  const allItems: { kind: DayStyleKind | 'today'; label: string; predictive: boolean }[] = [
-    { kind: 'period', label: t('calendar.period'), predictive: false },
-    { kind: 'predictedPeriod', label: t('calendar.predictedPeriod'), predictive: true },
-    { kind: 'fertile', label: t('calendar.fertile'), predictive: true },
-    { kind: 'ovulation', label: t('calendar.ovulationDay'), predictive: true },
-    // Phase tints come from cycle predictions, so pregnancy hides them with the rest.
-    { kind: 'follicular', label: t('calendar.follicularPhase'), predictive: true },
-    { kind: 'luteal', label: t('calendar.lutealPhase'), predictive: true },
-    { kind: 'today', label: t('calendar.today'), predictive: false },
+  const items: { kind: DayStyleKind | 'today'; label: string }[] = [
+    { kind: 'period', label: t('calendar.period') },
+    { kind: 'predictedPeriod', label: t('calendar.predictedPeriod') },
+    { kind: 'fertile', label: t('calendar.fertile') },
+    { kind: 'ovulation', label: t('calendar.ovulationDay') },
+    { kind: 'follicular', label: t('calendar.follicularPhase') },
+    { kind: 'luteal', label: t('calendar.lutealPhase') },
+    { kind: 'today', label: t('calendar.today') },
   ]
-
-  const items = pregnancy ? allItems.filter((i) => !i.predictive) : allItems
 
   return (
     <ul className="flex flex-wrap gap-x-2.5 md:gap-x-4 gap-y-1 md:gap-y-2 justify-center">
@@ -424,14 +419,12 @@ function lastPeriodStartIso(logs: PeriodLog[]): string | null {
   return best
 }
 
-export function CalendarClient({ profiles, activeProfileId, month, days, windowDays, symptomLogs, periodLogs, goal }: Props) {
+export function CalendarClient({ profiles, activeProfileId, month, days, windowDays, symptomLogs, periodLogs }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const language = useLanguage()
   const dateLocale = language === 'bn' ? bn : undefined
-  const prefersReducedMotion = useReducedMotion()
 
-  const pregnancy = isPregnancy(goal)
   const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
   const cycleLength = activeProfile?.cycleLength ?? 28
   const periodLength = activeProfile?.periodLength ?? 5
@@ -480,10 +473,9 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
   )
 
   // Cycle starts: logged period starts plus the first day of each period run (logged or predicted).
-  // Pregnancy has no cycle predictions, so no phase tints either.
   const cycleStarts = useMemo(
-    () => (pregnancy ? [] : periodStarts(periodLogs.map((l) => toDeviceDay(l.startDate)), windowDays ?? days ?? [])),
-    [pregnancy, periodLogs, windowDays, days],
+    () => periodStarts(periodLogs.map((l) => toDeviceDay(l.startDate)), windowDays ?? days ?? []),
+    [periodLogs, windowDays, days],
   )
 
   // Build DayMeta for each grid day from the server-provided calendar data
@@ -569,14 +561,12 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
   }
 
   // Extract prediction summary from calendar data for the monthly summary card.
-  // For pregnancy profiles the service returns empty sets, but we also guard
-  // client-side so no forward-looking data is ever derived or shown.
-  const firstPredictedPeriod = !pregnancy ? days?.find((d) => d.predicted && d.period) : undefined
+  const firstPredictedPeriod = days?.find((d) => d.predicted && d.period)
   const nextPeriodDaysLate = firstPredictedPeriod
     ? differenceInCalendarDays(new Date(), parseISO(firstPredictedPeriod.date))
     : 0
-  const ovulationDay = !pregnancy ? days?.find((d) => d.ovulation) : undefined
-  const fertileWindow = !pregnancy ? selectFertileWindow(windowDays ?? days ?? [], format(new Date(), 'yyyy-MM-dd'), lastPeriodStartIso(periodLogs)) : null
+  const ovulationDay = days?.find((d) => d.ovulation)
+  const fertileWindow = selectFertileWindow(windowDays ?? days ?? [], format(new Date(), 'yyyy-MM-dd'), lastPeriodStartIso(periodLogs))
 
   return (
     <PageContainer width="canvas" className="relative overflow-hidden">
@@ -603,23 +593,9 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
             dayContent={dayContent}
             dayState={dayState}
             dayAction={logPeriodAction}
-            banner={pregnancy && (
-              <motion.div
-                initial={prefersReducedMotion ? {} : { opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
-                className="mb-2 flex items-center gap-2 rounded-2xl px-3 py-2.5 bg-tint-sky text-accent-sky"
-                aria-live="polite"
-              >
-                <Baby size={15} aria-hidden="true" className="shrink-0" />
-                <p className="text-xs font-medium">
-                  {t('calendar.pregnancyComingSoon')}
-                </p>
-              </motion.div>
-            )}
             footer={(
               <div className="mt-2 pt-2 md:mt-3 md:pt-3 border-t border-[var(--color-border)]" aria-label={t('calendar.legend')} role="group">
-                <Legend pregnancy={pregnancy} />
+                <Legend />
               </div>
             )}
           />
@@ -642,8 +618,8 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
             )}
           </AnimatePresence>
 
-          {/* Monthly Summary — hidden for pregnancy profiles */}
-          {!pregnancy && (firstPredictedPeriod || ovulationDay || fertileWindow) && (
+          {/* Monthly Summary */}
+          {(firstPredictedPeriod || ovulationDay || fertileWindow) && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}

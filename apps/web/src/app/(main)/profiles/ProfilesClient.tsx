@@ -386,7 +386,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
           <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             {t('profiles.goalLabel')}
           </p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {GOAL_VALUES.map((g) => {
               const isSelected = goal === g;
               const accentVar = goalAccentVar(g);
@@ -537,7 +537,7 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
 
 // ─── Edit Profile Form ────────────────────────────────────────────────────────
 
-// Goal options derived from shared canonical module (includes 'pregnancy')
+// Goal options derived from shared canonical module
 const GOAL_OPTIONS: GoalValue[] = [...GOAL_VALUES];
 
 interface EditProfileFormProps {
@@ -697,7 +697,7 @@ function EditProfileForm({ open, profile, onClose, onSubmit, serverError, disabl
             <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
               {t('profiles.goalLabel')}
             </p>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {GOAL_OPTIONS.map((g) => {
                 const isSelected = goal === g;
                 const accentVar = goalAccentVar(g);

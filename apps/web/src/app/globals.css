@@ -30,7 +30,6 @@
   /* Goal accents (text on any of these uses --color-on-accent) */
   --color-goal-tracking: #D02F58;
   --color-goal-conceive: #8C6A1F;
-  --color-goal-pregnancy: #8E5BC4;
   --color-goal-perimenopause: #B4527A;
 
   /* Cycle phases, each with a matching on-* text token (spec #66): rose-red period,
@@ -152,7 +151,6 @@
   --color-error: #E58A62;
   --color-goal-tracking: #FF7A99;
   --color-goal-conceive: #E2C27A;
-  --color-goal-pregnancy: #C9A3EC;
   --color-goal-perimenopause: #E596B8;
   --color-menstrual: #FF6B7F;
   --color-on-menstrual: #1A232C;

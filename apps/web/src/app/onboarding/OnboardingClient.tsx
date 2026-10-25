@@ -10,7 +10,6 @@ import {
   CalendarDays,
   Heart,
   Moon,
-  Baby,
   ChevronLeft,
   ChevronRight,
   Check,
@@ -31,7 +30,7 @@ import type { ProfileRelation } from '@vesta/shared/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Goal = 'tracking' | 'conceive' | 'pregnancy' | 'perimenopause' | null;
+type Goal = 'tracking' | 'conceive' | 'perimenopause' | null;
 type FlowIntensity = 'light' | 'medium' | 'heavy';
 
 interface OnboardingState {
@@ -303,14 +302,6 @@ function StepGoal({
       description: t('onboarding.goalDescConceive'),
       accent: 'var(--color-goal-conceive)',
       bg: 'color-mix(in srgb, var(--color-goal-conceive) 8%, transparent)',
-    },
-    {
-      value: 'pregnancy',
-      icon: <Baby aria-hidden="true" size={28} />,
-      label: t('onboarding.goalPregnancy'),
-      description: t('onboarding.goalDescPregnancy'),
-      accent: 'var(--color-goal-pregnancy)',
-      bg: 'color-mix(in srgb, var(--color-goal-pregnancy) 8%, transparent)',
     },
     {
       value: 'perimenopause',
@@ -652,8 +643,6 @@ function StepDone({
       ? t('onboarding.goalTracking')
       : state.goal === 'conceive'
       ? t('onboarding.goalConceive')
-      : state.goal === 'pregnancy'
-      ? t('onboarding.goalPregnancy')
       : state.goal === 'perimenopause'
       ? t('onboarding.goalPerimenopause')
       : 'Not set';

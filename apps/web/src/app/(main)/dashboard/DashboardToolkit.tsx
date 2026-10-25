@@ -19,7 +19,7 @@ export interface PhaseArticle {
 
 interface DashboardToolkitProps {
   language: string
-  /** Null outside a live cycle (pregnancy, menopause, no period): the read card links to all articles. */
+  /** Null outside a live cycle (menopause, no period): the read card links to all articles. */
   phase: CyclePhase | null
   /** Published articles tagged with the current phase (already filtered on the server). */
   articles: PhaseArticle[]

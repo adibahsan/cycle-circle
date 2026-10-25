@@ -485,7 +485,7 @@ async function seedDummyUsers() {
   // Profile B: WIFE
   const proWife = await prisma.profile.upsert({
     where: { id: `seed-dummy-pro-wife-${proUser.id}` },
-    update: { goal: 'pregnancy' },
+    update: { goal: 'tracking' },
     create: {
       id: `seed-dummy-pro-wife-${proUser.id}`,
       userId: proUser.id,
@@ -494,7 +494,7 @@ async function seedDummyUsers() {
       cycleLength: 30,
       periodLength: 4,
       lastPeriodStart: daysAgo(12),
-      goal: 'pregnancy',
+      goal: 'tracking',
     },
   })
   await seedPeriodLogs(proWife.id, [
@@ -507,7 +507,7 @@ async function seedDummyUsers() {
     { daysBack: 1, symptomId: 'energetic', category: SymptomCategory.MOOD, value: 'present' },
   ])
   await seedPred(proWife.id, daysAgo(12), 30)
-  await seedNotifPref(proWife.id, 'pregnancy')
+  await seedNotifPref(proWife.id, 'tracking')
 
   // Profile C: DAUGHTER
   const proDaughter = await prisma.profile.upsert({
