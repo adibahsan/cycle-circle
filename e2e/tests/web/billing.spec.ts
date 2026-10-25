@@ -3,9 +3,27 @@ import { test, expect } from '../../support/fixtures'
 import { createEmailTrialUser, newPhone, toDbPhone } from '../../support/users'
 import { createProfileWithLogs, setUserSubscription } from '../../support/db'
 import { SECRETS, URLS } from '../../support/slot'
+import type { FakeBdapps } from '../../support/fake-bdapps'
+import { translogFor } from '../../support/translog'
+
+/** Run the daily-reminders cron for one user (forced), failing on any per-user error. */
+async function runDailyReminders(userId: string): Promise<void> {
+  const res = await fetch(`${URLS.web}/api/cron/daily-reminders`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${SECRETS.cronSecret}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ userId, force: true }),
+  })
+  expect(res.ok).toBe(true)
+  expect(((await res.json()) as { errors: number }).errors).toBe(0)
+}
+
+/** Count of SMS the app sent through the fake BDApps to this local-format phone. */
+async function smsSentTo(fakeBdapps: FakeBdapps, phone: string): Promise<number> {
+  return (await fakeBdapps.calls({ path: '/sms/send' })).filter((c) => JSON.stringify(c.body).includes(phone.slice(1))).length
+}
 
 test.describe('Web billing: upgrade and unsubscribe', () => {
-  test('flow: a Free user upgrades to Pro through the fake BDApps, and Pro features unlock', async ({ browser, fakeBdapps }) => {
+  test('flow: a Free user upgrades to Pro through the fake BDApps, and Pro features unlock', async ({ browser, fakeBdapps, db, days }) => {
     const { context, email } = await createEmailTrialUser(browser, {}, { withProfile: true })
     const page = await context.newPage()
 
@@ -33,11 +51,19 @@ test.describe('Web billing: upgrade and unsubscribe', () => {
       const otp = await fakeBdapps.latestOtp(phone)
       expect(otp.kind).toBe('bdapps')
 
+      expect(await fakeBdapps.subscriber(phone)).toBeUndefined()
+      const since = (await fakeBdapps.calls()).at(-1)?.seq ?? 0
       await dialog.getByRole('textbox', { name: 'Digit 1' }).fill(otp.code)
 
       // Success feedback appears and dialog closes
       await expect(dialog.getByRole('heading', { name: "Your number is verified — you're now on Pro!" })).toBeVisible()
       await expect(dialog).not.toBeVisible({ timeout: 10_000 })
+
+      // The fake proves the upgrade: the app verified this OTP and BDApps now holds the number as
+      // REGISTERED (ADR 0002: the subscribe happens in otp/verify).
+      const verifies = await fakeBdapps.calls({ path: '/subscription/otp/verify', sinceSeq: since })
+      expect(verifies.some((c) => c.body.otp === otp.code && c.response.statusCode === 'S1000')).toBe(true)
+      expect(await fakeBdapps.subscriber(phone)).toMatchObject({ status: 'REGISTERED' })
 
       // Page UI immediately updates to Pro
       await expect(page.getByText('Cycle Circle Pro', { exact: true })).toBeVisible()
@@ -59,6 +85,13 @@ test.describe('Web billing: upgrade and unsubscribe', () => {
       const statusRes = await page.request.get('/api/auth/status')
       const { user } = await statusRes.json()
       expect(user).toMatchObject({ subscriptionStatus: 'PRO', email })
+
+      // A real Pro behaviour, not just chrome: the reminder cron now sends this user an SMS
+      const dbUser = await db.user.findUniqueOrThrow({ where: { email } })
+      await createProfileWithLogs({ userId: dbUser.id, days })
+      expect(await smsSentTo(fakeBdapps, phone)).toBe(0)
+      await runDailyReminders(dbUser.id)
+      expect(await smsSentTo(fakeBdapps, phone)).toBeGreaterThanOrEqual(1)
     } finally {
       await context.close()
     }
@@ -184,6 +217,16 @@ test.describe('Web billing: upgrade and unsubscribe', () => {
       await page.keyboard.press('Escape')
       await expect(lockModal).toBeVisible()
       expect(await lockModal.getByRole('button', { name: /close/i }).count()).toBe(0)
+
+      // The lock follows the user across every signed-in page and cannot be dismissed
+      for (const route of ['/calendar', '/insights', '/settings', '/symptoms', '/content']) {
+        await page.goto(route)
+        await expect(lockModal).toBeVisible({ timeout: 15_000 })
+        await page.keyboard.press('Escape')
+        await expect(lockModal).toBeVisible()
+      }
+      await page.goto('/dashboard')
+      await expect(lockModal).toBeVisible({ timeout: 15_000 })
 
       // Protected API routes return 402 TRIAL_EXPIRED while trial is expired
       const apiRes = await page.request.get('/api/profiles')
@@ -316,9 +359,8 @@ test.describe('Web billing: upgrade and unsubscribe', () => {
 /**
  * Pro-only features (subscription page "Free vs Pro" table; DEV_SRS FR-BILL / FR-SMS; TESTING.md FR-GATE):
  * SMS Alerts, Data Export, Advanced Predictions, Ad-free Experience.
- * DEV_SRS says route gating is deferred, but the subscription page sells these as Pro-only, so each
- * is checked. Only SMS alerts are actually gated in the app; the rest are marked test.fail() with the
- * issue that tracks the gap. Ad-free has nothing to gate: the app renders no ads at all.
+ * Only SMS alerts are gated in v1; Data Export and Advanced Predictions gating is deferred (FR-GATE) and
+ * asserted as ungated. Ad-free has nothing to gate: the app renders no ads at all.
  */
 test.describe('Web billing: Pro-only features are gated for a Free user', () => {
   test('the Free vs Pro table lists exactly which features are Pro-only', async ({ browser }) => {
@@ -327,12 +369,15 @@ test.describe('Web billing: Pro-only features are gated for a Free user', () => 
     try {
       await page.goto('/subscription')
       await expect(page.getByText('Cycle Circle Free', { exact: true })).toBeVisible()
-      const table = page.locator('.divide-y').filter({ hasText: 'Feature' })
+      // The comparison is an unnamed div grid (a11y issue #153): anchor on its heading, search the page
+      await expect(page.getByRole('heading', { name: 'Free vs Pro' })).toBeVisible()
+      // feature names also appear in the plan card above, so take the last (table) match
+      const table = page.getByRole('main')
       for (const feat of ['Cycle Tracking', 'Calendar View', 'Symptom Logging', 'Health Articles']) {
-        await expect(table.getByText(feat, { exact: true })).toBeVisible()
+        await expect(table.getByText(feat, { exact: true }).last()).toBeVisible()
       }
       for (const feat of ['SMS Alerts', 'Data Export', 'Advanced Predictions', 'Ad-free Experience']) {
-        await expect(table.getByText(feat, { exact: true })).toBeVisible()
+        await expect(table.getByText(feat, { exact: true }).last()).toBeVisible()
       }
       await expect(page.getByRole('button', { name: 'Unsubscribe from Pro' })).toHaveCount(0)
     } finally {
@@ -373,27 +418,25 @@ test.describe('Web billing: Pro-only features are gated for a Free user', () => 
     expect(await smsToUser()).toBeGreaterThanOrEqual(1)
   })
 
-  // Bug: https://github.com/adibahsan/cycle-circle/issues/149
-  test.fail('data export: a Free user cannot download their data', async ({ browser }) => {
+  // Data Export and Advanced Predictions are sold as Pro on the page, but their route gating is a
+  // documented post-v1 deferral (DEV_SRS FR-GATE; TESTING.md "Not testable (v1)"). These tests pin the
+  // CURRENT behaviour (ungated) so a change to it is noticed; flip them when FR-GATE ships.
+  test('data export: gating is deferred (FR-GATE), so a Free user can still download their data', async ({ browser }) => {
     const { context } = await createEmailTrialUser(browser, {}, { withProfile: true })
     const page = await context.newPage()
     try {
       await page.goto('/settings')
       const csv = page.getByRole('button', { name: /csv/i })
       await expect(csv).toBeVisible()
-      const outcome = page.waitForEvent('download', { timeout: 6_000 }).then(
-        () => 'downloaded',
-        () => 'blocked',
-      )
-      await csv.click({ timeout: 2_000 }).catch(() => {})
-      expect(await outcome).toBe('blocked')
+      const download = page.waitForEvent('download', { timeout: 10_000 })
+      await csv.click()
+      expect((await download).suggestedFilename()).toMatch(/\.csv$/i)
     } finally {
       await context.close()
     }
   })
 
-  // Bug: https://github.com/adibahsan/cycle-circle/issues/150
-  test.fail('advanced predictions: a Free user with 7 cycles still gets the basic tier, a Pro user gets ARIMA', async ({
+  test('advanced predictions: gating is deferred (FR-GATE), so a Free user with 7 cycles gets the same ARIMA tier as Pro', async ({
     browser,
     newUser,
     days,
@@ -414,7 +457,6 @@ test.describe('Web billing: Pro-only features are gated for a Free user', () => 
       return (await res.json()).prediction.tier as string
     }
 
-    // Control: a Pro user with the same history gets ARIMA
     const pro = await newUser()
     const proUser = await db.user.findFirstOrThrow({ where: { phone: toDbPhone(pro.phone) } })
     const proProfile = await db.profile.create({
@@ -423,15 +465,43 @@ test.describe('Web billing: Pro-only features are gated for a Free user', () => 
     await seedCycles(pro.page.request, proProfile.id)
     expect(await tierFor(pro.page.request, proProfile.id)).toBe('ARIMA')
 
-    // Free user: Advanced Predictions is Pro-only, so the basic tier is expected
     const { context, email } = await createEmailTrialUser(browser, {}, { withProfile: true })
     try {
       const freeUser = await db.user.findUniqueOrThrow({ where: { email }, include: { profiles: true } })
       const profileId = freeUser.profiles[0]!.id
       await seedCycles(context.request, profileId)
-      expect(await tierFor(context.request, profileId)).toBe('AVERAGE')
+      expect(await tierFor(context.request, profileId)).toBe('ARIMA')
     } finally {
       await context.close()
     }
+  })
+})
+
+test.describe('Web billing: BDApps subscription-notify (REGISTERED)', () => {
+  test('moves a Free subscriber to Pro, shows Pro after a reload, and the translog records the cause', async ({ newUser, fakeBdapps, db }) => {
+    const { phone, page } = await newUser()
+    const user = await db.user.findFirstOrThrow({ where: { phone: toDbPhone(phone) } })
+    await setUserSubscription({ userId: user.id, status: 'FREE' })
+    await page.goto('/subscription')
+    await expect(page.getByText('Cycle Circle Free', { exact: true })).toBeVisible()
+
+    // BDApps tells the app the number is registered (e.g. subscribed by USSD)
+    const subscriber = await fakeBdapps.subscriber(phone)
+    const stamp = new Date().toISOString().replace(/\D/g, '').slice(0, 14)
+    const sent = await fakeBdapps.sendWebhook('/api/webhooks/subscription/notify', {
+      applicationId: SECRETS.bdappsAppId,
+      subscriberId: subscriber!.maskedId,
+      status: 'REGISTERED',
+      timeStamp: stamp,
+    })
+    expect(sent).toMatchObject({ status: 200, body: { statusCode: 'S1000' } })
+
+    await page.reload()
+    await expect(page.getByText('Cycle Circle Pro', { exact: true })).toBeVisible()
+    await expect(page.getByText('Cycle Circle Free', { exact: true })).toHaveCount(0)
+
+    await expect
+      .poll(() => translogFor(user.id).find((l) => l.event === 'plan.change' && l.data.cause === 'webhook'))
+      .toMatchObject({ data: { from: 'FREE', to: 'PRO', cause: 'webhook', changed: true } })
   })
 })

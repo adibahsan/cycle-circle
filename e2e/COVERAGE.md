@@ -117,13 +117,13 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W48 | Upgrade Free to Pro through BDApps; Pro features unlock | `/subscription`, `/api/billing/subscribe` | `e2e/tests/web/billing.spec.ts` | full (Subscribe through fake BDApps; Pro after reload and /api/auth/status) | #125 |
+| W48 | Upgrade Free to Pro through BDApps; Pro features unlock | `/subscription`, phone OTP request/verify (`/api/billing/subscribe` is CAAS_DISABLED) | `e2e/tests/web/billing.spec.ts` | full (OTP verify call and REGISTERED subscriber on the fake; Pro after reload and /api/auth/status; reminder SMS sent) | #125 |
 | W49 | Unsubscribe: BDApps records it, user returns to Free | `/subscription`, `/api/billing/unsubscribe` | `e2e/tests/web/billing.spec.ts` | full (unsubscribe merchant call recorded; fake UNREGISTERED; Free after reload) | #125 |
-| W50 | Subscription-notify webhook changes plan and writes a Translog entry | `/api/webhooks/subscription/notify` | `e2e/tests/web/bdapps-webhook-unsubscribe.spec.ts` | partial | #125 (route-level: #132) |
-| W51 | Trial lock for an expired email trial (only upgrade or logout gets past) | trial lock, `withAuth` 402 | `e2e/tests/web/billing.spec.ts` | full (lock, 402 TRIAL_EXPIRED, no dismiss, upgrade and logout paths) | #125 |
-| W52 | Pro-only features gated for Free users | Pro-gated routes and UI | `e2e/tests/web/billing.spec.ts` | full (SMS alerts gated via cron; Data Export #149 and Advanced Predictions #150 expected-to-fail; Ad-free has no UI) | #125 |
-| W53 | BDApps failure during subscribe: clear error, plan unchanged | `/api/billing/subscribe` | `e2e/tests/web/billing.spec.ts` | full (scoped E1601 failure: error shown, plan Free after reload) | #125 (fake failures: #118) |
-| W54 | Subscription page: status, plan, trial pill | `/subscription` | `e2e/tests/web/billing.spec.ts` | partial (Free and Pro plan card, upgrade/unsubscribe buttons, Free vs Pro table) | #125 |
+| W50 | Subscription-notify webhook changes plan and writes a Translog entry | `/api/webhooks/subscription/notify` | `e2e/tests/web/bdapps-webhook-unsubscribe.spec.ts` (UNREGISTERED, story 56, #118), `e2e/tests/web/billing.spec.ts` (REGISTERED) | full | #118, #125 (route-level: #132) |
+| W51 | Trial lock for an expired email trial (only upgrade or logout gets past) | trial lock, `withAuth` 402 | `e2e/tests/web/billing.spec.ts` | full (lock persists across /dashboard, /calendar, /insights, /settings, /symptoms, /content; 402 TRIAL_EXPIRED; no dismiss; upgrade and logout paths) | #125 |
+| W52 | Pro-only features gated for Free users | Pro-gated routes and UI | `e2e/tests/web/billing.spec.ts` | partial (SMS alerts gated via cron, proven; Data Export and Advanced Predictions ungated, asserted as current behaviour, deferred by FR-GATE; Ad-free has no UI) | #125 |
+| W53 | BDApps failure during subscribe: clear error, plan unchanged | phone OTP request (`/api/billing/subscribe` is CAAS_DISABLED) | `e2e/tests/web/billing.spec.ts` | full (scoped E1601 failure: error shown, plan Free after reload) | #125 (fake failures: #118) |
+| W54 | Subscription page: status, plan, trial pill | `/subscription` | `e2e/tests/web/billing.spec.ts` | partial (Free and Pro plan card, upgrade/unsubscribe buttons, Free vs Pro table; table unnamed, a11y #153) | #125 |
 
 ### Web: landing and public pages
 
@@ -207,7 +207,7 @@ Cron routes, BDApps webhooks, the Resend webhook and health endpoints have no sc
 | S02 | Nightly-maintenance cron: accuracy snapshot, purge past restore window | `/api/cron/nightly-maintenance` | - | none | #132 |
 | S03 | CaaS-check cron reads balances from fake BDApps | `/api/cron/caas-check` | - | none | #132 |
 | S04 | Cron-secret auth: routes reject calls without the secret | all `/api/cron/*` | - | none | #132 |
-| S05 | BDApps webhook: subscription notify (subscribed, unsubscribed) | `/api/webhooks/subscription/notify` | - | none | #132 (plan effect: #125) |
+| S05 | BDApps webhook: subscription notify (subscribed, unsubscribed) | `/api/webhooks/subscription/notify` | `e2e/tests/web/bdapps-webhook-unsubscribe.spec.ts`, `e2e/tests/web/billing.spec.ts` | partial (plan effect: UNREGISTERED and REGISTERED; raw route: #132) | #118, #125, #132 |
 | S06 | BDApps webhook: SMS received, recorded as Webhook event, duplicates ignored | `/api/webhooks/sms/receive` | - | none | #132 |
 | S07 | BDApps webhook: USSD, recorded, duplicates ignored | `/api/webhooks/ussd/receive` | - | none | #132 |
 | S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | - | none | #132 (admin counts: #129) |
