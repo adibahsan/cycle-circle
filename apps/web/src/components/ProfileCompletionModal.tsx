@@ -1,12 +1,13 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { Phone, User, Mail, CircleAlert } from 'lucide-react';
+import { Phone, User, CircleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import type { PopupLayer } from '@vesta/shared/utils/popup-core';
-import { completeProfile, updateContactInfo, updateUserName } from '@/app/actions/user-actions';
+import { updateUserName } from '@/app/actions/user-actions';
 
 interface ProfileCompletionModalProps {
   open: boolean;
@@ -21,23 +22,8 @@ interface ProfileCompletionModalProps {
   layer?: PopupLayer;
 }
 
-function validatePhone(value: string) {
-  const digits = value.replace(/\D/g, '');
-  if (digits.length === 0) return 'Phone number is required';
-  if (digits.length !== 11) return 'Phone number must be 11 digits';
-  if (!digits.startsWith('01')) return 'Phone number must start with 01';
-  return '';
-}
-
 function validateFullName(value: string) {
   if (value.trim().length === 0) return 'Full name is required';
-  return '';
-}
-
-function validateEmail(value: string) {
-  const v = value.trim();
-  if (v.length === 0) return 'Email is required';
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Enter a valid email';
   return '';
 }
 
@@ -54,71 +40,24 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
   const needEmail = missing.includes('email');
 
   const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
   const [nameError, setNameError] = useState('');
-  const [phoneError, setPhoneError] = useState('');
-  const [emailError, setEmailError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-
-  function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value.replace(/[^\d]/g, '').slice(0, 11);
-    setPhone(raw);
-    if (phoneError) setPhoneError('');
-  }
 
   function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
     setFullName(e.target.value);
     if (nameError) setNameError('');
   }
 
-  function handleEmailChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setEmail(e.target.value);
-    if (emailError) setEmailError('');
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const nErr = needName ? validateFullName(fullName) : '';
-    const pErr = needPhone ? validatePhone(phone) : '';
-    const eErr = needEmail ? validateEmail(email) : '';
-    if (nErr || pErr || eErr) { setNameError(nErr); setPhoneError(pErr); setEmailError(eErr); return; }
+    if (nErr) { setNameError(nErr); return; }
 
     setSubmitting(true);
     setSubmitError('');
     try {
-      if (needName && needPhone) {
-        const r1 = await completeProfile({ fullName: fullName.trim(), phone });
-        if (!r1.ok) {
-          if (r1.code === 'PHONE_TAKEN') setPhoneError(t('settings.phoneInUse'));
-          else if (r1.code === 'INVALID_PHONE') setPhoneError(t('settings.phoneAddFailed'));
-          else setSubmitError(t('settings.emailAddFailed'));
-          return;
-        }
-        if (needEmail) {
-          const r2 = await updateContactInfo({ email: email.trim() });
-          if (!r2.ok) {
-            setEmailError(r2.code === 'EMAIL_TAKEN' ? t('settings.emailInUse') : t('settings.emailAddFailed'));
-            return;
-          }
-        }
-      } else {
-        if (needName) await updateUserName(fullName.trim());
-        const contact: { phone?: string; email?: string } = {};
-        if (needPhone) contact.phone = phone;
-        if (needEmail) contact.email = email.trim();
-        if (Object.keys(contact).length) {
-          const r = await updateContactInfo(contact);
-          if (!r.ok) {
-            if (r.code === 'PHONE_TAKEN') setPhoneError(t('settings.phoneInUse'));
-            else if (r.code === 'EMAIL_TAKEN') setEmailError(t('settings.emailInUse'));
-            else if (r.code === 'INVALID_PHONE') setPhoneError(t('settings.phoneAddFailed'));
-            else setSubmitError(t('settings.emailAddFailed'));
-            return;
-          }
-        }
-      }
+      if (needName) await updateUserName(fullName.trim());
       onCompleted?.();
       if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
       onClose();
@@ -157,19 +96,29 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
       <Button type="button" variant="ghost" size="md" onClick={onClose} className="flex-1 rounded-xl">
         {t('common.later')}
       </Button>
-      <Button type="submit" form="profile-completion-form" variant="primary" size="md" disabled={submitting} className="flex-1 rounded-xl">
-        {submitting ? (
-          <span className="flex items-center gap-2">
-            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-            </svg>
-            {t('common.saving')}
-          </span>
-        ) : (
-          t('profile.completeAction')
-        )}
-      </Button>
+      {needName ? (
+        <Button type="submit" form="profile-completion-form" variant="primary" size="md" disabled={submitting} className="flex-1 rounded-xl">
+          {submitting ? (
+            <span className="flex items-center gap-2">
+              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+              {t('common.saving')}
+            </span>
+          ) : (
+            t('profile.completeAction')
+          )}
+        </Button>
+      ) : (
+        <Link
+          href="/settings"
+          onClick={onClose}
+          className="flex-1 inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-base font-semibold bg-[var(--color-action)] text-[var(--color-on-action)] shadow-soft transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+        >
+          {t('nav.settings')}
+        </Link>
+      )}
     </div>
   );
 
@@ -237,117 +186,6 @@ export function ProfileCompletionModal({ open, onClose, onCompleted, percent, it
                   >
                     <CircleAlert size={15} aria-hidden="true" className="shrink-0" />
                     {nameError}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Phone Number */}
-            {needPhone && (
-              <div>
-                <label
-                  htmlFor="completion-phone"
-                  className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5"
-                >
-                  {t('auth.phone')}
-                </label>
-                <div className="relative">
-                  {/* Country prefix */}
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-secondary)] select-none pointer-events-none">
-                    🇧🇩 +88
-                  </span>
-                  <input
-                    ref={missing[0] === 'phone' ? firstFocusableRef : undefined}
-                    id="completion-phone"
-                    type="tel"
-                    inputMode="numeric"
-                    name="phone"
-                    autoComplete="tel"
-                    spellCheck={false}
-                    placeholder={t('auth.phonePlaceholder')}
-                    value={phone}
-                    onChange={handlePhoneChange}
-                    maxLength={11}
-                    className={`w-full pl-20 pr-10 py-3 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/30 focus-visible:border-[var(--goal-accent)] transition-colors duration-200 text-base tracking-widest font-medium ${
-                      phoneError
-                        ? 'border-[var(--color-error)] focus-visible:ring-[var(--color-error)]/30'
-                        : 'border-[var(--color-border)]'
-                    }`}
-                    aria-describedby={phoneError ? 'completion-phone-error' : undefined}
-                  />
-                  {phone.length === 11 && !phoneError && (
-                    <span
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--goal-accent)]"
-                      aria-hidden="true"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <circle cx="9" cy="9" r="9" fill="currentColor" fillOpacity="0.15" />
-                        <path
-                          d="M5 9l3 3 5-5"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </span>
-                  )}
-                </div>
-                {phoneError && (
-                  <p
-                    id="completion-phone-error"
-                    role="alert"
-                    aria-live="polite"
-                    className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1.5"
-                  >
-                    <CircleAlert size={15} aria-hidden="true" className="shrink-0" />
-                    {phoneError}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Email */}
-            {needEmail && (
-              <div>
-                <label
-                  htmlFor="completion-email"
-                  className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5"
-                >
-                  {t('settings.email')}
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">
-                    <Mail size={16} aria-hidden="true" />
-                  </span>
-                  <input
-                    ref={missing[0] === 'email' ? firstFocusableRef : undefined}
-                    id="completion-email"
-                    type="email"
-                    name="email"
-                    autoComplete="email"
-                    spellCheck={false}
-                    inputMode="email"
-                    placeholder={t('settings.emailInputPlaceholder')}
-                    value={email}
-                    onChange={handleEmailChange}
-                    className={`w-full pl-10 pr-4 py-3 rounded-xl border bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]/30 focus-visible:border-[var(--goal-accent)] transition-colors duration-200 text-base ${
-                      emailError
-                        ? 'border-[var(--color-error)] focus-visible:ring-[var(--color-error)]/30'
-                        : 'border-[var(--color-border)]'
-                    }`}
-                    aria-describedby={emailError ? 'completion-email-error' : undefined}
-                  />
-                </div>
-                {emailError && (
-                  <p
-                    id="completion-email-error"
-                    role="alert"
-                    aria-live="polite"
-                    className="mt-1.5 text-sm text-[var(--color-error)] flex items-center gap-1.5"
-                  >
-                    <CircleAlert size={15} aria-hidden="true" className="shrink-0" />
-                    {emailError}
                   </p>
                 )}
               </div>

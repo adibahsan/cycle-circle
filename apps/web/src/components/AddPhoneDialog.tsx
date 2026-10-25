@@ -26,6 +26,7 @@ const ERROR_CODE_MAP: Record<string, string> = {
   CHALLENGE_NOT_FOUND: 'trial.err.invalidCode',
   ALREADY_VERIFIED: 'trial.err.invalidCode',
   INVALID_PHONE: 'trial.err.invalidPhone',
+  OPERATOR_NOT_SUPPORTED: 'auth.operatorNotSupported',
 };
 
 function mapErrorCode(code: string | undefined): string {

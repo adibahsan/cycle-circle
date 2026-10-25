@@ -286,7 +286,8 @@ server {
 # to match apps/web/vercel.json's schedule (08:00 / 02:00 UTC = 14:00 / 08:00 Asia/Dhaka).
 # If the server stays on Europe/Berlin, these fire 1–2 h earlier in UTC terms (DST-dependent).
 
-# Mirrors apps/web/vercel.json crons: daily-reminders 08:00 UTC, caas-check 02:00 UTC.
+# Mirrors apps/web/vercel.json crons: daily-reminders 08:00 UTC, caas-check 02:00 UTC
+# (caas-check is the daily subscription check: BDApps subscriber status only; the slug is historical).
 # apps/web/worker/index.ts (BullMQ) is a LOCAL DEV alternative only — do not run it in prod.
 0 8 * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/daily-reminders >> /var/log/vesta/cron-daily-reminders.log 2>&1
 0 2 * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/caas-check >> /var/log/vesta/cron-caas-check.log 2>&1
@@ -359,7 +360,7 @@ Run these as the `vesta` user (sudo where noted). Assumes §2's artifacts exist 
    chmod 600 /opt/vesta/.env.*.production
    # Edit each with a real editor (vim/nano) — never echo secrets into shell history.
    ```
-   Double-check: `JWT_SECRET` and `CRON_SECRET` identical across web and admin; postgres password in `DATABASE_URL` matches `POSTGRES_PASSWORD` in `.env.postgres.production`. For VPS v1 staging, use `DEV_MODE=true` in web env and `NEXT_PUBLIC_DEV_MODE=true` in `ops/deploy/.env` before web build — see [07-dns-and-env-runbook.md §5](./07-dns-and-env-runbook.md).
+   Double-check: `CRON_SECRET` identical across web and admin; `JWT_SECRET` **different** in each; `APP_ENV=production` (staging: `staging`) in both; postgres password in `DATABASE_URL` matches `POSTGRES_PASSWORD` in `.env.postgres.production`. For VPS v1 staging, use `DEV_MODE=true` in web env and `NEXT_PUBLIC_DEV_MODE=true` in `ops/deploy/.env` before web build — see [07-dns-and-env-runbook.md §5](./07-dns-and-env-runbook.md).
 
 4. **Build the images:**
    ```bash

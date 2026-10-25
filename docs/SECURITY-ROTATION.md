@@ -17,7 +17,7 @@ Use this after production secrets were removed from git history. **Purging histo
 openssl rand -hex 32
 ```
 
-Update the **same** value in Vercel web + admin (shared auth cookie).
+Web and admin each have their own `JWT_SECRET` (ADR 0007): rotate the one for the app you are rotating, and never copy the value across apps.
 
 ## 3. CRON_SECRET
 

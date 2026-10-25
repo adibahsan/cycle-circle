@@ -12,6 +12,7 @@ import {
   recalculatePrediction,
   saveSymptomLogs,
 } from '@vesta/shared/server/services'
+import { ApiError } from '@vesta/shared/server/api-error'
 import { cacheTags } from '@/lib/cache-tags'
 
 const createPeriodLogSchema = z.object({
@@ -21,16 +22,34 @@ const createPeriodLogSchema = z.object({
   flowIntensity: z.enum(['LIGHT', 'MEDIUM', 'HEAVY']),
 })
 
+/**
+ * Server-action errors are scrubbed in production (only a digest reaches the client), so an
+ * expected overlap is returned as a value the client can read instead of thrown.
+ */
+export type PeriodOverlapResult = { error: 'PERIOD_OVERLAP' }
+
+function asOverlap(err: unknown): PeriodOverlapResult | null {
+  return err instanceof ApiError && err.code === 'PERIOD_OVERLAP' ? { error: 'PERIOD_OVERLAP' } : null
+}
+
 export async function createPeriodLog(input: z.infer<typeof createPeriodLogSchema>) {
   const jwt = await requireAuth()
   const user = await getAuthUser(jwt.sub)
   const data = createPeriodLogSchema.parse(input)
 
-  const { log, shouldRecalcPrediction } = await svcCreatePeriodLog(data.profileId, user.id, {
-    startDate: data.startDate,
-    endDate: data.endDate,
-    flowIntensity: data.flowIntensity,
-  })
+  let created
+  try {
+    created = await svcCreatePeriodLog(data.profileId, user.id, {
+      startDate: data.startDate,
+      endDate: data.endDate,
+      flowIntensity: data.flowIntensity,
+    })
+  } catch (err) {
+    const overlap = asOverlap(err)
+    if (overlap) return overlap
+    throw err
+  }
+  const { log, shouldRecalcPrediction } = created
 
   if (shouldRecalcPrediction) {
     await recalculatePrediction(data.profileId)
@@ -50,7 +69,15 @@ export async function updatePeriodLog(logId: string, input: z.infer<typeof updat
   const user = await getAuthUser(jwt.sub)
   const data = updatePeriodLogSchema.parse(input)
 
-  const { log, profileId, shouldRecalcPrediction } = await svcUpdatePeriodLog(logId, user.id, data)
+  let updated
+  try {
+    updated = await svcUpdatePeriodLog(logId, user.id, data)
+  } catch (err) {
+    const overlap = asOverlap(err)
+    if (overlap) return overlap
+    throw err
+  }
+  const { log, profileId, shouldRecalcPrediction } = updated
 
   if (shouldRecalcPrediction) {
     await recalculatePrediction(profileId)

@@ -9,6 +9,7 @@ import { Phone, Shield, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { PhoneField } from '@/components/auth/PhoneField';
+import { authErrorMessage } from '@/lib/auth-errors';
 import { devMode, DEV_DEFAULT_PHONE } from '@vesta/shared/utils/config';
 import '@vesta/shared/utils/i18n';
 
@@ -64,15 +65,10 @@ export default function LoginPage() {
       });
       const body = await res.json().catch(() => ({})) as {
         referenceNo?: string;
-        error?: string | { message: string; code?: string; hasEmail?: boolean };
+        error?: string | { message?: string; code?: string; hasEmail?: boolean };
       };
       if (!res.ok) {
-        const err = typeof body.error === 'object' ? body.error : undefined;
-        if (err?.code === 'ALREADY_SUBSCRIBED') {
-          setError(t(err.hasEmail ? 'auth.alreadySubscribedEmail' : 'auth.alreadySubscribedNoEmail'));
-          return;
-        }
-        setError(err?.message ?? (typeof body.error === 'string' ? body.error : t('auth.sendOtpFailed')));
+        setError(authErrorMessage(body, 'auth.sendOtpFailed', t));
         return;
       }
       const { referenceNo } = body;

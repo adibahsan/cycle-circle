@@ -17,8 +17,10 @@ BDAPPS_APP_ID=APP_140389
 BDAPPS_PASSWORD="realpassword"
 DEV_MODE=false
 NEXT_PUBLIC_DEV_MODE=false
+APP_ENV=production
+JWT_SECRET=web-secret-0123456789abcdef0123456789abcdef
 ENV
-  printf 'BDAPPS_APP_ID=APP_140389\nBDAPPS_PASSWORD=realpassword\r\n' > "$T/r/.env.admin.production"
+  printf 'BDAPPS_APP_ID=APP_140389\nBDAPPS_PASSWORD=realpassword\r\nAPP_ENV=production\nJWT_SECRET=admin-secret-0123456789abcdef0123456789abcd\n' > "$T/r/.env.admin.production"
   printf 'NGINX_CONF=nginx/cycle-circle.conf\nNEXT_PUBLIC_DEV_MODE=false\n' > "$T/r/ops/deploy/.env"
 }
 
@@ -46,5 +48,8 @@ good; echo 'BDAPPS_SIMULATOR_BASE_URL=http://127.0.0.1:7002' >> "$T/r/.env.web.p
 good; echo 'BDAPPS_SIMULATOR_BASE_URL=' >> "$T/r/.env.web.production"; expect pass "simulator base URL empty"
 good; rm "$T/r/.env.web.production"; expect fail "missing web env file"
 good; set_kv "$T/r/.env.web.production" DEV_MODE true; expect pass "ALLOW_DEV_MODE=1 overrides (staging)" ALLOW_DEV_MODE=1
+good; set_kv "$T/r/.env.admin.production" APP_ENV ''; expect fail "APP_ENV missing in admin env (ADR 0007)"
+good; set_kv "$T/r/.env.web.production" JWT_SECRET local-dev-jwt-secret-minimum-32-characters-long; expect fail "local-dev JWT_SECRET in web env"
+good; set_kv "$T/r/.env.admin.production" JWT_SECRET web-secret-0123456789abcdef0123456789abcdef; expect fail "web and admin share JWT_SECRET"
 
 [[ $fail -eq 0 ]] && echo "PASS: check-prod-env" || { echo "check-prod-env tests failed"; exit 1; }

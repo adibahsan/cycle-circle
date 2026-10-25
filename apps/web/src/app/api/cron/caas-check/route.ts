@@ -31,7 +31,8 @@ const handler = withCronAuth(async (request) => {
     // Keep Supabase Free tier alive (auto-pauses after 7 days of inactivity)
     await prisma.$queryRaw`SELECT 1`
 
-    // CaaS balance checks return here when BDApps enables CaaS.
+    // Future note: CaaS balance checks may return here if BDApps enables CaaS for our app.
+    // Today this job only reads subscriber status (getSubscriptionStatus); it makes no CaaS calls.
     const subscribers = await listBdappsSubscribers()
 
     let checked = 0

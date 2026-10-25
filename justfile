@@ -287,7 +287,7 @@ webhook-smoke:
 cron-reminders:
     curl -s -X POST http://localhost:3000/api/cron/daily-reminders -H "Authorization: Bearer ${CRON_SECRET}" | python3 -m json.tool
 
-# Trigger CAAS balance check cron manually
+# Trigger the daily subscription check (route slug caas-check) manually
 cron-caas:
     curl -s -X POST http://localhost:3000/api/cron/caas-check -H "Authorization: Bearer ${CRON_SECRET}" | python3 -m json.tool
 

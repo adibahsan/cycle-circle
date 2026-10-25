@@ -5,6 +5,7 @@ import type { EmailType } from '@prisma/client'
 import { env } from '../../utils/env'
 import { prisma } from '../db'
 import { buildMagicLinkEmailHtml } from '../magic-link-email'
+import { buildVerificationCodeEmailHtml } from '../verification-code-email'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -117,6 +118,19 @@ export async function sendEmail(
     })
     throw err
   }
+}
+
+// ─── Verification-code email ──────────────────────────────────────────────────
+
+/** Send the 6-digit code that proves a signed-in user owns `email` before it is saved. */
+export async function sendVerificationCodeEmail(
+  email: string,
+  code: string,
+  language: 'en' | 'bn',
+  userId?: string,
+): Promise<void> {
+  const { subject, html } = buildVerificationCodeEmailHtml(code, language)
+  await sendEmail(email, subject, html, { type: 'VERIFICATION_CODE', userId })
 }
 
 // ─── Magic-link email ─────────────────────────────────────────────────────────

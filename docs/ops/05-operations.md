@@ -327,7 +327,8 @@ Create the log directory once first: `mkdir -p /opt/vesta/logs`.
 0 8 * * * curl -fsS -X GET https://cycle-circle.com/api/cron/daily-reminders \
   -H "Authorization: Bearer $CRON_SECRET" >> /opt/vesta/logs/cron-reminders.log 2>&1
 
-# CAAS balance check + Supabase-era keep-alive query — historically run at 02:00 UTC
+# Daily subscription check (BDApps subscriber-status: downgrades UNREGISTERED, restores re-subscribed)
+# + Supabase-era keep-alive query — historically run at 02:00 UTC. Route slug stays `caas-check`.
 0 2 * * * curl -fsS -X GET https://cycle-circle.com/api/cron/caas-check \
   -H "Authorization: Bearer $CRON_SECRET" >> /opt/vesta/logs/cron-caas.log 2>&1
 
@@ -356,8 +357,8 @@ tail -50 /opt/vesta/logs/cron-caas.log
 grep CRON /var/log/syslog   # or: journalctl | grep -i cron  — confirms crond fired the job at all
 ```
 
-A healthy run's JSON response includes counts (`{"checked":N,"healthy":N,...}` for
-`caas-check`; reminder counts + `smsBroadcast` for `daily-reminders`) — an empty
+A healthy run's JSON response includes counts (`{"checked":N,"downgraded":N,"skipped":N,"errors":N,"reinstated":N}` for
+`caas-check`, the daily subscription check; reminder counts + `smsBroadcast` for `daily-reminders`) — an empty
 `curl` output or a non-200 means the trigger itself failed, not just "nothing to do".
 
 ### Triggering manually

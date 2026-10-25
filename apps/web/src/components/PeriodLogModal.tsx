@@ -83,7 +83,7 @@ function PeriodLogModalBody({
   const [startDate, setStartDate] = useState(initialStart || (isEdit ? '' : todayStr))
   const [endDate, setEndDate] = useState(initialEnd || (isEdit ? '' : todayStr))
   const [flow, setFlow] = useState<FlowIntensity>(initialFlow)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState<false | 'overlap' | 'generic'>(false)
   const [isPending, startTransition] = useTransition()
 
   const handleSave = () => {
@@ -91,19 +91,24 @@ function PeriodLogModalBody({
     setError(false)
     startTransition(async () => {
       try {
+        let result
         if (isEdit && logId) {
-          await updatePeriodLog(logId, {
+          result = await updatePeriodLog(logId, {
             startDate,
             endDate,
             flowIntensity: toActionFlow(flow),
           })
         } else {
-          await createPeriodLog({
+          result = await createPeriodLog({
             profileId: logProfileId,
             startDate,
             endDate,
             flowIntensity: toActionFlow(flow),
           })
+        }
+        if ('error' in result && result.error === 'PERIOD_OVERLAP') {
+          setError('overlap')
+          return
         }
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
@@ -112,7 +117,7 @@ function PeriodLogModalBody({
         onClose()
       } catch (err) {
         console.error('Failed to save period log:', err)
-        setError(true)
+        setError('generic')
       }
     })
   }
@@ -132,11 +137,13 @@ function PeriodLogModalBody({
 
   const footer = (
     <div className="px-5 pt-3 pb-5">
-      {error && (
-        <p role="alert" className="mb-2 text-sm text-[var(--color-error)]">
-          {t('common.error')}
-        </p>
-      )}
+      <div aria-live="polite">
+        {error && (
+          <p role="alert" className="mb-2 text-sm text-[var(--color-error)]">
+            {error === 'overlap' ? t('dashboard.periodOverlap') : t('common.error')}
+          </p>
+        )}
+      </div>
       <Button
         variant="primary"
         fullWidth

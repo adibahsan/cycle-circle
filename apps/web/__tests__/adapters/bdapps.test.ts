@@ -83,6 +83,12 @@ describe('BDApps subscription adapter', () => {
     await expect(requestOtp('+8801805718862')).rejects.toMatchObject({ statusCode: 409, code: 'ALREADY_SUBSCRIBED' })
   })
 
+  it('reports an unsupported operator (E1301) as 422 OPERATOR_NOT_SUPPORTED without retrying', async () => {
+    reply({ statusCode: 'E1301', statusDetail: 'Requested ApplicationID is not allowed within the System for operator unknown.' })
+    await expect(requestOtp('+8801805718862')).rejects.toMatchObject({ statusCode: 422, code: 'OPERATOR_NOT_SUPPORTED' })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it('does not retry an HTTP 4xx', async () => {
     fetchMock.mockResolvedValueOnce(new Response('Not Found', { status: 404 }))
     await expect(verifyOtp('REF1', '000000')).rejects.toMatchObject({ code: 'BDAPPS_HTTP_ERROR' })

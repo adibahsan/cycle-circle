@@ -185,7 +185,7 @@ export function SystemClient({
     if (slug === 'daily-reminders') {
       startReminders(runSafely('Daily reminders', triggerDailyReminders, setRemindersResult))
     } else if (slug === 'caas-check') {
-      startCaas(runSafely('Subscription check', triggerCaasCheck, setCaasResult))
+      startCaas(runSafely('Daily subscription check', triggerCaasCheck, setCaasResult))
     }
   }
 
@@ -237,8 +237,8 @@ export function SystemClient({
         />
 
         <JobCard
-          title="Subscription check"
-          caption="Re-checks Pro subscribers' CAAS balance; lapses subscriptions after repeated billing failures."
+          title="Daily subscription check"
+          caption="Asks BDApps whether each Pro subscriber is still subscribed (subscriber status). Downgrades numbers BDApps reports as unsubscribed and restores revoked users who re-subscribed."
           schedule="02:00 UTC daily"
           result={caasResult}
           isPending={isCaasPending}
@@ -254,10 +254,10 @@ export function SystemClient({
         open={confirmSlug !== null}
         onClose={() => setConfirmSlug(null)}
         onConfirm={handleConfirmRun}
-        title={confirmSlug === 'caas-check' ? 'Run subscription check now?' : 'Send daily reminders now?'}
+        title={confirmSlug === 'caas-check' ? 'Run the daily subscription check now?' : 'Send daily reminders now?'}
         message={
           confirmSlug === 'caas-check'
-            ? 'This runs real CAAS billing checks and can lapse subscriptions after repeated failures.'
+            ? 'It calls the live BDApps subscriber-status API for every Pro subscriber.'
             : 'This sends real reminder emails and notifications to active subscribers.'
         }
         confirmLabel="Run now"

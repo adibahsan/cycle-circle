@@ -27,6 +27,8 @@ async function tokenIssuedAt(sub: string, iatSeconds: number) {
   return new SignJWT({ role: 'USER' })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(sub)
+    .setIssuer(`vesta:${env.APP_ENV}`)
+    .setAudience('vesta-web')
     .setJti(crypto.randomUUID())
     .setIssuedAt(iatSeconds)
     .setExpirationTime(iatSeconds + 3600 * 24)
