@@ -63,11 +63,15 @@ e2e/
   tests/web/             project web-*       (baseURL = web)
   tests/admin/           project admin-*     (baseURL = admin)
   tests/cross-app/       project cross-app-* (baseURL = web; open admin with URLS.admin)
+  fixtures/              small binary fixtures (e.g. `article-red-1x1.png` for CMS image upload)
   COVERAGE.md            feature → spec → depth
 ```
 
 Name specs after the feature (`tests/web/period-logging.spec.ts`). Every spec runs at desktop and
 phone width; use `test.skip(testInfo.project.name.endsWith('-phone'), 'why')` only with a reason.
+
+Cross-app admin→web content (#128): `tests/cross-app/admin-content.spec.ts` uses `createLoggedInAdmin`
+plus a throwaway `newUser()`; article titles are prefixed `E2E128` so they never collide with #124.
 
 ## Helpers
 

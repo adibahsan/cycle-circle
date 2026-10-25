@@ -19,18 +19,18 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Web: onboarding and profiles | 9 | 3 | 6 | 0 | 0 |
 | Web: logging | 9 | 4 | 2 | 3 | 0 |
 | Web: dashboard, calendar, predictions, insights | 12 | 2 | 10 | 0 | 0 |
-| Web: content, feedback, settings | 8 | 2 | 5 | 1 | 0 |
+| Web: content, feedback, settings | 8 | 1 | 5 | 1 | 1 |
 | Web: billing | 7 | 2 | 4 | 1 | 0 |
 | Web: landing and public pages | 4 | 0 | 4 | 0 | 0 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 5 | 0 | 0 |
-| **Web total** | 63 | 16 | 36 | 5 | 6 |
+| **Web total** | 63 | 15 | 36 | 5 | 7 |
 | Admin: access and read-only views | 5 | 1 | 0 | 4 | 0 |
 | Admin: user actions | 4 | 3 | 0 | 1 | 0 |
-| Admin: content | 2 | 2 | 0 | 0 | 0 |
+| Admin: content | 2 | 0 | 0 | 0 | 2 |
 | Admin: analytics and engagement | 2 | 2 | 0 | 0 | 0 |
 | Admin: SMS | 2 | 2 | 0 | 0 | 0 |
 | Admin: feedback, emails, audit, logs, system | 6 | 6 | 0 | 0 | 0 |
-| **Admin total** | 21 | 16 | 0 | 5 | 0 |
+| **Admin total** | 21 | 14 | 0 | 5 | 2 |
 | Server-only (not counted) | 10 | 9 | 0 | 1 | 0 |
 
 Notes on the tally:
@@ -105,7 +105,7 @@ Notes on the tally:
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
 | W40 | Learn: filter articles by phase, open the reader, English and Bengali | `/content` | `apps/web/e2e/tests/page-shell.spec.ts`, `apps/web/e2e/tests/card-rows.spec.ts` (layout only) | look-only | #124 |
-| W41 | Draft article never shown to users | `/content` | - | none | #124 (authoring side: #128) |
+| W41 | Draft article never shown to users | `/content` | `e2e/tests/cross-app/admin-content.spec.ts` | full | #128 (web Learn UI: #124) |
 | W42 | Feedback: submit and see it in history | `/feedback` | `apps/web/e2e/tests/page-leftovers.spec.ts` (layout only) | look-only | #124 |
 | W43 | Notification preferences and reminder opt-out (cron skips the user) | `/settings` | `apps/web/e2e/tests/account-look.spec.ts` (layout only) | look-only | #124 (cron side: #132) |
 | W44 | Data export: CSV and XLSX contain logged entries | `/settings` | - | none | #124 |
@@ -169,8 +169,8 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A10 | Content authoring: bilingual article, phase tags, image upload, draft, publish, seen on web | `/content`, `/content/new`, `/content/[id]`, `/uploads/[name]` | - | none | #128 |
-| A11 | Content sanitizing: unsafe HTML removed before it reaches web | `/content/new`, `/content/[id]` | - | none | #128 |
+| A10 | Content authoring: bilingual article, phase tags, image upload, draft, publish, seen on web | `/content`, `/content/new`, `/content/[id]`, `/uploads/[name]` | `e2e/tests/cross-app/admin-content.spec.ts` | full (draft hidden on web; publish → Follicular filter; EN/BN reader + `/uploads/` image) | #128 |
+| A11 | Content sanitizing: unsafe HTML removed before it reaches web | `/content/new`, `/content/[id]` | `e2e/tests/cross-app/admin-content.spec.ts` | full (paste script/iframe/evil img; web reader keeps safe text only) | #128 |
 
 ### Admin: analytics and engagement
 
