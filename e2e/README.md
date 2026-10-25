@@ -72,6 +72,9 @@ phone width; use `test.skip(testInfo.project.name.endsWith('-phone'), 'why')` on
 
 Cross-app admin→web content (#128): `tests/cross-app/admin-content.spec.ts` uses `createLoggedInAdmin`
 plus a throwaway `newUser()`; article titles are prefixed `E2E128` so they never collide with #124.
+Sanitizer coverage pastes rich HTML into Tiptap and also rewrites the `createArticle` Next-Action
+POST body (raw HTML bypassing the editor) so stored HTML and the web reader can be checked separately.
+Tiptap editors lack accessible names — CSS `.ProseMirror` with a comment pointing at #141.
 
 ## Helpers
 
