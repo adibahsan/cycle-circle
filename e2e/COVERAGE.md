@@ -73,14 +73,14 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W19 | Log a period; dashboard, calendar and prediction update after reload | `/calendar`, `/dashboard`, `/api/tracking/period-logs` | `e2e/tests/web/period-logging.spec.ts` | full | #122 |
+| W19 | Log a period; dashboard last-period card and calendar update after reload (prediction values not asserted; future dates accepted: #139; Bangladesh default day: #115) | `/calendar`, `/dashboard`, `/api/tracking/period-logs` | `e2e/tests/web/period-logging.spec.ts` | partial | #122 |
 | W20 | Edit and delete a past period | `/calendar`, `/api/tracking/period-logs/[id]` | `e2e/tests/web/period-logging.spec.ts` (delete missing affordance: #136), `apps/web/e2e/tests/calendar-days.spec.ts` | partial | #122 |
 | W21 | Period date validation: end before start, future date | period log form, `/api/tracking/period-logs` | `e2e/tests/web/period-logging.spec.ts` (future date accepted: #139) | partial | #122 |
 | W22 | Symptom logging across four categories (save, reload, still selected) | `/symptoms`, `/api/tracking/symptoms` | `e2e/tests/web/symptom-logging.spec.ts`, `apps/web/e2e/tests/symptoms-save.spec.ts`, `apps/web/e2e/tests/symptoms-look.spec.ts` | full | #122 |
 | W23 | Back-dated symptom logging with the date picker | `/symptoms` | `e2e/tests/web/symptom-logging.spec.ts` | full | #122 |
-| W24 | Daily Check-in, including "all good" (recorded, not offered again that Bangladesh day) | dashboard check-in dialog | `e2e/tests/web/symptom-logging.spec.ts`, `apps/web/e2e/tests/symptoms-save.spec.ts`, `apps/web/e2e/tests/dashboard-popups.spec.ts` | full | #122 |
-| W25 | Quick-symptom pop-up saves a log | dashboard quick-symptom dialog | `e2e/tests/web/symptom-logging.spec.ts`, `apps/web/e2e/tests/symptoms-save.spec.ts`, `apps/web/e2e/tests/dashboard-popups.spec.ts` | full | #122 |
-| W26 | Logging nudge: appears after 3 days without a log, clears after logging | `/api/tracking/logging-status`, nudge banner | `e2e/tests/web/symptom-logging.spec.ts`, `apps/web/e2e/tests/auto-prompts.spec.ts` | full | #122 |
+| W24 | Daily Check-in, including "all good" (recorded, not offered again that Bangladesh day) | dashboard check-in dialog | `e2e/tests/web/symptom-logging.spec.ts`, `apps/web/e2e/tests/dashboard-popups.spec.ts` | full | #122 |
+| W25 | Quick-symptom pop-up saves a log | dashboard quick-symptom dialog | `e2e/tests/web/symptom-logging.spec.ts`, `apps/web/e2e/tests/dashboard-popups.spec.ts` | full | #122 |
+| W26 | Logging nudge: appears after 3 days without a log, clears after logging | `/api/tracking/logging-status`, nudge banner | `e2e/tests/web/symptom-logging.spec.ts` | full | #122 |
 | W27 | Default log date is the Bangladesh day, not the device day (expected-to-fail, bug) | log forms, date pickers | `e2e/tests/web/period-logging.spec.ts` (expected failure: #115) | partial | #122 |
 
 ### Web: dashboard, calendar, predictions, insights

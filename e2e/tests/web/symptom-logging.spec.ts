@@ -14,7 +14,7 @@ test.describe('symptom logging flows', () => {
   }) => {
     const { page } = await newUser()
     await suppressAutoPrompts(page)
-    const profile = await setupProfile(page, { name: 'Symptom User W22' })
+    await setupProfile(page, { name: 'Symptom User W22' })
 
     await page.goto('/symptoms')
     await expect(page.getByRole('heading', { name: 'Symptoms', level: 1 })).toBeVisible()
@@ -47,10 +47,6 @@ test.describe('symptom logging flows', () => {
     // Save button should disappear once saved
     await expect(page.getByRole('button', { name: /^Save \d+ changes/i })).not.toBeVisible({ timeout: 15_000 })
 
-    // Verify in DB directly
-    const logs = await db.symptomLog.findMany({ where: { profileId: profile.id } })
-    expect(logs.length).toBe(4)
-
     // Reload page
     await page.reload()
     await expect(page.getByRole('heading', { name: 'Symptoms', level: 1 })).toBeVisible()
@@ -74,105 +70,107 @@ test.describe('symptom logging flows', () => {
   }) => {
     const { page } = await newUser()
     await suppressAutoPrompts(page)
-    const profile = await setupProfile(page, { name: 'Past Symptom User W23' })
+    await setupProfile(page, { name: 'Past Symptom User W23' })
 
     const targetDateStr = days.daysAgo(3)
 
     await page.goto('/symptoms')
     await expect(page.getByRole('heading', { name: 'Symptoms', level: 1 })).toBeVisible()
 
-    // Select the past date from MonthGrid date picker
+    // Three days ago can fall in the previous month (1st to 3rd): step the picker back to it.
+    if (targetDateStr.slice(0, 7) !== days.today.slice(0, 7)) {
+      await page.getByRole('button', { name: 'Previous month' }).click()
+    }
     const dayButton = page.locator(`button[data-date="${targetDateStr}"]`).first()
     await expect(dayButton).toBeVisible()
     await dayButton.click()
-
-    // URL should reflect the chosen date
     await expect(page).toHaveURL(new RegExp(`date=${targetDateStr}`))
 
-    // Pick an unpressed chip
     const group = page.getByRole('group', { name: 'Physical', exact: true })
-    const chip = group.locator('button[aria-pressed="false"]').first()
-    await expect(chip).toBeVisible()
-    const chipName = (await chip.getAttribute('aria-label')) || (await chip.textContent())
-    expect(chipName).toBeTruthy()
+    const chip = group.getByRole('button', { name: 'Cramps', exact: true })
+    await expect(chip).toHaveAttribute('aria-pressed', 'false')
     await chip.click()
-    await expect(group.getByRole('button', { name: chipName!.trim(), exact: true })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    await expect(chip).toHaveAttribute('aria-pressed', 'true')
 
-    // Click Save
     const saveBtn = page.getByRole('button', { name: /^Save \d+ changes/i }).locator('visible=true').first()
     await expect(saveBtn).toBeVisible()
     await saveBtn.click()
-
     await expect(page.getByRole('button', { name: /^Save \d+ changes/i })).not.toBeVisible({ timeout: 15_000 })
 
-    // Verify in DB
-    const savedLogs = await db.symptomLog.findMany({
-      where: {
-        profileId: profile.id,
-        date: {
-          gte: new Date(`${targetDateStr}T00:00:00.000Z`),
-          lte: new Date(`${targetDateStr}T23:59:59.999Z`),
-        },
-      },
-    })
-    expect(savedLogs.length).toBeGreaterThanOrEqual(1)
-
-    // Reload with date in query and verify chip is pressed
+    // The log belongs to that day: pressed there, not on today
     await page.goto(`/symptoms?date=${targetDateStr}`)
-    const reloadedGroup = page.getByRole('group', { name: 'Physical', exact: true })
-    const savedChip = reloadedGroup.getByRole('button', { name: chipName!.trim(), exact: true })
-    await expect(savedChip).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('group', { name: 'Physical', exact: true }).getByRole('button', { name: 'Cramps', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    await page.goto(`/symptoms?date=${days.today}`)
+    await expect(page.getByRole('group', { name: 'Physical', exact: true }).getByRole('button', { name: 'Cramps', exact: true })).toHaveAttribute('aria-pressed', 'false')
   })
 
   test('daily check-in, including "all good", is recorded and not offered again that Bangladesh day (W24)', async ({
     newUser,
+    days,
   }) => {
+    // Between 00:00 and 06:00 Bangladesh the server's UTC day is yesterday (#155)
+    test.fail(days.now.getUTCHours() >= 18, 'https://github.com/adibahsan/cycle-circle/issues/155')
     const { page } = await newUser()
-    // We want the check-in modal to be openable; setupProfile marks onboardingTourCompletedAt.
+    // No suppressAutoPrompts: for a fresh profile with the tour done, the check-in is the one auto-prompt.
     const profile = await setupProfile(page, { name: 'Checkin User W24' })
 
     await page.goto('/dashboard')
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-
-    // Check-in modal either auto-opens or we click "Check in" CTA button
     const modal = page.getByRole('dialog')
-    const checkInBtn = page.getByRole('button', { name: 'Check in', exact: true })
-    const opened = await modal.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false)
-    if (!opened) {
-      await expect(checkInBtn).toBeVisible()
-      await checkInBtn.click()
-      await expect(modal).toBeVisible()
-    }
+    await expect(modal).toBeVisible()
+    await expect(modal.getByRole('heading', { name: 'How are you feeling today?' })).toBeVisible()
 
-    // Click "All good today"
-    const allGoodBtn = modal.getByRole('button', { name: 'All good today', exact: true })
-    await expect(allGoodBtn).toBeVisible()
-    await allGoodBtn.click()
+    await modal.getByRole('button', { name: 'All good today', exact: true }).click()
+    await expect(modal).toBeHidden({ timeout: 15_000 })
 
-    // Modal should close
-    await expect(modal).not.toBeVisible({ timeout: 15_000 })
+    // Strip shows the done state and no longer offers the check-in
+    await expect(page.getByText("You've checked in today")).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Check in', exact: true })).toHaveCount(0)
 
-    // TodayCheckInStrip should now show "Checked in today" and no longer show "Check in" button
-    await expect(page.getByText('Checked in today')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Check in', exact: true })).not.toBeVisible()
+    // The sentinel row has no screen of its own
+    const allGoodLogs = await db.symptomLog.findMany({ where: { profileId: profile.id, symptomId: 'all_good' } })
+    expect(allGoodLogs).toHaveLength(1)
+    expect(allGoodLogs[0]!.date).toEqual(new Date(`${days.today}T00:00:00.000Z`))
 
-    // Verify recorded in DB (sentinel ID is 'all_good')
-    const allGoodLog = await db.symptomLog.findFirst({
-      where: {
-        profileId: profile.id,
-        symptomId: 'all_good',
-      },
+    // Forget the "already shown today" cadence so only the logged state can keep the prompt away
+    await page.evaluate(() => {
+      localStorage.clear()
+      sessionStorage.clear()
     })
-    expect(allGoodLog).not.toBeNull()
-
-    // Reload page: check-in is not offered again, "Checked in today" remains
     await page.reload()
-    await expect(page.getByText('Checked in today')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Check in', exact: true })).not.toBeVisible()
-    await expect(page.getByRole('dialog')).not.toBeVisible()
+    await expect(page.getByText("You've checked in today")).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Check in', exact: true })).toHaveCount(0)
+  })
+
+  test('a normal check-in with a chosen symptom is recorded for today (W24)', async ({ newUser, days }) => {
+    // Between 00:00 and 06:00 Bangladesh the server's UTC day is yesterday (#155)
+    test.fail(days.now.getUTCHours() >= 18, 'https://github.com/adibahsan/cycle-circle/issues/155')
+    const { page } = await newUser()
+    const profile = await setupProfile(page, { name: 'Checkin Chip User W24' })
+
+    await page.goto('/dashboard')
+    const modal = page.getByRole('dialog')
+    await expect(modal).toBeVisible()
+
+    const chip = modal.getByRole('button', { name: 'Cramps', exact: true })
+    await chip.click()
+    await expect(chip).toHaveAttribute('aria-pressed', 'true')
+    await modal.getByRole('button', { name: /^Save/ }).click()
+    await expect(modal).toBeHidden({ timeout: 15_000 })
+    await expect(page.getByText("You've checked in today")).toBeVisible()
+
+    // Visible on the symptoms screen for today after a reload
+    await page.goto(`/symptoms?date=${days.today}`)
+    await expect(
+      page.getByRole('group', { name: 'Physical', exact: true }).getByRole('button', { name: 'Cramps', exact: true }),
+    ).toHaveAttribute('aria-pressed', 'true')
+
+    // And not as the all-good sentinel
+    expect(await db.symptomLog.count({ where: { profileId: profile.id, symptomId: 'all_good' } })).toBe(0)
+
+    await page.goto('/dashboard')
+    await expect(page.getByText("You've checked in today")).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 
   test('the quick-symptom pop-up saves its log (W25)', async ({
@@ -181,12 +179,11 @@ test.describe('symptom logging flows', () => {
   }) => {
     const { page } = await newUser()
     await suppressAutoPrompts(page)
-    const profile = await setupProfile(page, { name: 'Quick Symptom User W25' })
+    await setupProfile(page, { name: 'Quick Symptom User W25' })
 
     await page.goto('/dashboard')
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 
-    // Open quick-symptom modal from Dashboard Toolkit
     const openBtn = page.locator('button[aria-haspopup="dialog"]', { hasText: 'Log Symptoms' }).first()
     await expect(openBtn).toBeVisible()
     await openBtn.click()
@@ -194,28 +191,21 @@ test.describe('symptom logging flows', () => {
     const modal = page.getByRole('dialog')
     await expect(modal).toBeVisible()
 
-    // Select a symptom chip (e.g. Cramps)
     const chip = modal.getByRole('button', { name: 'Cramps', exact: true })
-    await expect(chip).toBeVisible()
     await chip.click()
     await expect(chip).toHaveAttribute('aria-pressed', 'true')
+    await modal.getByRole('button', { name: 'Save symptoms', exact: true }).click()
+    await expect(modal).toBeHidden({ timeout: 15_000 })
 
-    // Click Save (accessible name is "Save symptoms")
-    const saveBtn = modal.getByRole('button', { name: 'Save symptoms', exact: true })
-    await expect(saveBtn).toBeVisible()
-    await saveBtn.click()
-
-    // Modal should close
-    await expect(modal).not.toBeVisible({ timeout: 15_000 })
-
-    // Verify in DB
-    const savedLogs = await db.symptomLog.findMany({ where: { profileId: profile.id } })
-    expect(savedLogs.length).toBeGreaterThanOrEqual(1)
-
-    // Navigate to /symptoms for today and verify the chip is selected
+    // Today's symptoms screen shows exactly this symptom, and yesterday's does not
     await page.goto(`/symptoms?date=${days.today}`)
-    const savedChip = page.getByRole('button', { name: 'Cramps', exact: true })
-    await expect(savedChip).toHaveAttribute('aria-pressed', 'true')
+    const physical = page.getByRole('group', { name: 'Physical', exact: true })
+    await expect(physical.getByRole('button', { name: 'Cramps', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    await expect(physical.locator('button[aria-pressed="true"]')).toHaveCount(1)
+    await page.goto(`/symptoms?date=${days.daysAgo(1)}`)
+    await expect(
+      page.getByRole('group', { name: 'Physical', exact: true }).getByRole('button', { name: 'Cramps', exact: true }),
+    ).toHaveAttribute('aria-pressed', 'false')
   })
 
   test('logging nudge appears after three days with no logs, and disappears after logging (W26)', async ({
@@ -246,24 +236,23 @@ test.describe('symptom logging flows', () => {
     const nudge = page.getByTestId('logging-nudge')
     await expect(nudge).toBeVisible()
     await expect(nudge.getByText('How are you feeling today?')).toBeVisible()
+    await expect(nudge.getByText("It's been a few days")).toBeVisible()
 
     // Click CTA to log symptoms
     const logCta = nudge.getByRole('link', { name: 'Log symptoms' })
     await expect(logCta).toBeVisible()
-    await logCta.click()
-
-    if (!page.url().includes('/symptoms')) {
-      await page.waitForURL(/\/symptoms/, { timeout: 3000 }).catch(async () => {
-        await page.goto('/symptoms')
-      })
-    }
-    await expect(page).toHaveURL(/\/symptoms/)
+    // The nudge swaps its server-rendered node for the animated one when it mounts; a click in that
+    // instant is lost, so retry the click (not a navigation shortcut) until the CTA lands on /symptoms.
+    await expect(async () => {
+      await logCta.click({ timeout: 2_000 })
+      await expect(page).toHaveURL(/\/symptoms/, { timeout: 2_000 })
+    }).toPass({ timeout: 15_000 })
 
     // Log a symptom for today
     const group = page.getByRole('group', { name: 'Physical', exact: true })
-    const chip = group.locator('button[aria-pressed="false"]').first()
-    await expect(chip).toBeVisible()
+    const chip = group.getByRole('button', { name: 'Cramps', exact: true })
     await chip.click()
+    await expect(chip).toHaveAttribute('aria-pressed', 'true')
 
     const saveBtn = page.getByRole('button', { name: /^Save \d+ changes/i }).locator('visible=true').first()
     await expect(saveBtn).toBeVisible()
@@ -274,7 +263,8 @@ test.describe('symptom logging flows', () => {
     await page.goto('/dashboard')
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 
-    // The logging nudge should now be gone because user logged today
-    await expect(page.getByTestId('logging-nudge')).not.toBeVisible()
+    // Wait for another dashboard element so absence is not just "not rendered yet"
+    await expect(page.locator('button[aria-haspopup="dialog"]', { hasText: 'Log Symptoms' }).first()).toBeVisible()
+    await expect(page.getByTestId('logging-nudge')).toHaveCount(0)
   })
 })

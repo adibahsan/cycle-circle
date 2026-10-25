@@ -1,7 +1,7 @@
 /**
  * Guard for ticket #68 (symptoms: save errors, drawn icons, chip accessibility).
- * Upgraded in ticket #122 to verify real saves alongside error guards.
  * Run: pnpm --filter @vesta/web e2e e2e/tests/symptoms-save.spec.ts
+ * Nothing here saves data: every server action POST is aborted before it leaves the browser.
  */
 import { test, expect, type Locator, type Page } from '@playwright/test'
 import i18n from '@vesta/shared/utils/i18n'
@@ -28,23 +28,6 @@ function unpressedChip(scope: Locator): Locator {
 
 test.describe('symptoms page', () => {
   for (const [label, viewport] of [['desktop', DESKTOP], ['375x667', PHONE_375]] as const) {
-    test(`save persists the selection on reload (${label})`, async ({ page }) => {
-      await page.setViewportSize(viewport)
-      await gotoQuiet(page, '/symptoms')
-      const group = page.getByRole('group', { name: en('symptoms.physical'), exact: true })
-      const chip = unpressedChip(group)
-      const name = await chip.getAttribute('aria-label')
-      await chip.click()
-      await page.getByRole('button', { name: /^Save \d+ changes$/ }).locator('visible=true').first().click()
-      await expect(page.getByRole('button', { name: /^Save \d+ changes$/ })).not.toBeVisible({ timeout: 15_000 })
-      await page.reload()
-      await expect(group.getByRole('button', { name: name!, exact: true })).toHaveAttribute('aria-pressed', 'true')
-      // Toggle back off so the seeded user state remains clean
-      await group.getByRole('button', { name: name!, exact: true }).click()
-      await page.getByRole('button', { name: /^Save \d+ changes$/ }).locator('visible=true').first().click()
-      await expect(page.getByRole('button', { name: /^Save \d+ changes$/ })).not.toBeVisible({ timeout: 15_000 })
-    })
-
     test(`failed save shows a translated error and keeps the selection (${label})`, async ({ page }) => {
       await page.setViewportSize(viewport)
       await failServerActions(page)
