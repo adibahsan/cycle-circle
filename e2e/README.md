@@ -83,6 +83,7 @@ Import `test` and `expect` from `support/fixtures.ts` (not `@playwright/test`).
 | Personas (`support/personas.ts`) | Seeded read-only users, logged in once by global setup: `streaker`, `allGood`, `stale`, `power`, `newUser`, `proMulti` (all Pro); `admin` = seeded super admin. **Never save data as a persona.** | `test.use({ storageState: statePath('power') })` |
 | `days` fixture (`support/bangladesh-day.ts`) | Bangladesh days from the **server's** clock (HTTP `Date`): `today`, `daysAgo(n)`, `daysFromNow(n)` (`YYYY-MM-DD`), `startOf(day)` (the `Date` to write to the DB), `now`. No fake clock. | `const start = days.startOf(days.daysAgo(35))` |
 | `fakeBdapps` fixture (`support/fake-bdapps.ts`) | Control client for the fake BDApps. | see below |
+| `db` fixture (`support/db.ts`) | Direct Prisma client for the slot database (`assertE2eDatabase` checked). Use only for test setup state the UI cannot reach in time (e.g. aging an OTP challenge). | `const count = await db.user.count()` |
 | `assertMailpit()` (`support/mailpit.ts`) | Mailpit reachability. A "wait for email to X" client arrives with the magic-link ticket. | `await assertMailpit()` |
 | `URLS`, `PORTS`, `SECRETS`, `DATABASE_URL` (`support/slot.ts`) | Slot-aware URLs (`URLS.web/admin/fakeBdapps/mailpit`), the cron secret, admin credentials, DB URL. | `` request.get(`${URLS.web}/api/cron/x`, { headers: { authorization: `Bearer ${SECRETS.cronSecret}` } }) `` |
 
@@ -93,13 +94,14 @@ Import `test` and `expect` from `support/fixtures.ts` (not `@playwright/test`).
 | `latestOtp(phone, { since?, timeoutMs? })` → `{ kind: 'bdapps'\|'app', code, referenceNo?, at }` | `const { code } = await fakeBdapps.latestOtp(phone)` |
 | `calls({ path?, sinceSeq? })` → merchant calls `{ seq, path, body, httpStatus, response }` | `await fakeBdapps.calls({ path: '/subscription/send' })` |
 | `subscriber(phone)` → `{ phone, maskedId, status }` or `undefined` | `expect(await fakeBdapps.subscriber(phone)).toMatchObject({ status: 'UNREGISTERED' })` |
-| `failNext(path, { mode, statusCode?, httpStatus?, delayMs?, times? })` | `await fakeBdapps.failNext('/subscription/send', { mode: 'error', statusCode: 'E1601' })` |
+| `caasBalance(phone)` → `{ phone, accountType, accountStatus, chargeableBalance, updatedAt }` or `undefined` | `expect(await fakeBdapps.caasBalance(phone)).toMatchObject({ accountStatus: 'ACTIVE' })` |
+| `caasDebits(phone?)` → list of `{ phone, externalTrxId, internalTrxId, referenceId, amount, timeStamp }` | `await fakeBdapps.caasDebits(phone)` |
+| `failNext(path, { match, mode, statusCode?, httpStatus?, delayMs?, times? })` | `await fakeBdapps.failNext('/subscription/send', { match: { subscriberId: maskedId }, mode: 'error', statusCode: 'E1601' })` |
 | `sendWebhook(appPath, body)` → the app's `{ status, body }` | `await fakeBdapps.sendWebhook('/api/webhooks/subscription/notify', {...})` |
 
 DB setup for states the UI can't reach in time (`support/db.ts`):
-Built as `new PrismaClient({ datasourceUrl: dbUrl })` from `@prisma/client` after `assertE2eDatabase()`.
-Never imports from `@vesta/shared`'s `prisma` (which reads `DATABASE_URL` from `.env` and would hit `vesta_dev`).
-Setup dates must come from the `days` fixture (`days.startOf(...)`).
+Provides `db` (and the `db` test fixture), built as `new PrismaClient({ datasourceUrl: dbUrl })` from `@prisma/client` after `assertE2eDatabase()`. Never import `@vesta/shared`'s `prisma`, which reads `DATABASE_URL` from the env and would hit `vesta_dev`.
+Write dates with the `days` helper (`days.startOf(...)`). Only set up state this way; check results through the UI or HTTP.
 - `ensureUserProfile(phone, options)`: updates or creates a profile and dismisses onboarding tour.
 - `setPeriodLogs(profileId, logs)`: replaces period logs for a profile.
 - `setSymptomLogs(profileId, logs)`: adds symptom logs in a transaction.
@@ -112,20 +114,53 @@ fresh every run.
 
 - `merchant-routes.ts`: route table `path → (body, state) => BDApps JSON`. Implemented:
   `/subscription/otp/request`, `/subscription/otp/verify`, `/subscription/getStatus`,
-  `/subscription/send`, `/sms/send`. Anything else answers 404 (and is still recorded).
+  `/subscription/send`, `/sms/send`, `/caas/get/balance`, `/caas/direct/debit`.
+  Anything else answers 404 (and is still recorded).
   **Add an endpoint = add an entry.**
-- `state.ts`: subscribers (by phone), issued OTPs, sent SMS, recorded calls, failure queue.
+- `state.ts`: subscribers (by phone), issued OTPs, sent SMS, recorded calls, failure queue,
+  CaaS balances and debits.
 - `server.ts`: credential check (`E1313`), call recording, failure queue, `/_control/*` API.
 
 Behaviour mirrors live BDApps for our number-masking app:
 - `otp/request` for a number that is already a Subscriber → `E1351` (the app then sends an App OTP by SMS).
 - `otp/verify` subscribes the number under a **new masked subscriber id** (`tel:<opaque>`).
-- `getStatus`, `send`, `sms/send` accept only the current masked id; raw numbers → `E1951`.
+- `getStatus`, `send`, `sms/send`, `caas/get/balance`, `caas/direct/debit` accept only the current masked id; raw numbers → `E1951`.
 - A 6-digit code in an SMS to a subscriber is kept as that phone's latest (`app`) OTP.
 
 Control API (the client wraps it): `GET /_control/health`, `POST /_control/reset`,
 `GET /_control/otp?phone=`, `GET /_control/calls?path=&sinceSeq=`, `GET /_control/subscribers/:phone`,
+`GET /_control/caas/balance?phone=`, `GET /_control/caas/debits?phone=`,
 `POST /_control/failures {path, mode, ...}`, `POST /_control/webhook {path, body}`.
+
+**Scripted failures** (`failNext(path, { match, mode, ... , times })`): the next `times` (default 1) calls to
+`path` that satisfy `match` fail, then calls succeed again. Modes: `error` (HTTP 200 with a BDApps
+`statusCode`, default `E1601`), `http` (answer `httpStatus`, default 503), `timeout` (never answer; the
+socket is dropped after `delayMs`, default 30s). The failed call is still recorded. The control API
+answers 400 for a missing/empty `match` or a bad mode field.
+
+`match` is **required** and scopes the failure to a call, so parallel tests (and the desktop and phone
+projects) can script the same path without stealing each other's failure: `{ subscriberId }` (masked id
+or phone, matched against `body.subscriberId`), `{ destinationAddress }` (against `body.destinationAddress`
+or any `body.destinationAddresses`), `{ phone }` (either, after normalisation); all given fields must match.
+`{ any: true }` matches every call to the path and is **exclusive**: only for a path nobody else uses,
+i.e. GET `/health`, which carries no subscriber. Those tests run on the desktop project only
+(`bdapps-health.spec.ts`). Typed webhook bodies: `SubscriptionNotifyPayload`, `SmsReceivePayload`,
+`SmsReportPayload`, `UssdReceivePayload` in `support/fake-bdapps.ts`.
+
+**Health**: the fake answers `GET /health` (200, `{status:'ok'}`). The apps' env sets
+`BDAPPS_SIMULATOR_UI_URL` to it, which is the only URL `/api/health/bdapps` fetches (up for any
+status below 500; down for 5xx, a network error or a 4s timeout). It is not a merchant call.
+
+**Webhooks** (`sendWebhook(appPath, body)` posts as BDApps would; the app answers `S1000`):
+`/api/webhooks/subscription/notify` `{applicationId, subscriberId (masked id), status: REGISTERED|UNREGISTERED, timeStamp}`,
+`/api/webhooks/sms/receive` `{sourceAddress, message, messageId, timeStamp}`,
+`/api/webhooks/sms/report` `{destinationAddress, requestId, deliveryStatus, timeStamp}`,
+`/api/webhooks/ussd/receive` `{subscriberId, ussdContent, sessionId, status}`.
+Only subscription-notify changes a user; the other three are stored. Idempotency keys must be
+unique per event.
+
+**Translog** has no screen: `translogFor(userId)` from `support/translog.ts` reads the web app's
+translog lines for that user (`plan.change` with `cause`).
 
 ## Conventions
 

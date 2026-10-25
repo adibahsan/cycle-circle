@@ -1,21 +1,26 @@
 /**
- * Database setup helpers for E2E tests.
- *
- * Uses a slot-bound PrismaClient connected to the slot's vesta_e2e database.
- * Never imports from @vesta/shared (which reads default DATABASE_URL from .env).
- * Dates must come from the Bangladesh-day helper (days fixture).
+ * Database client and setup helpers for the slot's E2E database.
+ * Use ONLY for test setup states the UI cannot reach in time.
+ * Never import `@vesta/shared` prisma directly, which targets vesta_dev.
+ * Dates must come from the Bangladesh-day helper (`days` fixture).
  */
 import { PrismaClient, type ProfileRelation, type FlowIntensity, type SymptomCategory, type PredictionTier } from '@prisma/client'
-import { DATABASE_URL, assertE2eDatabase } from './slot.ts'
+import { TEST_DATABASE_URL, DATABASE_URL, assertE2eDatabase } from './slot.ts'
 
-assertE2eDatabase()
+const dbUrl = TEST_DATABASE_URL ?? DATABASE_URL
+assertE2eDatabase(dbUrl)
 
-const dbUrl = new URL(DATABASE_URL)
-if (!dbUrl.searchParams.has('connection_limit')) {
-  dbUrl.searchParams.set('connection_limit', '2')
+let client: PrismaClient | undefined
+
+export function getE2eDb(): PrismaClient {
+  if (!client) {
+    client = new PrismaClient({ datasourceUrl: dbUrl })
+  }
+  return client
 }
 
-export const db = new PrismaClient({ datasourceUrl: dbUrl.toString() })
+export const db = getE2eDb()
+export type { PrismaClient }
 
 /** Find the User record in DB matching a phone number (e.g. 0136XXXXXXX). */
 export async function findUserByPhone(phone: string) {
