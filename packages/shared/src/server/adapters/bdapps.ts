@@ -41,6 +41,7 @@ function logBdappsCall(url: string, body: Record<string, unknown>, status: numbe
 const USER_ERRORS: Record<string, { status: number; message: string; code: string }> = {
   E1850: { status: 400, message: 'Invalid OTP code', code: 'INVALID_OTP' },
   E1854: { status: 400, message: 'Invalid OTP code', code: 'INVALID_OTP' },
+  E1301: { status: 422, message: "This number's mobile operator isn't supported yet", code: 'OPERATOR_NOT_SUPPORTED' },
   E1351: { status: 409, message: 'This number is already subscribed', code: 'ALREADY_SUBSCRIBED' },
 }
 

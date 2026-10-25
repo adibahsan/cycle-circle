@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, RefreshCw, CheckCircle2, CircleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { OtpCodeField } from '@/components/auth/OtpCodeField';
+import { authErrorMessage } from '@/lib/auth-errors';
 import '@vesta/shared/utils/i18n';
 
 const OTP_LENGTH = 6;
@@ -70,25 +71,6 @@ export default function VerifyOtpPage() {
   }, [endsAt]);
   const countdown = secondsLeft;
 
-  function errorMessage(body: { error?: string | { message?: string; code?: string; hasEmail?: boolean } }, fallbackKey: string) {
-    const err = body.error;
-    const code = typeof err === 'object' ? err?.code : undefined;
-    if (code === 'ALREADY_SUBSCRIBED' && typeof err === 'object') {
-      return t(err.hasEmail ? 'auth.alreadySubscribedEmail' : 'auth.alreadySubscribedNoEmail');
-    }
-    const known: Record<string, string> = {
-      INVALID_OTP: 'trial.err.invalidCode',
-      CHALLENGE_EXPIRED: 'trial.err.invalidCode',
-      CHALLENGE_NOT_FOUND: 'trial.err.invalidCode',
-      ALREADY_VERIFIED: 'trial.err.invalidCode',
-      RATE_LIMITED: 'trial.err.rateLimited',
-      OTP_COOLDOWN: 'trial.err.cooldown',
-      OTP_LOCKED: 'trial.err.codeLocked',
-    };
-    if (code && known[code]) return t(known[code]);
-    return t(fallbackKey);
-  }
-
   // Auto-submit once per completed code (typed, pasted or SMS-autofilled). Editing a
   // digit after a failed attempt produces a new code, which submits again.
   const formRef = useRef<HTMLFormElement>(null);
@@ -119,7 +101,7 @@ export default function VerifyOtpPage() {
       });
       const body = await res.json().catch(() => ({})) as { error?: string | { message?: string; code?: string }; user?: { profileCompleted?: boolean } };
       if (!res.ok) {
-        setError(errorMessage(body, 'auth.verificationFailed'));
+        setError(authErrorMessage(body, 'auth.verificationFailed', t));
         setLoading(false);
         return;
       }
@@ -150,7 +132,7 @@ export default function VerifyOtpPage() {
       });
       const body = await res.json().catch(() => ({})) as { referenceNo?: string; error?: string | { message?: string; code?: string; hasEmail?: boolean } };
       if (!res.ok || !body.referenceNo) {
-        setError(errorMessage(body, 'auth.resendFailed'));
+        setError(authErrorMessage(body, 'auth.resendFailed', t));
         return;
       }
       setReferenceNo(body.referenceNo);
