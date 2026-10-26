@@ -1,5 +1,6 @@
 import { test, expect } from '../../support/fixtures.ts'
 import { ensureUserProfile, setPeriodLogs, setPrediction } from '../../support/db.ts'
+import { suppressAutoPrompts } from '../../support/prompts.ts'
 
 test.describe('Prediction tier and confidence recalculation', () => {
   test('prediction tier and confidence update after enough cycles are logged', async ({ newUser, days }) => {
@@ -44,21 +45,15 @@ test.describe('Prediction tier and confidence recalculation', () => {
     })
     expect(initialJson.tierExplanation).toContain('Tier 1')
 
+    // Auto-prompts (check-in, profile, tour) can open late on a slow runner and cover the
+    // Log Period button; this flow opens its dialog explicitly.
+    await suppressAutoPrompts(page)
+
     // On dashboard, unlock meter shows 5 of 6 complete cycles and 75% confidence
     await page.goto('/dashboard')
     const main = page.locator('main')
     await expect(main.getByText('5 of 6 complete cycles')).toBeVisible()
     await expect(main.getByText('75% confidence')).toBeVisible()
-
-    // Dismiss check-in prompt if it auto-opens so it does not block the UI
-    const allGoodBtn = page.getByRole('button', { name: /all good/i })
-    try {
-      await allGoodBtn.waitFor({ state: 'visible', timeout: 3_000 })
-      await allGoodBtn.click()
-      await expect(allGoodBtn).toBeHidden()
-    } catch {
-      // Prompt did not appear
-    }
 
     // Log the 7th period (completing the 6th cycle) through the real UI flow (#123 Finding 5)
     await page.getByRole('button', { name: /log period/i }).click()
