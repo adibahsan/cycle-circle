@@ -1,5 +1,12 @@
 import { test, expect } from '../../support/fixtures.ts'
 import { ensureUserProfile, setPeriodLogs, setPrediction, setSymptomLogs } from '../../support/db.ts'
+import { openDialog } from '../../support/dialogs.ts'
+
+/** `2026-10-16` -> "Friday, October 16", the day-detail heading (DayDetail: format 'EEEE, MMMM d'). */
+function detailTitle(ymd: string): string {
+  const [y, m, d] = ymd.split('-').map(Number)
+  return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(y!, m! - 1, d!))
+}
 
 test.describe('Calendar views, colours and day details', () => {
   test('calendar day colours match logged, predicted and fertile states; tapping a day shows logs', async ({
@@ -12,21 +19,21 @@ test.describe('Calendar views, colours and day details', () => {
       goal: 'track',
       cycleLength: 28,
       periodLength: 5,
-      lastPeriodStart: days.startOf(days.daysAgo(10)),
+      lastPeriodStart: days.dateOf(days.daysAgo(10)),
     })
 
     // Logged period: 10 to 6 days ago (with cramps on start day)
     await setPeriodLogs(profile.id, [
       {
-        startDate: days.startOf(days.daysAgo(10)),
-        endDate: days.startOf(days.daysAgo(6)),
+        startDate: days.dateOf(days.daysAgo(10)),
+        endDate: days.dateOf(days.daysAgo(6)),
         flowIntensity: 'MEDIUM',
       },
     ])
 
     await setSymptomLogs(profile.id, [
       {
-        date: days.startOf(days.daysAgo(10)),
+        date: days.dateOf(days.daysAgo(10)),
         category: 'PHYSICAL',
         symptomId: 'cramps',
       },
@@ -36,10 +43,10 @@ test.describe('Calendar views, colours and day details', () => {
     // next period predicted at daysFromNow(18)
     await setPrediction(profile.id, {
       tier: 'AVERAGE',
-      nextPeriodStart: days.startOf(days.daysFromNow(18)),
-      ovulationDay: days.startOf(days.daysFromNow(4)),
-      fertileStart: days.startOf(days.daysAgo(1)),
-      fertileEnd: days.startOf(days.daysFromNow(5)),
+      nextPeriodStart: days.dateOf(days.daysFromNow(18)),
+      ovulationDay: days.dateOf(days.daysFromNow(4)),
+      fertileStart: days.dateOf(days.daysAgo(1)),
+      fertileEnd: days.dateOf(days.daysFromNow(5)),
       confidence: 0.75,
     })
 
@@ -104,9 +111,11 @@ test.describe('Calendar views, colours and day details', () => {
 
     // 7. Detail sheet: scoped to detail region, asserts clicked date in heading and cramps (#123 Finding 3)
     await showMonthOf(days.daysAgo(10))
-    await page.getByRole('grid').locator(`button[data-date="${days.daysAgo(10)}"]`).click()
     const detailRegion = page.locator('.rounded-panel').filter({ has: page.getByRole('button', { name: 'Close' }) })
-    await expect(detailRegion).toBeVisible()
+    // Retry the tap until this day's detail shows: a tap before hydration finishes can be lost (#161).
+    const detailFor = (ymd: string) =>
+      detailRegion.filter({ has: page.getByRole('heading', { level: 3, name: new RegExp(`^${detailTitle(ymd)}`) }) })
+    await openDialog(page.getByRole('grid').locator(`button[data-date="${days.daysAgo(10)}"]`), detailFor(days.daysAgo(10)))
     const detailHeading = detailRegion.getByRole('heading', { level: 3 })
     await expect(detailHeading).toBeVisible()
     const clickedDayNumber = String(parseInt(days.daysAgo(10).slice(8), 10))
@@ -117,8 +126,7 @@ test.describe('Calendar views, colours and day details', () => {
     // 8. Tapping an empty fertile day displays empty note and no cramps (#123 Finding 3)
     await showMonthOf(days.daysFromNow(2))
     const emptyDayButton = page.getByRole('grid').locator(`button[data-date="${days.daysFromNow(2)}"]`)
-    await emptyDayButton.click()
-    await expect(detailRegion).toBeVisible()
+    await openDialog(emptyDayButton, detailFor(days.daysFromNow(2)))
     const emptyDayNumber = String(parseInt(days.daysFromNow(2).slice(8), 10))
     await expect(detailHeading).toContainText(emptyDayNumber)
     await expect(detailRegion.getByText(/No symptoms logged/)).toBeVisible()

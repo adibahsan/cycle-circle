@@ -2,6 +2,8 @@ import { test, expect } from '../../support/fixtures'
 
 test.describe('Onboarding wizard and tour', () => {
   test('flow: complete the onboarding wizard; the dashboard reflects the answers', async ({ newUser, days }, testInfo) => {
+    // Between 00:00 and 06:00 Bangladesh a UTC server counts from yesterday (#160); guarded by the server clock.
+    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/160')
     const { page } = await newUser()
 
     await page.goto('/onboarding')

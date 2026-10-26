@@ -7,6 +7,7 @@ import { test, expect } from '../../support/fixtures.ts'
 import { db } from '../../support/db.ts'
 import { setupProfile } from '../../support/profiles.ts'
 import { suppressAutoPrompts } from '../../support/prompts.ts'
+import { openDialog } from '../../support/dialogs.ts'
 
 test.describe('symptom logging flows', () => {
   test('toggle symptoms across four categories, save, reload, and verify selection (W22)', async ({
@@ -185,8 +186,7 @@ test.describe('symptom logging flows', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 
     const openBtn = page.getByRole('button', { name: 'Log Symptoms' }).first()
-    await expect(openBtn).toBeVisible()
-    await openBtn.click()
+    await openDialog(openBtn)
 
     const modal = page.getByRole('dialog')
     await expect(modal).toBeVisible()

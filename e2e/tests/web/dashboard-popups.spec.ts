@@ -4,35 +4,36 @@
 import { test, expect } from '../../support/fixtures.ts'
 import { ensureUserProfile, setPeriodLogs } from '../../support/db.ts'
 import { suppressAutoPrompts } from '../../support/prompts.ts'
+import { openDialog } from '../../support/dialogs.ts'
 
 test.describe('dashboard pop-ups and celebration (W39)', () => {
   test('period-log and quick-symptom dialogs open from the dashboard', async ({ newUser, days }) => {
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, { name: 'Dash Popups' })
     await setPeriodLogs(profile.id, [
-      { startDate: days.startOf(days.daysAgo(10)), endDate: days.startOf(days.daysAgo(6)) },
+      { startDate: days.dateOf(days.daysAgo(10)), endDate: days.dateOf(days.daysAgo(6)) },
     ])
     await suppressAutoPrompts(page)
     await page.goto('/dashboard')
 
     const logPeriod = page.getByRole('button', { name: /Log Period/i }).first()
-    await logPeriod.click()
-    const periodDialog = page.getByRole('dialog')
-    await expect(periodDialog).toBeVisible()
+    const periodDialog = await openDialog(logPeriod)
     await expect(periodDialog).toHaveAttribute('aria-modal', 'true')
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toHaveCount(0)
 
     const quick = page.getByRole('button', { name: /Log Symptoms/i }).first()
-    await quick.click()
-    await expect(page.getByRole('dialog')).toBeVisible()
+    await openDialog(quick)
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 
   test('saving a period shows a celebration toast (polite live region, no focus steal)', async ({ newUser, days }) => {
-    // toast.celebrate runs after router.refresh(); the toast never appears (#157).
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/157')
+    // toast.celebrate runs after router.refresh(); the toast is usually lost (#157). It is a timing race
+    // (refresh vs the 260 ms toast delay): 16/16 lost 00:00-06:00 Bangladesh under TZ=UTC, but it showed
+    // in about 1 of 2 runs outside those hours and in 11 of 16 with E2E_APP_TZ=Asia/Dhaka. No server-clock
+    // condition predicts it, so an expected-fail would flip at random: fixme until #157 is fixed.
+    test.fixme(true, 'https://github.com/adibahsan/cycle-circle/issues/157 (intermittent; see comment)')
     const { page, phone } = await newUser()
     await ensureUserProfile(phone, { name: 'Celebrate User' })
     await suppressAutoPrompts(page)
@@ -43,9 +44,7 @@ test.describe('dashboard pop-ups and celebration (W39)', () => {
     await expect(region).toHaveAttribute('role', 'status')
     await expect(region).toHaveAttribute('aria-live', 'polite')
 
-    await page.getByRole('button', { name: /Log Period/i }).first().click()
-    const dialog = page.getByRole('dialog')
-    await expect(dialog).toBeVisible()
+    const dialog = await openDialog(page.getByRole('button', { name: /Log Period/i }).first())
     await page.getByLabel('Start Date').fill(days.daysAgo(4))
     await page.getByLabel('End Date').fill(days.today)
     await page.getByRole('button', { name: 'Save Period' }).click()

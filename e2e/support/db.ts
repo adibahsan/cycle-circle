@@ -15,7 +15,7 @@ import {
   type SubscriptionStatus,
   type SymptomCategory,
 } from '@prisma/client'
-import { TEST_DATABASE_URL, DATABASE_URL, assertE2eDatabase, SECRETS } from './slot.ts'
+import { TEST_DATABASE_URL, DATABASE_URL, assertE2eDatabase, SECRETS, URLS } from './slot.ts'
 import { bangladeshDays, type BangladeshDays } from './bangladesh-day.ts'
 
 const dbUrl = TEST_DATABASE_URL ?? DATABASE_URL
@@ -93,7 +93,7 @@ export async function createArticle(opts: {
     categoryId = cat?.id
   }
 
-  return db.article.upsert({
+  const article = await db.article.upsert({
     where: { slug: opts.slug },
     update: {
       titleEn: opts.titleEn,
@@ -118,6 +118,22 @@ export async function createArticle(opts: {
       publishedAt: (opts.status ?? 'PUBLISHED') === 'PUBLISHED' ? new Date() : null,
     },
   })
+  await revalidateWebArticles()
+  return article
+}
+
+/**
+ * Bust the web app's cached Learn list (`unstable_cache` tag `articles`, 5 min TTL), as the admin
+ * app does after a publish. A DB-only write is otherwise invisible to web until the TTL runs out,
+ * and on a fresh DB (CI) another spec has usually cached the list first.
+ */
+export async function revalidateWebArticles(): Promise<void> {
+  const res = await fetch(`${URLS.web}/api/internal/revalidate`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${SECRETS.cronSecret}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ tags: ['articles'] }),
+  })
+  if (!res.ok) throw new Error(`web revalidate failed: HTTP ${res.status}`)
 }
 
 /**
@@ -154,8 +170,8 @@ export async function createProfileWithLogs(opts: {
   })
 
   const d = opts.days ?? (await bangladeshDays())
-  const start = opts.startDate ?? d.startOf(d.daysAgo(10))
-  const end = opts.endDate ?? d.startOf(d.daysAgo(6))
+  const start = opts.startDate ?? d.dateOf(d.daysAgo(10))
+  const end = opts.endDate ?? d.dateOf(d.daysAgo(6))
 
   const periodLog = await db.periodLog.create({
     data: {
@@ -166,7 +182,7 @@ export async function createProfileWithLogs(opts: {
     },
   })
 
-  const symDate = opts.symptomDate ?? d.startOf(d.daysAgo(5))
+  const symDate = opts.symptomDate ?? d.dateOf(d.daysAgo(5))
   const symptomLog = await db.symptomLog.create({
     data: {
       profileId: profile.id,

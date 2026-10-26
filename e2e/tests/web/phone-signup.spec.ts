@@ -1,9 +1,9 @@
 import { test, expect } from '../../support/fixtures'
-import { newPhone } from '../../support/users'
+import { unusedPhone } from '../../support/users'
 
 test.describe('Phone signup', () => {
   test('a new number verifies a BDApps OTP, becomes a subscriber and lands on onboarding as Pro', async ({ page, fakeBdapps }) => {
-    const phone = newPhone()
+    const phone = await unusedPhone()
 
     await page.goto('/login')
     await page.getByLabel('Phone Number').fill(phone)

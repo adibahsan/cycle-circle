@@ -4,7 +4,7 @@ import { test, expect } from '../../support/fixtures.ts'
 import { createProfileWithLogs, getDb } from '../../support/db.ts'
 import { latestEmailFor } from '../../support/mailpit.ts'
 import { SECRETS, URLS } from '../../support/slot.ts'
-import { newPhone } from '../../support/users.ts'
+import { unusedPhone } from '../../support/users.ts'
 
 test.describe('Settings and Account', () => {
   test('the theme toggle switches and remembers light and dark', async ({ newUser }) => {
@@ -85,16 +85,16 @@ test.describe('Settings and Account', () => {
       data: {
         profileId: optedOutProfile.id,
         tier: 'AVERAGE',
-        nextPeriodStart: days.startOf(days.daysFromNow(1)),
-        ovulationDay: days.startOf(days.daysFromNow(14)),
-        fertileStart: days.startOf(days.daysFromNow(10)),
-        fertileEnd: days.startOf(days.daysFromNow(15)),
+        nextPeriodStart: days.dateOf(days.daysFromNow(1)),
+        ovulationDay: days.dateOf(days.daysFromNow(14)),
+        fertileStart: days.dateOf(days.daysFromNow(10)),
+        fertileEnd: days.dateOf(days.daysFromNow(15)),
         confidence: 0.85,
       },
     })
 
     // Seed a due CONTROL throwaway user (not opted out) with the exact same due data
-    const controlPhone = newPhone()
+    const controlPhone = await unusedPhone()
     const controlEmail = `control-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
     const controlUser = await db.user.create({
       data: {
@@ -116,10 +116,10 @@ test.describe('Settings and Account', () => {
       data: {
         profileId: controlProfile.id,
         tier: 'AVERAGE',
-        nextPeriodStart: days.startOf(days.daysFromNow(1)),
-        ovulationDay: days.startOf(days.daysFromNow(14)),
-        fertileStart: days.startOf(days.daysFromNow(10)),
-        fertileEnd: days.startOf(days.daysFromNow(15)),
+        nextPeriodStart: days.dateOf(days.daysFromNow(1)),
+        ovulationDay: days.dateOf(days.daysFromNow(14)),
+        fertileStart: days.dateOf(days.daysFromNow(10)),
+        fertileEnd: days.dateOf(days.daysFromNow(15)),
         confidence: 0.85,
       },
     })

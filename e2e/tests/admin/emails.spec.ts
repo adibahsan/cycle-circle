@@ -1,17 +1,19 @@
 import { test, expect } from '../../support/fixtures'
+import { fillSearch } from '../../support/search.ts'
 import { createLoggedInAdmin } from '../../support/admin'
 import { createEmailTrialUser } from '../../support/users'
 
 async function expectEmailsFilterUrl(
   page: import('@playwright/test').Page,
   opts: { search?: string; type?: string },
+  timeout?: number,
 ) {
   await expect(page).toHaveURL((url) => {
     const params = url.searchParams
     if (opts.search !== undefined && params.get('search') !== opts.search) return false
     if (opts.type !== undefined && params.get('type') !== opts.type) return false
     return true
-  })
+  }, { timeout })
 }
 
 test.describe('Admin emails', () => {
@@ -51,8 +53,7 @@ test.describe('Admin emails', () => {
       await expect(page.getByRole('heading', { name: 'Email Logs' })).toBeVisible()
 
       // Debounced search for the throwaway user's email
-      await page.getByRole('searchbox', { name: 'Search' }).fill(email)
-      await expectEmailsFilterUrl(page, { search: email })
+      await fillSearch(page.getByRole('searchbox', { name: 'Search' }), email, (timeout) => expectEmailsFilterUrl(page, { search: email }, timeout))
 
       const emailRow = page.getByText(email, { exact: true })
       await expect(emailRow).toBeVisible({ timeout: 15_000 })

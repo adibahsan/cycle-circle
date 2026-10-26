@@ -93,6 +93,9 @@ export const SECRETS = {
   adminPassword: 'admin123',
 }
 
+/** The apps' process timezone: UTC like prod and CI; `E2E_APP_TZ` overrides it (e.g. `Asia/Dhaka`). */
+export const APP_TZ = process.env.E2E_APP_TZ || 'UTC'
+
 export const LOG_ROOT = path.join(E2E_DIR, '.logs', `slot-${SLOT}`)
 const UPLOAD_DIR = path.join(E2E_DIR, '.uploads', `slot-${SLOT}`)
 
@@ -103,6 +106,9 @@ const UPLOAD_DIR = path.join(E2E_DIR, '.uploads', `slot-${SLOT}`)
 function appEnv(app: 'web' | 'admin'): Record<string, string> {
   return {
     NODE_ENV: 'production',
+    // Prod runs the apps in Docker with no TZ, i.e. UTC (docs/ops/02-server-setup.md), and so
+    // does CI. A Dhaka-time dev Mac would otherwise hide every "server-local day" bug.
+    TZ: APP_TZ,
     APP_ENV: 'local',
     DEV_MODE: 'false',
     NEXT_PUBLIC_DEV_MODE: 'false',

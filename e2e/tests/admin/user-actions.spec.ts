@@ -363,7 +363,7 @@ test.describe('Admin user actions', () => {
 
       await expect(admin.page.getByRole('combobox', { name: 'Set subscription status' })).toContainText(
         'Free',
-        { timeout: 15_000 },
+        { timeout: 30_000 },
       )
       await expectBdappsUnsubscribed(fakeBdapps, user.phone, maskedId, sinceSeq)
 
@@ -394,9 +394,11 @@ test.describe('Admin user actions', () => {
       await admin.page.getByRole('combobox', { name: 'Set subscription status' }).click()
       await admin.page.getByRole('option', { name: 'Pro', exact: true }).click()
       await confirmDialog(admin.page, 'Set PRO')
+      // The select stays disabled while router.refresh() re-renders the heavy detail page; under a
+      // full parallel run that took over 15 s once (local, 4 workers).
       await expect(admin.page.getByRole('combobox', { name: 'Set subscription status' })).toContainText(
         'Pro',
-        { timeout: 15_000 },
+        { timeout: 30_000 },
       )
 
       await expect

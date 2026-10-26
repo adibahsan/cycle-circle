@@ -1,6 +1,7 @@
 import { test, expect } from '../../support/fixtures.ts'
 import { setupProfile } from '../../support/profiles.ts'
 import { suppressAutoPrompts } from '../../support/prompts.ts'
+import { openDialog } from '../../support/dialogs.ts'
 
 /** `2026-10-22` -> "Oct 22", the dashboard's short date (browser default locale, local calendar day). */
 function shortDate(ymd: string): string {
@@ -22,7 +23,7 @@ test.describe('Period logging', () => {
 
     // Open the period log modal from the dashboard
     await page.goto('/dashboard')
-    await page.getByRole('button', { name: 'Log Period' }).click()
+    await openDialog(page.getByRole('button', { name: 'Log Period' }))
 
     const modal = page.getByRole('dialog')
     await expect(modal).toBeVisible()
@@ -54,7 +55,7 @@ test.describe('Period logging', () => {
     await setupProfile(page, { name: 'Dashboard Period User' })
 
     await page.goto('/dashboard')
-    await page.getByRole('button', { name: 'Log Period' }).click()
+    await openDialog(page.getByRole('button', { name: 'Log Period' }))
     await page.getByLabel('Start Date').fill(days.daysAgo(4))
     await page.getByLabel('End Date').fill(days.today)
     await page.getByRole('button', { name: 'Heavy' }).click()
@@ -75,7 +76,7 @@ test.describe('Period logging', () => {
 
     // Create an initial period log
     await page.goto('/dashboard')
-    await page.getByRole('button', { name: 'Log Period' }).click()
+    await openDialog(page.getByRole('button', { name: 'Log Period' }))
     await page.getByLabel('Start Date').fill(days.daysAgo(10))
     await page.getByLabel('End Date').fill(days.daysAgo(6))
     await page.getByRole('button', { name: 'Medium' }).click()
@@ -85,8 +86,7 @@ test.describe('Period logging', () => {
     // Open calendar and tap to edit the past period
     await page.goto('/calendar')
     const editBtn = page.getByRole('listitem', { name: /^Edit period log starting/ }).first()
-    await expect(editBtn).toBeVisible()
-    await editBtn.click()
+    await openDialog(editBtn)
 
     const modal = page.getByRole('dialog')
     await expect(modal.getByRole('heading', { name: 'Edit Period Log' })).toBeVisible()
@@ -114,7 +114,7 @@ test.describe('Period logging', () => {
     await setupProfile(page, { name: 'Delete Period User' })
 
     await page.goto('/dashboard')
-    await page.getByRole('button', { name: 'Log Period' }).click()
+    await openDialog(page.getByRole('button', { name: 'Log Period' }))
     await page.getByLabel('Start Date').fill(days.daysAgo(12))
     await page.getByLabel('End Date').fill(days.daysAgo(8))
     await page.getByRole('button', { name: 'Save Period' }).click()
@@ -122,7 +122,7 @@ test.describe('Period logging', () => {
 
     await page.goto('/calendar')
     const editBtn = page.getByRole('listitem', { name: /^Edit period log starting/ }).first()
-    await editBtn.click()
+    await openDialog(editBtn)
 
     const modal = page.getByRole('dialog')
     await expect(modal.getByRole('heading', { name: 'Edit Period Log' })).toBeVisible()
@@ -143,7 +143,7 @@ test.describe('Period logging', () => {
     await setupProfile(page, { name: 'Validation User' })
 
     await page.goto('/dashboard')
-    await page.getByRole('button', { name: 'Log Period' }).click()
+    await openDialog(page.getByRole('button', { name: 'Log Period' }))
 
     const modal = page.getByRole('dialog')
     await expect(modal).toBeVisible()
@@ -165,7 +165,7 @@ test.describe('Period logging', () => {
     await setupProfile(page, { name: 'Future User' })
 
     await page.goto('/dashboard')
-    await page.getByRole('button', { name: 'Log Period' }).click()
+    await openDialog(page.getByRole('button', { name: 'Log Period' }))
 
     const modal = page.getByRole('dialog')
     await expect(modal).toBeVisible()
@@ -202,7 +202,7 @@ test.describe('Period logging', () => {
       })
       expect(deviceDay).toBe('2026-10-25')
 
-      await page.getByRole('button', { name: 'Log Period' }).click()
+      await openDialog(page.getByRole('button', { name: 'Log Period' }))
       const modal = page.getByRole('dialog')
       await expect(modal).toBeVisible()
       await expect(page.getByLabel('Start Date')).toBeVisible()

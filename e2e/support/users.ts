@@ -10,6 +10,7 @@ import type { APIRequestContext, Browser, BrowserContext, BrowserContextOptions 
 import { FakeBdappsClient } from './fake-bdapps.ts'
 import { SLOT, URLS } from './slot.ts'
 import { waitForMagicLinkEmail } from './mailpit.ts'
+import { getDb } from './db.ts'
 
 const E2E_PREFIX = '0136'
 // Two digits of Playwright worker + five of a counter seeded from the clock: unique within a
@@ -21,6 +22,19 @@ let counter = Date.now() % 100_000
 export function newPhone(): string {
   counter = (counter + 1) % 100_000
   return `${E2E_PREFIX}${String(worker).padStart(2, '0')}${String(counter).padStart(5, '0')}`
+}
+
+/**
+ * `newPhone()` that no user in the slot DB has. With `E2E_SKIP_RESET` the DB keeps earlier runs'
+ * users, and the counter seed (`Date.now() % 100000` ms) repeats every 100 s, so a run can draw a
+ * number an earlier run used (seen: a number soft-deleted by an admin test → instant 401).
+ */
+export async function unusedPhone(): Promise<string> {
+  for (let i = 0; i < 50; i++) {
+    const phone = newPhone()
+    if (!(await getDb().user.findFirst({ where: { phone: toDbPhone(phone) }, select: { id: true } }))) return phone
+  }
+  throw new Error('no unused E2E phone after 50 tries')
 }
 
 /** Typed `01…` / `+8801…` → DB storage form `+8801…` (same rules as `validateMsisdn`). */
@@ -69,7 +83,7 @@ export async function createThrowawayUser(
   contextOptions: BrowserContextOptions = {},
   fake = new FakeBdappsClient(),
 ): Promise<ThrowawayUser> {
-  const phone = newPhone()
+  const phone = await unusedPhone()
   const context = await browser.newContext({
     baseURL: URLS.web,
     timezoneId: 'Asia/Dhaka',

@@ -1,5 +1,7 @@
 import { test, expect } from '../../support/fixtures.ts'
 import { ensureUserProfile, setPeriodLogs, setPrediction, setSymptomLogs } from '../../support/db.ts'
+import { suppressAutoPrompts } from '../../support/prompts.ts'
+import { SERVER_TZ_IS_UTC } from '../../support/bangladesh-day.ts'
 
 test.describe('Dashboard modes', () => {
   test('first-run dashboard shows first-period hero and example cycle', async ({ newUser }) => {
@@ -33,7 +35,7 @@ test.describe('Dashboard modes', () => {
     await ensureUserProfile(phone, {
       name: 'Pregnancy User',
       goal: 'pregnant',
-      lastPeriodStart: days.startOf(days.daysAgo(40)),
+      lastPeriodStart: days.dateOf(days.daysAgo(40)),
     })
 
     await page.goto('/dashboard')
@@ -58,9 +60,9 @@ test.describe('Dashboard modes', () => {
     })
 
     await setSymptomLogs(profile.id, [
-      { date: days.startOf(days.daysAgo(10)), category: 'PHYSICAL', symptomId: 'hot-flashes' },
-      { date: days.startOf(days.daysAgo(12)), category: 'PHYSICAL', symptomId: 'hot-flashes' },
-      { date: days.startOf(days.daysAgo(5)), category: 'MOOD', symptomId: 'mood-swings' },
+      { date: days.dateOf(days.daysAgo(10)), category: 'PHYSICAL', symptomId: 'hot-flashes' },
+      { date: days.dateOf(days.daysAgo(12)), category: 'PHYSICAL', symptomId: 'hot-flashes' },
+      { date: days.dateOf(days.daysAgo(5)), category: 'MOOD', symptomId: 'mood-swings' },
     ])
 
     await page.goto('/dashboard')
@@ -69,7 +71,7 @@ test.describe('Dashboard modes', () => {
     await expect(hero).toBeVisible()
     await expect(hero.getByRole('heading', { name: /Menopause User/ })).toBeVisible()
 
-    // Stat card shows exact days since last period (exact count tracked by test.fail below, issue #151; #123 Finding 6 & 10)
+    // Stat card shows days since last period (exact count: next test; #123 Finding 6 & 10)
     const statsList = page.getByRole('list', { name: 'Today at a glance' })
     await expect(statsList).toBeVisible()
     await expect(statsList).toContainText(/\d+ days since your last period/)
@@ -87,45 +89,48 @@ test.describe('Dashboard modes', () => {
     await expect(symptomItems.nth(1)).toContainText(/Logged 1 time/i)
   })
 
-  // Bug: calendarDay() slices the UTC day, so a Bangladesh-midnight start renders one day early.
-  // https://github.com/adibahsan/cycle-circle/issues/151
+  // #151: the period log the server derives from lastPeriodStart is cut at *server-local* midnight
+  // (ensurePeriodLogFromProfile setHours(0)), so on a non-UTC server (E2E_APP_TZ=Asia/Dhaka) it lands a
+  // day early. Under TZ=UTC (prod, CI) the stored UTC-midnight day is kept and the count is exact.
   test('menopause hero counts exact Bangladesh days since the last period', async ({ newUser, days }) => {
-    test.fail(true, 'issue #151: days-since is off by one for Bangladesh-midnight period dates')
+    test.fail(!SERVER_TZ_IS_UTC, 'https://github.com/adibahsan/cycle-circle/issues/151')
     const { page, phone } = await newUser()
     await ensureUserProfile(phone, {
       name: 'Menopause Exact',
       goal: 'menopause',
       cycleLength: 90,
-      lastPeriodStart: days.startOf(days.daysAgo(50)),
+      lastPeriodStart: days.dateOf(days.daysAgo(50)),
     })
     await page.goto('/dashboard')
     await expect(page.getByRole('list', { name: 'Today at a glance' })).toContainText('50 days since your last period')
   })
 
   test('standard dashboard displays cycle day hero, live cycle journey and ring', async ({ newUser, days }) => {
+    // Between 00:00 and 06:00 Bangladesh a UTC server counts from yesterday (#160); guarded by the server clock.
+    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/160')
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, {
       name: 'Standard User',
       goal: 'track',
       cycleLength: 28,
       periodLength: 5,
-      lastPeriodStart: days.startOf(days.daysAgo(10)),
+      lastPeriodStart: days.dateOf(days.daysAgo(10)),
     })
 
     await setPeriodLogs(profile.id, [
       {
-        startDate: days.startOf(days.daysAgo(10)),
-        endDate: days.startOf(days.daysAgo(6)),
+        startDate: days.dateOf(days.daysAgo(10)),
+        endDate: days.dateOf(days.daysAgo(6)),
         flowIntensity: 'MEDIUM',
       },
     ])
 
     await setPrediction(profile.id, {
       tier: 'AVERAGE',
-      nextPeriodStart: days.startOf(days.daysFromNow(18)),
-      ovulationDay: days.startOf(days.daysFromNow(4)),
-      fertileStart: days.startOf(days.daysAgo(1)),
-      fertileEnd: days.startOf(days.daysFromNow(5)),
+      nextPeriodStart: days.dateOf(days.daysFromNow(18)),
+      ovulationDay: days.dateOf(days.daysFromNow(4)),
+      fertileStart: days.dateOf(days.daysAgo(1)),
+      fertileEnd: days.dateOf(days.daysFromNow(5)),
       confidence: 0.7,
     })
 
@@ -152,19 +157,21 @@ test.describe('Dashboard modes', () => {
 
 test.describe('Late-period alert', () => {
   test('late-period alert opens with the right day count', async ({ newUser, days }) => {
+    // Between 00:00 and 06:00 Bangladesh a UTC server counts from yesterday (#160); guarded by the server clock.
+    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/160')
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, {
       name: 'Late Period User',
       goal: 'track',
       cycleLength: 28,
       periodLength: 5,
-      lastPeriodStart: days.startOf(days.daysAgo(31)),
+      lastPeriodStart: days.dateOf(days.daysAgo(31)),
     })
 
     await setPeriodLogs(profile.id, [
       {
-        startDate: days.startOf(days.daysAgo(31)),
-        endDate: days.startOf(days.daysAgo(27)),
+        startDate: days.dateOf(days.daysAgo(31)),
+        endDate: days.dateOf(days.daysAgo(27)),
         flowIntensity: 'MEDIUM',
       },
     ])
@@ -172,10 +179,10 @@ test.describe('Late-period alert', () => {
     // Prediction: period was expected 3 days ago
     await setPrediction(profile.id, {
       tier: 'AVERAGE',
-      nextPeriodStart: days.startOf(days.daysAgo(3)),
-      ovulationDay: days.startOf(days.daysAgo(17)),
-      fertileStart: days.startOf(days.daysAgo(22)),
-      fertileEnd: days.startOf(days.daysAgo(16)),
+      nextPeriodStart: days.dateOf(days.daysAgo(3)),
+      ovulationDay: days.dateOf(days.daysAgo(17)),
+      fertileStart: days.dateOf(days.daysAgo(22)),
+      fertileEnd: days.dateOf(days.daysAgo(16)),
       confidence: 0.75,
     })
 
@@ -209,6 +216,8 @@ test.describe('Streak badge and engagement tracking', () => {
     if (msToDhakaMidnight < 120_000 || dhakaMsIntoDay < 60_000) {
       test.skip(true, 'Skipping streak test near Bangladesh midnight to avoid date boundary flake')
     }
+    // getEngagementSummary counts in the UTC day whatever the server TZ (#155): a day behind 00:00-06:00 Bangladesh.
+    test.fail(days.now.getUTCHours() >= 18, 'https://github.com/adibahsan/cycle-circle/issues/155')
 
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, {
@@ -216,21 +225,21 @@ test.describe('Streak badge and engagement tracking', () => {
       goal: 'track',
       cycleLength: 28,
       periodLength: 5,
-      lastPeriodStart: days.startOf(days.daysAgo(10)),
+      lastPeriodStart: days.dateOf(days.daysAgo(10)),
     })
 
     await setPeriodLogs(profile.id, [
       {
-        startDate: days.startOf(days.daysAgo(10)),
-        endDate: days.startOf(days.daysAgo(6)),
+        startDate: days.dateOf(days.daysAgo(10)),
+        endDate: days.dateOf(days.daysAgo(6)),
         flowIntensity: 'MEDIUM',
       },
     ])
 
     // Seed logs for 2 consecutive days before today: daysAgo(2) and daysAgo(1)
     await setSymptomLogs(profile.id, [
-      { date: days.startOf(days.daysAgo(2)), category: 'MOOD', symptomId: 'calm' },
-      { date: days.startOf(days.daysAgo(1)), category: 'MOOD', symptomId: 'happy' },
+      { date: days.dateOf(days.daysAgo(2)), category: 'MOOD', symptomId: 'calm' },
+      { date: days.dateOf(days.daysAgo(1)), category: 'MOOD', symptomId: 'happy' },
     ])
 
     await page.goto('/dashboard')
@@ -259,31 +268,31 @@ test.describe('Phase pattern card', () => {
       goal: 'track',
       cycleLength: 28,
       periodLength: 5,
-      lastPeriodStart: days.startOf(days.daysAgo(10)),
+      lastPeriodStart: days.dateOf(days.daysAgo(10)),
     })
 
     // Cycle 1: started 38 days ago, ended 34 days ago
     // Cycle 2: started 10 days ago (current cycle day 11 = ovulation phase, days 10-15)
     await setPeriodLogs(profile.id, [
       {
-        startDate: days.startOf(days.daysAgo(38)),
-        endDate: days.startOf(days.daysAgo(34)),
+        startDate: days.dateOf(days.daysAgo(38)),
+        endDate: days.dateOf(days.daysAgo(34)),
         flowIntensity: 'MEDIUM',
       },
       {
-        startDate: days.startOf(days.daysAgo(10)),
-        endDate: days.startOf(days.daysAgo(6)),
+        startDate: days.dateOf(days.daysAgo(10)),
+        endDate: days.dateOf(days.daysAgo(6)),
         flowIntensity: 'MEDIUM',
       },
     ])
 
     // In past cycle's ovulation phase (cycle days 10-15 = days -29 to -24), log headache twice and cramps once
     await setSymptomLogs(profile.id, [
-      { date: days.startOf(days.daysAgo(29)), category: 'PHYSICAL', symptomId: 'headache' },
-      { date: days.startOf(days.daysAgo(28)), category: 'PHYSICAL', symptomId: 'headache' },
-      { date: days.startOf(days.daysAgo(27)), category: 'PHYSICAL', symptomId: 'cramps' },
+      { date: days.dateOf(days.daysAgo(29)), category: 'PHYSICAL', symptomId: 'headache' },
+      { date: days.dateOf(days.daysAgo(28)), category: 'PHYSICAL', symptomId: 'headache' },
+      { date: days.dateOf(days.daysAgo(27)), category: 'PHYSICAL', symptomId: 'cramps' },
       // Log another symptom in past follicular phase to verify it does not leak into ovulation pattern
-      { date: days.startOf(days.daysAgo(33)), category: 'PHYSICAL', symptomId: 'bloating' },
+      { date: days.dateOf(days.daysAgo(33)), category: 'PHYSICAL', symptomId: 'bloating' },
     ])
 
     await page.goto('/dashboard')
@@ -313,20 +322,20 @@ test.describe('Phase pattern card', () => {
       goal: 'track',
       cycleLength: 28,
       periodLength: 5,
-      lastPeriodStart: days.startOf(days.daysAgo(10)),
+      lastPeriodStart: days.dateOf(days.daysAgo(10)),
     })
 
     // Cycle 1: started 38 days ago, ended 34 days ago
     // Cycle 2: started 10 days ago (current cycle day 11 = ovulation phase)
     await setPeriodLogs(profile.id, [
       {
-        startDate: days.startOf(days.daysAgo(38)),
-        endDate: days.startOf(days.daysAgo(34)),
+        startDate: days.dateOf(days.daysAgo(38)),
+        endDate: days.dateOf(days.daysAgo(34)),
         flowIntensity: 'MEDIUM',
       },
       {
-        startDate: days.startOf(days.daysAgo(10)),
-        endDate: days.startOf(days.daysAgo(6)),
+        startDate: days.dateOf(days.daysAgo(10)),
+        endDate: days.dateOf(days.daysAgo(6)),
         flowIntensity: 'MEDIUM',
       },
     ])
@@ -342,5 +351,35 @@ test.describe('Phase pattern card', () => {
     await expect(card.getByText('Log your symptoms this cycle to see your pattern next time.')).toBeVisible()
     await expect(card.getByRole('link', { name: 'Log symptoms' })).toBeVisible()
     await expect(card.getByRole('list')).toHaveCount(0)
+  })
+})
+
+test.describe('Server render', () => {
+  test('dashboard and calendar hydrate without a React mismatch', async ({ newUser, days }) => {
+    // The SSR renders "today" from the server process clock; between 00:00 and 06:00 Bangladesh a
+    // UTC server renders yesterday and the Asia/Dhaka browser hits React #418 (#161).
+    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/161')
+    const { page, phone } = await newUser()
+    const profile = await ensureUserProfile(phone, {
+      name: 'Hydration User',
+      goal: 'track',
+      cycleLength: 28,
+      periodLength: 5,
+      lastPeriodStart: days.dateOf(days.daysAgo(10)),
+    })
+    await setPeriodLogs(profile.id, [
+      { startDate: days.dateOf(days.daysAgo(10)), endDate: days.dateOf(days.daysAgo(6)), flowIntensity: 'MEDIUM' },
+    ])
+    await suppressAutoPrompts(page)
+    const reactErrors: string[] = []
+    page.on('pageerror', (e) => {
+      if (/Minified React error #(418|423|425)|hydrat/i.test(e.message)) reactErrors.push(e.message)
+    })
+    for (const path of ['/dashboard', '/calendar']) {
+      await page.goto(path)
+      await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible()
+      await page.waitForLoadState('networkidle')
+    }
+    expect(reactErrors).toEqual([])
   })
 })

@@ -1,6 +1,6 @@
 import { test, expect } from '../../support/fixtures'
 import { createLoggedInAdmin } from '../../support/admin'
-import { newPhone } from '../../support/users'
+import { unusedPhone } from '../../support/users'
 import { URLS } from '../../support/slot'
 
 test.describe('Admin log reader', () => {
@@ -17,7 +17,7 @@ test.describe('Admin log reader', () => {
     timezoneId,
   }) => {
     // 1. Produce a real OTP in the run
-    const phone = newPhone()
+    const phone = await unusedPhone()
     const since = new Date(Date.now() - 1000)
 
     const reqRes = await request.post(`${URLS.web}/api/auth/otp/request`, { data: { phone } })

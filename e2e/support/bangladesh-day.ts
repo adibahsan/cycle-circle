@@ -3,7 +3,7 @@
  * Setup dates are counted from the *server's* clock (its HTTP Date header), never
  * the test machine's, and there is no fake clock.
  */
-import { URLS } from './slot.ts'
+import { APP_TZ, URLS } from './slot.ts'
 
 const DHAKA_OFFSET_MS = 6 * 60 * 60 * 1000
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -26,6 +26,25 @@ export function bangladeshDayStart(day: string): Date {
   return new Date(`${day}T00:00:00.000+06:00`)
 }
 
+/** `YYYY-MM-DD` of `instant` in the app processes' timezone (`TZ`, UTC unless `E2E_APP_TZ`). */
+export function serverLocalDayOf(instant: Date, timeZone: string = APP_TZ): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(instant)
+}
+
+/** True when the app processes run at UTC+0 (`TZ=UTC`, the default and prod), so server-local midnight is UTC midnight. */
+export const SERVER_TZ_IS_UTC =
+  new Intl.DateTimeFormat('en-GB', { timeZone: APP_TZ, hour: '2-digit', hourCycle: 'h23' }).format(new Date('2026-01-01T00:00:00Z')) === '00'
+
+/**
+ * The `Date` the app stores for a date-only value (period start/end, symptom date,
+ * `lastPeriodStart`, prediction days): UTC midnight of that calendar day, i.e. what
+ * `new Date('YYYY-MM-DD')` gives in the services and the seed. Use this for those columns;
+ * `bangladeshDayStart` is the *instant* a Bangladesh day begins (timestamps such as `deletedAt`).
+ */
+export function storedDay(day: string): Date {
+  return new Date(`${day}T00:00:00.000Z`)
+}
+
 /** `day` moved by `n` days (negative = earlier). */
 export function addBangladeshDays(day: string, n: number): string {
   return bangladeshDayOf(new Date(bangladeshDayStart(day).getTime() + n * DAY_MS))
@@ -33,7 +52,8 @@ export function addBangladeshDays(day: string, n: number): string {
 
 /**
  * Bangladesh-day helper anchored on the server's clock. `today` is the server's Bangladesh
- * day; `daysAgo(35)` is that many days earlier; `startOf(day)` is the Date to write to the DB.
+ * day; `daysAgo(35)` is that many days earlier; `dateOf(day)` is the Date to write to a date-only
+ * column (UTC midnight, as the app stores it); `startOf(day)` is the instant the day begins in Dhaka.
  */
 export interface BangladeshDays {
   now: Date
@@ -41,6 +61,13 @@ export interface BangladeshDays {
   daysAgo(n: number): string
   daysFromNow(n: number): string
   startOf(day: string): Date
+  dateOf(day: string): Date
+  /**
+   * True while the app server's own calendar day (its `TZ`) is not the Bangladesh day: with
+   * `TZ=UTC` that is 00:00-06:00 Bangladesh (18:00-24:00 UTC). Guard `test.fail()`s for bugs
+   * that compute "today" from the process clock with this, so they are deterministic at every hour.
+   */
+  serverDayLags: boolean
 }
 
 export async function bangladeshDays(baseUrl: string = URLS.web): Promise<BangladeshDays> {
@@ -52,5 +79,7 @@ export async function bangladeshDays(baseUrl: string = URLS.web): Promise<Bangla
     daysAgo: (n) => addBangladeshDays(today, -n),
     daysFromNow: (n) => addBangladeshDays(today, n),
     startOf: bangladeshDayStart,
+    dateOf: storedDay,
+    serverDayLags: serverLocalDayOf(now) !== today,
   }
 }

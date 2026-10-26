@@ -87,4 +87,41 @@ test.describe('BDApps webhooks: recorded events and duplicates', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ type: 'SUBSCRIPTION_NOTIFY' })
   })
+
+  // Serial project on purpose: the bug's fallback lands on the newest active SENT broadcast, so beside
+  // the parallel admin SMS tests it would hit one of theirs (and pass here unexpectedly).
+  test('a delivery report with an unknown requestId leaves our broadcast counts unchanged', async ({ fakeBdapps, db }) => {
+    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/145')
+    const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const admin = await db.user.findFirstOrThrow({ where: { role: 'ADMIN' } })
+    // Setup only: a sent broadcast with a known provider id, newest by sentAt (UI send can't fix the order).
+    const broadcast = await db.smsBroadcast.create({
+      data: {
+        message: `E2E SMS Bogus ${runId}`,
+        sendLanguage: 'EN',
+        status: 'SENT',
+        sentAt: new Date(),
+        active: true,
+        providerMessageId: `real-req-${runId}`,
+        targetCount: 1,
+        deliveredCount: 0,
+        failedCount: 0,
+        createdBy: admin.id,
+      },
+    })
+    try {
+      const res = await fakeBdapps.sendWebhook('/api/webhooks/sms/report', {
+        destinationAddress: 'tel:8801700000097',
+        requestId: `bogus-req-${runId}`,
+        deliveryStatus: 'DELIVERED',
+        timeStamp: stamp(),
+      })
+      expect(res).toMatchObject({ status: 200, body: { statusCode: 'S1000' } })
+
+      const after = await db.smsBroadcast.findUniqueOrThrow({ where: { id: broadcast.id } })
+      expect(after).toMatchObject({ deliveredCount: 0, failedCount: 0, targetCount: 1 })
+    } finally {
+      await db.smsBroadcast.update({ where: { id: broadcast.id }, data: { active: false } })
+    }
+  })
 })

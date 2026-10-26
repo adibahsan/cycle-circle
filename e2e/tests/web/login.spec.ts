@@ -1,5 +1,5 @@
 import { test, expect } from '../../support/fixtures'
-import { createThrowawayUser, newPhone } from '../../support/users'
+import { createThrowawayUser, unusedPhone } from '../../support/users'
 
 test.describe('Web login and access', () => {
   test('an existing subscriber logs in with an App OTP, and no new subscribe call is recorded', async ({ browser, page, fakeBdapps, db }) => {
@@ -75,7 +75,7 @@ test.describe('Web login and access', () => {
   })
 
   test('a wrong OTP shows an error and does not log in', async ({ page, fakeBdapps }) => {
-    const phone = newPhone()
+    const phone = await unusedPhone()
 
     await page.goto('/login')
     await page.getByLabel('Phone Number').fill(phone)
@@ -96,7 +96,7 @@ test.describe('Web login and access', () => {
   })
 
   test('an expired OTP shows an error and does not log in', async ({ page, fakeBdapps, db }) => {
-    const phone = newPhone()
+    const phone = await unusedPhone()
 
     await page.goto('/login')
     await page.getByLabel('Phone Number').fill(phone)
@@ -121,7 +121,7 @@ test.describe('Web login and access', () => {
   })
 
   test('the 60-second resend cooldown is enforced and shown', async ({ page }) => {
-    const phone = newPhone()
+    const phone = await unusedPhone()
 
     await page.goto('/login')
     await page.getByLabel('Phone Number').fill(phone)
@@ -145,7 +145,7 @@ test.describe('Web login and access', () => {
 
   test('the per-phone rate limit is enforced and shown after exceeding 3 requests in 60s', async ({ page, db }) => {
     test.setTimeout(90_000)
-    const phone = newPhone()
+    const phone = await unusedPhone()
     const start = Date.now()
     const send = async () => {
       await page.goto('/login')
@@ -175,7 +175,7 @@ test.describe('Web login and access', () => {
   })
 
   test('repeated wrong codes trigger the brute-force block', async ({ page, fakeBdapps }) => {
-    const phone = newPhone()
+    const phone = await unusedPhone()
 
     await page.goto('/login')
     await page.getByLabel('Phone Number').fill(phone)

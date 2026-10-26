@@ -213,11 +213,13 @@ test.describe('Admin analytics', () => {
 
     const db = e2eDb()
     const latestSnapDate = new Date(days.now.toISOString().slice(0, 10))
-    // 30d MAE trend uses snapshotDay on [from,to]. Seed UTC calendar dates via ISO date ctor
-    // so keys match the chart. N-1=29 inside; boundary=30 exclusive (same as phase from); N+1=31 out.
-    const trendInsideDate = new Date(days.startOf(days.daysAgo(5)).toISOString().slice(0, 10))
-    const trendBoundaryDate = new Date(days.startOf(days.daysAgo(30)).toISOString().slice(0, 10))
-    const trendOutsideDate = new Date(days.startOf(days.daysAgo(40)).toISOString().slice(0, 10))
+    // Snapshots are keyed by UTC date (ADR 0006) and the 30d range is [UTC today - 30, UTC today]
+    // (resolvePanelRange): count from the server's UTC day, not the Bangladesh day, so the edges hold
+    // at every hour (from the Bangladesh day they only held 00:00-06:00 Bangladesh).
+    const utcDaysAgo = (n: number) => new Date(latestSnapDate.getTime() - n * 24 * 60 * 60 * 1000)
+    const trendInsideDate = utcDaysAgo(5)
+    const trendBoundaryDate = utcDaysAgo(30)
+    const trendOutsideDate = utcDaysAgo(31)
 
     const touchDates = [latestSnapDate, trendInsideDate, trendBoundaryDate, trendOutsideDate]
     const backup = await db.predictionAccuracySnapshot.findMany({
@@ -287,8 +289,7 @@ test.describe('Admin analytics', () => {
           const boundaryKey = utcDayKey(trendBoundaryDate)
           const outsideKey = utcDayKey(trendOutsideDate)
           await expect(maeTrendTable.getByRole('row', { name: new RegExp(`^${insideKey}\\b`) })).toBeVisible()
-          // Snapshot dates are UTC midnight keys: daysAgo(30)’s UTC key is typically *inside*
-          // the 30d MAE window; daysAgo(40) is outside.
+          // UTC today - 30 is the inclusive edge; UTC today - 31 is outside.
           await expect(maeTrendTable.getByRole('row', { name: new RegExp(`^${boundaryKey}\\b`) })).toBeVisible()
           await expect(maeTrendTable.getByRole('row', { name: new RegExp(`^${outsideKey}\\b`) })).toHaveCount(0)
         },

@@ -50,10 +50,10 @@ async function seedPeriodAlertProfile(
         create: {
           tier: 'AVERAGE',
           // Due window is 0–2 days until next period.
-          nextPeriodStart: days.startOf(days.daysFromNow(1)),
-          ovulationDay: days.startOf(days.daysAgo(13)),
-          fertileStart: days.startOf(days.daysAgo(15)),
-          fertileEnd: days.startOf(days.daysAgo(11)),
+          nextPeriodStart: days.dateOf(days.daysFromNow(1)),
+          ovulationDay: days.dateOf(days.daysAgo(13)),
+          fertileStart: days.dateOf(days.daysAgo(15)),
+          fertileEnd: days.dateOf(days.daysAgo(11)),
           confidence: 0.6,
         },
       },
@@ -100,6 +100,9 @@ test.describe('cron: daily-reminders', () => {
     days,
     request,
   }) => {
+    // reminder-service counts days from server-local midnight: a UTC server says "in 2 days"
+    // between 00:00 and 06:00 Bangladesh (#160); guarded by the server clock.
+    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/160')
     const due = await newUser()
     const optedOut = await newUser()
     const dueStatus = await (await due.page.request.get('/api/auth/status')).json()

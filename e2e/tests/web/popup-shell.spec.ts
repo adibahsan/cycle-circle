@@ -1,18 +1,10 @@
 /**
  * W61 — pop-up shell contract on real dialogs: dialog semantics, ESC, focus return, inert background (#133).
  */
-import type { Locator, Page } from '@playwright/test'
 import { test, expect } from '../../support/fixtures.ts'
 import { ensureUserProfile } from '../../support/db.ts'
 import { suppressAutoPrompts } from '../../support/prompts.ts'
-
-async function openDialog(page: Page, trigger: Locator) {
-  await expect(trigger).toBeVisible({ timeout: 15_000 })
-  await trigger.click()
-  const dialog = page.getByRole('dialog').first()
-  await expect(dialog).toBeVisible()
-  return dialog
-}
+import { openDialog } from '../../support/dialogs.ts'
 
 test.describe('pop-up shell contract (W61)', () => {
   test('period-log and logout dialogs: role=dialog, ESC closes, focus returns, background inert', async ({ newUser }) => {
@@ -22,7 +14,7 @@ test.describe('pop-up shell contract (W61)', () => {
 
     await page.goto('/dashboard')
     const logPeriod = page.getByRole('button', { name: /Log Period|পিরিয়ড লগ করুন/i }).first()
-    const periodDialog = await openDialog(page, logPeriod)
+    const periodDialog = await openDialog(logPeriod)
     await expect(periodDialog).toHaveAttribute('aria-modal', 'true')
     expect(await page.locator('body > [inert]').count()).toBeGreaterThan(0)
     await page.keyboard.press('Escape')
@@ -32,7 +24,7 @@ test.describe('pop-up shell contract (W61)', () => {
 
     await page.goto('/settings')
     const logout = page.getByRole('button', { name: /Log out|Log Out|লগ আউট/i }).first()
-    const logoutDialog = await openDialog(page, logout)
+    const logoutDialog = await openDialog(logout)
     await expect(logoutDialog).toHaveAttribute('aria-modal', 'true')
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toHaveCount(0)
@@ -47,7 +39,7 @@ test.describe('pop-up shell contract (W61)', () => {
     await suppressAutoPrompts(page)
     await page.goto('/dashboard')
     const more = page.locator('nav[data-bottom-nav]').getByRole('button', { name: 'More' })
-    await openDialog(page, more)
+    await openDialog(more)
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(more).toBeFocused()

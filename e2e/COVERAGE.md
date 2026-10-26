@@ -18,12 +18,12 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | Web: login and access | 9 | 0 | 0 | 2 | 7 |
 | Web: onboarding and profiles | 9 | 0 | 0 | 1 | 8 |
 | Web: logging | 9 | 0 | 0 | 4 | 5 |
-| Web: dashboard, calendar, predictions, insights | 12 | 0 | 0 | 0 | 12 |
+| Web: dashboard, calendar, predictions, insights | 12 | 0 | 0 | 1 | 11 |
 | Web: content, feedback, settings | 8 | 0 | 0 | 0 | 8 |
 | Web: billing | 7 | 0 | 0 | 2 | 5 |
 | Web: landing and public pages | 4 | 0 | 0 | 0 | 4 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 0 | 0 | 5 |
-| **Web total** | 63 | 0 | 0 | 9 | 54 |
+| **Web total** | 63 | 0 | 0 | 10 | 53 |
 | Admin: access and read-only views | 5 | 0 | 0 | 1 | 4 |
 | Admin: user actions | 4 | 0 | 0 | 1 | 3 |
 | Admin: content | 2 | 0 | 0 | 0 | 2 |
@@ -37,6 +37,7 @@ Notes on the tally:
 - Depths are recomputed by `pnpm --dir e2e coverage:check` (fails on any `none` / `look-only` row). Admin `deep` counts as `full` in the summary.
 - #133 closed the last `none`/`look-only` product rows (W16, W18, W39, W59–W63) and filled `web-bengali`.
 - Terms follow `GLOSSARY.md`: Bangladesh day, Subscriber, BDApps OTP, App OTP, Check-in, Logging nudge, Auto-prompt, Trial lock, Translog, Webhook event, Merchant call, Phase pattern, Profile completion.
+- Since the #114 review fixes the apps run with `TZ=UTC` (prod parity). Bugs that read "today" from the process clock are expected-to-fail only 00:00-06:00 Bangladesh, guarded by the server clock: #160 (W10, W14, W28, W32, cron reminders), #161 (hydration, W28/W39), #155 (W24, W34). Those rows keep their depth: outside that window the same tests pass and assert the full flow.
 - Dev-only pages (`/internal/*`, `/api/simulator-check/*`, `/api/internal/revalidate`, `/api/auth/dev-login`) are not product features and are not listed.
 
 ## Web (63)
@@ -87,7 +88,7 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W28 | Dashboard standard mode: hero, cycle ring, cards, layout | `/dashboard`, `/api/tracking/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
+| W28 | Dashboard standard mode: hero, cycle ring, cards, layout; hydrates without a mismatch (#161) | `/dashboard`, `/api/tracking/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
 | W29 | Dashboard pregnancy mode | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
 | W30 | Dashboard menopause mode | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
 | W31 | Dashboard first-run state (no period ever logged) | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
@@ -98,7 +99,7 @@ Notes on the tally:
 | W36 | Insights charts with enough data | `/insights` | `e2e/tests/web/insights.spec.ts` | full | #123 |
 | W37 | Insights empty and partial states | `/insights` | `e2e/tests/web/insights.spec.ts` | full | #123 |
 | W38 | Phase pattern card (most-logged symptoms in the current phase) | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
-| W39 | Dashboard pop-ups and celebration toast | `/dashboard` | `e2e/tests/web/dashboard-popups.spec.ts` (period/quick dialogs + celebration toast); look-only: `apps/web/e2e/tests/dashboard-popups.spec.ts` | full | #133 (gap from #123) |
+| W39 | Dashboard pop-ups and celebration toast | `/dashboard` | `e2e/tests/web/dashboard-popups.spec.ts` (period/quick dialogs; celebration toast `fixme` until #157); look-only: `apps/web/e2e/tests/dashboard-popups.spec.ts` | partial | #133 (gap from #123) |
 
 ### Web: content, feedback, settings
 

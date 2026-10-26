@@ -34,6 +34,13 @@ E2E_SLOT=2 pnpm e2e                                   # another worktree at the 
 | `E2E_MAILPIT_URL`, `E2E_MAILPIT_SMTP_URL` | Mailpit API / SMTP (default `http://localhost:8025`, `smtp://localhost:1025`). |
 | `E2E_SUITE=desktop\|full\|all` | Which Playwright projects to run (see CI). Default `all`. |
 | `CI_PROJECTS` | Override: comma-separated project names, or the aliases `desktop` / `full` / `all` (same as `E2E_SUITE`). |
+| `E2E_APP_TZ` | Timezone of the web/admin processes (build and start). Default **`UTC`**, see below. `E2E_APP_TZ=Asia/Dhaka` reproduces a Dhaka-time server. |
+
+**The apps run with `TZ=UTC`** (`support/slot.ts`), like prod (Docker, no `TZ`: `docs/ops/02-server-setup.md`)
+and the CI runners. Before this the apps inherited the host TZ, and on an Asia/Dhaka dev Mac that hid every bug
+that counts "today" or a stored day with the process clock (the first CI run failed 40 tests). Browsers stay
+`Asia/Dhaka`; the test runner may stay in host TZ, since the `days` helper reads the server's clock.
+Tests must be green under UTC; runs with `E2E_APP_TZ=Asia/Dhaka` are for comparison only (see Deliberate deviations).
 
 `pnpm e2e` = `scripts/run.ts`: build web + admin (sequentially, with the E2E env) → `prisma migrate
 reset --force` on the slot DB (creates it, applies migrations, seeds; or the `E2E_SKIP_RESET` path) → check Mailpit →
@@ -150,14 +157,16 @@ Import `test` and `expect` from `support/fixtures.ts` (not `@playwright/test`).
 | Helper | What | Example |
 |---|---|---|
 | `newUser` fixture | Throwaway user: unique `0136…` phone, logged in through the real BDApps OTP flow (so Pro, no profile yet), own context + page with the project's viewport, Asia/Dhaka. Closed after the test. | `const { page, phone } = await newUser()` |
-| `newPhone()` / `toDbPhone(phone)` (`support/users.ts`) | A fresh phone in the E2E range `0136XXXXXXX`, for flows that sign up through the UI themselves. `toDbPhone` maps typed `01…` to the DB form `+8801…`. | `const phone = newPhone()` |
+| `unusedPhone()` / `newPhone()` / `toDbPhone(phone)` (`support/users.ts`) | A fresh phone in the E2E range `0136XXXXXXX`, for flows that sign up through the UI themselves. Use `await unusedPhone()`: it also skips numbers already in the slot DB (with `E2E_SKIP_RESET` an earlier run's user, possibly soft-deleted, can hold the same number). `toDbPhone` maps typed `01…` to the DB form `+8801…`. | `const phone = await unusedPhone()` |
 | `loginWithOtp(request, phone, fake?)` | Real OTP login over HTTP (request → code from fake → verify); cookies land in `request`. New number → BDApps OTP; existing subscriber → App OTP (read from the SMS the fake received). | `await loginWithOtp(context.request, phone)` |
 | `createThrowawayUser(browser, opts?)` | `newUser` without the fixture (e.g. in `beforeAll`); you close `context`. | `const { context } = await createThrowawayUser(browser)` |
 | `ipFor(key)` | Stable fake `x-real-ip` for a key. Each test already gets its own (OTP sends are capped at 10/hour/IP). Set it yourself only to test the IP limit. | `extraHTTPHeaders: { 'x-real-ip': ipFor('x') }` |
 | Personas (`support/personas.ts`) | Seeded read-only **web** users, logged in once by global setup: `streaker`, `allGood`, `stale`, `power`, `newUser`, `proMulti` (all Pro); `admin` = seeded super admin storage state. **Never save data as a persona.** Do not treat web personas as admins. | `test.use({ storageState: statePath('power') })` |
 | Admin helpers (`support/admin.ts`) | Create throwaway admins in the E2E DB and log in with email/password. Prefer these for admin mutating flows (#127–#131); never promote a seeded web persona. | see below |
 | `e2eDb()` / `closeE2eDb()` / `setUserSubscription` (`support/db.ts`) | Prisma against this slot's `vesta_e2e*` (setup only). `closeE2eDb` runs automatically via a worker-scoped fixture teardown. | `await setUserSubscription({ userId, status: 'FREE' })` |
-| `days` fixture (`support/bangladesh-day.ts`) | Bangladesh days from the **server's** clock (HTTP `Date`): `today`, `daysAgo(n)`, `daysFromNow(n)` (`YYYY-MM-DD`), `startOf(day)` (the `Date` to write to the DB), `now`. No fake clock. | `const start = days.startOf(days.daysAgo(35))` |
+| `days` fixture (`support/bangladesh-day.ts`) | Bangladesh days from the **server's** clock (HTTP `Date`): `today`, `daysAgo(n)`, `daysFromNow(n)` (`YYYY-MM-DD`), `now`. `dateOf(day)` = the `Date` to write to a **date-only column** (period start/end, symptom date, `lastPeriodStart`, prediction days): UTC midnight of that day, which is what the app stores (`new Date('YYYY-MM-DD')` in the services, the seed). `startOf(day)` = the *instant* the Bangladesh day begins, for timestamps (`deletedAt`, `emailTrialExpiresAt`). `serverDayLags` = the app server's own day (its `TZ`) is not the Bangladesh day (UTC: 18:00-24:00). No fake clock. | `startDate: days.dateOf(days.daysAgo(35))` |
+| `openDialog(trigger, dialog?)` (`support/dialogs.ts`) | Click until the pop-up (default: first `dialog`) is visible; never clicks while it is open. A tap before hydration can be lost (#161). | `const modal = await openDialog(page.getByRole('button', { name: 'Log Period' }))` |
+| `fillSearch(input, value, settled)` (`support/search.ts`) | Fill a debounced search box, clearing and re-typing until `settled(timeoutMs)` passes (the filter URL). For slow runners where the first fill beats hydration. | `await fillSearch(box, marker, (t) => expectUsersFilterUrl(page, { search: marker }, t))` |
 | `fakeBdapps` fixture (`support/fake-bdapps.ts`) | Control client for the fake BDApps. | see below |
 | `db` fixture / `db` / `getDb()` (`support/db.ts`) | Direct Prisma client for the slot database (`assertE2eDatabase` checked) and helpers for preconditions the UI cannot reach in time (draft articles, historical logs for export: `createArticle()`, `createProfileWithLogs()`, `setUserSubscription()`). | `const db = getDb()` |
 | `setupProfile(page, opts?)` (`support/profiles.ts`) | Creates a profile via `POST /api/profiles` and marks `onboardingTourCompletedAt` in DB so the first-run tour modal doesn't intercept clicks. | `const profile = await setupProfile(page)` |
@@ -278,6 +287,13 @@ app: `translogFor(userId, { app: 'admin' })`, or merge both with `{ apps: ['web'
 - **Check what a user or BDApps would see**: the page after a reload, a call recorded by the fake,
   an email in Mailpit. Query the DB only for results with no screen (translog, webhook events, audit).
 - **Dates are Bangladesh days from the server clock** (`days` fixture); every context runs in `Asia/Dhaka`.
+  Write date-only columns with `days.dateOf`, never `startOf` (a Bangladesh-midnight instant is the previous
+  UTC day, so a UTC server reads it as yesterday: that was the false bug #151).
+- **A bug that only shows in some hours** (it reads "today" from the process clock): guard the `test.fail()` with
+  the server clock so it is deterministic, e.g. `test.fail(days.serverDayLags, '…/issues/160')`. Never `test.fail(true)`
+  for an hour-dependent bug.
+- `createArticle()` busts web's cached Learn list (`POST /api/internal/revalidate`, as admin does on publish);
+  a DB-only article write is otherwise invisible to web for up to 5 minutes.
 - **A bug found by a test**: don't change app code. Open an issue, then mark the test expected-to-fail
   with the link, so it turns red (unexpected pass) once fixed:
   ```ts
@@ -299,6 +315,17 @@ app: `translogFor(userId, { app: 'admin' })`, or merge both with `{ apps: ['web'
 
 - `apps/web/e2e/tests/symptoms-save.spec.ts` is left as is: that suite writes to `vesta_dev`, not `vesta_e2e`, so it is not part of this harness.
 - Pro gating for export and predictions is not covered: it is deferred by FR-GATE.
-- The #155 `test.fail` in `symptom-logging.spec.ts` applies only between 00:00 and 06:00 Bangladesh (UTC 18:00-24:00), by design: the bug shows only then.
+- The #155 `test.fail` in `symptom-logging.spec.ts` and `dashboard.spec.ts` (streak) applies only between 00:00 and 06:00 Bangladesh (UTC 18:00-24:00), by design: the code uses the UTC day whatever the server TZ.
+- The #160 (server "today": cycle day, countdown, late days, reminders) and #161 (hydration mismatch) `test.fail`s use
+  `days.serverDayLags`: expected to fail only 00:00-06:00 Bangladesh under `TZ=UTC`, never under `E2E_APP_TZ=Asia/Dhaka`.
+- The #151 `test.fail` (menopause days-since) uses `SERVER_TZ_IS_UTC`: that bug (`setHours(0)` on the derived period
+  log) shows only on a non-UTC server, so it is expected to fail only with `E2E_APP_TZ=Asia/Dhaka`.
+- **Green means green under `TZ=UTC`.** With `E2E_APP_TZ=Asia/Dhaka` the #160/#161 guards switch off with those bugs and
+  #151 flips to expected-fail, so a Dhaka run is green too; but a Dhaka server hides the UTC-only bugs, so don't use it
+  to sign off a change.
+- Timeouts: the global test timeout is 90 s in CI (60 s locally) and the SMS broadcast tests set 150 s: a GitHub runner
+  is about 3x slower than a dev Mac (first CI run 14.6 min vs 5.3 min locally).
+- `dashboard-popups.spec.ts` celebration toast is `test.fixme` (#157): the bug is a timing race that no server-clock
+  condition predicts, so an expected-fail would pass at random.
 - `E2E_SKIP_RESET=1` is for local agent runs (Prisma refuses `migrate reset` for AI agents). CI always resets.
 - `page.clock` in the #115 test fakes the browser clock only; a server clock is out of scope.

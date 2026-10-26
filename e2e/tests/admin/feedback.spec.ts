@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { test, expect } from '../../support/fixtures'
+import { fillSearch } from '../../support/search.ts'
 import { createLoggedInAdmin } from '../../support/admin'
 import { e2eDb } from '../../support/db'
 import { toDbPhone } from '../../support/users'
@@ -16,13 +17,14 @@ async function downloadText(download: import('@playwright/test').Download): Prom
 async function expectFeedbackFilterUrl(
   page: import('@playwright/test').Page,
   opts: { q?: string; category?: string },
+  timeout?: number,
 ) {
   await expect(page).toHaveURL((url) => {
     const params = url.searchParams
     if (opts.q !== undefined && params.get('q') !== opts.q) return false
     if (opts.category !== undefined && params.get('category') !== opts.category) return false
     return true
-  })
+  }, { timeout })
 }
 
 test.describe('Admin feedback', () => {
@@ -83,8 +85,7 @@ test.describe('Admin feedback', () => {
       await expect(page.getByRole('heading', { name: 'Feedback', exact: true })).toBeVisible()
 
       // Debounced search: both items match the shared prefix
-      await page.getByRole('searchbox', { name: 'Search' }).fill(sharedPrefix)
-      await expectFeedbackFilterUrl(page, { q: sharedPrefix })
+      await fillSearch(page.getByRole('searchbox', { name: 'Search' }), sharedPrefix, (timeout) => expectFeedbackFilterUrl(page, { q: sharedPrefix }, timeout))
       await expect(page.getByText(msgA)).toBeVisible({ timeout: 15_000 })
       await expect(page.getByText(msgB)).toBeVisible()
 
@@ -146,8 +147,7 @@ test.describe('Admin feedback', () => {
     try {
       const { page } = admin
       await page.goto('/feedback')
-      await page.getByRole('searchbox', { name: 'Search' }).fill(marker)
-      await expectFeedbackFilterUrl(page, { q: marker })
+      await fillSearch(page.getByRole('searchbox', { name: 'Search' }), marker, (timeout) => expectFeedbackFilterUrl(page, { q: marker }, timeout))
       await expect(page.getByText(marker)).toBeVisible({ timeout: 15_000 })
 
       // On phone the charts above keep re-laying out, so Playwright's actionability

@@ -1,6 +1,6 @@
 import type { APIRequestContext } from '@playwright/test'
 import { test, expect } from '../../support/fixtures'
-import { createEmailTrialUser, newPhone, toDbPhone } from '../../support/users'
+import { createEmailTrialUser, unusedPhone, toDbPhone } from '../../support/users'
 import { createProfileWithLogs, setUserSubscription } from '../../support/db'
 import { SECRETS, URLS } from '../../support/slot'
 import type { FakeBdappsClient } from '../../support/fake-bdapps'
@@ -42,7 +42,7 @@ test.describe('Web billing: upgrade and unsubscribe', () => {
       await expect(dialog).toBeVisible()
       await expect(dialog.getByRole('heading', { level: 2 })).toHaveText('Upgrade to Pro')
 
-      const phone = newPhone()
+      const phone = await unusedPhone()
       await dialog.getByLabel('Mobile number').fill(phone)
       await dialog.getByRole('button', { name: 'Send code' }).click()
 
@@ -153,7 +153,7 @@ test.describe('Web billing: upgrade and unsubscribe', () => {
       await expect(page.getByText('Cycle Circle Free', { exact: true })).toBeVisible()
 
       // Script a failure on /subscription/otp/request scoped to this phone
-      const phone = newPhone()
+      const phone = await unusedPhone()
       await fakeBdapps.failNext('/subscription/otp/request', {
         match: { phone },
         mode: 'error',
@@ -243,7 +243,7 @@ test.describe('Web billing: upgrade and unsubscribe', () => {
       const dialog = page.getByRole('dialog')
       await expect(dialog).toBeVisible()
 
-      const phone = newPhone()
+      const phone = await unusedPhone()
       await dialog.getByLabel('Mobile number').fill(phone)
       await dialog.getByRole('button', { name: 'Send code' }).click()
 
@@ -316,7 +316,7 @@ test.describe('Web billing: upgrade and unsubscribe', () => {
       await expect(dialog).toBeVisible()
       await expect(dialog.getByRole('heading', { level: 2 })).toHaveText('Keep your account')
 
-      const phone = newPhone()
+      const phone = await unusedPhone()
       await dialog.getByLabel('Mobile number').fill(phone)
       await dialog.getByRole('button', { name: 'Send code' }).click()
 

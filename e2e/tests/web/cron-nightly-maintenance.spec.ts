@@ -1,5 +1,5 @@
 import { test, expect } from '../../support/fixtures'
-import { newPhone, toDbPhone } from '../../support/users.ts'
+import { unusedPhone, toDbPhone } from '../../support/users.ts'
 import { SECRETS, URLS } from '../../support/slot.ts'
 
 test.describe('cron: nightly-maintenance', () => {
@@ -8,9 +8,9 @@ test.describe('cron: nightly-maintenance', () => {
     days,
     request,
   }) => {
-    const purgePhone = toDbPhone(newPhone())
-    const keepPhone = toDbPhone(newPhone())
-    const maePhone = toDbPhone(newPhone())
+    const purgePhone = toDbPhone(await unusedPhone())
+    const keepPhone = toDbPhone(await unusedPhone())
+    const maePhone = toDbPhone(await unusedPhone())
 
     const purgeUser = await db.user.create({
       data: {
@@ -43,18 +43,18 @@ test.describe('cron: nightly-maintenance', () => {
         periodLogs: {
           create: [
             {
-              startDate: days.startOf(days.daysAgo(58)),
-              endDate: days.startOf(days.daysAgo(54)),
+              startDate: days.dateOf(days.daysAgo(58)),
+              endDate: days.dateOf(days.daysAgo(54)),
               flowIntensity: 'MEDIUM',
             },
             {
-              startDate: days.startOf(days.daysAgo(30)),
-              endDate: days.startOf(days.daysAgo(26)),
+              startDate: days.dateOf(days.daysAgo(30)),
+              endDate: days.dateOf(days.daysAgo(26)),
               flowIntensity: 'MEDIUM',
             },
             {
-              startDate: days.startOf(days.daysAgo(0)),
-              endDate: days.startOf(days.daysFromNow(4)),
+              startDate: days.dateOf(days.daysAgo(0)),
+              endDate: days.dateOf(days.daysFromNow(4)),
               flowIntensity: 'MEDIUM',
             },
           ],

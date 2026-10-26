@@ -6,8 +6,9 @@
 import type { BrowserContext, Locator, Page } from '@playwright/test'
 import { test, expect } from '../../support/fixtures.ts'
 import { BN, expectNoEnglish, useBengali } from '../../support/bengali.ts'
-import { db, ensureUserProfile, setPeriodLogs, setUserSubscription } from '../../support/db.ts'
+import { createArticle, db, ensureUserProfile, setPeriodLogs, setUserSubscription } from '../../support/db.ts'
 import { suppressAutoPrompts } from '../../support/prompts.ts'
+import { openDialog } from '../../support/dialogs.ts'
 import { createEmailTrialUser, toDbPhone } from '../../support/users.ts'
 
 const SIGNED_IN = [
@@ -36,6 +37,18 @@ test.describe('bengali: signed-in pages', () => {
       // Learn category chip "Cycle Health" is still English (#156).
       if (route === '/content') {
         test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/156')
+        // The chip shows only while a published article has that category; on a fresh DB that
+        // depended on content.spec having run first. Publish one here (and bust web's list cache).
+        await createArticle({
+          slug: 'e2e-bn-cycle-health',
+          titleEn: 'Cycle health basics',
+          titleBn: 'চক্রের স্বাস্থ্যের প্রাথমিক কথা',
+          bodyEn: '<p>Cycle health basics.</p>',
+          bodyBn: '<p>চক্রের স্বাস্থ্যের প্রাথমিক কথা।</p>',
+          cyclePhases: ['MENSTRUAL'],
+          categoryName: 'Cycle Health',
+          status: 'PUBLISHED',
+        })
       }
       const { page, context, phone } = await newUser()
       await prepareSignedIn(page, context, phone)
@@ -95,7 +108,7 @@ const POPUPS: PopupCase[] = [
       const { bangladeshDays } = await import('../../support/bangladesh-day.ts')
       const days = await bangladeshDays()
       await setPeriodLogs(profile.id, [
-        { startDate: days.startOf(days.daysAgo(10)), endDate: days.startOf(days.daysAgo(6)) },
+        { startDate: days.dateOf(days.daysAgo(10)), endDate: days.dateOf(days.daysAgo(6)) },
       ])
       await page.goto('/calendar')
     },
@@ -152,9 +165,12 @@ for (const c of POPUPS) {
       if (c.setup) await c.setup({ page, phone, context })
       else await page.goto('/dashboard')
       const trigger = await c.open(page)
-      await expect(trigger).toBeVisible({ timeout: 15_000 })
-      await trigger.click()
-      if (!c.inline) await expect(page.getByRole('dialog').first()).toBeVisible()
+      if (c.inline) {
+        await expect(trigger).toBeVisible({ timeout: 15_000 })
+        await trigger.click()
+      } else {
+        await openDialog(trigger)
+      }
       await page.waitForLoadState('networkidle').catch(() => {}) // let lazy content / transitions settle
       await expectNoEnglish(page, `pop-up ${c.id}`)
     })
@@ -170,10 +186,10 @@ test.describe('bengali: auto prompts and locks', () => {
       name: 'বাংলা ইউজার',
       cycleLength: 28,
       periodLength: 5,
-      lastPeriodStart: days.startOf(days.daysAgo(40)),
+      lastPeriodStart: days.dateOf(days.daysAgo(40)),
     })
     await setPeriodLogs(profile.id, [
-      { startDate: days.startOf(days.daysAgo(40)), endDate: days.startOf(days.daysAgo(36)) },
+      { startDate: days.dateOf(days.daysAgo(40)), endDate: days.dateOf(days.daysAgo(36)) },
     ])
     await useBengali(context, page)
     await page.goto('/dashboard')

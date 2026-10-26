@@ -36,9 +36,9 @@ test.describe('Insights states and charts', () => {
 
     // Log symptoms only, no period logs (so cycle-dependent charts have no data)
     await setSymptomLogs(profile.id, [
-      { date: days.startOf(days.daysAgo(3)), category: 'PHYSICAL', symptomId: 'cramps' },
-      { date: days.startOf(days.daysAgo(2)), category: 'PHYSICAL', symptomId: 'headache' },
-      { date: days.startOf(days.daysAgo(1)), category: 'MOOD', symptomId: 'anxious' },
+      { date: days.dateOf(days.daysAgo(3)), category: 'PHYSICAL', symptomId: 'cramps' },
+      { date: days.dateOf(days.daysAgo(2)), category: 'PHYSICAL', symptomId: 'headache' },
+      { date: days.dateOf(days.daysAgo(1)), category: 'MOOD', symptomId: 'anxious' },
     ])
 
     await page.goto('/insights')
@@ -77,21 +77,21 @@ test.describe('Insights states and charts', () => {
       goal: 'track',
       cycleLength: 28,
       periodLength: 5,
-      lastPeriodStart: days.startOf(days.daysAgo(15)),
+      lastPeriodStart: days.dateOf(days.daysAgo(15)),
     })
 
     // 4 period logs -> 3 complete cycles
     await setPeriodLogs(profile.id, [
-      { startDate: days.startOf(days.daysAgo(99)), endDate: days.startOf(days.daysAgo(95)), flowIntensity: 'MEDIUM' },
-      { startDate: days.startOf(days.daysAgo(71)), endDate: days.startOf(days.daysAgo(67)), flowIntensity: 'MEDIUM' },
-      { startDate: days.startOf(days.daysAgo(43)), endDate: days.startOf(days.daysAgo(39)), flowIntensity: 'MEDIUM' },
-      { startDate: days.startOf(days.daysAgo(15)), endDate: days.startOf(days.daysAgo(11)), flowIntensity: 'MEDIUM' },
+      { startDate: days.dateOf(days.daysAgo(99)), endDate: days.dateOf(days.daysAgo(95)), flowIntensity: 'MEDIUM' },
+      { startDate: days.dateOf(days.daysAgo(71)), endDate: days.dateOf(days.daysAgo(67)), flowIntensity: 'MEDIUM' },
+      { startDate: days.dateOf(days.daysAgo(43)), endDate: days.dateOf(days.daysAgo(39)), flowIntensity: 'MEDIUM' },
+      { startDate: days.dateOf(days.daysAgo(15)), endDate: days.dateOf(days.daysAgo(11)), flowIntensity: 'MEDIUM' },
     ])
 
     // Symptom logs
     await setSymptomLogs(profile.id, [
-      { date: days.startOf(days.daysAgo(20)), category: 'PHYSICAL', symptomId: 'cramps' },
-      { date: days.startOf(days.daysAgo(10)), category: 'MOOD', symptomId: 'calm' },
+      { date: days.dateOf(days.daysAgo(20)), category: 'PHYSICAL', symptomId: 'cramps' },
+      { date: days.dateOf(days.daysAgo(10)), category: 'MOOD', symptomId: 'calm' },
     ])
 
     await page.goto('/insights')

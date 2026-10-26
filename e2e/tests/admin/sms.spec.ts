@@ -80,15 +80,15 @@ async function dispatchUntilMarker(
 
 async function openCreateModal(page: import('@playwright/test').Page) {
   const newBtn = page.getByRole('button', { name: 'New Broadcast' })
-  await newBtn.scrollIntoViewIfNeeded()
-  // Phone layout: sticky chrome / chart canvases sit above the button hit-target, so the
-  // first click focuses without opening the dialog — not an overlay bug in the app.
-  await newBtn.click({ force: true })
   const heading = page.getByRole('heading', { name: 'New SMS Broadcast' })
-  if (!(await heading.isVisible().catch(() => false))) {
-    await newBtn.click({ force: true })
-  }
-  await expect(heading).toBeVisible({ timeout: 15_000 })
+  await expect(newBtn).toBeVisible({ timeout: 15_000 })
+  // Phone layout: sticky chrome / chart canvases sit above the button hit-target, so a click
+  // can focus without opening the dialog — not an overlay bug in the app. On a slow runner the
+  // button can also be re-rendered (hydration) under the click. Click again until it opens.
+  await expect(async () => {
+    if (!(await heading.isVisible())) await newBtn.click({ force: true, timeout: 3_000 })
+    await expect(heading).toBeVisible({ timeout: 3_000 })
+  }).toPass({ timeout: 30_000 })
   return page.getByRole('dialog').filter({ has: heading })
 }
 
@@ -101,8 +101,14 @@ async function fillBilingualDraft(
   await dialog.getByLabel('Message (English)').fill(en)
   await dialog.getByLabel(/Message \(Bengali\)/).fill(bn)
   if (opts.language && opts.language !== 'Bengali + English') {
-    // Label wraps an sr-only radio; the visible label is the clickable control.
-    await dialog.locator('label').filter({ hasText: opts.language }).click()
+    // Label wraps an sr-only radio; the visible label is the clickable control. Click until the
+    // radio is checked: on the phone project a click right after the dialog opens was once lost.
+    const label = dialog.locator('label').filter({ hasText: opts.language })
+    const radio = label.getByRole('radio')
+    await expect(async () => {
+      if (!(await radio.isChecked())) await label.click({ timeout: 2_000 })
+      await expect(radio).toBeChecked({ timeout: 2_000 })
+    }).toPass({ timeout: 15_000 })
   }
   if (opts.scheduleLocal) {
     await dialog.getByLabel('Schedule date and time').fill(opts.scheduleLocal)
@@ -147,7 +153,7 @@ test.describe('Admin SMS broadcasting', () => {
     locale,
     timezoneId,
   }) => {
-    test.setTimeout(90_000)
+    test.setTimeout(150_000)
     const runId = randomBytes(3).toString('hex')
     const enMarker = `E2E SMS EN ${runId}`
     const bnMarker = `E2E SMS BN ${runId}`
@@ -211,7 +217,7 @@ test.describe('Admin SMS broadcasting', () => {
     locale,
     timezoneId,
   }) => {
-    test.setTimeout(90_000)
+    test.setTimeout(150_000)
     const runId = randomBytes(3).toString('hex')
     const enMarker = `E2E SMS BN-only EN ${runId}`
     const bnMarker = `E2E SMS BN-only BN ${runId}`
@@ -332,6 +338,8 @@ test.describe('Admin SMS broadcasting', () => {
     timezoneId,
   }) => {
     const runId = randomBytes(3).toString('hex')
+    // Retry + 45 s send wait + 45 s fake poll: more than the 60 s default on a CI runner.
+    test.setTimeout(150_000)
     const enMarker = `E2E SMS Retry ${runId}`
     const bnMarker = `E2E SMS Retry BN ${runId}`
     await newUser()
@@ -396,7 +404,7 @@ test.describe('Admin SMS broadcasting', () => {
     locale,
     timezoneId,
   }) => {
-    test.setTimeout(90_000)
+    test.setTimeout(150_000)
     const runId = randomBytes(3).toString('hex')
     const enMarker = `E2E SMS Report ${runId}`
     const bnMarker = `E2E SMS Report BN ${runId}`
@@ -482,74 +490,7 @@ test.describe('Admin SMS broadcasting', () => {
       await admin.context.close()
     }
   })
-
-  // Expected-fail until #145: unknown requestId falls back to the active SENT broadcast.
-  test('a delivery report with an unknown requestId leaves our broadcast counts unchanged', async ({
-    browser,
-    newUser,
-    fakeBdapps,
-    viewport,
-    userAgent,
-    isMobile,
-    hasTouch,
-    deviceScaleFactor,
-    locale,
-    timezoneId,
-  }) => {
-    test.fail(
-      true,
-      'recordSmsDeliveryReport falls back to any active SENT broadcast when requestId is unknown (#145)',
-    )
-    test.setTimeout(90_000)
-    const runId = randomBytes(3).toString('hex')
-    const enMarker = `E2E SMS Bogus ${runId}`
-    const bnMarker = `E2E SMS Bogus BN ${runId}`
-    const recipient = await newUser()
-    const maskedId = (await fakeBdapps.subscriber(recipient.phone))!.maskedId
-
-    const sinceSeq = (await fakeBdapps.calls({ path: '/sms/send' })).at(-1)?.seq ?? 0
-    const admin = await createLoggedInAdmin(browser, {
-      viewport,
-      userAgent,
-      isMobile,
-      hasTouch,
-      deviceScaleFactor,
-      locale,
-      timezoneId,
-    })
-
-    try {
-      const { page } = admin
-      await page.goto('/sms?pageSize=100')
-      const dialog = await openCreateModal(page)
-      await fillBilingualDraft(dialog, enMarker, bnMarker, { language: 'English only' })
-      await dialog.getByRole('button', { name: 'Save as Draft' }).click()
-      await expect(broadcastRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
-      await clickRowAction(page, enMarker, 'Send broadcast')
-      await page.getByRole('button', { name: 'Send Now', exact: true }).click()
-      await expect(page.getByText('Broadcast sent')).toBeVisible({ timeout: 30_000 })
-      await waitForSmsCalls(fakeBdapps, enMarker, { sinceSeq })
-
-      const broadcast = await e2eDb().smsBroadcast.findFirstOrThrow({ where: { message: enMarker } })
-      const before = {
-        deliveredCount: broadcast.deliveredCount ?? 0,
-        failedCount: broadcast.failedCount ?? 0,
-        targetCount: broadcast.targetCount ?? 0,
-      }
-
-      await fakeBdapps.sendWebhook('/api/webhooks/sms/report', {
-        destinationAddress: maskedId,
-        requestId: `bogus-req-${runId}`,
-        deliveryStatus: 'DELIVERED',
-        timeStamp: stamp(),
-      })
-
-      const after = await e2eDb().smsBroadcast.findUniqueOrThrow({ where: { id: broadcast.id } })
-      expect(after.deliveredCount ?? 0).toBe(before.deliveredCount)
-      expect(after.failedCount ?? 0).toBe(before.failedCount)
-      expect(after.targetCount ?? 0).toBe(before.targetCount)
-    } finally {
-      await admin.context.close()
-    }
-  })
+  // The #145 unknown-requestId test lives in tests/web/webhooks-bdapps.spec.ts (serial `cron` project):
+  // its fallback lands on whichever broadcast is active, so in this parallel file it corrupted
+  // another test's counts and passed unexpectedly.
 })

@@ -93,11 +93,14 @@ test.describe('Profiles management and isolation', () => {
           goal: 'tracking',
         },
       })
-      expect(res.ok()).toBe(true)
+      expect(res.status(), `profile ${i}: ${await res.text()}`).toBe(201)
     }
+    // Six stored (API) and six rendered (page) before the limit assertions, so a slow run fails on the cause.
+    await expect.poll(async () => (await (await page.request.get('/api/profiles')).json()).profiles.length).toBe(6)
 
     // Navigate to /profiles: limit message must show instead of the add button
     await page.goto('/profiles')
+    await expect(page.getByRole('button', { name: /^Edit Profile Member \d$/ })).toHaveCount(6)
     await expect(page.getByText('Maximum 6 profiles')).toBeVisible()
     await expect(page.getByText('Delete a profile to add a new one')).toBeVisible()
     await expect(page.getByRole('button', { name: /^Add$/i })).not.toBeVisible()
@@ -139,6 +142,8 @@ test.describe('Profiles management and isolation', () => {
   })
 
   test('switching profiles changes the dashboard, calendar and insights to that profile data', async ({ newUser, days }, testInfo) => {
+    // Between 00:00 and 06:00 Bangladesh a UTC server counts from yesterday (#160); guarded by the server clock.
+    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/160')
     const { page } = await newUser()
 
     // Create Profile Alpha (last period 10 days ago -> cycle day 11, goal: tracking)

@@ -143,7 +143,9 @@ export default defineConfig({
     ? [['list'], ['html', { open: 'never', outputFolder: `./playwright-report/slot-${SLOT}` }]]
     : [['list']],
   outputDir: `./.results/slot-${SLOT}`,
-  timeout: 60_000,
+  // A GitHub runner is ~3x slower than a dev Mac (first CI run: 14.6 min vs 5.3 min); multi-step admin
+  // flows (search debounce, broadcast send + fake poll) need the headroom there.
+  timeout: ci ? 90_000 : 60_000,
   expect: { timeout: 10_000 },
   use: {
     timezoneId: 'Asia/Dhaka',

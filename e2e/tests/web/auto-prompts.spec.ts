@@ -19,10 +19,10 @@ test.describe('auto-prompt arbiter (W18)', () => {
       name: 'Arbiter Late',
       cycleLength: 28,
       periodLength: 5,
-      lastPeriodStart: days.startOf(days.daysAgo(40)),
+      lastPeriodStart: days.dateOf(days.daysAgo(40)),
     })
     await setPeriodLogs(profile.id, [
-      { startDate: days.startOf(days.daysAgo(40)), endDate: days.startOf(days.daysAgo(36)) },
+      { startDate: days.dateOf(days.daysAgo(40)), endDate: days.dateOf(days.daysAgo(36)) },
     ])
 
     await page.goto('/dashboard')
@@ -39,10 +39,10 @@ test.describe('auto-prompt arbiter (W18)', () => {
       name: 'Arbiter Dismiss',
       cycleLength: 28,
       periodLength: 5,
-      lastPeriodStart: days.startOf(days.daysAgo(40)),
+      lastPeriodStart: days.dateOf(days.daysAgo(40)),
     })
     await setPeriodLogs(profile.id, [
-      { startDate: days.startOf(days.daysAgo(40)), endDate: days.startOf(days.daysAgo(36)) },
+      { startDate: days.dateOf(days.daysAgo(40)), endDate: days.dateOf(days.daysAgo(36)) },
     ])
 
     await page.goto('/dashboard')

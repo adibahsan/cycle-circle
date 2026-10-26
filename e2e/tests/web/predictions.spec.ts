@@ -9,17 +9,17 @@ test.describe('Prediction tier and confidence recalculation', () => {
       goal: 'track',
       cycleLength: 28,
       periodLength: 5,
-      lastPeriodStart: days.startOf(days.daysAgo(30)),
+      lastPeriodStart: days.dateOf(days.daysAgo(30)),
     })
 
     // Seed 6 past period logs -> 5 complete cycles (< 6 cycles threshold for ARIMA)
     await setPeriodLogs(profile.id, [
-      { startDate: days.startOf(days.daysAgo(170)), endDate: days.startOf(days.daysAgo(166)), flowIntensity: 'MEDIUM' },
-      { startDate: days.startOf(days.daysAgo(142)), endDate: days.startOf(days.daysAgo(138)), flowIntensity: 'MEDIUM' },
-      { startDate: days.startOf(days.daysAgo(114)), endDate: days.startOf(days.daysAgo(110)), flowIntensity: 'MEDIUM' },
-      { startDate: days.startOf(days.daysAgo(86)), endDate: days.startOf(days.daysAgo(82)), flowIntensity: 'MEDIUM' },
-      { startDate: days.startOf(days.daysAgo(58)), endDate: days.startOf(days.daysAgo(54)), flowIntensity: 'MEDIUM' },
-      { startDate: days.startOf(days.daysAgo(30)), endDate: days.startOf(days.daysAgo(26)), flowIntensity: 'MEDIUM' },
+      { startDate: days.dateOf(days.daysAgo(170)), endDate: days.dateOf(days.daysAgo(166)), flowIntensity: 'MEDIUM' },
+      { startDate: days.dateOf(days.daysAgo(142)), endDate: days.dateOf(days.daysAgo(138)), flowIntensity: 'MEDIUM' },
+      { startDate: days.dateOf(days.daysAgo(114)), endDate: days.dateOf(days.daysAgo(110)), flowIntensity: 'MEDIUM' },
+      { startDate: days.dateOf(days.daysAgo(86)), endDate: days.dateOf(days.daysAgo(82)), flowIntensity: 'MEDIUM' },
+      { startDate: days.dateOf(days.daysAgo(58)), endDate: days.dateOf(days.daysAgo(54)), flowIntensity: 'MEDIUM' },
+      { startDate: days.dateOf(days.daysAgo(30)), endDate: days.dateOf(days.daysAgo(26)), flowIntensity: 'MEDIUM' },
     ])
 
     // Set initial average prediction for 5 cycles: 75% confidence, tier AVERAGE.
@@ -27,10 +27,10 @@ test.describe('Prediction tier and confidence recalculation', () => {
     // auto-open and block the asserts (#123 Finding 11).
     await setPrediction(profile.id, {
       tier: 'AVERAGE',
-      nextPeriodStart: days.startOf(days.daysFromNow(2)),
-      ovulationDay: days.startOf(days.daysAgo(12)),
-      fertileStart: days.startOf(days.daysAgo(17)),
-      fertileEnd: days.startOf(days.daysAgo(11)),
+      nextPeriodStart: days.dateOf(days.daysFromNow(2)),
+      ovulationDay: days.dateOf(days.daysAgo(12)),
+      fertileStart: days.dateOf(days.daysAgo(17)),
+      fertileEnd: days.dateOf(days.daysAgo(11)),
       confidence: 0.75,
     })
 

@@ -20,6 +20,8 @@ test.describe('Harness', () => {
     expect(days.today).toBe(browserDay)
     expect(days.daysAgo(1) < days.today && days.today < days.daysFromNow(1)).toBe(true)
     expect(days.startOf(days.today).toISOString()).toBe(new Date(`${days.today}T00:00:00+06:00`).toISOString())
+    // Date-only columns hold UTC midnight of the day, as `new Date('YYYY-MM-DD')` in the services and seed.
+    expect(days.dateOf(days.today).toISOString()).toBe(`${days.today}T00:00:00.000Z`)
   })
 
   test('db fixture can query the slot database', async ({ db }) => {
