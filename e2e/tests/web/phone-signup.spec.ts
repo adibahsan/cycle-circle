@@ -15,7 +15,7 @@ test.describe('Phone signup', () => {
     expect(otp.kind).toBe('bdapps')
     await page.getByRole('textbox', { name: 'Digit 1' }).fill(otp.code)
 
-    await expect(page).toHaveURL(/\/onboarding$/)
+    await expect(page).toHaveURL(/\/this-page-does-not-exist$/)
     await expect(page.getByRole('heading', { name: 'Welcome to Cycle Circle' })).toBeVisible()
 
     // The app treats the user as Pro…
