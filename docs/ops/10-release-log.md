@@ -17,15 +17,15 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 **Post-deploy data fix** (forward-only fix, past rows not backfilled; spec Out of Scope): one "All good" Check-in sentinel was saved at 2026-10-18 04:48 Bangladesh on the UTC day 2026-10-17 (#155). Moved to 2026-10-18 by id, in a transaction, after checking nothing else of that profile is on that day. The old bug also deleted real symptom logs of the previous day when "All good" was tapped in that window; that can't be recovered from the DB.
 
-**Deploy:** merge #177, then `git push origin origin/main:production` → GitHub Actions *Production* workflow.
+**Deploy:** merge #177, then `git push origin origin/main:production`. The workflow's deploy job failed (a transient Google Fonts fetch in the web build), then its rerun hit a GitHub `startup_failure` during a GitHub incident, so the same command was run over SSH: `cd /opt/vesta && bash ops/deploy/scripts/deploy.sh 0faeed3b18205c6531d71300ec5f6703b2022c5f`.
 
 ---
 
-## Pending — Auth tokens scoped per app and environment (branch `fix/auth-app-env-isolation`)
+## 2026-10-25 — Auth tokens scoped per app and environment (PR #110)
 
 **Effect:** every existing session (web and admin) is invalidated once on deploy, because old tokens carry no audience or issuer. Users log in again. See [ADR 0007](../adr/0007-auth-tokens-scoped-per-app-and-environment.md).
 
-**Pre-deploy steps on the VPS** (to be done by a human; nothing here has been run)
+**Pre-deploy steps on the VPS** (done before the 2026-10-25 deploy; checked 2026-10-30: `APP_ENV` and `AUTH_COOKIE_NAME` set in both env files, the two `JWT_SECRET`s differ)
 
 1. In both `/opt/vesta/.env.web.production` and `/opt/vesta/.env.admin.production` add `APP_ENV=production` (staging box: `APP_ENV=staging`).
 2. Generate a new, distinct admin secret and put it in `.env.admin.production` as `JWT_SECRET`: `openssl rand -hex 32`. Web keeps its current `JWT_SECRET` (it must not start with `local-dev`). Do not reuse web's value.
