@@ -106,8 +106,6 @@ test.describe('Dashboard modes', () => {
   })
 
   test('standard dashboard displays cycle day hero, live cycle journey and ring', async ({ newUser, days }) => {
-    // Between 00:00 and 06:00 Bangladesh a UTC server counts from yesterday (#160); guarded by the server clock.
-    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/160')
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, {
       name: 'Standard User',
@@ -158,8 +156,6 @@ test.describe('Dashboard modes', () => {
 
 test.describe('Late-period alert', () => {
   test('late-period alert opens with the right day count', async ({ newUser, days }) => {
-    // Between 00:00 and 06:00 Bangladesh a UTC server counts from yesterday (#160); guarded by the server clock.
-    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/160')
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, {
       name: 'Late Period User',

@@ -1,5 +1,6 @@
 import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 import { requireCurrentUser } from './auth-queries'
 import { cacheTags, WEB_CACHE_TTL } from '@/lib/cache-tags'
 import {
@@ -18,9 +19,12 @@ const DASHBOARD_CACHE_VERSION = 'dashboard-v3'
 
 export const getDashboardData = cache(async (profileId: string) => {
   const user = await requireCurrentUser()
+  const now = new Date()
   return unstable_cache(
-    () => svcGetDashboardData(profileId, user.id),
-    [DASHBOARD_CACHE_VERSION, profileId],
+    () => svcGetDashboardData(profileId, user.id, now),
+    // The Bangladesh day is part of the key: the data counts days from "today", so an entry
+    // built yesterday must not be served after midnight.
+    [DASHBOARD_CACHE_VERSION, profileId, bangladeshToday(now)],
     { tags: [cacheTags.tracking(profileId)], revalidate: WEB_CACHE_TTL }
   )()
 })

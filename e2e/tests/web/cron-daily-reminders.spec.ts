@@ -100,9 +100,6 @@ test.describe('cron: daily-reminders', () => {
     days,
     request,
   }) => {
-    // reminder-service counts days from server-local midnight: a UTC server says "in 2 days"
-    // between 00:00 and 06:00 Bangladesh (#160); guarded by the server clock.
-    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/160')
     const due = await newUser()
     const optedOut = await newUser()
     const dueStatus = await (await due.page.request.get('/api/auth/status')).json()

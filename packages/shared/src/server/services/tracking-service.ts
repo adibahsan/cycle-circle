@@ -1,17 +1,19 @@
 import { Prisma, type SymptomCategory } from '@prisma/client'
 import { prisma } from '../db'
-import {
-  getLatestPeriodLog,
-  ensurePeriodLogFromProfile,
-  addPeriodDatesInRange,
-  toLocalDateStr,
-} from '../period-log-sync'
+import { getLatestPeriodLog, ensurePeriodLogFromProfile } from '../period-log-sync'
 import { isPregnancy, isMenopause } from '../../utils/goal'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
 import { TIER2_MIN_CYCLES } from '../prediction-calc'
 import { ApiError } from '../api-error'
 import { findOverlappingPeriod, periodDayKey } from '../../utils/period-overlap'
 import { getCurrentPhase, MS_PER_DAY } from '../../utils/cycle-utils'
+import {
+  addDaysToDay,
+  bangladeshToday,
+  dayToStoredDate,
+  daysBetween,
+  storedDateToDay,
+} from '../../utils/dhaka-date'
 import type { CyclePhase } from '../../types/types'
 import { loadPhasePattern, loadRecentSymptomPattern, type PhasePatternEntry } from './insights-service'
 
@@ -517,7 +519,7 @@ export function dashboardCycleState({
 
 // ── Dashboard ──────────────────────────────────────────────────────────────────
 
-export async function getDashboardData(profileId: string, userId: string) {
+export async function getDashboardData(profileId: string, userId: string, now: Date) {
   const profile = await prisma.profile.findUnique({ where: { id: profileId } })
   if (!profile || profile.userId !== userId) return null
 
@@ -531,19 +533,17 @@ export async function getDashboardData(profileId: string, userId: string) {
     }),
   ])
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // Every date here is a Bangladesh-day string; stored date-only values are UTC midnight of their day.
+  const today = bangladeshToday(now)
 
   let currentCycleDay = 1
   let currentPhase: CyclePhase = 'follicular'
   let countdownToNextPeriod: number | null = null
 
   if (lastPeriod) {
-    const lastStart = new Date(lastPeriod.startDate)
-    lastStart.setHours(0, 0, 0, 0)
     const state = dashboardCycleState({
-      lastStartMs: lastStart.getTime(),
-      todayMs: today.getTime(),
+      lastStartMs: lastPeriod.startDate.getTime(),
+      todayMs: dayToStoredDate(today).getTime(),
       periodLength: profile.periodLength,
       cycleLength: profile.cycleLength,
     })
@@ -552,19 +552,10 @@ export async function getDashboardData(profileId: string, userId: string) {
   }
 
   if (prediction?.nextPeriodStart) {
-    const nextStart = new Date(prediction.nextPeriodStart)
-    nextStart.setHours(0, 0, 0, 0)
-    countdownToNextPeriod = Math.ceil(
-      (nextStart.getTime() - today.getTime()) / MS_PER_DAY,
-    )
+    countdownToNextPeriod = daysBetween(today, storedDateToDay(prediction.nextPeriodStart))
   } else if (lastPeriod) {
-    const lastStart = new Date(lastPeriod.startDate)
-    lastStart.setHours(0, 0, 0, 0)
-    const nextEstimated = new Date(lastStart)
-    nextEstimated.setDate(nextEstimated.getDate() + profile.cycleLength)
-    countdownToNextPeriod = Math.ceil(
-      (nextEstimated.getTime() - today.getTime()) / MS_PER_DAY,
-    )
+    const nextEstimated = addDaysToDay(storedDateToDay(lastPeriod.startDate), profile.cycleLength)
+    countdownToNextPeriod = daysBetween(today, nextEstimated)
   }
 
   const lastPeriodSummary = lastPeriod
@@ -595,7 +586,7 @@ export async function getDashboardData(profileId: string, userId: string) {
       ? await loadPhasePattern(profileId, profile.periodLength, currentPhase)
       : []
   // Symptom pattern (#66 S1): menopause has no phases, so it ranks a recent window instead.
-  const symptomPattern: PhasePatternEntry[] = mode === 'menopause' ? await loadRecentSymptomPattern(profileId) : []
+  const symptomPattern: PhasePatternEntry[] = mode === 'menopause' ? await loadRecentSymptomPattern(profileId, now) : []
 
   return {
     mode,
@@ -615,18 +606,15 @@ export async function getDashboardData(profileId: string, userId: string) {
 export async function getLoggingStatus(
   profileId: string,
   userId: string,
+  now: Date,
 ): Promise<{ goal: string | null; loggedToday: boolean; isPeriodLate: boolean; daysLate: number } | null> {
   const profile = await prisma.profile.findUnique({ where: { id: profileId } })
   if (!profile || profile.userId !== userId) return null
 
-  // Use UTC day boundaries to match getEngagementSummary and how symptom/period
-  // logs are stored (UTC-midnight day keys). Local-time boundaries here caused
-  // the sidebar to disagree with the dashboard on machines where local ≠ UTC.
-  const now = new Date()
-  const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`
-  const today = new Date(todayStr)
-  const tomorrow = new Date(todayStr)
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
+  // Date-only logs are stored at UTC midnight of their Bangladesh day.
+  const todayStr = bangladeshToday(now)
+  const today = dayToStoredDate(todayStr)
+  const tomorrow = dayToStoredDate(addDaysToDay(todayStr, 1))
 
   const [symptomToday, periodToday] = await Promise.all([
     prisma.symptomLog.findFirst({
@@ -641,7 +629,7 @@ export async function getLoggingStatus(
   const loggedToday = Boolean(symptomToday || periodToday)
 
   // Reuse the dashboard countdown so "late" never drifts from the dashboard.
-  const dash = await getDashboardData(profileId, userId)
+  const dash = await getDashboardData(profileId, userId, now)
   const countdown = dash?.countdownToNextPeriod ?? null
   const isPeriodLate = countdown != null && countdown < 0
   const daysLate = isPeriodLate ? Math.abs(countdown as number) : 0
@@ -667,17 +655,20 @@ export async function getCalendarData(
   const profile = await prisma.profile.findUnique({ where: { id: profileId } })
   if (!profile || profile.userId !== userId) return null
 
+  // Day math runs on Bangladesh-day strings (UTC-only helpers), so the answer is the same in any
+  // process timezone. Stored dates are UTC midnight of their day.
   const [year, monthNum] = month.split('-').map(Number)
-  const monthStart = new Date(year, monthNum - 1, 1)
-  const monthEnd = new Date(year, monthNum, 0)
+  const firstDay = `${String(year).padStart(4, '0')}-${String(monthNum).padStart(2, '0')}-01`
+  const lastDay = storedDateToDay(new Date(Date.UTC(year, monthNum, 0)))
+  const inMonth = (day: string) => day >= firstDay && day <= lastDay
 
   await ensurePeriodLogFromProfile(profile)
 
   const periodLogs = await prisma.periodLog.findMany({
     where: {
       profileId: profile.id,
-      startDate: { lte: monthEnd },
-      endDate: { gte: monthStart },
+      startDate: { lte: dayToStoredDate(lastDay) },
+      endDate: { gte: dayToStoredDate(firstDay) },
     },
   })
 
@@ -689,84 +680,61 @@ export async function getCalendarData(
   const ovulationDates = new Set<string>()
 
   for (const log of periodLogs) {
-    addPeriodDatesInRange(
-      new Date(log.startDate),
-      new Date(log.endDate),
-      monthStart,
-      monthEnd,
-      periodDates,
-    )
+    const end = storedDateToDay(log.endDate)
+    for (let d = storedDateToDay(log.startDate); d <= end; d = addDaysToDay(d, 1)) {
+      if (inMonth(d)) periodDates.add(d)
+    }
   }
 
   if (!isPregnancy(profile.goal)) {
     // Determine the anchor for forward projections.
     // If a Prediction record exists, use it as cycle 1 and project cycles 2-3.
     // Otherwise, estimate from the most recent period log.
-    let anchorPeriodStart: Date | null = null
+    let anchorPeriodStart: string | null = null
 
     if (prediction?.nextPeriodStart) {
-      anchorPeriodStart = new Date(prediction.nextPeriodStart)
+      anchorPeriodStart = storedDateToDay(prediction.nextPeriodStart)
     } else {
       const lastLog = await prisma.periodLog.findFirst({
         where: { profileId: profile.id },
         orderBy: { startDate: 'desc' },
       })
       if (lastLog) {
-        anchorPeriodStart = new Date(lastLog.startDate)
-        anchorPeriodStart.setDate(anchorPeriodStart.getDate() + profile.cycleLength)
+        anchorPeriodStart = addDaysToDay(storedDateToDay(lastLog.startDate), profile.cycleLength)
       }
     }
 
     // Project up to 3 future cycles (period, fertile window, ovulation)
     if (anchorPeriodStart) {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
       const { cycleLength, periodLength } = profile
 
       for (let cycle = 0; cycle < 3; cycle++) {
-        const cycleStart = new Date(anchorPeriodStart)
-        cycleStart.setDate(cycleStart.getDate() + cycle * cycleLength)
-        cycleStart.setHours(0, 0, 0, 0)
+        const cycleStart = addDaysToDay(anchorPeriodStart, cycle * cycleLength)
 
         // Predicted period days — mark as both period and predicted
-        const periodEnd = new Date(cycleStart)
-        periodEnd.setDate(periodEnd.getDate() + periodLength - 1)
-        const d = new Date(cycleStart)
-        while (d <= periodEnd) {
-          if (d >= monthStart && d <= monthEnd) {
-            const ds = toLocalDateStr(d)
-            if (!periodDates.has(ds)) {
-              predictedDates.add(ds)
-              periodDates.add(ds)
-            }
+        const periodEnd = addDaysToDay(cycleStart, periodLength - 1)
+        for (let d = cycleStart; d <= periodEnd; d = addDaysToDay(d, 1)) {
+          if (inMonth(d) && !periodDates.has(d)) {
+            predictedDates.add(d)
+            periodDates.add(d)
           }
-          d.setDate(d.getDate() + 1)
         }
 
         // Ovulation = next period start - 14 days
-        const ovDay = new Date(cycleStart)
-        ovDay.setDate(ovDay.getDate() - 14)
-        ovDay.setHours(0, 0, 0, 0)
-        if (ovDay >= monthStart && ovDay <= monthEnd) {
-          ovulationDates.add(toLocalDateStr(ovDay))
-        }
+        const ovDay = addDaysToDay(cycleStart, -14)
+        if (inMonth(ovDay)) ovulationDates.add(ovDay)
 
         // Fertile window = ovulation - 5 days to ovulation + 1 day
         for (let offset = -5; offset <= 1; offset++) {
-          const fDay = new Date(ovDay)
-          fDay.setDate(fDay.getDate() + offset)
-          if (fDay >= monthStart && fDay <= monthEnd) {
-            fertileDates.add(toLocalDateStr(fDay))
-          }
+          const fDay = addDaysToDay(ovDay, offset)
+          if (inMonth(fDay)) fertileDates.add(fDay)
         }
       }
     }
   }
 
   const days: CalendarDay[] = []
-  const cur = new Date(monthStart)
-  while (cur <= monthEnd) {
-    const dateStr = toLocalDateStr(cur)
+  for (let dateStr = firstDay; dateStr <= lastDay; dateStr = addDaysToDay(dateStr, 1)) {
     days.push({
       date: dateStr,
       period: periodDates.has(dateStr),
@@ -774,7 +742,6 @@ export async function getCalendarData(
       ovulation: ovulationDates.has(dateStr),
       predicted: predictedDates.has(dateStr),
     })
-    cur.setDate(cur.getDate() + 1)
   }
 
   return days
