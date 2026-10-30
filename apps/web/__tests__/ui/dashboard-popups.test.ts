@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+// eslint-disable-next-line no-restricted-imports -- Bangladesh-day debt, see #115
 import { deviceDayString } from '@/lib/local-date'
 import { celebrationCopy, shouldShowConfetti, TOAST_AFTER_POPUP_MS } from '@/lib/toast-core'
 

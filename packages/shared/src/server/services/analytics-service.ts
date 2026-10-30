@@ -23,6 +23,7 @@ export async function getDashboardStats() {
     prisma.user.count({ where: { deletedAt: null, lastLoginAt: { gte: thirtyDaysAgo } } }),
     prisma.profile.count(),
     prisma.subscription.count({ where: { status: 'PRO' } }),
+    // eslint-disable-next-line no-restricted-syntax -- Bangladesh-day debt, see #147
     prisma.periodLog.count({ where: { createdAt: { gte: new Date(now.toDateString()) } } }),
     prisma.user.count({ where: { deletedAt: null, createdAt: { gte: sevenDaysAgo } } }),
     prisma.user.count({
@@ -387,6 +388,7 @@ export async function getLoggingStreakDistribution(): Promise<
   const now = Date.now()
   const since = new Date(now - LOOK_BACK * MS_PER_DAY)
 
+  // eslint-disable-next-line no-restricted-syntax -- Bangladesh-day debt, see #147
   const today = new Date(new Date().toDateString())
 
   const logs = await prisma.symptomLog.findMany({

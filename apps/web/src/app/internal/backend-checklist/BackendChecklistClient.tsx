@@ -345,7 +345,9 @@ export default function BackendChecklistClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             profileId: 'demo-profile-id',
+            // eslint-disable-next-line no-restricted-syntax -- Bangladesh-day debt, see #115
             startDate: new Date().toISOString().split('T')[0],
+            // eslint-disable-next-line no-restricted-syntax -- Bangladesh-day debt, see #115
             endDate: new Date(Date.now() + 4 * 86400000).toISOString().split('T')[0],
             flowIntensity: 'medium',
           }),

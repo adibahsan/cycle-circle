@@ -6,6 +6,7 @@ import type { FlowIntensity } from '@vesta/shared/types'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { FlowIcon } from '@/components/ui/PhaseIcon'
+// eslint-disable-next-line no-restricted-imports -- Bangladesh-day debt, see #115
 import { deviceDayString } from '@/lib/local-date'
 import { createPeriodLog, updatePeriodLog } from '@/app/actions/tracking-actions'
 import '@vesta/shared/utils/i18n'

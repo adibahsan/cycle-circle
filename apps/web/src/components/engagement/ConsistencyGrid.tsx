@@ -1,5 +1,6 @@
 'use client';
 
+// eslint-disable-next-line no-restricted-imports -- Bangladesh-day debt, see #115
 import { deviceDayString } from '@/lib/local-date';
 import { motion } from 'motion/react';
 import { useReducedMotion } from 'motion/react';

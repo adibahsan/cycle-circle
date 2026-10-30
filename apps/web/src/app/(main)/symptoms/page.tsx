@@ -17,6 +17,7 @@ export default async function SymptomsPage({
 
   const params = await searchParams
   const profileId = await getActiveProfileId(profiles, params.profileId)
+  // eslint-disable-next-line no-restricted-syntax -- Bangladesh-day debt, see #148
   const today = new Date().toISOString().slice(0, 10)
   const date = params.date || today
   const symptomLogs = await getSymptomLogs(profileId, date)
