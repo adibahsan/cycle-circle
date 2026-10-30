@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "db:generate": "pnpm --filter @vesta/shared db:generate",
     "db:migrate": "pnpm --filter @vesta/shared db:migrate",
     "db:migrate:deploy": "pnpm --filter @vesta/shared db:migrate:deploy",
