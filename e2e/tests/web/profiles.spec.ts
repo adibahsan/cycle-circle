@@ -142,8 +142,6 @@ test.describe('Profiles management and isolation', () => {
   })
 
   test('switching profiles changes the dashboard, calendar and insights to that profile data', async ({ newUser, days }, testInfo) => {
-    // Between 00:00 and 06:00 Bangladesh a UTC server counts from yesterday (#160); guarded by the server clock.
-    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/160')
     const { page } = await newUser()
 
     // Create Profile Alpha (last period 10 days ago -> cycle day 11, goal: tracking)

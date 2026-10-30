@@ -13,7 +13,7 @@ export const GET = withAuth(async (_request, { user }: { user: AuthUser }) => {
     const cookieId = (await cookies()).get('vesta_active_profile')?.value
     const profileId =
       cookieId && profiles.some((p) => p.id === cookieId) ? cookieId : profiles[0].id
-    const status = await getLoggingStatus(profileId, user.id)
+    const status = await getLoggingStatus(profileId, user.id, new Date())
     return Response.json({ ...(status ?? { goal: null, loggedToday: false, isPeriodLate: false, daysLate: 0 }), profileId })
   } catch (error) {
     return handleApiError(error)
