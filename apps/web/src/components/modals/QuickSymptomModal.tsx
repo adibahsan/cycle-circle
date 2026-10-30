@@ -13,7 +13,7 @@ import { saveSymptoms } from '@/app/actions/tracking-actions';
 import { SymptomChip } from '@/components/symptoms/SymptomChip';
 import { SymptomCategoryTabs, CATEGORIES } from '@/components/symptoms/SymptomCategoryTabs';
 import { SaveErrorStatus } from '@/components/symptoms/SaveErrorStatus';
-// eslint-disable-next-line no-restricted-imports -- Bangladesh-day debt, see #115
+// eslint-disable-next-line no-restricted-imports -- Bangladesh-day debt, see https://github.com/adibahsan/cycle-circle/issues/115
 import { deviceDayString } from '@/lib/local-date';
 import { goalAccentVar } from '@vesta/shared/utils/goal';
 import type { SymptomCategory } from '@vesta/shared/types';

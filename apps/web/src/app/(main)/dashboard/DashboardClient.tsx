@@ -31,7 +31,7 @@ import { ProgressToUnlockMeter } from '@/components/engagement/ProgressToUnlockM
 import dynamic from 'next/dynamic'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
-// eslint-disable-next-line no-restricted-imports -- Bangladesh-day debt, see #115
+// eslint-disable-next-line no-restricted-imports -- Bangladesh-day debt, see https://github.com/adibahsan/cycle-circle/issues/115
 import { deviceDayString } from '@/lib/local-date'
 import { CycleHero, FirstPeriodHero, MenopauseHero, PregnancyHero } from './CycleHero'
 import { CycleDates, type LastPeriodFacts } from './CycleDates'
