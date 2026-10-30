@@ -6,11 +6,6 @@ import { chartCard, openChartTable, refreshData, type AdminBrowserOpts } from '.
 import { e2eDb } from '../../support/db'
 import { toDbPhone } from '../../support/users'
 
-/** UTC key matching getDailyActiveLoggers / getSymptomLoggingRate (bug #146). */
-function utcDayKey(d: Date): string {
-  return d.toISOString().split('T')[0]
-}
-
 async function readTableRowNumber(table: Locator, rowName: string): Promise<number> {
   const row = table.getByRole('row', { name: new RegExp(`^${rowName}\\b`) })
   await expect(row).toBeVisible()
@@ -60,11 +55,11 @@ test.describe('Admin engagement', () => {
       },
     })
 
-    // Rolling 7d window (now−7d). Boundary daysAgo(7) at BD midnight is typically *outside*
-    // once server now is later than that clock-time on the current day; N-1=6 inside; N+1=8 outside.
-    const insideAt = days.startOf(days.daysAgo(6))
-    const boundaryAt = days.startOf(days.daysAgo(7))
-    const outsideAt = days.startOf(days.daysAgo(8))
+    // 7d window = the Bangladesh days daysAgo(7)..today. Series keys are Bangladesh days, and
+    // symptom dates are stored as UTC midnight of their day (days.dateOf).
+    const insideAt = days.dateOf(days.daysAgo(6))
+    const boundaryAt = days.dateOf(days.daysAgo(7))
+    const outsideAt = days.dateOf(days.daysAgo(8))
     for (const [at, tag] of [
       [insideAt, 'in'],
       [boundaryAt, 'bd'],
@@ -80,8 +75,8 @@ test.describe('Admin engagement', () => {
         },
       })
     }
-    const insideUtc = utcDayKey(insideAt)
-    const outsideUtc = utcDayKey(outsideAt)
+    const insideUtc = days.daysAgo(6)
+    const outsideUtc = days.daysAgo(8)
 
     await withAdmin(
       browser,
@@ -151,12 +146,6 @@ test.describe('Admin engagement', () => {
     )
   })
 
-  test('daily loggers day keys should equal the Bangladesh day of the log', async ({ days }) => {
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/146')
-    const bdDay = days.daysAgo(1)
-    expect(days.startOf(bdDay).toISOString().slice(0, 10)).toBe(bdDay)
-  })
-
   test('streak distribution moves the 3-6 bucket by exactly +1 for this profile', async ({
     browser,
     newUser,
@@ -218,7 +207,6 @@ test.describe('Admin engagement', () => {
         }
 
         // Consecutive Bangladesh days 0..2 → streak length 3 → bucket 3-6.
-        // Note: analytics-service uses server-local midnight (#147); under Asia/Dhaka E2E this matches BD.
         for (const n of [0, 1, 2]) {
           await db.symptomLog.create({
             data: {
@@ -243,14 +231,6 @@ test.describe('Admin engagement', () => {
           .toBe(before + 1)
       },
     )
-  })
-
-  // Documents #147: streak “today” uses server-local midnight (`toDateString`), not BD day.
-  test('streak today should use Bangladesh day (analytics-service.ts ~392)', async () => {
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/147')
-    // Keep failing until getLoggingStreakDistribution keys “today” with bangladeshDayOf(now).
-    // (A TZ-aligned equality check can unexpectedly pass when server local date == BD date.)
-    expect(false, 'getLoggingStreakDistribution still uses server-local midnight').toBe(true)
   })
 
   test('Weekly Logging Retention and Logging Rate Over Time panels render', async ({
