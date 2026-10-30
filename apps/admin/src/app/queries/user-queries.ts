@@ -49,7 +49,7 @@ export const getUserDetail = cache(async (userId: string) => {
 export const getUserSignupTrendQuery = cache(async (days: number) => {
   await requireAdminUser()
   return unstable_cache(
-    () => getUserSignupTrend({ days }),
+    () => getUserSignupTrend({ days, now: new Date() }),
     ['admin-users-signup-trend', String(days)],
     { tags: [adminCacheTags.users], revalidate: KPI_CACHE_TTL }
   )()

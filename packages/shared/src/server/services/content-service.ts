@@ -117,9 +117,10 @@ export async function createArticle(
     cyclePhases?: string[]
     status?: string
   },
+  now: Date,
 ) {
   assertArticleStatus(data.status)
-  const slug = slugify(data.titleEn) + '-' + Date.now().toString(36)
+  const slug = slugify(data.titleEn) + '-' + now.getTime().toString(36)
 
   const article = await prisma.article.create({
     data: {
@@ -134,7 +135,7 @@ export async function createArticle(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       status: (data.status as never) || 'DRAFT',
       authorId,
-      publishedAt: data.status === 'PUBLISHED' ? new Date() : null,
+      publishedAt: data.status === 'PUBLISHED' ? now : null,
     },
   })
 
@@ -162,6 +163,7 @@ export async function updateArticle(
     cyclePhases?: string[]
     status?: string
   },
+  now: Date,
 ) {
   assertArticleStatus(data.status)
   const updateData: Record<string, unknown> = { ...data }
@@ -176,7 +178,7 @@ export async function updateArticle(
   if (data.status === 'PUBLISHED') {
     const existing = await prisma.article.findUnique({ where: { id } })
     if (existing && !existing.publishedAt) {
-      updateData.publishedAt = new Date()
+      updateData.publishedAt = now
     }
   } else if (data.status === 'DRAFT' || data.status === 'ARCHIVED') {
     updateData.publishedAt = null

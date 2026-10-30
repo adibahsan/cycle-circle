@@ -11,6 +11,7 @@ import {
   getPhaseColor,
   getPhaseEmoji,
 } from '@vesta/shared/utils/cycle-utils';
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date';
 import type { UserProfile } from '@vesta/shared/types';
 
 function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
@@ -110,34 +111,34 @@ describe('getConfidence', () => {
 });
 
 describe('getCurrentCycleDay', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-03-01'));
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+  const today = '2026-03-01';
 
   it('returns 1 when last period started today', () => {
-    expect(getCurrentCycleDay('2026-03-01', 28)).toBe(1);
+    expect(getCurrentCycleDay('2026-03-01', 28, today)).toBe(1);
   });
 
   it('returns correct day for mid-cycle', () => {
     // 5 days ago → day 6
-    expect(getCurrentCycleDay('2026-02-24', 28)).toBe(6);
+    expect(getCurrentCycleDay('2026-02-24', 28, today)).toBe(6);
   });
 
   it('clamps to cycle length at the exact boundary', () => {
     // 28 days ago → would be day 29; clamped to cycleLength (28).
     // The impl deliberately clamps rather than wrapping, so a late user is
     // never shown a fabricated "day 1" of a cycle they have not logged.
-    expect(getCurrentCycleDay('2026-02-01', 28)).toBe(28);
+    expect(getCurrentCycleDay('2026-02-01', 28, today)).toBe(28);
   });
 
   it('clamps to cycle length past the boundary (late, no new log)', () => {
     // 30 days ago → would be day 31; clamped to cycleLength (28).
-    expect(getCurrentCycleDay('2026-01-30', 28)).toBe(28);
+    expect(getCurrentCycleDay('2026-01-30', 28, today)).toBe(28);
+  });
+
+  it('is timezone-independent at 18:30 UTC (00:30 Bangladesh next day)', () => {
+    expect(getCurrentCycleDay('2026-03-01', 28, bangladeshToday(new Date('2026-03-01T18:30:00Z')))).toBe(2);
+  });
+  it('still the same Bangladesh day at 17:59 UTC', () => {
+    expect(getCurrentCycleDay('2026-03-01', 28, bangladeshToday(new Date('2026-03-01T17:59:00Z')))).toBe(1);
   });
 });
 

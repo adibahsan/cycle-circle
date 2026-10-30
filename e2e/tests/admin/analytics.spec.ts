@@ -18,7 +18,7 @@ function phaseSymptomsDl(page: Page) {
     .locator('dl')
 }
 
-/** UTC YYYY-MM-DD matching analytics-service `toISOString` bucketing (bug #146). */
+/** UTC YYYY-MM-DD, for the MAE trend (stored `date` of prediction snapshots). */
 function utcDayKey(d: Date): string {
   return d.toISOString().split('T')[0]
 }
@@ -347,9 +347,9 @@ test.describe('Admin analytics', () => {
 
     // getTrendMetric(active, 7) → rolling now−7d. Boundary daysAgo(7) at BD midnight is
     // typically *outside* when server now is later that clock-time (startDate = now−7d).
-    const insideAt = days.startOf(days.daysAgo(6))
-    const boundaryAt = days.startOf(days.daysAgo(7))
-    const outsideAt = days.startOf(days.daysAgo(8))
+    const insideAt = days.dateOf(days.daysAgo(6))
+    const boundaryAt = days.dateOf(days.daysAgo(7))
+    const outsideAt = days.dateOf(days.daysAgo(8))
     for (const [at, tag] of [
       [insideAt, 'in'],
       [boundaryAt, 'bd'],
@@ -365,9 +365,9 @@ test.describe('Admin analytics', () => {
         },
       })
     }
-    // Chart row labels are UTC keys today (#146); seeds are Bangladesh days.
-    const insideUtc = utcDayKey(insideAt)
-    const outsideUtc = utcDayKey(outsideAt)
+    // Chart row labels are Bangladesh days.
+    const insideDay = days.daysAgo(6)
+    const outsideDay = days.daysAgo(8)
 
     await withAdmin(
       browser,
@@ -390,7 +390,7 @@ test.describe('Admin analytics', () => {
             async () => {
               await refreshData(page)
               const table = await openChartTable(page, 'User Activity Trend')
-              const insideRow = table.getByRole('row', { name: new RegExp(`^${insideUtc}\\b`) })
+              const insideRow = table.getByRole('row', { name: new RegExp(`^${insideDay}\\b`) })
               if ((await insideRow.count()) === 0) return -1
               const raw = ((await insideRow.getByRole('cell').first().textContent()) ?? '').trim()
               const n = Number.parseInt(raw, 10)
@@ -401,7 +401,7 @@ test.describe('Admin analytics', () => {
           .toBeGreaterThanOrEqual(1)
 
         const trendTable = await openChartTable(page, 'User Activity Trend')
-        await expect(trendTable.getByRole('row', { name: new RegExp(`^${outsideUtc}\\b`) })).toHaveCount(0)
+        await expect(trendTable.getByRole('row', { name: new RegExp(`^${outsideDay}\\b`) })).toHaveCount(0)
 
         // Exercise PanelRange + metric picker.
         await rangeGroup.getByRole('button', { name: '30d' }).click()
@@ -420,12 +420,53 @@ test.describe('Admin analytics', () => {
     )
   })
 
-  // App buckets with toISOString (UTC); desired key is the Bangladesh day — #146.
-  test('activity trend day keys should equal the Bangladesh day of the log', async ({ days }) => {
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/146')
-    const bdDay = days.daysAgo(1)
-    // Mirrors getDailyActiveLoggers / getTrendMetric active bucketing today.
-    expect(days.startOf(bdDay).toISOString().slice(0, 10)).toBe(bdDay)
+  // https://github.com/adibahsan/cycle-circle/issues/146: signups bucket by the Bangladesh day of
+  // createdAt, and the series has no empty leading bucket labelled with the day before the range.
+  test('signup trend buckets a 02:00 Bangladesh signup on its Bangladesh day', async ({
+    browser,
+    newUser,
+    days,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    const throwaway = await newUser()
+    const db = e2eDb()
+    const bdDay = days.daysAgo(2)
+    // 02:00 Bangladesh = 20:00 UTC of the day before: a UTC bucketing puts it on the wrong bar.
+    await db.user.update({
+      where: { phone: toDbPhone(throwaway.phone) },
+      data: { createdAt: new Date(days.startOf(bdDay).getTime() + 2 * 3_600_000) },
+    })
+    const beforeRange = days.daysAgo(8)
+
+    await withAdmin(
+      browser,
+      { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
+      async (page) => {
+        await page.goto('/analytics?trend=7d&tm=signups')
+        await expect(page.getByRole('heading', { name: 'User Activity Trend' })).toBeVisible()
+        await expect
+          .poll(
+            async () => {
+              await refreshData(page)
+              const table = await openChartTable(page, 'User Activity Trend')
+              const row = table.getByRole('row', { name: new RegExp(`^${bdDay}\\b`) })
+              if ((await row.count()) === 0) return -1
+              return Number.parseInt(((await row.getByRole('cell').first().textContent()) ?? '').trim(), 10)
+            },
+            { timeout: 30_000 },
+          )
+          .toBeGreaterThanOrEqual(1)
+
+        const table = await openChartTable(page, 'User Activity Trend')
+        await expect(table.getByRole('row', { name: new RegExp(`^${beforeRange}\\b`) })).toHaveCount(0)
+      },
+    )
   })
 
   test('cycle-length distribution reflects throwaway period gaps', async ({

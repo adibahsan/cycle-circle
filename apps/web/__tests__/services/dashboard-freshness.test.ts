@@ -12,7 +12,7 @@ describe('getDashboardStats freshness', () => {
 
   it('stamps generatedAt with the time the stats were computed', async () => {
     const before = Date.now()
-    const stats = await getDashboardStats()
+    const stats = await getDashboardStats(new Date())
     const after = Date.now()
     const t = new Date(stats.generatedAt).getTime()
     expect(t).toBeGreaterThanOrEqual(before)
@@ -20,7 +20,7 @@ describe('getDashboardStats freshness', () => {
   })
 
   it('reflects a new user and period log immediately', async () => {
-    await getDashboardStats() // a cached implementation would pin this result
+    await getDashboardStats(new Date()) // a cached implementation would pin this result
     const { profile } = await createTestUser('9001')
     await insertPeriodLogs(profile.id, ['2026-01-01'])
 
@@ -36,7 +36,7 @@ describe('getDashboardStats freshness', () => {
     let stable: { stats: Awaited<ReturnType<typeof getDashboardStats>>; users: number; profiles: number } | null = null
     for (let attempt = 0; attempt < 50 && !stable; attempt++) {
       const [usersBefore, profilesBefore] = await counts()
-      const stats = await getDashboardStats()
+      const stats = await getDashboardStats(new Date())
       const [usersAfter, profilesAfter] = await counts()
       if (usersBefore === usersAfter && profilesBefore === profilesAfter) {
         stable = { stats, users: usersAfter, profiles: profilesAfter }

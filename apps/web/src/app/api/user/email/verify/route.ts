@@ -25,7 +25,7 @@ export const POST = withAuth(async (request, { user }) => {
       throw new ApiError(429, 'Too many verification attempts. Try again later.', 'RATE_LIMITED')
     }
 
-    const { email } = await verifyEmailCode(user.id, body.code)
+    const { email } = await verifyEmailCode(user.id, body.code, new Date())
 
     // Bust the cached user so settings and RSC show the new email at once.
     revalidateTag(`user:${user.id}`, { expire: 0 })

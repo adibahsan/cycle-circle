@@ -20,6 +20,7 @@ import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 
 type FeedbackItem = {
   id: string
@@ -223,8 +224,7 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      // eslint-disable-next-line no-restricted-syntax -- not a day computation: download filename stamp
-      a.download = `feedback-${new Date().toISOString().split('T')[0]}.csv`
+      a.download = `feedback-${bangladeshToday()}.csv`
       a.click()
       URL.revokeObjectURL(url)
       toast.success('Feedback CSV exported')

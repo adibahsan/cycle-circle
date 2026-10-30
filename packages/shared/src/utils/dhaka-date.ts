@@ -28,3 +28,28 @@ export function bangladeshDayOf(instant: Date): string {
 export function bangladeshToday(now: Date = new Date()): string {
   return bangladeshDayOf(now)
 }
+
+// Bangladesh-day arithmetic. A day is a `YYYY-MM-DD` string; these helpers use UTC
+// methods only, so they give the same answer in any process timezone.
+
+const DAY_MS = 86_400_000
+
+/** A `YYYY-MM-DD` day to its stored form: that day at 00:00 UTC (how date-only columns are written). */
+export function dayToStoredDate(day: string): Date {
+  return new Date(`${day}T00:00:00.000Z`)
+}
+
+/** A stored date-only value (a Date at 00:00 UTC) back to its `YYYY-MM-DD` day. */
+export function storedDateToDay(stored: Date): string {
+  return stored.toISOString().slice(0, 10)
+}
+
+/** `day` plus `n` days (negative `n` goes back), as `YYYY-MM-DD`. Crosses month, year and leap days. */
+export function addDaysToDay(day: string, n: number): string {
+  return storedDateToDay(new Date(dayToStoredDate(day).getTime() + n * DAY_MS))
+}
+
+/** Whole days from `from` to `to` (`to` minus `from`; negative if `to` is earlier). */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((dayToStoredDate(to).getTime() - dayToStoredDate(from).getTime()) / DAY_MS)
+}

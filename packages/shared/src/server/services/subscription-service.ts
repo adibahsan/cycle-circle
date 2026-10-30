@@ -1,5 +1,6 @@
 import { prisma } from '../db'
 import { Prisma } from '@prisma/client'
+import { fillDaySeries, resolveDaySeriesRange, type DaySeriesOpts } from '../../utils/day-series'
 import { logger } from '../log'
 import { isPhoneSubscriberId, setSubscription } from '../adapters/bdapps'
 
@@ -63,7 +64,7 @@ export async function unsubscribeUserOnBdapps(userId: string, adminId?: string):
  * Grant PRO access to a user. Finds an existing subscription and updates it,
  * or creates a new one. Syncs user.subscriptionStatus to PRO.
  */
-export async function grantPro(userId: string, adminId: string) {
+export async function grantPro(userId: string, adminId: string, now: Date) {
   const before = await prisma.user.findUnique({ where: { id: userId }, select: { subscriptionStatus: true } })
   const sub = await prisma.subscription.findFirst({ where: { userId } })
 
@@ -74,7 +75,7 @@ export async function grantPro(userId: string, adminId: string) {
         status: 'PRO',
         adminOverride: true,
         adminOverrideBy: adminId,
-        adminOverrideAt: new Date(),
+        adminOverrideAt: now,
         adminOverrideUnsubFailed: false,
       },
     })
@@ -85,7 +86,7 @@ export async function grantPro(userId: string, adminId: string) {
         status: 'PRO',
         adminOverride: true,
         adminOverrideBy: adminId,
-        adminOverrideAt: new Date(),
+        adminOverrideAt: now,
       },
     })
   }
@@ -109,7 +110,7 @@ export async function grantPro(userId: string, adminId: string) {
  * Revoke PRO access from a user. Updates all active PRO subscriptions to LAPSED
  * and syncs user.subscriptionStatus.
  */
-export async function revokePro(userId: string, adminId: string) {
+export async function revokePro(userId: string, adminId: string, now: Date) {
   const before = await prisma.user.findUnique({ where: { id: userId }, select: { subscriptionStatus: true } })
   // BDApps first so a failure is known when the override is stored; our side applies either way.
   const bdapps = await unsubscribeUserOnBdapps(userId, adminId)
@@ -119,7 +120,7 @@ export async function revokePro(userId: string, adminId: string) {
       status: 'LAPSED',
       adminOverride: true,
       adminOverrideBy: adminId,
-      adminOverrideAt: new Date(),
+      adminOverrideAt: now,
       // Skipped (no usable id) is as unconfirmed as failed: only a new masked id ends the override.
       adminOverrideUnsubFailed: bdapps.status !== 'unsubscribed',
     },
@@ -149,10 +150,10 @@ export async function setSubscriptionStatus(
   userId: string,
   status: 'PRO' | 'FREE' | 'LAPSED',
   adminId: string,
+  now: Date,
 ) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { subscriptionStatus: true } })
   const previous = user?.subscriptionStatus ?? null
-  const now = new Date()
   // Taking Pro away also ends BDApps billing (ADR 0006); granting Pro leaves BDApps alone.
   const bdapps: BdappsUnsubscribeResult | null = status === 'PRO' ? null : await unsubscribeUserOnBdapps(userId, adminId)
   const adminOverrideUnsubFailed = !!bdapps && bdapps.status !== 'unsubscribed'
@@ -434,38 +435,26 @@ export async function listProSubscriptions() {
 // Chart-data aggregations for admin Subscriptions section
 // ---------------------------------------------------------------------------
 
-export interface SubscriptionChartDateRangeOpts {
-  days?: number
-  dateFrom?: Date
-  dateTo?: Date
-}
+export type SubscriptionChartDateRangeOpts = DaySeriesOpts
 
 /**
  * Daily new subscriptions created over the given date range (default: last 30 days).
  * Uses Subscription.createdAt. Gap-fills days with zero for a continuous x-axis.
  */
 export async function getSubscriptionTrend(
-  opts: SubscriptionChartDateRangeOpts = {},
+  opts: SubscriptionChartDateRangeOpts,
 ): Promise<{ date: string; count: number }[]> {
-  const { dateTo = new Date(), dateFrom, days = 30 } = opts
-  const resolvedFrom =
-    dateFrom ?? new Date(new Date(dateTo).setDate(dateTo.getDate() - days + 1))
+  const { from, to, fromDay, toDay } = resolveDaySeriesRange(opts)
 
-  const from = new Date(
-    Date.UTC(resolvedFrom.getFullYear(), resolvedFrom.getMonth(), resolvedFrom.getDate()),
-  )
-  const to = new Date(
-    Date.UTC(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999),
-  )
-
+  // Bucket by Bangladesh day (UTC+6), not UTC day. "createdAt" is a UTC timestamp without zone, so tag it UTC first.
   const rows = await prisma.$queryRaw<{ date: string; count: bigint }[]>`
     SELECT
-      TO_CHAR(DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS date,
+      TO_CHAR(DATE_TRUNC('day', ("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Dhaka'), 'YYYY-MM-DD') AS date,
       COUNT(*)::bigint AS count
     FROM "Subscription"
     WHERE "createdAt" >= ${from} AND "createdAt" <= ${to}
-    GROUP BY DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC')
-    ORDER BY DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC') ASC
+    GROUP BY DATE_TRUNC('day', ("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Dhaka')
+    ORDER BY DATE_TRUNC('day', ("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Dhaka') ASC
   `
 
   const lookup = new Map<string, number>()
@@ -473,15 +462,7 @@ export async function getSubscriptionTrend(
     lookup.set(row.date, Number(row.count))
   }
 
-  const result: { date: string; count: number }[] = []
-  const cursor = new Date(from)
-  while (cursor <= to) {
-    const key = cursor.toISOString().slice(0, 10)
-    result.push({ date: key, count: lookup.get(key) ?? 0 })
-    cursor.setUTCDate(cursor.getUTCDate() + 1)
-  }
-
-  return result
+  return fillDaySeries(fromDay, toDay, lookup)
 }
 
 /**

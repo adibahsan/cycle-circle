@@ -2,6 +2,8 @@ import { prisma } from '../db'
 import { logger } from '../log'
 import { smsSend } from '../adapters/bdapps'
 import { createAuditLog } from './audit-service'
+import { bangladeshDayOf } from '../../utils/dhaka-date'
+import { fillDaySeries, resolveDaySeriesRange, type DaySeriesOpts } from '../../utils/day-series'
 import { env } from '../../utils/env'
 import {
   composeSms,
@@ -19,11 +21,7 @@ export * from '../../utils/sms'
 
 // ── Chart-data helpers ─────────────────────────────────────────────────────────
 
-export interface ChartDateOpts {
-  days?: number
-  dateFrom?: Date
-  dateTo?: Date
-}
+export type ChartDateOpts = DaySeriesOpts
 
 /**
  * Returns daily broadcast counts (sent or scheduled) over the requested range.
@@ -34,16 +32,9 @@ export interface ChartDateOpts {
  * otherwise on `createdAt`.
  */
 export async function getSmsSendHistory(
-  opts: ChartDateOpts = {},
+  opts: ChartDateOpts,
 ): Promise<{ date: string; count: number }[]> {
-  const { days = 30, dateFrom, dateTo } = opts
-
-  const to = dateTo ?? new Date()
-  const from = dateFrom ?? new Date(new Date(to).setDate(to.getDate() - days + 1))
-
-  // Normalise to start-of-day UTC for consistent bucketing
-  from.setUTCHours(0, 0, 0, 0)
-  to.setUTCHours(23, 59, 59, 999)
+  const { from, to, fromDay, toDay } = resolveDaySeriesRange(opts)
 
   const broadcasts = await prisma.smsBroadcast.findMany({
     where: {
@@ -55,24 +46,15 @@ export async function getSmsSendHistory(
     select: { sentAt: true, createdAt: true },
   })
 
-  // Build a map keyed by ISO date string (YYYY-MM-DD)
+  // Build a map keyed by Bangladesh day (YYYY-MM-DD)
   const counts = new Map<string, number>()
   for (const b of broadcasts) {
     const ts = b.sentAt ?? b.createdAt
-    const key = ts.toISOString().slice(0, 10)
+    const key = bangladeshDayOf(ts)
     counts.set(key, (counts.get(key) ?? 0) + 1)
   }
 
-  // Gap-fill every day in the range
-  const result: { date: string; count: number }[] = []
-  const cursor = new Date(from)
-  while (cursor <= to) {
-    const key = cursor.toISOString().slice(0, 10)
-    result.push({ date: key, count: counts.get(key) ?? 0 })
-    cursor.setUTCDate(cursor.getUTCDate() + 1)
-  }
-
-  return result
+  return fillDaySeries(fromDay, toDay, counts)
 }
 
 /**
@@ -321,6 +303,7 @@ async function performSend(
     messageBn: string | null
     sendLanguage: SmsSendLanguage
   },
+  now: Date,
   opts: SendOptions = {},
 ) {
   const isDevMode = env.DEV_MODE || env.NODE_ENV === 'development'
@@ -350,7 +333,7 @@ async function performSend(
     where: { id: broadcast.id },
     data: {
       status: 'SENT',
-      sentAt: new Date(),
+      sentAt: now,
       active: true,
       providerMessageId,
       targetCount,
@@ -375,7 +358,7 @@ function errorText(err: unknown) {
  * In production the BDApps smsSend API is called with `destinationAddresses:
  * ["tel:all"]` to reach all subscribers.
  */
-export async function sendBroadcast(broadcastId: string, adminUserId: string, opts: SendOptions = {}) {
+export async function sendBroadcast(broadcastId: string, adminUserId: string, now: Date, opts: SendOptions = {}) {
   const broadcast = await prisma.smsBroadcast.findUnique({ where: { id: broadcastId } })
 
   if (!broadcast) {
@@ -392,7 +375,7 @@ export async function sendBroadcast(broadcastId: string, adminUserId: string, op
   })
 
   try {
-    const updated = await performSend(broadcast, opts)
+    const updated = await performSend(broadcast, now, opts)
 
     await createAuditLog(adminUserId, 'SEND_SMS_BROADCAST', 'SmsBroadcast', broadcastId, {
       message: broadcast.message.slice(0, 100),
@@ -414,7 +397,7 @@ export async function sendBroadcast(broadcastId: string, adminUserId: string, op
  * Dispatch the next due scheduled broadcast (one per run = one per day).
  * Returns what happened.
  */
-export async function dispatchScheduledBroadcast(now: Date = new Date(), opts: SendOptions = {}) {
+export async function dispatchScheduledBroadcast(now: Date, opts: SendOptions = {}) {
   const due = await prisma.smsBroadcast.findFirst({
     where: { status: 'SCHEDULED', scheduledFor: { lte: now } },
     orderBy: { scheduledFor: 'asc' },
@@ -422,7 +405,7 @@ export async function dispatchScheduledBroadcast(now: Date = new Date(), opts: S
   if (!due) return { dispatched: false as const }
   await prisma.smsBroadcast.update({ where: { id: due.id }, data: { status: 'SENDING' } })
   try {
-    const sent = await performSend(due, opts)
+    const sent = await performSend(due, now, opts)
     await createAuditLog(due.createdBy, 'DISPATCH_SMS_BROADCAST', 'SmsBroadcast', due.id, {
       auto: true,
     })

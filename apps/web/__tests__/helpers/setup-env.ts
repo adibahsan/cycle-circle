@@ -2,7 +2,8 @@ import { readFileSync } from 'fs'
 import { resolve, join } from 'path'
 import { tmpdir } from 'os'
 
-process.env.TZ = 'UTC'
+// Default to UTC, but keep a TZ the caller set (pnpm test:tz runs the suite under other zones).
+process.env.TZ ??= 'UTC'
 
 const envPath = resolve(__dirname, '../../.env.local')
 try {

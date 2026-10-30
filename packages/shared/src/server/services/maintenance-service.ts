@@ -12,7 +12,7 @@ import { snapshotPredictionAccuracy } from './analytics-service'
  * deletedAt strictly before the cutoff is purged. One failing user (e.g. an
  * admin who still owns articles) never blocks the rest.
  */
-export async function purgeExpiredDeletedUsers(now: Date = new Date()) {
+export async function purgeExpiredDeletedUsers(now: Date) {
   const cutoff = new Date(now.getTime() - RESTORE_WINDOW_DAYS * MS_PER_DAY)
   const users = await prisma.user.findMany({
     where: { deletedAt: { lt: cutoff } },
@@ -35,7 +35,7 @@ export async function purgeExpiredDeletedUsers(now: Date = new Date()) {
 }
 
 /** The nightly admin-maintenance job: MAE snapshot, then the 30-day purge. */
-export async function runNightlyMaintenance(now: Date = new Date()) {
+export async function runNightlyMaintenance(now: Date) {
   const tiers = await snapshotPredictionAccuracy(now)
   const purge = await purgeExpiredDeletedUsers(now)
   const summary = { snapshotTiers: tiers.length, purged: purge.purged, failed: purge.failed }

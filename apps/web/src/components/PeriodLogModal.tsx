@@ -6,8 +6,7 @@ import type { FlowIntensity } from '@vesta/shared/types'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { FlowIcon } from '@/components/ui/PhaseIcon'
-// eslint-disable-next-line no-restricted-imports -- Bangladesh-day debt, see https://github.com/adibahsan/cycle-circle/issues/115
-import { deviceDayString } from '@/lib/local-date'
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 import { createPeriodLog, updatePeriodLog } from '@/app/actions/tracking-actions'
 import '@vesta/shared/utils/i18n'
 
@@ -80,7 +79,8 @@ function PeriodLogModalBody({
   const { profileId: logProfileId, existingLogId: logId } = frozen.current
 
   const isEdit = Boolean(logId)
-  const todayStr = deviceDayString()
+  // Read when the form opens (the body remounts per open session), not from the page's render.
+  const [todayStr] = useState(bangladeshToday)
   const [startDate, setStartDate] = useState(initialStart || (isEdit ? '' : todayStr))
   const [endDate, setEndDate] = useState(initialEnd || (isEdit ? '' : todayStr))
   const [flow, setFlow] = useState<FlowIntensity>(initialFlow)

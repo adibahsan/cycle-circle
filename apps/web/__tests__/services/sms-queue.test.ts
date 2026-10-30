@@ -119,7 +119,7 @@ describe('SMS queue management', () => {
   it('a failed manual send is marked FAILED with lastError and rethrows', async () => {
     bdapps.smsSend.mockRejectedValue(new Error('gateway down'))
     const b = await createBroadcast(ADMIN, 'Hi', undefined, undefined, 'EN')
-    await expect(sendBroadcast(b.id, ADMIN, { backoffMs: 0 })).rejects.toThrow('gateway down')
+    await expect(sendBroadcast(b.id, ADMIN, new Date(), { backoffMs: 0 })).rejects.toThrow('gateway down')
     expect(bdapps.smsSend).toHaveBeenCalledTimes(SMS_MAX_SEND_ATTEMPTS)
     const row = await testPrisma.smsBroadcast.findUnique({ where: { id: b.id } })
     expect(row?.status).toBe('FAILED')
@@ -129,7 +129,7 @@ describe('SMS queue management', () => {
   it('a successful send clears the error and marks SENT', async () => {
     const b = await createBroadcast(ADMIN, 'Hi', undefined, '2020-01-01T08:00:00Z', 'EN')
     await testPrisma.smsBroadcast.update({ where: { id: b.id }, data: { lastError: 'old', sendAttempts: 1 } })
-    await dispatchScheduledBroadcast(new Date('2020-01-02'))
+    await dispatchScheduledBroadcast(new Date('2020-01-02'), {})
     const row = await testPrisma.smsBroadcast.findUnique({ where: { id: b.id } })
     expect(row?.status).toBe('SENT')
     expect(row?.lastError).toBeNull()

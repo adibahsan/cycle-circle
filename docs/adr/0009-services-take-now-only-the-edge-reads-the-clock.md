@@ -1,0 +1,5 @@
+# Services take `now`; only the edge reads the clock
+
+Shared server services never read the clock. Every function whose answer depends on the current time takes `now: Date` as a parameter. Only the edge calls `new Date()`: route handlers, server actions, cron routes, Server Component pages, and client components at the moment of an event. A Server Component computes "today" once with `bangladeshToday()` and passes it down. Write timestamps use Prisma defaults (`@default(now())`, `@updatedAt`) or the injected `now`. Lint bans zero-argument `new Date()` and `Date.now()` in `packages/shared/src/server/**`.
+
+We chose this over a custom ESLint rule that follows `const now = new Date()` through a scope. The Bangladesh-day bugs that escaped lint (#155, #160) all read the clock through a variable. A ban on reading the clock at all closes that gap with a stock rule. It also makes each "between 00:00 and 06:00 Bangladesh" bug unit-testable by passing in `now`. The cost is a `now` parameter on every clock-dependent service signature. Decided 2026-10-30.

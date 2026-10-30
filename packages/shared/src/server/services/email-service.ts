@@ -1,5 +1,6 @@
 import type { DeliveryStatus, EmailType } from '@prisma/client'
 import { prisma } from '../db'
+import { bangladeshToday, parseDhakaDay } from '../../utils/dhaka-date'
 
 // ── List ───────────────────────────────────────────────────────────────────────
 
@@ -101,14 +102,15 @@ export async function getEmailLogById(id: string) {
   })
 }
 
+// "Today" is the Bangladesh day: the window opens at 00:00 Bangladesh (18:00 UTC the day before).
 // ── Dedup helper (used by cron) ────────────────────────────────────────────────
 
 export async function wasEmailSentToday(
   type: EmailType,
   profileId: string,
+  now: Date,
 ): Promise<boolean> {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = parseDhakaDay(bangladeshToday(now))
   const existing = await prisma.emailLog.findFirst({
     where: { type, profileId, sentAt: { gte: today }, status: 'SENT' },
   })
@@ -125,9 +127,9 @@ export async function wasEmailSentToday(
 export async function wasEmailSentTodayForUser(
   type: EmailType,
   userId: string,
+  now: Date,
 ): Promise<boolean> {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = parseDhakaDay(bangladeshToday(now))
   const existing = await prisma.emailLog.findFirst({
     where: { type, userId, sentAt: { gte: today }, status: 'SENT' },
   })

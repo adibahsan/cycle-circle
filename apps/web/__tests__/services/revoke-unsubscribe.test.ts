@@ -74,7 +74,7 @@ describe('unsubscribeUserOnBdapps', () => {
 describe('revokePro', () => {
   it('sets a Free override, unsubscribes on BDApps and writes a translog line', async () => {
     const spy = vi.spyOn(logger, 'translog')
-    const res = await svc.revokePro(ids.masked, ids.admin)
+    const res = await svc.revokePro(ids.masked, ids.admin, new Date())
     expect(res.bdapps).toEqual({ status: 'unsubscribed' })
     expect((await state('masked')).subscriptionStatus).toBe('LAPSED')
     expect(await sub('masked')).toMatchObject({ adminOverride: true, adminOverrideUnsubFailed: false })
@@ -84,23 +84,23 @@ describe('revokePro', () => {
 
   it('still applies on our side when BDApps fails, and says so', async () => {
     bdapps.setSubscription.mockRejectedValue(new Error('down'))
-    const res = await svc.revokePro(ids.fail, ids.admin)
+    const res = await svc.revokePro(ids.fail, ids.admin, new Date())
     expect(res.bdapps).toMatchObject({ status: 'failed' })
     expect((await state('fail')).subscriptionStatus).toBe('LAPSED')
     expect((await sub('fail')).adminOverrideUnsubFailed).toBe(true)
   })
 
   it('setSubscriptionStatus FREE/LAPSED unsubscribes, PRO does not', async () => {
-    await svc.setSubscriptionStatus(ids.masked, 'FREE', ids.admin)
+    await svc.setSubscriptionStatus(ids.masked, 'FREE', ids.admin, new Date())
     expect(bdapps.setSubscription).toHaveBeenCalledTimes(1)
-    await svc.setSubscriptionStatus(ids.masked, 'PRO', ids.admin)
+    await svc.setSubscriptionStatus(ids.masked, 'PRO', ids.admin, new Date())
     expect(bdapps.setSubscription).toHaveBeenCalledTimes(1)
   })
 })
 
 describe('override ends on re-subscription', () => {
   it('REGISTERED after a successful revoke ends the override and the user is Pro again', async () => {
-    await svc.revokePro(ids.masked, ids.admin)
+    await svc.revokePro(ids.masked, ids.admin, new Date())
     expect(await svc.applyBdappsSubscription(ids.masked, MASKED, false, 'webhook')).toBe('LAPSED')
     expect(await svc.applyBdappsSubscription(ids.masked, MASKED, true, 'webhook')).toBe('PRO')
     expect(await svc.hasAdminOverride(ids.masked)).toBe(false)
@@ -108,7 +108,7 @@ describe('override ends on re-subscription', () => {
 
   it('a repeat REGISTERED does not end the override when the unsubscribe failed', async () => {
     bdapps.setSubscription.mockRejectedValue(new Error('down'))
-    await svc.revokePro(ids.fail, ids.admin)
+    await svc.revokePro(ids.fail, ids.admin, new Date())
     expect(await svc.applyBdappsSubscription(ids.fail, MASKED, true, 'webhook')).toBe('LAPSED')
     expect(await svc.hasAdminOverride(ids.fail)).toBe(true)
     // a new masked id is a new subscription
@@ -117,7 +117,7 @@ describe('override ends on re-subscription', () => {
   })
 
   it('Grant Pro is cleared by the same rule', async () => {
-    await svc.grantPro(ids.grant, ids.admin)
+    await svc.grantPro(ids.grant, ids.admin, new Date())
     expect(await svc.applyBdappsSubscription(ids.grant, MASKED, false, 'nightly-check')).toBe('PRO')
     expect(await svc.hasAdminOverride(ids.grant)).toBe(true)
     expect(await svc.applyBdappsSubscription(ids.grant, MASKED, true, 'otp-verify')).toBe('PRO')
@@ -125,13 +125,13 @@ describe('override ends on re-subscription', () => {
   })
 
   it('a skipped unsubscribe (no usable id) behaves like a failed one', async () => {
-    await svc.revokePro(ids.none, ids.admin)
+    await svc.revokePro(ids.none, ids.admin, new Date())
     expect((await sub('none')).adminOverrideUnsubFailed).toBe(true)
     // absent old id: a REGISTERED report is just the old status, not a new subscription
     expect(await svc.applyBdappsSubscription(ids.none, MASKED, true, 'webhook')).toBe('LAPSED')
     expect(await svc.hasAdminOverride(ids.none)).toBe(true)
 
-    await svc.revokePro(ids.legacy, ids.admin)
+    await svc.revokePro(ids.legacy, ids.admin, new Date())
     expect(await svc.applyBdappsSubscription(ids.legacy, '+8801920000002', true, 'webhook')).toBe('LAPSED')
     expect(await svc.hasAdminOverride(ids.legacy)).toBe(true)
     // a masked id is a genuinely new subscription
@@ -141,7 +141,7 @@ describe('override ends on re-subscription', () => {
 
   it('webhook compares the payload id with the override id ignoring the tel: prefix', async () => {
     bdapps.setSubscription.mockRejectedValue(new Error('down'))
-    await svc.revokePro(ids.fail, ids.admin) // override row stores tel:<x>, unsubscribe failed
+    await svc.revokePro(ids.fail, ids.admin, new Date()) // override row stores tel:<x>, unsubscribe failed
     // a newer row for the same user holding the bare form of the same id
     await testPrisma.subscription.create({
       data: { userId: ids.fail, status: 'LAPSED', bdappsSubscriberId: MASKED.replace(/^tel:/, '') },
@@ -152,11 +152,11 @@ describe('override ends on re-subscription', () => {
   })
 
   it('listRevokedSubscribers returns revoked masked users, including failed unsubscribes, never skipped ones', async () => {
-    await svc.revokePro(ids.masked, ids.admin)
+    await svc.revokePro(ids.masked, ids.admin, new Date())
     bdapps.setSubscription.mockRejectedValue(new Error('down'))
-    await svc.revokePro(ids.fail, ids.admin)
-    await svc.revokePro(ids.none, ids.admin) // skipped, no id
-    await svc.revokePro(ids.legacy, ids.admin) // skipped, phone id
+    await svc.revokePro(ids.fail, ids.admin, new Date())
+    await svc.revokePro(ids.none, ids.admin, new Date()) // skipped, no id
+    await svc.revokePro(ids.legacy, ids.admin, new Date()) // skipped, phone id
     const mine = (await svc.listRevokedSubscribers())
       .filter((r) => r.userId.startsWith(P))
       .sort((a, b) => a.userId.localeCompare(b.userId))

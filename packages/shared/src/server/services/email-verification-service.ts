@@ -32,27 +32,27 @@ function codeMatches(userId: string, email: string, code: string, codeHash: stri
 }
 
 /** Seconds until this user may ask for another code (0 = now). */
-export async function getEmailCodeCooldownRemaining(userId: string): Promise<number> {
+export async function getEmailCodeCooldownRemaining(userId: string, now: Date): Promise<number> {
   const last = await prisma.emailVerification.findFirst({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     select: { createdAt: true },
   })
-  return otpCooldownRemaining(last?.createdAt ?? null, Date.now(), OTP_RESEND_COOLDOWN_SECONDS)
+  return otpCooldownRemaining(last?.createdAt ?? null, now.getTime(), OTP_RESEND_COOLDOWN_SECONDS)
 }
 
 /**
  * Mail a verification code to `rawEmail`. Returns the normalised address and the code
  * (the caller may log the code in dev only).
  */
-export async function requestEmailVerification(userId: string, rawEmail: string) {
+export async function requestEmailVerification(userId: string, rawEmail: string, now: Date) {
   const email = normalizeEmail(rawEmail)
   if (!emailSchema.safeParse(email).success) {
     throw new ApiError(400, 'Enter a valid email address', 'INVALID_EMAIL')
   }
   await assertContactAvailable(userId, { email })
 
-  const cooldown = await getEmailCodeCooldownRemaining(userId)
+  const cooldown = await getEmailCodeCooldownRemaining(userId, now)
   if (cooldown > 0) {
     throw new ApiError(429, `Please wait ${cooldown}s before requesting a new code.`, 'OTP_COOLDOWN')
   }
@@ -66,7 +66,7 @@ export async function requestEmailVerification(userId: string, rawEmail: string)
       userId,
       email,
       codeHash: hashCode(userId, email, code),
-      expiresAt: new Date(Date.now() + EMAIL_CODE_TTL_MS),
+      expiresAt: new Date(now.getTime() + EMAIL_CODE_TTL_MS),
     },
   })
   try {
@@ -84,13 +84,13 @@ export async function requestEmailVerification(userId: string, rawEmail: string)
 }
 
 /** Check the code for the user's latest request and save the email. Returns the saved address. */
-export async function verifyEmailCode(userId: string, code: string): Promise<{ email: string }> {
+export async function verifyEmailCode(userId: string, code: string, now: Date): Promise<{ email: string }> {
   const challenge = await prisma.emailVerification.findFirst({
     where: { userId, verified: false },
     orderBy: { createdAt: 'desc' },
   })
   if (!challenge) throw new ApiError(404, 'No verification code found. Request a new one.', 'CHALLENGE_NOT_FOUND')
-  if (new Date() > challenge.expiresAt) {
+  if (now > challenge.expiresAt) {
     throw new ApiError(400, 'Verification code has expired', 'CHALLENGE_EXPIRED')
   }
   if (challenge.attempts >= EMAIL_CODE_MAX_ATTEMPTS) {

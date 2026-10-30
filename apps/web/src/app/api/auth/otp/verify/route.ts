@@ -45,7 +45,7 @@ export async function POST(request: Request): Promise<Response> {
     let subscriberId = challenge.phone
     let user
     if (appOtp) {
-      user = await verifyAppOtp(body.referenceNo, body.otp)
+      user = await verifyAppOtp(body.referenceNo, body.otp, new Date())
     } else {
       if (challenge.verified) {
         throw new ApiError(400, 'OTP challenge already verified', 'ALREADY_VERIFIED')
@@ -64,7 +64,7 @@ export async function POST(request: Request): Promise<Response> {
         registered = isSubscribed(result.subscriptionStatus)
         subscriberId = storedSubscriberId(result, challenge.phone)
       }
-      user = await completeOtpAuth(challenge.id, challenge.phone, registered, subscriberId)
+      user = await completeOtpAuth(challenge.id, challenge.phone, registered, new Date(), subscriberId)
     }
     setRequestUser(user.id)
     revalidateTag(cacheTags.user(user.id), { expire: 0 })

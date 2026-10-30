@@ -5,6 +5,7 @@ import { revalidateTag } from 'next/cache'
 import { requireAuth, getAuthUser } from '@vesta/shared/server/auth'
 import { upsertNotificationPrefs, listProfiles, listPeriodLogs, getSymptomLogs, setProfileReminderOptOut } from '@vesta/shared/server/services'
 import { cacheTags } from '@/lib/cache-tags'
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 
 const updatePrefsSchema = z.object({
   profileId: z.string().min(1),
@@ -114,8 +115,7 @@ export async function exportUserDataCsv(opts?: { profileId?: string; allProfiles
 
   const csv = sections.join('\n')
   const scope = opts?.allProfiles ? 'all-profiles' : 'profile'
-  // eslint-disable-next-line no-restricted-syntax -- not a day computation: download filename stamp
-  const filename = `vesta-export-${scope}-${new Date().toISOString().slice(0, 10)}.csv`
+  const filename = `vesta-export-${scope}-${bangladeshToday()}.csv`
 
   return { csv, filename }
 }
@@ -162,7 +162,6 @@ export async function exportUserDataRows(opts?: { profileId?: string; allProfile
   return {
     periodLogs,
     symptomLogs,
-    // eslint-disable-next-line no-restricted-syntax -- not a day computation: download filename stamp
-    filename: `vesta-export-${opts?.allProfiles ? 'all-profiles' : 'profile'}-${new Date().toISOString().slice(0, 10)}.xlsx`,
+    filename: `vesta-export-${opts?.allProfiles ? 'all-profiles' : 'profile'}-${bangladeshToday()}.xlsx`,
   }
 }

@@ -4,6 +4,23 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
+## 2026-10-30 — Bangladesh day everywhere, E2E suite (PRs #158, #177)
+
+**Shipped** (spec #167, tickets #168–#176; fixes #115 #146 #147 #148 #151 #155 #160 #161):
+
+- One "today" everywhere, the Bangladesh day (ADR 0008 amended, ADR 0009 new). Between 00:00 and 06:00 Bangladesh the dashboard, late-period alert, reminders, Check-in and symptoms page no longer use yesterday, and the dashboard and calendar hydrate.
+- Admin per-day series group by the Bangladesh day; `days=N` returns exactly N buckets (was N+1 with an empty first one).
+- Lint bans clock reads in shared server services and date-fns local-day functions; CI runs `test:tz` (Asia/Dhaka, America/New_York).
+- The E2E suite (#158) ships with it; it changes no runtime behaviour beyond its listed fixes.
+
+**Migrations:** none.
+
+**Post-deploy data fix** (forward-only fix, past rows not backfilled; spec Out of Scope): one "All good" Check-in sentinel was saved at 2026-10-18 04:48 Bangladesh on the UTC day 2026-10-17 (#155). Moved to 2026-10-18 by id, in a transaction, after checking nothing else of that profile is on that day. The old bug also deleted real symptom logs of the previous day when "All good" was tapped in that window; that can't be recovered from the DB.
+
+**Deploy:** merge #177, then `git push origin origin/main:production` → GitHub Actions *Production* workflow.
+
+---
+
 ## Pending — Auth tokens scoped per app and environment (branch `fix/auth-app-env-isolation`)
 
 **Effect:** every existing session (web and admin) is invalidated once on deploy, because old tokens carry no audience or issuer. Users log in again. See [ADR 0007](../adr/0007-auth-tokens-scoped-per-app-and-environment.md).

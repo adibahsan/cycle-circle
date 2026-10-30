@@ -23,7 +23,7 @@ export const POST = withAuth(async (request, { user }) => {
     const body = await parseBody(request, bodySchema)
 
     // Cooldown first so a blocked resend doesn't use up the per-minute budget.
-    const cooldown = await getEmailCodeCooldownRemaining(user.id)
+    const cooldown = await getEmailCodeCooldownRemaining(user.id, new Date())
     if (cooldown > 0) {
       throw new ApiError(429, `Please wait ${cooldown}s before requesting a new code.`, 'OTP_COOLDOWN')
     }
@@ -33,7 +33,7 @@ export const POST = withAuth(async (request, { user }) => {
     }
     await assertOtpIpLimit(request)
 
-    const sent = await requestEmailVerification(user.id, body.email)
+    const sent = await requestEmailVerification(user.id, body.email, new Date())
     email = sent.email
 
     logger.customer('user.email.request', {

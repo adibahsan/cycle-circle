@@ -6,11 +6,6 @@ import { chartCard, openChartTable, refreshData, type AdminBrowserOpts } from '.
 import { e2eDb } from '../../support/db'
 import { toDbPhone } from '../../support/users'
 
-/** UTC key matching getDailyActiveLoggers / getSymptomLoggingRate (bug #146). */
-function utcDayKey(d: Date): string {
-  return d.toISOString().split('T')[0]
-}
-
 async function readTableRowNumber(table: Locator, rowName: string): Promise<number> {
   const row = table.getByRole('row', { name: new RegExp(`^${rowName}\\b`) })
   await expect(row).toBeVisible()
@@ -60,11 +55,11 @@ test.describe('Admin engagement', () => {
       },
     })
 
-    // Rolling 7d window (now−7d). Boundary daysAgo(7) at BD midnight is typically *outside*
-    // once server now is later than that clock-time on the current day; N-1=6 inside; N+1=8 outside.
-    const insideAt = days.startOf(days.daysAgo(6))
-    const boundaryAt = days.startOf(days.daysAgo(7))
-    const outsideAt = days.startOf(days.daysAgo(8))
+    // 7d window = the Bangladesh days daysAgo(7)..today. Series keys are Bangladesh days, and
+    // symptom dates are stored as UTC midnight of their day (days.dateOf).
+    const insideAt = days.dateOf(days.daysAgo(6))
+    const boundaryAt = days.dateOf(days.daysAgo(7))
+    const outsideAt = days.dateOf(days.daysAgo(8))
     for (const [at, tag] of [
       [insideAt, 'in'],
       [boundaryAt, 'bd'],
@@ -80,8 +75,8 @@ test.describe('Admin engagement', () => {
         },
       })
     }
-    const insideUtc = utcDayKey(insideAt)
-    const outsideUtc = utcDayKey(outsideAt)
+    const insideDay = days.daysAgo(6)
+    const outsideDay = days.daysAgo(8)
 
     await withAdmin(
       browser,
@@ -97,10 +92,10 @@ test.describe('Admin engagement', () => {
             async () => {
               await refreshData(page)
               const table = await openChartTable(page, 'Daily Active Loggers')
-              if ((await table.getByRole('row', { name: new RegExp(`^${outsideUtc}\\b`) }).count()) !== 0) {
+              if ((await table.getByRole('row', { name: new RegExp(`^${outsideDay}\\b`) }).count()) !== 0) {
                 return -2
               }
-              const insideRow = table.getByRole('row', { name: new RegExp(`^${insideUtc}\\b`) })
+              const insideRow = table.getByRole('row', { name: new RegExp(`^${insideDay}\\b`) })
               if ((await insideRow.count()) === 0) return -1
               const raw = ((await insideRow.getByRole('cell').first().textContent()) ?? '').trim()
               const n = Number.parseInt(raw, 10)
@@ -111,21 +106,21 @@ test.describe('Admin engagement', () => {
           .toBeGreaterThanOrEqual(1)
 
         const loggersTable = await openChartTable(page, 'Daily Active Loggers')
-        await expect(loggersTable.getByRole('row', { name: new RegExp(`^${outsideUtc}\\b`) })).toHaveCount(0)
+        await expect(loggersTable.getByRole('row', { name: new RegExp(`^${outsideDay}\\b`) })).toHaveCount(0)
 
-        // Logging rate: same inside UTC day present and >0; outside absent (finding 6).
+        // Logging rate: same inside day present and >0; outside absent (finding 6).
         await expect
           .poll(
             async () => {
               await refreshData(page)
               const rateTable = await openChartTable(page, 'Symptom Logging Rate')
-              if ((await rateTable.getByRole('row', { name: new RegExp(`^${outsideUtc}\\b`) }).count()) !== 0) {
+              if ((await rateTable.getByRole('row', { name: new RegExp(`^${outsideDay}\\b`) }).count()) !== 0) {
                 return -2
               }
               const loggers = await openChartTable(page, 'Daily Active Loggers')
-              const loggerCount = await readTableRowNumber(loggers, insideUtc)
+              const loggerCount = await readTableRowNumber(loggers, insideDay)
               if (loggerCount < 1) return -1
-              const rateRow = rateTable.getByRole('row', { name: new RegExp(`^${insideUtc}\\b`) })
+              const rateRow = rateTable.getByRole('row', { name: new RegExp(`^${insideDay}\\b`) })
               if ((await rateRow.count()) === 0) return -1
               const raw = ((await rateRow.getByRole('cell').first().textContent()) ?? '').trim()
               const ratePct = Number.parseInt(raw, 10)
@@ -137,7 +132,7 @@ test.describe('Admin engagement', () => {
           .toBeGreaterThan(0)
 
         const rateTable = await openChartTable(page, 'Symptom Logging Rate')
-        await expect(rateTable.getByRole('row', { name: new RegExp(`^${outsideUtc}\\b`) })).toHaveCount(0)
+        await expect(rateTable.getByRole('row', { name: new RegExp(`^${outsideDay}\\b`) })).toHaveCount(0)
 
         await rangeGroup.getByRole('button', { name: '30d' }).click()
         await expect(page).toHaveURL(/range=30d/)
@@ -149,12 +144,6 @@ test.describe('Admin engagement', () => {
         await expect(page).toHaveURL(/range=7d/)
       },
     )
-  })
-
-  test('daily loggers day keys should equal the Bangladesh day of the log', async ({ days }) => {
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/146')
-    const bdDay = days.daysAgo(1)
-    expect(days.startOf(bdDay).toISOString().slice(0, 10)).toBe(bdDay)
   })
 
   test('streak distribution moves the 3-6 bucket by exactly +1 for this profile', async ({
@@ -218,7 +207,6 @@ test.describe('Admin engagement', () => {
         }
 
         // Consecutive Bangladesh days 0..2 → streak length 3 → bucket 3-6.
-        // Note: analytics-service uses server-local midnight (#147); under Asia/Dhaka E2E this matches BD.
         for (const n of [0, 1, 2]) {
           await db.symptomLog.create({
             data: {
@@ -243,14 +231,6 @@ test.describe('Admin engagement', () => {
           .toBe(before + 1)
       },
     )
-  })
-
-  // Documents #147: streak “today” uses server-local midnight (`toDateString`), not BD day.
-  test('streak today should use Bangladesh day (analytics-service.ts ~392)', async () => {
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/147')
-    // Keep failing until getLoggingStreakDistribution keys “today” with bangladeshDayOf(now).
-    // (A TZ-aligned equality check can unexpectedly pass when server local date == BD date.)
-    expect(false, 'getLoggingStreakDistribution still uses server-local midnight').toBe(true)
   })
 
   test('Weekly Logging Retention and Logging Rate Over Time panels render', async ({

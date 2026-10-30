@@ -112,8 +112,7 @@ async function isIssuedBeforeSessionsValidAfter(userId: string, iat: number | un
  * rejected by verifyAuth on their next request (web and admin). Reusable by any
  * flow that ends access (suspend, delete, BDApps unsubscribe).
  */
-export async function bumpSessionsValidAfter(userId: string): Promise<Date> {
-  const now = new Date()
+export async function bumpSessionsValidAfter(userId: string, now: Date): Promise<Date> {
   await prisma.user.update({ where: { id: userId }, data: { sessionsValidAfter: now } })
   await setSessionsValidAfterCache(userId, now.getTime())
   return now
@@ -127,7 +126,7 @@ export async function requireAuth(audience: AuthAudience = WEB_AUDIENCE): Promis
   return payload
 }
 
-export async function logoutAndBlacklist(audience: AuthAudience = WEB_AUDIENCE): Promise<void> {
+export async function logoutAndBlacklist(now: Date, audience: AuthAudience = WEB_AUDIENCE): Promise<void> {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get(COOKIE_NAME)?.value
@@ -136,7 +135,7 @@ export async function logoutAndBlacklist(audience: AuthAudience = WEB_AUDIENCE):
       const jti = payload.jti as string | undefined
       const exp = payload.exp as number | undefined
       if (jti && exp) {
-        const ttl = Math.max(0, exp - Math.floor(Date.now() / 1000))
+        const ttl = Math.max(0, exp - Math.floor(now.getTime() / 1000))
         await blacklistJti(jti, ttl)
       }
     }
@@ -184,7 +183,7 @@ export async function getAuthUser(userId: string): Promise<AuthUser> {
   return user as AuthUser
 }
 
-export async function verifyAdminLogin(email: string, password: string): Promise<AuthUser> {
+export async function verifyAdminLogin(email: string, password: string, now: Date): Promise<AuthUser> {
   const bcrypt = await import('bcryptjs')
   const user = await prisma.user.findUnique({ where: { email } })
   if (!user || user.role !== 'ADMIN' || !user.passwordHash) {
@@ -196,7 +195,7 @@ export async function verifyAdminLogin(email: string, password: string): Promise
   }
   if (user.suspendedAt) throw new ApiError(403, 'Account suspended', 'ACCOUNT_SUSPENDED')
   if (user.deletedAt) throw new ApiError(401, 'User not found', 'USER_NOT_FOUND')
-  await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
+  await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: now } })
   return user as AuthUser
 }
 

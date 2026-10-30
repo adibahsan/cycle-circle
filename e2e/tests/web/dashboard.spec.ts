@@ -1,7 +1,6 @@
 import { test, expect } from '../../support/fixtures.ts'
 import { ensureUserProfile, setPeriodLogs, setPrediction, setSymptomLogs } from '../../support/db.ts'
 import { suppressAutoPrompts } from '../../support/prompts.ts'
-import { SERVER_TZ_IS_UTC } from '../../support/bangladesh-day.ts'
 
 test.describe('Dashboard modes', () => {
   test('first-run dashboard shows first-period hero and example cycle', async ({ newUser }) => {
@@ -89,11 +88,9 @@ test.describe('Dashboard modes', () => {
     await expect(symptomItems.nth(1)).toContainText(/Logged 1 time/i)
   })
 
-  // #151: the period log the server derives from lastPeriodStart is cut at *server-local* midnight
-  // (ensurePeriodLogFromProfile setHours(0)), so on a non-UTC server (E2E_APP_TZ=Asia/Dhaka) it lands a
-  // day early. Under TZ=UTC (prod, CI) the stored UTC-midnight day is kept and the count is exact.
+  // https://github.com/adibahsan/cycle-circle/issues/151: the period log derived from lastPeriodStart keeps
+  // its stored UTC-midnight day under any server timezone (E2E_APP_TZ), so the count is exact.
   test('menopause hero counts exact Bangladesh days since the last period', async ({ newUser, days }) => {
-    test.fail(!SERVER_TZ_IS_UTC, 'https://github.com/adibahsan/cycle-circle/issues/151')
     const { page, phone } = await newUser()
     await ensureUserProfile(phone, {
       name: 'Menopause Exact',
@@ -106,8 +103,6 @@ test.describe('Dashboard modes', () => {
   })
 
   test('standard dashboard displays cycle day hero, live cycle journey and ring', async ({ newUser, days }) => {
-    // Between 00:00 and 06:00 Bangladesh a UTC server counts from yesterday (#160); guarded by the server clock.
-    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/160')
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, {
       name: 'Standard User',
@@ -158,8 +153,6 @@ test.describe('Dashboard modes', () => {
 
 test.describe('Late-period alert', () => {
   test('late-period alert opens with the right day count', async ({ newUser, days }) => {
-    // Between 00:00 and 06:00 Bangladesh a UTC server counts from yesterday (#160); guarded by the server clock.
-    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/160')
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, {
       name: 'Late Period User',
@@ -217,8 +210,6 @@ test.describe('Streak badge and engagement tracking', () => {
     if (msToDhakaMidnight < 120_000 || dhakaMsIntoDay < 60_000) {
       test.skip(true, 'Skipping streak test near Bangladesh midnight to avoid date boundary flake')
     }
-    // getEngagementSummary counts in the UTC day whatever the server TZ (#155): a day behind 00:00-06:00 Bangladesh.
-    test.fail(days.now.getUTCHours() >= 18, 'https://github.com/adibahsan/cycle-circle/issues/155')
 
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, {
@@ -357,9 +348,6 @@ test.describe('Phase pattern card', () => {
 
 test.describe('Server render', () => {
   test('dashboard and calendar hydrate without a React mismatch', async ({ newUser, days }) => {
-    // The SSR renders "today" from the server process clock; between 00:00 and 06:00 Bangladesh a
-    // UTC server renders yesterday and the Asia/Dhaka browser hits React #418 (#161).
-    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/161')
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, {
       name: 'Hydration User',

@@ -27,7 +27,7 @@ export async function getShellInitial(): Promise<ShellInitial | null> {
     const active =
       (cookieId && profiles.find((p) => p.id === cookieId)) || profiles[0] || null
     const [status, completion] = await Promise.all([
-      active ? getLoggingStatus(active.id, authUser.id) : null,
+      active ? getLoggingStatus(active.id, authUser.id, new Date()) : null,
       getProfileCompletionStatus(
         authUser.id,
         cookieId && profiles.some((p) => p.id === cookieId) ? cookieId : undefined,

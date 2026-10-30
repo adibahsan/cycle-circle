@@ -3,6 +3,7 @@ import { prisma } from '../db'
 import { applyBdappsSubscription, unsubscribeUserOnBdapps } from './subscription-service'
 import { ApiError } from '../api-error'
 import { bumpSessionsValidAfter } from '../auth'
+import { fillDaySeries, resolveDaySeriesRange, type DaySeriesOpts } from '../../utils/day-series'
 import { RESTORE_WINDOW_DAYS, isWithinRestoreWindow } from '../../utils/restore-window'
 
 /**
@@ -185,16 +186,16 @@ export async function completeUserProfile(userId: string, data: CompleteUserProf
  * Suspend a user (reason required), invalidate their sessions and unsubscribe their
  * number on BDApps (ADR 0006). A BDApps failure is returned, never thrown; the suspension applies.
  */
-export async function suspendUser(userId: string, adminId: string, reason: string) {
+export async function suspendUser(userId: string, adminId: string, reason: string, now: Date) {
   const trimmed = reason?.trim()
   if (!trimmed) throw new ApiError(400, 'A suspension reason is required', 'REASON_REQUIRED')
 
   await prisma.user.update({
     where: { id: userId },
-    data: { suspendedAt: new Date(), suspendedBy: adminId },
+    data: { suspendedAt: now, suspendedBy: adminId },
   })
   // Existing sessions stop working on their next request.
-  await bumpSessionsValidAfter(userId)
+  await bumpSessionsValidAfter(userId, now)
   const bdapps = await unsubscribeUserOnBdapps(userId, adminId)
 
   await prisma.adminAuditLog.create({
@@ -236,13 +237,13 @@ export async function reactivateUser(userId: string, adminId: string) {
  * Soft-delete a user by setting deletedAt and unsubscribe their number on BDApps
  * (ADR 0006). A BDApps failure is returned, never thrown; the deletion applies.
  */
-export async function softDeleteUser(userId: string, adminId: string) {
+export async function softDeleteUser(userId: string, adminId: string, now: Date) {
   await prisma.user.update({
     where: { id: userId },
-    data: { deletedAt: new Date() },
+    data: { deletedAt: now },
   })
   // Existing sessions stop working on their next request.
-  await bumpSessionsValidAfter(userId)
+  await bumpSessionsValidAfter(userId, now)
   const bdapps = await unsubscribeUserOnBdapps(userId, adminId)
 
   await prisma.adminAuditLog.create({
@@ -262,7 +263,7 @@ export async function softDeleteUser(userId: string, adminId: string) {
  * Restore a soft-deleted user within the restore window. Clears deletedAt only;
  * never re-subscribes on BDApps (ADR 0006). Refused after 30 days.
  */
-export async function restoreUser(userId: string, adminId: string, now: Date = new Date()) {
+export async function restoreUser(userId: string, adminId: string, now: Date) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { deletedAt: true } })
   if (!user) throw new ApiError(404, 'User not found', 'USER_NOT_FOUND')
   if (!user.deletedAt) throw new ApiError(409, 'User is not deleted', 'NOT_DELETED')
@@ -411,10 +412,10 @@ export async function getProfileCompletionStatus(
 /**
  * Mark the onboarding tour as completed for a user by recording the timestamp.
  */
-export async function completeOnboardingTour(userId: string): Promise<void> {
+export async function completeOnboardingTour(userId: string, now: Date): Promise<void> {
   await prisma.user.update({
     where: { id: userId },
-    data: { onboardingTourCompletedAt: new Date() },
+    data: { onboardingTourCompletedAt: now },
   })
 }
 
@@ -438,57 +439,34 @@ export async function setProfileReminderOptOut(
 // Chart-data aggregations for admin Users section
 // ---------------------------------------------------------------------------
 
-export interface ChartDateRangeOpts {
-  days?: number
-  dateFrom?: Date
-  dateTo?: Date
-}
+export type ChartDateRangeOpts = DaySeriesOpts
 
 /**
  * Daily new-user signups over the given date range (default: last 30 days).
  * Gap-fills days with zero so the chart always has a continuous x-axis.
  */
 export async function getUserSignupTrend(
-  opts: ChartDateRangeOpts = {},
+  opts: ChartDateRangeOpts,
 ): Promise<{ date: string; count: number }[]> {
-  const { dateTo = new Date(), dateFrom, days = 30 } = opts
-  const resolvedFrom =
-    dateFrom ?? new Date(new Date(dateTo).setDate(dateTo.getDate() - days + 1))
+  const { from, to, fromDay, toDay } = resolveDaySeriesRange(opts)
 
-  // Truncate time component so grouping is day-level only
-  const from = new Date(
-    Date.UTC(resolvedFrom.getFullYear(), resolvedFrom.getMonth(), resolvedFrom.getDate()),
-  )
-  const to = new Date(
-    Date.UTC(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999),
-  )
-
+  // Bucket by Bangladesh day (UTC+6), not UTC day. "createdAt" is a UTC timestamp without zone, so tag it UTC first.
   const rows = await prisma.$queryRaw<{ date: string; count: bigint }[]>`
     SELECT
-      TO_CHAR(DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS date,
+      TO_CHAR(DATE_TRUNC('day', ("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Dhaka'), 'YYYY-MM-DD') AS date,
       COUNT(*)::bigint AS count
     FROM "User"
     WHERE "createdAt" >= ${from} AND "createdAt" <= ${to}
-    GROUP BY DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC')
-    ORDER BY DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC') ASC
+    GROUP BY DATE_TRUNC('day', ("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Dhaka')
+    ORDER BY DATE_TRUNC('day', ("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Dhaka') ASC
   `
 
-  // Build a lookup from the raw results
   const lookup = new Map<string, number>()
   for (const row of rows) {
     lookup.set(row.date, Number(row.count))
   }
 
-  // Gap-fill: walk day by day from `from` to `to`
-  const result: { date: string; count: number }[] = []
-  const cursor = new Date(from)
-  while (cursor <= to) {
-    const key = cursor.toISOString().slice(0, 10)
-    result.push({ date: key, count: lookup.get(key) ?? 0 })
-    cursor.setUTCDate(cursor.getUTCDate() + 1)
-  }
-
-  return result
+  return fillDaySeries(fromDay, toDay, lookup)
 }
 
 /**

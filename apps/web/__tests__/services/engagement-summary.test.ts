@@ -12,14 +12,15 @@ import {
   toggleSymptomLog,
 } from '@vesta/shared/server/services'
 import { getSymptomFrequency } from '@vesta/shared/server/services'
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 import { ALL_GOOD_SYMPTOM_ID } from '@vesta/shared/utils/symptoms'
 
 // All tests use process.env.TZ = 'UTC' (set by setup-env.ts)
 // Dates stored as new Date('YYYY-MM-DD') = midnight UTC
 
+// "Today" is the Bangladesh day, matching what the services take from `new Date()`.
 function utcDateStr(offsetDays = 0): string {
-  const d = new Date()
-  d.setUTCHours(0, 0, 0, 0)
+  const d = new Date(`${bangladeshToday()}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() + offsetDays)
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
 }
@@ -62,7 +63,7 @@ describe('getEngagementSummary — today logged → streak includes today', () =
     const today = utcDateStr(0)
     await insertSymptomLog(profileId, today)
 
-    const summary = await getEngagementSummary(profileId, userId)
+    const summary = await getEngagementSummary(profileId, userId, new Date())
     expect(summary).not.toBeNull()
     expect(summary!.loggedToday).toBe(true)
     expect(summary!.streak).toBeGreaterThanOrEqual(1)
@@ -73,7 +74,7 @@ describe('getEngagementSummary — today logged → streak includes today', () =
     const yesterday = utcDateStr(-1)
     await insertSymptomLog(profileId, yesterday, 'headache')
 
-    const summary = await getEngagementSummary(profileId, userId)
+    const summary = await getEngagementSummary(profileId, userId, new Date())
     expect(summary).not.toBeNull()
     expect(summary!.streak).toBeGreaterThanOrEqual(2)
     expect(summary!.streakAtRisk).toBe(false)
@@ -101,7 +102,7 @@ describe('getEngagementSummary — today NOT logged, yesterday logged → streak
     const yesterday = utcDateStr(-1)
     await insertSymptomLog(profileId, yesterday)
 
-    const summary = await getEngagementSummary(profileId, userId)
+    const summary = await getEngagementSummary(profileId, userId, new Date())
     expect(summary).not.toBeNull()
     expect(summary!.loggedToday).toBe(false)
     expect(summary!.streak).toBe(1)
@@ -112,7 +113,7 @@ describe('getEngagementSummary — today NOT logged, yesterday logged → streak
     const twoDaysAgo = utcDateStr(-2)
     await insertSymptomLog(profileId, twoDaysAgo, 'fatigue')
 
-    const summary = await getEngagementSummary(profileId, userId)
+    const summary = await getEngagementSummary(profileId, userId, new Date())
     expect(summary).not.toBeNull()
     expect(summary!.streak).toBe(2)
     expect(summary!.streakAtRisk).toBe(true)
@@ -121,7 +122,7 @@ describe('getEngagementSummary — today NOT logged, yesterday logged → streak
   it('neither today nor yesterday logged → streak=0, streakAtRisk=false', async () => {
     // Create a fresh profile for this sub-test
     const sub = await createTestUser(`${suffix}b`)
-    const summary = await getEngagementSummary(sub.profile.id, sub.user.id)
+    const summary = await getEngagementSummary(sub.profile.id, sub.user.id, new Date())
     expect(summary).not.toBeNull()
     expect(summary!.streak).toBe(0)
     expect(summary!.streakAtRisk).toBe(false)
@@ -148,9 +149,9 @@ describe('getEngagementSummary — "all good" sentinel counts as logged', () => 
   })
 
   it('setAllGoodToday makes loggedToday=true and streak≥1', async () => {
-    await setAllGoodToday(profileId, userId)
+    await setAllGoodToday(profileId, userId, new Date())
 
-    const summary = await getEngagementSummary(profileId, userId)
+    const summary = await getEngagementSummary(profileId, userId, new Date())
     expect(summary).not.toBeNull()
     expect(summary!.loggedToday).toBe(true)
     expect(summary!.streak).toBeGreaterThanOrEqual(1)
@@ -159,7 +160,7 @@ describe('getEngagementSummary — "all good" sentinel counts as logged', () => 
 
   it('sentinel day appears as logged in last30', async () => {
     const today = utcDateStr(0)
-    const summary = await getEngagementSummary(profileId, userId)
+    const summary = await getEngagementSummary(profileId, userId, new Date())
     expect(summary).not.toBeNull()
     const todayEntry = summary!.last30.find((e) => e.date === today)
     expect(todayEntry).toBeDefined()
@@ -197,7 +198,7 @@ describe('getEngagementSummary — period log range day counts as active', () =>
       },
     })
 
-    const summary = await getEngagementSummary(profileId, userId)
+    const summary = await getEngagementSummary(profileId, userId, new Date())
     expect(summary).not.toBeNull()
     expect(summary!.loggedToday).toBe(true)
     expect(summary!.streak).toBeGreaterThanOrEqual(1)
@@ -207,7 +208,7 @@ describe('getEngagementSummary — period log range day counts as active', () =>
     const threeDaysAgo = utcDateStr(-3)
     const twoDaysAgo = utcDateStr(-2)
 
-    const summary = await getEngagementSummary(profileId, userId)
+    const summary = await getEngagementSummary(profileId, userId, new Date())
     expect(summary).not.toBeNull()
 
     // Days 3 and 2 ago should be active (covered by yesterday→tomorrow period log above,
@@ -239,13 +240,13 @@ describe('getEngagementSummary — last30 always has exactly 30 entries', () => 
   })
 
   it('last30 has exactly 30 entries with no data', async () => {
-    const summary = await getEngagementSummary(profileId, userId)
+    const summary = await getEngagementSummary(profileId, userId, new Date())
     expect(summary).not.toBeNull()
     expect(summary!.last30).toHaveLength(30)
   })
 
   it('last30 is ordered oldest→newest, last entry is today', async () => {
-    const summary = await getEngagementSummary(profileId, userId)
+    const summary = await getEngagementSummary(profileId, userId, new Date())
     expect(summary).not.toBeNull()
     const today = utcDateStr(0)
     expect(summary!.last30[summary!.last30.length - 1].date).toBe(today)
@@ -263,7 +264,7 @@ describe('getEngagementSummary — last30 always has exactly 30 entries', () => 
     await insertSymptomLog(profileId, utcDateStr(0))
     await insertSymptomLog(profileId, utcDateStr(-5))
 
-    const summary = await getEngagementSummary(profileId, userId)
+    const summary = await getEngagementSummary(profileId, userId, new Date())
     expect(summary).not.toBeNull()
     expect(summary!.last30).toHaveLength(30)
   })
@@ -289,7 +290,7 @@ describe('getSymptomFrequency — sentinel excluded', () => {
   it('sentinel does not inflate MOOD count', async () => {
     // Insert 1 real MOOD symptom and 1 sentinel
     await insertSymptomLog(profileId, utcDateStr(-1), 'anxiety', 'MOOD')
-    await setAllGoodToday(profileId, userId)
+    await setAllGoodToday(profileId, userId, new Date())
 
     const freq = await getSymptomFrequency(profileId, userId)
 
@@ -302,7 +303,7 @@ describe('getSymptomFrequency — sentinel excluded', () => {
   it('sentinel-only day has MOOD count=0 in symptom frequency', async () => {
     // Create fresh profile with only a sentinel
     const sub = await createTestUser(`${suffix}b`)
-    await setAllGoodToday(sub.profile.id, sub.user.id)
+    await setAllGoodToday(sub.profile.id, sub.user.id, new Date())
 
     const freq = await getSymptomFrequency(sub.profile.id, sub.user.id)
     const moodEntry = freq.find((f) => f.category === 'MOOD')
@@ -340,12 +341,12 @@ describe('getEngagementSummary — ownership check', () => {
   })
 
   it('returns null for wrong userId', async () => {
-    const summary = await getEngagementSummary(profileId, 'wrong-user-id')
+    const summary = await getEngagementSummary(profileId, 'wrong-user-id', new Date())
     expect(summary).toBeNull()
   })
 
   it('returns null for non-existent profileId', async () => {
-    const summary = await getEngagementSummary('non-existent-profile', userId)
+    const summary = await getEngagementSummary('non-existent-profile', userId, new Date())
     expect(summary).toBeNull()
   })
 })

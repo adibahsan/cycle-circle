@@ -13,7 +13,7 @@ import { adminCacheTags, DASHBOARD_CACHE_TTL } from '@/lib/admin-cache-tags'
 export const getDashboardStats = cache(async () => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetDashboardStats(),
+    () => svcGetDashboardStats(new Date()),
     ['admin-dashboard-stats'],
     { tags: [adminCacheTags.dashboard], revalidate: DASHBOARD_CACHE_TTL }
   )()
@@ -22,7 +22,7 @@ export const getDashboardStats = cache(async () => {
 export const getUserTrend = cache(async (days: number = 30) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetUserTrend(days),
+    () => svcGetUserTrend(days, new Date()),
     ['admin-dashboard-user-trend', String(days)],
     { tags: [adminCacheTags.dashboard], revalidate: DASHBOARD_CACHE_TTL }
   )()
@@ -31,7 +31,7 @@ export const getUserTrend = cache(async (days: number = 30) => {
 export const getUserSignupTrend = cache(async (days: number = 30) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetUserSignupTrend({ days }),
+    () => svcGetUserSignupTrend({ days, now: new Date() }),
     ['admin-dashboard-user-signup-trend', String(days)],
     { tags: [adminCacheTags.dashboard], revalidate: DASHBOARD_CACHE_TTL }
   )()
@@ -40,7 +40,7 @@ export const getUserSignupTrend = cache(async (days: number = 30) => {
 export const getSubscriptionTrend = cache(async (days: number = 30) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetSubscriptionTrend({ days }),
+    () => svcGetSubscriptionTrend({ days, now: new Date() }),
     ['admin-dashboard-subscription-trend', String(days)],
     { tags: [adminCacheTags.dashboard], revalidate: DASHBOARD_CACHE_TTL }
   )()

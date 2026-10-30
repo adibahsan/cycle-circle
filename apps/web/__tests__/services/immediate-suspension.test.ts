@@ -61,10 +61,10 @@ describe('isIssuedBeforeMarker', () => {
 
 describe('immediate suspension', () => {
   it('requires a reason and stores it in the audit entry', async () => {
-    await expect(suspendUser(USER, ADMIN, '   ')).rejects.toMatchObject({ code: 'REASON_REQUIRED' })
+    await expect(suspendUser(USER, ADMIN, '   ', new Date())).rejects.toMatchObject({ code: 'REASON_REQUIRED' })
     expect(await testPrisma.user.findUnique({ where: { id: USER } })).toMatchObject({ suspendedAt: null })
 
-    await suspendUser(USER, ADMIN, ' Abusive messages ')
+    await suspendUser(USER, ADMIN, ' Abusive messages ', new Date())
     const log = await testPrisma.adminAuditLog.findFirst({ where: { adminId: ADMIN, action: 'USER_SUSPENDED', targetId: USER } })
     expect(log?.metadata).toMatchObject({ reason: 'Abusive messages' })
     await reactivateUser(USER, ADMIN)
@@ -80,7 +80,7 @@ describe('immediate suspension', () => {
     cookie.token = before
     expect(await verifyAuth()).not.toBeNull()
 
-    await suspendUser(USER, ADMIN, 'test')
+    await suspendUser(USER, ADMIN, 'test', new Date())
     expect(await verifyAuth()).toBeNull() // immediate, no cache window
 
     await reactivateUser(USER, ADMIN)
@@ -91,7 +91,7 @@ describe('immediate suspension', () => {
   })
 
   it('reads the marker from the database when the session store has no entry', async () => {
-    const marker = await bumpSessionsValidAfter(USER)
+    const marker = await bumpSessionsValidAfter(USER, new Date())
     const row = await testPrisma.user.findUnique({ where: { id: USER } })
     expect(row?.sessionsValidAfter?.getTime()).toBe(marker.getTime())
 
@@ -111,12 +111,12 @@ describe('immediate deletion', () => {
     cookie.token = await tokenIssuedAt(USER, now - 10)
     expect(await verifyAuth()).not.toBeNull()
 
-    await softDeleteUser(USER, ADMIN)
+    await softDeleteUser(USER, ADMIN, new Date())
     expect(await verifyAuth()).toBeNull()
     const marker = (await testPrisma.user.findUniqueOrThrow({ where: { id: USER } })).sessionsValidAfter
     expect(marker).not.toBeNull()
 
-    await restoreUser(USER, ADMIN)
+    await restoreUser(USER, ADMIN, new Date())
     const after = (await testPrisma.user.findUniqueOrThrow({ where: { id: USER } })).sessionsValidAfter
     expect(after?.getTime()).toBe(marker!.getTime())
     expect(await verifyAuth()).toBeNull() // old sessions stay dead after restore

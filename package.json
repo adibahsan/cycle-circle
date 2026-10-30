@@ -23,6 +23,7 @@
     "build:admin": "pnpm --filter @vesta/admin build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
+    "test:tz": "rc=0; for tz in Asia/Dhaka America/New_York; do echo \"== TZ=$tz\"; TZ=$tz pnpm --filter @vesta/shared test || rc=1; TZ=$tz pnpm --filter @vesta/web backend:test || rc=1; done; exit $rc",
     "db:generate": "pnpm --filter @vesta/shared db:generate",
     "db:migrate": "pnpm --filter @vesta/shared db:migrate",
     "db:studio": "pnpm --filter @vesta/shared db:studio",

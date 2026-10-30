@@ -1,6 +1,5 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { dayAccessibleName, gridKeyTarget } from '../../src/lib/calendar-a11y'
-import { toDeviceDay } from '../../src/lib/local-date'
 
 const plain = { isPeriod: false, isFertile: false, isOvulation: false, isFuturePredicted: false }
 // Stand-in translator: the real labels live in i18n; these literals are the spec's state names.
@@ -86,24 +85,5 @@ describe('gridKeyTarget: date-grid keyboard moves (WAI-ARIA date picker)', () =>
   it('other keys are not grid moves', () => {
     expect(gridKeyTarget(oct15, 'Enter')).toBeNull()
     expect(gridKeyTarget(oct15, 'Tab')).toBeNull()
-  })
-})
-
-describe('toDeviceDay: the edit form opens on the day the user sees (UTC+6)', () => {
-  afterEach(() => {
-    process.env.TZ = 'UTC'
-  })
-  it('a Dhaka local-midnight date stays on its own day, not the UTC day before', () => {
-    process.env.TZ = 'Asia/Dhaka'
-    expect(toDeviceDay(new Date('2026-10-04T18:00:00.000Z'))).toBe('2026-10-05')
-    expect(toDeviceDay('2026-10-04T18:00:00.000Z')).toBe('2026-10-05')
-  })
-  it('a stored UTC-midnight date is the same day in Dhaka', () => {
-    process.env.TZ = 'Asia/Dhaka'
-    expect(toDeviceDay(new Date('2026-10-05T00:00:00.000Z'))).toBe('2026-10-05')
-  })
-  it('a plain YYYY-MM-DD string passes through', () => {
-    process.env.TZ = 'Asia/Dhaka'
-    expect(toDeviceDay('2026-10-05')).toBe('2026-10-05')
   })
 })

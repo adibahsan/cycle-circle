@@ -32,7 +32,7 @@ export async function createArticle(data: {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  const article = await svcCreateArticle(admin.id, data)
+  const article = await svcCreateArticle(admin.id, data, new Date())
 
   revalidateContentTags()
   const webCacheRefreshed = await revalidateWebTags(['articles'])
@@ -53,7 +53,7 @@ export async function updateArticle(
 ) {
   await requireAdminAuth()
 
-  const article = await svcUpdateArticle(id, data)
+  const article = await svcUpdateArticle(id, data, new Date())
 
   revalidateContentTags(id)
   const webCacheRefreshed = await revalidateWebTags(['articles'])
