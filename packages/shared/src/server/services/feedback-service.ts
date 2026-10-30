@@ -1,5 +1,7 @@
 import type { FeedbackCategory, Prisma } from '@prisma/client'
 import { prisma } from '../db'
+import { bangladeshDayOf } from '../../utils/dhaka-date'
+import { fillDaySeries, resolveDaySeriesRange, type DaySeriesOpts } from '../../utils/day-series'
 
 // ── Create ─────────────────────────────────────────────────────────────────────
 
@@ -128,17 +130,17 @@ export async function exportFeedbackRows() {
 
 // ── Chart aggregations ─────────────────────────────────────────────────────────
 
-type DateRangeOpts = { dateFrom?: Date; dateTo?: Date; days?: number }
+type DateRangeOpts = DaySeriesOpts
 
-function resolveDateRange(opts: DateRangeOpts = {}): { startDate: Date; endDate: Date } {
-  const MS_PER_DAY = 24 * 60 * 60 * 1000
-  const now = new Date()
-  const { dateFrom, dateTo, days = 30 } = opts
-
-  if (dateFrom && dateTo) return { startDate: dateFrom, endDate: dateTo }
-  if (dateFrom) return { startDate: dateFrom, endDate: now }
-  if (dateTo) return { startDate: new Date(dateTo.getTime() - days * MS_PER_DAY), endDate: dateTo }
-  return { startDate: new Date(now.getTime() - days * MS_PER_DAY), endDate: now }
+/** Whole Bangladesh days, so every feedback chart covers the same window. */
+function resolveDateRange(opts: DateRangeOpts): {
+  startDate: Date
+  endDate: Date
+  fromDay: string
+  toDay: string
+} {
+  const { from, to, fromDay, toDay } = resolveDaySeriesRange(opts)
+  return { startDate: from, endDate: to, fromDay, toDay }
 }
 
 /**
@@ -146,10 +148,9 @@ function resolveDateRange(opts: DateRangeOpts = {}): { startDate: Date; endDate:
  * Default range: last 30 days.
  */
 export async function getFeedbackVolumeByDate(
-  opts: DateRangeOpts = {},
+  opts: DateRangeOpts,
 ): Promise<{ date: string; count: number }[]> {
-  const MS_PER_DAY = 24 * 60 * 60 * 1000
-  const { startDate, endDate } = resolveDateRange(opts)
+  const { startDate, endDate, fromDay, toDay } = resolveDateRange(opts)
 
   const rows = await prisma.feedback.findMany({
     where: { createdAt: { gte: startDate, lte: endDate } },
@@ -157,20 +158,13 @@ export async function getFeedbackVolumeByDate(
     orderBy: { createdAt: 'asc' },
   })
 
-  // Pre-fill every date bucket with zero across the full range
-  const dailyCounts: Record<string, number> = {}
-  const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / MS_PER_DAY) + 1
-  for (let i = 0; i < totalDays; i++) {
-    const date = new Date(startDate.getTime() + i * MS_PER_DAY)
-    dailyCounts[date.toISOString().split('T')[0]] = 0
-  }
-
+  const counts = new Map<string, number>()
   for (const row of rows) {
-    const dateKey = row.createdAt.toISOString().split('T')[0]
-    if (dailyCounts[dateKey] !== undefined) dailyCounts[dateKey]++
+    const day = bangladeshDayOf(row.createdAt)
+    counts.set(day, (counts.get(day) ?? 0) + 1)
   }
 
-  return Object.entries(dailyCounts).map(([date, count]) => ({ date, count }))
+  return fillDaySeries(fromDay, toDay, counts)
 }
 
 /**
@@ -178,7 +172,7 @@ export async function getFeedbackVolumeByDate(
  * Default range: last 30 days.
  */
 export async function getFeedbackByCategory(
-  opts: DateRangeOpts = {},
+  opts: DateRangeOpts,
 ): Promise<{ category: 'BUG' | 'FEATURE' | 'GENERAL' | 'SATISFACTION'; count: number }[]> {
   const { startDate, endDate } = resolveDateRange(opts)
 
@@ -199,7 +193,7 @@ export async function getFeedbackByCategory(
  * Default range: last 30 days.
  */
 export async function getFeedbackRatingDistribution(
-  opts: DateRangeOpts = {},
+  opts: DateRangeOpts,
 ): Promise<{ rating: number | null; count: number }[]> {
   const { startDate, endDate } = resolveDateRange(opts)
 

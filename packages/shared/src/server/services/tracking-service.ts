@@ -12,6 +12,7 @@ import { TIER2_MIN_CYCLES } from '../prediction-calc'
 import { ApiError } from '../api-error'
 import { findOverlappingPeriod, periodDayKey } from '../../utils/period-overlap'
 import { getCurrentPhase, MS_PER_DAY } from '../../utils/cycle-utils'
+import { dayToStoredDate } from '../../utils/dhaka-date'
 import type { CyclePhase } from '../../types/types'
 import { loadPhasePattern, loadRecentSymptomPattern, type PhasePatternEntry } from './insights-service'
 
@@ -690,10 +691,10 @@ export async function getCalendarData(
 
   for (const log of periodLogs) {
     addPeriodDatesInRange(
-      new Date(log.startDate),
-      new Date(log.endDate),
-      monthStart,
-      monthEnd,
+      log.startDate,
+      log.endDate,
+      dayToStoredDate(toLocalDateStr(monthStart)),
+      dayToStoredDate(toLocalDateStr(monthEnd)),
       periodDates,
     )
   }
