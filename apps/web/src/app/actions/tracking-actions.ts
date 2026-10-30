@@ -132,7 +132,7 @@ export async function markAllGoodToday(profileId: string, date?: string) {
   const user = await getAuthUser(jwt.sub)
   const data = allGoodSchema.parse({ profileId, date })
 
-  await setAllGoodToday(data.profileId, user.id, data.date)
+  await setAllGoodToday(data.profileId, user.id, new Date(), data.date)
 
   revalidateTag(cacheTags.symptoms(data.profileId), { expire: 0 })
   revalidateTag(cacheTags.tracking(data.profileId), { expire: 0 })

@@ -210,8 +210,6 @@ test.describe('Streak badge and engagement tracking', () => {
     if (msToDhakaMidnight < 120_000 || dhakaMsIntoDay < 60_000) {
       test.skip(true, 'Skipping streak test near Bangladesh midnight to avoid date boundary flake')
     }
-    // getEngagementSummary counts in the UTC day whatever the server TZ (#155): a day behind 00:00-06:00 Bangladesh.
-    test.fail(days.now.getUTCHours() >= 18, 'https://github.com/adibahsan/cycle-circle/issues/155')
 
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, {

@@ -172,16 +172,13 @@ export async function toggleSymptomLog(
 export async function setAllGoodToday(
   profileId: string,
   userId: string,
+  now: Date,
   date?: string,
 ): Promise<void> {
   await verifyProfileOwnership(profileId, userId)
 
-  const dateStr =
-    date ??
-    (() => {
-      const now = new Date()
-      return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`
-    })()
+  // No explicit day: the Bangladesh day of `now`, same as a client Check-in.
+  const dateStr = date ?? bangladeshToday(now)
 
   const dayDate = new Date(dateStr)
 
@@ -266,6 +263,7 @@ export async function saveSymptomLogs(
 export async function getEngagementSummary(
   profileId: string,
   userId: string,
+  now: Date,
 ): Promise<{
   loggedToday: boolean
   lastLoggedDate: string | null
@@ -281,9 +279,8 @@ export async function getEngagementSummary(
   const profile = await prisma.profile.findUnique({ where: { id: profileId } })
   if (!profile || profile.userId !== userId) return null
 
-  // Build UTC-normalized today string
-  const now = new Date()
-  const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`
+  // Date-only logs are stored at UTC midnight of their Bangladesh day.
+  const todayStr = bangladeshToday(now)
 
   // Window: last 30 calendar days (today = day 29, oldest = day 0)
   const windowStart = new Date(todayStr)
