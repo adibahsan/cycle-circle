@@ -8,7 +8,8 @@
     "fake-bdapps": "tsx fake-bdapps/main.ts",
     "coverage:check": "tsx scripts/coverage-check.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:unit": "tsx --test eslint-rules/*.test.mjs support/*.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

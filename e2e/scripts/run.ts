@@ -1,6 +1,6 @@
 /**
  * `pnpm e2e [-- <playwright args>]`: build web + admin for production, reset this slot's
- * vesta_e2e database from migrations + seed, check Mailpit, then run Playwright (which
+ * vesta_e2e database (drop + create, migrate deploy, seed), check Mailpit, then run Playwright (which
  * starts the fake BDApps and both apps). See e2e/README.md for the env switches.
  *
  * CI project selection is owned by playwright.config.ts (`E2E_SUITE` / `CI_PROJECTS`).
@@ -11,6 +11,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { FakeBdappsClient } from '../support/fake-bdapps.ts'
 import { assertMailpit } from '../support/mailpit.ts'
+import { recreateDatabase } from '../support/reset-db.ts'
 import { DB_NAME, E2E_DIR, ENV, PORTS, REPO_DIR, SLOT, assertE2eDatabase } from '../support/slot.ts'
 
 const flag = (name: string) => process.env[name] === '1' || process.env[name] === 'true'
@@ -65,9 +66,12 @@ async function prepareDatabase() {
     if (!seeded) await prisma(`seed ${DB_NAME}`, 'db', 'seed')
     else console.log(`[e2e] keeping ${DB_NAME} data (E2E_SKIP_RESET=1)`)
   } else {
-    // Creates the database if missing, drops everything, applies every migration, runs the seed.
-    // Prisma refuses this when an AI agent runs it; agents use E2E_SKIP_RESET=1 (see README).
-    await prisma(`reset ${DB_NAME}`, 'migrate', 'reset', '--force', '--skip-generate')
+    // `prisma migrate reset` is blocked for AI agents, so drop and recreate the slot database
+    // ourselves (guarded to vesta_e2e*), then apply every migration and seed.
+    console.log(`[e2e] recreating ${DB_NAME}`)
+    await recreateDatabase(ENV.db.DATABASE_URL)
+    await prisma(`migrate ${DB_NAME}`, 'migrate', 'deploy')
+    await prisma(`seed ${DB_NAME}`, 'db', 'seed')
   }
   // A fake BDApps left running (E2E_REUSE_SERVERS=1) still holds last run's subscribers.
   await new FakeBdappsClient().reset().catch(() => {})
