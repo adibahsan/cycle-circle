@@ -52,6 +52,7 @@ jobs:
       - run: pnpm deploy:verify
       - name: Deploy guard tests (no dev mode / placeholder creds in prod)
         run: bash ops/deploy/scripts/test-check-prod-env.sh
+      - run: pnpm --filter @vesta/shared test
       - run: pnpm --filter @vesta/web backend:test
 
   deploy:
