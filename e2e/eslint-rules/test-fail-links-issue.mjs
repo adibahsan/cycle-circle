@@ -2,7 +2,8 @@
  * Every `test.fail(...)` / `test.fixme(...)` (also `test.describe.fail/fixme`) must carry a
  * string containing a link to an open issue, so an expected failure always has an owner.
  */
-const LINK = /github\.com\/adibahsan\/cycle-circle\/issues\/\d+/
+// A full URL, not the bare host form and not embedded in another URL's query string.
+const LINK = /(?<![\w/?=&#.%-])https:\/\/github\.com\/adibahsan\/cycle-circle\/issues\/\d+\b/
 const KINDS = new Set(['fail', 'fixme'])
 
 /** Concatenate every string part we can see statically (literals, templates, `+`). */

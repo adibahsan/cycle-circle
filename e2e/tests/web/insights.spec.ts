@@ -59,9 +59,9 @@ test.describe('Insights states and charts', () => {
     await expect(page.getByRole('heading', { name: 'Fertile window history' })).toHaveCount(0)
 
     // Symptom frequency chart shows real data (#123 Finding 8)
-    // eslint-disable-next-line playwright/no-raw-locators -- summary <p> has no role; located by its aria-describedby id (#135)
+    // eslint-disable-next-line playwright/no-raw-locators -- unnamed summary <p> located by id (#135)
     await expect(page.locator('#symptom-summary')).toContainText(/Physical/i)
-    // eslint-disable-next-line playwright/no-raw-locators -- summary <p> has no role; located by its aria-describedby id (#135)
+    // eslint-disable-next-line playwright/no-raw-locators -- unnamed summary <p> located by id (#135)
     await expect(page.locator('#symptom-summary')).toContainText(/of 3 logs/i)
     const symptomTable = page.getByRole('table', { name: 'Symptom frequency' })
     await expect(symptomTable).toBeAttached()
@@ -110,9 +110,9 @@ test.describe('Insights states and charts', () => {
 
     // Assert chart content: values and accessible summaries (#123 Finding 7)
     // 1. Cycle length trend: summary and data table
-    // eslint-disable-next-line playwright/no-raw-locators -- summary <p> has no role; located by its id (#135)
+    // eslint-disable-next-line playwright/no-raw-locators -- unnamed summary <p> located by id (#135)
     await expect(page.locator('#cycle-length-summary')).toContainText(/3 cycles/i)
-    // eslint-disable-next-line playwright/no-raw-locators -- summary <p> has no role; located by its id (#135)
+    // eslint-disable-next-line playwright/no-raw-locators -- unnamed summary <p> located by id (#135)
     await expect(page.locator('#cycle-length-summary')).toContainText(/from 28 to 28 days/i)
     const cycleTable = page.getByRole('table', { name: 'Cycle length trend' })
     await expect(cycleTable).toBeAttached()
@@ -126,12 +126,12 @@ test.describe('Insights states and charts', () => {
     await expect(regularityCard.getByText('Stable', { exact: true })).toBeVisible()
 
     // 3. Fertile window history: summary and span
-    // eslint-disable-next-line playwright/no-raw-locators -- summary <p> has no role; located by its id (#135)
+    // eslint-disable-next-line playwright/no-raw-locators -- unnamed summary <p> located by id (#135)
     await expect(page.locator('#fertile-summary')).toContainText('Showing the last 3 fertile windows.')
     await expect(page.locator('li').filter({ hasText: '7 days' }).first()).toBeVisible()
 
     // 4. Symptom frequency: summary and data table
-    // eslint-disable-next-line playwright/no-raw-locators -- summary <p> has no role; located by its id (#135)
+    // eslint-disable-next-line playwright/no-raw-locators -- unnamed summary <p> located by id (#135)
     await expect(page.locator('#symptom-summary')).toContainText(/of 2 logs/i)
     const symptomTable = page.getByRole('table', { name: 'Symptom frequency' })
     await expect(symptomTable).toBeAttached()

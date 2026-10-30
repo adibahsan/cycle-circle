@@ -36,12 +36,11 @@ test.describe('phone shell (W60)', () => {
     }
 
     await page.goto('/dashboard')
-    // eslint-disable-next-line playwright/no-raw-locators -- bottom nav is an unnamed <nav>; found by its data attribute
-    const nav = page.locator('nav[data-bottom-nav]')
+    const nav = page.getByRole('navigation', { name: /Mobile navigation/ })
     await expect(nav).toBeVisible()
     await expect(nav.getByRole('link').or(nav.getByRole('button'))).toHaveCount(5)
-    // eslint-disable-next-line playwright/no-raw-locators -- current nav item is exposed only as aria-current
-    await expect(nav.locator('[aria-current="page"]')).toHaveCount(1)
+    await expect(nav.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
+    await expect(nav.getByRole('link', { name: 'Calendar' })).not.toHaveAttribute('aria-current', 'page')
 
     const moreBtn = nav.getByRole('button', { name: 'More' })
     await expect(moreBtn).toBeVisible()

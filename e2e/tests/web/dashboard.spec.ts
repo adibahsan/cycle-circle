@@ -150,7 +150,7 @@ test.describe('Dashboard modes', () => {
     // data-testid is kept because the inner <ol> stepper element has no separate accessible role/name.
     const journey = page.getByTestId('cycle-journey')
     await expect(journey).toBeVisible()
-    // eslint-disable-next-line playwright/no-raw-locators -- current journey step is exposed only as aria-current
+    // eslint-disable-next-line playwright/no-raw-locators -- Playwright's getByRole has no aria-current option (journey step)
     await expect(journey.locator('[aria-current="step"]')).toBeVisible()
     await expect(page.getByRole('img', { name: /^Cycle day \d+ of \d+$/ })).toBeVisible()
   })
@@ -192,8 +192,7 @@ test.describe('Late-period alert', () => {
     // Auto-prompt dialog opens
     const modalHeading = page.getByRole('heading', { name: 'Your period is running late' })
     await expect(modalHeading).toBeVisible({ timeout: 15_000 })
-    // eslint-disable-next-line playwright/no-raw-locators -- late-alert description target (aria-describedby id)
-    await expect(page.locator('#late-alert-desc')).toContainText("It's 3 days past your prediction")
+    await expect(page.getByRole('dialog')).toHaveAccessibleDescription(/It's 3 days past your prediction/)
 
     const logCta = page.getByRole('button', { name: 'Log my period' })
     await expect(logCta).toBeVisible()

@@ -40,8 +40,7 @@ test.describe('pop-up shell contract (W61)', () => {
     await ensureUserProfile(phone, { name: 'More Sheet User' })
     await suppressAutoPrompts(page)
     await page.goto('/dashboard')
-    // eslint-disable-next-line playwright/no-raw-locators -- bottom nav is an unnamed <nav>; found by its data attribute
-    const more = page.locator('nav[data-bottom-nav]').getByRole('button', { name: 'More' })
+    const more = page.getByRole('navigation', { name: /Mobile navigation/ }).getByRole('button', { name: 'More' })
     await openDialog(more)
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toHaveCount(0)

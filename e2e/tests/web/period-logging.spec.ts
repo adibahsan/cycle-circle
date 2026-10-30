@@ -214,7 +214,7 @@ test.describe('Period logging', () => {
       // ...and the calendar marks the Bangladesh day as today
       await page.keyboard.press('Escape')
       await page.goto('/calendar')
-      // eslint-disable-next-line playwright/no-raw-locators -- today cell is exposed only as aria-current="date"
+      // eslint-disable-next-line playwright/no-raw-locators -- Playwright's getByRole has no aria-current option, and the today label is a formatted date
       await expect(page.locator('button[aria-current="date"]')).toHaveAttribute('data-date', bangladeshDay)
     } finally {
       await context.close()

@@ -36,7 +36,7 @@ export async function openChartTable(page: Page, title: string) {
   const card = chartCard(page, title)
   const table = card.getByRole('table', { name: title })
   if (!(await table.isVisible().catch(() => false))) {
-    // eslint-disable-next-line playwright/no-raw-locators -- native <summary> disclosure has no role or name hook
+    // eslint-disable-next-line playwright/no-raw-locators -- native <summary> toggle has no role in Playwright's role engine
     await card.locator('summary', { hasText: 'View data as table' }).click()
   }
   await expect(table).toBeVisible({ timeout: 10_000 })

@@ -206,8 +206,7 @@ test.describe('Web billing: upgrade and unsubscribe', () => {
       await page.goto('/dashboard')
 
       // Trial lock modal is visible and covers the page
-      // eslint-disable-next-line playwright/no-raw-locators -- lock modal is found by its labelledby id; its heading is asserted next
-      const lockModal = page.locator('[aria-labelledby="trial-expired-title"]')
+      const lockModal = page.getByRole('dialog', { name: /trial has ended/i })
       await expect(lockModal).toBeVisible({ timeout: 15_000 })
       await expect(lockModal.getByRole('heading', { level: 2 })).toHaveText('Your 24-hour trial has ended')
       await expect(
@@ -283,8 +282,7 @@ test.describe('Web billing: upgrade and unsubscribe', () => {
       })
 
       await page.goto('/dashboard')
-      // eslint-disable-next-line playwright/no-raw-locators -- lock modal is found by its labelledby id
-      const lockModal = page.locator('[aria-labelledby="trial-expired-title"]')
+      const lockModal = page.getByRole('dialog', { name: /trial has ended/i })
       await expect(lockModal).toBeVisible({ timeout: 15_000 })
 
       // Click "Log out"

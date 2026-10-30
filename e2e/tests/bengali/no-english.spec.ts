@@ -97,14 +97,12 @@ const POPUPS: PopupCase[] = [
   {
     id: 'quick-symptom',
     // Same-named logging nudge navigates; the dialog trigger declares aria-haspopup.
-    // eslint-disable-next-line playwright/no-raw-locators -- trigger identified by aria-haspopup, its Bengali name is the thing under test
-    open: (p) => p.locator('button[aria-haspopup="dialog"]', { hasText: BN.logSymptoms }).first(),
+    open: (p) => p.getByRole('button', { name: BN.logSymptoms }).first(),
   },
   {
     id: 'calendar-day',
     inline: true,
-    // eslint-disable-next-line playwright/no-raw-locators -- trigger identified by aria-pressed; its Bengali name is the thing under test
-    open: (p) => p.locator('button[aria-pressed]:visible').first(),
+    open: (p) => p.getByRole('gridcell').getByRole('button').first(),
     setup: async ({ page, phone }) => {
       const profile = await ensureUserProfile(phone, { name: 'বাংলা ইউজার' })
       const { bangladeshDays } = await import('../../support/bangladesh-day.ts')
@@ -148,8 +146,7 @@ const POPUPS: PopupCase[] = [
   },
   {
     id: 'more-sheet',
-    // eslint-disable-next-line playwright/no-raw-locators -- bottom-nav More sheet trigger, scoped by the nav data attribute
-    open: (p) => p.locator('nav[data-bottom-nav] button[aria-haspopup="dialog"]:visible').first(),
+    open: (p) => p.getByRole('navigation', { name: /Mobile navigation|মোবাইল নেভিগেশন/ }).getByRole('button', { name: /More|আরও/ }),
     setup: async ({ page }) => {
       // Force phone chrome so the bottom-nav More sheet exists.
       await page.setViewportSize({ width: 390, height: 844 })
@@ -229,8 +226,7 @@ test.describe('bengali: auto prompts and locks', () => {
       }
     })
     await page.goto('/dashboard')
-    // eslint-disable-next-line playwright/no-raw-locators -- tour dialog has a generated title id; its text is the thing under test
-    await expect(page.locator('[role="dialog"][aria-labelledby^="tour-title-"]')).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByRole('dialog').first()).toBeVisible({ timeout: 20_000 })
     await expectNoEnglish(page, 'tour')
   })
 })

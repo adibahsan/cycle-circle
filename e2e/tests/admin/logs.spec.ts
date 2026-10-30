@@ -55,7 +55,7 @@ test.describe('Admin log reader', () => {
       await expect(logItem).toBeVisible({ timeout: 15_000 })
 
       // Open the details to inspect the raw JSON payload
-      // eslint-disable-next-line playwright/no-raw-locators -- log row <summary> toggle has no accessible name
+      // eslint-disable-next-line playwright/no-raw-locators -- native <summary> toggle has no role in Playwright's role engine
       await logItem.locator('summary > span').first().click()
       // eslint-disable-next-line playwright/no-raw-locators -- raw log JSON <pre> has no role or name
       const rawPre = logItem.locator('pre')

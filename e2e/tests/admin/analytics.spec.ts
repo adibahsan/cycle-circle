@@ -676,10 +676,8 @@ test.describe('Admin analytics', () => {
         await page.goto('/feedback')
         await refreshData(page)
         await page.goto('/analytics?fb=7d')
-        // eslint-disable-next-line playwright/no-raw-locators -- Feedback section is an unnamed <section> region
         const fbRange = page
-          .locator('section')
-          .filter({ has: page.getByRole('heading', { name: 'Feedback', exact: true }) })
+          .getByRole('region', { name: 'Feedback analytics' })
           .getByRole('group', { name: 'Date range' })
         await fbRange.getByRole('button', { name: '7d' }).click()
         await expect
