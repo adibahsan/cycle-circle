@@ -60,7 +60,7 @@ export const getUserRetention = cache(async (range: AnalyticsRange) => {
 export const getUserTrend = cache(async (days: number) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetUserTrend({ days }),
+    () => svcGetUserTrend({ days }, new Date()),
     ['admin-analytics-user-trend', String(days)],
     { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
@@ -74,12 +74,12 @@ export const getTrendMetric = cache(async (metric: TrendMetric, days: number) =>
   return unstable_cache(
     async (): Promise<{ date: string; value: number }[]> => {
       if (metric === 'active') {
-        return (await svcGetDailyActiveLoggers({ days })).map((r) => ({ date: r.date, value: r.count }))
+        return (await svcGetDailyActiveLoggers({ days }, new Date())).map((r) => ({ date: r.date, value: r.count }))
       }
       if (metric === 'logRate') {
-        return (await svcGetSymptomLoggingRate({ days })).map((r) => ({ date: r.date, value: r.rate }))
+        return (await svcGetSymptomLoggingRate({ days }, new Date())).map((r) => ({ date: r.date, value: r.rate }))
       }
-      return (await svcGetUserTrend({ days })).map((r) => ({ date: r.date, value: r.count }))
+      return (await svcGetUserTrend({ days }, new Date())).map((r) => ({ date: r.date, value: r.count }))
     },
     ['admin-analytics-trend-metric', metric, String(days)],
     { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
@@ -89,7 +89,7 @@ export const getTrendMetric = cache(async (metric: TrendMetric, days: number) =>
 export const getDailyActiveLoggers = cache(async (days: number) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetDailyActiveLoggers({ days }),
+    () => svcGetDailyActiveLoggers({ days }, new Date()),
     ['admin-daily-active-loggers', String(days)],
     { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
@@ -98,7 +98,7 @@ export const getDailyActiveLoggers = cache(async (days: number) => {
 export const getSymptomLoggingRate = cache(async (days: number) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetSymptomLoggingRate({ days }),
+    () => svcGetSymptomLoggingRate({ days }, new Date()),
     ['admin-symptom-logging-rate', String(days)],
     { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
@@ -107,7 +107,7 @@ export const getSymptomLoggingRate = cache(async (days: number) => {
 export const getLoggingStreakDistribution = cache(async () => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetLoggingStreakDistribution(),
+    () => svcGetLoggingStreakDistribution(new Date()),
     ['admin-logging-streak-distribution'],
     { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()

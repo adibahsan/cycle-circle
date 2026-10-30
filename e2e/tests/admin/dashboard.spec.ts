@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { test, expect } from '../../support/fixtures'
 import { createLoggedInAdmin } from '../../support/admin'
 import { e2eDb } from '../../support/db'
+import { bangladeshDayOf, bangladeshDayStart, serverNow } from '../../support/bangladesh-day'
 
 /**
  * Parse a StatCard value as an exact integer.
@@ -97,11 +98,11 @@ async function ensureExactTotalUsersHeadroom(maxActive = 850): Promise<void> {
   })
 }
 
-/** Today's signup bucket using the same UTC day key as getUserTrend. */
+/** Today's signup bucket: users created on the current Bangladesh day, as getUserTrend groups them. */
 async function todaySignupBucketCount(): Promise<number> {
-  const todayKey = new Date().toISOString().split('T')[0]
-  const start = new Date(`${todayKey}T00:00:00.000Z`)
-  const end = new Date(`${todayKey}T23:59:59.999Z`)
+  const today = bangladeshDayOf(await serverNow())
+  const start = bangladeshDayStart(today)
+  const end = new Date(start.getTime() + 24 * 3_600_000 - 1)
   return e2eDb().user.count({
     where: { deletedAt: null, createdAt: { gte: start, lte: end } },
   })

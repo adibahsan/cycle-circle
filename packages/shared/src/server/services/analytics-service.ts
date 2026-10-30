@@ -1,12 +1,36 @@
 import { prisma } from '../db'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
 import { predictCycleLength, getPredictionTier, getCurrentPhase, MS_PER_DAY } from '../../utils/cycle-utils'
+import {
+  addDaysToDay,
+  bangladeshDayOf,
+  bangladeshToday,
+  dayToStoredDate,
+  daysBetween,
+  parseDhakaDay,
+  storedDateToDay,
+} from '../../utils/dhaka-date'
+
+type SeriesOpts = number | { days?: number; dateFrom?: Date; dateTo?: Date }
+
+/**
+ * The first and last Bangladesh day a per-day series covers. `days` counts back from the
+ * Bangladesh day of `now`; an explicit `dateFrom`/`dateTo` (Asia/Dhaka day bounds) wins.
+ * Stepping is on day strings, so the first bucket is the first requested day.
+ */
+function seriesDays(opts: SeriesOpts, now: Date): { startDay: string; endDay: string; list: string[] } {
+  const { days = 30, dateFrom, dateTo } = typeof opts === 'number' ? { days: opts } : opts
+  const endDay = dateTo ? bangladeshDayOf(dateTo) : bangladeshToday(now)
+  const startDay = dateFrom ? bangladeshDayOf(dateFrom) : addDaysToDay(endDay, -days)
+  const list: string[] = []
+  for (let i = 0, n = daysBetween(startDay, endDay); i <= n; i++) list.push(addDaysToDay(startDay, i))
+  return { startDay, endDay, list }
+}
 
 /**
  * Return KPI counts for the admin dashboard.
  */
-export async function getDashboardStats() {
-  const now = new Date()
+export async function getDashboardStats(now: Date) {
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
@@ -23,8 +47,7 @@ export async function getDashboardStats() {
     prisma.user.count({ where: { deletedAt: null, lastLoginAt: { gte: thirtyDaysAgo } } }),
     prisma.profile.count(),
     prisma.subscription.count({ where: { status: 'PRO' } }),
-    // eslint-disable-next-line no-restricted-syntax -- Bangladesh-day debt, see https://github.com/adibahsan/cycle-circle/issues/147
-    prisma.periodLog.count({ where: { createdAt: { gte: new Date(now.toDateString()) } } }),
+    prisma.periodLog.count({ where: { createdAt: { gte: parseDhakaDay(bangladeshToday(now)) } } }),
     prisma.user.count({ where: { deletedAt: null, createdAt: { gte: sevenDaysAgo } } }),
     prisma.user.count({
       where: {
@@ -57,62 +80,37 @@ export async function getDashboardStats() {
  * Return daily signup counts bucketed over a date range, gap-filled with zeros.
  *
  * Accepts either a plain number of days (backward-compatible):
- *   getUserTrend(30)
+ *   getUserTrend(30, now)
  * or an options object (new, configurable):
- *   getUserTrend({ days: 90 })
- *   getUserTrend({ dateFrom: new Date('2026-01-01'), dateTo: new Date('2026-03-31') })
+ *   getUserTrend({ days: 90 }, now)
+ *   getUserTrend({ dateFrom, dateTo }, now)  // Asia/Dhaka day bounds, see parseDhakaDay
  *
  * When `dateFrom`/`dateTo` are both supplied they take precedence over `days`.
  * Default: last 30 days.
  */
 export async function getUserTrend(
-  opts: number | { days?: number; dateFrom?: Date; dateTo?: Date } = 30,
+  opts: SeriesOpts,
+  now: Date,
 ): Promise<{ date: string; count: number }[]> {
-  const now = Date.now()
-
-  let startDate: Date
-  let endDate: Date
-
-  if (typeof opts === 'number') {
-    startDate = new Date(now - opts * MS_PER_DAY)
-    endDate = new Date(now)
-  } else {
-    const { days = 30, dateFrom, dateTo } = opts
-    if (dateFrom && dateTo) {
-      startDate = dateFrom
-      endDate = dateTo
-    } else if (dateFrom) {
-      startDate = dateFrom
-      endDate = new Date(now)
-    } else if (dateTo) {
-      startDate = new Date(dateTo.getTime() - days * MS_PER_DAY)
-      endDate = dateTo
-    } else {
-      startDate = new Date(now - days * MS_PER_DAY)
-      endDate = new Date(now)
-    }
-  }
+  const { startDay, endDay, list } = seriesDays(opts, now)
 
   const users = await prisma.user.findMany({
-    where: { createdAt: { gte: startDate, lte: endDate }, deletedAt: null },
+    where: {
+      createdAt: { gte: parseDhakaDay(startDay), lte: parseDhakaDay(endDay, true) },
+      deletedAt: null,
+    },
     select: { createdAt: true },
     orderBy: { createdAt: 'asc' },
   })
 
-  // Pre-fill every date bucket with zero across the full range
-  const dailyCounts: Record<string, number> = {}
-  const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / MS_PER_DAY) + 1
-  for (let i = 0; i < totalDays; i++) {
-    const date = new Date(startDate.getTime() + i * MS_PER_DAY)
-    dailyCounts[date.toISOString().split('T')[0]] = 0
-  }
-
+  // Pre-fill every Bangladesh day with zero, then bucket each signup by its Bangladesh day.
+  const dailyCounts: Record<string, number> = Object.fromEntries(list.map((d) => [d, 0]))
   for (const user of users) {
-    const dateKey = user.createdAt.toISOString().split('T')[0]
+    const dateKey = bangladeshDayOf(user.createdAt)
     if (dailyCounts[dateKey] !== undefined) dailyCounts[dateKey]++
   }
 
-  return Object.entries(dailyCounts).map(([date, count]) => ({ date, count }))
+  return list.map((date) => ({ date, count: dailyCounts[date] }))
 }
 
 /** Date window every analytics panel query takes; #103 adds metric/config fields. */
@@ -297,58 +295,24 @@ export async function getUserRetention(
  * Default: last 30 days.
  */
 export async function getDailyActiveLoggers(
-  opts: number | { days?: number; dateFrom?: Date; dateTo?: Date } = 30,
+  opts: SeriesOpts,
+  now: Date,
 ): Promise<{ date: string; count: number }[]> {
-  const MS_PER_DAY = 24 * 60 * 60 * 1000
-  const now = Date.now()
+  const { startDay, endDay, list } = seriesDays(opts, now)
 
-  let startDate: Date
-  let endDate: Date
-
-  if (typeof opts === 'number') {
-    startDate = new Date(now - opts * MS_PER_DAY)
-    endDate = new Date(now)
-  } else {
-    const { days = 30, dateFrom, dateTo } = opts
-    if (dateFrom && dateTo) {
-      startDate = dateFrom
-      endDate = dateTo
-    } else if (dateFrom) {
-      startDate = dateFrom
-      endDate = new Date(now)
-    } else if (dateTo) {
-      startDate = new Date(dateTo.getTime() - days * MS_PER_DAY)
-      endDate = dateTo
-    } else {
-      startDate = new Date(now - days * MS_PER_DAY)
-      endDate = new Date(now)
-    }
-  }
-
-  // Fetch distinct (profileId, date) pairs in range
+  // Symptom log dates are stored as UTC midnight of their calendar day.
   const logs = await prisma.symptomLog.findMany({
-    where: { date: { gte: startDate, lte: endDate } },
+    where: { date: { gte: dayToStoredDate(startDay), lte: dayToStoredDate(endDay) } },
     select: { profileId: true, date: true },
     orderBy: { date: 'asc' },
   })
 
-  // Pre-fill every date bucket with zero
-  const dailyCounts: Record<string, Set<string>> = {}
-  const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / MS_PER_DAY) + 1
-  for (let i = 0; i < totalDays; i++) {
-    const d = new Date(startDate.getTime() + i * MS_PER_DAY)
-    dailyCounts[d.toISOString().split('T')[0]] = new Set()
-  }
-
+  const dailyCounts: Record<string, Set<string>> = Object.fromEntries(list.map((d) => [d, new Set<string>()]))
   for (const log of logs) {
-    const dateKey = log.date.toISOString().split('T')[0]
-    if (dailyCounts[dateKey]) dailyCounts[dateKey].add(log.profileId)
+    dailyCounts[storedDateToDay(log.date)]?.add(log.profileId)
   }
 
-  return Object.entries(dailyCounts).map(([date, profiles]) => ({
-    date,
-    count: profiles.size,
-  }))
+  return list.map((date) => ({ date, count: dailyCounts[date].size }))
 }
 
 /**
@@ -360,10 +324,11 @@ export async function getDailyActiveLoggers(
  * Default: last 30 days.
  */
 export async function getSymptomLoggingRate(
-  opts: number | { days?: number; dateFrom?: Date; dateTo?: Date } = 30,
+  opts: SeriesOpts,
+  now: Date,
 ): Promise<{ date: string; rate: number }[]> {
   const [dailyLoggers, totalProfiles] = await Promise.all([
-    getDailyActiveLoggers(opts),
+    getDailyActiveLoggers(opts, now),
     prisma.profile.count(),
   ])
 
@@ -380,55 +345,39 @@ export async function getSymptomLoggingRate(
  * A streak day is any day with at least one SymptomLog (including the all_good sentinel).
  * Computes streaks over the last ~40 days in JS (efficient at v1 scale).
  */
-export async function getLoggingStreakDistribution(): Promise<
+export async function getLoggingStreakDistribution(now: Date): Promise<
   { bucket: string; count: number }[]
 > {
   const LOOK_BACK = 40
-  const MS_PER_DAY = 24 * 60 * 60 * 1000
-  const now = Date.now()
-  const since = new Date(now - LOOK_BACK * MS_PER_DAY)
+  const today = bangladeshToday(now)
+  const yesterday = addDaysToDay(today, -1)
 
-  // eslint-disable-next-line no-restricted-syntax -- Bangladesh-day debt, see https://github.com/adibahsan/cycle-circle/issues/147
-  const today = new Date(new Date().toDateString())
-
+  // Symptom log dates are stored as UTC midnight of their calendar day.
   const logs = await prisma.symptomLog.findMany({
-    where: { date: { gte: since } },
+    where: { date: { gte: dayToStoredDate(addDaysToDay(today, -LOOK_BACK)) } },
     select: { profileId: true, date: true },
   })
 
-  // Build set of active dates per profile
+  // Build set of active days per profile
   const profileDates = new Map<string, Set<string>>()
   for (const log of logs) {
-    const dateKey = log.date.toISOString().split('T')[0]
     if (!profileDates.has(log.profileId)) profileDates.set(log.profileId, new Set())
-    profileDates.get(log.profileId)!.add(dateKey)
+    profileDates.get(log.profileId)!.add(storedDateToDay(log.date))
   }
 
   // Compute streak for each profile that has any logs
   const streaks: number[] = []
   for (const [, dates] of profileDates) {
-    let streak = 0
-    // Start from today or yesterday (whichever has a log) and count back
-    let cursor = today.getTime()
-    const todayKey = today.toISOString().split('T')[0]
-    const yesterdayKey = new Date(today.getTime() - MS_PER_DAY).toISOString().split('T')[0]
-
     // Only count streak if today or yesterday has a log (active streak)
-    if (!dates.has(todayKey) && !dates.has(yesterdayKey)) {
+    if (!dates.has(today) && !dates.has(yesterday)) {
       streaks.push(0)
       continue
     }
-    // Start from today
-    if (!dates.has(todayKey)) cursor -= MS_PER_DAY
-
-    while (true) {
-      const key = new Date(cursor).toISOString().split('T')[0]
-      if (dates.has(key)) {
-        streak++
-        cursor -= MS_PER_DAY
-      } else {
-        break
-      }
+    let streak = 0
+    let cursor = dates.has(today) ? today : yesterday
+    while (dates.has(cursor)) {
+      streak++
+      cursor = addDaysToDay(cursor, -1)
     }
     streaks.push(streak)
   }
