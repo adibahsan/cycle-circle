@@ -39,6 +39,7 @@ async function confirmDialog(page: Page, confirmName: string) {
 
 /** Status badge next to the user heading (not list filters / other copy). */
 function headerStatus(page: Page, marker: string, status: 'Active' | 'Suspended') {
+  // eslint-disable-next-line playwright/no-raw-locators -- status badge is an unnamed sibling of the heading
   return page
     .getByRole('heading', { name: marker, exact: true })
     .locator('xpath=..')

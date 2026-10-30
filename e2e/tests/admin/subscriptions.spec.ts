@@ -59,7 +59,7 @@ test.describe('Admin subscriptions', () => {
       await expect(page.getByText(proMarker)).toBeVisible({ timeout: 15_000 })
       await expect(page.getByText(freeMarker)).toHaveCount(0)
       // Scope to the marker's list row (Status Breakdown pie/table also contains "PRO").
-      const proRow = page.getByText(proMarker).locator('xpath=ancestor::tr[1]')
+      const proRow = page.getByRole('row').filter({ has: page.getByText(proMarker) })
       await expect(proRow.getByText('PRO', { exact: true })).toBeVisible()
 
       await page.getByRole('combobox', { name: 'Status:' }).click()
@@ -69,7 +69,7 @@ test.describe('Admin subscriptions', () => {
       await expect(page.getByText(freeMarker)).toBeVisible({ timeout: 15_000 })
       await expect(page.getByText(proMarker)).toHaveCount(0)
       // StatusBadge renders FREE as title-case "Free".
-      const freeRow = page.getByText(freeMarker).locator('xpath=ancestor::tr[1]')
+      const freeRow = page.getByRole('row').filter({ has: page.getByText(freeMarker) })
       await expect(freeRow.getByText('Free', { exact: true })).toBeVisible()
     } finally {
       await admin.context.close()

@@ -11,6 +11,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 /** Phase top-symptoms `<dl>` — scoped to the section that owns the phase heading. */
 function phaseSymptomsDl(page: Page) {
+  // eslint-disable-next-line playwright/no-raw-locators -- section wrapper of the phase heading has no role/name; the <dl> is reached through it
   return page
     .getByRole('heading', { name: 'Symptom Logs by Cycle Phase', exact: true })
     .locator('xpath=ancestor::div[./dl][1]')
@@ -259,11 +260,13 @@ test.describe('Admin analytics', () => {
                 await upsertTier(latestSnapDate, 'AVERAGE', avgMae, avgSamples)
                 await upsertTier(latestSnapDate, 'ARIMA', arimaMae, arimaSamples)
                 await refreshData(page)
+                // eslint-disable-next-line playwright/no-raw-locators -- tier pill is an unnamed <div>; matched by its text parts
                 const avgPill = page
                   .locator('div')
                   .filter({ hasText: 'AVERAGE' })
                   .filter({ hasText: `${avgMae}d MAE` })
                   .filter({ hasText: `${avgSamples} samples` })
+                // eslint-disable-next-line playwright/no-raw-locators -- tier pill is an unnamed <div>; matched by its text parts
                 const arimaPill = page
                   .locator('div')
                   .filter({ hasText: 'ARIMA' })
@@ -673,6 +676,7 @@ test.describe('Admin analytics', () => {
         await page.goto('/feedback')
         await refreshData(page)
         await page.goto('/analytics?fb=7d')
+        // eslint-disable-next-line playwright/no-raw-locators -- Feedback section is an unnamed <section> region
         const fbRange = page
           .locator('section')
           .filter({ has: page.getByRole('heading', { name: 'Feedback', exact: true }) })

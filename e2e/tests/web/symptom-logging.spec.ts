@@ -41,7 +41,7 @@ test.describe('symptom logging flows', () => {
     }
 
     // Save changes (desktop inline or mobile floating bar)
-    const saveBtn = page.getByRole('button', { name: /^Save \d+ changes/i }).locator('visible=true').first()
+    const saveBtn = page.getByRole('button', { name: /^Save \d+ changes/i }).filter({ visible: true }).first()
     await expect(saveBtn).toBeVisible()
     await saveBtn.click()
 
@@ -93,7 +93,7 @@ test.describe('symptom logging flows', () => {
     await chip.click()
     await expect(chip).toHaveAttribute('aria-pressed', 'true')
 
-    const saveBtn = page.getByRole('button', { name: /^Save \d+ changes/i }).locator('visible=true').first()
+    const saveBtn = page.getByRole('button', { name: /^Save \d+ changes/i }).filter({ visible: true }).first()
     await expect(saveBtn).toBeVisible()
     await saveBtn.click()
     await expect(page.getByRole('button', { name: /^Save \d+ changes/i })).not.toBeVisible({ timeout: 15_000 })
@@ -201,7 +201,7 @@ test.describe('symptom logging flows', () => {
     await page.goto(`/symptoms?date=${days.today}`)
     const physical = page.getByRole('group', { name: 'Physical', exact: true })
     await expect(physical.getByRole('button', { name: 'Cramps', exact: true })).toHaveAttribute('aria-pressed', 'true')
-    await expect(physical.locator('button[aria-pressed="true"]')).toHaveCount(1)
+    await expect(physical.getByRole('button', { pressed: true })).toHaveCount(1)
     await page.goto(`/symptoms?date=${days.daysAgo(1)}`)
     await expect(
       page.getByRole('group', { name: 'Physical', exact: true }).getByRole('button', { name: 'Cramps', exact: true }),
@@ -254,7 +254,7 @@ test.describe('symptom logging flows', () => {
     await chip.click()
     await expect(chip).toHaveAttribute('aria-pressed', 'true')
 
-    const saveBtn = page.getByRole('button', { name: /^Save \d+ changes/i }).locator('visible=true').first()
+    const saveBtn = page.getByRole('button', { name: /^Save \d+ changes/i }).filter({ visible: true }).first()
     await expect(saveBtn).toBeVisible()
     await saveBtn.click()
     await expect(page.getByRole('button', { name: /^Save \d+ changes/i })).not.toBeVisible({ timeout: 15_000 })

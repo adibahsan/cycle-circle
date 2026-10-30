@@ -50,6 +50,7 @@ test.describe('signed-in shell (W59)', () => {
     await page.keyboard.press('Enter')
     await expect(page.locator('main')).toBeFocused()
 
+    // eslint-disable-next-line playwright/no-raw-locators -- sidebar is one of several unnamed navigation shapes (aside/nav/data attr)
     await expect(page.locator('aside, nav[aria-label], [data-sidebar]').first()).toBeVisible()
   })
 })

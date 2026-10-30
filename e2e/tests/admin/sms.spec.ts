@@ -86,7 +86,11 @@ async function openCreateModal(page: import('@playwright/test').Page) {
   // can focus without opening the dialog — not an overlay bug in the app. On a slow runner the
   // button can also be re-rendered (hydration) under the click. Click again until it opens.
   await expect(async () => {
-    if (!(await heading.isVisible())) await newBtn.click({ force: true, timeout: 3_000 })
+    if (!(await heading.isVisible())) {
+      // Keyboard activation: no hit-test, so sticky chrome over the button can't swallow it.
+      await newBtn.focus()
+      await newBtn.press('Enter', { timeout: 3_000 })
+    }
     await expect(heading).toBeVisible({ timeout: 3_000 })
   }).toPass({ timeout: 30_000 })
   return page.getByRole('dialog').filter({ has: heading })
@@ -103,8 +107,8 @@ async function fillBilingualDraft(
   if (opts.language && opts.language !== 'Bengali + English') {
     // Label wraps an sr-only radio; the visible label is the clickable control. Click until the
     // radio is checked: on the phone project a click right after the dialog opens was once lost.
-    const label = dialog.locator('label').filter({ hasText: opts.language })
-    const radio = label.getByRole('radio')
+    const label = dialog.getByText(opts.language, { exact: true })
+    const radio = dialog.getByRole('radio', { name: opts.language })
     await expect(async () => {
       if (!(await radio.isChecked())) await label.click({ timeout: 2_000 })
       await expect(radio).toBeChecked({ timeout: 2_000 })
@@ -123,13 +127,14 @@ function broadcastRow(page: import('@playwright/test').Page, marker: string) {
 
 /**
  * Action column sits under sticky pagination / overlapping cells on the phone
- * project's narrow horizontal table — force is a viewport layout workaround, not a
- * missing accessible control.
+ * project's narrow horizontal table — keyboard activation sidesteps the overlap (a viewport
+ * layout quirk, not a missing accessible control).
  */
 async function clickRowAction(page: import('@playwright/test').Page, marker: string, name: string) {
   const btn = broadcastRow(page, marker).getByRole('button', { name })
   await btn.scrollIntoViewIfNeeded()
-  await btn.click({ force: true })
+  await btn.focus()
+  await btn.press('Enter')
 }
 
 async function filterStatusSent(page: import('@playwright/test').Page) {

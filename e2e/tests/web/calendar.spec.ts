@@ -111,6 +111,7 @@ test.describe('Calendar views, colours and day details', () => {
 
     // 7. Detail sheet: scoped to detail region, asserts clicked date in heading and cramps (#123 Finding 3)
     await showMonthOf(days.daysAgo(10))
+    // eslint-disable-next-line playwright/no-raw-locators -- day detail card is an unnamed panel; scoped through its Close button
     const detailRegion = page.locator('.rounded-panel').filter({ has: page.getByRole('button', { name: 'Close' }) })
     // Retry the tap until this day's detail shows: a tap before hydration finishes can be lost (#161).
     const detailFor = (ymd: string) =>

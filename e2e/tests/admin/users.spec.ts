@@ -144,7 +144,7 @@ test.describe('Admin users', () => {
       await expect(page.getByText(suspendedMarker)).toBeVisible({ timeout: 15_000 })
       await expect(page.getByText(activeMarker)).toHaveCount(0)
       await expect(
-        page.getByText(suspendedMarker).locator('xpath=ancestor::tr[1]').getByText('Suspended'),
+        page.getByRole('row').filter({ has: page.getByText(suspendedMarker) }).getByText('Suspended'),
       ).toBeVisible()
     } finally {
       await admin.context.close()

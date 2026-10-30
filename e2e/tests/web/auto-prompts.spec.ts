@@ -9,7 +9,7 @@ import { createEmailTrialUser } from '../../support/users.ts'
 const lateAlert = (page: import('@playwright/test').Page) => page.getByRole('dialog', { name: /Your period is running late/ })
 
 const visibleDialogs = (page: import('@playwright/test').Page) =>
-  page.locator('[role="dialog"]:visible, [role="alertdialog"]:visible')
+  page.getByRole('dialog').or(page.getByRole('alertdialog'))
 
 test.describe('auto-prompt arbiter (W18)', () => {
   test('when late-alert and check-in are both eligible, only the late alert shows', async ({ newUser, days }) => {

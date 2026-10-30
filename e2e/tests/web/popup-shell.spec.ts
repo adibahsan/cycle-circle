@@ -16,10 +16,12 @@ test.describe('pop-up shell contract (W61)', () => {
     const logPeriod = page.getByRole('button', { name: /Log Period|পিরিয়ড লগ করুন/i }).first()
     const periodDialog = await openDialog(logPeriod)
     await expect(periodDialog).toHaveAttribute('aria-modal', 'true')
+    // eslint-disable-next-line playwright/no-raw-locators -- inert siblings of the dialog are the assertion, no role
     expect(await page.locator('body > [inert]').count()).toBeGreaterThan(0)
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(logPeriod).toBeFocused()
+    // eslint-disable-next-line playwright/no-raw-locators -- inert siblings of the dialog are the assertion, no role
     expect(await page.locator('body > [inert]').count()).toBe(0)
 
     await page.goto('/settings')
@@ -38,6 +40,7 @@ test.describe('pop-up shell contract (W61)', () => {
     await ensureUserProfile(phone, { name: 'More Sheet User' })
     await suppressAutoPrompts(page)
     await page.goto('/dashboard')
+    // eslint-disable-next-line playwright/no-raw-locators -- bottom nav is an unnamed <nav>; found by its data attribute
     const more = page.locator('nav[data-bottom-nav]').getByRole('button', { name: 'More' })
     await openDialog(more)
     await page.keyboard.press('Escape')

@@ -27,7 +27,9 @@ test.describe('Admin API docs', () => {
       await expect(page.getByRole('heading', { name: 'API Reference', level: 1 })).toBeVisible()
       await expect(page.getByRole('main').getByRole('link', { name: '/openapi.yaml' }).first()).toBeVisible()
       // Swagger UI rendered the spec (title + at least one operation block).
+      // eslint-disable-next-line playwright/no-raw-locators -- third-party Swagger UI markup, no accessible names
       await expect(page.locator('#swagger-ui .info .title')).toBeVisible({ timeout: 20_000 })
+      // eslint-disable-next-line playwright/no-raw-locators -- third-party Swagger UI markup, no accessible names
       await expect(page.locator('#swagger-ui .opblock').first()).toBeVisible()
     } finally {
       await admin.context.close()

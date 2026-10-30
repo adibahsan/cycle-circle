@@ -55,7 +55,7 @@ async function expectWebContentListSettled(page: Page) {
   await expect(page.getByRole('heading', { name: 'Health Articles' })).toBeVisible()
   const empty = page.getByText('No articles yet')
   // Article cards are unnamed buttons that contain an h3 title (no listbox role).
-  const anyCard = page.locator('button').filter({ has: page.locator('h3') }).first()
+  const anyCard = page.getByRole('button').filter({ has: page.getByRole('heading', { level: 3 }) }).first()
   await expect(empty.or(anyCard)).toBeVisible({ timeout: 15_000 })
 }
 
@@ -135,6 +135,7 @@ async function assertReaderSanitized(reader: Locator, opts: {
   await expect(reader.getByText(safeMarker)).toBeVisible()
 
   // Body HTML only — article chrome (phase chips) legitimately uses inline style=.
+  /* eslint-disable playwright/no-raw-locators -- sanitizer check inspects the raw rendered DOM (script/style/on* attrs, .prose body) that has no role or name */
   const body = reader.locator('.prose')
   await expect(body).toBeVisible()
   await expect(body.locator('script')).toHaveCount(0)
@@ -145,14 +146,15 @@ async function assertReaderSanitized(reader: Locator, opts: {
   await expect(body.locator('[style]')).toHaveCount(0)
   await expect(body.locator('a[href^="javascript:"]')).toHaveCount(0)
   await expect(body.locator('[src*="evil.example"], [href*="evil.example"]')).toHaveCount(0)
+  /* eslint-enable playwright/no-raw-locators */
 
   const html = await body.innerHTML()
   expect(html).not.toContain('evil.example')
   expect(html).not.toMatch(/javascript:/i)
 
   if (expectSafeFormatting) {
-    await expect(body.locator('strong')).toContainText(`bold-${runId}`)
-    await expect(body.locator('em')).toContainText(`italic-${runId}`)
+    await expect(body.getByRole('strong')).toContainText(`bold-${runId}`)
+    await expect(body.getByRole('emphasis')).toContainText(`italic-${runId}`)
     const safeLink = body.getByRole('link', { name: `safe link ${runId}` })
     await expect(safeLink).toBeVisible()
     await expect(safeLink).toHaveAttribute('href', `https://example.com/safe-${runId}`)
@@ -259,6 +261,7 @@ test.describe('Admin content authoring (seen on web)', () => {
 
       await adminPage.getByLabel('Choose an image to insert').first().setInputFiles(FIXTURE_PNG)
       // Image has alt from filename; still scope under editor (no name on editor).
+      // eslint-disable-next-line playwright/no-raw-locators -- uploaded editor image has no accessible name (#141)
       const enUploadImg = editors.nth(0).locator('img[src^="/uploads/"]')
       await expect(enUploadImg).toBeVisible({ timeout: 15_000 })
 
@@ -365,6 +368,7 @@ test.describe('Admin content authoring (seen on web)', () => {
       // Obtain a real /uploads src that sanitize-html allows.
       await fillEditor(editors.nth(0), 'upload-seed')
       await adminPage.getByLabel('Choose an image to insert').first().setInputFiles(FIXTURE_PNG)
+      // eslint-disable-next-line playwright/no-raw-locators -- uploaded editor image has no accessible name (#141)
       const uploadImg = editors.nth(0).locator('img[src^="/uploads/"]')
       await expect(uploadImg).toBeVisible({ timeout: 15_000 })
       const uploadSrc = await uploadImg.getAttribute('src')
@@ -462,6 +466,7 @@ test.describe('Admin content authoring (seen on web)', () => {
       await expect(editors).toHaveCount(2)
       await fillEditor(editors.nth(0), 'upload-seed')
       await adminPage.getByLabel('Choose an image to insert').first().setInputFiles(FIXTURE_PNG)
+      // eslint-disable-next-line playwright/no-raw-locators -- uploaded editor image has no accessible name (#141)
       const uploadImg = editors.nth(0).locator('img[src^="/uploads/"]')
       await expect(uploadImg).toBeVisible({ timeout: 15_000 })
       const uploadSrc = await uploadImg.getAttribute('src')

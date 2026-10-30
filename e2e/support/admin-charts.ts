@@ -26,6 +26,7 @@ export async function refreshData(page: Page): Promise<void> {
  * Empty panels omit the data-table summary, so do not require it here: openChartTable adds that check.
  */
 export function chartCard(page: Page, title: string) {
+  // eslint-disable-next-line playwright/no-raw-locators -- ChartPanel card has no role or accessible name; reached via its heading
   return page
     .getByRole('heading', { name: title, exact: true })
     .locator('xpath=ancestor::div[contains(@class,"rounded-2xl")][1]')
@@ -35,6 +36,7 @@ export async function openChartTable(page: Page, title: string) {
   const card = chartCard(page, title)
   const table = card.getByRole('table', { name: title })
   if (!(await table.isVisible().catch(() => false))) {
+    // eslint-disable-next-line playwright/no-raw-locators -- native <summary> disclosure has no role or name hook
     await card.locator('summary', { hasText: 'View data as table' }).click()
   }
   await expect(table).toBeVisible({ timeout: 10_000 })

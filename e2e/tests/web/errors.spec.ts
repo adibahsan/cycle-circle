@@ -33,10 +33,10 @@ test.describe('error and not-found (W63)', () => {
 
     await page.goto('/symptoms')
     const group = page.getByRole('group', { name: /Physical|শারীরিক/i })
-    const chip = group.locator('button[aria-pressed="false"]').first()
+    const chip = group.getByRole('button', { pressed: false }).first()
     const name = await chip.getAttribute('aria-label')
     await chip.click()
-    await page.getByRole('button', { name: /^Save \d+ changes$|^.*?পরিবর্তন/i }).locator('visible=true').first().click()
+    await page.getByRole('button', { name: /^Save \d+ changes$|^.*?পরিবর্তন/i }).filter({ visible: true }).first().click()
     await expect(page.getByRole('status').filter({ hasText: /couldn.t save|save|সমস্যা|ব্যর্থ|error/i })).toBeVisible({
       timeout: 10_000,
     })

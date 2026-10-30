@@ -39,6 +39,7 @@ test.describe('dashboard pop-ups and celebration (W39)', () => {
     await suppressAutoPrompts(page)
     await page.goto('/dashboard')
 
+    // eslint-disable-next-line playwright/no-raw-locators -- toast region has no accessible name; its role is the assertion
     const region = page.locator('[data-toast-region]')
     await expect(region).toBeAttached()
     await expect(region).toHaveAttribute('role', 'status')
