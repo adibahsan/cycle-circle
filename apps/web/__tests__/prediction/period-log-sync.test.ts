@@ -4,6 +4,7 @@ import {
   ensurePeriodLogFromProfile,
   getLatestPeriodLog,
 } from '@vesta/shared/server/period-log-sync'
+import { dayToStoredDate } from '@vesta/shared/utils/dhaka-date'
 import {
   createTestUser,
   cleanupTestData,
@@ -18,9 +19,7 @@ import {
 
 /** Create a midnight-UTC Date for a given YYYY-MM-DD string. */
 function d(dateStr: string): Date {
-  const date = new Date(dateStr)
-  date.setHours(0, 0, 0, 0)
-  return date
+  return dayToStoredDate(dateStr)
 }
 
 /** Extract YYYY-MM-DD from a Date. */

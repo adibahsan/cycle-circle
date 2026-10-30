@@ -318,10 +318,8 @@ app: `translogFor(userId, { app: 'admin' })`, or merge both with `{ apps: ['web'
 - The #155 `test.fail` in `symptom-logging.spec.ts` and `dashboard.spec.ts` (streak) applies only between 00:00 and 06:00 Bangladesh (UTC 18:00-24:00), by design: the code uses the UTC day whatever the server TZ.
 - The #160 (server "today": cycle day, countdown, late days, reminders) and #161 (hydration mismatch) `test.fail`s use
   `days.serverDayLags`: expected to fail only 00:00-06:00 Bangladesh under `TZ=UTC`, never under `E2E_APP_TZ=Asia/Dhaka`.
-- The #151 `test.fail` (menopause days-since) uses `SERVER_TZ_IS_UTC`: that bug (`setHours(0)` on the derived period
-  log) shows only on a non-UTC server, so it is expected to fail only with `E2E_APP_TZ=Asia/Dhaka`.
-- **Green means green under `TZ=UTC`.** With `E2E_APP_TZ=Asia/Dhaka` the #160/#161 guards switch off with those bugs and
-  #151 flips to expected-fail, so a Dhaka run is green too; but a Dhaka server hides the UTC-only bugs, so don't use it
+- **Green means green under `TZ=UTC`.** With `E2E_APP_TZ=Asia/Dhaka` the #160/#161 guards switch off with those bugs,
+  so a Dhaka run is green too; but a Dhaka server hides the UTC-only bugs, so don't use it
   to sign off a change.
 - Timeouts: the global test timeout is 90 s in CI (60 s locally) and the SMS broadcast tests set 150 s: a GitHub runner
   is about 3x slower than a dev Mac (first CI run 14.6 min vs 5.3 min locally).

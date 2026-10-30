@@ -35,7 +35,7 @@ export const getSubscriptions = cache(async (params: SubscriptionListParams = {}
 export const getSubscriptionTrend = cache(async (days: number) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetSubscriptionTrend({ days }),
+    () => svcGetSubscriptionTrend({ days, now: new Date() }),
     ['admin-subscriptions-subscription-trend', String(days)],
     { tags: [adminCacheTags.subscriptions], revalidate: KPI_CACHE_TTL }
   )()
