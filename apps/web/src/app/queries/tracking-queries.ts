@@ -50,7 +50,7 @@ export const getPeriodLogs = cache(async (profileId: string) => {
 export const getEngagementSummary = cache(async (profileId: string) => {
   const user = await requireCurrentUser()
   return unstable_cache(
-    () => svcGetEngagementSummary(profileId, user.id),
+    () => svcGetEngagementSummary(profileId, user.id, new Date()),
     ['engagement-summary', profileId],
     { tags: [cacheTags.tracking(profileId)], revalidate: WEB_CACHE_TTL }
   )()
