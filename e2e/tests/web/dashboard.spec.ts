@@ -103,8 +103,6 @@ test.describe('Dashboard modes', () => {
   })
 
   test('standard dashboard displays cycle day hero, live cycle journey and ring', async ({ newUser, days }) => {
-    // Between 00:00 and 06:00 Bangladesh a UTC server counts from yesterday (#160); guarded by the server clock.
-    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/160')
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, {
       name: 'Standard User',
@@ -155,8 +153,6 @@ test.describe('Dashboard modes', () => {
 
 test.describe('Late-period alert', () => {
   test('late-period alert opens with the right day count', async ({ newUser, days }) => {
-    // Between 00:00 and 06:00 Bangladesh a UTC server counts from yesterday (#160); guarded by the server clock.
-    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/160')
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, {
       name: 'Late Period User',
@@ -214,8 +210,6 @@ test.describe('Streak badge and engagement tracking', () => {
     if (msToDhakaMidnight < 120_000 || dhakaMsIntoDay < 60_000) {
       test.skip(true, 'Skipping streak test near Bangladesh midnight to avoid date boundary flake')
     }
-    // getEngagementSummary counts in the UTC day whatever the server TZ (#155): a day behind 00:00-06:00 Bangladesh.
-    test.fail(days.now.getUTCHours() >= 18, 'https://github.com/adibahsan/cycle-circle/issues/155')
 
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, {

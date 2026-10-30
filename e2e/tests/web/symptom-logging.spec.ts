@@ -109,8 +109,6 @@ test.describe('symptom logging flows', () => {
     newUser,
     days,
   }) => {
-    // Between 00:00 and 06:00 Bangladesh the server's UTC day is yesterday (#155)
-    test.fail(days.now.getUTCHours() >= 18, 'https://github.com/adibahsan/cycle-circle/issues/155')
     const { page } = await newUser()
     // No suppressAutoPrompts: for a fresh profile with the tour done, the check-in is the one auto-prompt.
     const profile = await setupProfile(page, { name: 'Checkin User W24' })
@@ -144,8 +142,6 @@ test.describe('symptom logging flows', () => {
   })
 
   test('a normal check-in with a chosen symptom is recorded for today (W24)', async ({ newUser, days }) => {
-    // Between 00:00 and 06:00 Bangladesh the server's UTC day is yesterday (#155)
-    test.fail(days.now.getUTCHours() >= 18, 'https://github.com/adibahsan/cycle-circle/issues/155')
     const { page } = await newUser()
     const profile = await setupProfile(page, { name: 'Checkin Chip User W24' })
 

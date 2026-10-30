@@ -1,6 +1,12 @@
-import { differenceInDays } from 'date-fns'
 import { prisma } from '../db'
 import { logger } from '../log'
+import {
+  addDaysToDay,
+  bangladeshToday,
+  daysBetween,
+  parseDhakaDay,
+  storedDateToDay,
+} from '../../utils/dhaka-date'
 import { getProfilesForReminders } from './tracking-service'
 import { wasEmailSentToday, wasEmailSentTodayForUser } from './email-service'
 import {
@@ -14,6 +20,8 @@ import {
 const COMPLETION_REMINDER_MAX_AGE_DAYS = 14
 
 export interface RunDailyRemindersOptions {
+  /** The moment the run happens at; the cron route reads the clock and passes it in. */
+  now: Date
   userId?: string
   force?: boolean
 }
@@ -35,12 +43,12 @@ export interface DailyRemindersResult {
  * admin re-trigger a specific user's reminders on demand.
  */
 export async function runDailyReminders(
-  opts: RunDailyRemindersOptions = {},
+  opts: RunDailyRemindersOptions,
 ): Promise<DailyRemindersResult> {
-  const { userId, force = false } = opts
+  const { userId, force = false, now } = opts
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // Days are counted on the Bangladesh calendar; stored date-only values are UTC midnight of their day.
+  const today = bangladeshToday(now)
 
   let periodAlerts = 0
   let fertileAlerts = 0
@@ -63,7 +71,7 @@ export async function runDailyReminders(
 
     try {
       if (prefs.periodAlert && prediction) {
-        const daysUntil = differenceInDays(prediction.nextPeriodStart, today)
+        const daysUntil = daysBetween(today, storedDateToDay(prediction.nextPeriodStart))
         if (daysUntil >= 0 && daysUntil <= 2) {
           if (!force && (await wasEmailSentToday('PERIOD_ALERT', profile.id))) {
             skipped++
@@ -88,7 +96,7 @@ export async function runDailyReminders(
       }
 
       if (prefs.fertileWindow && prediction) {
-        const fertileStartDiff = differenceInDays(prediction.fertileStart, today)
+        const fertileStartDiff = daysBetween(today, storedDateToDay(prediction.fertileStart))
         if (fertileStartDiff === 0) {
           if (!force && (await wasEmailSentToday('FERTILE_ALERT', profile.id))) {
             skipped++
@@ -118,7 +126,7 @@ export async function runDailyReminders(
       if (prefs.loggingReminder) {
         const lastLog = profile.periodLogs[0] ?? null
         const daysSince = lastLog
-          ? differenceInDays(today, lastLog.startDate)
+          ? daysBetween(storedDateToDay(lastLog.startDate), today)
           : 999
         if (daysSince >= 3) {
           if (!force && (await wasEmailSentToday('LOGGING_REMINDER', profile.id))) {
@@ -146,10 +154,9 @@ export async function runDailyReminders(
   }
 
   // ── Profile-completion reminders ──────────────────────────────────────────────
-  const campaignCutoff = new Date(today)
-  campaignCutoff.setDate(campaignCutoff.getDate() - COMPLETION_REMINDER_MAX_AGE_DAYS)
-  const oneDayAgo = new Date(today)
-  oneDayAgo.setDate(oneDayAgo.getDate() - 1)
+  // Cutoffs are the start of a Bangladesh day, so the 14-day window rolls over at Bangladesh midnight.
+  const campaignCutoff = parseDhakaDay(addDaysToDay(today, -COMPLETION_REMINDER_MAX_AGE_DAYS))!
+  const oneDayAgo = parseDhakaDay(addDaysToDay(today, -1))!
 
   const incompleteUsers = await prisma.user.findMany({
     where: {

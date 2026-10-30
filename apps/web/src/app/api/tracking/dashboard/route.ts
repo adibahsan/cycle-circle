@@ -12,7 +12,7 @@ const paramsSchema = z.object({
 export const GET = withAuth(async (request, { user }: { user: AuthUser }) => {
   try {
     const params = await parseSearchParams(request, paramsSchema)
-    const data = await getDashboardData(params.profileId, user.id)
+    const data = await getDashboardData(params.profileId, user.id, new Date())
     if (!data) {
       throw new ApiError(404, 'Profile not found', 'PROFILE_NOT_FOUND')
     }
