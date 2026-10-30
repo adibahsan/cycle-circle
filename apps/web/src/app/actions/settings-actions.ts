@@ -114,6 +114,7 @@ export async function exportUserDataCsv(opts?: { profileId?: string; allProfiles
 
   const csv = sections.join('\n')
   const scope = opts?.allProfiles ? 'all-profiles' : 'profile'
+  // eslint-disable-next-line no-restricted-syntax -- not a day computation: download filename stamp
   const filename = `vesta-export-${scope}-${new Date().toISOString().slice(0, 10)}.csv`
 
   return { csv, filename }
@@ -161,6 +162,7 @@ export async function exportUserDataRows(opts?: { profileId?: string; allProfile
   return {
     periodLogs,
     symptomLogs,
+    // eslint-disable-next-line no-restricted-syntax -- not a day computation: download filename stamp
     filename: `vesta-export-${opts?.allProfiles ? 'all-profiles' : 'profile'}-${new Date().toISOString().slice(0, 10)}.xlsx`,
   }
 }

@@ -1,9 +1,11 @@
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
+import { bangladeshDayConfig } from "@vesta/shared/eslint/bangladesh-day";
 
 const eslintConfig = [
   ...nextCoreWebVitals,
   ...nextTypescript,
+  bangladeshDayConfig, // no server/device-clock days; see #115
   {
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",

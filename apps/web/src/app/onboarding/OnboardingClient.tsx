@@ -416,7 +416,9 @@ function StepCycleHistory({
   const { t } = useTranslation();
 
   // Max date is today; min date is 90 days ago
+  // eslint-disable-next-line no-restricted-syntax -- Bangladesh-day debt, see https://github.com/adibahsan/cycle-circle/issues/115
   const today = new Date().toISOString().split('T')[0];
+  // eslint-disable-next-line no-restricted-syntax -- Bangladesh-day debt, see https://github.com/adibahsan/cycle-circle/issues/115
   const minDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   return (
