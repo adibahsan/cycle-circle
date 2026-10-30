@@ -53,3 +53,11 @@ export function addDaysToDay(day: string, n: number): string {
 export function daysBetween(from: string, to: string): number {
   return Math.round((dayToStoredDate(to).getTime() - dayToStoredDate(from).getTime()) / DAY_MS)
 }
+
+/**
+ * Format an instant for display in Bangladesh time, with a fixed locale. Server and browser
+ * render the same text whatever their own timezone or locale, so pages hydrate (React #418).
+ */
+export function formatDhaka(instant: Date | string, options: Intl.DateTimeFormatOptions): string {
+  return new Intl.DateTimeFormat('en-US', { ...options, timeZone: 'Asia/Dhaka' }).format(new Date(instant))
+}
