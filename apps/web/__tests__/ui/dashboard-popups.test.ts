@@ -1,27 +1,12 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-// eslint-disable-next-line no-restricted-imports -- Bangladesh-day debt, see https://github.com/adibahsan/cycle-circle/issues/115
-import { deviceDayString } from '@/lib/local-date'
 import { celebrationCopy, shouldShowConfetti, TOAST_AFTER_POPUP_MS } from '@/lib/toast-core'
 
 const src = (p: string) => readFileSync(resolve(__dirname, '../../src', p), 'utf8')
 const exists = (p: string) => existsSync(resolve(__dirname, '../../src', p))
 
 afterEach(() => vi.useRealTimers())
-
-describe('deviceDayString', () => {
-  it('uses the local calendar day, not the UTC day', () => {
-    // 01:30 local on 8 Oct: in UTC+6 this is still 7 Oct in UTC.
-    expect(deviceDayString(new Date(2026, 9, 8, 1, 30))).toBe('2026-10-08')
-    expect(deviceDayString(new Date(2026, 0, 2, 23, 59))).toBe('2026-01-02')
-  })
-  it('defaults to now', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(2026, 9, 8, 0, 5))
-    expect(deviceDayString()).toBe('2026-10-08')
-  })
-})
 
 describe('celebration toast copy', () => {
   it('maps each kind to its translation keys and count', () => {

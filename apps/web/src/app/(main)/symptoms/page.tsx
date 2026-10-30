@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/app/queries/auth-queries'
 import { getProfiles, getActiveProfileId } from '@/app/queries/profile-queries'
 import { getSymptomLogs } from '@/app/queries/symptom-queries'
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 import { SymptomsClient } from './SymptomsClient'
 
 export default async function SymptomsPage({
@@ -17,8 +18,7 @@ export default async function SymptomsPage({
 
   const params = await searchParams
   const profileId = await getActiveProfileId(profiles, params.profileId)
-  // eslint-disable-next-line no-restricted-syntax -- Bangladesh-day debt, see https://github.com/adibahsan/cycle-circle/issues/148
-  const today = new Date().toISOString().slice(0, 10)
+  const today = bangladeshToday()
   const date = params.date || today
   const symptomLogs = await getSymptomLogs(profileId, date)
 

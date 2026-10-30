@@ -1,3 +1,5 @@
+import { daysBetween, storedDateToDay } from '@vesta/shared/utils/dhaka-date'
+
 /** Pure rules for the dashboard-only prompts (completion row, logging nudge). */
 
 export const NUDGE_STALE_DAYS = 3
@@ -11,15 +13,14 @@ export function showCompletionRow(status: CompletionLike | null | undefined): bo
   return !!status && !status.complete
 }
 
-/** Whole local days between the most recent log and `today`; null when nothing was ever logged. */
-export function daysSinceLastLog(dates: Date[], today: Date = new Date()): number | null {
+/**
+ * Whole days between the most recent log and `today` (the Bangladesh day, `YYYY-MM-DD`);
+ * null when nothing was ever logged. `dates` are stored date-only values (UTC midnight).
+ */
+export function daysSinceLastLog(dates: Date[], today: string): number | null {
   if (dates.length === 0) return null
   const latest = dates.reduce((a, b) => (a > b ? a : b))
-  const a = new Date(today)
-  a.setHours(0, 0, 0, 0)
-  const b = new Date(latest)
-  b.setHours(0, 0, 0, 0)
-  return Math.round((a.getTime() - b.getTime()) / 86_400_000)
+  return daysBetween(storedDateToDay(latest), today)
 }
 
 /**

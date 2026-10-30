@@ -15,7 +15,6 @@
  *  - Day parts read off an identifier, e.g. calendar/page.tsx `now.getMonth()`.
  *  - Event-timestamp UTC bucketing (e.g. sms-service, analytics-service `toISOString().slice(0, 10)`
  *    on a stored createdAt): the receiver is not a current instant.
- *  - `deviceDayString` is handled separately by `no-restricted-imports` in apps/web.
  */
 const SEE = 'Use bangladeshToday()/bangladeshDayOf() from @vesta/shared/utils/dhaka-date (see #115).'
 
@@ -69,24 +68,5 @@ export const bangladeshDayConfig = {
   files: ['**/*.{js,jsx,mjs,ts,tsx}'],
   rules: {
     'no-restricted-syntax': ['error', ...bangladeshDayRestrictedSyntax],
-  },
-}
-
-/** apps/web only: `deviceDayString` is the device-clock "today" (#115). */
-export const deviceDayImportConfig = {
-  files: ['**/*.{js,jsx,mjs,ts,tsx}'],
-  rules: {
-    'no-restricted-imports': [
-      'error',
-      {
-        paths: [
-          {
-            name: '@/lib/local-date',
-            importNames: ['deviceDayString'],
-            message: `deviceDayString() is the device's day, not the Bangladesh day. ${SEE}`,
-          },
-        ],
-      },
-    ],
   },
 }
