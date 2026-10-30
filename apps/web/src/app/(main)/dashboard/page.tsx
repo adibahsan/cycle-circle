@@ -6,6 +6,7 @@ import { getDashboardData, getEngagementSummary } from '@/app/queries/tracking-q
 import { getPublishedArticles } from '@/app/queries/content-queries'
 import { getProfileCompletionStatus, SYMPTOM_PATTERN_DAYS } from '@vesta/shared/server/services'
 import { normalizeCyclePhase } from '@vesta/shared/utils/cycle-utils'
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 import { DashboardClient } from './DashboardClient'
 import type { PhaseArticle } from './DashboardToolkit'
 import { PhasePatternCard } from './PhasePatternCard'
@@ -26,6 +27,7 @@ export default async function DashboardPage({
   if (!user) redirect('/login')
   if (profiles.length === 0) redirect('/onboarding')
 
+  const today = bangladeshToday()
   const params = await searchParams
   const profileId = await getActiveProfileId(profiles, params.profileId)
 
@@ -64,6 +66,7 @@ export default async function DashboardPage({
       user={user}
       activeProfileId={profileId}
       profileCookieSynced={profileCookieSynced}
+      today={today}
       dashboardData={dashboardData}
       completion={completion}
       lastSymptomLogDate={dashboardData?.lastSymptomLogDate ?? null}

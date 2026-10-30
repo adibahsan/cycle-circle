@@ -180,9 +180,7 @@ test.describe('Period logging', () => {
     await expect(modal).toBeVisible()
   })
 
-  test('default log date is the Bangladesh day, not the device day', async ({ browser, fakeBdapps }) => {
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/115')
-
+  test('default log date is the Bangladesh day, not the device day', async ({ browser, fakeBdapps, days }) => {
     // 2026-10-26T01:30 Bangladesh = 2026-10-25T19:30Z: Bangladesh day is the 26th, a London device day is the 25th.
     const bangladeshDay = '2026-10-26'
     const { createThrowawayUser } = await import('../../support/users.ts')
@@ -211,11 +209,11 @@ test.describe('Period logging', () => {
       await expect(page.getByLabel('Start Date')).toHaveValue(bangladeshDay)
       await expect(page.getByLabel('End Date')).toHaveValue(bangladeshDay)
 
-      // ...and the calendar marks the Bangladesh day as today
+      // ...and the calendar marks the server's Bangladesh day as today (the Server Component's clock, not the device's or the faked browser clock)
       await page.keyboard.press('Escape')
       await page.goto('/calendar')
       // eslint-disable-next-line playwright/no-raw-locators -- Playwright's getByRole has no aria-current option, and the today label is a formatted date
-      await expect(page.locator('button[aria-current="date"]')).toHaveAttribute('data-date', bangladeshDay)
+      await expect(page.locator('button[aria-current="date"]')).toHaveAttribute('data-date', days.today)
     } finally {
       await context.close()
     }

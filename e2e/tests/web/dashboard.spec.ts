@@ -354,9 +354,6 @@ test.describe('Phase pattern card', () => {
 
 test.describe('Server render', () => {
   test('dashboard and calendar hydrate without a React mismatch', async ({ newUser, days }) => {
-    // The SSR renders "today" from the server process clock; between 00:00 and 06:00 Bangladesh a
-    // UTC server renders yesterday and the Asia/Dhaka browser hits React #418 (#161).
-    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/161')
     const { page, phone } = await newUser()
     const profile = await ensureUserProfile(phone, {
       name: 'Hydration User',

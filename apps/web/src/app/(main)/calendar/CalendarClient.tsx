@@ -98,6 +98,8 @@ interface Props {
   profiles: PrismaProfile[]
   activeProfileId: string
   month: string
+  /** The Bangladesh day (YYYY-MM-DD), computed once by the Server Component. */
+  today: string
   days: CalendarDay[] | null
   /** prev + visible + next month days, so a window straddling a month edge isn't truncated */
   windowDays?: CalendarDay[]
@@ -146,6 +148,8 @@ function Legend({ pregnancy }: { pregnancy: boolean }) {
 // ─── Day Detail Sheet ──────────────────────────────────────────────────────────
 
 interface DayDetailProps {
+  /** The Bangladesh day as a local-midnight Date. */
+  today: Date
   date: Date
   meta: DayMeta
   symptoms: SymptomLog[]
@@ -154,11 +158,10 @@ interface DayDetailProps {
   onAddLog?: () => void
 }
 
-function DayDetail({ date, meta, symptoms, onClose, onAddLog }: DayDetailProps) {
+function DayDetail({ date, today, meta, symptoms, onClose, onAddLog }: DayDetailProps) {
   const { t } = useTranslation()
   const language = useLanguage()
   const dateLocale = language === 'bn' ? bn : undefined
-  const today = new Date()
   const isFuture = date > today
   const ref = useRef<HTMLDivElement>(null)
   const reduce = useReducedMotion()
@@ -414,8 +417,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
 // ─── Calendar Client ───────────────────────────────────────────────────────────
 
 /** Latest logged period start that is not in the future (YYYY-MM-DD), or null. */
-function lastPeriodStartIso(logs: PeriodLog[]): string | null {
-  const today = format(new Date(), 'yyyy-MM-dd')
+function lastPeriodStartIso(logs: PeriodLog[], today: string): string | null {
   let best: string | null = null
   for (const l of logs) {
     const s = format(new Date(l.startDate), 'yyyy-MM-dd')
@@ -424,7 +426,7 @@ function lastPeriodStartIso(logs: PeriodLog[]): string | null {
   return best
 }
 
-export function CalendarClient({ profiles, activeProfileId, month, days, windowDays, symptomLogs, periodLogs, goal }: Props) {
+export function CalendarClient({ profiles, activeProfileId, month, today: todayDay, days, windowDays, symptomLogs, periodLogs, goal }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const language = useLanguage()
@@ -438,7 +440,8 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
 
   // Stable across renders so dayMetaMap isn't rebuilt (and all DayCells re-rendered)
   // on every unrelated state change, e.g. opening/closing the edit modal.
-  const today = useMemo(() => new Date(), [])
+  // The Bangladesh day from the Server Component, as a local-midnight Date for date-fns.
+  const today = useMemo(() => parseISO(todayDay), [todayDay])
   const currentMonth = useMemo(() => {
     const [year, monthNum] = month.split('-').map(Number)
     return new Date(year, monthNum - 1, 1)
@@ -573,10 +576,10 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
   // client-side so no forward-looking data is ever derived or shown.
   const firstPredictedPeriod = !pregnancy ? days?.find((d) => d.predicted && d.period) : undefined
   const nextPeriodDaysLate = firstPredictedPeriod
-    ? differenceInCalendarDays(new Date(), parseISO(firstPredictedPeriod.date))
+    ? differenceInCalendarDays(today, parseISO(firstPredictedPeriod.date))
     : 0
   const ovulationDay = !pregnancy ? days?.find((d) => d.ovulation) : undefined
-  const fertileWindow = !pregnancy ? selectFertileWindow(windowDays ?? days ?? [], format(new Date(), 'yyyy-MM-dd'), lastPeriodStartIso(periodLogs)) : null
+  const fertileWindow = !pregnancy ? selectFertileWindow(windowDays ?? days ?? [], todayStr, lastPeriodStartIso(periodLogs, todayStr)) : null
 
   return (
     <PageContainer width="canvas" className="relative overflow-hidden">
@@ -634,6 +637,7 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
               <DayDetail
                 key={format(selectedDate, 'yyyy-MM-dd')}
                 date={selectedDate}
+                today={today}
                 meta={selectedMeta}
                 symptoms={selectedSymptoms}
                 onClose={() => setSelectedDate(null)}

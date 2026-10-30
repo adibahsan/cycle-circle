@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/app/queries/auth-queries'
 import { getProfiles, getActiveProfileId } from '@/app/queries/profile-queries'
 import { getCalendarData, getPeriodLogs } from '@/app/queries/tracking-queries'
 import { getSymptomLogs } from '@/app/queries/symptom-queries'
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 import { CalendarClient } from './CalendarClient'
 
 export default async function CalendarPage({
@@ -18,9 +19,8 @@ export default async function CalendarPage({
 
   const params = await searchParams
   const profileId = await getActiveProfileId(profiles, params.profileId)
-  const now = new Date()
-  const month =
-    params.month || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const today = bangladeshToday()
+  const month = params.month || today.slice(0, 7)
 
   // Fertile windows can straddle a month boundary, so the "This Cycle" panel
   // picks its window from the previous, visible and next months together.
@@ -45,6 +45,7 @@ export default async function CalendarPage({
       profiles={profiles}
       activeProfileId={profileId}
       month={month}
+      today={today}
       days={calendarDays}
       windowDays={[...(prevDays ?? []), ...(calendarDays ?? []), ...(nextDays ?? [])]}
       symptomLogs={symptomLogs}
