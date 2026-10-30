@@ -31,10 +31,6 @@ export function serverLocalDayOf(instant: Date, timeZone: string = APP_TZ): stri
   return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(instant)
 }
 
-/** True when the app processes run at UTC+0 (`TZ=UTC`, the default and prod), so server-local midnight is UTC midnight. */
-export const SERVER_TZ_IS_UTC =
-  new Intl.DateTimeFormat('en-GB', { timeZone: APP_TZ, hour: '2-digit', hourCycle: 'h23' }).format(new Date('2026-01-01T00:00:00Z')) === '00'
-
 /**
  * The `Date` the app stores for a date-only value (period start/end, symptom date,
  * `lastPeriodStart`, prediction days): UTC midnight of that calendar day, i.e. what

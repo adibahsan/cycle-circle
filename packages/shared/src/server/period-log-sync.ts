@@ -1,6 +1,7 @@
 import type { FlowIntensity, PeriodLog, Profile } from '@prisma/client'
 import { prisma } from './db'
 import { recalculatePrediction } from './prediction-calc'
+import { addDaysToDay, dayToStoredDate, storedDateToDay } from '../utils/dhaka-date'
 
 /** Format a Date as YYYY-MM-DD in local timezone (avoids UTC shift from toISOString). */
 export function toLocalDateStr(date: Date): string {
@@ -10,7 +11,11 @@ export function toLocalDateStr(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
-/** Add each day in [start, end] that falls within [monthStart, monthEnd] to periodDates. */
+/**
+ * Add each day in [start, end] that falls within [monthStart, monthEnd] to periodDates.
+ * All four bounds are stored date-only values (UTC midnight); days are walked as
+ * Bangladesh-day strings, so the result is the same in any process timezone.
+ */
 export function addPeriodDatesInRange(
   start: Date,
   end: Date,
@@ -18,16 +23,11 @@ export function addPeriodDatesInRange(
   monthEnd: Date,
   periodDates: Set<string>,
 ): void {
-  const cur = new Date(start)
-  cur.setHours(0, 0, 0, 0)
-  const endDay = new Date(end)
-  endDay.setHours(0, 0, 0, 0)
-
-  while (cur <= endDay) {
-    if (cur >= monthStart && cur <= monthEnd) {
-      periodDates.add(toLocalDateStr(cur))
-    }
-    cur.setDate(cur.getDate() + 1)
+  const from = storedDateToDay(monthStart)
+  const to = storedDateToDay(monthEnd)
+  const last = storedDateToDay(end)
+  for (let day = storedDateToDay(start); day <= last; day = addDaysToDay(day, 1)) {
+    if (day >= from && day <= to) periodDates.add(day)
   }
 }
 
@@ -45,10 +45,9 @@ export async function ensurePeriodLogFromProfile(profile: Profile, flowIntensity
   })
   if (existing) return existing
 
-  const startDate = new Date(profile.lastPeriodStart)
-  startDate.setHours(0, 0, 0, 0)
-  const endDate = new Date(startDate)
-  endDate.setDate(endDate.getDate() + Math.max(profile.periodLength, 1) - 1)
+  const startDay = storedDateToDay(profile.lastPeriodStart)
+  const startDate = dayToStoredDate(startDay)
+  const endDate = dayToStoredDate(addDaysToDay(startDay, Math.max(profile.periodLength, 1) - 1))
 
   const created = await prisma.periodLog.create({
     data: {
