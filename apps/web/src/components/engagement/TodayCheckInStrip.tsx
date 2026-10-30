@@ -33,6 +33,8 @@ interface TodayCheckInStripProps {
   goal: string | null;
   onOpenCheckIn: () => void;
   profileId: string;
+  /** The Bangladesh day, from the Server Component. */
+  today: string;
   variant?: 'card' | 'hero';
   className?: string;
 }
@@ -44,6 +46,7 @@ export function TodayCheckInStrip({
   goal,
   onOpenCheckIn,
   profileId,
+  today,
   variant = 'card',
   className,
 }: TodayCheckInStripProps) {
@@ -93,6 +96,7 @@ export function TodayCheckInStrip({
 
       {/* ── Consistency grid ── */}
       <ConsistencyGrid
+        today={today}
         last30={engagement.last30}
         onBackfill={handleBackfill}
         variant="inline"

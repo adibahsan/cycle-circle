@@ -17,9 +17,10 @@ describe('profiles page', () => {
     expect(add).toBeLessThan(end)
   })
 
-  it('last-period date bounds use the local day, not the UTC day', () => {
+  it('last-period date bounds come from the Bangladesh today the page passes in', () => {
     expect(src).not.toContain('toISOString().slice(0, 10)')
-    expect(src).toContain('deviceDayString')
+    expect(src).not.toContain('deviceDayString')
+    expect(src).toContain('lastPeriodDateBounds(today)')
   })
 })
 

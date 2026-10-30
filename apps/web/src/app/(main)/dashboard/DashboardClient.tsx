@@ -132,12 +132,6 @@ function normalizeFlow(f: string): FlowIntensity {
   return f.toLowerCase() as FlowIntensity
 }
 
-/** The Bangladesh day as a local-midnight Date, for helpers that count local calendar days. */
-function dayAtLocalMidnight(day: string): Date {
-  const [y, m, d] = day.split('-').map(Number)
-  return new Date(y, m - 1, d)
-}
-
 // ─── Dashboard Client ─────────────────────────────────────────────────────────
 
 export function DashboardClient({ profiles, user: _user, activeProfileId, profileCookieSynced, today, dashboardData, completion, lastSymptomLogDate, goal, engagement, phaseArticles = [], phasePattern }: Props) {
@@ -296,7 +290,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, profil
 
   const daysSinceLastLog = daysSinceLastLogFor(
     [lastPeriodDate, lastSymptomDate].filter((d): d is Date => d !== null),
-    dayAtLocalMidnight(today),
+    today,
   )
 
   const fertile = prediction ? fertileStatus(today, prediction.fertileStart, prediction.fertileEnd) : null
@@ -362,6 +356,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, profil
             {engagement && (
               <TodayCheckInStrip
                 profileId={activeProfileId}
+                today={today}
                 engagement={engagement}
                 goal={goal}
                 onOpenCheckIn={() => setCheckInOpen(true)}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { addDaysToDay, bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -345,10 +346,8 @@ export default function BackendChecklistClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             profileId: 'demo-profile-id',
-            // eslint-disable-next-line no-restricted-syntax -- Bangladesh-day debt, see https://github.com/adibahsan/cycle-circle/issues/115
-            startDate: new Date().toISOString().split('T')[0],
-            // eslint-disable-next-line no-restricted-syntax -- Bangladesh-day debt, see https://github.com/adibahsan/cycle-circle/issues/115
-            endDate: new Date(Date.now() + 4 * 86400000).toISOString().split('T')[0],
+            startDate: bangladeshToday(),
+            endDate: addDaysToDay(bangladeshToday(), 4),
             flowIntensity: 'medium',
           }),
         }),

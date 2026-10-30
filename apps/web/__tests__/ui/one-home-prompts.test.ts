@@ -16,13 +16,18 @@ describe('showCompletionRow', () => {
 })
 
 describe('daysSinceLastLog', () => {
-  const today = new Date(2026, 9, 8, 15, 0)
+  const today = '2026-10-08'
+  const stored = (day: string) => new Date(`${day}T00:00:00.000Z`)
   it('is null with no logs', () => {
     expect(daysSinceLastLog([], today)).toBeNull()
   })
-  it('counts whole local days from the most recent log', () => {
-    expect(daysSinceLastLog([new Date(2026, 9, 1), new Date(2026, 9, 5, 23, 0)], today)).toBe(3)
-    expect(daysSinceLastLog([new Date(2026, 9, 8, 0, 1)], today)).toBe(0)
+  it('counts whole Bangladesh days from the most recent stored log', () => {
+    expect(daysSinceLastLog([stored('2026-10-01'), stored('2026-10-05')], today)).toBe(3)
+    expect(daysSinceLastLog([stored('2026-10-08')], today)).toBe(0)
+  })
+  it('reads a stored date by its UTC day, so the answer does not depend on the process timezone', () => {
+    // 2026-10-05T00:00Z is still Oct 4 on a phone west of UTC; the stored day is Oct 5.
+    expect(daysSinceLastLog([stored('2026-10-05')], '2026-10-06')).toBe(1)
   })
 })
 

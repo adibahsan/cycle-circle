@@ -32,7 +32,7 @@ import { DAY_STYLES, TODAY_GLOW_SWATCH, dayStyleKind, type DayStyleKind } from '
 import { MonthGrid, type MonthDayAction, type MonthDayState } from '@/components/calendar/MonthGrid'
 import { cyclePhaseOn, periodStarts } from '@/lib/calendar-phase'
 import { SectionHeader } from '@/components/ui/SectionHeader'
-import { toDeviceDay } from '@/lib/local-date'
+import { storedDay } from '@/lib/day-ranges'
 import { canLogPastPeriod } from './period-backfill'
 import { appLocale } from '@/lib/language'
 import { PageContainer } from '@/components/ui/PageContainer'
@@ -310,9 +310,11 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
   const totalPages = Math.ceil(periodLogs.length / PAGE_SIZE)
   const slice = periodLogs.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
+  // Stored dates are UTC midnight; format them in UTC so a phone west of UTC shows the same day.
   const fmt = new Intl.DateTimeFormat(appLocale(language), {
     month: 'short',
     day: 'numeric',
+    timeZone: 'UTC',
   })
 
   function toDate(val: Date | string): Date {
@@ -420,7 +422,7 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
 function lastPeriodStartIso(logs: PeriodLog[], today: string): string | null {
   let best: string | null = null
   for (const l of logs) {
-    const s = format(new Date(l.startDate), 'yyyy-MM-dd')
+    const s = storedDay(l.startDate)
     if (s <= today && (!best || s > best)) best = s
   }
   return best
@@ -462,7 +464,7 @@ export function CalendarClient({ profiles, activeProfileId, month, today: todayD
   const todayStr = format(today, 'yyyy-MM-dd')
   const thirtyDaysAgoStr = format(subDays(today, 30), 'yyyy-MM-dd')
   const loggedRanges = useMemo(
-    () => periodLogs.map((l) => ({ startDate: toDeviceDay(l.startDate), endDate: toDeviceDay(l.endDate) })),
+    () => periodLogs.map((l) => ({ startDate: storedDay(l.startDate), endDate: storedDay(l.endDate) })),
     [periodLogs],
   )
 
@@ -485,7 +487,7 @@ export function CalendarClient({ profiles, activeProfileId, month, today: todayD
   // Cycle starts: logged period starts plus the first day of each period run (logged or predicted).
   // Pregnancy has no cycle predictions, so no phase tints either.
   const cycleStarts = useMemo(
-    () => (pregnancy ? [] : periodStarts(periodLogs.map((l) => toDeviceDay(l.startDate)), windowDays ?? days ?? [])),
+    () => (pregnancy ? [] : periodStarts(periodLogs.map((l) => storedDay(l.startDate)), windowDays ?? days ?? [])),
     [pregnancy, periodLogs, windowDays, days],
   )
 
@@ -511,7 +513,7 @@ export function CalendarClient({ profiles, activeProfileId, month, today: todayD
   const symptomsByDate = useMemo(() => {
     const map = new Map<string, SymptomLog[]>()
     for (const log of symptomLogs) {
-      const dateStr = format(new Date(log.date), 'yyyy-MM-dd')
+      const dateStr = storedDay(log.date)
       const existing = map.get(dateStr) ?? []
       existing.push(log)
       map.set(dateStr, existing)
@@ -728,8 +730,8 @@ export function CalendarClient({ profiles, activeProfileId, month, today: todayD
         open={editingLog !== null}
         profileId={editingLog?.profileId ?? activeProfileId}
         existingLogId={editingLog?.id}
-        initialStart={editingLog ? toDeviceDay(editingLog.startDate) : undefined}
-        initialEnd={editingLog ? toDeviceDay(editingLog.endDate) : undefined}
+        initialStart={editingLog ? storedDay(editingLog.startDate) : undefined}
+        initialEnd={editingLog ? storedDay(editingLog.endDate) : undefined}
         initialFlow={editingLog ? (editingLog.flowIntensity.toLowerCase() as FlowIntensity) : undefined}
         onClose={() => setEditingLog(null)}
         onSaved={() => {
