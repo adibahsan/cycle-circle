@@ -27,7 +27,7 @@ E2E_SLOT=2 pnpm e2e                                   # another worktree at the 
 |---|---|
 | `E2E_SLOT=<0-99>` | Offsets ports and the DB name (default 0). |
 | `E2E_SKIP_BUILD=1` | Skip `next build` (fails if there is no build yet). Rebuild after any app change. |
-| `E2E_SKIP_RESET=1` | Don't wipe the DB: apply pending migrations (`migrate deploy`), and seed only a DB that is new. Faster reruns; throwaway phones stay unique. **AI agents must use this**: Prisma refuses `migrate reset` when it detects an AI agent. |
+| `E2E_SKIP_RESET=1` | Don't wipe the DB: apply pending migrations (`migrate deploy`), and seed only a DB that is new. Faster reruns; throwaway phones stay unique. Opt-in for speed only: the default reset (drop + create the slot DB, `migrate deploy`, seed) works for AI agents too. |
 | `E2E_REUSE_SERVERS=1` | Reuse already-running fake BDApps / web / admin on the slot's ports. |
 | `E2E_SERVER_LOGS=1` | Pipe the servers' stdout into the test output. |
 | `E2E_DATABASE_URL` | Postgres server to use (db name is replaced); default from `packages/shared/.env.local`, then Compose `localhost:5431`. **Required in CI** (no `.env.local`). |
@@ -42,8 +42,7 @@ that counts "today" or a stored day with the process clock (the first CI run fai
 `Asia/Dhaka`; the test runner may stay in host TZ, since the `days` helper reads the server's clock.
 Tests must be green under UTC; runs with `E2E_APP_TZ=Asia/Dhaka` are for comparison only (see Deliberate deviations).
 
-`pnpm e2e` = `scripts/run.ts`: build web + admin (sequentially, with the E2E env) → `prisma migrate
-reset --force` on the slot DB (creates it, applies migrations, seeds; or the `E2E_SKIP_RESET` path) → check Mailpit →
+`pnpm e2e` = `scripts/run.ts`: build web + admin (sequentially, with the E2E env) → reset of the slot DB (`support/reset-db.ts`: connect to the server's `postgres` DB, `DROP DATABASE IF EXISTS … WITH (FORCE)` + `CREATE DATABASE`, then `migrate deploy` and seed; or the `E2E_SKIP_RESET` path) → check Mailpit →
 `playwright test`, whose `webServer` starts the fake BDApps and `next start` for both apps.
 Running `pnpm exec playwright test` inside `e2e/` directly also works if the build and DB are ready.
 
@@ -94,7 +93,7 @@ Workflow: [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml).
 The job starts **Postgres**, **Redis** and **Mailpit** as service containers, sets `E2E_DATABASE_URL` /
 Mailpit URLs (no `packages/shared/.env.local`), runs `pnpm install`, `pnpm db:generate`, caches
 Playwright browsers + Next.js `.next/cache`, installs Chromium, then `pnpm e2e` with a full
-`migrate reset` on `vesta_e2e` only (`assertE2eDatabase`). Worker count is **4 in CI** from
+reset of `vesta_e2e` only (`assertE2eDatabase` guards the drop). Worker count is **4 in CI** from
 `playwright.config.ts` (`workers: ci ? 4`) — do not also pass `--workers` in the workflow.
 Redis is present to match Compose; the suite still sets `REDIS_URL=''` so rate limits stay
 in-process. On non-cancelled runs it uploads the HTML report (`e2e/playwright-report/`), traces
@@ -308,7 +307,8 @@ app: `translogFor(userId, { app: 'admin' })`, or merge both with `{ apps: ['web'
 - Global setup reuses a persona's saved session while the app still accepts it (a second OTP
   within 60 s would hit the resend cooldown). Tests must not log personas out.
 - `tests/web/harness.spec.ts` is the contract for the helpers; keep it green when changing them.
-- `pnpm --filter @vesta/e2e typecheck` and `lint` must pass (root `pnpm typecheck && pnpm lint` covers it).
+- `pnpm --filter @vesta/e2e typecheck` and `lint` must pass (root `pnpm typecheck && pnpm lint` covers it); `pnpm --filter @vesta/e2e test:unit` runs the lint-rule and reset-guard unit tests. Lint enforces the mechanical rules (no `waitForTimeout`, no raw locators without a reasoned disable, `test.fail`/`test.fixme` link an issue URL).
+- Reviewing an E2E diff? Apply [`REVIEW.md`](./REVIEW.md) (the judgement checklist the linter can't cover).
 - `next build` rewrites `apps/*/next-env.d.ts`; don't commit that change (`git checkout apps/*/next-env.d.ts`).
 
 ## Deliberate deviations
@@ -327,5 +327,5 @@ app: `translogFor(userId, { app: 'admin' })`, or merge both with `{ apps: ['web'
   is about 3x slower than a dev Mac (first CI run 14.6 min vs 5.3 min locally).
 - `dashboard-popups.spec.ts` celebration toast is `test.fixme` (#157): the bug is a timing race that no server-clock
   condition predicts, so an expected-fail would pass at random.
-- `E2E_SKIP_RESET=1` is for local agent runs (Prisma refuses `migrate reset` for AI agents). CI always resets.
+- Agents may run the full reset: it does not use `prisma migrate reset` (which Prisma blocks for AI agents). `E2E_SKIP_RESET=1` is only a speed opt-in; leftover data from earlier runs can cause flakes. CI always resets.
 - `page.clock` in the #115 test fakes the browser clock only; a server clock is out of scope.
