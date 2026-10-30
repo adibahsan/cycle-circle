@@ -16,7 +16,6 @@ import {
   normalizeCyclePhase,
 } from '@vesta/shared/utils/cycle-utils'
 import type { FlowIntensity, ProfileRelation } from '@vesta/shared/types'
-import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 import { isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal'
 import { PeriodLogModal } from '@/components/PeriodLogModal'
 import { setActiveProfileCookie } from '@/app/actions/profile-actions'
@@ -234,7 +233,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, profil
 
   const cycleDay =
     dashboardData?.currentCycleDay ??
-    getCurrentCycleDay(profileForCompute.lastPeriodStart, profile.cycleLength, bangladeshToday())
+    getCurrentCycleDay(profileForCompute.lastPeriodStart, profile.cycleLength, today)
 
   const rawPhase =
     dashboardData?.currentPhase ??

@@ -366,8 +366,8 @@ test.describe('Admin analytics', () => {
       })
     }
     // Chart row labels are Bangladesh days.
-    const insideUtc = days.daysAgo(6)
-    const outsideUtc = days.daysAgo(8)
+    const insideDay = days.daysAgo(6)
+    const outsideDay = days.daysAgo(8)
 
     await withAdmin(
       browser,
@@ -390,7 +390,7 @@ test.describe('Admin analytics', () => {
             async () => {
               await refreshData(page)
               const table = await openChartTable(page, 'User Activity Trend')
-              const insideRow = table.getByRole('row', { name: new RegExp(`^${insideUtc}\\b`) })
+              const insideRow = table.getByRole('row', { name: new RegExp(`^${insideDay}\\b`) })
               if ((await insideRow.count()) === 0) return -1
               const raw = ((await insideRow.getByRole('cell').first().textContent()) ?? '').trim()
               const n = Number.parseInt(raw, 10)
@@ -401,7 +401,7 @@ test.describe('Admin analytics', () => {
           .toBeGreaterThanOrEqual(1)
 
         const trendTable = await openChartTable(page, 'User Activity Trend')
-        await expect(trendTable.getByRole('row', { name: new RegExp(`^${outsideUtc}\\b`) })).toHaveCount(0)
+        await expect(trendTable.getByRole('row', { name: new RegExp(`^${outsideDay}\\b`) })).toHaveCount(0)
 
         // Exercise PanelRange + metric picker.
         await rangeGroup.getByRole('button', { name: '30d' }).click()

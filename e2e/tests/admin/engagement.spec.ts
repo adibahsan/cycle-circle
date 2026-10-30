@@ -75,8 +75,8 @@ test.describe('Admin engagement', () => {
         },
       })
     }
-    const insideUtc = days.daysAgo(6)
-    const outsideUtc = days.daysAgo(8)
+    const insideDay = days.daysAgo(6)
+    const outsideDay = days.daysAgo(8)
 
     await withAdmin(
       browser,
@@ -92,10 +92,10 @@ test.describe('Admin engagement', () => {
             async () => {
               await refreshData(page)
               const table = await openChartTable(page, 'Daily Active Loggers')
-              if ((await table.getByRole('row', { name: new RegExp(`^${outsideUtc}\\b`) }).count()) !== 0) {
+              if ((await table.getByRole('row', { name: new RegExp(`^${outsideDay}\\b`) }).count()) !== 0) {
                 return -2
               }
-              const insideRow = table.getByRole('row', { name: new RegExp(`^${insideUtc}\\b`) })
+              const insideRow = table.getByRole('row', { name: new RegExp(`^${insideDay}\\b`) })
               if ((await insideRow.count()) === 0) return -1
               const raw = ((await insideRow.getByRole('cell').first().textContent()) ?? '').trim()
               const n = Number.parseInt(raw, 10)
@@ -106,21 +106,21 @@ test.describe('Admin engagement', () => {
           .toBeGreaterThanOrEqual(1)
 
         const loggersTable = await openChartTable(page, 'Daily Active Loggers')
-        await expect(loggersTable.getByRole('row', { name: new RegExp(`^${outsideUtc}\\b`) })).toHaveCount(0)
+        await expect(loggersTable.getByRole('row', { name: new RegExp(`^${outsideDay}\\b`) })).toHaveCount(0)
 
-        // Logging rate: same inside UTC day present and >0; outside absent (finding 6).
+        // Logging rate: same inside day present and >0; outside absent (finding 6).
         await expect
           .poll(
             async () => {
               await refreshData(page)
               const rateTable = await openChartTable(page, 'Symptom Logging Rate')
-              if ((await rateTable.getByRole('row', { name: new RegExp(`^${outsideUtc}\\b`) }).count()) !== 0) {
+              if ((await rateTable.getByRole('row', { name: new RegExp(`^${outsideDay}\\b`) }).count()) !== 0) {
                 return -2
               }
               const loggers = await openChartTable(page, 'Daily Active Loggers')
-              const loggerCount = await readTableRowNumber(loggers, insideUtc)
+              const loggerCount = await readTableRowNumber(loggers, insideDay)
               if (loggerCount < 1) return -1
-              const rateRow = rateTable.getByRole('row', { name: new RegExp(`^${insideUtc}\\b`) })
+              const rateRow = rateTable.getByRole('row', { name: new RegExp(`^${insideDay}\\b`) })
               if ((await rateRow.count()) === 0) return -1
               const raw = ((await rateRow.getByRole('cell').first().textContent()) ?? '').trim()
               const ratePct = Number.parseInt(raw, 10)
@@ -132,7 +132,7 @@ test.describe('Admin engagement', () => {
           .toBeGreaterThan(0)
 
         const rateTable = await openChartTable(page, 'Symptom Logging Rate')
-        await expect(rateTable.getByRole('row', { name: new RegExp(`^${outsideUtc}\\b`) })).toHaveCount(0)
+        await expect(rateTable.getByRole('row', { name: new RegExp(`^${outsideDay}\\b`) })).toHaveCount(0)
 
         await rangeGroup.getByRole('button', { name: '30d' }).click()
         await expect(page).toHaveURL(/range=30d/)

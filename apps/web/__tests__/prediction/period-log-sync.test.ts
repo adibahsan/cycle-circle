@@ -1,6 +1,5 @@
 import { describe, it, expect, afterAll, beforeEach } from 'vitest'
 import {
-  addPeriodDatesInRange,
   ensurePeriodLogFromProfile,
   getLatestPeriodLog,
 } from '@vesta/shared/server/period-log-sync'
@@ -16,99 +15,16 @@ import {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
 /** Create a midnight-UTC Date for a given YYYY-MM-DD string. */
 function d(dateStr: string): Date {
   return dayToStoredDate(dateStr)
 }
 
 /** Extract YYYY-MM-DD from a Date. */
+
 function ymd(date: Date): string {
   return date.toISOString().slice(0, 10)
 }
-
-// ---------------------------------------------------------------------------
-// addPeriodDatesInRange — pure function, no DB
-// ---------------------------------------------------------------------------
-
-describe('addPeriodDatesInRange', () => {
-  it('adds all dates when period is entirely within the month', () => {
-    const periodDates = new Set<string>()
-    addPeriodDatesInRange(d('2026-01-05'), d('2026-01-10'), d('2026-01-01'), d('2026-01-31'), periodDates)
-    expect(periodDates.size).toBe(6)
-    expect(periodDates).toContain('2026-01-05')
-    expect(periodDates).toContain('2026-01-10')
-  })
-
-  it('clips to month start when period starts before the month', () => {
-    const periodDates = new Set<string>()
-    // Period Dec 28 - Jan 3, month = January
-    addPeriodDatesInRange(d('2025-12-28'), d('2026-01-03'), d('2026-01-01'), d('2026-01-31'), periodDates)
-    expect(periodDates.size).toBe(3)
-    expect(periodDates).toContain('2026-01-01')
-    expect(periodDates).toContain('2026-01-02')
-    expect(periodDates).toContain('2026-01-03')
-    expect(periodDates).not.toContain('2025-12-28')
-  })
-
-  it('clips to month end when period extends past the month', () => {
-    const periodDates = new Set<string>()
-    // Period Jan 28 - Feb 2, month = January
-    addPeriodDatesInRange(d('2026-01-28'), d('2026-02-02'), d('2026-01-01'), d('2026-01-31'), periodDates)
-    expect(periodDates.size).toBe(4)
-    expect(periodDates).toContain('2026-01-28')
-    expect(periodDates).toContain('2026-01-31')
-    expect(periodDates).not.toContain('2026-02-01')
-  })
-
-  it('adds nothing when period is entirely outside the month', () => {
-    const periodDates = new Set<string>()
-    // Period Feb 5-10, month = January
-    addPeriodDatesInRange(d('2026-02-05'), d('2026-02-10'), d('2026-01-01'), d('2026-01-31'), periodDates)
-    expect(periodDates.size).toBe(0)
-  })
-
-  it('adds exactly one date for a single-day period', () => {
-    const periodDates = new Set<string>()
-    addPeriodDatesInRange(d('2026-01-15'), d('2026-01-15'), d('2026-01-01'), d('2026-01-31'), periodDates)
-    expect(periodDates.size).toBe(1)
-    expect(periodDates).toContain('2026-01-15')
-  })
-
-  it('preserves existing entries in the set', () => {
-    const periodDates = new Set<string>(['2026-01-01', '2026-01-20'])
-    addPeriodDatesInRange(d('2026-01-05'), d('2026-01-06'), d('2026-01-01'), d('2026-01-31'), periodDates)
-    expect(periodDates.size).toBe(4)
-    expect(periodDates).toContain('2026-01-01')
-    expect(periodDates).toContain('2026-01-20')
-    expect(periodDates).toContain('2026-01-05')
-    expect(periodDates).toContain('2026-01-06')
-  })
-
-  it('includes start when it equals monthStart', () => {
-    const periodDates = new Set<string>()
-    addPeriodDatesInRange(d('2026-01-01'), d('2026-01-05'), d('2026-01-01'), d('2026-01-31'), periodDates)
-    expect(periodDates.size).toBe(5)
-    expect(periodDates).toContain('2026-01-01')
-    expect(periodDates).toContain('2026-01-05')
-  })
-
-  it('includes end when it equals monthEnd', () => {
-    const periodDates = new Set<string>()
-    addPeriodDatesInRange(d('2026-01-27'), d('2026-01-31'), d('2026-01-01'), d('2026-01-31'), periodDates)
-    expect(periodDates.size).toBe(5)
-    expect(periodDates).toContain('2026-01-27')
-    expect(periodDates).toContain('2026-01-31')
-  })
-
-  it('adds all 31 dates when period spans the entire month', () => {
-    const periodDates = new Set<string>()
-    addPeriodDatesInRange(d('2026-01-01'), d('2026-01-31'), d('2026-01-01'), d('2026-01-31'), periodDates)
-    expect(periodDates.size).toBe(31)
-    expect(periodDates).toContain('2026-01-01')
-    expect(periodDates).toContain('2026-01-31')
-  })
-})
 
 // ---------------------------------------------------------------------------
 // ensurePeriodLogFromProfile — real DB tests

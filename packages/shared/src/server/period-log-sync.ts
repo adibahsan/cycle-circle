@@ -4,26 +4,6 @@ import { recalculatePrediction } from './prediction-calc'
 import { addDaysToDay, dayToStoredDate, storedDateToDay } from '../utils/dhaka-date'
 
 /**
- * Add each day in [start, end] that falls within [monthStart, monthEnd] to periodDates.
- * All four bounds are stored date-only values (UTC midnight); days are walked as
- * Bangladesh-day strings, so the result is the same in any process timezone.
- */
-export function addPeriodDatesInRange(
-  start: Date,
-  end: Date,
-  monthStart: Date,
-  monthEnd: Date,
-  periodDates: Set<string>,
-): void {
-  const from = storedDateToDay(monthStart)
-  const to = storedDateToDay(monthEnd)
-  const last = storedDateToDay(end)
-  for (let day = storedDateToDay(start); day <= last; day = addDaysToDay(day, 1)) {
-    if (day >= from && day <= to) periodDates.add(day)
-  }
-}
-
-/**
  * If the profile has lastPeriodStart but no period logs yet (e.g. from onboarding),
  * create an initial PeriodLog and recalculate the prediction synchronously so the
  * dashboard/calendar have data immediately.

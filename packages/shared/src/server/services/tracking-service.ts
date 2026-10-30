@@ -283,8 +283,8 @@ export async function getEngagementSummary(
   const todayStr = bangladeshToday(now)
 
   // Window: last 30 calendar days (today = day 29, oldest = day 0)
-  const windowStart = new Date(todayStr)
-  windowStart.setUTCDate(windowStart.getUTCDate() - 29)
+  const windowStartStr = addDaysToDay(todayStr, -29)
+  const windowStart = dayToStoredDate(windowStartStr)
 
   // Fetch symptom logs within the 30-day window and period logs overlapping it — independent reads
   const [symptomLogsInWindow, periodLogsInWindow] = await Promise.all([
@@ -298,44 +298,32 @@ export async function getEngagementSummary(
     prisma.periodLog.findMany({
       where: {
         profileId,
-        startDate: { lte: new Date(todayStr) },
+        startDate: { lte: dayToStoredDate(todayStr) },
         endDate: { gte: windowStart },
       },
       select: { startDate: true, endDate: true },
     }),
   ])
 
-  // Build set of active day strings (YYYY-MM-DD UTC)
+  // Build set of active Bangladesh-day strings (YYYY-MM-DD)
   const activeDays = new Set<string>()
 
   for (const sl of symptomLogsInWindow) {
-    const d = sl.date
-    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
-    activeDays.add(key)
+    activeDays.add(storedDateToDay(sl.date))
   }
 
   // Expand period log ranges into individual days within the window
-  const windowStartStr = windowStart.toISOString().slice(0, 10)
   for (const pl of periodLogsInWindow) {
-    const cur = new Date(pl.startDate)
-    cur.setUTCHours(0, 0, 0, 0)
-    const end = new Date(pl.endDate)
-    end.setUTCHours(0, 0, 0, 0)
-    while (cur <= end) {
-      const key = `${cur.getUTCFullYear()}-${String(cur.getUTCMonth() + 1).padStart(2, '0')}-${String(cur.getUTCDate()).padStart(2, '0')}`
-      if (key >= windowStartStr && key <= todayStr) {
-        activeDays.add(key)
-      }
-      cur.setUTCDate(cur.getUTCDate() + 1)
+    const end = storedDateToDay(pl.endDate)
+    for (let day = storedDateToDay(pl.startDate); day <= end; day = addDaysToDay(day, 1)) {
+      if (day >= windowStartStr && day <= todayStr) activeDays.add(day)
     }
   }
 
   // Build last30 array (oldest first, newest = today)
   const last30: { date: string; logged: boolean }[] = []
   for (let i = 29; i >= 0; i--) {
-    const d = new Date(todayStr)
-    d.setUTCDate(d.getUTCDate() - i)
-    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+    const key = addDaysToDay(todayStr, -i)
     last30.push({ date: key, logged: activeDays.has(key) })
   }
 
@@ -344,9 +332,7 @@ export async function getEngagementSummary(
   let streakAtRisk = false
   const todayLogged = activeDays.has(todayStr)
 
-  const yesterdayDate = new Date(todayStr)
-  yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1)
-  const yesterdayStr = `${yesterdayDate.getUTCFullYear()}-${String(yesterdayDate.getUTCMonth() + 1).padStart(2, '0')}-${String(yesterdayDate.getUTCDate()).padStart(2, '0')}`
+  const yesterdayStr = addDaysToDay(todayStr, -1)
 
   if (todayLogged) {
     // Count backward from today
@@ -373,9 +359,8 @@ export async function getEngagementSummary(
   // else streak = 0, streakAtRisk = false
 
   // loggedToday: same logic as getLoggingStatus (symptom log today OR today within a period range)
-  const today = new Date(todayStr)
-  const tomorrow = new Date(todayStr)
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
+  const today = dayToStoredDate(todayStr)
+  const tomorrow = dayToStoredDate(addDaysToDay(todayStr, 1))
 
   const [symptomToday, periodToday] = await Promise.all([
     prisma.symptomLog.findFirst({

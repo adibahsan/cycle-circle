@@ -49,9 +49,11 @@ export const getPeriodLogs = cache(async (profileId: string) => {
 
 export const getEngagementSummary = cache(async (profileId: string) => {
   const user = await requireCurrentUser()
+  const now = new Date()
   return unstable_cache(
-    () => svcGetEngagementSummary(profileId, user.id, new Date()),
-    ['engagement-summary', profileId],
+    () => svcGetEngagementSummary(profileId, user.id, now),
+    // Keyed by the Bangladesh day so loggedToday/streak are never served from before midnight.
+    ['engagement-summary', profileId, bangladeshToday(now)],
     { tags: [cacheTags.tracking(profileId)], revalidate: WEB_CACHE_TTL }
   )()
 })
