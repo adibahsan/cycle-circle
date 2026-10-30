@@ -316,7 +316,7 @@ Delta: +Z new / -W resolved."}
 1. Print the full path of the generated report.
 2. List the screenshots saved to `review/screenshots/`.
 3. Give a one-paragraph summary of the top 3 most impactful findings.
-4. Ask the user: "Would you like me to fix any of these issues now?" — if yes, apply fixes following the project's UI/Accessibility Guidelines in `CLAUDE.md`.
+4. Ask the user: "Would you like me to fix any of these issues now?" — if yes, apply fixes following the project's `CODING_STANDARDS.md`.
 
 ---
 

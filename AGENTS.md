@@ -2,7 +2,7 @@
 
 See `CLAUDE.md` for project context, monorepo layout, import conventions, development workflow, and code-review-graph MCP tool guidance.
 
-For **implement-orchestrated** from Cursor: follow `CLAUDE.md` → **`## implement-orchestrated`** and the Cursor rule `.cursor/rules/implement-orchestrated.mdc` (local; gitignored).
+For **implement-orchestrated** from Cursor: follow `docs/agents/implement-orchestrated.md` and the Cursor rule `.cursor/rules/implement-orchestrated.mdc` (local; gitignored).
 
 Key starting points for any task:
 - **Local setup**: `docs/LOCAL-DEVELOPMENT.md` — Docker + hybrid dev workflow for newcomers
