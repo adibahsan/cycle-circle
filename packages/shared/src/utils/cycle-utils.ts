@@ -1,13 +1,12 @@
-import { differenceInDays, addDays, format, startOfDay } from 'date-fns';
+import { addDaysToDay, daysBetween } from './dhaka-date';
 import type { CyclePhase, PredictionTier, UserProfile, Prediction } from '../types/types';
 
 /** Milliseconds in a calendar day (UTC; no DST). */
 export const MS_PER_DAY = 86_400_000;
 
-export function getCurrentCycleDay(lastPeriodStart: string, cycleLength: number): number {
-  const today = startOfDay(new Date());
-  const lastPeriod = startOfDay(new Date(lastPeriodStart));
-  const daysSince = differenceInDays(today, lastPeriod);
+/** `today` and `lastPeriodStart` are `YYYY-MM-DD` Bangladesh days; the caller reads the clock (ADR 0009). */
+export function getCurrentCycleDay(lastPeriodStart: string, cycleLength: number, today: string): number {
+  const daysSince = daysBetween(lastPeriodStart.slice(0, 10), today);
   return Math.min(daysSince + 1, cycleLength);
 }
 
@@ -84,21 +83,20 @@ export function normalizeCyclePhase(phase: string): CyclePhase {
 
 export function computePrediction(profile: UserProfile): Prediction {
   const predictedLength = predictCycleLength(profile.cycleHistory, profile.cycleLength);
-  const lastPeriod = new Date(profile.lastPeriodStart);
-  const nextPeriodStart = addDays(lastPeriod, predictedLength);
-  const ovulationDay = addDays(nextPeriodStart, -14);
-  const fertileStart = addDays(ovulationDay, -5);
-  const fertileEnd = addDays(ovulationDay, 1);
+  const nextPeriodStart = addDaysToDay(profile.lastPeriodStart.slice(0, 10), predictedLength);
+  const ovulationDay = addDaysToDay(nextPeriodStart, -14);
+  const fertileStart = addDaysToDay(ovulationDay, -5);
+  const fertileEnd = addDaysToDay(ovulationDay, 1);
   const tier = getPredictionTier(profile.cycleHistory.length);
   const confidence = getConfidence(tier, profile.cycleHistory.length);
 
   return {
     profileId: profile.id,
     tier,
-    nextPeriodStart: format(nextPeriodStart, 'yyyy-MM-dd'),
-    ovulationDay: format(ovulationDay, 'yyyy-MM-dd'),
-    fertileStart: format(fertileStart, 'yyyy-MM-dd'),
-    fertileEnd: format(fertileEnd, 'yyyy-MM-dd'),
+    nextPeriodStart: nextPeriodStart,
+    ovulationDay: ovulationDay,
+    fertileStart: fertileStart,
+    fertileEnd: fertileEnd,
     confidence,
   };
 }

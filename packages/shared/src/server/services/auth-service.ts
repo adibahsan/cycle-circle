@@ -11,7 +11,7 @@ export async function findMagicLink(token: string) {
   return prisma.magicLink.findUnique({ where: { token } })
 }
 
-export async function completeMagicLinkAuth(magicLinkId: string, email: string) {
+export async function completeMagicLinkAuth(magicLinkId: string, email: string, now: Date) {
   await prisma.magicLink.update({
     where: { id: magicLinkId },
     data: { used: true },
@@ -22,10 +22,10 @@ export async function completeMagicLinkAuth(magicLinkId: string, email: string) 
     create: {
       email,
       authMethod: 'EMAIL',
-      emailTrialExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      lastLoginAt: new Date(),
+      emailTrialExpiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+      lastLoginAt: now,
     },
-    update: { lastLoginAt: new Date() },
+    update: { lastLoginAt: now },
   })
 
   await prisma.magicLink.update({
@@ -66,13 +66,14 @@ export function otpCooldownRemaining(
  */
 export async function getOtpResendCooldownRemaining(
   phone: string,
+  now: Date,
   cooldownSeconds: number = OTP_RESEND_COOLDOWN_SECONDS,
 ): Promise<number> {
   const last = await prisma.otpChallenge.findFirst({
     where: { phone },
     orderBy: { createdAt: 'desc' },
   })
-  return otpCooldownRemaining(last?.createdAt ?? null, Date.now(), cooldownSeconds)
+  return otpCooldownRemaining(last?.createdAt ?? null, now.getTime(), cooldownSeconds)
 }
 
 export async function findOtpChallenge(referenceNo: string) {
@@ -85,6 +86,7 @@ export async function completeOtpAuth(
   challengeId: string,
   phone: string,
   registered: boolean,
+  now: Date,
   /** BDApps subscriberId from otp/verify (masked `tel:<id>`); defaults to the phone. */
   subscriberId: string = phone,
 ) {
@@ -98,9 +100,9 @@ export async function completeOtpAuth(
     create: {
       phone,
       authMethod: 'OTP',
-      lastLoginAt: new Date(),
+      lastLoginAt: now,
     },
-    update: { lastLoginAt: new Date() },
+    update: { lastLoginAt: now },
   })
 
   // A BDApps-verified phone login is the subscription (ADR 0002). Admin overrides win.
@@ -114,15 +116,15 @@ export async function completeOtpAuth(
   return user
 }
 
-export async function upsertUserByPhone(phone: string) {
+export async function upsertUserByPhone(phone: string, now: Date) {
   const user = await prisma.user.upsert({
     where: { phone },
     create: {
       phone,
       authMethod: 'OTP',
-      lastLoginAt: new Date(),
+      lastLoginAt: now,
     },
-    update: { lastLoginAt: new Date() },
+    update: { lastLoginAt: now },
   })
 
   // Dev login stands in for a registered BDApps subscriber (ADR 0002): create the

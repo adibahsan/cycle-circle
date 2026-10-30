@@ -36,17 +36,12 @@ export async function recalculatePrediction(profileId: string) {
   }
 
   const lastLog = logs[logs.length - 1]
-  const nextPeriodStart = new Date(lastLog.startDate)
-  nextPeriodStart.setDate(nextPeriodStart.getDate() + avgCycle)
-
-  const ovulationDay = new Date(nextPeriodStart)
-  ovulationDay.setDate(ovulationDay.getDate() - 14)
-
-  const fertileStart = new Date(ovulationDay)
-  fertileStart.setDate(fertileStart.getDate() - 5)
-
-  const fertileEnd = new Date(ovulationDay)
-  fertileEnd.setDate(fertileEnd.getDate() + 1)
+  // startDate is a stored date-only value (00:00 UTC): add days in UTC so DST never shifts the result.
+  const addDays = (d: Date, n: number) => new Date(d.getTime() + n * MS_PER_DAY)
+  const nextPeriodStart = addDays(lastLog.startDate, avgCycle)
+  const ovulationDay = addDays(nextPeriodStart, -14)
+  const fertileStart = addDays(ovulationDay, -5)
+  const fertileEnd = addDays(ovulationDay, 1)
 
   const confidence = Math.min(0.95, 0.5 + cycleLengths.length * 0.05)
 

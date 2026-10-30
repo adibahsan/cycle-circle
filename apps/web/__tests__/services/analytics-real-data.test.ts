@@ -117,7 +117,7 @@ describe('getUserRetention', () => {
     await period(a.profile.id, '2017-06-09', new Date(signup.getTime() + 8 * DAY))
     await symptom(b.profile.id, '2017-06-02', 'cramps', new Date(signup.getTime() + 2 * DAY))
 
-    const res = await getUserRetention({ from: signup, to: new Date(signup.getTime() + 6 * DAY) }, { maxWeeks: 3 })
+    const res = await getUserRetention({ from: signup, to: new Date(signup.getTime() + 6 * DAY) }, { maxWeeks: 3, now: new Date() })
     expect(res).toHaveLength(1)
     expect(res[0].cohortWeek).toBe('2017-06-01')
     expect(res[0].size).toBe(3)

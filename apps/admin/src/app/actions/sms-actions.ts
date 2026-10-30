@@ -59,7 +59,7 @@ export async function sendSmsBroadcast(id: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await sendBroadcast(id, admin.id)
+  await sendBroadcast(id, admin.id, new Date())
 
   revalidateTag(adminCacheTags.sms, { expire: 0 })
   return { success: true }

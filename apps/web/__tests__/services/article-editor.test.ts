@@ -15,7 +15,7 @@ async function make(data: Partial<Parameters<typeof createArticle>[1]> = {}) {
     bodyBn: '<p>বাংলা</p>',
     cyclePhases: ['LUTEAL'],
     ...data,
-  })
+  }, new Date())
   created.push(a.id)
   return a
 }
@@ -38,13 +38,13 @@ describe('updateArticle clearing', () => {
     const cat = await prisma.articleCategory.create({ data: { name: 'test-art-cat', slug: 'test-art-cat' } })
     try {
       const a = await make({ categoryId: cat.id })
-      const updated = await updateArticle(a.id, { titleBn: null, bodyBn: '<p></p>', categoryId: null })
+      const updated = await updateArticle(a.id, { titleBn: null, bodyBn: '<p></p>', categoryId: null }, new Date())
       expect(updated.titleBn).toBeNull()
       expect(updated.bodyBn).toBeNull()
       expect(updated.categoryId).toBeNull()
 
       const b = await make({ categoryId: cat.id })
-      const u2 = await updateArticle(b.id, { titleBn: '', bodyBn: '', categoryId: '' })
+      const u2 = await updateArticle(b.id, { titleBn: '', bodyBn: '', categoryId: '' }, new Date())
       expect(u2.titleBn).toBeNull()
       expect(u2.bodyBn).toBeNull()
       expect(u2.categoryId).toBeNull()
@@ -56,7 +56,7 @@ describe('updateArticle clearing', () => {
 
   it('leaves fields untouched when undefined', async () => {
     const a = await make()
-    const updated = await updateArticle(a.id, { titleEn: 'New title' })
+    const updated = await updateArticle(a.id, { titleEn: 'New title' }, new Date())
     expect(updated.titleBn).toBe('শিরোনাম')
     expect(updated.bodyBn).toContain('বাংলা')
   })
@@ -65,13 +65,13 @@ describe('updateArticle clearing', () => {
 describe('article status validation', () => {
   it('rejects an unknown status on update and create', async () => {
     const a = await make()
-    await expect(updateArticle(a.id, { status: 'BOGUS' })).rejects.toThrow(/status/i)
-    await expect(createArticle(ADMIN_ID, { titleEn: 'x', bodyEn: '<p>x</p>', status: 'nope' })).rejects.toThrow(/status/i)
+    await expect(updateArticle(a.id, { status: 'BOGUS' }, new Date())).rejects.toThrow(/status/i)
+    await expect(createArticle(ADMIN_ID, { titleEn: 'x', bodyEn: '<p>x</p>', status: 'nope' }, new Date())).rejects.toThrow(/status/i)
   })
 
   it('accepts valid statuses', async () => {
     const a = await make()
-    const u = await updateArticle(a.id, { status: 'PUBLISHED' })
+    const u = await updateArticle(a.id, { status: 'PUBLISHED' }, new Date())
     expect(u.status).toBe('PUBLISHED')
     expect(u.publishedAt).not.toBeNull()
   })

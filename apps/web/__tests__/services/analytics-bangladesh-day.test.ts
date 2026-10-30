@@ -126,10 +126,12 @@ describe('getDashboardStats dailyLogs counts since Bangladesh midnight', () => {
       })
     await mk(at('2016-06-09T18:30:00Z'), '2016-06-01') // Bangladesh 06-10 00:30
     await mk(at('2016-06-09T17:30:00Z'), '2016-06-02') // Bangladesh 06-09 23:30
-    // The count has no upper bound, so rows from other suites cancel out in the difference.
-    // Between "Bangladesh 06-10 09:00" and "Bangladesh 06-11 00:00" only our 00:30 log drops out.
-    const onTenth = await getDashboardStats(at('2016-06-10T03:00:00Z'))
-    const onEleventh = await getDashboardStats(at('2016-06-10T18:00:00Z'))
-    expect(onTenth.dailyLogs - onEleventh.dailyLogs).toBe(1)
+    // dailyLogs is bounded by `now` on both sides, so only our 2016 rows can fall in each window.
+    // Bangladesh 06-10 09:00: today is 06-10, only the 00:30 log counts.
+    expect((await getDashboardStats(at('2016-06-10T03:00:00Z'))).dailyLogs).toBe(1)
+    // Bangladesh 06-11 00:00: a new day has started and nothing is logged yet.
+    expect((await getDashboardStats(at('2016-06-10T18:00:00Z'))).dailyLogs).toBe(0)
+    // Bangladesh 06-09 23:45: the 23:30 log is today; the 00:30 log is later than `now`, so it is not counted.
+    expect((await getDashboardStats(at('2016-06-09T17:45:00Z'))).dailyLogs).toBe(1)
   })
 })

@@ -57,7 +57,7 @@ export async function updateUserName(input: string) {
 export async function completeOnboardingTour() {
   const jwt = await requireAuth()
   const user = await getAuthUser(jwt.sub)
-  await svcCompleteOnboardingTour(user.id)
+  await svcCompleteOnboardingTour(user.id, new Date())
   revalidateTag(cacheTags.user(user.id), { expire: 0 })
   return { success: true }
 }

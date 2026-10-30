@@ -64,7 +64,7 @@ export async function unsubscribeUserOnBdapps(userId: string, adminId?: string):
  * Grant PRO access to a user. Finds an existing subscription and updates it,
  * or creates a new one. Syncs user.subscriptionStatus to PRO.
  */
-export async function grantPro(userId: string, adminId: string) {
+export async function grantPro(userId: string, adminId: string, now: Date) {
   const before = await prisma.user.findUnique({ where: { id: userId }, select: { subscriptionStatus: true } })
   const sub = await prisma.subscription.findFirst({ where: { userId } })
 
@@ -75,7 +75,7 @@ export async function grantPro(userId: string, adminId: string) {
         status: 'PRO',
         adminOverride: true,
         adminOverrideBy: adminId,
-        adminOverrideAt: new Date(),
+        adminOverrideAt: now,
         adminOverrideUnsubFailed: false,
       },
     })
@@ -86,7 +86,7 @@ export async function grantPro(userId: string, adminId: string) {
         status: 'PRO',
         adminOverride: true,
         adminOverrideBy: adminId,
-        adminOverrideAt: new Date(),
+        adminOverrideAt: now,
       },
     })
   }
@@ -110,7 +110,7 @@ export async function grantPro(userId: string, adminId: string) {
  * Revoke PRO access from a user. Updates all active PRO subscriptions to LAPSED
  * and syncs user.subscriptionStatus.
  */
-export async function revokePro(userId: string, adminId: string) {
+export async function revokePro(userId: string, adminId: string, now: Date) {
   const before = await prisma.user.findUnique({ where: { id: userId }, select: { subscriptionStatus: true } })
   // BDApps first so a failure is known when the override is stored; our side applies either way.
   const bdapps = await unsubscribeUserOnBdapps(userId, adminId)
@@ -120,7 +120,7 @@ export async function revokePro(userId: string, adminId: string) {
       status: 'LAPSED',
       adminOverride: true,
       adminOverrideBy: adminId,
-      adminOverrideAt: new Date(),
+      adminOverrideAt: now,
       // Skipped (no usable id) is as unconfirmed as failed: only a new masked id ends the override.
       adminOverrideUnsubFailed: bdapps.status !== 'unsubscribed',
     },
@@ -150,10 +150,10 @@ export async function setSubscriptionStatus(
   userId: string,
   status: 'PRO' | 'FREE' | 'LAPSED',
   adminId: string,
+  now: Date,
 ) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { subscriptionStatus: true } })
   const previous = user?.subscriptionStatus ?? null
-  const now = new Date()
   // Taking Pro away also ends BDApps billing (ADR 0006); granting Pro leaves BDApps alone.
   const bdapps: BdappsUnsubscribeResult | null = status === 'PRO' ? null : await unsubscribeUserOnBdapps(userId, adminId)
   const adminOverrideUnsubFailed = !!bdapps && bdapps.status !== 'unsubscribed'

@@ -24,7 +24,7 @@ export async function suspendUser(userId: string, reason: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  const { bdapps } = await svcSuspendUser(userId, admin.id, reason)
+  const { bdapps } = await svcSuspendUser(userId, admin.id, reason, new Date())
 
   revalidateUserTags(userId)
   await revalidateWebTags([`user:${userId}`])
@@ -46,7 +46,7 @@ export async function softDeleteUser(userId: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  const { bdapps } = await svcSoftDeleteUser(userId, admin.id)
+  const { bdapps } = await svcSoftDeleteUser(userId, admin.id, new Date())
 
   revalidateUserTags(userId)
   await revalidateWebTags([`user:${userId}`])
@@ -57,7 +57,7 @@ export async function restoreUser(userId: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await svcRestoreUser(userId, admin.id)
+  await svcRestoreUser(userId, admin.id, new Date())
 
   revalidateUserTags(userId)
   await revalidateWebTags([`user:${userId}`])
@@ -68,7 +68,7 @@ export async function grantProAccess(userId: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await grantPro(userId, admin.id)
+  await grantPro(userId, admin.id, new Date())
 
   revalidateUserTags(userId)
   revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
@@ -80,7 +80,7 @@ export async function revokeProAccess(userId: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  const { bdapps } = await revokePro(userId, admin.id)
+  const { bdapps } = await revokePro(userId, admin.id, new Date())
 
   revalidateUserTags(userId)
   revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
@@ -92,7 +92,7 @@ export async function setUserSubscriptionStatus(userId: string, status: 'PRO' | 
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  const { bdapps } = await setSubscriptionStatus(userId, status, admin.id)
+  const { bdapps } = await setSubscriptionStatus(userId, status, admin.id, new Date())
 
   revalidateUserTags(userId)
   revalidateTag(adminCacheTags.subscriptions, { expire: 0 })

@@ -73,7 +73,7 @@ export async function runDailyReminders(
       if (prefs.periodAlert && prediction) {
         const daysUntil = daysBetween(today, storedDateToDay(prediction.nextPeriodStart))
         if (daysUntil >= 0 && daysUntil <= 2) {
-          if (!force && (await wasEmailSentToday('PERIOD_ALERT', profile.id))) {
+          if (!force && (await wasEmailSentToday('PERIOD_ALERT', profile.id, now))) {
             skipped++
           } else {
             await sendPeriodAlert({
@@ -98,7 +98,7 @@ export async function runDailyReminders(
       if (prefs.fertileWindow && prediction) {
         const fertileStartDiff = daysBetween(today, storedDateToDay(prediction.fertileStart))
         if (fertileStartDiff === 0) {
-          if (!force && (await wasEmailSentToday('FERTILE_ALERT', profile.id))) {
+          if (!force && (await wasEmailSentToday('FERTILE_ALERT', profile.id, now))) {
             skipped++
           } else {
             await sendFertileAlert({
@@ -129,7 +129,7 @@ export async function runDailyReminders(
           ? daysBetween(storedDateToDay(lastLog.startDate), today)
           : 999
         if (daysSince >= 3) {
-          if (!force && (await wasEmailSentToday('LOGGING_REMINDER', profile.id))) {
+          if (!force && (await wasEmailSentToday('LOGGING_REMINDER', profile.id, now))) {
             skipped++
           } else {
             await sendLoggingReminder({
@@ -184,7 +184,7 @@ export async function runDailyReminders(
     try {
       if (
         !force &&
-        (await wasEmailSentTodayForUser('PROFILE_COMPLETION_REMINDER', user.id))
+        (await wasEmailSentTodayForUser('PROFILE_COMPLETION_REMINDER', user.id, now))
       ) {
         skipped++
         continue

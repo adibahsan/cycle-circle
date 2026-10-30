@@ -44,7 +44,7 @@ export function appOtpSmsText(code: string, lang: Language): string {
  * Start a phone login: a BDApps OTP for a new number, or an App OTP when BDApps says the
  * number is already subscribed (E1351). Creates the OTP challenge either way.
  */
-export async function requestLoginOtp(phone: string, lang: Language): Promise<LoginOtpRequest> {
+export async function requestLoginOtp(phone: string, lang: Language, now: Date): Promise<LoginOtpRequest> {
   let referenceNo: string
   if (isDevModeEnabled()) {
     referenceNo = `dev-${randomUUID()}`
@@ -52,16 +52,16 @@ export async function requestLoginOtp(phone: string, lang: Language): Promise<Lo
     try {
       referenceNo = (await requestOtp(phone)).referenceNo
     } catch (error) {
-      if (error instanceof ApiError && error.code === 'ALREADY_SUBSCRIBED') return startAppOtpLogin(phone, lang)
+      if (error instanceof ApiError && error.code === 'ALREADY_SUBSCRIBED') return startAppOtpLogin(phone, lang, now)
       throw error
     }
   }
-  await createOtpChallenge(phone, referenceNo, new Date(Date.now() + OTP_TTL_MS))
+  await createOtpChallenge(phone, referenceNo, new Date(now.getTime() + OTP_TTL_MS))
   return { kind: 'bdapps', referenceNo }
 }
 
 /** On E1351 at login: SMS an App OTP to the user's stored masked subscriber id, if it is live. */
-export async function startAppOtpLogin(phone: string, lang: Language): Promise<AppOtpStart> {
+export async function startAppOtpLogin(phone: string, lang: Language, now: Date): Promise<AppOtpStart> {
   const user = await prisma.user.findUnique({ where: { phone }, select: { id: true, email: true } })
   const hasEmail = Boolean(user?.email)
   if (!user) return { kind: 'fallback', hasEmail, reason: 'no-account' }
@@ -72,7 +72,7 @@ export async function startAppOtpLogin(phone: string, lang: Language): Promise<A
   if (!isSubscribed(await getSubscriptionStatus(subscriberId))) return { kind: 'fallback', hasEmail, reason: 'unregistered' }
 
   const sentToday = await prisma.otpChallenge.count({
-    where: { phone, codeHash: { not: null }, createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+    where: { phone, codeHash: { not: null }, createdAt: { gt: new Date(now.getTime() - 24 * 60 * 60 * 1000) } },
   })
   if (sentToday >= APP_OTP_DAILY_CAP) {
     throw new ApiError(429, 'Too many codes sent to this number today. Try again tomorrow.', 'RATE_LIMITED')
@@ -85,7 +85,7 @@ export async function startAppOtpLogin(phone: string, lang: Language): Promise<A
     data: {
       phone,
       referenceNo,
-      expiresAt: new Date(Date.now() + OTP_TTL_MS),
+      expiresAt: new Date(now.getTime() + OTP_TTL_MS),
       codeHash: hashCode(referenceNo, code),
       userId: user.id,
     },
@@ -104,13 +104,13 @@ export async function startAppOtpLogin(phone: string, lang: Language): Promise<A
  * Check an App OTP and log the user in. Plan and subscription are untouched: the user
  * is already a subscriber (ADR 0002). Throws the same error codes as the BDApps OTP path.
  */
-export async function verifyAppOtp(referenceNo: string, code: string) {
+export async function verifyAppOtp(referenceNo: string, code: string, now: Date) {
   const challenge = await prisma.otpChallenge.findFirst({ where: { referenceNo } })
   if (!challenge?.codeHash || !challenge.userId) {
     throw new ApiError(404, 'OTP challenge not found', 'CHALLENGE_NOT_FOUND')
   }
   if (challenge.verified) throw new ApiError(400, 'OTP challenge already verified', 'ALREADY_VERIFIED')
-  if (new Date() > challenge.expiresAt) throw new ApiError(400, 'OTP challenge has expired', 'CHALLENGE_EXPIRED')
+  if (now > challenge.expiresAt) throw new ApiError(400, 'OTP challenge has expired', 'CHALLENGE_EXPIRED')
   if (challenge.attempts >= APP_OTP_MAX_ATTEMPTS) {
     throw new ApiError(429, 'Too many wrong codes. Request a new code.', 'OTP_LOCKED')
   }
@@ -127,7 +127,7 @@ export async function verifyAppOtp(referenceNo: string, code: string) {
   })
   if (count === 0) throw new ApiError(400, 'OTP challenge already verified', 'ALREADY_VERIFIED')
 
-  return prisma.user.update({ where: { id: challenge.userId }, data: { lastLoginAt: new Date() } })
+  return prisma.user.update({ where: { id: challenge.userId }, data: { lastLoginAt: now } })
 }
 
 /** Constant-time check of an App OTP code against its stored hash. */

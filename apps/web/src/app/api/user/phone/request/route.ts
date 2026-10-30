@@ -38,7 +38,7 @@ export const POST = withAuth(async (request, { user }) => {
 
     // SRS FR-AUTH: OTP resend only after a 60s cooldown. Checked before the
     // abuse limiter so a blocked resend doesn't consume the per-minute budget.
-    const cooldown = await getOtpResendCooldownRemaining(normalized)
+    const cooldown = await getOtpResendCooldownRemaining(normalized, new Date())
     if (cooldown > 0) {
       throw new ApiError(
         429,

@@ -39,7 +39,7 @@ export async function POST(request: Request): Promise<Response> {
     const body = await parseBody(request, bodySchema)
     const normalizedPhone = validateMsisdn(body.phone)
 
-    const user = await upsertUserByPhone(normalizedPhone)
+    const user = await upsertUserByPhone(normalizedPhone, new Date())
     setRequestUser(user.id)
 
     const token = await issueJwt({

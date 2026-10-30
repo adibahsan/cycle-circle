@@ -15,7 +15,7 @@ export const maxDuration = 60
  */
 const handler = withCronAuth(async () => {
   try {
-    return Response.json(await runNightlyMaintenance())
+    return Response.json(await runNightlyMaintenance(new Date()))
   } catch (error) {
     return handleApiError(error)
   }

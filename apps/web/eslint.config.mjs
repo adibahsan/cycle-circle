@@ -1,11 +1,12 @@
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
-import { bangladeshDayConfig } from "@vesta/shared/eslint/bangladesh-day";
+import { bangladeshDayConfig, dateFnsLocalDayConfig } from "@vesta/shared/eslint/bangladesh-day";
 
 const eslintConfig = [
   ...nextCoreWebVitals,
   ...nextTypescript,
   bangladeshDayConfig, // no server/device-clock days; see #115
+  dateFnsLocalDayConfig(["src/app/api/**/*.{ts,tsx}", "src/app/actions/**/*.{ts,tsx}", "src/lib/server/**/*.{ts,tsx}"]), // server code: no local-time day functions
   {
     rules: {
       // Next 16 ESLint defaults are stricter than legacy `next lint`; keep warnings until cleaned up.
