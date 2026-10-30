@@ -13,7 +13,7 @@ The product's former name, kept only as the internal code name in identifiers; n
 _Avoid_: using it in any user-facing text
 
 **Bangladesh day**:
-A calendar day in Bangladesh time (UTC+6, no daylight saving): the day that "today", "35 days ago" and every date the product shows or stores is counted in.
+A calendar day in Bangladesh time (UTC+6, no daylight saving): the day that "today", "35 days ago" and every date the product shows or stores is counted in. An event (a signup, a sent SMS, a check-in) belongs to the Bangladesh day its moment falls on, so every per-day count groups by Bangladesh day.
 _Avoid_: local day, server day, UTC day
 
 ### Prompts and engagement
