@@ -143,8 +143,9 @@ test.describe('Admin users', () => {
       await page.getByRole('button', { name: 'Refresh data' }).click()
       await expect(page.getByText(suspendedMarker)).toBeVisible({ timeout: 15_000 })
       await expect(page.getByText(activeMarker)).toHaveCount(0)
+      // The table row is a clickable role=button whose name holds every cell.
       await expect(
-        page.getByRole('row').filter({ has: page.getByText(suspendedMarker) }).getByText('Suspended'),
+        page.getByRole('button').filter({ has: page.getByText(suspendedMarker) }).getByText('Suspended'),
       ).toBeVisible()
     } finally {
       await admin.context.close()
