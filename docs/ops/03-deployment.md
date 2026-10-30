@@ -554,13 +554,25 @@ Since 2026-10-18 `deploy.sh` refuses dev mode and placeholder BDApps creds (§5)
    ```bash
    docker compose -f ops/deploy/compose.prod.yml up -d web
    ```
-5. Send a test event from the Resend dashboard and confirm a `200` response; without `RESEND_WEBHOOK_SECRET` set, the route falls back to a "headers present" sanity check and accepts unsigned requests — do not run production traffic in that state.
+
+Without `RESEND_WEBHOOK_SECRET` set, the route falls back to a "headers present" sanity check and accepts unsigned requests — do not run production traffic in that state.
+
+### Verify
+
+Resend API keys are either full access or sending-only, so an agent cannot read the webhook config with the prod (sending-only) key. Verify through traffic instead:
+
+1. Human: press "Send test event" on the webhook in the Resend dashboard.
+2. Agent: confirm a `200` in the nginx log:
+   ```bash
+   ssh vesta 'docker logs --since 10m vesta-nginx-1 2>&1 | grep /api/webhooks/resend'
+   ```
+3. Secret rotation: [SECURITY-ROTATION.md](../SECURITY-ROTATION.md) §5. After changing the secret, restart with `docker compose -f ops/deploy/compose.prod.yml up -d web` from `/opt/vesta`.
 
 ---
 
 ## Supabase / RLS finding
 
-`CLAUDE.md` and `STAGING-DEPLOY-PLAN.md` both describe the original target as Supabase Postgres with RLS. A grep of every migration under `packages/shared/prisma/migrations/` (`0_init`, `20260616210000_v1_3_consolidated`, `20260629120000_v1_4_consolidated`) for `auth.`, `anon`, `authenticated`, `service_role`, `ENABLE ROW LEVEL SECURITY`, `GRANT`, `REVOKE` returned **no matches**. RLS policies were never actually built into the schema — isolation is app-layer only (JWT → Prisma `userId` scoping in `middleware.ts`), matching `STAGING-DEPLOY-PLAN.md`'s own "Postgres RLS / pgcrypto — not built" note. Practical result: the existing migrations are plain-Postgres-compatible as-is — `ops/docker/postgres/init.sql` (`CREATE EXTENSION IF NOT EXISTS pgcrypto;`) is all the self-hosted container needs beyond creating the `vesta` role/database (handled by `POSTGRES_USER`/`POSTGRES_DB` env vars on the official Postgres image). No migration edits are required to run on self-hosted Postgres instead of Supabase.
+`STAGING-DEPLOY-PLAN.md` describes the original target as Supabase Postgres with RLS. A grep of every migration under `packages/shared/prisma/migrations/` (`0_init`, `20260616210000_v1_3_consolidated`, `20260629120000_v1_4_consolidated`) for `auth.`, `anon`, `authenticated`, `service_role`, `ENABLE ROW LEVEL SECURITY`, `GRANT`, `REVOKE` returned **no matches**. RLS policies were never actually built into the schema — isolation is app-layer only (JWT → Prisma `userId` scoping in `middleware.ts`), matching `STAGING-DEPLOY-PLAN.md`'s own "Postgres RLS / pgcrypto — not built" note. Practical result: the existing migrations are plain-Postgres-compatible as-is — `ops/docker/postgres/init.sql` (`CREATE EXTENSION IF NOT EXISTS pgcrypto;`) is all the self-hosted container needs beyond creating the `vesta` role/database (handled by `POSTGRES_USER`/`POSTGRES_DB` env vars on the official Postgres image). No migration edits are required to run on self-hosted Postgres instead of Supabase.
 
 ---
 

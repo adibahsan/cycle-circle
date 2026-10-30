@@ -223,6 +223,7 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
+      // eslint-disable-next-line no-restricted-syntax -- not a day computation: download filename stamp
       a.download = `feedback-${new Date().toISOString().split('T')[0]}.csv`
       a.click()
       URL.revokeObjectURL(url)

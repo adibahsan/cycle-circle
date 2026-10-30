@@ -15,6 +15,7 @@ import { SaveErrorStatus } from '@/components/symptoms/SaveErrorStatus';
 import { saveSymptoms, markAllGoodToday } from '@/app/actions/tracking-actions';
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal';
 import { useToast } from '@/components/ui/Toast';
+// eslint-disable-next-line no-restricted-imports -- Bangladesh-day debt, see https://github.com/adibahsan/cycle-circle/issues/115
 import { deviceDayString } from '@/lib/local-date';
 import type { PopupLayer } from '@vesta/shared/utils/popup-core';
 import '@vesta/shared/utils/i18n';

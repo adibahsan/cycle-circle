@@ -79,9 +79,38 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 
 ## Test Coverage
 
-- **Web app**: 22/22 Vitest tests passing across 5 test files located at `apps/web/__tests__/actions/`. Tests updated to reflect the shared services layer (mocks target service modules, not direct Prisma calls). Covers all Server Actions with deterministic mocks (Prisma, Redis, BDApps). Run with `just test` or `pnpm --filter @vesta/web backend:test`.
-- **Admin app**: TypeScript typecheck passes (`just typecheck-all`). No automated test suite yet — manual QA only.
-- **Manual QA**: See [`TESTING.md`](TESTING.md) for environment setup, test accounts, and per-FR scenarios.
+### Unit / integration (Vitest)
+
+- **Web app**: Vitest under `apps/web/__tests__/` (actions, UI contracts, latin-scan). Mocks target shared services, not Prisma. Run: `pnpm --filter @vesta/web backend:test` (or `just test`).
+- **Shared / admin**: covered by package and admin Vitest where present; typecheck via `pnpm typecheck`.
+- **Manual QA**: [`TESTING.md`](TESTING.md) — environment, seeded accounts, per-FR scenarios.
+
+### E2E suite (`@vesta/e2e`, spec #114)
+
+Production builds of web + admin, fake BDApps, Mailpit, and a per-slot `vesta_e2e` database. Coverage map: [`e2e/COVERAGE.md`](e2e/COVERAGE.md) (enforced by `pnpm --dir e2e coverage:check` — no `none` / `look-only` rows). Harness docs: [`e2e/README.md`](e2e/README.md).
+
+**Run** (Compose Postgres :5431 + Mailpit required):
+
+```bash
+pnpm e2e                                                    # build, reset DB, all projects
+E2E_SLOT=18 E2E_SKIP_RESET=1 E2E_SKIP_BUILD=1 pnpm e2e -- --workers=2
+E2E_SUITE=desktop pnpm e2e                                  # PR job: no *-phone, no web-bengali
+E2E_SUITE=full pnpm e2e                                     # nightly / e2e-full: phones + Bengali + cron
+```
+
+| Project | What |
+|---|---|
+| `web-desktop` / `web-phone` | `e2e/tests/web/` |
+| `admin-desktop` / `admin-phone` | `e2e/tests/admin/` |
+| `cross-app-desktop` / `cross-app-phone` | `e2e/tests/cross-app/` |
+| `web-bengali` | `e2e/tests/bengali/` — BN cookie, English leftover scan (`E2E_SUITE=full` only) |
+| `cron` | Serial cron/webhook/health specs after parallel projects |
+
+**Slots:** `E2E_SLOT=n` offsets ports and DB name so multiple worktrees can run together. AI agents use `E2E_SKIP_RESET=1` (Prisma blocks destructive reset). First run in a slot builds; later runs use `E2E_SKIP_BUILD=1`. Prefer `--workers=2` on shared Postgres.
+
+**CI:** PR → `main` runs `E2E_SUITE=desktop`. Nightly / `workflow_dispatch` / PR label `e2e-full` runs `E2E_SUITE=full`. Expected failures use `test.fail()` linked to an open issue (no app code changes in E2E tickets).
+
+The older look-only suite in `apps/web/e2e/` (dev server, dev-login) remains: `pnpm --filter @vesta/web e2e`.
 
 ### Web App Route Inventory (rev 3)
 
