@@ -3,6 +3,7 @@ import { prisma } from '../db'
 import { applyBdappsSubscription, unsubscribeUserOnBdapps } from './subscription-service'
 import { ApiError } from '../api-error'
 import { bumpSessionsValidAfter } from '../auth'
+import { fillDaySeries, resolveDaySeriesRange, type DaySeriesOpts } from '../../utils/day-series'
 import { RESTORE_WINDOW_DAYS, isWithinRestoreWindow } from '../../utils/restore-window'
 
 /**
@@ -438,57 +439,34 @@ export async function setProfileReminderOptOut(
 // Chart-data aggregations for admin Users section
 // ---------------------------------------------------------------------------
 
-export interface ChartDateRangeOpts {
-  days?: number
-  dateFrom?: Date
-  dateTo?: Date
-}
+export type ChartDateRangeOpts = DaySeriesOpts
 
 /**
  * Daily new-user signups over the given date range (default: last 30 days).
  * Gap-fills days with zero so the chart always has a continuous x-axis.
  */
 export async function getUserSignupTrend(
-  opts: ChartDateRangeOpts = {},
+  opts: ChartDateRangeOpts,
 ): Promise<{ date: string; count: number }[]> {
-  const { dateTo = new Date(), dateFrom, days = 30 } = opts
-  const resolvedFrom =
-    dateFrom ?? new Date(new Date(dateTo).setDate(dateTo.getDate() - days + 1))
+  const { from, to, fromDay, toDay } = resolveDaySeriesRange(opts)
 
-  // Truncate time component so grouping is day-level only
-  const from = new Date(
-    Date.UTC(resolvedFrom.getFullYear(), resolvedFrom.getMonth(), resolvedFrom.getDate()),
-  )
-  const to = new Date(
-    Date.UTC(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999),
-  )
-
+  // Bucket by Bangladesh day (UTC+6), not UTC day. "createdAt" is a UTC timestamp without zone, so tag it UTC first.
   const rows = await prisma.$queryRaw<{ date: string; count: bigint }[]>`
     SELECT
-      TO_CHAR(DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS date,
+      TO_CHAR(DATE_TRUNC('day', ("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Dhaka'), 'YYYY-MM-DD') AS date,
       COUNT(*)::bigint AS count
     FROM "User"
     WHERE "createdAt" >= ${from} AND "createdAt" <= ${to}
-    GROUP BY DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC')
-    ORDER BY DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC') ASC
+    GROUP BY DATE_TRUNC('day', ("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Dhaka')
+    ORDER BY DATE_TRUNC('day', ("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Dhaka') ASC
   `
 
-  // Build a lookup from the raw results
   const lookup = new Map<string, number>()
   for (const row of rows) {
     lookup.set(row.date, Number(row.count))
   }
 
-  // Gap-fill: walk day by day from `from` to `to`
-  const result: { date: string; count: number }[] = []
-  const cursor = new Date(from)
-  while (cursor <= to) {
-    const key = cursor.toISOString().slice(0, 10)
-    result.push({ date: key, count: lookup.get(key) ?? 0 })
-    cursor.setUTCDate(cursor.getUTCDate() + 1)
-  }
-
-  return result
+  return fillDaySeries(fromDay, toDay, lookup)
 }
 
 /**

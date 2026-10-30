@@ -36,7 +36,7 @@ export const getSmsBroadcasts = cache(async (params: SmsBroadcastListParams = {}
 export const getSmsSendHistory = cache(async (days: number) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetSmsSendHistory({ days }),
+    () => svcGetSmsSendHistory({ days, now: new Date() }),
     ['admin-sms-send-history', String(days)],
     { tags: [adminCacheTags.sms], revalidate: ADMIN_CACHE_TTL }
   )()
