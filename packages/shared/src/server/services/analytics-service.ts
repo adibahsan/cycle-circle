@@ -1,30 +1,24 @@
 import { prisma } from '../db'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
 import { predictCycleLength, getPredictionTier, getCurrentPhase, MS_PER_DAY } from '../../utils/cycle-utils'
+import { fillDaySeries, resolveDaySeriesRange } from '../../utils/day-series'
 import {
   addDaysToDay,
   bangladeshDayOf,
   bangladeshToday,
   dayToStoredDate,
-  daysBetween,
   parseDhakaDay,
   storedDateToDay,
 } from '../../utils/dhaka-date'
 
 type SeriesOpts = number | { days?: number; dateFrom?: Date; dateTo?: Date }
 
-/**
- * The first and last Bangladesh day a per-day series covers. `days` counts back from the
- * Bangladesh day of `now`; an explicit `dateFrom`/`dateTo` (Asia/Dhaka day bounds) wins.
- * Stepping is on day strings, so the first bucket is the first requested day.
- */
-function seriesDays(opts: SeriesOpts, now: Date): { startDay: string; endDay: string; list: string[] } {
-  const { days = 30, dateFrom, dateTo } = typeof opts === 'number' ? { days: opts } : opts
-  const endDay = dateTo ? bangladeshDayOf(dateTo) : bangladeshToday(now)
-  const startDay = dateFrom ? bangladeshDayOf(dateFrom) : addDaysToDay(endDay, -days)
-  const list: string[] = []
-  for (let i = 0, n = daysBetween(startDay, endDay); i <= n; i++) list.push(addDaysToDay(startDay, i))
-  return { startDay, endDay, list }
+/** The Bangladesh days a per-day series covers; `days` counts the last N days ending today, inclusive. */
+function seriesDays(opts: SeriesOpts, now: Date) {
+  const o = typeof opts === 'number' ? { days: opts } : opts
+  const { fromDay, toDay, from, to } = resolveDaySeriesRange({ ...o, now })
+  const list = fillDaySeries(fromDay, toDay, new Map()).map((r) => r.date)
+  return { startDay: fromDay, endDay: toDay, from, to, list }
 }
 
 /**
@@ -92,11 +86,11 @@ export async function getUserTrend(
   opts: SeriesOpts,
   now: Date,
 ): Promise<{ date: string; count: number }[]> {
-  const { startDay, endDay, list } = seriesDays(opts, now)
+  const { from, to, list } = seriesDays(opts, now)
 
   const users = await prisma.user.findMany({
     where: {
-      createdAt: { gte: parseDhakaDay(startDay), lte: parseDhakaDay(endDay, true) },
+      createdAt: { gte: from, lte: to },
       deletedAt: null,
     },
     select: { createdAt: true },

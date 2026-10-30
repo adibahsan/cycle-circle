@@ -53,15 +53,15 @@ describe('getUserTrend buckets signups by Bangladesh day', () => {
     expect(byDate['2016-03-09']).toBe(0)
   })
 
-  it('has no empty leading bucket: days=5 at 2016-03-12 starts on 2016-03-07', async () => {
+  it('has no empty leading bucket: days=5 at 2016-03-12 starts on 2016-03-08', async () => {
     const series = await getUserTrend({ days: 5 }, at('2016-03-12T10:00:00Z'))
     expect(series.map((r) => r.date)).toEqual([
-      '2016-03-07', '2016-03-08', '2016-03-09', '2016-03-10', '2016-03-11', '2016-03-12',
+      '2016-03-08', '2016-03-09', '2016-03-10', '2016-03-11', '2016-03-12',
     ])
   })
 
   it('ends on the Bangladesh today at 18:30Z (00:30 Bangladesh next day)', async () => {
-    const series = await getUserTrend(2, at('2016-03-12T18:30:00Z'))
+    const series = await getUserTrend(3, at('2016-03-12T18:30:00Z'))
     expect(series.map((r) => r.date)).toEqual(['2016-03-11', '2016-03-12', '2016-03-13'])
   })
 
@@ -81,10 +81,10 @@ describe('getDailyActiveLoggers and getSymptomLoggingRate', () => {
     await symptom(profile.id, '2016-04-10')
     await symptom(profile.id, '2016-04-11')
     const now = at('2016-04-11T23:59:00Z') // 23:59Z = Bangladesh 2016-04-12 05:59
-    const series = await getDailyActiveLoggers({ days: 2 }, now)
+    const series = await getDailyActiveLoggers({ days: 3 }, now)
     expect(series.map((r) => r.date)).toEqual(['2016-04-10', '2016-04-11', '2016-04-12'])
     expect(series.map((r) => r.count)).toEqual([1, 1, 0])
-    const rate = await getSymptomLoggingRate({ days: 2 }, now)
+    const rate = await getSymptomLoggingRate({ days: 3 }, now)
     expect(rate.map((r) => r.date)).toEqual(['2016-04-10', '2016-04-11', '2016-04-12'])
     expect(rate[2].rate).toBe(0)
     expect(rate[0].rate).toBeGreaterThan(0)
