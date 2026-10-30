@@ -13,8 +13,7 @@ import { saveSymptoms } from '@/app/actions/tracking-actions';
 import { SymptomChip } from '@/components/symptoms/SymptomChip';
 import { SymptomCategoryTabs, CATEGORIES } from '@/components/symptoms/SymptomCategoryTabs';
 import { SaveErrorStatus } from '@/components/symptoms/SaveErrorStatus';
-// eslint-disable-next-line no-restricted-imports -- Bangladesh-day debt, see https://github.com/adibahsan/cycle-circle/issues/115
-import { deviceDayString } from '@/lib/local-date';
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date';
 import { goalAccentVar } from '@vesta/shared/utils/goal';
 import type { SymptomCategory } from '@vesta/shared/types';
 import '@vesta/shared/utils/i18n';
@@ -77,9 +76,8 @@ export function QuickSymptomModal({
 
   const accentVar = goalAccentVar(goal);
 
-  // Date to log against — defaults to today in YYYY-MM-DD format.
+  // Date to log against — defaults to the Bangladesh day at the moment of saving.
   // When `initialDate` is provided (backfill from ConsistencyGrid), we log against that date.
-  const logDate = initialDate ?? deviceDayString();
 
   const handleToggle = useCallback((id: string) => {
     setSaveFailed(false);
@@ -107,7 +105,7 @@ export function QuickSymptomModal({
       });
       const removedPayload = removed.filter((id) => SYMPTOMS_DATA.some((s) => s.id === id));
       if (addedPayload.length || removedPayload.length) {
-        await saveSymptoms({ profileId, date: logDate, added: addedPayload, removed: removedPayload });
+        await saveSymptoms({ profileId, date: initialDate ?? bangladeshToday(), added: addedPayload, removed: removedPayload });
       }
       router.refresh();
       if (typeof window !== 'undefined') {

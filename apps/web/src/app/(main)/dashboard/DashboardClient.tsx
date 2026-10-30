@@ -31,8 +31,6 @@ import { ProgressToUnlockMeter } from '@/components/engagement/ProgressToUnlockM
 import dynamic from 'next/dynamic'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
-// eslint-disable-next-line no-restricted-imports -- Bangladesh-day debt, see https://github.com/adibahsan/cycle-circle/issues/115
-import { deviceDayString } from '@/lib/local-date'
 import { CycleHero, FirstPeriodHero, MenopauseHero, PregnancyHero } from './CycleHero'
 import { CycleDates, type LastPeriodFacts } from './CycleDates'
 import { CycleJourney } from './CycleJourney'
@@ -113,6 +111,8 @@ interface Props {
   activeProfileId: string
   /** True when the active-profile cookie already matches; skips the cookie server action (which re-renders the route). */
   profileCookieSynced: boolean
+  /** The Bangladesh day (YYYY-MM-DD), computed once by the Server Component so server and client render the same day. */
+  today: string
   dashboardData: DashboardData | null
   completion: ProfileCompletionStatus
   lastSymptomLogDate: Date | string | null
@@ -132,9 +132,15 @@ function normalizeFlow(f: string): FlowIntensity {
   return f.toLowerCase() as FlowIntensity
 }
 
+/** The Bangladesh day as a local-midnight Date, for helpers that count local calendar days. */
+function dayAtLocalMidnight(day: string): Date {
+  const [y, m, d] = day.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
 // ─── Dashboard Client ─────────────────────────────────────────────────────────
 
-export function DashboardClient({ profiles, user: _user, activeProfileId, profileCookieSynced, dashboardData, completion, lastSymptomLogDate, goal, engagement, phaseArticles = [], phasePattern }: Props) {
+export function DashboardClient({ profiles, user: _user, activeProfileId, profileCookieSynced, today, dashboardData, completion, lastSymptomLogDate, goal, engagement, phaseArticles = [], phasePattern }: Props) {
   const { t } = useTranslation()
   const router = useRouter()
   const setActiveProfile = useAppStore((s) => s.setActiveProfile)
@@ -290,9 +296,10 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, profil
 
   const daysSinceLastLog = daysSinceLastLogFor(
     [lastPeriodDate, lastSymptomDate].filter((d): d is Date => d !== null),
+    dayAtLocalMidnight(today),
   )
 
-  const fertile = prediction ? fertileStatus(deviceDayString(), prediction.fertileStart, prediction.fertileEnd) : null
+  const fertile = prediction ? fertileStatus(today, prediction.fertileStart, prediction.fertileEnd) : null
   const heroState = dashboardHeroState(dashboardData?.mode ?? 'standard', !!lastPeriodDisplay, pregnancy)
   const blocks = dashboardBlocks(heroState)
   const position: CyclePosition = { cycleLength: profile.cycleLength, periodLength: profile.periodLength, cycleDay, phase }
@@ -321,7 +328,7 @@ export function DashboardClient({ profiles, user: _user, activeProfileId, profil
               <MenopauseHero
                 name={profile.name}
                 language={language}
-                today={deviceDayString()}
+                today={today}
                 lastPeriodStart={lastPeriodDisplay?.startDate ?? null}
               />
             ) : heroState === 'no-period' ? (
