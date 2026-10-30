@@ -170,18 +170,12 @@ The VPS rollout spec (#5) and its sub-issues mix **human** steps (SSH, DNS, merg
 
 ## MCP Tools: code-review-graph
 
-**IMPORTANT: This project has a knowledge graph. ALWAYS use the
-code-review-graph MCP tools BEFORE using Grep/Glob/Read to explore
-the codebase.** The graph is faster, cheaper (fewer tokens), and gives
-you structural context (callers, dependents, test coverage) that file
-scanning cannot.
+When the `code-review-graph` MCP server is connected, reach for it before Grep/Glob/Read: it answers structural questions (callers, dependents, impact radius, test coverage) in fewer tokens than file scanning.
 
-### When to use graph tools FIRST
+- **Exploring code**: `semantic_search_nodes` or `query_graph`
+- **Impact of a change**: `get_impact_radius`
+- **Code review**: `detect_changes` + `get_review_context`
+- **Relationships**: `query_graph` with callers_of / callees_of / imports_of / tests_for
+- **Architecture**: `get_architecture_overview` + `list_communities`
 
-- **Exploring code**: `semantic_search_nodes` or `query_graph` instead of Grep
-- **Understanding impact**: `get_impact_radius` instead of manually tracing imports
-- **Code review**: `detect_changes` + `get_review_context` instead of reading entire files
-- **Finding relationships**: `query_graph` with callers_of/callees_of/imports_of/tests_for
-- **Architecture questions**: `get_architecture_overview` + `list_communities`
-
-Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need. Run `code-review-graph` with no args (or see `/mcp`) for the full tool list.
+The graph is built per branch and can lag the working tree; when it's disconnected, stale, or doesn't cover the question, use Grep/Glob/Read. `/mcp` lists its tools and shows whether it's connected.
