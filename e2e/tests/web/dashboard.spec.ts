@@ -1,7 +1,6 @@
 import { test, expect } from '../../support/fixtures.ts'
 import { ensureUserProfile, setPeriodLogs, setPrediction, setSymptomLogs } from '../../support/db.ts'
 import { suppressAutoPrompts } from '../../support/prompts.ts'
-import { SERVER_TZ_IS_UTC } from '../../support/bangladesh-day.ts'
 
 test.describe('Dashboard modes', () => {
   test('first-run dashboard shows first-period hero and example cycle', async ({ newUser }) => {
@@ -89,11 +88,9 @@ test.describe('Dashboard modes', () => {
     await expect(symptomItems.nth(1)).toContainText(/Logged 1 time/i)
   })
 
-  // #151: the period log the server derives from lastPeriodStart is cut at *server-local* midnight
-  // (ensurePeriodLogFromProfile setHours(0)), so on a non-UTC server (E2E_APP_TZ=Asia/Dhaka) it lands a
-  // day early. Under TZ=UTC (prod, CI) the stored UTC-midnight day is kept and the count is exact.
+  // https://github.com/adibahsan/cycle-circle/issues/151: the period log derived from lastPeriodStart keeps
+  // its stored UTC-midnight day under any server timezone (E2E_APP_TZ), so the count is exact.
   test('menopause hero counts exact Bangladesh days since the last period', async ({ newUser, days }) => {
-    test.fail(!SERVER_TZ_IS_UTC, 'https://github.com/adibahsan/cycle-circle/issues/151')
     const { page, phone } = await newUser()
     await ensureUserProfile(phone, {
       name: 'Menopause Exact',
