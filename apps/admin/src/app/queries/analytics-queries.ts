@@ -51,7 +51,7 @@ export const getPredictionAccuracy = cache(async (range: AnalyticsRange) => {
 export const getUserRetention = cache(async (range: AnalyticsRange) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetUserRetention(range),
+    () => svcGetUserRetention(range, { now: new Date() }),
     ['admin-user-retention', day(range.from), day(range.to)],
     { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
@@ -116,7 +116,7 @@ export const getLoggingStreakDistribution = cache(async () => {
 export const getLoggingRetention = cache(async (weeks?: number) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetLoggingRetention(weeks),
+    () => svcGetLoggingRetention(new Date(), weeks),
     ['admin-logging-retention', String(weeks ?? 8)],
     { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()

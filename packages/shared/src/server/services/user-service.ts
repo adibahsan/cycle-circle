@@ -186,16 +186,16 @@ export async function completeUserProfile(userId: string, data: CompleteUserProf
  * Suspend a user (reason required), invalidate their sessions and unsubscribe their
  * number on BDApps (ADR 0006). A BDApps failure is returned, never thrown; the suspension applies.
  */
-export async function suspendUser(userId: string, adminId: string, reason: string) {
+export async function suspendUser(userId: string, adminId: string, reason: string, now: Date) {
   const trimmed = reason?.trim()
   if (!trimmed) throw new ApiError(400, 'A suspension reason is required', 'REASON_REQUIRED')
 
   await prisma.user.update({
     where: { id: userId },
-    data: { suspendedAt: new Date(), suspendedBy: adminId },
+    data: { suspendedAt: now, suspendedBy: adminId },
   })
   // Existing sessions stop working on their next request.
-  await bumpSessionsValidAfter(userId)
+  await bumpSessionsValidAfter(userId, now)
   const bdapps = await unsubscribeUserOnBdapps(userId, adminId)
 
   await prisma.adminAuditLog.create({
@@ -237,13 +237,13 @@ export async function reactivateUser(userId: string, adminId: string) {
  * Soft-delete a user by setting deletedAt and unsubscribe their number on BDApps
  * (ADR 0006). A BDApps failure is returned, never thrown; the deletion applies.
  */
-export async function softDeleteUser(userId: string, adminId: string) {
+export async function softDeleteUser(userId: string, adminId: string, now: Date) {
   await prisma.user.update({
     where: { id: userId },
-    data: { deletedAt: new Date() },
+    data: { deletedAt: now },
   })
   // Existing sessions stop working on their next request.
-  await bumpSessionsValidAfter(userId)
+  await bumpSessionsValidAfter(userId, now)
   const bdapps = await unsubscribeUserOnBdapps(userId, adminId)
 
   await prisma.adminAuditLog.create({
@@ -263,7 +263,7 @@ export async function softDeleteUser(userId: string, adminId: string) {
  * Restore a soft-deleted user within the restore window. Clears deletedAt only;
  * never re-subscribes on BDApps (ADR 0006). Refused after 30 days.
  */
-export async function restoreUser(userId: string, adminId: string, now: Date = new Date()) {
+export async function restoreUser(userId: string, adminId: string, now: Date) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { deletedAt: true } })
   if (!user) throw new ApiError(404, 'User not found', 'USER_NOT_FOUND')
   if (!user.deletedAt) throw new ApiError(409, 'User is not deleted', 'NOT_DELETED')
@@ -412,10 +412,10 @@ export async function getProfileCompletionStatus(
 /**
  * Mark the onboarding tour as completed for a user by recording the timestamp.
  */
-export async function completeOnboardingTour(userId: string): Promise<void> {
+export async function completeOnboardingTour(userId: string, now: Date): Promise<void> {
   await prisma.user.update({
     where: { id: userId },
-    data: { onboardingTourCompletedAt: new Date() },
+    data: { onboardingTourCompletedAt: now },
   })
 }
 

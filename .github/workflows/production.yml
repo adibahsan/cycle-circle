@@ -54,6 +54,8 @@ jobs:
         run: bash ops/deploy/scripts/test-check-prod-env.sh
       - run: pnpm --filter @vesta/shared test
       - run: pnpm --filter @vesta/web backend:test
+      - name: Timezone runs (Asia/Dhaka, America/New_York)
+        run: pnpm test:tz
 
   deploy:
     name: Deploy to VPS

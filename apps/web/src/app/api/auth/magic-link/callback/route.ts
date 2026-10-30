@@ -28,7 +28,7 @@ export async function GET(request: Request): Promise<Response> {
       throw new ApiError(400, 'Magic link has expired', 'TOKEN_EXPIRED')
     }
 
-    const user = await completeMagicLinkAuth(magicLink.id, magicLink.email)
+    const user = await completeMagicLinkAuth(magicLink.id, magicLink.email, new Date())
     setRequestUser(user.id)
     revalidateTag(cacheTags.user(user.id), { expire: 0 })
 

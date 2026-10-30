@@ -21,6 +21,7 @@ import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 
 type UserRow = {
   id: string
@@ -276,8 +277,7 @@ export function UsersClient({
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      // eslint-disable-next-line no-restricted-syntax -- not a day computation: download filename stamp
-      a.download = `users-${new Date().toISOString().split('T')[0]}.csv`
+      a.download = `users-${bangladeshToday()}.csv`
       a.click()
       URL.revokeObjectURL(url)
     } finally {

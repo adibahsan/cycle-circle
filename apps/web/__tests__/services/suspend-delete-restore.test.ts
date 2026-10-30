@@ -40,14 +40,14 @@ beforeEach(async () => {
 
 describe('suspend / delete unsubscribe on BDApps', () => {
   it('suspend unsubscribes and audits', async () => {
-    const res = await svc.suspendUser(USER, ADMIN, 'abuse')
+    const res = await svc.suspendUser(USER, ADMIN, 'abuse', new Date())
     expect(res.bdapps).toEqual({ status: 'unsubscribed' })
     expect(bdapps.setSubscription).toHaveBeenCalledWith(MASKED, 'unsubscribe')
     expect(await audit('USER_SUSPENDED')).toBe(1)
   })
 
   it('delete unsubscribes, records deletedAt and audits', async () => {
-    const res = await svc.softDeleteUser(USER, ADMIN)
+    const res = await svc.softDeleteUser(USER, ADMIN, new Date())
     expect(res.bdapps).toEqual({ status: 'unsubscribed' })
     expect(bdapps.setSubscription).toHaveBeenCalledWith(MASKED, 'unsubscribe')
     expect((await testPrisma.user.findUniqueOrThrow({ where: { id: USER } })).deletedAt).toBeInstanceOf(Date)
@@ -56,8 +56,8 @@ describe('suspend / delete unsubscribe on BDApps', () => {
 
   it('reports a BDApps failure but still applies suspend and delete', async () => {
     bdapps.setSubscription.mockRejectedValue(new Error('E1000 boom'))
-    expect((await svc.suspendUser(USER, ADMIN, 'abuse')).bdapps).toEqual({ status: 'failed', error: 'E1000 boom' })
-    expect((await svc.softDeleteUser(USER, ADMIN)).bdapps).toMatchObject({ status: 'failed' })
+    expect((await svc.suspendUser(USER, ADMIN, 'abuse', new Date())).bdapps).toEqual({ status: 'failed', error: 'E1000 boom' })
+    expect((await svc.softDeleteUser(USER, ADMIN, new Date())).bdapps).toMatchObject({ status: 'failed' })
     const u = await testPrisma.user.findUniqueOrThrow({ where: { id: USER } })
     expect(u.suspendedAt).not.toBeNull()
     expect(u.deletedAt).not.toBeNull()
@@ -66,7 +66,7 @@ describe('suspend / delete unsubscribe on BDApps', () => {
 
 describe('reactivate and restore never re-subscribe', () => {
   it('reactivate lifts the block without calling BDApps', async () => {
-    await svc.suspendUser(USER, ADMIN, 'x')
+    await svc.suspendUser(USER, ADMIN, 'x', new Date())
     bdapps.setSubscription.mockClear()
     await svc.reactivateUser(USER, ADMIN)
     expect(bdapps.setSubscription).not.toHaveBeenCalled()
@@ -74,9 +74,9 @@ describe('reactivate and restore never re-subscribe', () => {
   })
 
   it('restore clears deletedAt without calling BDApps, and audits', async () => {
-    await svc.softDeleteUser(USER, ADMIN)
+    await svc.softDeleteUser(USER, ADMIN, new Date())
     bdapps.setSubscription.mockClear()
-    await svc.restoreUser(USER, ADMIN)
+    await svc.restoreUser(USER, ADMIN, new Date())
     expect(bdapps.setSubscription).not.toHaveBeenCalled()
     expect((await testPrisma.user.findUniqueOrThrow({ where: { id: USER } })).deletedAt).toBeNull()
     expect(await audit('USER_RESTORED')).toBe(1)
@@ -96,6 +96,6 @@ describe('30-day restore window', () => {
   })
 
   it('refuses to restore an account that is not deleted', async () => {
-    await expect(svc.restoreUser(USER, ADMIN)).rejects.toMatchObject({ code: 'NOT_DELETED' })
+    await expect(svc.restoreUser(USER, ADMIN, new Date())).rejects.toMatchObject({ code: 'NOT_DELETED' })
   })
 })

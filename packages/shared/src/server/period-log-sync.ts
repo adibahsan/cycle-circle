@@ -3,14 +3,6 @@ import { prisma } from './db'
 import { recalculatePrediction } from './prediction-calc'
 import { addDaysToDay, dayToStoredDate, storedDateToDay } from '../utils/dhaka-date'
 
-/** Format a Date as YYYY-MM-DD in local timezone (avoids UTC shift from toISOString). */
-export function toLocalDateStr(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
 /**
  * Add each day in [start, end] that falls within [monthStart, monthEnd] to periodDates.
  * All four bounds are stored date-only values (UTC midnight); days are walked as

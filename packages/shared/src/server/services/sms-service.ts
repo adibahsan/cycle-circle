@@ -303,6 +303,7 @@ async function performSend(
     messageBn: string | null
     sendLanguage: SmsSendLanguage
   },
+  now: Date,
   opts: SendOptions = {},
 ) {
   const isDevMode = env.DEV_MODE || env.NODE_ENV === 'development'
@@ -332,7 +333,7 @@ async function performSend(
     where: { id: broadcast.id },
     data: {
       status: 'SENT',
-      sentAt: new Date(),
+      sentAt: now,
       active: true,
       providerMessageId,
       targetCount,
@@ -357,7 +358,7 @@ function errorText(err: unknown) {
  * In production the BDApps smsSend API is called with `destinationAddresses:
  * ["tel:all"]` to reach all subscribers.
  */
-export async function sendBroadcast(broadcastId: string, adminUserId: string, opts: SendOptions = {}) {
+export async function sendBroadcast(broadcastId: string, adminUserId: string, now: Date, opts: SendOptions = {}) {
   const broadcast = await prisma.smsBroadcast.findUnique({ where: { id: broadcastId } })
 
   if (!broadcast) {
@@ -374,7 +375,7 @@ export async function sendBroadcast(broadcastId: string, adminUserId: string, op
   })
 
   try {
-    const updated = await performSend(broadcast, opts)
+    const updated = await performSend(broadcast, now, opts)
 
     await createAuditLog(adminUserId, 'SEND_SMS_BROADCAST', 'SmsBroadcast', broadcastId, {
       message: broadcast.message.slice(0, 100),
@@ -396,7 +397,7 @@ export async function sendBroadcast(broadcastId: string, adminUserId: string, op
  * Dispatch the next due scheduled broadcast (one per run = one per day).
  * Returns what happened.
  */
-export async function dispatchScheduledBroadcast(now: Date = new Date(), opts: SendOptions = {}) {
+export async function dispatchScheduledBroadcast(now: Date, opts: SendOptions = {}) {
   const due = await prisma.smsBroadcast.findFirst({
     where: { status: 'SCHEDULED', scheduledFor: { lte: now } },
     orderBy: { scheduledFor: 'asc' },
@@ -404,7 +405,7 @@ export async function dispatchScheduledBroadcast(now: Date = new Date(), opts: S
   if (!due) return { dispatched: false as const }
   await prisma.smsBroadcast.update({ where: { id: due.id }, data: { status: 'SENDING' } })
   try {
-    const sent = await performSend(due, opts)
+    const sent = await performSend(due, now, opts)
     await createAuditLog(due.createdBy, 'DISPATCH_SMS_BROADCAST', 'SmsBroadcast', due.id, {
       auto: true,
     })

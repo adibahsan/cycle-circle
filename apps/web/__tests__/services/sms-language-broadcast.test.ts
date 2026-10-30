@@ -42,14 +42,14 @@ describe('SMS send language', () => {
   it('stores the language and sends only Bengali for BN', async () => {
     const b = await createBroadcast(ADMIN, 'Hello', 'হ্যালো', undefined, 'BN')
     expect(b.sendLanguage).toBe('BN')
-    await sendBroadcast(b.id, ADMIN)
+    await sendBroadcast(b.id, ADMIN, new Date())
     expect(bdapps.smsSend).toHaveBeenCalledWith('হ্যালো', ['tel:all'])
   })
 
   it('defaults to BOTH and sends EN then BN', async () => {
     const b = await createBroadcast(ADMIN, 'Hello', 'হ্যালো')
     expect(b.sendLanguage).toBe('BOTH')
-    await sendBroadcast(b.id, ADMIN)
+    await sendBroadcast(b.id, ADMIN, new Date())
     expect(bdapps.smsSend).toHaveBeenCalledWith('Hello\nহ্যালো', ['tel:all'])
   })
 

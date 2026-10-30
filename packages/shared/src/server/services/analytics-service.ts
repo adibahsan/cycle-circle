@@ -41,7 +41,7 @@ export async function getDashboardStats(now: Date) {
     prisma.user.count({ where: { deletedAt: null, lastLoginAt: { gte: thirtyDaysAgo } } }),
     prisma.profile.count(),
     prisma.subscription.count({ where: { status: 'PRO' } }),
-    prisma.periodLog.count({ where: { createdAt: { gte: parseDhakaDay(bangladeshToday(now)) } } }),
+    prisma.periodLog.count({ where: { createdAt: { gte: parseDhakaDay(bangladeshToday(now)), lte: now } } }),
     prisma.user.count({ where: { deletedAt: null, createdAt: { gte: sevenDaysAgo } } }),
     prisma.user.count({
       where: {
@@ -220,7 +220,7 @@ export interface RetentionCohort {
  */
 export async function getUserRetention(
   { from, to }: AnalyticsRange,
-  { maxWeeks = 8, now = new Date() }: { maxWeeks?: number; now?: Date } = {},
+  { maxWeeks = 8, now }: { maxWeeks?: number; now: Date },
 ): Promise<RetentionCohort[]> {
   const users = await prisma.user.findMany({
     where: { deletedAt: null, createdAt: { gte: from, lte: to } },
@@ -484,7 +484,7 @@ export async function writePredictionSnapshot(now: Date, tiers: PredictionMaeTie
 }
 
 /** Backtest now and store tonight's snapshot (nightly maintenance job). */
-export async function snapshotPredictionAccuracy(now: Date = new Date()) {
+export async function snapshotPredictionAccuracy(now: Date) {
   const tiers = await getPredictionAccuracyMae()
   await writePredictionSnapshot(now, tiers)
   return tiers
@@ -540,14 +540,15 @@ export async function getPredictionMaeTrend({ from, to }: AnalyticsRange) {
  * Mirrors getUserRetention but cohorting by first log rather than account creation.
  */
 export async function getLoggingRetention(
+  now: Date,
   weeks: number = 8,
 ): Promise<{ week: string; created: number; retained: number; rate: number }[]> {
   const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000
-  const retentionWindowStart = new Date(Date.now() - MS_PER_WEEK)
+  const retentionWindowStart = new Date(now.getTime() - MS_PER_WEEK)
   const cohorts = []
 
   for (let i = 0; i < weeks; i++) {
-    const weekStart = new Date(Date.now() - (weeks - i) * MS_PER_WEEK)
+    const weekStart = new Date(now.getTime() - (weeks - i) * MS_PER_WEEK)
     const weekEnd = new Date(weekStart.getTime() + MS_PER_WEEK)
 
     // Profiles whose first SymptomLog is in this cohort week

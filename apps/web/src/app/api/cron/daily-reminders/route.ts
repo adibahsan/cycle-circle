@@ -41,7 +41,7 @@ const handler = withCronAuth(async (request) => {
 
   // Send the day's scheduled SMS broadcast (one per day). Failures here must not
   // fail the reminder run, so it is reported alongside rather than thrown.
-  const smsBroadcast = await dispatchScheduledBroadcast().catch((err: unknown) => ({
+  const smsBroadcast = await dispatchScheduledBroadcast(new Date()).catch((err: unknown) => ({
     dispatched: false as const,
     error: String(err),
   }))

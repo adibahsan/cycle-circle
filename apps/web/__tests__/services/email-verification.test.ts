@@ -38,7 +38,7 @@ async function sendCode(email = 'New@Example.com') {
   )
   db.emailVerification.findFirst.mockResolvedValueOnce(null) // no cooldown
   db.emailVerification.create.mockImplementation(async ({ data }: { data: object }) => ({ id: 'c1', attempts: 0, ...data }))
-  const { code } = await requestEmailVerification(USER, email)
+  const { code } = await requestEmailVerification(USER, email, new Date())
   const row = { id: 'c1', attempts: 0, ...db.emailVerification.create.mock.calls.at(-1)![0].data }
   return { code, row }
 }
@@ -68,25 +68,25 @@ describe('requestEmailVerification', () => {
     db.user.findUnique.mockImplementation(async (a: { where: { id?: string } }) => (a.where.id ? { language: 'BN' } : null))
     db.emailVerification.findFirst.mockResolvedValueOnce(null)
     db.emailVerification.create.mockResolvedValue({ id: 'c1' })
-    await requestEmailVerification(USER, 'a@b.co')
+    await requestEmailVerification(USER, 'a@b.co', new Date())
     expect(mail.sendVerificationCodeEmail.mock.calls[0][2]).toBe('bn')
   })
 
   it('rejects a malformed address with INVALID_EMAIL', async () => {
-    await codeFails(requestEmailVerification(USER, 'not-an-email'), 'INVALID_EMAIL')
+    await codeFails(requestEmailVerification(USER, 'not-an-email', new Date()), 'INVALID_EMAIL')
     expect(mail.sendVerificationCodeEmail).not.toHaveBeenCalled()
   })
 
   it('rejects an address used by another account with EMAIL_TAKEN', async () => {
     db.user.findUnique.mockResolvedValue({ id: 'someone-else' })
-    await codeFails(requestEmailVerification(USER, 'taken@example.com'), 'EMAIL_TAKEN')
+    await codeFails(requestEmailVerification(USER, 'taken@example.com', new Date()), 'EMAIL_TAKEN')
     expect(db.emailVerification.create).not.toHaveBeenCalled()
   })
 
   it('enforces the 60s resend cooldown with OTP_COOLDOWN', async () => {
     db.user.findUnique.mockResolvedValue(null)
     db.emailVerification.findFirst.mockResolvedValueOnce({ createdAt: new Date(Date.now() - 10_000) })
-    await codeFails(requestEmailVerification(USER, 'new@example.com'), 'OTP_COOLDOWN')
+    await codeFails(requestEmailVerification(USER, 'new@example.com', new Date()), 'OTP_COOLDOWN')
     expect(mail.sendVerificationCodeEmail).not.toHaveBeenCalled()
   })
 
@@ -95,7 +95,7 @@ describe('requestEmailVerification', () => {
     db.emailVerification.findFirst.mockResolvedValueOnce(null)
     db.emailVerification.create.mockResolvedValue({ id: 'c1' })
     mail.sendVerificationCodeEmail.mockRejectedValueOnce(new Error('smtp down'))
-    await expect(requestEmailVerification(USER, 'new@example.com')).rejects.toThrow('smtp down')
+    await expect(requestEmailVerification(USER, 'new@example.com', new Date())).rejects.toThrow('smtp down')
     expect(db.emailVerification.delete).toHaveBeenCalledWith({ where: { id: 'c1' } })
   })
 })
@@ -107,14 +107,14 @@ describe('verifyEmailCode', () => {
     db.user.findUnique.mockResolvedValue(null) // still free
     db.emailVerification.updateMany.mockResolvedValue({ count: 1 })
 
-    await expect(verifyEmailCode(USER, code)).resolves.toEqual({ email: 'new@example.com' })
+    await expect(verifyEmailCode(USER, code, new Date())).resolves.toEqual({ email: 'new@example.com' })
     expect(db.user.update).toHaveBeenCalledWith({ where: { id: USER }, data: { email: 'new@example.com' } })
   })
 
   it('counts a wrong code and does not save', async () => {
     const { row } = await sendCode()
     db.emailVerification.findFirst.mockResolvedValueOnce(row)
-    await codeFails(verifyEmailCode(USER, '000000'), 'INVALID_OTP')
+    await codeFails(verifyEmailCode(USER, '000000', new Date()), 'INVALID_OTP')
     expect(db.emailVerification.update).toHaveBeenCalledWith({ where: { id: 'c1' }, data: { attempts: { increment: 1 } } })
     expect(db.user.update).not.toHaveBeenCalled()
   })
@@ -122,26 +122,26 @@ describe('verifyEmailCode', () => {
   it('locks after 5 wrong attempts, even for the right code', async () => {
     const { code, row } = await sendCode()
     db.emailVerification.findFirst.mockResolvedValueOnce({ ...row, attempts: 5 })
-    await codeFails(verifyEmailCode(USER, code), 'OTP_LOCKED')
+    await codeFails(verifyEmailCode(USER, code, new Date()), 'OTP_LOCKED')
     expect(db.user.update).not.toHaveBeenCalled()
   })
 
   it('rejects an expired code with CHALLENGE_EXPIRED', async () => {
     const { code, row } = await sendCode()
     db.emailVerification.findFirst.mockResolvedValueOnce({ ...row, expiresAt: new Date(Date.now() - 1000) })
-    await codeFails(verifyEmailCode(USER, code), 'CHALLENGE_EXPIRED')
+    await codeFails(verifyEmailCode(USER, code, new Date()), 'CHALLENGE_EXPIRED')
   })
 
   it('returns CHALLENGE_NOT_FOUND when nothing was requested', async () => {
     db.emailVerification.findFirst.mockResolvedValueOnce(null)
-    await codeFails(verifyEmailCode(USER, '123456'), 'CHALLENGE_NOT_FOUND')
+    await codeFails(verifyEmailCode(USER, '123456', new Date()), 'CHALLENGE_NOT_FOUND')
   })
 
   it('returns EMAIL_TAKEN when someone claimed the address after the code was sent', async () => {
     const { code, row } = await sendCode()
     db.emailVerification.findFirst.mockResolvedValueOnce(row)
     db.user.findUnique.mockResolvedValue({ id: 'someone-else' })
-    await codeFails(verifyEmailCode(USER, code), 'EMAIL_TAKEN')
+    await codeFails(verifyEmailCode(USER, code, new Date()), 'EMAIL_TAKEN')
     expect(db.user.update).not.toHaveBeenCalled()
   })
 
@@ -151,7 +151,7 @@ describe('verifyEmailCode', () => {
     db.user.findUnique.mockResolvedValue(null)
     db.emailVerification.updateMany.mockResolvedValue({ count: 1 })
     db.user.update.mockRejectedValueOnce(Object.assign(new Error('dup'), { code: 'P2002' }))
-    await codeFails(verifyEmailCode(USER, code), 'EMAIL_TAKEN')
+    await codeFails(verifyEmailCode(USER, code, new Date()), 'EMAIL_TAKEN')
   })
 
   it('accepts a dev OTP code only in DEV_MODE', async () => {
@@ -160,10 +160,10 @@ describe('verifyEmailCode', () => {
     db.emailVerification.updateMany.mockResolvedValue({ count: 1 })
 
     db.emailVerification.findFirst.mockResolvedValueOnce(row)
-    await codeFails(verifyEmailCode(USER, '420420'), 'INVALID_OTP')
+    await codeFails(verifyEmailCode(USER, '420420', new Date()), 'INVALID_OTP')
 
     dev.on = true
     db.emailVerification.findFirst.mockResolvedValueOnce(row)
-    await expect(verifyEmailCode(USER, '420420')).resolves.toEqual({ email: 'new@example.com' })
+    await expect(verifyEmailCode(USER, '420420', new Date())).resolves.toEqual({ email: 'new@example.com' })
   })
 })
