@@ -1,5 +1,7 @@
 import { test, expect } from '../../support/fixtures'
 import { SECRETS, URLS } from '../../support/slot.ts'
+import { e2eDb } from '../../support/db'
+import { toDbPhone } from '../../support/users'
 
 /**
  * The route slug is historical: today the job calls `/subscription/getStatus` for
@@ -73,5 +75,32 @@ test.describe('cron: caas-check', () => {
     expect((await (await page.request.get('/api/auth/status')).json()).user).toMatchObject({
       subscriptionStatus: 'FREE',
     })
+
+    // The run is recorded with the user it moved, under their masked subscriber id.
+    expect(typeof body.runId).toBe('string')
+    const user = await e2eDb().user.findUniqueOrThrow({ where: { phone: toDbPhone(phone) } })
+    const run = await e2eDb().subscriptionCheckRun.findUniqueOrThrow({
+      where: { id: body.runId },
+      include: { outcomes: true },
+    })
+    expect(run).toMatchObject({ status: 'OK', trigger: 'MANUAL' })
+    expect(run.outcomes.find((o) => o.userId === user.id)).toMatchObject({
+      outcome: 'MOVED_TO_FREE',
+      maskedSubscriberId: expect.stringMatching(/^tel:/),
+    })
+    expect(
+      await e2eDb().subscription.findFirstOrThrow({ where: { userId: user.id } }),
+    ).toMatchObject({ lastReportedStatus: 'UNREGISTERED' })
+  })
+
+  test('a scheduled run (no override) is recorded as a cron run', async ({ request }) => {
+    const res = await request.post(`${URLS.web}/api/cron/caas-check`, {
+      headers: { authorization: `Bearer ${SECRETS.cronSecret}` },
+    })
+    expect(res.ok()).toBe(true)
+    const body = await res.json()
+    const run = await e2eDb().subscriptionCheckRun.findUniqueOrThrow({ where: { id: body.runId } })
+    expect(run.trigger).toBe('CRON')
+    expect(['OK', 'SKIPPED']).toContain(run.status)
   })
 })

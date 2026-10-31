@@ -1,6 +1,7 @@
 'use client'
 
-import { useTransition, useState } from 'react'
+import { useTransition, useState, type ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
 import { ServerCog, Play } from 'lucide-react'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { Button } from '@/components/ui/Button'
@@ -151,11 +152,14 @@ export function SystemClient({
   initialSettings,
   initialSmsSendTime,
   initialSmsDeliveryReports,
+  runHistory,
 }: {
   initialSettings: Record<CronSlug, boolean>
   initialSmsSendTime: string
   initialSmsDeliveryReports: boolean
+  runHistory: ReactNode
 }) {
+  const router = useRouter()
   const [remindersResult, setRemindersResult] = useState<CronJobResult | null>(null)
   const [caasResult, setCaasResult] = useState<CronJobResult | null>(null)
   const [settings, setSettings] = useState(initialSettings)
@@ -179,6 +183,7 @@ export function SystemClient({
         const result = await job()
         set(result)
         report(label, result)
+        router.refresh()
       } catch (err) {
         toast.error(err instanceof Error && err.message ? err.message : `${label} failed`)
       }
@@ -255,6 +260,8 @@ export function SystemClient({
           onToggle={() => handleToggle('caas-check')}
         />
       </div>
+
+      {runHistory}
 
       <SmsSendTimeCard initialTime={initialSmsSendTime} />
       <SmsDeliveryReportsCard initialEnabled={initialSmsDeliveryReports} />

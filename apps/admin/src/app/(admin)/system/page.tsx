@@ -1,6 +1,7 @@
 import { requireAdminUser } from '@/app/queries/auth-queries'
 import { getCronSettings, getSmsDeliveryReports, getSmsSendTime } from '@vesta/shared/server/services'
 import { SystemClient } from './SystemClient'
+import { RunHistory } from './RunHistory'
 
 export default async function SystemPage() {
   await requireAdminUser()
@@ -12,6 +13,7 @@ export default async function SystemPage() {
       initialSettings={cronSettings}
       initialSmsSendTime={smsSendTime}
       initialSmsDeliveryReports={smsDeliveryReports}
+      runHistory={<RunHistory />}
     />
   )
 }
