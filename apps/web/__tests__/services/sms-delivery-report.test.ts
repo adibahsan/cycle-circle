@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { PrismaClient } from '@prisma/client'
-import { recordSmsDeliveryReport } from '@vesta/shared/server/services'
+import {
+  recordSmsDeliveryReport,
+  classifyDeliveryStatus,
+  getSmsDeliveryReports,
+  setSmsDeliveryReports,
+  SMS_DELIVERY_REPORTS_KEY,
+} from '@vesta/shared/server/services'
 
 const prisma = new PrismaClient()
 const P = `test-smsreport-${Date.now()}`
@@ -66,5 +72,48 @@ describe('recordSmsDeliveryReport (db)', () => {
 
   it('a pending report is matched but not counted', async () => {
     expect(await recordSmsDeliveryReport(`${P}-req`, 'PENDING')).toEqual({ matched: true, counted: false })
+  })
+
+  it('counts the BDApps terminal failure statuses as failed, and in-flight or unknown ones as neither', async () => {
+    const before = await prisma.smsCampaignMessage.findUniqueOrThrow({ where: { id: byRequestId } })
+    for (const status of ['EXPIRED', 'DELETED', 'UNDELIVERABLE', 'REJECTED']) {
+      expect(await recordSmsDeliveryReport(`${P}-req`, status)).toMatchObject({ matched: true, counted: true })
+    }
+    for (const status of ['ACCEPTED', 'UNKNOWN', 'SomethingNew', '']) {
+      expect(await recordSmsDeliveryReport(`${P}-req`, status)).toEqual({ matched: true, counted: false })
+    }
+    const after = await prisma.smsCampaignMessage.findUniqueOrThrow({ where: { id: byRequestId } })
+    expect(after.failedCount).toBe((before.failedCount ?? 0) + 4)
+    expect(after.deliveredCount).toBe(before.deliveredCount)
+  })
+})
+
+describe('classifyDeliveryStatus', () => {
+  it('maps the documented BDApps statuses and the vendor-sample spellings', () => {
+    expect(classifyDeliveryStatus('DELIVERED')).toBe('delivered')
+    expect(classifyDeliveryStatus('DeliveredToTerminal')).toBe('delivered')
+    expect(classifyDeliveryStatus('delivered')).toBe('delivered')
+    for (const s of ['FAILED', 'EXPIRED', 'DELETED', 'UNDELIVERABLE', 'REJECTED', 'DeliveryImpossible']) {
+      expect(classifyDeliveryStatus(s)).toBe('failed')
+    }
+    for (const s of ['ACCEPTED', 'UNKNOWN', 'PENDING', 'DeliveryUncertain', '', null, undefined]) {
+      expect(classifyDeliveryStatus(s)).toBe('unknown')
+    }
+  })
+})
+
+describe('delivery-report switch (db)', () => {
+  afterAll(async () => {
+    await prisma.systemSetting.deleteMany({ where: { key: SMS_DELIVERY_REPORTS_KEY } })
+  })
+  it('is off by default and when the value is corrupt, and round-trips on and off', async () => {
+    await prisma.systemSetting.deleteMany({ where: { key: SMS_DELIVERY_REPORTS_KEY } })
+    expect(await getSmsDeliveryReports()).toBe(false)
+    expect(await setSmsDeliveryReports(true)).toEqual({ previous: false, enabled: true })
+    expect(await getSmsDeliveryReports()).toBe(true)
+    expect(await setSmsDeliveryReports(false)).toEqual({ previous: true, enabled: false })
+    expect(await getSmsDeliveryReports()).toBe(false)
+    await prisma.systemSetting.update({ where: { key: SMS_DELIVERY_REPORTS_KEY }, data: { value: 'garbage' } })
+    expect(await getSmsDeliveryReports()).toBe(false)
   })
 })

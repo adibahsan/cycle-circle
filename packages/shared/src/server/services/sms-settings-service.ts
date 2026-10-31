@@ -36,3 +36,29 @@ export async function setSmsSendTime(time: string, adminId?: string) {
   })
   return { previous, time }
 }
+
+// ── Delivery reports ───────────────────────────────────────────────────────────
+
+export const SMS_DELIVERY_REPORTS_KEY = 'sms.deliveryReports'
+
+/**
+ * Whether sends ask BDApps for delivery reports. Off until an admin turns it on: our BDApps SMS
+ * plan has reports disabled and BDApps rejects the whole send with E1312 when they are requested.
+ * An absent or corrupt value means off.
+ */
+export async function getSmsDeliveryReports(): Promise<boolean> {
+  const row = await prisma.systemSetting.findUnique({ where: { key: SMS_DELIVERY_REPORTS_KEY }, select: { value: true } })
+  return row?.value === 'on'
+}
+
+/** Turn delivery reports on or off. Returns the previous and new values. */
+export async function setSmsDeliveryReports(enabled: boolean, adminId?: string) {
+  const previous = await getSmsDeliveryReports()
+  const value = enabled ? 'on' : 'off'
+  await prisma.systemSetting.upsert({
+    where: { key: SMS_DELIVERY_REPORTS_KEY },
+    create: { key: SMS_DELIVERY_REPORTS_KEY, value, updatedBy: adminId },
+    update: { value, updatedBy: adminId },
+  })
+  return { previous, enabled }
+}

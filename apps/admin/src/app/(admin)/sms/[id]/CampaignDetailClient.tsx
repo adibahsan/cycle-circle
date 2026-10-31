@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
-import { dayText, formatDay, formatSentAt, statusBadge, type SmsCampaign } from '../sms-shared'
+import { dayText, formatDay, formatSentAt, statusBadge, ResultCell, TotalsLines, type SmsCampaign } from '../sms-shared'
 
 /** Read-only view of one campaign: every day's message, its status and when it went out (Bangladesh time). */
 export function CampaignDetailClient({ campaign }: { campaign: SmsCampaign }) {
@@ -28,6 +28,8 @@ export function CampaignDetailClient({ campaign }: { campaign: SmsCampaign }) {
         actions={<div data-testid="campaign-status">{statusBadge(campaign.status)}</div>}
       />
 
+      <TotalsLines messages={campaign.messages} />
+
       <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
         <table className="w-full text-left text-sm">
           <caption className="sr-only">Messages in {campaign.name}</caption>
@@ -37,6 +39,7 @@ export function CampaignDetailClient({ campaign }: { campaign: SmsCampaign }) {
               <th scope="col" className="px-4 py-2.5 font-medium">Message</th>
               <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
               <th scope="col" className="px-4 py-2.5 font-medium">Sent (Bangladesh time)</th>
+              <th scope="col" className="px-4 py-2.5 font-medium">Result</th>
             </tr>
           </thead>
           <tbody>
@@ -55,6 +58,7 @@ export function CampaignDetailClient({ campaign }: { campaign: SmsCampaign }) {
                   </div>
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 tabular-nums text-[var(--color-text-muted)]">{formatSentAt(m.sentAt)}</td>
+                <td className="px-4 py-3"><ResultCell message={m} /></td>
               </tr>
             ))}
           </tbody>

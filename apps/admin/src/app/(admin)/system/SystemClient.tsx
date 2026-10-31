@@ -13,6 +13,7 @@ import {
   setCronEnabledAction,
 } from '@/app/actions/system-actions'
 import { SmsSendTimeCard } from './SmsSendTimeCard'
+import { SmsDeliveryReportsCard } from './SmsDeliveryReportsCard'
 import type { CronJobResult, CronSlug } from '@/app/actions/system-actions'
 
 function CountsDisplay({ counts }: { counts: Record<string, number> }) {
@@ -149,9 +150,11 @@ function JobCard({
 export function SystemClient({
   initialSettings,
   initialSmsSendTime,
+  initialSmsDeliveryReports,
 }: {
   initialSettings: Record<CronSlug, boolean>
   initialSmsSendTime: string
+  initialSmsDeliveryReports: boolean
 }) {
   const [remindersResult, setRemindersResult] = useState<CronJobResult | null>(null)
   const [caasResult, setCaasResult] = useState<CronJobResult | null>(null)
@@ -254,6 +257,7 @@ export function SystemClient({
       </div>
 
       <SmsSendTimeCard initialTime={initialSmsSendTime} />
+      <SmsDeliveryReportsCard initialEnabled={initialSmsDeliveryReports} />
 
       <ConfirmModal
         open={confirmSlug !== null}

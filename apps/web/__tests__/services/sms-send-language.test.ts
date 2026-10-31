@@ -12,6 +12,13 @@ vi.mock('@vesta/shared/utils/env', async (importOriginal) => {
   return { ...mod, env: { ...mod.env, DEV_MODE: false, NODE_ENV: 'test' } }
 })
 
+// The delivery-report switch is one global row that sms-delivery-report.test.ts writes; pin it
+// off here so these tests never see a value that file left behind.
+vi.mock('@vesta/shared/server/services/sms-settings-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@vesta/shared/server/services/sms-settings-service')>()),
+  getSmsDeliveryReports: async () => false,
+}))
+
 const { createOneDayCampaign, createOneDayCampaignsBulk, sendCampaignMessage } = await import(
   '@vesta/shared/server/services'
 )
@@ -46,7 +53,7 @@ describe('SMS send language (composed into one body)', () => {
       message: 'Hello', messageBn: 'হ্যালো', sendLanguage: 'BN', scheduledFor: '2042-02-01T08:00:00Z', now: NOW,
     })
     await sendCampaignMessage(c.messages[0].id, ADMIN, NOW)
-    expect(bdapps.smsSend).toHaveBeenCalledWith('হ্যালো', ['tel:all'])
+    expect(bdapps.smsSend).toHaveBeenCalledWith('হ্যালো', ['tel:all'], 0)
   })
 
   it('defaults to BOTH and sends EN then BN', async () => {
@@ -54,7 +61,7 @@ describe('SMS send language (composed into one body)', () => {
       message: 'Hello', messageBn: 'হ্যালো', scheduledFor: '2042-02-02T08:00:00Z', now: NOW,
     })
     await sendCampaignMessage(c.messages[0].id, ADMIN, NOW)
-    expect(bdapps.smsSend).toHaveBeenCalledWith('Hello\nহ্যালো', ['tel:all'])
+    expect(bdapps.smsSend).toHaveBeenCalledWith('Hello\nহ্যালো', ['tel:all'], 0)
   })
 
   it('rejects BN without Bengali text and writes nothing', async () => {

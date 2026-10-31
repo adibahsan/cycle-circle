@@ -46,6 +46,70 @@ export function formatSentAt(at: Instant | null): string {
   return formatDhaka(at, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
+// ─── Results ──────────────────────────────────────────────────────────────────
+
+/**
+ * What a sent message achieved. Delivered/failed counts are null when delivery reports were not
+ * requested for that send, which the admin shows as "delivery reports off", never as zeros.
+ */
+export function messageResult(m: Pick<SmsMessage, 'audienceSize' | 'deliveredCount' | 'failedCount'>) {
+  const reports = m.deliveredCount !== null || m.failedCount !== null
+  return {
+    audience: m.audienceSize,
+    reports,
+    delivered: m.deliveredCount ?? 0,
+    failed: m.failedCount ?? 0,
+  }
+}
+
+/** Campaign totals over its messages: sent, failed to send, audience reached, and report counts. */
+export function campaignTotals(messages: SmsMessage[]) {
+  const sentMessages = messages.filter((m) => m.status === 'SENT')
+  const results = sentMessages.map(messageResult)
+  return {
+    sent: sentMessages.length,
+    failedToSend: messages.filter((m) => m.status === 'FAILED').length,
+    audience: results.reduce((n, r) => n + (r.audience ?? 0), 0),
+    reports: results.some((r) => r.reports),
+    delivered: results.reduce((n, r) => n + r.delivered, 0),
+    failed: results.reduce((n, r) => n + r.failed, 0),
+  }
+}
+
+export const DELIVERY_REPORTS_OFF = 'Delivery reports off'
+
+/** The audience/delivered/failed cell for one message (nothing for a message that was not sent). */
+export function ResultCell({ message }: { message: SmsMessage }) {
+  if (message.status !== 'SENT') return <span className="text-[var(--color-text-muted)]">—</span>
+  const r = messageResult(message)
+  return (
+    <div className="space-y-0.5 text-xs tabular-nums text-[var(--color-text-secondary)]" data-testid="message-result">
+      <p>Audience: {r.audience ?? '—'}</p>
+      {r.reports ? (
+        <p>
+          Delivered {r.delivered} · Failed {r.failed}
+        </p>
+      ) : (
+        <p className="text-[var(--color-text-muted)]">{DELIVERY_REPORTS_OFF}</p>
+      )}
+    </div>
+  )
+}
+
+/** Campaign totals line(s) for the list and detail. */
+export function TotalsLines({ messages }: { messages: SmsMessage[] }) {
+  const t = campaignTotals(messages)
+  if (t.sent === 0 && t.failedToSend === 0) return null
+  return (
+    <div className="space-y-0.5 text-xs tabular-nums text-[var(--color-text-muted)]" data-testid="campaign-totals">
+      <p>
+        {t.sent} sent · {t.failedToSend} failed to send · audience {t.audience}
+      </p>
+      <p>{t.reports ? `Delivered ${t.delivered} · Failed ${t.failed}` : DELIVERY_REPORTS_OFF}</p>
+    </div>
+  )
+}
+
 // ─── Part counter ─────────────────────────────────────────────────────────────
 
 export function PartCounter({ text }: { text: string }) {
