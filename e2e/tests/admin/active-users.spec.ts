@@ -35,8 +35,9 @@ test.describe('Admin active users', () => {
       const before = await todayActiveUsers(page, days.today)
 
       const persona = await newUser()
-      await persona.page.goto('/dashboard')
-      await expect(persona.page).toHaveURL(/\/dashboard/)
+      // A fresh persona has no profile, so it only ever reaches onboarding: that entry must count too.
+      await persona.page.goto('/onboarding')
+      await expect(persona.page).toHaveURL(/\/onboarding/)
 
       // Other workers open the app too, so "one more" is a lower bound on a shared DB.
       await expect
