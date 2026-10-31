@@ -86,10 +86,6 @@ describe('fertileStatus (fertile window stat)', () => {
 })
 
 describe('dashboardHeroState (which hero renders)', () => {
-  it('pregnancy mode wins over everything', () => {
-    expect(dashboardHeroState('pregnancy', true)).toBe('pregnancy')
-    expect(dashboardHeroState('standard', true, true)).toBe('pregnancy')
-  })
   it('menopause mode has its own hero', () => {
     expect(dashboardHeroState('menopause', true)).toBe('menopause')
   })
@@ -104,9 +100,6 @@ describe('dashboardHeroState (which hero renders)', () => {
 describe('dashboardBlocks (what each mode renders, #76)', () => {
   it('cycle: live stepper and ring, phase tools', () => {
     expect(dashboardBlocks('cycle')).toEqual({ cycle: 'live', phaseTools: true, logPeriodTool: true, cycleDates: true })
-  })
-  it('pregnancy: no stepper, ring or phase tools', () => {
-    expect(dashboardBlocks('pregnancy')).toEqual({ cycle: null, phaseTools: false, logPeriodTool: true, cycleDates: false })
   })
   it('menopause: no stepper, ring or phase tools', () => {
     expect(dashboardBlocks('menopause')).toEqual({ cycle: null, phaseTools: false, logPeriodTool: true, cycleDates: false })

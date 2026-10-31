@@ -29,24 +29,19 @@ test.describe('Dashboard modes', () => {
     await expect(page.getByRole('list', { name: 'Today at a glance' })).toHaveCount(0)
   })
 
-  test('pregnancy dashboard pauses cycle predictions and offers symptom logging', async ({ newUser, days }) => {
+  test('a legacy pregnancy goal shows the standard tracking dashboard', async ({ newUser, days }) => {
+    // Pregnancy mode was removed; old 'pregnant'/'pregnancy' goals normalise to tracking.
     const { page, phone } = await newUser()
     await ensureUserProfile(phone, {
-      name: 'Pregnancy User',
+      name: 'Legacy Pregnancy User',
       goal: 'pregnant',
-      lastPeriodStart: days.dateOf(days.daysAgo(40)),
+      lastPeriodStart: days.dateOf(days.daysAgo(10)),
     })
 
     await page.goto('/dashboard')
 
-    const hero = page.getByRole('region', { name: 'Pregnancy tracking is coming soon' })
-    await expect(hero).toBeVisible()
-    await expect(hero.getByRole('button', { name: 'Log symptoms' })).toBeVisible()
-
-    // Prediction cards, cycle journey and progress ring are hidden (prefer accessible name/role, #123 Finding 10)
-    await expect(page.getByRole('list', { name: 'Today at a glance' })).toHaveCount(0)
-    await expect(page.getByRole('heading', { name: 'Cycle journey' })).toHaveCount(0)
-    await expect(page.locator('main')).not.toContainText(/fertile|ovulation|next period/i)
+    await expect(page.getByRole('region', { name: /pregnancy/i })).toHaveCount(0)
+    await expect(page.getByRole('list', { name: 'Today at a glance' })).toBeVisible()
   })
 
   test('menopause dashboard displays days since last period and symptom pattern card', async ({ newUser, days }) => {

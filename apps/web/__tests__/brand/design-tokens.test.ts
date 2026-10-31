@@ -42,7 +42,7 @@ const LIGHT_SPEC: Record<string, string> = {
   '--color-fertile': '#F2C46D', '--color-on-fertile': '#1A232C',
   '--color-luteal': '#8E5BC4', '--color-on-luteal': '#FFFFFF',
   '--color-goal-tracking': '#D02F58', '--color-goal-conceive': '#8C6A1F',
-  '--color-goal-pregnancy': '#8E5BC4', '--color-goal-perimenopause': '#B4527A',
+  '--color-goal-perimenopause': '#B4527A',
 }
 const DARK_SPEC: Record<string, string> = {
   '--color-action': '#FF7A99', '--color-on-action': '#1A232C',
@@ -57,7 +57,7 @@ const DARK_SPEC: Record<string, string> = {
   '--color-fertile': '#F2C46D', '--color-on-fertile': '#1A232C',
   '--color-luteal': '#C9A3EC', '--color-on-luteal': '#1A232C',
   '--color-goal-tracking': '#FF7A99', '--color-goal-conceive': '#E2C27A',
-  '--color-goal-pregnancy': '#C9A3EC', '--color-goal-perimenopause': '#E596B8',
+  '--color-goal-perimenopause': '#E596B8',
 }
 
 /* Spec #66 phase re-map (web portal only; admin keeps the #18 palette):
@@ -108,7 +108,7 @@ for (const app of ['web', 'admin'] as const) {
             pairs.push([f, s])
           }
         pairs.push(['--color-on-action', '--color-action'])
-        for (const g of ['tracking', 'conceive', 'pregnancy', 'perimenopause'])
+        for (const g of ['tracking', 'conceive', 'perimenopause'])
           pairs.push([onAccent, `--color-goal-${g}`])
         for (const p of ['menstrual', 'follicular', 'ovulation', 'fertile', 'luteal'])
           pairs.push([`--color-on-${p}`, `--color-${p}`])
@@ -217,7 +217,7 @@ describe('goalAccentVar', () => {
   it('maps every goal to a --color-goal-* token defined in the theme', async () => {
     const { goalAccentVar } = await import('@vesta/shared/utils/goal')
     const theme = block(read('apps/web/src/app/globals.css'), '@theme')
-    for (const g of ['tracking', 'conceive', 'pregnancy', 'perimenopause']) {
+    for (const g of ['tracking', 'conceive', 'perimenopause']) {
       expect(goalAccentVar(g)).toBe(`var(--color-goal-${g})`)
       expect(theme[`--color-goal-${g}`]).toBeDefined()
     }

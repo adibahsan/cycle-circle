@@ -33,7 +33,7 @@ const contrast = (a: string, b: string) => {
 
 const light = block('@theme')
 const themes = { light, dark: { ...light, ...block('.dark') } }
-const GOALS = ['tracking', 'conceive', 'pregnancy', 'perimenopause'] as const
+const GOALS = ['tracking', 'conceive', 'perimenopause'] as const
 
 /** Resolve `var(--x)` against a theme, with the layout's per-goal --goal-accent. */
 function resolve(value: string, theme: Record<string, string>, goal: string): string {

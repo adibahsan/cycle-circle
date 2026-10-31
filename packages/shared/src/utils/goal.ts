@@ -1,4 +1,4 @@
-export const GOAL_VALUES = ['tracking', 'conceive', 'pregnancy', 'perimenopause'] as const;
+export const GOAL_VALUES = ['tracking', 'conceive', 'perimenopause'] as const;
 export type GoalValue = (typeof GOAL_VALUES)[number];
 
 /**
@@ -10,7 +10,8 @@ export function normalizeGoal(goal?: string | null): GoalValue | null {
   const g = goal.trim().toLowerCase();
   if (g === 'tracking' || g === 'cycle tracking' || g === 'period tracking') return 'tracking';
   if (g === 'conceive' || g === 'trying to conceive') return 'conceive';
-  if (g === 'pregnancy' || g === 'pregnant') return 'pregnancy';
+  // Pregnancy mode was removed; legacy values fall back to plain tracking.
+  if (g === 'pregnancy' || g === 'pregnant') return 'tracking';
   if (
     g === 'perimenopause' ||
     g === 'perimenopause support' ||
@@ -21,7 +22,6 @@ export function normalizeGoal(goal?: string | null): GoalValue | null {
 }
 
 export const isTTC = (goal?: string | null): boolean => normalizeGoal(goal) === 'conceive';
-export const isPregnancy = (goal?: string | null): boolean => normalizeGoal(goal) === 'pregnancy';
 export const isMenopause = (goal?: string | null): boolean => normalizeGoal(goal) === 'perimenopause';
 
 /**
@@ -30,7 +30,6 @@ export const isMenopause = (goal?: string | null): boolean => normalizeGoal(goal
  * settings. Shared by the app (profile create / goal change) and the DB seed so
  * there is a single source of truth.
  *   conceive (TTC) → fertile-window only
- *   pregnancy      → all off
  *   perimenopause  → period + logging (no fertile)
  *   tracking/other → all on
  */
@@ -41,7 +40,6 @@ export function defaultNotificationPrefsForGoal(goal?: string | null): {
 } {
   const g = normalizeGoal(goal);
   if (g === 'conceive') return { periodAlert: false, fertileWindow: true, loggingReminder: false };
-  if (g === 'pregnancy') return { periodAlert: false, fertileWindow: false, loggingReminder: false };
   if (g === 'perimenopause') return { periodAlert: true, fertileWindow: false, loggingReminder: true };
   return { periodAlert: true, fertileWindow: true, loggingReminder: true };
 }
@@ -52,15 +50,12 @@ export function defaultNotificationPrefsForGoal(goal?: string | null): {
  * fill uses `--color-on-accent`.
  *   tracking      → --color-goal-tracking      (rose)
  *   conceive      → --color-goal-conceive      (gold ink)
- *   pregnancy     → --color-goal-pregnancy     (lilac)
  *   perimenopause → --color-goal-perimenopause (mauve)
  */
 export function goalAccentVar(goal?: string | null): string {
   switch (normalizeGoal(goal)) {
     case 'conceive':
       return 'var(--color-goal-conceive)';
-    case 'pregnancy':
-      return 'var(--color-goal-pregnancy)';
     case 'perimenopause':
       return 'var(--color-goal-perimenopause)';
     case 'tracking':

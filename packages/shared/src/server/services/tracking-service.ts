@@ -1,7 +1,7 @@
 import { Prisma, type SymptomCategory } from '@prisma/client'
 import { prisma } from '../db'
 import { getLatestPeriodLog, ensurePeriodLogFromProfile } from '../period-log-sync'
-import { isPregnancy, isMenopause } from '../../utils/goal'
+import { isMenopause } from '../../utils/goal'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
 import { TIER2_MIN_CYCLES } from '../prediction-calc'
 import { ApiError } from '../api-error'
@@ -567,13 +567,7 @@ export async function getDashboardData(profileId: string, userId: string, now: D
 
   const lastSymptomLogDate: Date | null = lastSymptomLog?.date ?? null
 
-  const mode: 'standard' | 'pregnancy' | 'menopause' = isPregnancy(profile.goal)
-    ? 'pregnancy'
-    : isMenopause(profile.goal)
-      ? 'menopause'
-      : 'standard'
-
-  const pregnant = mode === 'pregnancy'
+  const mode: 'standard' | 'menopause' = isMenopause(profile.goal) ? 'menopause' : 'standard'
 
   // Phase pattern (#75): only meaningful when a current phase is shown.
   const phasePattern: PhasePatternEntry[] =
@@ -586,10 +580,10 @@ export async function getDashboardData(profileId: string, userId: string, now: D
   return {
     mode,
     currentCycleDay,
-    currentPhase: pregnant ? null : currentPhase,
-    countdownToNextPeriod: pregnant ? null : countdownToNextPeriod,
+    currentPhase: currentPhase,
+    countdownToNextPeriod: countdownToNextPeriod,
     lastPeriod: lastPeriodSummary,
-    prediction: pregnant ? null : prediction,
+    prediction: prediction,
     lastSymptomLogDate,
     phasePattern,
     symptomPattern,
@@ -681,7 +675,7 @@ export async function getCalendarData(
     }
   }
 
-  if (!isPregnancy(profile.goal)) {
+  {
     // Determine the anchor for forward projections.
     // If a Prediction record exists, use it as cycle 1 and project cycles 2-3.
     // Otherwise, estimate from the most recent period log.

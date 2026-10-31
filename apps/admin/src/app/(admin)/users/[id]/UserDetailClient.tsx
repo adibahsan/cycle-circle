@@ -558,7 +558,7 @@ function SubscriptionTab({
       {activeSub && activeSub.caasTransactions.length > 0 && (
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 shadow-soft">
           <h3 className="font-semibold text-[var(--color-text-primary)] mb-4">
-            CAAS Transactions ({activeSub.caasTransactions.length})
+            Charge transactions ({activeSub.caasTransactions.length})
           </h3>
           <div className="space-y-2">
             {activeSub.caasTransactions.map((tx) => (

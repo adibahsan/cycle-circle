@@ -51,18 +51,15 @@ export function fertileStatus(today: string, start: string, end: string): Fertil
   return { kind: 'closed' }
 }
 
-export type DashboardHeroState = 'pregnancy' | 'menopause' | 'no-period' | 'cycle'
+export type DashboardHeroState = 'menopause' | 'no-period' | 'cycle'
 
 /**
- * Which hero (and which blocks) the dashboard renders. `pregnantGoal` is the client-side goal
- * fallback for the pregnancy flag.
+ * Which hero (and which blocks) the dashboard renders.
  */
 export function dashboardHeroState(
-  mode: 'standard' | 'pregnancy' | 'menopause',
+  mode: 'standard' | 'menopause',
   hasPeriod: boolean,
-  pregnantGoal = false,
 ): DashboardHeroState {
-  if (mode === 'pregnancy' || pregnantGoal) return 'pregnancy'
   if (mode === 'menopause') return 'menopause'
   return hasPeriod ? 'cycle' : 'no-period'
 }
@@ -79,8 +76,8 @@ export interface DashboardBlocks {
 }
 
 /**
- * Blocks per hero state. Pregnancy and menopause hide the stepper and ring (their heroes
- * carry no fertile stat or predictions); with no period logged there is no real phase, so the stepper and ring show an example.
+ * Blocks per hero state. Menopause hides the stepper and ring (its hero
+ * carries no fertile stat or predictions); with no period logged there is no real phase, so the stepper and ring show an example.
  */
 export function dashboardBlocks(state: DashboardHeroState): DashboardBlocks {
   switch (state) {

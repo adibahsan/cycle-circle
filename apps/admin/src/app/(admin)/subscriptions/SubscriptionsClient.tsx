@@ -307,7 +307,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, range }: Sub
             <div className="hidden sm:flex items-center gap-2 rounded-xl border border-[var(--color-border)] glass px-4 py-2.5">
               <CreditCard size={16} aria-hidden="true" className="text-[var(--color-primary)]" />
               <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-                BDApps CAAS
+                BDApps subscription
               </span>
             </div>
           }

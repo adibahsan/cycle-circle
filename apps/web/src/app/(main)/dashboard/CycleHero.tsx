@@ -2,7 +2,7 @@
 
 import { useTranslation } from 'react-i18next'
 import { parseISO } from 'date-fns'
-import { Baby, CalendarClock, Droplets, Flower2, HeartPulse, Sparkles, type LucideIcon } from 'lucide-react'
+import { CalendarClock, Droplets, Flower2, Sparkles, type LucideIcon } from 'lucide-react'
 import type { CyclePhase } from '@vesta/shared/types'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -163,38 +163,6 @@ function HeroFrame({
         {children}
       </section>
     </Card>
-  )
-}
-
-/** Pregnancy mode: no phases, fertile stat or predictions; just the coming-soon message. */
-export function PregnancyHero({ language, lastPeriodStart, onLogSymptoms }: {
-  language: string
-  /** YYYY-MM-DD of the last logged period, kept as history. */
-  lastPeriodStart: string | null
-  onLogSymptoms: () => void
-}) {
-  const { t } = useTranslation()
-  return (
-    <HeroFrame
-      testId="hero-pregnancy"
-      headingId="hero-pregnancy-title"
-      tone="lavender"
-      Icon={Baby}
-      title={t('dashboard.pregnancyHeroTitle')}
-      sub={t('dashboard.pregnancyHeroBody')}
-    >
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <Button variant="primary" onClick={onLogSymptoms} aria-haspopup="dialog" className="min-h-11">
-          <HeartPulse size={16} aria-hidden="true" />
-          {t('dashboard.logSymptoms')}
-        </Button>
-        {lastPeriodStart && (
-          <p className="text-sm text-[var(--color-text-secondary)] tabular-nums">
-            {t('dashboard.lastPeriod')}: {formatShortDate(language, parseISO(lastPeriodStart))}
-          </p>
-        )}
-      </div>
-    </HeroFrame>
   )
 }
 

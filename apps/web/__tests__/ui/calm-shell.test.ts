@@ -6,7 +6,7 @@ const SRC = path.resolve(__dirname, '../../src')
 const read = (p: string) => fs.readFileSync(path.join(SRC, p), 'utf8')
 
 // Guards for #71. The behaviour itself is covered by e2e/tests/page-shell.spec.ts ("shell basics");
-// these catch loops that only appear in states the seeded persona never reaches (late, pregnancy, at-risk streak).
+// these catch loops that only appear in states the seeded persona never reaches (late, at-risk streak).
 describe('calm shell (#71)', () => {
   const MOVING = [
     'app/(main)/dashboard/DashboardClient.tsx',

@@ -14,7 +14,7 @@ const CTA_LINK_CLASS =
   'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--color-on-action)] shadow-soft transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]';
 import { GOAL_ACCENT_FILL } from '@/components/ui/action-styles';
 import { useHasMounted } from '@/components/motion/useHasMounted';
-import { isTTC, isPregnancy, goalAccentVar } from '@vesta/shared/utils/goal';
+import { isTTC, goalAccentVar } from '@vesta/shared/utils/goal';
 import { loggingNudgeVariant } from '@/lib/prompt-rules';
 import '@vesta/shared/utils/i18n';
 
@@ -71,7 +71,6 @@ export function LoggingNudge({
   const isEmptyState = variant === 'empty';
 
   // Resolve copy keys
-  const goalIsPregnancy = isPregnancy(goal);
   const goalIsTTC = isTTC(goal);
   const accentVar = goalAccentVar(goal);
 
@@ -81,10 +80,7 @@ export function LoggingNudge({
   let Icon: LucideIcon;
 
   if (isEmptyState) {
-    if (goalIsPregnancy) {
-      title = t('nudge.pregnancyTitle');
-      description = t('nudge.pregnancyDescription');
-    } else if (goalIsTTC) {
+    if (goalIsTTC) {
       title = t('nudge.conceiveTitle');
       description = t('nudge.conceiveDescription');
     } else {
@@ -95,10 +91,7 @@ export function LoggingNudge({
     Icon = CalendarPlus;
   } else {
     // stale variant
-    if (goalIsPregnancy) {
-      title = t('nudge.pregnancyTitle');
-      description = t('nudge.pregnancyDescription');
-    } else if (goalIsTTC) {
+    if (goalIsTTC) {
       title = t('nudge.conceiveTitle');
       description = t('nudge.conceiveDescription');
     } else {

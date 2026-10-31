@@ -89,7 +89,7 @@ Notes on the tally:
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
 | W28 | Dashboard standard mode: hero, cycle ring, cards, layout; hydrates without a mismatch (#161) | `/dashboard`, `/api/tracking/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
-| W29 | Dashboard pregnancy mode | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
+| W29 | Legacy pregnancy goal falls back to the tracking dashboard (pregnancy mode removed) | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
 | W30 | Dashboard menopause mode | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
 | W31 | Dashboard first-run state (no period ever logged) | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
 | W32 | Late-period alert with day count | `/dashboard`, late alert dialog | `e2e/tests/web/dashboard.spec.ts` | full | #123 |

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { defaultNotificationPrefsForGoal } from '@vesta/shared/server/services'
-import { normalizeGoal, isTTC } from '@vesta/shared/utils/goal'
+import { normalizeGoal, isTTC, GOAL_VALUES } from '@vesta/shared/utils/goal'
 
 // FR-NOTIF / FR-SMS (v1.3) goal-based notification filtering.
 //
@@ -15,14 +15,6 @@ describe('defaultNotificationPrefsForGoal', () => {
     expect(defaultNotificationPrefsForGoal('conceive')).toEqual({
       periodAlert: false,
       fertileWindow: true,
-      loggingReminder: false,
-    })
-  })
-
-  it('pregnancy → all alerts suppressed', () => {
-    expect(defaultNotificationPrefsForGoal('pregnancy')).toEqual({
-      periodAlert: false,
-      fertileWindow: false,
       loggingReminder: false,
     })
   })
@@ -68,6 +60,18 @@ describe('goal normalization helpers', () => {
     expect(normalizeGoal('menopause')).toBe('perimenopause')
     expect(normalizeGoal('')).toBeNull()
     expect(normalizeGoal(null)).toBeNull()
+  })
+
+  it('pregnancy is gone: legacy values normalise to tracking', () => {
+    expect(normalizeGoal('pregnancy')).toBe('tracking')
+    expect(normalizeGoal('pregnant')).toBe('tracking')
+    expect(defaultNotificationPrefsForGoal('pregnancy')).toEqual({
+      periodAlert: true,
+      fertileWindow: true,
+      loggingReminder: true,
+    })
+    expect(GOAL_VALUES).toEqual(['tracking', 'conceive', 'perimenopause'])
+    expect(GOAL_VALUES as readonly string[]).not.toContain('pregnancy')
   })
 
   it('isTTC is true only for conceive', () => {
