@@ -32,6 +32,16 @@ export async function recordChurnEvent(userId: string, reason: ChurnReasonValue,
   await prisma.churnEvent.create({ data: { userId, reason, ...(at && { occurredAt: at }) } })
 }
 
+/** Remove a user's latest ACCOUNT_DELETED churn event (a restored account did not churn). No-op when there is none. */
+export async function removeLatestAccountDeletedChurn(userId: string): Promise<void> {
+  const latest = await prisma.churnEvent.findFirst({
+    where: { userId, reason: 'ACCOUNT_DELETED' },
+    orderBy: { occurredAt: 'desc' },
+    select: { id: true },
+  })
+  if (latest) await prisma.churnEvent.delete({ where: { id: latest.id } })
+}
+
 export interface ChurnSummary {
   range: ChurnRange
   byReason: Record<ChurnReasonValue, number>

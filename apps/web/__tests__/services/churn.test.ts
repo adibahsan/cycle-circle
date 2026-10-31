@@ -89,6 +89,25 @@ describe('each path that ends Pro records its reason', () => {
     expect(ev[0].occurredAt).toEqual(now)
   })
 
+  it('restoring a deleted Pro user removes its ACCOUNT_DELETED event, and only that one', async () => {
+    await seedPro('rst', 8)
+    await seedPro('oth', 9)
+    const now = new Date('2032-03-10T05:00:00Z')
+    await svc.softDeleteUser(u('rst'), ADMIN, now)
+    await svc.softDeleteUser(u('oth'), ADMIN, now)
+    await testPrisma.churnEvent.create({ data: { userId: u('rst'), reason: 'DAILY_CHECK', occurredAt: new Date('2032-03-01T00:00:00Z') } })
+    await svc.restoreUser(u('rst'), ADMIN, new Date('2032-03-11T05:00:00Z'))
+    expect((await events('rst')).map((e) => e.reason)).toEqual(['DAILY_CHECK'])
+    expect((await events('oth')).map((e) => e.reason)).toEqual(['ACCOUNT_DELETED'])
+  })
+
+  it('restoring a deleted user who was not Pro is fine and records nothing', async () => {
+    await testPrisma.user.create({ data: { id: u('rfree'), phone: '+8801960000010', authMethod: 'OTP' } })
+    await svc.softDeleteUser(u('rfree'), ADMIN, new Date('2032-03-10T05:00:00Z'))
+    await svc.restoreUser(u('rfree'), ADMIN, new Date('2032-03-11T05:00:00Z'))
+    expect(await events('rfree')).toEqual([])
+  })
+
   it('records nothing for a user who was not Pro, or who stays Pro', async () => {
     await testPrisma.user.create({ data: { id: u('free'), phone: '+8801960000006', authMethod: 'OTP' } })
     await svc.softDeleteUser(u('free'), ADMIN, new Date())
