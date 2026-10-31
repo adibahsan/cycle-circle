@@ -5,6 +5,7 @@ import {
   bangladeshToday,
   dayToStoredDate,
   daysBetween,
+  formatDhaka,
   storedDateToDay,
 } from '../dhaka-date'
 
@@ -92,5 +93,21 @@ describe('daysBetween', () => {
     const a = bangladeshDayOf(new Date('2026-06-10T17:59:00Z'))
     const b = bangladeshDayOf(new Date('2026-06-10T18:00:00Z'))
     expect(daysBetween(a, b)).toBe(1)
+  })
+})
+
+describe('formatDhaka', () => {
+  const date = { month: 'short', day: 'numeric', year: 'numeric' } as const
+
+  it('shows the Bangladesh date of an instant at 18:00 UTC (00:00 Bangladesh, next day)', () => {
+    expect(formatDhaka(new Date('2026-10-01T18:00:00Z'), date)).toBe('Oct 2, 2026')
+  })
+
+  it('shows the same date as UTC at 17:59 UTC', () => {
+    expect(formatDhaka(new Date('2026-10-01T17:59:00Z'), date)).toBe('Oct 1, 2026')
+  })
+
+  it('shows Bangladesh wall-clock time and accepts an ISO string', () => {
+    expect(formatDhaka('2026-10-01T18:30:00Z', { hour: '2-digit', minute: '2-digit', hour12: false })).toBe('00:30')
   })
 })

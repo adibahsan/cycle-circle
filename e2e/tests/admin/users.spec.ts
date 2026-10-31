@@ -251,3 +251,34 @@ test.describe('Admin users', () => {
     }
   })
 })
+
+test.describe('Server render', () => {
+  test('user detail hydrates when its dates fall on different days in UTC and Bangladesh', async ({
+    browser,
+    newUser,
+    days,
+    viewport,
+  }) => {
+    // The admin server runs at UTC and the browser at Asia/Dhaka. 18:00Z is 00:00 Bangladesh,
+    // so a date formatted in the process timezone differs between server and client (React #418)
+    // and the first click after load is lost.
+    const u = await newUser()
+    const row = await e2eDb().user.update({
+      where: { phone: toDbPhone(u.phone) },
+      data: { deletedAt: days.startOf(days.daysAgo(29)) },
+    })
+    const admin = await createLoggedInAdmin(browser, { viewport })
+    const reactErrors: string[] = []
+    admin.page.on('pageerror', (e) => {
+      if (/Minified React error #(418|423|425)|hydrat/i.test(e.message)) reactErrors.push(e.message)
+    })
+    try {
+      await admin.page.goto(`/users/${row.id}`)
+      await expect(admin.page.getByRole('button', { name: 'Restore', exact: true })).toBeVisible()
+      await admin.page.waitForLoadState('networkidle')
+      expect(reactErrors).toEqual([])
+    } finally {
+      await admin.context.close()
+    }
+  })
+})
