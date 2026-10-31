@@ -1,4 +1,6 @@
+import { request as pwRequest } from '@playwright/test'
 import { test, expect } from '../../support/fixtures'
+import { URLS } from '../../support/slot'
 import {
   createAdminUser,
   createLoggedInAdmin,
@@ -127,5 +129,49 @@ test.describe('Admin login', () => {
     } finally {
       await admin.context.close()
     }
+  })
+
+  test.describe('login hardening (#188)', () => {
+    test('the 6th failed login for one email gets 429, even with the right password', async () => {
+      const admin = await createAdminUser()
+      const api = await pwRequest.newContext({ baseURL: URLS.admin })
+      try {
+        for (let i = 0; i < 5; i++) {
+          const res = await api.post('/api/auth/login', { data: { email: admin.email, password: `wrong-${i}` } })
+          expect(res.status()).toBe(401)
+        }
+        const blocked = await api.post('/api/auth/login', { data: { email: admin.email, password: admin.password } })
+        expect(blocked.status()).toBe(429)
+      } finally {
+        await api.dispose()
+      }
+    })
+
+    test('a malformed body gets 400, not 500', async () => {
+      const api = await pwRequest.newContext({ baseURL: URLS.admin })
+      try {
+        const objectEmail = await api.post('/api/auth/login', { data: { email: {} } })
+        expect(objectEmail.status()).toBe(400)
+        const missing = await api.post('/api/auth/login', { data: { email: 'a@b.test' } })
+        expect(missing.status()).toBe(400)
+        const notJson = await api.post('/api/auth/login', { headers: { 'content-type': 'application/json' }, data: '{nope' })
+        expect(notJson.status()).toBe(400)
+      } finally {
+        await api.dispose()
+      }
+    })
+
+    test('an admin stored in lowercase logs in with a mixed-case email', async () => {
+      const admin = await createAdminUser()
+      const mixed = admin.email.charAt(0).toUpperCase() + admin.email.slice(1)
+      expect(mixed).not.toBe(admin.email)
+      const api = await pwRequest.newContext({ baseURL: URLS.admin })
+      try {
+        const res = await api.post('/api/auth/login', { data: { email: ` ${mixed} `, password: admin.password } })
+        expect(res.status()).toBe(200)
+      } finally {
+        await api.dispose()
+      }
+    })
   })
 })

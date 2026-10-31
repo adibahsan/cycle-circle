@@ -200,3 +200,55 @@ export async function checkRateLimit(
     remaining: Math.max(0, limit - count),
   }
 }
+
+/**
+ * Counts hits in the window WITHOUT recording one. Pair with `recordRateLimitHit`
+ * to rate-limit only the events you choose to count (e.g. failed logins).
+ * `allowed` is false once `limit` hits are already recorded.
+ */
+export async function peekRateLimit(
+  key: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<RateLimitResult> {
+  const windowStart = Date.now() - windowSeconds * 1000
+
+  if (redis) {
+    try {
+      const multi = redis.multi()
+      multi.zremrangebyscore(key, 0, windowStart)
+      multi.zcard(key)
+      const results = await multi.exec()
+      const count = (results?.[1]?.[1] as number) ?? 0
+      return { allowed: count < limit, remaining: Math.max(0, limit - count) }
+    } catch (err) {
+      logRedisError('peekRateLimit', err)
+    }
+  }
+
+  const count = (memRateLimit.get(key) ?? []).filter((ts) => ts > windowStart).length
+  return { allowed: count < limit, remaining: Math.max(0, limit - count) }
+}
+
+/** Records one hit against `key` in the sliding window. */
+export async function recordRateLimitHit(key: string, windowSeconds: number): Promise<void> {
+  const now = Date.now()
+  const windowStart = now - windowSeconds * 1000
+
+  if (redis) {
+    try {
+      const multi = redis.multi()
+      multi.zremrangebyscore(key, 0, windowStart)
+      multi.zadd(key, now, `${now}-${Math.random()}`)
+      multi.expire(key, windowSeconds)
+      await multi.exec()
+      return
+    } catch (err) {
+      logRedisError('recordRateLimitHit', err)
+    }
+  }
+
+  const timestamps = (memRateLimit.get(key) ?? []).filter((ts) => ts > windowStart)
+  timestamps.push(now)
+  memRateLimit.set(key, timestamps)
+}

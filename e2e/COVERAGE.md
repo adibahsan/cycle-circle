@@ -151,7 +151,7 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A01 | Login with email and password; non-admin sees forbidden page; logout | `/login`, `/forbidden`, `/api/auth/login`, `/api/auth/logout` | `e2e/tests/admin/login.spec.ts` | deep (wrong password, non-admin form error, unauth redirect, forged-token forbidden, logout) | #126 |
+| A01 | Login with email and password; non-admin sees forbidden page; logout | `/login`, `/forbidden`, `/api/auth/login`, `/api/auth/logout` | `e2e/tests/admin/login.spec.ts` | deep (wrong password, non-admin form error, unauth redirect, forged-token forbidden, logout; 6th failed login gets 429, malformed body gets 400, mixed-case email logs in) | #126, #188 |
 | A02 | Dashboard KPIs and signup trend | `/` | `e2e/tests/admin/dashboard.spec.ts` | full (Total Users UI ≥ before+2 after creates — parallel-safe; today's signup count from the chart's screen-reader table: #135) | #126 |
 | A03 | Users: search and filter | `/users` | `e2e/tests/admin/users.spec.ts` | deep (search narrows; Suspended set up before load; hides active) | #126 |
 | A04 | User detail: profile, plan history, Translog tabs; hydrates when its dates differ between UTC and Bangladesh | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts`, `e2e/tests/admin/users.spec.ts` | full (Profiles empty state; Plan history after grant/revoke; Translog via `translogFor(..., { app: 'admin' })` — no Translog tab in UI; no React #418 for a user deleted at 18:00Z) | #127 |
