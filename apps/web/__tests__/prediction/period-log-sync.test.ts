@@ -326,4 +326,22 @@ describe('getLatestPeriodLog', () => {
     expect(prediction).not.toBeNull()
     expect(prediction!.tier).toBe('AVERAGE')
   })
+
+  it('returns a logged period even when profile.lastPeriodStart is null (#154)', async () => {
+    const suffix2 = 'sync6'
+    const userId = testId(`user-${suffix2}`)
+    await cleanupTestData(userId).catch(() => {})
+    const { profile } = await createTestUser(suffix2)
+    const noLps = await testPrisma.profile.update({ where: { id: profile.id }, data: { lastPeriodStart: null } })
+    await testPrisma.periodLog.create({
+      data: { profileId: profile.id, startDate: d('2026-02-03'), endDate: d('2026-02-07'), flowIntensity: 'HEAVY' },
+    })
+
+    const result = await getLatestPeriodLog(noLps)
+
+    expect(result).not.toBeNull()
+    expect(ymd(result!.startDate)).toBe('2026-02-03')
+    expect(result!.flowIntensity).toBe('HEAVY')
+    await cleanupTestData(userId).catch(() => {})
+  })
 })

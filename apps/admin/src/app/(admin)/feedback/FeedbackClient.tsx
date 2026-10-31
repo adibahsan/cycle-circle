@@ -1,7 +1,8 @@
 'use client'
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { useUrlParams } from '@/lib/use-url-params'
+import { useCallback, useState } from 'react'
 import { Download } from 'lucide-react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
@@ -20,7 +21,7 @@ import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
-import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
+import { bangladeshToday, formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 type FeedbackItem = {
   id: string
@@ -97,7 +98,7 @@ function StarRating({ rating }: { rating: number | null }) {
 }
 
 function formatDate(d: Date) {
-  return new Date(d).toLocaleDateString(undefined, {
+  return formatDhaka(d, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -135,9 +136,7 @@ function MessageCell({ message }: { message: string }) {
 
 export function FeedbackClient({ data, volumeData, categoryData, ratingData }: FeedbackClientProps) {
   const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const [, startTransition] = useTransition()
+  const { searchParams, updateParams } = useUrlParams({ clearOn: ['all'] })
   const [exporting, setExporting] = useState(false)
   const toast = useToast()
 
@@ -170,23 +169,6 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
   const currentPage = data.page
   const currentPageSize = data.pageSize
 
-  const updateParams = useCallback(
-    (updates: Record<string, string | number>) => {
-      const params = new URLSearchParams(searchParams.toString())
-      Object.entries(updates).forEach(([k, v]) => {
-        if (v === '' || v === undefined || v === 'all') {
-          params.delete(k)
-        } else {
-          params.set(k, String(v))
-        }
-      })
-      if (!('page' in updates)) params.set('page', '1')
-      startTransition(() => {
-        router.push(`${pathname}?${params.toString()}`)
-      })
-    },
-    [router, pathname, searchParams]
-  )
 
   function handleCategoryChange(value: string) {
     updateParams({ category: value })

@@ -9,6 +9,7 @@ import { findOverlappingPeriod, periodDayKey } from '../../utils/period-overlap'
 import { getCurrentPhase, MS_PER_DAY } from '../../utils/cycle-utils'
 import {
   addDaysToDay,
+  bangladeshDayOf,
   bangladeshToday,
   dayToStoredDate,
   daysBetween,
@@ -47,6 +48,14 @@ async function assertNoPeriodOverlap(profileId: string, start: Date, end: Date, 
   if (hit) throw new ApiError(409, 'This period overlaps another logged period', 'PERIOD_OVERLAP')
 }
 
+/** Throws 400 PERIOD_IN_FUTURE if either day is after today's Bangladesh day (today itself is fine). */
+function assertNotFuture(start: Date, end: Date, now: Date) {
+  const today = bangladeshDayOf(now)
+  if (periodDayKey(start) > today || periodDayKey(end) > today) {
+    throw new ApiError(400, 'A period cannot start or end in the future', 'PERIOD_IN_FUTURE')
+  }
+}
+
 export async function createPeriodLog(
   profileId: string,
   userId: string,
@@ -55,10 +64,12 @@ export async function createPeriodLog(
     endDate: string
     flowIntensity: 'LIGHT' | 'MEDIUM' | 'HEAVY'
   },
+  now: Date,
 ): Promise<{ log: Awaited<ReturnType<typeof prisma.periodLog.create>>; shouldRecalcPrediction: true }> {
   const start = new Date(data.startDate)
   const end = new Date(data.endDate)
   if (end < start) throw new Error('End date must be on or after start date')
+  assertNotFuture(start, end, now)
 
   await verifyProfileOwnership(profileId, userId)
   await assertNoPeriodOverlap(profileId, start, end)
@@ -83,6 +94,7 @@ export async function updatePeriodLog(
     endDate?: string
     flowIntensity?: 'LIGHT' | 'MEDIUM' | 'HEAVY'
   },
+  now: Date,
 ): Promise<{ log: Awaited<ReturnType<typeof prisma.periodLog.update>>; profileId: string; shouldRecalcPrediction: true }> {
   const existing = await prisma.periodLog.findUnique({
     where: { id: logId },
@@ -94,6 +106,7 @@ export async function updatePeriodLog(
   const newEnd = data.endDate !== undefined ? new Date(data.endDate) : existing.endDate
   if (newEnd < newStart) throw new Error('End date must be on or after start date')
   if (data.startDate !== undefined || data.endDate !== undefined) {
+    assertNotFuture(newStart, newEnd, now)
     await assertNoPeriodOverlap(existing.profileId, newStart, newEnd, logId)
   }
 

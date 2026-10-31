@@ -12,6 +12,7 @@ import {
   type MetricConfig,
   type PanelKey,
 } from '@/lib/analytics-panels'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -153,8 +154,7 @@ function TierBadges({ data }: { data: PredictionAccuracy[] }) {
 // ── Retention rate mini-badges (KPI) ───────────────────────────────────────
 
 function formatWeek(dateStr: string) {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return formatDhaka(dateStr, { month: 'short', day: 'numeric' })
 }
 
 function RetentionRates({ data }: { data: UserRetention[] }) {
@@ -263,7 +263,7 @@ export function AnalyticsClient({
       <AdminPageHeader
         title="Analytics"
         description="Platform health metrics and cycle intelligence insights"
-        tags={[adminCacheTags.analytics]}
+        tags={[adminCacheTags.analytics, adminCacheTags.feedback]}
       />
 
       {/* Every panel carries its own range (and metric) selector, each bound to its own URL param. */}

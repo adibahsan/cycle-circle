@@ -1,7 +1,8 @@
 'use client'
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { useUrlParams } from '@/lib/use-url-params'
+import { useState, useTransition } from 'react'
 import { CreditCard, Mail, Smartphone, ShieldCheck } from 'lucide-react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
@@ -16,6 +17,7 @@ import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { CHART_VAR } from '@/lib/chart-palette'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types — mirror the Prisma include shape from getSubscriptions
@@ -69,7 +71,7 @@ const STATUS_OPTIONS = [
 
 function formatDate(d: Date | null | undefined) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString(undefined, {
+  return formatDhaka(d, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -143,9 +145,7 @@ const bdappsFailedMessage = (e: string) => `Plan changed, but the BDApps unsubsc
 
 export function SubscriptionsClient({ data, trend, statusBreakdown, range }: SubscriptionsClientProps) {
   const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const [, startTransition] = useTransition()
+  const { searchParams, updateParams } = useUrlParams({ clearOn: ['all'] })
   const [actionPending, startActionTransition] = useTransition()
   const toast = useToast()
 
@@ -160,23 +160,6 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, range }: Sub
 
   // ── URL helpers ──────────────────────────────────────────────────────────
 
-  const updateParams = useCallback(
-    (updates: Record<string, string | number>) => {
-      const params = new URLSearchParams(searchParams.toString())
-      Object.entries(updates).forEach(([k, v]) => {
-        if (v === '' || v === undefined) {
-          params.delete(k)
-        } else {
-          params.set(k, String(v))
-        }
-      })
-      if (!('page' in updates)) params.set('page', '1')
-      startTransition(() => {
-        router.push(`${pathname}?${params.toString()}`)
-      })
-    },
-    [router, pathname, searchParams]
-  )
 
   function handleStatusChange(value: string) {
     updateParams({ status: value })

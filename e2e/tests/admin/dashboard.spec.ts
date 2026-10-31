@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { test, expect } from '../../support/fixtures'
 import { createLoggedInAdmin } from '../../support/admin'
 import { e2eDb } from '../../support/db'
+import { toDbPhone } from '../../support/users'
 import { bangladeshDayOf, bangladeshDayStart, serverNow } from '../../support/bangladesh-day'
 
 /**
@@ -21,20 +22,10 @@ function parseExactStatInteger(display: string, label: string): number {
   return Number.parseInt(trimmed, 10)
 }
 
-/**
- * StatCard value sits in the `<p>` after the title row.
- * No role/name or data-testid on the value (a11y gap #135).
- */
+/** StatCard exposes its value as the paragraph inside a group named by the card title. */
 async function readStatCardValue(page: Page, title: string): Promise<string> {
-  return page.getByText(title, { exact: true }).evaluate((titleEl) => {
-    const titleRow = titleEl.parentElement
-    const valueEl = titleRow?.nextElementSibling
-    if (valueEl && valueEl.tagName === 'P') return valueEl.textContent?.trim() ?? ''
-    const card = titleEl.parentElement?.parentElement
-    if (!card) return ''
-    const paragraphs = Array.from(card.querySelectorAll('p'))
-    return paragraphs.find((p) => p !== titleEl)?.textContent?.trim() ?? ''
-  })
+  const value = page.getByRole('group', { name: title, exact: true }).getByRole('paragraph')
+  return ((await value.textContent()) ?? '').trim()
 }
 
 async function readExactStat(page: Page, title: string): Promise<number> {
@@ -177,9 +168,50 @@ test.describe('Admin dashboard', () => {
 
       await expect(page.getByRole('heading', { name: 'New Signups' })).toBeVisible()
       await expect(page.getByText('Daily new user registrations — last 30 days')).toBeVisible()
-      // Recharts AreaChart exposes no accessible per-day counts (#135); today's bucket is
-      // asserted via the same User.createdAt day grouping the chart reads (see COVERAGE.md A02).
-      expect(afterToday - beforeToday).toBeGreaterThanOrEqual(2)
+      // The chart's screen-reader table carries the per-day counts; today's row must hold the new users.
+      const todayRow = page
+        .getByRole('table', { name: 'New signups per day' })
+        .getByRole('row', { name: new RegExp(`^${bangladeshDayOf(await serverNow())}\\b`) })
+      await expect
+        .poll(
+          async () => {
+            await refreshDashboard(page)
+            return Number.parseInt(((await todayRow.getByRole('cell').textContent()) ?? '0').trim(), 10)
+          },
+          { timeout: 20_000 },
+        )
+        .toBeGreaterThanOrEqual(beforeToday + 2)
+    } finally {
+      await admin.context.close()
+    }
+  })
+})
+
+test.describe('Server render', () => {
+  test('dashboard hydrates when a user signed up between 18:00Z and 24:00Z', async ({
+    browser,
+    newUser,
+    days,
+    viewport,
+  }) => {
+    // The admin server runs at UTC and the browser at Asia/Dhaka. 18:00Z is 00:00 Bangladesh, so a
+    // date formatted in the process timezone differs between server and client (React #418).
+    const u = await newUser()
+    await e2eDb().user.update({
+      where: { phone: toDbPhone(u.phone) },
+      data: { createdAt: days.startOf(days.daysAgo(2)) },
+    })
+    const admin = await createLoggedInAdmin(browser, { viewport })
+
+    const reactErrors: string[] = []
+    admin.page.on('pageerror', (e) => {
+      if (/Minified React error #(418|423|425)|hydrat/i.test(e.message)) reactErrors.push(e.message)
+    })
+    try {
+      await admin.page.goto('/')
+      await expect(admin.page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
+      await admin.page.waitForLoadState('networkidle')
+      expect(reactErrors).toEqual([])
     } finally {
       await admin.context.close()
     }

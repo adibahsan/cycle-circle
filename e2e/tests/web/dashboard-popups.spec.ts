@@ -29,11 +29,6 @@ test.describe('dashboard pop-ups and celebration (W39)', () => {
   })
 
   test('saving a period shows a celebration toast (polite live region, no focus steal)', async ({ newUser, days }) => {
-    // toast.celebrate runs after router.refresh(); the toast is usually lost (#157). It is a timing race
-    // (refresh vs the 260 ms toast delay): 16/16 lost 00:00-06:00 Bangladesh under TZ=UTC, but it showed
-    // in about 1 of 2 runs outside those hours and in 11 of 16 with E2E_APP_TZ=Asia/Dhaka. No server-clock
-    // condition predicts it, so an expected-fail would flip at random: fixme until #157 is fixed.
-    test.fixme(true, 'https://github.com/adibahsan/cycle-circle/issues/157 (intermittent; see comment)')
     const { page, phone } = await newUser()
     await ensureUserProfile(phone, { name: 'Celebrate User' })
     await suppressAutoPrompts(page)

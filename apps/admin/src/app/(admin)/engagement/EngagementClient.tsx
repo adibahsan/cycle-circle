@@ -5,6 +5,7 @@ import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { CHART_VAR } from '@/lib/chart-palette'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -41,8 +42,7 @@ interface EngagementClientProps {
 // ── Retention rate mini-badges ─────────────────────────────────────────────
 
 function formatWeek(dateStr: string) {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return formatDhaka(dateStr, { month: 'short', day: 'numeric' })
 }
 
 function RetentionRates({ data }: { data: RetentionPoint[] }) {

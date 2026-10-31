@@ -24,7 +24,7 @@ export const PATCH = withAuth(async (request, { params, user }: RouteContext) =>
       startDate: body.startDate,
       endDate: body.endDate,
       flowIntensity: body.flowIntensity,
-    })
+    }, new Date())
 
     await recalculatePrediction(profileId)
     revalidateTag(cacheTags.tracking(profileId), { expire: 0 })

@@ -712,10 +712,6 @@ test.describe('Admin analytics', () => {
       browser,
       { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
       async (page) => {
-        // The analytics page's Refresh only busts the analytics cache tag, not the feedback panels'
-        // (cached 5 min, and warmed empty by the check above): bust it from /feedback, then come back.
-        await page.goto('/feedback')
-        await refreshData(page)
         await page.goto('/analytics?fb=7d')
         const fbRange = page
           .getByRole('region', { name: 'Feedback analytics' })

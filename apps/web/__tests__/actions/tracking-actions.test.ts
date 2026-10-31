@@ -65,7 +65,7 @@ describe('createPeriodLog', () => {
       startDate: '2026-01-15',
       endDate: '2026-01-20',
       flowIntensity: 'MEDIUM',
-    })
+    }, expect.any(Date))
     expect(svc.recalculatePrediction).toHaveBeenCalledWith('profile-1')
     expect(revalidateTag).toHaveBeenCalledWith('tracking:profile-1', { expire: 0 })
     expect(result).toEqual(MOCK_PERIOD_LOG)
@@ -117,7 +117,7 @@ describe('updatePeriodLog', () => {
 
     expect(svc.updatePeriodLog).toHaveBeenCalledWith('log-1', 'user-1', {
       flowIntensity: 'HEAVY',
-    })
+    }, expect.any(Date))
     expect(svc.recalculatePrediction).toHaveBeenCalledWith('profile-1')
     expect(revalidateTag).toHaveBeenCalledWith('tracking:profile-1', { expire: 0 })
     expect(result).toEqual(updatedLog)

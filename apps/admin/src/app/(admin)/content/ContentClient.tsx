@@ -1,7 +1,8 @@
 'use client'
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useTransition, useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import { useUrlParams } from '@/lib/use-url-params'
+import { useState, useRef } from 'react'
 import { Plus, Pencil, Trash2, ChevronRight, Tags, X, Check } from 'lucide-react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
@@ -15,6 +16,7 @@ import { deleteArticle, createCategory, updateCategory, deleteCategory } from '@
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 type ArticleRow = {
   id: string
@@ -95,7 +97,7 @@ function PhaseBadges({ phases }: { phases: string[] }) {
 
 function formatDate(d: Date | null | string) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString(undefined, {
+  return formatDhaka(d, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -104,9 +106,7 @@ function formatDate(d: Date | null | string) {
 
 export function ContentClient({ data, categories, statusBreakdown, byCategory, byPhase }: ContentClientProps) {
   const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const [, startTransition] = useTransition()
+  const { searchParams, updateParams } = useUrlParams({ clearOn: ['all'] })
   const [deleteTarget, setDeleteTarget] = useState<ArticleRow | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -131,23 +131,6 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
   const currentPage = data.page
   const currentPageSize = data.pageSize
 
-  const updateParams = useCallback(
-    (updates: Record<string, string | number>) => {
-      const params = new URLSearchParams(searchParams.toString())
-      Object.entries(updates).forEach(([k, v]) => {
-        if (v === '' || v === 'all' || v === undefined) {
-          params.delete(k)
-        } else {
-          params.set(k, String(v))
-        }
-      })
-      if (!('page' in updates)) params.set('page', '1')
-      startTransition(() => {
-        router.push(`${pathname}?${params.toString()}`)
-      })
-    },
-    [router, pathname, searchParams]
-  )
 
   const categoryOptions = [
     { value: 'all', label: 'All Categories' },

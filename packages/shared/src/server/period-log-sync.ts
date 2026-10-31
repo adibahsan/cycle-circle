@@ -35,7 +35,14 @@ export async function ensurePeriodLogFromProfile(profile: Profile, flowIntensity
   return created
 }
 
-/** Latest period log, materializing from profile.lastPeriodStart when missing. */
+/**
+ * Latest period log. A logged period always wins (even when profile.lastPeriodStart is null);
+ * only when none exists is one materialized from profile.lastPeriodStart.
+ */
 export async function getLatestPeriodLog(profile: Profile): Promise<PeriodLog | null> {
-  return ensurePeriodLogFromProfile(profile)
+  const latest = await prisma.periodLog.findFirst({
+    where: { profileId: profile.id },
+    orderBy: { startDate: 'desc' },
+  })
+  return latest ?? ensurePeriodLogFromProfile(profile)
 }

@@ -35,7 +35,7 @@ export const POST = withAuth(async (request, { user }: { user: AuthUser }) => {
       startDate: body.startDate,
       endDate: body.endDate,
       flowIntensity: body.flowIntensity,
-    })
+    }, new Date())
 
     await recalculatePrediction(body.profileId)
     revalidateTag(cacheTags.tracking(body.profileId), { expire: 0 })

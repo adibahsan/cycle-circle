@@ -91,7 +91,6 @@ test.describe('BDApps webhooks: recorded events and duplicates', () => {
   // Serial project on purpose: the bug's fallback lands on the newest active SENT broadcast, so beside
   // the parallel admin SMS tests it would hit one of theirs (and pass here unexpectedly).
   test('a delivery report with an unknown requestId leaves our broadcast counts unchanged', async ({ fakeBdapps, db }) => {
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/145')
     const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     const admin = await db.user.findFirstOrThrow({ where: { role: 'ADMIN' } })
     // Setup only: a sent broadcast with a known provider id, newest by sentAt (UI send can't fix the order).

@@ -51,7 +51,7 @@ Notes on the tally:
 | W03 | OTP error paths: wrong, expired, 60 s resend cooldown, per-phone rate limit | `/verify-otp`, `/api/auth/otp/*` | `e2e/tests/web/login.spec.ts` | full | #120 |
 | W04 | Brute-force block after repeated wrong codes | `/api/auth/otp/verify` | `e2e/tests/web/login.spec.ts` | full | #120 |
 | W05 | Email magic-link login, lands on 24 h email trial | `/email-login`, `/api/auth/magic-link/request`, `/api/auth/magic-link/callback` | `e2e/tests/web/email-magic-link.spec.ts` | partial | #119 |
-| W06 | Magic-link security: expired or reused link rejected | `/api/auth/magic-link/callback` | `e2e/tests/web/email-magic-link.spec.ts` | partial | #119 |
+| W06 | Magic-link security: expired, reused or unknown link redirects to an error on `/email-login` | `/api/auth/magic-link/callback` | `e2e/tests/web/email-magic-link.spec.ts` | full (#140) | #119 |
 | W07 | Logout ends the session | `/api/auth/logout`, settings logout dialog | `e2e/tests/web/login.spec.ts`, `apps/web/e2e/tests/bengali-no-english.spec.ts` | full | #120 |
 | W08 | Route protection: logged-out visitor redirected from every protected page | all `(main)` routes, `/onboarding` | `e2e/tests/web/login.spec.ts` | full | #120 |
 | W09 | Suspended or deleted user session is blocked | `/api/auth/status`, withAuth | `e2e/tests/admin/user-actions.spec.ts` | full (baseline 200; after suspend/delete → auth/status 401 + /dashboard → /login) | #127 |
@@ -74,9 +74,9 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W19 | Log a period; dashboard last-period card and calendar update after reload (prediction values not asserted; future dates accepted: #139; Bangladesh default day: #115) | `/calendar`, `/dashboard`, `/api/tracking/period-logs` | `e2e/tests/web/period-logging.spec.ts` | partial | #122 |
+| W19 | Log a period; dashboard last-period card and calendar update after reload (prediction values not asserted; profile without a last-period date still shows the logged period: #154) | `/calendar`, `/dashboard`, `/api/tracking/period-logs` | `e2e/tests/web/period-logging.spec.ts` | partial | #122 |
 | W20 | Edit and delete a past period | `/calendar`, `/api/tracking/period-logs/[id]` | `e2e/tests/web/period-logging.spec.ts` (delete missing affordance: #136), `apps/web/e2e/tests/calendar-days.spec.ts` | partial | #122 |
-| W21 | Period date validation: end before start, future date | period log form, `/api/tracking/period-logs` | `e2e/tests/web/period-logging.spec.ts` (future date accepted: #139) | partial | #122 |
+| W21 | Period date validation: end before start, future date | period log form, `/api/tracking/period-logs` | `e2e/tests/web/period-logging.spec.ts` (future date rejected with a visible alert and 400 `PERIOD_IN_FUTURE`: #139) | full | #122 |
 | W22 | Symptom logging across four categories (save, reload, still selected) | `/symptoms`, `/api/tracking/symptoms` | `e2e/tests/web/symptom-logging.spec.ts`, `apps/web/e2e/tests/symptoms-save.spec.ts`, `apps/web/e2e/tests/symptoms-look.spec.ts` | full | #122 |
 | W23 | Back-dated symptom logging with the date picker | `/symptoms` | `e2e/tests/web/symptom-logging.spec.ts` | full | #122 |
 | W24 | Daily Check-in, including "all good" (recorded, not offered again that Bangladesh day) | dashboard check-in dialog | `e2e/tests/web/symptom-logging.spec.ts`, `apps/web/e2e/tests/dashboard-popups.spec.ts` | full | #122 |
@@ -99,7 +99,7 @@ Notes on the tally:
 | W36 | Insights charts with enough data | `/insights` | `e2e/tests/web/insights.spec.ts` | full | #123 |
 | W37 | Insights empty and partial states | `/insights` | `e2e/tests/web/insights.spec.ts` | full | #123 |
 | W38 | Phase pattern card (most-logged symptoms in the current phase) | `/dashboard` | `e2e/tests/web/dashboard.spec.ts` | full | #123 |
-| W39 | Dashboard pop-ups and celebration toast | `/dashboard` | `e2e/tests/web/dashboard-popups.spec.ts` (period/quick dialogs; celebration toast `fixme` until #157); look-only: `apps/web/e2e/tests/dashboard-popups.spec.ts` | partial | #133 (gap from #123) |
+| W39 | Dashboard pop-ups and celebration toast | `/dashboard` | `e2e/tests/web/dashboard-popups.spec.ts` (period/quick dialogs; celebration toast in the polite region: #157); look-only: `apps/web/e2e/tests/dashboard-popups.spec.ts` | full | #133 (gap from #123) |
 
 ### Web: content, feedback, settings
 
@@ -124,7 +124,7 @@ Notes on the tally:
 | W51 | Trial lock for an expired email trial (only upgrade or logout gets past) | trial lock, `withAuth` 402 | `e2e/tests/web/billing.spec.ts` | full (lock persists across /dashboard, /calendar, /insights, /settings, /symptoms, /content; 402 TRIAL_EXPIRED; no dismiss; upgrade and logout paths) | #125 |
 | W52 | Pro-only features gated for Free users | Pro-gated routes and UI | `e2e/tests/web/billing.spec.ts` | partial (SMS alerts gated via cron, proven; Data Export and Advanced Predictions ungated, asserted as current behaviour, deferred by FR-GATE; Ad-free has no UI) | #125 |
 | W53 | BDApps failure during subscribe: clear error, plan unchanged | phone OTP request (`/api/billing/subscribe` is CAAS_DISABLED) | `e2e/tests/web/billing.spec.ts` | full (scoped E1601 failure: error shown, plan Free after reload) | #125 (fake failures: #118) |
-| W54 | Subscription page: status, plan, trial pill | `/subscription` | `e2e/tests/web/billing.spec.ts` | partial (Free and Pro plan card, upgrade/unsubscribe buttons, Free vs Pro table; table unnamed, a11y #153) | #125 |
+| W54 | Subscription page: status, plan, trial pill | `/subscription` | `e2e/tests/web/billing.spec.ts` | partial (Free and Pro plan card, upgrade/unsubscribe buttons, Free vs Pro table by role and name, per-feature Free/Pro values: #153) | #125 |
 
 ### Web: landing and public pages
 
@@ -152,7 +152,7 @@ Notes on the tally:
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
 | A01 | Login with email and password; non-admin sees forbidden page; logout | `/login`, `/forbidden`, `/api/auth/login`, `/api/auth/logout` | `e2e/tests/admin/login.spec.ts` | deep (wrong password, non-admin form error, unauth redirect, forged-token forbidden, logout) | #126 |
-| A02 | Dashboard KPIs and signup trend | `/` | `e2e/tests/admin/dashboard.spec.ts` | partial (Total Users UI ≥ before+2 after creates — parallel-safe; today's signup bucket via DB — Recharts SVG has no accessible per-day counts; a11y #135) | #126 |
+| A02 | Dashboard KPIs and signup trend | `/` | `e2e/tests/admin/dashboard.spec.ts` | full (Total Users UI ≥ before+2 after creates — parallel-safe; today's signup count from the chart's screen-reader table: #135) | #126 |
 | A03 | Users: search and filter | `/users` | `e2e/tests/admin/users.spec.ts` | deep (search narrows; Suspended set up before load; hides active) | #126 |
 | A04 | User detail: profile, plan history, Translog tabs; hydrates when its dates differ between UTC and Bangladesh | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts`, `e2e/tests/admin/users.spec.ts` | full (Profiles empty state; Plan history after grant/revoke; Translog via `translogFor(..., { app: 'admin' })` — no Translog tab in UI; no React #418 for a user deleted at 18:00Z) | #127 |
 | A05 | Subscriptions list with status filter | `/subscriptions` | `e2e/tests/admin/subscriptions.spec.ts` | deep (explicit PRO/FREE via setUserSubscription; pageSize=100; all visible rows match filter) | #126 |
@@ -164,7 +164,7 @@ Notes on the tally:
 | A06 | Suspend and reactivate (ends or keeps BDApps billing) | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (suspend → BDApps UNREGISTERED + session 401; reactivate leaves BDApps unsubscribed; /login UI BDApps OTP) | #127 |
 | A07 | Delete and restore within 30 days; no restore after the window | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (delete/restore UI + session block; daysAgo(29) restore; daysAgo(31) window passed) | #127 |
 | A08 | Grant and revoke Pro (admin override) | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts` | full (Set FREE unsubscribes BDApps; Set PRO leaves BDApps; scoped plan-history rows + admin translog + web) | #127 |
-| A09 | Users CSV export | `/users` | `e2e/tests/admin/users.spec.ts` | partial (filtered-only export expected-to-fail #134) | #126 |
+| A09 | Users CSV export | `/users` | `e2e/tests/admin/users.spec.ts` | full (export holds only the users matching the active search: #134; status filter merge race #138 covered by a unit test) | #126 |
 
 ### Admin: content
 
@@ -177,7 +177,7 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A12 | Analytics: population panels, per-tier MAE, symptoms by phase, date ranges in Bangladesh days | `/analytics` | `e2e/tests/admin/analytics.spec.ts` | partial (per-panel tests: phase N−1/boundary/N+1 + PanelRange; distinct per-tier MAE desktop-only with snapshot restore; cycle-length, symptoms-by-category, prediction confidence+metric, retention, feedback volume/category/rating, trend signups/logRate/1y; empty feedback when no rows; BD day keys `test.fail` #146; SVG a11y still #135. Remaining: true Bangladesh-day range windows once #146 lands; retention cohort value assertions beyond range clicks) | #130 |
+| A12 | Analytics: population panels, per-tier MAE, symptoms by phase, date ranges in Bangladesh days | `/analytics` | `e2e/tests/admin/analytics.spec.ts` | partial (per-panel tests: phase N−1/boundary/N+1 + PanelRange; distinct per-tier MAE desktop-only with snapshot restore; cycle-length, symptoms-by-category, prediction confidence+metric, retention, feedback volume/category/rating, trend signups/logRate/1y; empty feedback when no rows; BD day keys `test.fail` #146; SVG a11y: Refresh also refreshes the Feedback panels (#159). Remaining: true Bangladesh-day range windows once #146 lands; retention cohort value assertions beyond range clicks) | #130 |
 | A13 | Engagement panels | `/engagement` | `e2e/tests/admin/engagement.spec.ts` | partial (7d loggers/rate N−1/boundary/N+1; rate vs loggers + outside absent; streak exact +1 desktop-only; Weekly Logging Retention + Logging Rate Over Time; 90d/1y range; empty unreachable on busy slot noted; BD keys #146 + streak local-midnight #147 `test.fail`. Remaining: BD-day bucketing after #146/#147; empty-state when slot is quiet) | #130 |
 
 ### Admin: SMS
@@ -185,7 +185,7 @@ Notes on the tally:
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
 | A14 | SMS broadcast: bilingual create, schedule, send; one composed body by send language (`tel:all`) | `/sms` | `e2e/tests/admin/sms.spec.ts` | full | #129 (wording: #143) |
-| A15 | SMS queue: failed send retried; delivery-report webhook updates counts (webhook path; prod E1312) | `/sms` | `e2e/tests/admin/sms.spec.ts` | full (counts via DB + reload; UI counts: #144) | #129 |
+| A15 | SMS queue: failed send retried; delivery-report webhook updates counts (webhook path; prod E1312) | `/sms` | `e2e/tests/admin/sms.spec.ts` | full (counts via DB, then the Delivery column after Refresh: #144) | #129 |
 
 ### Admin: feedback, emails, audit, logs, system
 
@@ -193,7 +193,7 @@ Notes on the tally:
 |---|---|---|---|---|---|
 | A16 | Feedback triage: filter, detail, CSV export | `/feedback`, `/feedback/[id]` | `e2e/tests/admin/feedback.spec.ts` | deep (search + category filter via URL, detail view, CSV contains own marker) | #131 |
 | A17 | Emails: log and bilingual template preview | `/emails`, `/emails/[id]`, `/emails/preview` | `e2e/tests/admin/emails.spec.ts` | deep (magic-link email in log + detail; previews EN/BN real Bengali text) | #131 |
-| A18 | Audit log search | `/audit-logs` | `e2e/tests/admin/audit-logs.spec.ts` | partial (real suspend appears in search + metadata; Action filter expected-to-fail #152) | #131 |
+| A18 | Audit log search | `/audit-logs` | `e2e/tests/admin/audit-logs.spec.ts` | full (real suspend appears in search + metadata; Action filter finds it: #152) | #131 |
 | A19 | Log reader with OTPs masked | `/logs` | `e2e/tests/admin/logs.spec.ts` | deep (real OTP verify line found, OTP masked, raw code absent) | #131 |
 | A20 | System: cron settings saved and applied | `/system` | `e2e/tests/admin/system.spec.ts` | deep (caas-check toggle saved after reload, cron route skips; restored) | #131 |
 | A21 | API docs page loads | `/api-docs` | `e2e/tests/admin/api-docs.spec.ts` | deep (heading + Swagger UI renders operations) | #131 |
@@ -211,6 +211,6 @@ Cron routes, BDApps webhooks, the Resend webhook and health endpoints have no sc
 | S05 | BDApps webhook: subscription notify (subscribed, unsubscribed) | `/api/webhooks/subscription/notify` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`; subscribed record); `bdapps-webhook-unsubscribe.spec.ts` (UNREGISTERED plan effect, #118); `billing.spec.ts` (REGISTERED: Free to Pro, translog) | full | #118, #125, #132 |
 | S06 | BDApps webhook: SMS received, recorded as Webhook event, duplicates ignored | `/api/webhooks/sms/receive` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`) | full | #132 |
 | S07 | BDApps webhook: USSD, recorded, duplicates ignored | `/api/webhooks/ussd/receive` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`) | full | #132 |
-| S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`), `e2e/tests/admin/sms.spec.ts` (admin counts) | full (route-level; UI counts: #144; unknown requestId: #145) | #132, #129 |
+| S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`), `e2e/tests/admin/sms.spec.ts` (admin counts) | full (route-level; UI counts: #144; unknown requestId leaves every broadcast unchanged: #145) | #132, #129 |
 | S09 | Resend webhook updates email log delivery status | `/api/webhooks/resend` | `e2e/tests/web/webhooks-resend.spec.ts` (Svix HMAC via `SECRETS.resendWebhookSecret`; bad sig→401; bounce→BOUNCED) | full | #132 |
 | S10 | Health endpoints up; BDApps reported down when fake BDApps fails | `/api/health/{db,redis,mailpit,bdapps,worker}` | `e2e/tests/web/health.spec.ts` + `bdapps-health.spec.ts` (`cron`; no Redis → redis `skipped`, worker `ok:false`) | full | #132 |

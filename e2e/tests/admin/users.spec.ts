@@ -197,7 +197,7 @@ test.describe('Admin users', () => {
   })
 
   // Spec story 67 / #126: export must contain *the filtered users* only.
-  // handleExport calls exportUsersCsv() with no filter args — see #134.
+  // Regression for #134: handleExport passes the active filters to exportUsersCsv.
   test('users CSV export excludes users outside the active search filter', async ({
     browser,
     newUser,
@@ -209,8 +209,6 @@ test.describe('Admin users', () => {
     locale,
     timezoneId,
   }) => {
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/134')
-
     const userA = await newUser()
     const userB = await newUser()
     const storedA = toDbPhone(userA.phone)

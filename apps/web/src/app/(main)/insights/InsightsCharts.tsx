@@ -32,7 +32,9 @@ export function CycleLengthTrendChart({
   animate,
   formatDate,
   formatNumber,
+  ariaLabel,
 }: {
+  ariaLabel: string
   data: CycleLengthPoint[]
   chartType: ChartType
   cycleLengthLabel: string
@@ -90,7 +92,7 @@ export function CycleLengthTrendChart({
   )
 
   return (
-    <div className="h-[150px] sm:h-[190px] xl:h-[200px] 2xl:h-[260px]">
+    <div role="group" aria-label={ariaLabel} className="h-[150px] sm:h-[190px] xl:h-[200px] 2xl:h-[260px]">
     <ResponsiveContainer width="100%" height="100%">
       {chartType === 'line' ? (
         <LineChart {...sharedProps} accessibilityLayer>
@@ -158,7 +160,9 @@ export function SymptomFrequencyChart({
   categoryLabel,
   animate,
   formatNumber,
+  ariaLabel,
 }: {
+  ariaLabel: string
   data: SymptomFrequencyPoint[]
   countLabel: string
   categoryLabel: (category: string) => string
@@ -166,7 +170,7 @@ export function SymptomFrequencyChart({
   formatNumber: (n: number) => string
 }) {
   return (
-    <div className="h-[140px] sm:h-[170px] xl:h-[200px] 2xl:h-[260px]">
+    <div role="group" aria-label={ariaLabel} className="h-[140px] sm:h-[170px] xl:h-[200px] 2xl:h-[260px]">
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
         accessibilityLayer

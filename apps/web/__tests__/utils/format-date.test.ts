@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax -- the expected value is the plain local-zone Intl output the helper wraps */
 import { describe, it, expect } from 'vitest'
 import { formatShortDate } from '@/lib/format-date'
 import { parseCyclePhase } from '@vesta/shared/utils/cycle-utils'

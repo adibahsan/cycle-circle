@@ -11,10 +11,10 @@ import {
 } from 'recharts'
 import { Card } from '@/components/ui/Card'
 import { CHART_VAR, useChartColors } from '@/lib/chart-palette'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 function formatDate(dateStr: string) {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return formatDhaka(dateStr, { month: 'short', day: 'numeric' })
 }
 
 function ChartTooltip({
@@ -54,7 +54,24 @@ export function SignupTrendChart({ data }: { data: { date: string; count: number
           Users / day
         </div>
       </div>
-      <div className="h-64">
+      <table className="sr-only">
+        <caption>New signups per day</caption>
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">New users</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((d) => (
+            <tr key={d.date}>
+              <th scope="row">{d.date}</th>
+              <td>{d.count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="h-64" aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
             <defs>

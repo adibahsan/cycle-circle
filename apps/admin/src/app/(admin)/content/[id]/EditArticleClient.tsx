@@ -21,6 +21,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
 import { articlePublishWarnings, articleWarningMessages, isBlankBody } from '@vesta/shared/utils/article-warnings'
 import { updateArticle } from '@/app/actions/content-actions'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 type CategoryOption = {
   id: string
@@ -210,6 +211,7 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
                   </span>
                 </div>
                 <TiptapEditor
+                  ariaLabel="English Body"
                   content={bodyEn}
                   onChange={(v) => { setBodyEn(v); setIsDirty(true) }}
                   placeholder="Write the article content in English…"
@@ -228,6 +230,7 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
                   </span>
                 </div>
                 <TiptapEditor
+                  ariaLabel="Bengali Body"
                   content={bodyBn}
                   onChange={(v) => { setBodyBn(v); setIsDirty(true) }}
                   lang="bn"
@@ -346,7 +349,7 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
               <p className="text-xs text-[var(--color-text-muted)]">
                 Published{' '}
                 <span className="text-[var(--color-text-secondary)]">
-                  {new Date(article.publishedAt).toLocaleDateString(undefined, {
+                  {formatDhaka(article.publishedAt, {
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric',

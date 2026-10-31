@@ -1,3 +1,4 @@
+import { AUDIT_ACTIONS } from './audit-actions'
 import { prisma } from '../db'
 import { createAuditLog } from './audit-service'
 
@@ -62,7 +63,7 @@ export async function adminSetNotificationPrefs(
     },
   })
 
-  await createAuditLog(adminId, 'NOTIFICATION_PREFS_UPDATED', 'Profile', profileId, {
+  await createAuditLog(adminId, AUDIT_ACTIONS.NOTIFICATION_PREFS_UPDATED, 'Profile', profileId, {
     userId: profile.userId,
     ...data,
   })

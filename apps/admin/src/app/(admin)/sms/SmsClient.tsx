@@ -1,7 +1,8 @@
 'use client'
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { useUrlParams } from '@/lib/use-url-params'
+import { useState } from 'react'
 import { CalendarClock, Pencil, Plus, Send, Trash2 } from 'lucide-react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
@@ -20,6 +21,7 @@ import { RescheduleModal } from './RescheduleModal'
 import { SendPreview, statusBadge, type SmsBroadcast } from './sms-shared'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { canDeleteBroadcast, canEditBroadcast, canSendBroadcast } from '@vesta/shared/utils/sms'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 type SmsSendHistoryPoint = { date: string; count: number }
 type SmsDeliveryBreakdownItem = { status: string; count: number }
@@ -51,7 +53,7 @@ const STATUS_OPTIONS = [
 
 function formatDate(d: Date | null) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString(undefined, {
+  return formatDhaka(d, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -65,9 +67,7 @@ function formatDate(d: Date | null) {
 export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: SmsClientProps) {
   const toast = useToast()
   const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const [, startTransition] = useTransition()
+  const { searchParams, updateParams } = useUrlParams()
 
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<SmsBroadcast | null>(null)
@@ -82,23 +82,6 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
   const currentPage = data.page
   const currentPageSize = data.pageSize
 
-  const updateParams = useCallback(
-    (updates: Record<string, string | number>) => {
-      const params = new URLSearchParams(searchParams.toString())
-      Object.entries(updates).forEach(([k, v]) => {
-        if (v === '' || v === undefined) {
-          params.delete(k)
-        } else {
-          params.set(k, String(v))
-        }
-      })
-      if (!('page' in updates)) params.set('page', '1')
-      startTransition(() => {
-        router.push(`${pathname}?${params.toString()}`)
-      })
-    },
-    [router, pathname, searchParams]
-  )
 
   function handleStatusChange(value: string) {
     updateParams({ status: value })
@@ -200,6 +183,18 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
           {formatDate(row.sentAt)}
         </span>
       ),
+    },
+    {
+      key: 'delivery',
+      header: 'Delivery',
+      render: (row) =>
+        row.status === 'SENT' ? (
+          <span className="whitespace-nowrap text-sm tabular-nums text-[var(--color-text-secondary)]">
+            Delivered {row.deliveredCount ?? 0} · Failed {row.failedCount ?? 0}
+          </span>
+        ) : (
+          <span className="text-sm text-[var(--color-text-muted)]">—</span>
+        ),
     },
     {
       key: 'active',

@@ -1,5 +1,7 @@
+import { AUDIT_ACTIONS } from './audit-actions'
 import { prisma } from '../db'
 import { createAuditLog } from './audit-service'
+import { buildUsersWhere, type ListUsersParams } from './user-service'
 import { buildFeedbackWhere, type FeedbackFilters } from './feedback-service'
 
 type CsvCell = string | number | boolean | Date | null | undefined
@@ -40,7 +42,7 @@ export async function generateFeedbackCsv(
     orderBy: { createdAt: 'desc' },
   })
 
-  await createAuditLog(adminId, 'EXPORT_FEEDBACK_CSV', 'Feedback', 'csv', {
+  await createAuditLog(adminId, AUDIT_ACTIONS.EXPORT_FEEDBACK_CSV, 'Feedback', 'csv', {
     rows: items.length,
     filters: {
       category: category ?? null,
@@ -68,10 +70,17 @@ export async function generateFeedbackCsv(
   )
 }
 
-/** CSV of all non-deleted users. Audit-logged. */
-export async function generateUsersCsv(adminId: string): Promise<string> {
+export type UsersExportFilters = Pick<ListUsersParams, 'search' | 'status'>
+
+/** CSV of users matching the admin's current search/status filters (default: all non-deleted). Audit-logged. */
+export async function generateUsersCsv(
+  adminId: string,
+  filters: UsersExportFilters = {},
+): Promise<string> {
+  const search = filters.search?.trim() || undefined
+  const status = filters.status ?? 'all'
   const users = await prisma.user.findMany({
-    where: { deletedAt: null },
+    where: buildUsersWhere({ search, status }),
     select: {
       id: true,
       fullName: true,
@@ -88,7 +97,10 @@ export async function generateUsersCsv(adminId: string): Promise<string> {
     orderBy: { createdAt: 'desc' },
   })
 
-  await createAuditLog(adminId, 'EXPORT_USERS_CSV', 'User', 'csv', { rows: users.length })
+  await createAuditLog(adminId, AUDIT_ACTIONS.EXPORT_USERS_CSV, 'User', 'csv', {
+    rows: users.length,
+    filters: { search: search ?? null, status },
+  })
 
   return toCsv(
     ['ID', 'Name', 'Phone', 'Email', 'Auth Method', 'Subscription', 'Role', 'Profiles', 'Profile Complete', 'Created', 'Last Login'],

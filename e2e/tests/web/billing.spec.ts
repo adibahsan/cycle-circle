@@ -369,15 +369,18 @@ test.describe('Web billing: Pro-only features are gated for a Free user', () => 
     try {
       await page.goto('/subscription')
       await expect(page.getByText('Cycle Circle Free', { exact: true })).toBeVisible()
-      // The comparison is an unnamed div grid (a11y issue #153): anchor on its heading, search the page
-      await expect(page.getByRole('heading', { name: 'Free vs Pro' })).toBeVisible()
-      // feature names also appear in the plan card above, so take the last (table) match
-      const table = page.getByRole('main')
+      const table = page.getByRole('table', { name: 'Free vs Pro' })
+      await expect(table).toBeVisible()
+      const expectRow = async (feature: string, free: string, pro: string) => {
+        const cells = table.getByRole('row', { name: new RegExp(`^${feature}`) }).getByRole('cell')
+        await expect(cells.nth(0)).toHaveText(free)
+        await expect(cells.nth(1)).toHaveText(pro)
+      }
       for (const feat of ['Cycle Tracking', 'Calendar View', 'Symptom Logging', 'Health Articles']) {
-        await expect(table.getByText(feat, { exact: true }).last()).toBeVisible()
+        await expectRow(feat, 'Included', 'Included')
       }
       for (const feat of ['SMS Alerts', 'Data Export', 'Advanced Predictions', 'Ad-free Experience']) {
-        await expect(table.getByText(feat, { exact: true }).last()).toBeVisible()
+        await expectRow(feat, 'Not included', 'Included')
       }
       await expect(page.getByRole('button', { name: 'Unsubscribe from Pro' })).toHaveCount(0)
     } finally {

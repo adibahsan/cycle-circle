@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -24,8 +25,23 @@ function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
+const LINK_ERROR_KEYS: Record<string, string> = {
+  TOKEN_EXPIRED: 'auth.magicLinkExpired',
+  TOKEN_USED: 'auth.magicLinkUsed',
+  INVALID_TOKEN: 'auth.magicLinkInvalid',
+};
+
 export default function EmailLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <EmailLoginContent />
+    </Suspense>
+  );
+}
+
+function EmailLoginContent() {
   const { t } = useTranslation();
+  const linkErrorKey = LINK_ERROR_KEYS[useSearchParams().get('error') ?? ''];
 
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -114,6 +130,15 @@ export default function EmailLoginPage() {
                 {t('auth.emailLoginSub')}
               </p>
             </motion.div>
+
+            {linkErrorKey && (
+              <div
+                role="alert"
+                className="mb-5 px-4 py-3 rounded-2xl border border-[var(--color-error)] text-sm text-[var(--color-error)]"
+              >
+                {t(linkErrorKey)}
+              </div>
+            )}
 
             {/* Trial notice */}
             <motion.div

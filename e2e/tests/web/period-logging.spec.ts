@@ -49,7 +49,6 @@ test.describe('Period logging', () => {
   })
 
   test('a logged period shows on the dashboard last-period card after reload', async ({ newUser, days }) => {
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/154')
     const { page } = await newUser()
     await suppressAutoPrompts(page)
     await setupProfile(page, { name: 'Dashboard Period User' })
@@ -159,7 +158,6 @@ test.describe('Period logging', () => {
   })
 
   test('future date is rejected with a visible error', async ({ newUser, days }) => {
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/139')
     const { page } = await newUser()
     await suppressAutoPrompts(page)
     await setupProfile(page, { name: 'Future User' })
