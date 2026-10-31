@@ -197,7 +197,7 @@ Notes on the tally:
 | A18 | Audit log search | `/audit-logs` | `e2e/tests/admin/audit-logs.spec.ts` | full (real suspend appears in search + metadata; Action filter finds it: #152) | #131 |
 | A19 | Log reader with OTPs masked | `/logs` | `e2e/tests/admin/logs.spec.ts` | deep (real OTP verify line found, OTP masked, raw code absent) | #131 |
 | A20b | System: Pro price set with warning, history, audit | `/system` | `e2e/tests/admin/system.spec.ts` | deep (invalid refused, scheduled entry kept after reload, today's price unchanged, audit row) | #202 |
-| A20 | System: cron settings saved and applied | `/system` | `e2e/tests/admin/system.spec.ts` | deep (caas-check toggle saved after reload, cron route skips; restored) | #131 |
+| A20 | System: cron settings saved and applied; subscription check run history and run detail | `/system`, `/system/runs/[id]` | `e2e/tests/admin/system.spec.ts` | deep (caas-check toggle saved after reload, cron route skips; restored. A manual run is kept in the history and lists the moved user, linked to user detail) | #131, #204 |
 | A21 | API docs page loads | `/api-docs` | `e2e/tests/admin/api-docs.spec.ts` | deep (heading + Swagger UI renders operations; anonymous `/openapi.yaml` and `/swagger-ui/*` redirect to `/login`) | #131, #186 |
 
 ## Server-only paths (not counted in the 63 / 21)
