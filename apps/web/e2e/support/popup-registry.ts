@@ -48,6 +48,7 @@ export const ADMIN_POPUP_SOURCES = [
   'app/(admin)/sms/CreateBroadcastModal.tsx',
   'app/(admin)/sms/EditBroadcastModal.tsx',
   'app/(admin)/sms/RescheduleModal.tsx',
+  'app/(admin)/sms/[id]/CampaignDayModals.tsx',
   'components/ui/ConfirmModal.tsx',
   'components/ui/Drawer.tsx',
 ]
