@@ -1,3 +1,4 @@
+import { AUDIT_ACTIONS } from './audit-actions'
 import sanitizeHtml from 'sanitize-html'
 import { prisma } from '../db'
 import { articlePublishWarnings, isBlankBody } from '../../utils/article-warnings'
@@ -142,7 +143,7 @@ export async function createArticle(
   await prisma.adminAuditLog.create({
     data: {
       adminId: authorId,
-      action: 'ARTICLE_CREATED',
+      action: AUDIT_ACTIONS.ARTICLE_CREATED,
       targetType: 'Article',
       targetId: article.id,
     },
@@ -200,7 +201,7 @@ export async function removeArticle(id: string, adminId: string) {
   await prisma.adminAuditLog.create({
     data: {
       adminId,
-      action: 'ARTICLE_DELETED',
+      action: AUDIT_ACTIONS.ARTICLE_DELETED,
       targetType: 'Article',
       targetId: id,
     },

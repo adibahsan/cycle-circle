@@ -1,3 +1,4 @@
+import { AUDIT_ACTIONS } from './audit-actions'
 import { prisma } from '../db'
 import { logger } from '../log'
 import { smsSend } from '../adapters/bdapps'
@@ -212,7 +213,7 @@ export async function updateBroadcast(id: string, adminUserId: string, input: Up
         : {}),
     },
   })
-  await createAuditLog(adminUserId, 'UPDATE_SMS_BROADCAST', 'SmsBroadcast', id, { sendLanguage })
+  await createAuditLog(adminUserId, AUDIT_ACTIONS.UPDATE_SMS_BROADCAST, 'SmsBroadcast', id, { sendLanguage })
   return updated
 }
 
@@ -224,7 +225,7 @@ export async function rescheduleBroadcast(id: string, adminUserId: string, sched
     where: { id },
     data: { scheduledFor: when, status: 'SCHEDULED', lastError: null, sendAttempts: 0 },
   })
-  await createAuditLog(adminUserId, 'RESCHEDULE_SMS_BROADCAST', 'SmsBroadcast', id, {
+  await createAuditLog(adminUserId, AUDIT_ACTIONS.RESCHEDULE_SMS_BROADCAST, 'SmsBroadcast', id, {
     from: b.scheduledFor?.toISOString() ?? null,
     to: when.toISOString(),
   })
@@ -377,7 +378,7 @@ export async function sendBroadcast(broadcastId: string, adminUserId: string, no
   try {
     const updated = await performSend(broadcast, now, opts)
 
-    await createAuditLog(adminUserId, 'SEND_SMS_BROADCAST', 'SmsBroadcast', broadcastId, {
+    await createAuditLog(adminUserId, AUDIT_ACTIONS.SEND_SMS_BROADCAST, 'SmsBroadcast', broadcastId, {
       message: broadcast.message.slice(0, 100),
       devMode: env.DEV_MODE || env.NODE_ENV === 'development',
     })
@@ -406,7 +407,7 @@ export async function dispatchScheduledBroadcast(now: Date, opts: SendOptions = 
   await prisma.smsBroadcast.update({ where: { id: due.id }, data: { status: 'SENDING' } })
   try {
     const sent = await performSend(due, now, opts)
-    await createAuditLog(due.createdBy, 'DISPATCH_SMS_BROADCAST', 'SmsBroadcast', due.id, {
+    await createAuditLog(due.createdBy, AUDIT_ACTIONS.DISPATCH_SMS_BROADCAST, 'SmsBroadcast', due.id, {
       auto: true,
     })
     return { dispatched: true as const, broadcastId: sent.id }
@@ -433,16 +434,11 @@ export async function dispatchScheduledBroadcast(now: Date, opts: SendOptions = 
 export async function recordSmsDeliveryReport(requestId: string, deliveryStatus: string) {
   if (!requestId) return { matched: false as const }
 
-  let broadcast = await prisma.smsBroadcast.findFirst({
+  // Only an exact providerMessageId match counts; never fall back to another broadcast.
+  const broadcast = await prisma.smsBroadcast.findFirst({
     where: { providerMessageId: requestId },
     orderBy: { sentAt: 'desc' },
   })
-  if (!broadcast) {
-    broadcast = await prisma.smsBroadcast.findFirst({
-      where: { status: 'SENT', active: true },
-      orderBy: { sentAt: 'desc' },
-    })
-  }
   if (!broadcast) return { matched: false as const }
 
   const status = (deliveryStatus || '').toUpperCase()

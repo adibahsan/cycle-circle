@@ -202,6 +202,18 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
       ),
     },
     {
+      key: 'delivery',
+      header: 'Delivery',
+      render: (row) =>
+        row.status === 'SENT' ? (
+          <span className="whitespace-nowrap text-sm tabular-nums text-[var(--color-text-secondary)]">
+            Delivered {row.deliveredCount ?? 0} · Failed {row.failedCount ?? 0}
+          </span>
+        ) : (
+          <span className="text-sm text-[var(--color-text-muted)]">—</span>
+        ),
+    },
+    {
       key: 'active',
       header: 'Active',
       render: (row) =>

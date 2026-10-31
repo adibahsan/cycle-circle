@@ -1,3 +1,4 @@
+import { AUDIT_ACTIONS } from './audit-actions'
 import { prisma } from '../db'
 import { Prisma } from '@prisma/client'
 import { fillDaySeries, resolveDaySeriesRange, type DaySeriesOpts } from '../../utils/day-series'
@@ -96,7 +97,7 @@ export async function grantPro(userId: string, adminId: string, now: Date) {
   await prisma.adminAuditLog.create({
     data: {
       adminId,
-      action: 'PRO_GRANTED',
+      action: AUDIT_ACTIONS.PRO_GRANTED,
       targetType: 'Subscription',
       targetId: userId,
     },
@@ -131,7 +132,7 @@ export async function revokePro(userId: string, adminId: string, now: Date) {
   await prisma.adminAuditLog.create({
     data: {
       adminId,
-      action: 'PRO_REVOKED',
+      action: AUDIT_ACTIONS.PRO_REVOKED,
       targetType: 'Subscription',
       targetId: userId,
     },

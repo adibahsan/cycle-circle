@@ -7,6 +7,12 @@ import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
 import { Pagination } from '@/components/ui/Pagination'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
+import {
+  AUDIT_ACTION_VALUES,
+  AUDIT_TARGET_TYPES,
+  auditActionLabel,
+  type AuditAction,
+} from '@vesta/shared/server/services/audit-actions'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 
 type AuditLogRow = {
@@ -32,39 +38,36 @@ interface AuditLogClientProps {
 
 const ACTION_OPTIONS = [
   { value: '', label: 'All Actions' },
-  { value: 'SUSPEND_USER', label: 'Suspend User' },
-  { value: 'REACTIVATE_USER', label: 'Reactivate User' },
-  { value: 'SOFT_DELETE_USER', label: 'Delete User' },
-  { value: 'GRANT_PRO', label: 'Grant Pro' },
-  { value: 'REVOKE_PRO', label: 'Revoke Pro' },
-  { value: 'CREATE_ARTICLE', label: 'Create Article' },
-  { value: 'UPDATE_ARTICLE', label: 'Update Article' },
-  { value: 'DELETE_ARTICLE', label: 'Delete Article' },
-  { value: 'SEND_SMS_BROADCAST', label: 'Send SMS Broadcast' },
+  ...AUDIT_ACTION_VALUES.map((value) => ({ value, label: auditActionLabel(value) })),
 ]
 
 const TARGET_TYPE_OPTIONS = [
   { value: '', label: 'All Types' },
-  { value: 'USER', label: 'User' },
-  { value: 'ARTICLE', label: 'Article' },
-  { value: 'SUBSCRIPTION', label: 'Subscription' },
-  { value: 'SMS_BROADCAST', label: 'SMS Broadcast' },
+  ...AUDIT_TARGET_TYPES.map((value) => ({ value, label: value.replace(/([a-z])([A-Z])/g, '$1 $2') })),
 ]
 
-const ACTION_VARIANT_MAP: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
-  SUSPEND_USER: 'danger',
-  SOFT_DELETE_USER: 'danger',
-  REVOKE_PRO: 'danger',
-  DELETE_ARTICLE: 'danger',
-  REACTIVATE_USER: 'success',
-  GRANT_PRO: 'success',
-  CREATE_ARTICLE: 'info',
-  UPDATE_ARTICLE: 'info',
+type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral'
+
+const ACTION_VARIANT_MAP: Partial<Record<AuditAction, BadgeVariant>> = {
+  USER_SUSPENDED: 'danger',
+  USER_DELETED: 'danger',
+  PRO_REVOKED: 'danger',
+  ARTICLE_DELETED: 'danger',
+  USER_REACTIVATED: 'success',
+  USER_RESTORED: 'success',
+  PRO_GRANTED: 'success',
+  ARTICLE_CREATED: 'info',
   SEND_SMS_BROADCAST: 'warning',
+  DISPATCH_SMS_BROADCAST: 'warning',
+  UPDATE_SMS_BROADCAST: 'info',
+  RESCHEDULE_SMS_BROADCAST: 'info',
+  SET_CRON_ENABLED: 'warning',
+  TRIGGER_CRON_DAILY_REMINDERS: 'info',
+  TRIGGER_CRON_CAAS_CHECK: 'info',
 }
 
 function ActionBadge({ action }: { action: string }) {
-  const variant = ACTION_VARIANT_MAP[action] ?? 'neutral'
+  const variant = ACTION_VARIANT_MAP[action as AuditAction] ?? 'neutral'
   const label = action.replace(/_/g, ' ')
   return (
     <Badge variant={variant} size="sm">

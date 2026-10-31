@@ -485,12 +485,15 @@ test.describe('Admin SMS broadcasting', () => {
       expect(afterFailed.targetCount).toBe(2)
       expect(afterFailed.deliveredCount).toBe(1)
 
-      // Reload: Sent stays visible. Per-row delivered/failed counts are not rendered (#144).
+      // Reload: Sent stays visible and the Delivery column shows the webhook-updated counts (#144).
       // Do not assert Active — content-override clears it when a parallel worker sends later.
       await page.goto('/sms?status=SENT&pageSize=100')
       await expect(page.getByRole('heading', { name: 'SMS Broadcasts' })).toBeVisible()
       await expect(broadcastRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
       await expect(broadcastRow(page, enMarker).getByText('Sent', { exact: true })).toBeVisible()
+      // The webhook runs in the web app and can't clear the admin's cached list (5 min), so refresh.
+      await page.getByRole('button', { name: 'Refresh data' }).click()
+      await expect(broadcastRow(page, enMarker).getByText('Delivered 1 · Failed 1')).toBeVisible()
     } finally {
       await admin.context.close()
     }

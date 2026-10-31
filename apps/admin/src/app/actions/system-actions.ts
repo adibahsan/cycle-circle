@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireAdminAuth, getAuthUser } from '@vesta/shared/server/auth'
 import {
+  AUDIT_ACTIONS,
   createAuditLog,
   getCronSettings,
   setCronEnabled,
@@ -63,11 +64,11 @@ async function runJob(
 }
 
 export async function triggerDailyReminders(): Promise<CronJobResult> {
-  return runJob('daily-reminders', 'TRIGGER_CRON_DAILY_REMINDERS')
+  return runJob('daily-reminders', AUDIT_ACTIONS.TRIGGER_CRON_DAILY_REMINDERS)
 }
 
 export async function triggerCaasCheck(): Promise<CronJobResult> {
-  return runJob('caas-check', 'TRIGGER_CRON_CAAS_CHECK')
+  return runJob('caas-check', AUDIT_ACTIONS.TRIGGER_CRON_CAAS_CHECK)
 }
 
 export async function sendUserReminders(userId: string): Promise<CronJobResult> {
@@ -98,7 +99,7 @@ export async function sendUserReminders(userId: string): Promise<CronJobResult> 
       : undefined
     await createAuditLog(
       admin.id,
-      'SEND_USER_REMINDERS',
+      AUDIT_ACTIONS.SEND_USER_REMINDERS,
       'User',
       userId,
       res.ok ? { counts: counts ?? {} } : { status: res.status },
@@ -125,7 +126,7 @@ export async function setCronEnabledAction(
   const admin = await getAuthUser(jwt.sub)
   try {
     await setCronEnabled(slug, enabled, admin.id)
-    await createAuditLog(admin.id, 'SET_CRON_ENABLED', 'CronJob', slug, { enabled })
+    await createAuditLog(admin.id, AUDIT_ACTIONS.SET_CRON_ENABLED, 'CronJob', slug, { enabled })
     revalidatePath('/system')
     return { ok: true, enabled }
   } catch (e) {

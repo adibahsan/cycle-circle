@@ -89,8 +89,6 @@ test.describe('Admin audit logs', () => {
     locale,
     timezoneId,
   }) => {
-    // Bug: filter options use SUSPEND_USER, the service writes USER_SUSPENDED.
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/152')
     const user = await newUser()
     const dbUser = await e2eDb().user.findUniqueOrThrow({ where: { phone: toDbPhone(user.phone) } })
     const admin = await createLoggedInAdmin(browser, {
@@ -116,7 +114,7 @@ test.describe('Admin audit logs', () => {
       await page.goto('/audit-logs?pageSize=100')
       await fillSearch(page.getByRole('searchbox', { name: 'Search' }), dbUser.id, (timeout) => expectAuditLogFilterUrl(page, { search: dbUser.id }, timeout))
       await page.getByRole('combobox', { name: 'Action:' }).click()
-      await page.getByRole('option', { name: 'Suspend User' }).click()
+      await page.getByRole('option', { name: 'User Suspended', exact: true }).click()
       await expect(page).toHaveURL(/action=/)
       await expect(
         page.getByRole('row').filter({ hasText: 'USER SUSPENDED' }),
