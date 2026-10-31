@@ -28,6 +28,9 @@ test.describe('Customers see the admin-set Pro price', () => {
     const page = await context.newPage()
 
     try {
+      // A price cached by an earlier run on this server may predate this DB's reset
+      await revalidateWebTags(['pro-price'])
+
       // The seeded price shows to start with
       await page.goto('/subscription')
       await expect(page.getByText('/day', { exact: true })).toBeVisible()
@@ -69,10 +72,11 @@ test.describe('Customers see the admin-set Pro price', () => {
       await expect(page.getByText('৳৩৫/সপ্তাহ', { exact: false })).toBeVisible()
       await expect(page.getByText(/CAAS|অ্যাগ্রিগেশন/)).toHaveCount(0)
     } finally {
-      await e2eDb().proPrice.deleteMany({ where: { createdBy: { not: null } } })
-      await revalidateWebTags(['pro-price'])
+      // Close the browsers first so no page read refills the cache after the restore below
       await context.close()
       await admin.context.close()
+      await e2eDb().proPrice.deleteMany({ where: { createdBy: { not: null } } })
+      await revalidateWebTags(['pro-price'])
     }
   })
 })
