@@ -19,7 +19,8 @@ export function StatCard({ title, value, change, icon, className }: StatCardProp
     <Card className={clsx('flex flex-col gap-3', className)}>
       <div role="group" aria-labelledby={titleId} className="flex flex-col gap-3">
       <div className="flex items-start justify-between">
-        <p id={titleId} className="text-sm font-medium text-[var(--color-text-muted)]">{title}</p>
+        {/* aria-hidden: the group's name already announces the title; the value paragraph is the only content read after it. */}
+        <p id={titleId} aria-hidden="true" className="text-sm font-medium text-[var(--color-text-muted)]">{title}</p>
         {icon && (
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-bg-secondary)] text-[var(--color-primary)]">
             {icon}
@@ -27,12 +28,9 @@ export function StatCard({ title, value, change, icon, className }: StatCardProp
         )}
       </div>
 
-      <dl>
-        <dt className="sr-only">{title}</dt>
-        <dd className="text-3xl font-bold tracking-tight tabular-nums text-[var(--color-text-primary)]">
-          {value}
-        </dd>
-      </dl>
+      <p className="text-3xl font-bold tracking-tight tabular-nums text-[var(--color-text-primary)]">
+        {value}
+      </p>
 
       {change && (
         <div

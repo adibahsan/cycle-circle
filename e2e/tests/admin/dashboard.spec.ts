@@ -22,9 +22,9 @@ function parseExactStatInteger(display: string, label: string): number {
   return Number.parseInt(trimmed, 10)
 }
 
-/** StatCard exposes its value as a definition inside a group named by the card title. */
+/** StatCard exposes its value as the paragraph inside a group named by the card title. */
 async function readStatCardValue(page: Page, title: string): Promise<string> {
-  const value = page.getByRole('group', { name: title, exact: true }).getByRole('definition')
+  const value = page.getByRole('group', { name: title, exact: true }).getByRole('paragraph')
   return ((await value.textContent()) ?? '').trim()
 }
 

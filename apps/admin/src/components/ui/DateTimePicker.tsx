@@ -205,6 +205,7 @@ export function DateTimePicker({
     onChange(formatValue(next));
   }
 
+  // eslint-disable-next-line no-restricted-syntax -- viewMonth is a local-midnight Date from the picker's own local grid; same-zone formatting keeps the month
   const monthLabel = new Intl.DateTimeFormat(undefined, {
     month: 'long',
     year: 'numeric',

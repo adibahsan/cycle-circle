@@ -70,7 +70,11 @@ const NO_TIME_ZONE = ':not(:has(ObjectExpression > Property[key.name="timeZone"]
  * `toLocaleDateString` / `toLocaleTimeString` are always dates. `toLocaleString` is also used for
  * numbers, so it is flagged only when it is clearly a date (options with date/time fields, or a
  * `new Date(...)` receiver) and has no `timeZone`. Anything ambiguous is allowed.
+ * `Intl.DateTimeFormat(...)` (with or without `new`) is flagged when its options have date/time
+ * fields and no `timeZone`, or when there is no options argument (it then defaults to date fields).
  */
+const INTL_DTF = '[callee.object.name="Intl"][callee.property.name="DateTimeFormat"]'
+
 export const localeFormatSyntax = [
   {
     selector: 'CallExpression[callee.property.name=/^(toLocaleDateString|toLocaleTimeString)$/]',
@@ -78,6 +82,14 @@ export const localeFormatSyntax = [
   },
   {
     selector: `CallExpression[callee.property.name="toLocaleString"]:has(ObjectExpression > Property[key.name=${DATE_FIELDS}])${NO_TIME_ZONE}`,
+    message: FORMAT_MESSAGE,
+  },
+  {
+    selector: `:matches(NewExpression, CallExpression)${INTL_DTF}[arguments.length<2]`,
+    message: FORMAT_MESSAGE,
+  },
+  {
+    selector: `:matches(NewExpression, CallExpression)${INTL_DTF}:has(ObjectExpression > Property[key.name=${DATE_FIELDS}])${NO_TIME_ZONE}`,
     message: FORMAT_MESSAGE,
   },
   {

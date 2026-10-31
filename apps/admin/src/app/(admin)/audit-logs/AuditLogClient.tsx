@@ -1,7 +1,7 @@
 'use client'
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useState, useTransition } from 'react'
+import { useUrlParams } from '@/lib/use-url-params'
+import { useState } from 'react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
@@ -14,6 +14,7 @@ import {
   type AuditAction,
 } from '@vesta/shared/server/services/audit-actions'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 type AuditLogRow = {
   id: string
@@ -68,7 +69,7 @@ const ACTION_VARIANT_MAP: Partial<Record<AuditAction, BadgeVariant>> = {
 
 function ActionBadge({ action }: { action: string }) {
   const variant = ACTION_VARIANT_MAP[action as AuditAction] ?? 'neutral'
-  const label = action.replace(/_/g, ' ')
+  const label = auditActionLabel(action)
   return (
     <Badge variant={variant} size="sm">
       {label}
@@ -77,13 +78,13 @@ function ActionBadge({ action }: { action: string }) {
 }
 
 function formatDateTime(d: Date) {
-  return new Intl.DateTimeFormat(undefined, {
+  return formatDhaka(d, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(d))
+  })
 }
 
 function MetadataCell({ metadata }: { metadata: unknown }) {
@@ -167,10 +168,7 @@ const COLUMNS: Column<AuditLogRow>[] = [
 ]
 
 export function AuditLogClient({ data }: AuditLogClientProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const [, startTransition] = useTransition()
+  const { searchParams, updateParams } = useUrlParams()
 
   const currentAction = searchParams.get('action') ?? ''
   const currentTargetType = searchParams.get('targetType') ?? ''
@@ -178,23 +176,6 @@ export function AuditLogClient({ data }: AuditLogClientProps) {
   const currentPage = data.page
   const currentPageSize = data.pageSize
 
-  const updateParams = useCallback(
-    (updates: Record<string, string | number>) => {
-      const params = new URLSearchParams(searchParams.toString())
-      Object.entries(updates).forEach(([k, v]) => {
-        if (v === '' || v === undefined) {
-          params.delete(k)
-        } else {
-          params.set(k, String(v))
-        }
-      })
-      if (!('page' in updates)) params.set('page', '1')
-      startTransition(() => {
-        router.push(`${pathname}?${params.toString()}`)
-      })
-    },
-    [router, pathname, searchParams]
-  )
 
   function handleSearch(value: string) {
     updateParams({ search: value })

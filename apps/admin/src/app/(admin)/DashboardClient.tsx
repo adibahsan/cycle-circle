@@ -82,8 +82,8 @@ export function DashboardClient({ stats, mae, userTrend, signupTrend, subscripti
         description={
           <>
             Platform overview — last updated{' '}
-            <time dateTime={stats.generatedAt} suppressHydrationWarning>
-              {new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(new Date(stats.generatedAt))}
+            <time dateTime={stats.generatedAt}>
+              {formatDhaka(stats.generatedAt, { timeStyle: 'medium' })}
             </time>
           </>
         }

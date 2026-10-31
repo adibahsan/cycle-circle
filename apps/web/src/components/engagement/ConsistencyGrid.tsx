@@ -38,6 +38,7 @@ export function ConsistencyGrid({ today: todayStr, last30, onBackfill, variant =
   // Inline: last 14 entries; full: all 30
   const entries = variant === 'inline' ? last30.slice(-14) : last30;
 
+  // eslint-disable-next-line no-restricted-syntax -- entry days are local-midnight Dates; formatting in the same local zone keeps the day
   const dateFormatter = new Intl.DateTimeFormat(
     language === 'bn' ? 'bn-BD' : undefined,
     { month: 'short', day: 'numeric' }

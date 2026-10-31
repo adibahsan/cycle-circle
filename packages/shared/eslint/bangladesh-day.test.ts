@@ -36,6 +36,10 @@ tester.run('no-restricted-syntax (Bangladesh day)', builtinRules.get('no-restric
     { code: "d.toLocaleString('en-US', { dateStyle: 'medium', timeZone: 'Asia/Dhaka' })", options },
     { code: "new Date(x).toLocaleString('en-US', { timeZone: 'Asia/Dhaka' })", options },
     { code: "formatDhaka(d, { month: 'short', day: 'numeric' })", options },
+    { code: "new Intl.DateTimeFormat('en-US', { ...options, timeZone: 'Asia/Dhaka' }).format(d)", options },
+    { code: "Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeZone: 'Asia/Dhaka' })", options },
+    { code: "new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })", options },
+    { code: "new Intl.DateTimeFormat('en-US', opts)", options }, // ambiguous: allowed
   ],
   invalid: [
     { code: 'new Date().toISOString().slice(0, 10)', options, errors: 1 },
@@ -65,6 +69,12 @@ tester.run('no-restricted-syntax (Bangladesh day)', builtinRules.get('no-restric
     { code: "d.toLocaleString('en-US', { weekday: 'long' })", options, errors: 1 },
     { code: 'new Date(x).toLocaleString()', options, errors: 1 },
     { code: "new Date(x).toLocaleString('en-US')", options, errors: 1 },
+    // unpinned Intl.DateTimeFormat (#178)
+    { code: "new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(d)", options, errors: 1 },
+    { code: "new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(d)", options, errors: 1 },
+    { code: "Intl.DateTimeFormat('en-US', { hour: '2-digit' }).format(d)", options, errors: 1 },
+    { code: 'new Intl.DateTimeFormat().format(d)', options, errors: 1 },
+    { code: "new Intl.DateTimeFormat('en-US').format(d)", options, errors: 1 },
   ],
 })
 

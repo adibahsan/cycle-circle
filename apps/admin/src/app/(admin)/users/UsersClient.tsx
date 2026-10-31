@@ -1,7 +1,7 @@
 'use client'
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useState } from 'react'
 import {
   Phone,
   Mail,
@@ -22,7 +22,7 @@ import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
 import { bangladeshToday, formatDhaka } from '@vesta/shared/utils/dhaka-date'
-import { createQueryTracker } from '@vesta/shared/utils/query-tracker'
+import { useUrlParams } from '@/lib/use-url-params'
 
 type UserRow = {
   id: string
@@ -215,9 +215,7 @@ export function UsersClient({
   statusBreakdown,
 }: UsersClientProps) {
   const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [, startTransition] = useTransition()
   const [exporting, setExporting] = useState(false)
 
   const currentSearch = searchParams.get('search') ?? ''
@@ -227,24 +225,7 @@ export function UsersClient({
   const currentSort = data.sort
   const currentOrder = data.order
 
-  // Debounced search can fire before the router lands a just-picked filter, so merge
-  // into the newest query we asked for, not the (stale) rendered searchParams.
-  const trackerRef = useRef<ReturnType<typeof createQueryTracker> | null>(null)
-  if (!trackerRef.current) trackerRef.current = createQueryTracker(searchParams.toString())
-  const searchString = searchParams.toString()
-  useEffect(() => {
-    trackerRef.current?.sync(searchString)
-  }, [searchString])
-
-  const updateParams = useCallback(
-    (updates: Record<string, string | number>) => {
-      const query = trackerRef.current!.apply(updates)
-      startTransition(() => {
-        router.push(`${pathname}?${query}`)
-      })
-    },
-    [router, pathname]
-  )
+  const { updateParams } = useUrlParams()
 
   function handleSearch(value: string) {
     updateParams({ search: value })
@@ -290,9 +271,8 @@ export function UsersClient({
 
   // Signup trend: format date label to "MMM D" for readability
   const signupData = signupTrend.map((row) => ({
-    date: new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(
-      new Date(row.date + 'T00:00:00Z')
-    ),
+    // row.date is a Bangladesh day: anchor at Dhaka midnight so the label can't shift a day.
+    date: formatDhaka(`${row.date}T00:00:00+06:00`, { month: 'short', day: 'numeric' }),
     count: row.count,
   }))
 

@@ -680,6 +680,7 @@ function StepDone({
       value: `${state.periodLength} ${t('onboarding.days')}`,
     },
     ...(state.lastPeriodDate
+      // eslint-disable-next-line no-restricted-syntax -- parsed as local midnight and formatted in the same local zone, so the day cannot shift
       ? [{ label: t('onboarding.lastPeriodLabel'), value: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(state.lastPeriodDate + 'T00:00:00')) }]
       : []),
     {

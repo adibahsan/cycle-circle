@@ -64,7 +64,7 @@ test.describe('Admin audit logs', () => {
       await fillSearch(page.getByRole('searchbox', { name: 'Search' }), dbUser.id, (timeout) => expectAuditLogFilterUrl(page, { search: dbUser.id }, timeout))
 
       // Verify the matching row appears
-      const row = page.getByRole('row').filter({ hasText: 'USER SUSPENDED' })
+      const row = page.getByRole('row').filter({ hasText: 'User Suspended' })
       await expect(row).toBeVisible({ timeout: 15_000 })
       await expect(row.getByRole('cell', { name: 'User', exact: true })).toBeVisible()
       await expect(row.getByText('E2E Admin')).toBeVisible()
@@ -117,7 +117,7 @@ test.describe('Admin audit logs', () => {
       await page.getByRole('option', { name: 'User Suspended', exact: true }).click()
       await expect(page).toHaveURL(/action=/)
       await expect(
-        page.getByRole('row').filter({ hasText: 'USER SUSPENDED' }),
+        page.getByRole('row').filter({ hasText: 'User Suspended' }),
       ).toBeVisible({ timeout: 5_000 })
     } finally {
       await admin.context.close()
