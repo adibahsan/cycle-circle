@@ -193,11 +193,12 @@ export async function completeUserProfile(userId: string, data: CompleteUserProf
 
 /** Admin accounts (including the caller) are managed outside the user list. */
 async function assertManageableTarget(userId: string) {
-  const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
+  const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, deletedAt: true } })
   if (!target) throw new ApiError(404, 'User not found', 'USER_NOT_FOUND')
   if (target.role === 'ADMIN') {
     throw new ApiError(403, "Admin accounts can't be suspended or deleted.", 'ADMIN_TARGET')
   }
+  return target
 }
 
 /**
@@ -268,9 +269,8 @@ export async function softDeleteUser(
   adminId: string,
   now: Date,
 ): Promise<{ success: true; bdapps: BdappsUnsubscribeResult | null; alreadyDeleted: boolean }> {
-  await assertManageableTarget(userId)
-  const current = await prisma.user.findUnique({ where: { id: userId }, select: { deletedAt: true } })
-  if (current?.deletedAt) return { success: true, bdapps: null, alreadyDeleted: true }
+  const current = await assertManageableTarget(userId)
+  if (current.deletedAt) return { success: true, bdapps: null, alreadyDeleted: true }
 
   await prisma.user.update({
     where: { id: userId },
@@ -632,6 +632,11 @@ const adminUserDetailSelect = {
 } satisfies Prisma.UserSelect
 
 export type AdminUserDetail = Prisma.UserGetPayload<{ select: typeof adminUserDetailSelect }>
+
+// Compile-time guard (#185): adding a secret column to the select above fails typecheck.
+type SecretUserColumn = 'passwordHash' | 'sessionsValidAfter' | 'suspendedBy'
+const _noSecretsInAdminUserDetail: Extract<keyof AdminUserDetail, SecretUserColumn> extends never ? true : never = true
+void _noSecretsInAdminUserDetail
 
 /** Returns null when the user does not exist. */
 export async function getUserDetailForAdmin(userId: string): Promise<AdminUserDetail | null> {

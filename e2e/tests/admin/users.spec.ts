@@ -292,11 +292,15 @@ test.describe('Server render', () => {
     }
   })
 
-  test('an unknown user id returns 404', async ({ browser, viewport }) => {
+  // The (admin) segment streams behind loading.tsx, so the status line is already 200 when
+  // notFound() runs (same as every other admin detail page). What matters: the not-found
+  // page renders, not the error boundary.
+  test('an unknown user id shows the not-found page', async ({ browser, viewport }) => {
     const admin = await createLoggedInAdmin(browser, { viewport })
     try {
-      const res = await admin.page.goto('/users/does-not-exist')
-      expect(res?.status()).toBe(404)
+      await admin.page.goto('/users/does-not-exist')
+      await expect(admin.page.getByRole('heading', { name: 'This page could not be found.' })).toBeVisible()
+      await expect(admin.page.getByText('Something went wrong')).toHaveCount(0)
     } finally {
       await admin.context.close()
     }
