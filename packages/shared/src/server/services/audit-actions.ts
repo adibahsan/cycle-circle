@@ -38,6 +38,7 @@ export const AUDIT_ACTIONS = {
   SET_CRON_ENABLED: 'SET_CRON_ENABLED',
   SET_SMS_SEND_TIME: 'SET_SMS_SEND_TIME',
   SET_SMS_DELIVERY_REPORTS: 'SET_SMS_DELIVERY_REPORTS',
+  PRO_PRICE_SET: 'PRO_PRICE_SET',
   ADMIN_LOGIN: 'ADMIN_LOGIN',
   ADMIN_LOGIN_FAILED: 'ADMIN_LOGIN_FAILED',
   ADMIN_LOGOUT: 'ADMIN_LOGOUT',
@@ -59,6 +60,7 @@ export const AUDIT_TARGET_TYPES = [
   'Feedback',
   'CronJob',
   'SystemSetting',
+  'ProPrice',
 ] as const
 
 /** Human label for an action: USER_SUSPENDED -> "User Suspended". */

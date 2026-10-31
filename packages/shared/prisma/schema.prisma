@@ -163,6 +163,7 @@ model User {
   feedback        Feedback[]
   articles        Article[]
   smsCampaigns    SmsCampaign[]
+  proPrices       ProPrice[]
   adminAuditLogs  AdminAuditLog[]
   emailLogs       EmailLog[]
   emailVerifications EmailVerification[]
@@ -450,6 +451,27 @@ model SystemSetting {
   value     String
   updatedAt DateTime @updatedAt
   updatedBy String?
+}
+
+enum ProPricePeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+// Pro price history (ADR 0011). The price in effect on a Bangladesh day is the latest entry whose
+// effectiveFrom is on or before that day (ties: the newest createdAt). Entries are never edited.
+model ProPrice {
+  id            String         @id @default(cuid())
+  amount        Decimal        @db.Decimal(10, 2) // taka
+  period        ProPricePeriod
+  effectiveFrom DateTime       @db.Date // a Bangladesh day, stored as that day at 00:00 UTC
+  createdBy     String? // null for the seeded first entry
+  createdAt     DateTime       @default(now())
+
+  creator User? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([effectiveFrom, createdAt])
 }
 
 model AdminAuditLog {

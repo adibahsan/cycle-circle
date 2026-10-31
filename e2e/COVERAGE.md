@@ -195,6 +195,7 @@ Notes on the tally:
 | A17 | Emails: log and bilingual template preview | `/emails`, `/emails/[id]`, `/emails/preview` | `e2e/tests/admin/emails.spec.ts` | deep (magic-link email in log + detail; previews EN/BN real Bengali text) | #131 |
 | A18 | Audit log search | `/audit-logs` | `e2e/tests/admin/audit-logs.spec.ts` | full (real suspend appears in search + metadata; Action filter finds it: #152) | #131 |
 | A19 | Log reader with OTPs masked | `/logs` | `e2e/tests/admin/logs.spec.ts` | deep (real OTP verify line found, OTP masked, raw code absent) | #131 |
+| A20b | System: Pro price set with warning, history, audit | `/system` | `e2e/tests/admin/system.spec.ts` | deep (invalid refused, scheduled entry kept after reload, today's price unchanged, audit row) | #202 |
 | A20 | System: cron settings saved and applied | `/system` | `e2e/tests/admin/system.spec.ts` | deep (caas-check toggle saved after reload, cron route skips; restored) | #131 |
 | A21 | API docs page loads | `/api-docs` | `e2e/tests/admin/api-docs.spec.ts` | deep (heading + Swagger UI renders operations; anonymous `/openapi.yaml` and `/swagger-ui/*` redirect to `/login`) | #131, #186 |
 
