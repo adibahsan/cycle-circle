@@ -291,6 +291,8 @@ server {
 # apps/web/worker/index.ts (BullMQ) is a LOCAL DEV alternative only — do not run it in prod.
 0 8 * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/daily-reminders >> /var/log/vesta/cron-daily-reminders.log 2>&1
 0 2 * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/caas-check >> /var/log/vesta/cron-caas-check.log 2>&1
+# SMS campaign dispatch every 15 minutes (daily send time is set on the admin System page)
+*/15 * * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/sms-dispatch >> /var/log/vesta/cron-sms-dispatch.log 2>&1
 30 2 * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/nightly-maintenance >> /var/log/vesta/cron-nightly-maintenance.log 2>&1
 
 # TLS renewal, twice daily (certbot's own recommendation; it no-ops unless <30 days remain)
