@@ -19,6 +19,8 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { Card } from '@/components/ui/Card'
+import { chartToCsv } from '@vesta/shared/utils/csv'
+import { CsvExportButton } from './CsvExportButton'
 import { CHART_TOKENS, CHART_VAR, useChartColors } from '@/lib/chart-palette'
 
 /** Ordered series palette as var() strings; resolved to concrete colours at render. */
@@ -49,6 +51,10 @@ export interface ChartPanelProps {
   controls?: React.ReactNode
   /** Allow fractional y-axis ticks (e.g. MAE in days). Default: integers only. */
   decimals?: boolean
+  /** Label of the x column in the CSV export. Default: "Date" for a `date` key, else the key. */
+  xLabel?: string
+  /** Rows for the CSV when they differ from the plotted rows (e.g. full dates behind short ticks). */
+  exportData?: Array<Record<string, string | number | null>>
 }
 
 // ── Shared axis tick style (matches AnalyticsClient) ──────────────────────
@@ -474,6 +480,8 @@ export function ChartPanel({
   className,
   controls,
   decimals = false,
+  xLabel,
+  exportData,
 }: ChartPanelProps): React.JSX.Element {
   const [activeKind, setActiveKind] = useState<ChartKind>(defaultKind ?? kinds[0])
 
@@ -498,6 +506,12 @@ export function ChartPanel({
       {/* Header row */}
       <div className="mb-5 flex items-start justify-between gap-3">
         <h2 className="text-base font-bold text-[var(--color-text-primary)]">{title}</h2>
+        <div className="flex shrink-0 items-center gap-2">
+        {/* CSV of exactly the rows this chart shows (the page already loaded them for the range) */}
+        <CsvExportButton
+          panel={title}
+          getCsv={() => chartToCsv(exportData ?? data, xKey, xLabel ?? (xKey === 'date' ? 'Date' : xKey), series)}
+        />
 
         {/* Chart-kind toggle — hidden when only one kind is allowed */}
         {showToggle && (
@@ -525,6 +539,7 @@ export function ChartPanel({
             ))}
           </div>
         )}
+        </div>
       </div>
 
       {controls && <div className="mb-4 flex flex-wrap items-center gap-2">{controls}</div>}

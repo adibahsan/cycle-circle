@@ -491,6 +491,9 @@ export interface SubscriptionListParams {
   page?: number
   pageSize?: number
   status?: string
+  /** Shared dashboard range: subscriptions updated from `dateFrom` to `dateTo` inclusive. */
+  dateFrom?: Date
+  dateTo?: Date
 }
 
 /**
@@ -498,11 +501,12 @@ export interface SubscriptionListParams {
  * Each subscription includes the associated user.
  */
 export async function listSubscriptions(params: SubscriptionListParams = {}) {
-  const { page = 1, pageSize = 20, status } = params
+  const { page = 1, pageSize = 20, status, dateFrom, dateTo } = params
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {}
   if (status && status !== 'all') where.status = status
+  if (dateFrom || dateTo) where.updatedAt = { ...(dateFrom && { gte: dateFrom }), ...(dateTo && { lte: dateTo }) }
 
   const [subscriptions, total] = await Promise.all([
     prisma.subscription.findMany({

@@ -15,7 +15,8 @@ import { setUserSubscriptionStatus } from '@/app/actions/user-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
-import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
+import { DateRangeControl, type DateRangeControlValue } from '@/components/charts/DateRangeControl'
+import { TableCsvExport } from '@/components/charts/TableCsvExport'
 import { CHART_VAR } from '@/lib/chart-palette'
 import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 import { describeLastCheck } from '@vesta/shared/utils/subscription-check-strip'
@@ -54,7 +55,7 @@ interface SubscriptionsClientProps {
   }
   trend: { date: string; count: number }[]
   statusBreakdown: { status: string; count: number }[]
-  range: string
+  range: DateRangeControlValue
   latestRun: {
     startedAt: Date
     status: 'OK' | 'FAILED' | 'SKIPPED'
@@ -368,7 +369,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, range, lates
       <div className="flex flex-1 flex-col gap-6 page-enter">
         <AdminPageHeader
           title="Subscriptions"
-          description={`${data.total.toLocaleString()} total subscriptions`}
+          description={`${data.total.toLocaleString()} subscriptions updated in this range`}
           tags={[adminCacheTags.subscriptions]}
         />
 
@@ -381,7 +382,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, range, lates
             <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
               Overview
             </h2>
-            <UrlSegmentedControl paramKey="range" />
+            <DateRangeControl range={range} />
           </div>
 
           {/* Two-panel responsive grid */}
@@ -391,6 +392,7 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, range, lates
               <ChartPanel
                 title="New Subscriptions"
                 data={trend.map((d) => ({ date: d.date.slice(5), count: d.count }))}
+                exportData={trend.map((d) => ({ date: d.date, count: d.count }))}
                 xKey="date"
                 series={[{ key: 'count', label: 'Subscriptions', color: CHART_VAR.primary }]}
                 kinds={['area', 'bar', 'line']}
@@ -431,6 +433,9 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, range, lates
         />
 
         {/* Table */}
+        <div className="-mb-3 flex justify-end">
+          <TableCsvExport table="subscriptions" panel="Subscriptions" />
+        </div>
         <DataTable
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           columns={columns as unknown as Column<Record<string, unknown>>[]}

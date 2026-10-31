@@ -16,6 +16,8 @@ import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
 import { Pagination } from '@/components/ui/Pagination'
 import { StatCard } from '@/components/ui/StatCard'
+import { DateRangeControl, type DateRangeControlValue } from '@/components/charts/DateRangeControl'
+import { TableCsvExport } from '@/components/charts/TableCsvExport'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 
@@ -52,6 +54,7 @@ interface EmailsClientProps {
     totalPages: number
   }
   stats: EmailStats
+  range: DateRangeControlValue
 }
 
 // ── Filter options ─────────────────────────────────────────────────────────
@@ -150,7 +153,7 @@ function topEntry(record: Record<string, number>): string {
 
 // ── Main Client ─────────────────────────────────────────────────────────────
 
-export function EmailsClient({ data, stats }: EmailsClientProps) {
+export function EmailsClient({ data, stats, range }: EmailsClientProps) {
   const router = useRouter()
   const { searchParams, updateParams } = useUrlParams({ clearOn: ['all'] })
 
@@ -266,8 +269,9 @@ export function EmailsClient({ data, stats }: EmailsClientProps) {
     <div className="flex flex-1 flex-col gap-6 page-enter">
       <AdminPageHeader
         title="Email Logs"
-        description={`${data.total.toLocaleString()} email${data.total !== 1 ? 's' : ''} total`}
+        description={`${data.total.toLocaleString()} email${data.total !== 1 ? 's' : ''} in this range`}
         tags={[adminCacheTags.emails]}
+        actions={<DateRangeControl range={range} />}
       />
 
       {/* Stats grid */}
@@ -329,6 +333,9 @@ export function EmailsClient({ data, stats }: EmailsClientProps) {
       />
 
       {/* Table */}
+      <div className="-mb-3 flex justify-end">
+        <TableCsvExport table="emails" panel="Email logs" />
+      </div>
       <DataTable
         columns={COLUMNS}
         data={data.items}
