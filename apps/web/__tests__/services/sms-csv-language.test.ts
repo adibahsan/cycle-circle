@@ -1,59 +1,66 @@
 import { describe, it, expect } from 'vitest'
 import {
-  parseSmsCsv,
-  parseBulkSmsInput,
+  parseCampaignCsv,
+  campaignCsvTemplate,
+  SMS_MAX_PARTS,
+  SMS_MAX_CAMPAIGN_MESSAGES,
   countSmsParts,
-  composeSms,
-  scheduleDrafts,
-  SMS_CSV_TEMPLATE,
 } from '@vesta/shared/server/services'
 
-describe('parseSmsCsv', () => {
-  it('parses header + rows with Bengali into the shared draft shape', () => {
-    const csv = 'scheduled_date,message_en,message_bn\n2026-11-01,Drink water,পানি পান করুন\n,Rest well,'
-    const { drafts, errors } = parseSmsCsv(csv)
+describe('parseCampaignCsv', () => {
+  it('parses day,text rows with Bengali text', () => {
+    const { rows, errors } = parseCampaignCsv('day,text\n2043-01-01,Drink water\n2043-01-03,পানি পান করুন')
     expect(errors).toEqual([])
-    expect(drafts).toEqual([
-      { messageEn: 'Drink water', messageBn: 'পানি পান করুন', scheduledDate: '2026-11-01' },
-      { messageEn: 'Rest well' },
+    expect(rows).toEqual([
+      { line: 2, day: '2043-01-01', body: 'Drink water' },
+      { line: 3, day: '2043-01-03', body: 'পানি পান করুন' },
     ])
   })
 
   it('handles quoted fields with commas, escaped quotes, newlines, BOM and CRLF', () => {
-    const csv = '﻿scheduled_date,message_en,message_bn\r\n2026-11-02,"Hi, ""friend""\nline two",টিপ\r\n'
-    const { drafts } = parseSmsCsv(csv)
-    expect(drafts).toEqual([
-      { messageEn: 'Hi, "friend"\nline two', messageBn: 'টিপ', scheduledDate: '2026-11-02' },
-    ])
-  })
-
-  it('accepts columns in any order and ignores blank rows', () => {
-    const { drafts } = parseSmsCsv('message_en,scheduled_date\nA,2026-11-03\n\n,\nB,')
-    expect(drafts).toEqual([{ messageEn: 'A', scheduledDate: '2026-11-03' }, { messageEn: 'B' }])
-  })
-
-  it('reports invalid dates and missing English text per line, keeps valid rows', () => {
-    const { drafts, errors } = parseSmsCsv(
-      'scheduled_date,message_en,message_bn\nnot-a-date,Hello,\n2026-11-04,,শুধু বাংলা\n2026-11-05,Ok,',
-    )
-    expect(drafts).toEqual([{ messageEn: 'Ok', scheduledDate: '2026-11-05' }])
-    expect(errors.map((e) => e.line)).toEqual([2, 3])
-  })
-
-  it('errors when message_en header is missing', () => {
-    const { drafts, errors } = parseSmsCsv('foo,bar\n1,2')
-    expect(drafts).toEqual([])
-    expect(errors).toHaveLength(1)
-  })
-
-  it('template parses cleanly', () => {
-    const { drafts, errors } = parseSmsCsv(SMS_CSV_TEMPLATE)
+    const { rows, errors } = parseCampaignCsv('\uFEFFday,text\r\n2043-01-02,"Hi, ""friend""\nline two"\r\n2043-01-03,after\r\n')
     expect(errors).toEqual([])
-    expect(drafts.length).toBeGreaterThan(0)
+    expect(rows[0]).toEqual({ line: 2, day: '2043-01-02', body: 'Hi, "friend"\nline two' })
+    expect(rows[1].line).toBe(4)
   })
 
-  it('shares draft shape with the line parser', () => {
-    expect(parseBulkSmsInput('A | বি')[0]).toEqual({ messageEn: 'A', messageBn: 'বি' })
+  it('accepts columns in any order and skips blank rows', () => {
+    const { rows, errors } = parseCampaignCsv('text,day\nA,2043-01-03\n\n,\nB,2043-01-04')
+    expect(errors).toEqual([])
+    expect(rows.map((r) => r.day)).toEqual(['2043-01-03', '2043-01-04'])
+  })
+
+  it('reports every bad row by line and keeps the good ones', () => {
+    const { rows, errors } = parseCampaignCsv(
+      ['day,text', 'not-a-date,Hello', '2043-02-30,Hello', ',Hello', '2043-01-05,', '2043-01-06,ok', '2043-01-06,twice'].join('\n'),
+    )
+    expect(rows.map((r) => r.day)).toEqual(['2043-01-06'])
+    expect(errors.map((e) => e.line)).toEqual([2, 3, 4, 5, 7])
+    expect(errors[4].message).toMatch(/line 6/)
+  })
+
+  it('refuses over-long text (too many SMS parts)', () => {
+    const { errors } = parseCampaignCsv(`day,text\n2043-01-05,${'a'.repeat(SMS_MAX_PARTS * 153 + 1)}`)
+    expect(errors).toHaveLength(1)
+    expect(errors[0].message).toMatch(/parts/)
+  })
+
+  it('caps the row count', () => {
+    const lines = Array.from({ length: SMS_MAX_CAMPAIGN_MESSAGES + 5 }, (_, i) => `2043-01-01,x${i}`)
+    const { errors } = parseCampaignCsv(['day,text', ...lines].join('\n'))
+    expect(errors.filter((e) => /too many/i.test(e.message))).toHaveLength(1)
+  })
+
+  it('errors on an empty file, missing columns, or no rows', () => {
+    expect(parseCampaignCsv('').errors).toHaveLength(1)
+    expect(parseCampaignCsv('foo,bar\n1,2').errors[0].message).toMatch(/header/)
+    expect(parseCampaignCsv('day,text\n').errors[0].message).toMatch(/no rows/)
+  })
+
+  it('the template parses cleanly', () => {
+    const { rows, errors } = parseCampaignCsv(campaignCsvTemplate('2043-01-01', '2043-01-02'))
+    expect(errors).toEqual([])
+    expect(rows).toHaveLength(2)
   })
 })
 
@@ -84,35 +91,5 @@ describe('countSmsParts', () => {
 
   it('empty text is zero parts', () => {
     expect(countSmsParts('')).toEqual({ encoding: 'GSM7', parts: 0, charsLeft: 160 })
-  })
-})
-
-describe('composeSms', () => {
-  it('EN sends English only', () => expect(composeSms('Hi', 'হাই', 'EN')).toBe('Hi'))
-  it('BN sends Bengali only', () => expect(composeSms('Hi', 'হাই', 'BN')).toBe('হাই'))
-  it('BOTH joins EN then BN', () => expect(composeSms('Hi', 'হাই', 'BOTH')).toBe('Hi\nহাই'))
-  it('BOTH without Bengali falls back to English', () => expect(composeSms('Hi', null, 'BOTH')).toBe('Hi'))
-  it('BN without Bengali text throws', () => {
-    expect(() => composeSms('Hi', '  ', 'BN')).toThrow()
-  })
-})
-
-describe('scheduleDrafts', () => {
-  const now = new Date('2026-10-19T10:00:00Z')
-  it('dated rows use their own date at 08:00 UTC; undated fill from start date by order', () => {
-    const dates = scheduleDrafts(
-      [{ messageEn: 'a' }, { messageEn: 'b', scheduledDate: '2026-12-25' }, { messageEn: 'c' }],
-      '2026-11-01',
-      now,
-    )
-    expect(dates.map((d) => d.toISOString())).toEqual([
-      '2026-11-01T08:00:00.000Z',
-      '2026-12-25T08:00:00.000Z',
-      '2026-11-02T08:00:00.000Z',
-    ])
-  })
-  it('defaults the start to tomorrow', () => {
-    const [d] = scheduleDrafts([{ messageEn: 'a' }], undefined, now)
-    expect(d.toISOString()).toBe('2026-10-20T08:00:00.000Z')
   })
 })

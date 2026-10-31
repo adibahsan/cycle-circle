@@ -35,7 +35,7 @@ const NAV_ITEMS = [
   { href: '/content', icon: FileText, label: 'Content' },
   { href: '/analytics', icon: BarChart3, label: 'Analytics' },
   { href: '/engagement', icon: Activity, label: 'Engagement' },
-  { href: '/sms', icon: MessageSquare, label: 'SMS Broadcasts' },
+  { href: '/sms', icon: MessageSquare, label: 'SMS Campaigns' },
   { href: '/feedback', icon: MessageCircle, label: 'Feedback' },
   { href: '/emails', icon: Mail, label: 'Emails' },
   { href: '/audit-logs', icon: ScrollText, label: 'Audit Logs' },

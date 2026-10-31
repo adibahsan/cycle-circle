@@ -956,8 +956,8 @@ paths:
   /api/cron/daily-reminders:
     get:
       tags: [Cron]
-      summary: Daily reminders + scheduled SMS broadcast
-      description: Sends period/fertile/logging/completion reminders and dispatches the day's SMS broadcast. Invoked by Vercel Cron via GET (identical handler on POST).
+      summary: Daily reminders + planned SMS campaign message
+      description: Sends period/fertile/logging/completion reminders and runs the SMS dispatch step once (response keys `smsBroadcast`, `smsRecovery`; see `/api/cron/sms-dispatch`). Invoked by the host crontab at 08:00 UTC.
       security: [{ cronBearer: [] }]
       responses:
         '200':
@@ -972,7 +972,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
     post:
       tags: [Cron]
-      summary: Daily reminders + scheduled SMS broadcast (POST alias)
+      summary: Daily reminders + planned SMS campaign message (POST alias)
       description: Optional body `{ userId?, force? }` to re-trigger a specific user's reminders.
       security: [{ cronBearer: [] }]
       requestBody:
@@ -987,6 +987,45 @@ paths:
       responses:
         '200':
           description: Reminder run result
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/cron/sms-dispatch:
+    post:
+      tags: [Cron]
+      summary: Dispatch today's SMS campaign message (call every 15 minutes)
+      description: |
+        Marks planned messages of earlier Bangladesh days `MISSED` (never sent late) and, once the
+        daily send time (admin System page, Bangladesh time, default 14:00) has passed, sends
+        today's planned message. Sends no reminder emails. Idempotent: each message is claimed and
+        sent once however often this is called. Honours the `daily-reminders` on/off switch.
+
+        Production crontab line (a human step on the VPS; see docs/ops/05-operations.md):
+        `*/15 * * * * curl -fsS -X POST https://cycle-circle.com/api/cron/sms-dispatch -H "Authorization: Bearer $CRON_SECRET"`
+      security: [{ cronBearer: [] }]
+      responses:
+        '200':
+          description: Dispatch result, or `{ skipped, reason }` when the cron is disabled
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  smsBroadcast: { type: object, additionalProperties: true }
+                  smsRecovery: { type: object, additionalProperties: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    get:
+      tags: [Cron]
+      summary: Dispatch today's SMS campaign message (GET alias)
+      security: [{ cronBearer: [] }]
+      responses:
+        '200':
+          description: Same as POST
           content:
             application/json:
               schema:

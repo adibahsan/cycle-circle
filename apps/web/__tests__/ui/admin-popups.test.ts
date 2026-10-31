@@ -35,7 +35,7 @@ describe('placePopover (picker is never clipped)', () => {
 })
 
 describe('admin pop-ups use the shell', () => {
-  const hand = ['components/ui/ConfirmModal.tsx', 'app/(admin)/sms/SmsClient.tsx', 'app/(admin)/sms/CreateBroadcastModal.tsx', 'app/(admin)/sms/EditBroadcastModal.tsx', 'app/(admin)/sms/RescheduleModal.tsx', 'app/(admin)/content/ContentClient.tsx', 'app/(admin)/layout.tsx']
+  const hand = ['components/ui/ConfirmModal.tsx', 'app/(admin)/sms/SmsClient.tsx', 'app/(admin)/sms/CreateBroadcastModal.tsx', 'app/(admin)/sms/EditBroadcastModal.tsx', 'app/(admin)/sms/RescheduleModal.tsx', 'app/(admin)/sms/[id]/CampaignDayModals.tsx', 'app/(admin)/content/ContentClient.tsx', 'app/(admin)/layout.tsx']
   for (const f of hand) {
     it(`${f} has no hand-rolled overlay`, () => {
       const src = read(f)

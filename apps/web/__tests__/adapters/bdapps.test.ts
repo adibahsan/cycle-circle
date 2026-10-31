@@ -136,6 +136,50 @@ describe('BDApps subscription adapter', () => {
   })
 })
 
+describe('SMS send is never blindly re-sent', () => {
+  afterEach(() => vi.useRealTimers())
+
+  it('does not retry a 5xx after the request went out', async () => {
+    fetchMock.mockResolvedValue(new Response('boom', { status: 503 }))
+    await expect(smsSend('hi', ['tel:all'])).rejects.toMatchObject({ code: 'BDAPPS_HTTP_ERROR' })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not retry a timeout, and reports it as BDAPPS_TIMEOUT', async () => {
+    fetchMock.mockRejectedValue(new DOMException('The operation timed out.', 'TimeoutError'))
+    await expect(smsSend('hi', ['tel:all'])).rejects.toMatchObject({ code: 'BDAPPS_TIMEOUT' })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not retry a dropped connection (BDApps may have received the request)', async () => {
+    fetchMock.mockRejectedValue(Object.assign(new TypeError('fetch failed'), { cause: { code: 'ECONNRESET' } }))
+    await expect(smsSend('hi', ['tel:all'])).rejects.toThrow('fetch failed')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries when the connection was never made, then succeeds', async () => {
+    vi.useFakeTimers()
+    fetchMock
+      .mockRejectedValueOnce(Object.assign(new TypeError('fetch failed'), { cause: { code: 'ECONNREFUSED' } }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ statusCode: 'S1000', destinationResponses: [{ messageId: 'M1' }] }), { status: 200 }),
+      )
+    const p = smsSend('hi', ['tel:all'])
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(await p).toMatchObject({ messageId: 'M1' })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('gives every call a timeout signal', async () => {
+    reply({ statusCode: 'S1000', destinationResponses: [{ messageId: 'M1' }] })
+    await smsSend('hi', ['tel:all'])
+    expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal)
+    reply({ statusCode: 'S1000', referenceNo: 'R' })
+    await requestOtp('+8801805718862')
+    expect(fetchMock.mock.calls[1][1].signal).toBeInstanceOf(AbortSignal)
+  })
+})
+
 describe('BDApps helpers', () => {
   it('normalises status strings', () => {
     expect(normalizeSubscriptionStatus('registered.')).toBe('REGISTERED')

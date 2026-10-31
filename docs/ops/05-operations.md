@@ -323,9 +323,16 @@ Example entries (adjust times for the server's timezone — see
 Create the log directory once first: `mkdir -p /opt/vesta/logs`.
 
 ```cron
-# daily reminders + SMS broadcast — historically run at 08:00 UTC
+# daily reminders — historically run at 08:00 UTC (it also runs the SMS dispatch step once)
 0 8 * * * curl -fsS -X GET https://cycle-circle.com/api/cron/daily-reminders \
   -H "Authorization: Bearer $CRON_SECRET" >> /opt/vesta/logs/cron-reminders.log 2>&1
+
+# SMS campaign dispatch — EVERY 15 MINUTES. Sends today's campaign message once the daily send
+# time (admin System page, Bangladesh time) has passed; marks missed days. Sends no reminder
+# emails and is safe to repeat. Without this line the message goes out only at the 08:00 UTC
+# daily-reminders run, whatever send time is set.
+*/15 * * * * curl -fsS -X POST https://cycle-circle.com/api/cron/sms-dispatch \
+  -H "Authorization: Bearer $CRON_SECRET" >> /opt/vesta/logs/cron-sms-dispatch.log 2>&1
 
 # Daily subscription check (BDApps subscriber-status: downgrades UNREGISTERED, restores re-subscribed)
 # + Supabase-era keep-alive query — historically run at 02:00 UTC. Route slug stays `caas-check`.
@@ -336,6 +343,19 @@ Create the log directory once first: `mkdir -p /opt/vesta/logs`.
 30 2 * * * curl -fsS -X POST https://cycle-circle.com/api/cron/nightly-maintenance \
   -H "Authorization: Bearer $CRON_SECRET" >> /var/log/vesta/cron-nightly-maintenance.log 2>&1
 ```
+
+**Human step: the VPS crontab is not changed by deploying this code.** Someone with SSH
+must add the `*/15 * * * *` `sms-dispatch` line above (the repo copy is
+`ops/deploy/vesta-crontab`; reinstall it as in the deployment doc, or `crontab -e`).
+Until then the daily send time only takes effect at the existing 08:00 UTC run (14:00
+Bangladesh time, the default send time); a send time earlier than that is sent at 14:00,
+and a message never goes out on a day whose run it missed.
+
+The daily send time is set on the admin **/system** page (Bangladesh time, UTC+6, no DST;
+default 14:00). Dispatch is idempotent: calling `sms-dispatch` (or `daily-reminders`) any
+number of times a day sends each message once. A planned message whose day passed unsent is
+marked **Missed** and never sent late. `sms-dispatch` honours the same on/off switch as
+`daily-reminders`.
 
 `$CRON_SECRET` isn't available inside a plain crontab line by default — either
 `source` an env file first (`. /opt/vesta/.env.production && curl ...`) or hardcode
@@ -358,7 +378,7 @@ grep CRON /var/log/syslog   # or: journalctl | grep -i cron  — confirms crond 
 ```
 
 A healthy run's JSON response includes counts (`{"checked":N,"downgraded":N,"skipped":N,"errors":N,"reinstated":N}` for
-`caas-check`, the daily subscription check; reminder counts + `smsBroadcast` for `daily-reminders`) — an empty
+`caas-check`, the daily subscription check; reminder counts + `smsBroadcast` for `daily-reminders`; `smsBroadcast` + `smsRecovery` for `sms-dispatch`) — an empty
 `curl` output or a non-200 means the trigger itself failed, not just "nothing to do".
 
 ### Triggering manually

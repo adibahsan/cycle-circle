@@ -1,9 +1,9 @@
 import { requireAdminUser } from '@/app/queries/auth-queries'
 import {
-  getSmsBroadcasts,
+  getSmsCampaigns,
   getSmsSendHistory,
   getSmsDeliveryBreakdown,
-  getNextSmsBroadcastId,
+  getNextSmsCampaignId,
 } from '@/app/queries/sms-queries'
 import { SmsClient } from './SmsClient'
 
@@ -30,14 +30,15 @@ export default async function SmsPage({
 
   // Fetch all data in parallel
   const [data, sendHistory, deliveryBreakdown, nextSendId] = await Promise.all([
-    getSmsBroadcasts({
+    getSmsCampaigns({
       page: Number(params.page) || 1,
       pageSize: Number(params.pageSize) || 20,
-      status: params.status ?? 'queue',
+      status: params.status ?? 'all',
+      q: params.q?.trim().slice(0, 100) || undefined,
     }),
     getSmsSendHistory(days),
     getSmsDeliveryBreakdown(),
-    getNextSmsBroadcastId(),
+    getNextSmsCampaignId(),
   ])
 
   return (

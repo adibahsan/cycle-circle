@@ -1,0 +1,330 @@
+import { AUDIT_ACTIONS } from './audit-actions'
+import { prisma } from '../db'
+import { logger } from '../log'
+import { smsSend } from '../adapters/bdapps'
+import { createAuditLog } from './audit-service'
+import { bangladeshToday, dayToStoredDate } from '../../utils/dhaka-date'
+import { getSmsDeliveryReports, getSmsSendTime, smsSendMoment } from './sms-settings-service'
+import { env } from '../../utils/env'
+import { canSendMessage } from '../../utils/sms'
+
+// Sending campaign messages (the #195 guarantees, on SmsCampaignMessage):
+//  - the PLANNED -> SENDING move is one conditional update, so exactly one caller sends;
+//  - the provider call is made once (the BDApps adapter never re-sends a request it may have accepted);
+//  - once the provider accepted, no database error can mark the message FAILED;
+//  - a message stuck in SENDING is closed out as FAILED ("outcome unknown"), never put back to PLANNED.
+
+/**
+ * A SENDING message older than this is presumed orphaned (the process died mid-send). The send
+ * itself is capped at ~20 s, so this is generous.
+ */
+export const SMS_STUCK_SENDING_MS = 30 * 60 * 1000
+
+type SendableMessage = { id: string; body: string }
+
+const isDevSend = () => env.DEV_MODE || env.NODE_ENV === 'development'
+
+/**
+ * Atomically move a PLANNED message to SENDING. Exactly one caller wins; the loser gets false
+ * and must not call the provider.
+ */
+async function claimForSending(id: string): Promise<boolean> {
+  const { count } = await prisma.smsCampaignMessage.updateMany({
+    where: { id, status: 'PLANNED' },
+    data: { status: 'SENDING' },
+  })
+  return count === 1
+}
+
+/**
+ * The one provider call (or the dev simulation). Retries live in the BDApps adapter, which
+ * never re-sends a request BDApps may already have accepted. Throws if the send failed.
+ */
+async function providerSend(message: SendableMessage) {
+  const reports = await getSmsDeliveryReports()
+  // null = no delivery reports were requested for this message ("delivery reports off" in the
+  // admin); 0 = requested, none received yet. The webhook then adds to the counts.
+  const initialCount = reports ? 0 : null
+  if (isDevSend()) {
+    console.log(`[SMS Campaign DEV] id=${message.id} message="${message.body}"`)
+    return {
+      providerRequestId: `dev-req-${message.id}`,
+      providerMessageId: `dev-${message.id}`,
+      audienceSize: 1 as number | null,
+      deliveredCount: reports ? 1 : null,
+      failedCount: initialCount,
+    }
+  }
+  const audienceSize = await estimateAudience()
+  const res = await smsSend(message.body, ['tel:all'], reports ? 1 : 0)
+  return {
+    providerRequestId: res.requestId || null,
+    providerMessageId: res.messageId || null,
+    audienceSize,
+    deliveredCount: initialCount,
+    failedCount: initialCount,
+  }
+}
+
+/**
+ * How many subscribers a `tel:all` send reaches. BDApps does not say (the response has one
+ * destination for the whole broadcast), so this is our own record of who is subscribed: Pro
+ * subscriptions with a stored BDApps subscriber id (ADR 0002: Pro means REGISTERED on BDApps).
+ * It is an estimate: a subscriber who unsubscribed on BDApps since the nightly check still
+ * counts, and one subscribed outside the app does not. Null when it cannot be counted; a
+ * counting error must never stop a send.
+ */
+async function estimateAudience(): Promise<number | null> {
+  try {
+    return await prisma.subscription.count({ where: { status: 'PRO', bdappsSubscriberId: { not: null } } })
+  } catch (error) {
+    logger.cron('sms.audience.count.failed', { error: String(error) }, { level: 'error' })
+    return null
+  }
+}
+
+type SendResult = Awaited<ReturnType<typeof providerSend>>
+
+/**
+ * Record a send that already happened. A DB error here is returned, never thrown or turned
+ * into FAILED: the message is out, so it must not look re-sendable.
+ */
+async function recordSent(messageId: string, now: Date, result: SendResult) {
+  try {
+    const row = await prisma.smsCampaignMessage.update({
+      where: { id: messageId },
+      data: {
+        status: 'SENT',
+        sentAt: now,
+        providerRequestId: result.providerRequestId,
+        providerMessageId: result.providerMessageId,
+        audienceSize: result.audienceSize,
+        deliveredCount: result.deliveredCount,
+        failedCount: result.failedCount,
+        lastError: null,
+        sendAttempts: { increment: 1 },
+      },
+    })
+    return { ok: true as const, row }
+  } catch (error) {
+    logger.cron('sms.message.record.failed', { messageId, error: String(error) }, { level: 'error' })
+    return { ok: false as const, error }
+  }
+}
+
+/** Best effort: the send already happened, so a failed audit write must not fail it. */
+async function auditSent(...args: Parameters<typeof createAuditLog>) {
+  try {
+    await createAuditLog(...args)
+  } catch (error) {
+    logger.cron('sms.message.audit.failed', { messageId: args[3], error: String(error) }, { level: 'error' })
+  }
+}
+
+/** The provider call failed: nothing went out as far as we know, so the admin may retry. */
+async function markFailed(messageId: string, error: unknown) {
+  try {
+    await prisma.smsCampaignMessage.update({
+      where: { id: messageId },
+      data: { status: 'FAILED', sendAttempts: { increment: 1 }, lastError: errorText(error) },
+    })
+  } catch (dbError) {
+    // Left in SENDING: recoverStuckMessages will close it out.
+    logger.cron('sms.message.markFailed.failed', { messageId, error: String(dbError) }, { level: 'error' })
+  }
+}
+
+function errorText(err: unknown) {
+  return (err instanceof Error ? err.message : String(err)).slice(0, 500)
+}
+
+// ── Public send functions ──────────────────────────────────────────────────────
+
+/**
+ * Send a campaign message immediately (manual trigger by an admin).
+ *
+ * In dev mode (DEV_MODE=true or NODE_ENV=development) the message is logged to the console and
+ * marked SENT with synthetic counts. In production the BDApps smsSend API is called with
+ * `destinationAddresses: ["tel:all"]` to reach all subscribers.
+ *
+ * Concurrent calls (double-click, a manual send racing the cron) make one provider call:
+ * the loser throws without sending.
+ */
+export async function sendCampaignMessage(messageId: string, adminUserId: string, now: Date) {
+  const message = await prisma.smsCampaignMessage.findUnique({ where: { id: messageId } })
+
+  if (!message) {
+    throw new Error('Message not found')
+  }
+  if (!canSendMessage(message.status)) {
+    throw new Error(`Cannot send a message with status ${message.status}`)
+  }
+  if (!(await claimForSending(messageId))) {
+    throw new Error('This message is already being sent')
+  }
+
+  let result: SendResult
+  try {
+    result = await providerSend(message)
+  } catch (error) {
+    await markFailed(messageId, error)
+    throw error
+  }
+
+  const recorded = await recordSent(messageId, now, result)
+  await auditSent(adminUserId, AUDIT_ACTIONS.SEND_SMS_BROADCAST, 'SmsCampaignMessage', messageId, {
+    campaignId: message.campaignId,
+    message: message.body.slice(0, 100),
+    devMode: isDevSend(),
+  })
+  if (!recorded.ok) {
+    throw new Error(
+      'The message was sent, but saving its status failed. Do not send it again; it will be reviewed within a day.',
+    )
+  }
+  return recorded.row
+}
+
+/**
+ * Mark PLANNED messages of earlier Bangladesh days MISSED: their day is over, and a message
+ * is never sent late. Safe to repeat.
+ */
+export async function markMissedMessages(now: Date) {
+  const { count } = await prisma.smsCampaignMessage.updateMany({
+    where: {
+      status: 'PLANNED',
+      day: { lt: dayToStoredDate(bangladeshToday(now)) },
+      campaign: { cancelledAt: null },
+    },
+    data: { status: 'MISSED', lastError: 'Missed: not sent on its day.' },
+  })
+  if (count > 0) logger.cron('sms.message.missed', { count }, { level: 'error' })
+  return { missed: count }
+}
+
+/**
+ * Dispatch today's planned message, once the daily send time (Bangladesh time) has passed.
+ * Called by the cron many times a day: before the send time it does nothing, afterwards the
+ * PLANNED -> SENDING claim means only the first call sends. Past days are marked MISSED first.
+ * Returns what happened.
+ */
+export async function dispatchDueCampaignMessage(now: Date) {
+  await markMissedMessages(now)
+
+  const today = bangladeshToday(now)
+  const sendTime = await getSmsSendTime()
+  if (now < smsSendMoment(today, sendTime)) return { dispatched: false as const, skipped: 'before send time' }
+
+  const due = await prisma.smsCampaignMessage.findFirst({
+    where: { status: 'PLANNED', day: dayToStoredDate(today), campaign: { cancelledAt: null } },
+    orderBy: { createdAt: 'asc' },
+    include: { campaign: { select: { createdBy: true } } },
+  })
+  if (!due) return { dispatched: false as const }
+  // A manual send (or another run) may have taken it between the find and now.
+  if (!(await claimForSending(due.id))) return { dispatched: false as const, skipped: 'already claimed' }
+
+  let result: SendResult
+  try {
+    result = await providerSend(due)
+  } catch (err) {
+    // A failed message is not retried automatically; the admin decides.
+    await markFailed(due.id, err)
+    logger.cron('sms.message.dispatch.failed', { messageId: due.id, failed: true, error: String(err) }, { level: 'error' })
+    return { dispatched: false as const, error: String(err) }
+  }
+
+  const recorded = await recordSent(due.id, now, result)
+  await auditSent(due.campaign.createdBy, AUDIT_ACTIONS.DISPATCH_SMS_BROADCAST, 'SmsCampaignMessage', due.id, {
+    campaignId: due.campaignId,
+    auto: true,
+  })
+  return recorded.ok
+    ? { dispatched: true as const, messageId: due.id, campaignId: due.campaignId }
+    : { dispatched: true as const, messageId: due.id, campaignId: due.campaignId, unrecorded: true as const }
+}
+
+/**
+ * The whole SMS cron step: close out orphaned SENDING messages, then dispatch. Errors are
+ * reported, not thrown, so a failing SMS step never fails the caller (the reminder run).
+ */
+export async function runSmsDispatch(now: Date) {
+  const smsRecovery = await recoverStuckMessages(now).catch((err: unknown) => ({ recovered: 0, error: String(err) }))
+  const smsBroadcast = await dispatchDueCampaignMessage(now).catch((err: unknown) => ({
+    dispatched: false as const,
+    error: String(err),
+  }))
+  return { smsBroadcast, smsRecovery }
+}
+
+/**
+ * Close out messages stuck in SENDING (the process died mid-send, or the result could not be
+ * saved). We cannot know whether BDApps sent it, so it moves to FAILED with an "outcome
+ * unknown" error; the admin checks the handset/BDApps and may reschedule it.
+ */
+export async function recoverStuckMessages(now: Date, thresholdMs = SMS_STUCK_SENDING_MS) {
+  const { count } = await prisma.smsCampaignMessage.updateMany({
+    where: { status: 'SENDING', updatedAt: { lt: new Date(now.getTime() - thresholdMs) } },
+    data: {
+      status: 'FAILED',
+      lastError: 'Outcome unknown: sending did not finish. Check whether subscribers received it before rescheduling.',
+    },
+  })
+  if (count > 0) logger.cron('sms.message.recovered', { count }, { level: 'error' })
+  return { recovered: count }
+}
+
+// ── Delivery-report recording ──────────────────────────────────────────────────
+
+/**
+ * Correlate an inbound sms/report to its message and bump its delivery counts.
+ *
+ * BDApps reports carry the `requestId` of the send, so that is matched first against
+ * `providerRequestId`. Rows sent before it was stored fall back to `providerMessageId`.
+ * Counts are bumped in SQL so concurrent reports (one per recipient) cannot lose updates.
+ */
+export async function recordSmsDeliveryReport(requestId: string, deliveryStatus: string) {
+  if (!requestId) return { matched: false as const }
+
+  // Only an exact id match counts; never fall back to another message.
+  const message =
+    (await prisma.smsCampaignMessage.findFirst({
+      where: { providerRequestId: requestId },
+      orderBy: { sentAt: 'desc' },
+      select: { id: true },
+    })) ??
+    (await prisma.smsCampaignMessage.findFirst({
+      where: { providerMessageId: requestId },
+      orderBy: { sentAt: 'desc' },
+      select: { id: true },
+    }))
+  if (!message) return { matched: false as const }
+
+  const outcome = classifyDeliveryStatus(deliveryStatus)
+  if (outcome === 'delivered') {
+    await prisma.$executeRaw`UPDATE "SmsCampaignMessage" SET "deliveredCount" = COALESCE("deliveredCount", 0) + 1 WHERE "id" = ${message.id}`
+    return { matched: true as const, counted: true as const }
+  }
+  if (outcome === 'failed') {
+    await prisma.$executeRaw`UPDATE "SmsCampaignMessage" SET "failedCount" = COALESCE("failedCount", 0) + 1 WHERE "id" = ${message.id}`
+    return { matched: true as const, counted: true as const }
+  }
+  // ACCEPTED / UNKNOWN / anything new: not an outcome, so not counted. Logged so a status BDApps
+  // adds later shows up in the logs instead of silently skewing the totals.
+  logger.webhook('sms.report.unclassified', { messageId: message.id, deliveryStatus }, { level: 'warn' })
+  return { matched: true as const, counted: false as const }
+}
+
+/**
+ * BDApps' delivery-report statuses (docs/vesta/source/bdapps-tap-api.html): DELIVERED, EXPIRED,
+ * DELETED, UNDELIVERABLE, ACCEPTED, UNKNOWN, REJECTED. DELIVERED is the only success; the
+ * terminal failures count as failed; ACCEPTED (still in flight) and UNKNOWN are neither. The
+ * vendor sample apps and the older TAP docs use "DeliveredToTerminal" / "DeliveryImpossible",
+ * accepted too. Case and separators are ignored.
+ */
+export function classifyDeliveryStatus(status: string | null | undefined): 'delivered' | 'failed' | 'unknown' {
+  const key = (status || '').toUpperCase().replace(/[^A-Z]/g, '')
+  if (key === 'DELIVERED' || key === 'DELIVEREDTOTERMINAL') return 'delivered'
+  if (['FAILED', 'UNDELIVERABLE', 'EXPIRED', 'DELETED', 'REJECTED', 'DELIVERYIMPOSSIBLE'].includes(key)) return 'failed'
+  return 'unknown'
+}
