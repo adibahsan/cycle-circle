@@ -59,6 +59,7 @@ beforeAll(async () => {
     ['a1', '2036-03-01'], ['a2', '2036-03-01'], ['s1', '2036-03-01'], ['a1', '2036-03-02'],
     ['a1', '2036-03-10'], ['a2', '2036-03-10'], ['a3', '2036-03-10'],
     ['p1', '2036-02-25'], ['a1', '2036-02-25'],
+    ['p1', '2036-01-15'], // recording began before both periods, so neither average drops days
   ] as const) await active(who, day)
 
   // Pro price: 290 a month from 1 Feb (10 a day in February, 290/31 in March), 140 a week from 6 March (20 a day).
@@ -92,7 +93,8 @@ describe('getOverviewMetrics', () => {
     const m = await getOverviewMetrics(range, NOW)
     // a1 a2 a3 p1 s1 exist by 10 March (suspended users still count; a4 was deleted, b1 signs up on the 11th); p1 s1 by 29 February.
     expect(m.totalUsers).toEqual({ value: baseUsers + 5, previous: baseUsers + 2, change: expect.any(Number) })
-    expect(m.newSignups).toEqual({ value: 3, previous: 1, change: 200 })
+    // a4 signed up in the range and was deleted afterwards: still a signup.
+    expect(m.newSignups).toEqual({ value: 4, previous: 1, change: 300 })
   })
 
   it('averages daily active users, leaving out suspended users', async () => {
@@ -100,6 +102,15 @@ describe('getOverviewMetrics', () => {
     expect(m.activeUsers.average).toEqual({ value: 0.6, previous: 0.2, change: 200 })
     expect(m.activeUsers.latest).toEqual({ value: 3, previous: 0, change: null })
     expect(m.activeUsers.series).toHaveLength(10)
+  })
+
+  it('leaves out days before recording began, and has no comparison for a period wholly before it', async () => {
+    // Recording began in 2017 at the earliest (other tests' rows); 2012 is wholly before it.
+    const early = parseDateRange({ from: '2012-06-10', to: '2012-06-16' }, NOW)
+    const m = await getOverviewMetrics(early, NOW)
+    expect(m.activeUsers.average).toEqual({ value: null, previous: null, change: null })
+    expect(m.activeUsers.latest).toEqual({ value: null, previous: null, change: null })
+    expect(m.activeUsers.series).toHaveLength(7)
   })
 
   it('reports Pro subscribers at the end of each period', async () => {
@@ -121,12 +132,15 @@ describe('getOverviewMetrics', () => {
   it('estimates revenue from the price in effect each day, across a price change', async () => {
     const { revenue: r } = await getOverviewMetrics(range, NOW)
     // 1,2,4,5 March: 5 Pro x 290/31; 6-10 March: 6 Pro x 140/7. The 3rd has no snapshot.
-    expect(r.total.value).toBeCloseTo((4 * 5 * 290) / 31 + 5 * 6 * 20, 2)
+    const total = (4 * 5 * 290) / 31 + 5 * 6 * 20
+    expect(r.total).toBeCloseTo(total, 2)
     expect(r.unavailableDays).toBe(1)
     // Previous: 4 Pro x 290/29 on five days (25-29 Feb); five days unavailable.
-    expect(r.total.previous).toBeCloseTo(5 * 4 * 10, 2)
-    // Compared per available day, since the periods have different gaps: 87.455 vs 40.
-    expect(r.total.change).toBe(118.6)
+    expect(r.previousTotal).toBeCloseTo(5 * 4 * 10, 2)
+    // The headline is the daily average over the available days, and its change compares those: 87.455 vs 40.
+    expect(r.dailyAverage.value).toBeCloseTo(total / 9, 2)
+    expect(r.dailyAverage.previous).toBe(40)
+    expect(r.dailyAverage.change).toBe(118.6)
     expect(r.series.find((d) => d.date === '2036-03-03')!.amount).toBeNull()
     expect(r.series.find((d) => d.date === '2036-03-06')!.amount).toBe(120)
   })
@@ -134,7 +148,9 @@ describe('getOverviewMetrics', () => {
   it('shows days without a snapshot as unavailable, never zero', async () => {
     const empty = parseDateRange({ from: '2037-06-01', to: '2037-06-07' }, new Date('2037-07-01T06:00:00Z'))
     const m = await getOverviewMetrics(empty, new Date('2037-07-01T06:00:00Z'))
-    expect(m.revenue.total).toEqual({ value: null, previous: null, change: null })
+    expect(m.revenue.dailyAverage).toEqual({ value: null, previous: null, change: null })
+    expect(m.revenue.total).toBeNull()
+    expect(m.revenue.previousTotal).toBeNull()
     expect(m.revenue.unavailableDays).toBe(7)
     expect(m.revenue.series.every((d) => d.amount === null)).toBe(true)
     expect(m.proSubscribers.value).toBeNull()

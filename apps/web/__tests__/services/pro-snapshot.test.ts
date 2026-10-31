@@ -44,7 +44,7 @@ describe('Pro snapshot', () => {
     await testPrisma.user.update({ where: { id: u('gone') }, data: { deletedAt: new Date() } })
     const after = (await snapshotProCount(new Date('2032-03-13T06:00:00Z'))).proCount
     expect(after).toBe(before - 1)
-    expect(await getProSnapshots({ from: '2032-03-12', to: '2032-03-13' })).toEqual([
+    expect(await getProSnapshots({ fromDay: '2032-03-12', toDay: '2032-03-13' })).toEqual([
       { day: '2032-03-12', proCount: before },
       { day: '2032-03-13', proCount: after },
     ])

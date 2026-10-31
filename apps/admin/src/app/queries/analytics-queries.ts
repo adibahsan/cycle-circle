@@ -97,7 +97,7 @@ export const getDailyActiveLoggers = cache(async (range: DateRange) => {
 export const getDailyActiveUsers = cache(async (range: DateRange) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetDailyActiveUsers(range, new Date()),
+    () => svcGetDailyActiveUsers(range),
     ['admin-daily-active-users', range.key],
     { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()

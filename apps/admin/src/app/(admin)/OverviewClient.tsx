@@ -10,6 +10,7 @@ import { DateRangeControl, type DateRangeControlValue } from '@/components/chart
 import { CHART_VAR } from '@/lib/chart-palette'
 import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 import { toCsv } from '@vesta/shared/utils/csv'
+import { OVERVIEW_CHURN_REASONS, overviewNumbersCsv } from '@vesta/shared/utils/overview-rows'
 import type { Metric, OverviewMetrics } from '@vesta/shared/server/services'
 
 interface OverviewClientProps {
@@ -21,13 +22,6 @@ interface OverviewClientProps {
 }
 
 const CHANGE_LABEL = 'vs previous period'
-
-const REASONS = [
-  { key: 'DAILY_CHECK', label: 'Daily subscription check', note: '' },
-  { key: 'BDAPPS_UNSUBSCRIBE', label: 'BDApps unsubscribe', note: '' },
-  { key: 'ACCOUNT_DELETED', label: 'Account deleted', note: '' },
-  { key: 'ADMIN_REVOKE', label: 'Admin revoke', note: 'not counted in the churn rate' },
-] as const
 
 const int = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 const dec = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
@@ -41,21 +35,24 @@ function formatNumber(n: number | null) {
 
 const formatPercent = (fraction: number | null) => (fraction === null ? 'Unavailable' : `${dec.format(fraction * 100)}%`)
 const formatTaka = (n: number | null) => (n === null ? 'Unavailable' : `৳${int.format(n)}`)
+const formatDec = (n: number | null) => (n === null ? 'Unavailable' : `৳${dec.format(n)}`)
 const formatChange = (n: number | null) => (n === null ? '' : `${n > 0 ? '+' : ''}${n}%`)
 const shortDate = (d: string) => formatDhaka(d, { month: 'short', day: 'numeric' })
 
-function Card({
+function MetricCard({
   title,
   m,
   icon,
   format = formatNumber,
+  note,
 }: {
   title: string
   m: Metric
   icon: React.ReactNode
   format?: (n: number | null) => string
+  note?: string
 }) {
-  return <StatCard title={title} value={format(m.value)} change={{ value: m.change, label: CHANGE_LABEL }} icon={icon} />
+  return <StatCard title={title} value={format(m.value)} change={{ value: m.change, label: CHANGE_LABEL }} icon={icon} note={note} />
 }
 
 export function OverviewClient({ generatedAt, metrics, signupTrend, maeTrend, range }: OverviewClientProps) {
@@ -68,27 +65,12 @@ export function OverviewClient({ generatedAt, metrics, signupTrend, maeTrend, ra
     return row
   })
 
-  const numbersCsv = () => {
-    const row = (name: string, m: Metric) => [name, m.value, m.previous, m.change]
-    return toCsv(
-      ['Metric', 'This period', 'Previous period', 'Change %'],
-      [
-        row('Total users', metrics.totalUsers),
-        row('New signups', metrics.newSignups),
-        row('Average daily active users', activeUsers.average),
-        row('Active users on last day', activeUsers.latest),
-        row('Pro subscribers', metrics.proSubscribers),
-        row('Churned (excl. admin revokes)', churn.churned),
-        row('Churn rate (fraction)', churn.rate),
-        row('Estimated revenue (taka)', revenue.total),
-      ],
-    )
-  }
+  const numbersCsv = () => overviewNumbersCsv(metrics)
 
   const reasonsCsv = () =>
     toCsv(
       ['Reason', 'This period', 'Previous period', 'Change %', 'In churn rate'],
-      REASONS.map((r) => [
+      OVERVIEW_CHURN_REASONS.map((r) => [
         r.label,
         churn.byReason[r.key].value,
         churn.byReason[r.key].previous,
@@ -122,31 +104,32 @@ export function OverviewClient({ generatedAt, metrics, signupTrend, maeTrend, ra
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card title="Total Users" m={metrics.totalUsers} icon={<Users aria-hidden="true" size={18} />} />
-        <Card title="New Signups" m={metrics.newSignups} icon={<UserPlus aria-hidden="true" size={18} />} />
-        <Card
+        <MetricCard title="Total Users" m={metrics.totalUsers} icon={<Users aria-hidden="true" size={18} />} />
+        <MetricCard title="New Signups" m={metrics.newSignups} icon={<UserPlus aria-hidden="true" size={18} />} />
+        <MetricCard
           title="Average Daily Active Users"
           m={activeUsers.average}
           format={(n) => (n === null ? 'Unavailable' : dec.format(n))}
           icon={<UserCheck aria-hidden="true" size={18} />}
         />
-        <Card title="Active Users on Last Day" m={activeUsers.latest} icon={<Activity aria-hidden="true" size={18} />} />
-        <Card title="Pro Subscribers" m={metrics.proSubscribers} icon={<Crown aria-hidden="true" size={18} />} />
-        <Card title="Churned Pro Users" m={churn.churned} icon={<UserMinus aria-hidden="true" size={18} />} />
-        <Card title="Churn Rate" m={churn.rate} format={formatPercent} icon={<UserMinus aria-hidden="true" size={18} />} />
-        <Card
-          title="Estimated Revenue"
-          m={revenue.total}
-          format={formatTaka}
+        <MetricCard title="Active Users on Last Day" m={activeUsers.latest} icon={<Activity aria-hidden="true" size={18} />} />
+        <MetricCard title="Pro Subscribers" m={metrics.proSubscribers} icon={<Crown aria-hidden="true" size={18} />} />
+        <MetricCard title="Churned Pro Users" m={churn.churned} icon={<UserMinus aria-hidden="true" size={18} />} />
+        <MetricCard title="Churn Rate" m={churn.rate} format={formatPercent} icon={<UserMinus aria-hidden="true" size={18} />} />
+        <MetricCard
+          title="Estimated Daily Revenue"
+          m={revenue.dailyAverage}
+          format={formatDec}
+          note={revenue.total === null ? undefined : `${formatTaka(revenue.total)} in total`}
           icon={<Wallet aria-hidden="true" size={18} />}
         />
       </div>
 
       <p className="text-sm text-[var(--color-text-muted)]">
-        Estimated revenue is Pro subscribers each day times the daily equivalent of the Pro price in effect that day. It is an
-        estimate, not billed money.
+        Estimated daily revenue is the average, over the days that have a Pro subscriber count, of Pro subscribers times the
+        daily equivalent of the Pro price in effect that day. It is an estimate, not billed money.
         {revenue.unavailableDays > 0 &&
-          ` ${revenue.unavailableDays} of ${metrics.range.days} days have no Pro subscriber count yet and are left out (shown as unavailable, not zero), so the change compares the daily average of the days that have one.`}
+          ` ${revenue.unavailableDays} of ${metrics.range.days} days have no Pro subscriber count yet and are left out (shown as unavailable, not zero), so the average and its change use only the days that have one.`}
         {' '}Active-user history starts on the day recording began.
       </p>
 
@@ -167,7 +150,7 @@ export function OverviewClient({ generatedAt, metrics, signupTrend, maeTrend, ra
               </tr>
             </thead>
             <tbody>
-              {REASONS.map((r) => {
+              {OVERVIEW_CHURN_REASONS.map((r) => {
                 const m = churn.byReason[r.key]
                 return (
                   <tr key={r.key} className="border-t border-[var(--color-border)]">

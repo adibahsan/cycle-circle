@@ -1,7 +1,7 @@
 import { prisma } from '../db'
 import { bangladeshDayOf, dayToStoredDate, storedDateToDay } from '../../utils/dhaka-date'
-import type { DateRange } from '../../utils/date-range'
-import { fillDaySeries, resolveDaySeriesRange } from '../../utils/day-series'
+import type { DayWindow } from '../../utils/date-range'
+import { fillDaySeries } from '../../utils/day-series'
 
 // Per-process memo of "already recorded today": makes the call cheap enough for every request.
 const recorded = new Map<string, string>()
@@ -29,23 +29,21 @@ export async function recordUserActivity(userId: string, now: Date): Promise<voi
   recorded.set(userId, day)
 }
 
+/** The first Bangladesh day anyone was recorded, or null before recording began. */
+export async function getFirstActivityDay(): Promise<string | null> {
+  const first = await prisma.userActivity.aggregate({ _min: { day: true } })
+  return first._min.day ? storedDateToDay(first._min.day) : null
+}
+
 /**
- * Daily active users: distinct users who opened the app per Bangladesh day, gap-filled with
- * zeros. Users suspended or deleted now are excluded. History starts on the recording date.
- * Accepts the same opts shape as getUserTrend, including the shared `DateRange` (default last 30 days).
+ * Daily active users: distinct users who opened the app per Bangladesh day of the shared range,
+ * gap-filled with zeros. Users suspended or deleted now are excluded. History starts on the
+ * recording date (`getFirstActivityDay`).
  */
 export async function getDailyActiveUsers(
-  opts: number | DateRange | { days?: number; dateFrom?: Date; dateTo?: Date },
-  now: Date,
+  range: Pick<DayWindow, 'fromDay' | 'toDay'>,
 ): Promise<{ date: string; count: number }[]> {
-  const o =
-    typeof opts === 'number'
-      ? { days: opts }
-      : 'fromDay' in opts
-        ? { dateFrom: opts.from, dateTo: opts.to }
-        : opts
-  const { fromDay, toDay } = resolveDaySeriesRange({ ...o, now })
-
+  const { fromDay, toDay } = range
   const grouped = await prisma.userActivity.groupBy({
     by: ['day'],
     where: {

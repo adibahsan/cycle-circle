@@ -61,6 +61,15 @@ describe('day-series services follow the parsed range', () => {
   })
 })
 
+describe('signup trend and deletion', () => {
+  it('counts a user who signed up in the range even if deleted later', async () => {
+    const { user } = await makeUser('90', at('2013-03-05T05:00:00Z'))
+    await testPrisma.user.update({ where: { id: user.id }, data: { deletedAt: new Date() } }) // real clock: stays clear of the purge window
+    const series = await getUserTrend(parseDateRange({ from: '2013-03-05', to: '2013-03-05' }, NOW_0200), NOW_0200)
+    expect(series).toEqual([{ date: '2013-03-05', count: 1 }])
+  })
+})
+
 describe('panel services include today\'s logs at 02:00 Bangladesh', () => {
   const range = () => parseDateRange({ range: '7d' }, NOW_0200)
 

@@ -14,8 +14,8 @@ async function makeUser(n: string, extra: Record<string, unknown> = {}) {
   })
 }
 
-const countOn = async (day: string, now: Date) => {
-  const series = await getDailyActiveUsers({ dateFrom: at(`${day}T00:00:00+06:00`), dateTo: at(`${day}T23:59:59+06:00`) }, now)
+const countOn = async (day: string) => {
+  const series = await getDailyActiveUsers({ fromDay: day, toDay: day })
   return series.find((r) => r.date === day)?.count
 }
 
@@ -31,7 +31,7 @@ describe('recordUserActivity', () => {
     await recordUserActivity(u.id, now)
     await recordUserActivity(u.id, at('2017-03-10T09:00:00Z'))
     expect(await testPrisma.userActivity.count({ where: { userId: u.id } })).toBe(1)
-    expect(await countOn('2017-03-10', now)).toBeGreaterThanOrEqual(1)
+    expect(await countOn('2017-03-10')).toBeGreaterThanOrEqual(1)
   })
 
   it('splits the Bangladesh day at 18:00Z', async () => {
@@ -58,14 +58,14 @@ describe('getDailyActiveUsers', () => {
     const c = await makeUser('7')
     const now = at('2017-04-10T05:00:00Z')
     for (const u of [a, b, c]) await recordUserActivity(u.id, now)
-    const base = await countOn('2017-04-10', now)
+    const base = await countOn('2017-04-10')
     await testPrisma.user.update({ where: { id: b.id }, data: { suspendedAt: now } })
     await testPrisma.user.update({ where: { id: c.id }, data: { deletedAt: new Date() } })
-    expect(await countOn('2017-04-10', now)).toBe(base! - 2)
+    expect(await countOn('2017-04-10')).toBe(base! - 2)
   })
 
-  it('gap-fills days with zero and ends the range at the Bangladesh today', async () => {
-    const series = await getDailyActiveUsers(3, at('2017-05-10T18:30:00Z'))
+  it('gap-fills every day of the range with zero', async () => {
+    const series = await getDailyActiveUsers({ fromDay: '2017-05-09', toDay: '2017-05-11' })
     expect(series.map((r) => r.date)).toEqual(['2017-05-09', '2017-05-10', '2017-05-11'])
   })
 })

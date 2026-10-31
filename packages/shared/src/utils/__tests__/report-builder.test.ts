@@ -22,7 +22,7 @@ function metrics(over: Partial<OverviewMetrics> = {}): OverviewMetrics {
       churned: m(5, 4, 25),
       rate: m(0.0625, 0.05, 25),
     },
-    revenue: { total: m(1234.5, 1000, 23.5), unavailableDays: 0, previousUnavailableDays: 0, series: [] },
+    revenue: { dailyAverage: m(176.36, 142.86, 23.5), total: 1234.5, previousTotal: 1000, unavailableDays: 0, previousUnavailableDays: 0, series: [] },
     ...over,
   }
 }
@@ -41,7 +41,8 @@ describe('buildReport', () => {
     expect(text).toContain('Average daily active users: 41.5 (+3.8% vs 40.0)')
     expect(text).toContain('Pro subscribers: 80 (+0.0% vs 80)')
     expect(text).toContain('Churn rate: 6.3% (+25.0% vs 5.0%)')
-    expect(text).toContain('Estimated revenue: Tk 1,234.50 (+23.5% vs Tk 1,000.00)')
+    expect(text).toContain('Estimated daily revenue: Tk 176.36 (+23.5% vs Tk 142.86)')
+    expect(text).toContain('Estimated revenue in total: Tk 1,234.50 (previous Tk 1,000.00)')
     expect(html).toContain('Total users')
     expect(html).toContain('+9.1%')
     expect(html).toContain('-20.0%')
@@ -53,12 +54,12 @@ describe('buildReport', () => {
       metrics: metrics({
         proSubscribers: m(null, null, null),
         churn: { ...metrics().churn, rate: m(null, null, null) },
-        revenue: { total: m(null, null, null), unavailableDays: 7, previousUnavailableDays: 7, series: [] },
+        revenue: { dailyAverage: m(null, null, null), total: null, previousTotal: null, unavailableDays: 7, previousUnavailableDays: 7, series: [] },
       }),
     })
     expect(r.text).toContain('Pro subscribers: unavailable')
     expect(r.text).toContain('Churn rate: unavailable')
-    expect(r.text).toContain('Estimated revenue: unavailable')
+    expect(r.text).toContain('Estimated daily revenue: unavailable')
     expect(r.text).not.toMatch(/NaN|null|undefined/)
     expect(r.html).not.toMatch(/NaN|null|undefined/)
   })
@@ -82,8 +83,9 @@ describe('buildReport', () => {
     expect(lines[0]).toBe('Metric,This period,Previous period,Change %')
     expect(lines).toContain('Total users,1200,1100,9.1')
     expect(lines).toContain('Churn rate (fraction),0.0625,0.05,25')
-    expect(lines).toContain('Estimated revenue (taka),1234.5,1000,23.5')
-    expect(lines).toContain('Churn: Admin revoke (not in churn rate),1,0,')
+    expect(lines).toContain('Estimated daily revenue (taka),176.36,142.86,23.5')
+    expect(lines).toContain('Estimated revenue in total (taka),1234.5,1000,')
+    expect(lines).toContain('Churn: Admin revoke (not counted in the churn rate),1,0,')
     expect(csvFilename).toBe('overview_2038-03-01_2038-03-07.csv')
   })
 

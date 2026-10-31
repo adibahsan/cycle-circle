@@ -8,10 +8,12 @@ interface StatCardProps {
   /** `value` null means there is nothing to compare against (shown as a muted note). */
   change?: { value: number | null; label: string };
   icon?: React.ReactNode;
+  /** Secondary text under the value, e.g. a total behind an average. */
+  note?: string;
   className?: string;
 }
 
-export function StatCard({ title, value, change, icon, className }: StatCardProps) {
+export function StatCard({ title, value, change, icon, note, className }: StatCardProps) {
   const titleId = useId();
   const hasChange = change && change.value !== null;
   const isPositive = hasChange && change.value! >= 0;
@@ -33,6 +35,8 @@ export function StatCard({ title, value, change, icon, className }: StatCardProp
       <p className="text-3xl font-bold tracking-tight tabular-nums text-[var(--color-text-primary)]">
         {value}
       </p>
+
+      {note && <p className="-mt-2 text-sm text-[var(--color-text-muted)]">{note}</p>}
 
       {change && change.value === null && (
         <div className="text-sm text-[var(--color-text-muted)]">No comparison {change.label}</div>

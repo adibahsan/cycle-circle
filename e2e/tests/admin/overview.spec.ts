@@ -48,9 +48,10 @@ test.describe('Admin overview numbers', () => {
       await refreshData(page)
       const card = (title: string) => page.getByRole('group', { name: title, exact: true })
 
-      // 1 March 3 x 5 + 2 March 3 x 10 = 45 over two available days; previous 2 x 2 x 5 = 20 over two days.
-      await expect(card('Estimated Revenue').getByRole('paragraph')).toHaveText('৳45')
-      await expect(card('Estimated Revenue').getByText('+125% vs previous period')).toBeVisible()
+      // 1 March 3 x 5 + 2 March 3 x 10 = 45 over two available days, 22.5 a day; previous 2 x 2 x 5 = 20 over two days, 10 a day.
+      await expect(card('Estimated Daily Revenue').getByRole('paragraph').first()).toHaveText('৳22.5')
+      await expect(card('Estimated Daily Revenue').getByText('৳45 in total')).toBeVisible()
+      await expect(card('Estimated Daily Revenue').getByText('+125% vs previous period')).toBeVisible()
       await expect(page.getByText('1 of 3 days have no Pro subscriber count')).toBeVisible()
       await expect(page.getByText('not billed money')).toBeVisible()
 

@@ -1,4 +1,5 @@
 import { prisma } from '../db'
+import type { DayWindow } from '../../utils/date-range'
 import {
   addDaysToDay,
   bangladeshDayOf,
@@ -11,18 +12,8 @@ import {
 export const CHURN_REASONS = ['DAILY_CHECK', 'BDAPPS_UNSUBSCRIBE', 'ADMIN_REVOKE', 'ACCOUNT_DELETED'] as const
 export type ChurnReasonValue = (typeof CHURN_REASONS)[number]
 
-/** An inclusive range of Bangladesh days, `YYYY-MM-DD` each. */
-export interface ChurnRange {
-  from: string
-  to: string
-}
-
-/** What the churn functions accept: plain day strings, or the shared range's day window (`fromDay`/`toDay`). */
-export type ChurnRangeInput = ChurnRange | { fromDay: string; toDay: string }
-
-function toChurnRange(r: ChurnRangeInput): ChurnRange {
-  return 'fromDay' in r ? { from: r.fromDay, to: r.toDay } : r
-}
+/** The part of the shared range (utils/date-range) the churn functions read: inclusive Bangladesh days. */
+export type ChurnRange = Pick<DayWindow, 'fromDay' | 'toDay'>
 
 /**
  * Record that a Pro user stopped being Pro. `at` defaults to the database clock; callers that
@@ -47,7 +38,7 @@ export interface ChurnSummary {
   byReason: Record<ChurnReasonValue, number>
   /** Events that count toward the churn rate: everything except admin revokes. */
   churned: number
-  /** Pro subscribers at the end of the day before `range.from` (snapshot); null if none was stored. */
+  /** Pro subscribers at the end of the day before `range.fromDay` (snapshot); null if none was stored. */
   proAtStart: number | null
   /** churned / proAtStart; null when proAtStart is missing or zero. */
   rate: number | null
@@ -57,26 +48,25 @@ export interface ChurnSummary {
  * Churn in a range of Bangladesh days: counts by reason, and the churn rate with admin revokes
  * left out. The range end is capped at today (`now`).
  */
-export async function getChurnSummary(input: ChurnRangeInput, now: Date): Promise<ChurnSummary> {
-  const range = toChurnRange(input)
+export async function getChurnSummary(range: ChurnRange, now: Date): Promise<ChurnSummary> {
   const today = bangladeshDayOf(now)
-  const to = range.to > today ? today : range.to
+  const to = range.toDay > today ? today : range.toDay
   const byReason = Object.fromEntries(CHURN_REASONS.map((r) => [r, 0])) as Record<ChurnReasonValue, number>
   const proAtStart = (
-    await prisma.proSnapshot.findUnique({ where: { day: dayToStoredDate(addDaysToDay(range.from, -1)) } })
+    await prisma.proSnapshot.findUnique({ where: { day: dayToStoredDate(addDaysToDay(range.fromDay, -1)) } })
   )?.proCount ?? null
 
-  if (to >= range.from) {
+  if (to >= range.fromDay) {
     const rows = await prisma.churnEvent.groupBy({
       by: ['reason'],
-      where: { occurredAt: { gte: parseDhakaDay(range.from)!, lte: parseDhakaDay(to, true)! } },
+      where: { occurredAt: { gte: parseDhakaDay(range.fromDay)!, lte: parseDhakaDay(to, true)! } },
       _count: { _all: true },
     })
     for (const r of rows) byReason[r.reason] = r._count._all
   }
   const churned = CHURN_REASONS.filter((r) => r !== 'ADMIN_REVOKE').reduce((n, r) => n + byReason[r], 0)
   return {
-    range: { from: range.from, to },
+    range: { fromDay: range.fromDay, toDay: to },
     byReason,
     churned,
     proAtStart,
@@ -108,10 +98,9 @@ export async function snapshotProCount(now: Date): Promise<{ day: string; proCou
 }
 
 /** Stored Pro counts for the range, oldest first. Days with no snapshot are absent. */
-export async function getProSnapshots(input: ChurnRangeInput): Promise<{ day: string; proCount: number }[]> {
-  const range = toChurnRange(input)
+export async function getProSnapshots(range: ChurnRange): Promise<{ day: string; proCount: number }[]> {
   const rows = await prisma.proSnapshot.findMany({
-    where: { day: { gte: dayToStoredDate(range.from), lte: dayToStoredDate(range.to) } },
+    where: { day: { gte: dayToStoredDate(range.fromDay), lte: dayToStoredDate(range.toDay) } },
     orderBy: { day: 'asc' },
   })
   return rows.map((r) => ({ day: storedDateToDay(r.day), proCount: r.proCount }))

@@ -1,7 +1,8 @@
 import { prisma } from '../db'
 import { addDaysToDay, bangladeshToday } from '../../utils/dhaka-date'
 import type { DateRange, DayWindow } from '../../utils/date-range'
-import { getDailyActiveUsers } from './user-activity-service'
+import { averageSince } from '../../utils/day-series'
+import { getDailyActiveUsers, getFirstActivityDay } from './user-activity-service'
 import {
   CHURN_REASONS,
   countProUsers,
@@ -29,10 +30,10 @@ export interface OverviewMetrics {
   previousRange: Pick<DayWindow, 'fromDay' | 'toDay' | 'days'>
   /** Live users at the end of the period. */
   totalUsers: Metric
-  /** Live users who signed up during the period. */
+  /** Users who signed up during the period, including any deleted since. */
   newSignups: Metric
   activeUsers: {
-    /** Mean of the daily active users over the period. History before recording began counts as zero. */
+    /** Mean of the daily active users over the days on or after the first recorded day. Unavailable when the period lies wholly before recording. */
     average: Metric
     /** Active users on the period's last day. */
     latest: Metric
@@ -49,8 +50,11 @@ export interface OverviewMetrics {
   }
   /** Estimated, never billed: Pro subscribers each day x the daily equivalent of the price in effect. Taka. */
   revenue: {
-    /** Sum over the days that have a snapshot and a price. `change` compares the per-day average of those days. */
-    total: Metric
+    /** The headline: average per day over the days that have a snapshot and a price. `change` compares these averages. */
+    dailyAverage: Metric
+    /** Sum over the same days: the secondary figure. Null when no day qualifies. */
+    total: number | null
+    previousTotal: number | null
     unavailableDays: number
     previousUnavailableDays: number
     /** `amount` is null for a day without a snapshot (or without a price): unavailable, not zero. */
@@ -66,6 +70,8 @@ export function percentChange(value: number | null, previous: number | null): nu
   if (previous === 0) return value === 0 ? 0 : null
   return round(((value - previous) / previous) * 100, 1)
 }
+
+const roundOrNull = (n: number | null, dp: number) => (n === null ? null : round(n, dp))
 
 const metric = (value: number | null, previous: number | null, changeOn?: [number | null, number | null]): Metric => ({
   value,
@@ -95,6 +101,8 @@ interface Shared {
   now: Date
   today: string
   liveProCount: number
+  /** First Bangladesh day with a recorded active user; null before recording began. */
+  firstActivityDay: string | null
   /** Newest effective day first, as listProPriceHistory returns it. */
   prices: ProPriceEntry[]
 }
@@ -104,8 +112,8 @@ async function figures(w: DayWindow, s: Shared) {
     prisma.user.count({
       where: { createdAt: { lte: w.to }, OR: [{ deletedAt: null }, { deletedAt: { gt: w.to } }] },
     }),
-    prisma.user.count({ where: { createdAt: { gte: w.from, lte: w.to }, deletedAt: null } }),
-    getDailyActiveUsers({ dateFrom: w.from, dateTo: w.to }, s.now),
+    prisma.user.count({ where: { createdAt: { gte: w.from, lte: w.to } } }),
+    getDailyActiveUsers(w),
     getProSnapshots(w),
     getChurnSummary(w, s.now),
   ])
@@ -125,8 +133,8 @@ async function figures(w: DayWindow, s: Shared) {
     totalUsers,
     newSignups,
     dau,
-    dauAverage: dau.length ? round(dau.reduce((a, d) => a + d.count, 0) / dau.length, 2) : null,
-    dauLatest: dau.length ? dau[dau.length - 1].count : null,
+    dauAverage: roundOrNull(averageSince(dau, s.firstActivityDay), 2),
+    dauLatest: dau.length && s.firstActivityDay !== null && w.toDay >= s.firstActivityDay ? dau[dau.length - 1].count : null,
     pro: proOn(w.toDay),
     churn,
     revenue,
@@ -138,8 +146,8 @@ async function figures(w: DayWindow, s: Shared) {
 
 /** The Overview's headline numbers for `range`, each against the previous period of equal length. */
 export async function getOverviewMetrics(range: DateRange, now: Date): Promise<OverviewMetrics> {
-  const [prices, liveProCount] = await Promise.all([listProPriceHistory(), countProUsers()])
-  const shared: Shared = { now, today: bangladeshToday(now), liveProCount, prices }
+  const [prices, liveProCount, firstActivityDay] = await Promise.all([listProPriceHistory(), countProUsers(), getFirstActivityDay()])
+  const shared: Shared = { now, today: bangladeshToday(now), liveProCount, firstActivityDay, prices }
   const [cur, prev] = await Promise.all([figures(range, shared), figures(range.previous, shared)])
 
   const reason = (r: ChurnReasonValue) => metric(cur.churn.byReason[r], prev.churn.byReason[r])
@@ -162,7 +170,9 @@ export async function getOverviewMetrics(range: DateRange, now: Date): Promise<O
       rate: metric(cur.churn.rate, prev.churn.rate),
     },
     revenue: {
-      total: metric(money(cur.revenueTotal), money(prev.revenueTotal), [cur.revenuePerDay, prev.revenuePerDay]),
+      dailyAverage: metric(money(cur.revenuePerDay), money(prev.revenuePerDay), [cur.revenuePerDay, prev.revenuePerDay]),
+      total: money(cur.revenueTotal),
+      previousTotal: money(prev.revenueTotal),
       unavailableDays: cur.unavailableDays,
       previousUnavailableDays: prev.unavailableDays,
       series: cur.revenue.map((d) => ({ date: d.date, amount: money(d.amount) })),

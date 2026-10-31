@@ -1,5 +1,6 @@
 import type { Metric, OverviewMetrics } from '../server/services/overview-service'
-import { toCsv, csvFileName } from './csv'
+import { csvFileName } from './csv'
+import { overviewNumbersCsv } from './overview-rows'
 
 /**
  * The emailed report: pure (range metrics in, email content and CSV out). The numbers are the
@@ -50,6 +51,12 @@ function row(label: string, m: Metric, format: Format): Row {
   }
 }
 
+function revenueTotalLine(r: OverviewMetrics['revenue']): string {
+  if (r.total === null) return 'Estimated revenue in total: unavailable'
+  const prev = r.previousTotal === null ? 'unavailable' : fmtTaka(r.previousTotal)
+  return `Estimated revenue in total: ${fmtTaka(r.total)} (previous ${prev})`
+}
+
 function textLine(r: Row): string {
   if (r.unavailable) return `${r.label}: unavailable`
   return `${r.label}: ${r.value} (${r.change ?? 'change n/a'} vs ${r.previous})`
@@ -57,13 +64,6 @@ function textLine(r: Row): string {
 
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-
-const REASONS: { key: keyof OverviewMetrics['churn']['byReason']; label: string }[] = [
-  { key: 'DAILY_CHECK', label: 'Daily subscription check' },
-  { key: 'BDAPPS_UNSUBSCRIBE', label: 'BDApps unsubscribe' },
-  { key: 'ADMIN_REVOKE', label: 'Admin revoke (not in churn rate)' },
-  { key: 'ACCOUNT_DELETED', label: 'Account deleted' },
-]
 
 export function buildReport(input: { kind: ReportKind; metrics: OverviewMetrics; overviewUrl?: string }): BuiltReport {
   const { kind, metrics, overviewUrl } = input
@@ -77,19 +77,21 @@ export function buildReport(input: { kind: ReportKind; metrics: OverviewMetrics;
     row('Pro subscribers', metrics.proSubscribers, fmtInt),
     row('Churned Pro users (excl. admin revokes)', churn.churned, fmtInt),
     row('Churn rate', churn.rate, fmtPercent),
-    row('Estimated revenue', revenue.total, fmtTaka),
+    row('Estimated daily revenue', revenue.dailyAverage, fmtTaka),
   ]
+  const totalLine = revenueTotalLine(revenue)
 
   const subject = `Cycle Circle ${kind} report: ${fromDay} to ${toDay}`
   const period = `${fromDay} to ${toDay} (${metrics.range.days} Bangladesh days), compared with ${metrics.previousRange.fromDay} to ${metrics.previousRange.toDay}.`
   const note =
-    'Estimated revenue is Pro subscribers each day times the daily equivalent of the Pro price in effect that day. It is an estimate, not billed money.'
+    'Estimated daily revenue is the average, over the days that have a Pro subscriber count, of Pro subscribers times the daily equivalent of the Pro price in effect that day; its change compares those averages. It is an estimate, not billed money.'
 
   const text = [
     subject,
     period,
     '',
     ...rows.map(textLine),
+    totalLine,
     '',
     note,
     ...(overviewUrl ? ['', `Open the Overview for this range: ${overviewUrl}`] : []),
@@ -110,26 +112,13 @@ export function buildReport(input: { kind: ReportKind; metrics: OverviewMetrics;
 <h1 style="font-size:20px;margin:0 0 4px">${esc(subject)}</h1>
 <p style="margin:0 0 16px;color:#6b7280">${esc(period)}</p>
 <table style="border-collapse:collapse;width:100%;font-size:14px"><thead><tr><th style="text-align:left;padding:8px 12px">Metric</th><th style="text-align:right;padding:8px 12px">This period</th><th style="text-align:right;padding:8px 12px">Change</th><th style="text-align:right;padding:8px 12px">Previous</th></tr></thead><tbody>${cells}</tbody></table>
+<p style="font-size:14px">${esc(totalLine)}</p>
 <p style="font-size:12px;color:#6b7280">${esc(note)}</p>
 ${overviewUrl ? `<p><a href="${esc(overviewUrl)}">Open the Overview for this range</a></p>` : ''}
 <p style="font-size:12px;color:#6b7280">The numbers are also attached as a CSV file.</p>
 </body></html>`
 
-  const csvRow = (name: string, m: Metric) => [name, m.value, m.previous, m.change]
-  const csv = toCsv(
-    ['Metric', 'This period', 'Previous period', 'Change %'],
-    [
-      csvRow('Total users', metrics.totalUsers),
-      csvRow('New signups', metrics.newSignups),
-      csvRow('Average daily active users', activeUsers.average),
-      csvRow('Active users on last day', activeUsers.latest),
-      csvRow('Pro subscribers', metrics.proSubscribers),
-      csvRow('Churned (excl. admin revokes)', churn.churned),
-      csvRow('Churn rate (fraction)', churn.rate),
-      csvRow('Estimated revenue (taka)', revenue.total),
-      ...REASONS.map((r) => csvRow(`Churn: ${r.label}`, churn.byReason[r.key])),
-    ],
-  )
+  const csv = overviewNumbersCsv(metrics)
 
   return { subject, html, text, csv, csvFilename: csvFileName('Overview', `${fromDay}_${toDay}`) }
 }

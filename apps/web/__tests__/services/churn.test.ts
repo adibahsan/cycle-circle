@@ -134,7 +134,7 @@ describe('getChurnSummary', () => {
     await ev('DAILY_CHECK', '2032-04-14T18:00:00Z') // 15 April BD: outside
     await ev('DAILY_CHECK', '2032-04-09T17:59:59Z') // 9 April BD: outside
 
-    const s = await svc.getChurnSummary({ from: '2032-04-10', to: '2032-04-14' }, at('2032-06-01T00:00:00Z'))
+    const s = await svc.getChurnSummary({ fromDay: '2032-04-10', toDay: '2032-04-14' }, at('2032-06-01T00:00:00Z'))
     expect(s.byReason).toEqual({ DAILY_CHECK: 2, BDAPPS_UNSUBSCRIBE: 1, ADMIN_REVOKE: 1, ACCOUNT_DELETED: 1 })
     expect(s.churned).toBe(4)
     expect(s.proAtStart).toBe(50)
@@ -143,15 +143,15 @@ describe('getChurnSummary', () => {
 
   it('has no rate without a snapshot for the day before the range, or with zero Pro', async () => {
     await ev('DAILY_CHECK', '2032-05-02T10:00:00Z')
-    const none = await svc.getChurnSummary({ from: '2032-05-01', to: '2032-05-03' }, at('2032-06-01T00:00:00Z'))
+    const none = await svc.getChurnSummary({ fromDay: '2032-05-01', toDay: '2032-05-03' }, at('2032-06-01T00:00:00Z'))
     expect(none).toMatchObject({ churned: 1, proAtStart: null, rate: null })
     await testPrisma.proSnapshot.create({ data: { day: new Date('2032-04-30'), proCount: 0 } })
-    const zero = await svc.getChurnSummary({ from: '2032-05-01', to: '2032-05-03' }, at('2032-06-01T00:00:00Z'))
+    const zero = await svc.getChurnSummary({ fromDay: '2032-05-01', toDay: '2032-05-03' }, at('2032-06-01T00:00:00Z'))
     expect(zero).toMatchObject({ proAtStart: 0, rate: null })
   })
 
   it('returns zero counts for an empty range', async () => {
-    const s = await svc.getChurnSummary({ from: '2032-07-01', to: '2032-07-02' }, at('2032-08-01T00:00:00Z'))
+    const s = await svc.getChurnSummary({ fromDay: '2032-07-01', toDay: '2032-07-02' }, at('2032-08-01T00:00:00Z'))
     expect(s.byReason).toEqual({ DAILY_CHECK: 0, BDAPPS_UNSUBSCRIBE: 0, ADMIN_REVOKE: 0, ACCOUNT_DELETED: 0 })
     expect(s.churned).toBe(0)
   })

@@ -40,6 +40,17 @@ export function resolveDaySeriesRange(opts: DaySeriesOpts): DaySeriesRange {
   }
 }
 
+/**
+ * Mean count over the series days on or after `firstDay` (when recording began), so days from
+ * before recording are not averaged in as zeros. Null when no day qualifies.
+ */
+export function averageSince(series: { date: string; count: number }[], firstDay: string | null): number | null {
+  if (!firstDay) return null
+  const days = series.filter((d) => d.date >= firstDay)
+  if (!days.length) return null
+  return days.reduce((a, d) => a + d.count, 0) / days.length
+}
+
 /** One `{date, count}` row per Bangladesh day from `fromDay` to `toDay`, zero where `counts` has no entry. */
 export function fillDaySeries(
   fromDay: string,

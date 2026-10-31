@@ -112,8 +112,7 @@ export async function getUserTrend(
 
   const users = await prisma.user.findMany({
     where: {
-      createdAt: { gte: from, lte: to },
-      deletedAt: null,
+      createdAt: { gte: from, lte: to }, // a signup stays a signup if the user is deleted later
     },
     select: { createdAt: true },
     orderBy: { createdAt: 'asc' },
