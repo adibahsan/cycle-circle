@@ -32,6 +32,7 @@ describe('primary surfaces have no 10px text', () => {
     'app/(main)/insights/InsightsClient.tsx',
     'app/onboarding/OnboardingClient.tsx',
     'app/(main)/content/ContentClient.tsx',
+    'app/(main)/content/[id]/ArticleReaderClient.tsx',
     'app/(main)/calendar/CalendarClient.tsx',
     'app/(main)/symptoms/SymptomsClient.tsx',
     'components/engagement/ConsistencyGrid.tsx',
