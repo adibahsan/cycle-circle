@@ -7,13 +7,12 @@ import {
   SubscriptionStatus,
   SymptomCategory,
 } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+import { assertSeedAdminConfig, ensureAdminUser } from './seed-admin'
 import { defaultNotificationPrefsForGoal } from '../src/utils/goal'
 
 const prisma = new PrismaClient()
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@vesta.health'
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'admin123'
 
 /** Subtract `months` from a date, returning a new Date. */
 function subMonths(date: Date, months: number): Date {
@@ -540,6 +539,8 @@ async function seedDummyUsers() {
 }
 
 async function main() {
+  // Fail fast, before any write (demo data included).
+  assertSeedAdminConfig({ password: process.env.ADMIN_PASSWORD, nodeEnv: process.env.NODE_ENV })
   console.log('Seeding database…')
 
   // Demo + dummy data are for local/dev only. In production they are skipped
@@ -728,26 +729,18 @@ async function main() {
   console.log('Notification preferences upserted for both profiles')
   } // end if (seedDemo)
 
-  // ── Admin User ──────────────────────────────────────────────────────────────
-  const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12)
-
-  const adminUser = await prisma.user.upsert({
-    where: { email: ADMIN_EMAIL },
-    update: { role: 'ADMIN', passwordHash },
-    create: {
-      email: ADMIN_EMAIL,
-      fullName: 'Super Admin',
-      authMethod: AuthMethod.EMAIL,
-      role: 'ADMIN',
-      passwordHash,
-      profileCompleted: true,
-    },
+  // ── Admin User (create-only; never touches an existing row) ────────────────
+  const admin = await ensureAdminUser(prisma, {
+    email: ADMIN_EMAIL,
+    password: process.env.ADMIN_PASSWORD,
+    nodeEnv: process.env.NODE_ENV,
   })
-
-  console.log(`Admin user upserted: ${adminUser.email} (id: ${adminUser.id})`)
-  console.log(`  Login at http://localhost:3001/login`)
-  console.log(`  Email: ${ADMIN_EMAIL}`)
-  console.log(`  Password: ${ADMIN_PASSWORD}`)
+  if (admin.status === 'created') {
+    console.log(`Admin user created: ${ADMIN_EMAIL}`)
+    console.log(`  Login at http://localhost:3001/login`)
+  } else {
+    console.log(`Admin user already exists: ${ADMIN_EMAIL} (password unchanged)`)
+  }
 
   // ── Dummy test users for engagement/streak feature ─────────────────────────
   if (seedDemo) {
