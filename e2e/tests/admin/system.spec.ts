@@ -75,4 +75,50 @@ test.describe('Admin system', () => {
       await admin.context.close()
     }
   })
+
+  test('the SMS daily send time is set in Bangladesh time, saved after reload and audited', async ({
+    browser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    const key = 'sms.dailySendTime'
+    const before = await e2eDb().systemSetting.findUnique({ where: { key } })
+    const admin = await createLoggedInAdmin(browser, {
+      viewport,
+      userAgent,
+      isMobile,
+      hasTouch,
+      deviceScaleFactor,
+      locale,
+      timezoneId,
+    })
+    try {
+      const { page } = admin
+      await page.goto('/system')
+      const input = page.getByLabel('Send time (Bangladesh)')
+      await expect(input).toBeVisible()
+      await input.fill('16:45')
+      await page.getByRole('button', { name: 'Save', exact: true }).click()
+      await expect(page.getByText('16:45 Bangladesh time')).toBeVisible()
+      await expect(page.getByText('10:45', { exact: true })).toBeVisible() // the same moment in UTC
+
+      await page.reload()
+      await expect(page.getByLabel('Send time (Bangladesh)')).toHaveValue('16:45')
+      expect((await e2eDb().systemSetting.findUniqueOrThrow({ where: { key } })).value).toBe('16:45')
+      const log = await e2eDb().adminAuditLog.findFirst({
+        where: { action: 'SET_SMS_SEND_TIME', targetId: key },
+        orderBy: { createdAt: 'desc' },
+      })
+      expect(log).not.toBeNull()
+    } finally {
+      await admin.context.close()
+      if (before) await e2eDb().systemSetting.update({ where: { key }, data: { value: before.value } })
+      else await e2eDb().systemSetting.deleteMany({ where: { key } })
+    }
+  })
 })

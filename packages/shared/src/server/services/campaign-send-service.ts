@@ -4,6 +4,7 @@ import { logger } from '../log'
 import { smsSend } from '../adapters/bdapps'
 import { createAuditLog } from './audit-service'
 import { bangladeshToday, dayToStoredDate } from '../../utils/dhaka-date'
+import { getSmsSendTime, smsSendMoment } from './sms-settings-service'
 import { env } from '../../utils/env'
 import { canSendMessage } from '../../utils/sms'
 
@@ -162,17 +163,38 @@ export async function sendCampaignMessage(messageId: string, adminUserId: string
 }
 
 /**
- * Dispatch the next due planned message (one per run = one per day): the oldest PLANNED message
- * whose Bangladesh day has come, in a campaign that is not cancelled. Returns what happened.
+ * Mark PLANNED messages of earlier Bangladesh days MISSED: their day is over, and a message
+ * is never sent late. Safe to repeat.
  */
-export async function dispatchDueCampaignMessage(now: Date) {
-  const due = await prisma.smsCampaignMessage.findFirst({
+export async function markMissedMessages(now: Date) {
+  const { count } = await prisma.smsCampaignMessage.updateMany({
     where: {
       status: 'PLANNED',
-      day: { lte: dayToStoredDate(bangladeshToday(now)) },
+      day: { lt: dayToStoredDate(bangladeshToday(now)) },
       campaign: { cancelledAt: null },
     },
-    orderBy: [{ day: 'asc' }, { createdAt: 'asc' }],
+    data: { status: 'MISSED', lastError: 'Missed: not sent on its day.' },
+  })
+  if (count > 0) logger.cron('sms.message.missed', { count }, { level: 'error' })
+  return { missed: count }
+}
+
+/**
+ * Dispatch today's planned message, once the daily send time (Bangladesh time) has passed.
+ * Called by the cron many times a day: before the send time it does nothing, afterwards the
+ * PLANNED -> SENDING claim means only the first call sends. Past days are marked MISSED first.
+ * Returns what happened.
+ */
+export async function dispatchDueCampaignMessage(now: Date) {
+  await markMissedMessages(now)
+
+  const today = bangladeshToday(now)
+  const sendTime = await getSmsSendTime()
+  if (now < smsSendMoment(today, sendTime)) return { dispatched: false as const, skipped: 'before send time' }
+
+  const due = await prisma.smsCampaignMessage.findFirst({
+    where: { status: 'PLANNED', day: dayToStoredDate(today), campaign: { cancelledAt: null } },
+    orderBy: { createdAt: 'asc' },
     include: { campaign: { select: { createdBy: true } } },
   })
   if (!due) return { dispatched: false as const }
@@ -183,7 +205,7 @@ export async function dispatchDueCampaignMessage(now: Date) {
   try {
     result = await providerSend(due)
   } catch (err) {
-    // A failing message must not hold the queue across days.
+    // A failed message is not retried automatically; the admin decides.
     await markFailed(due.id, err)
     logger.cron('sms.message.dispatch.failed', { messageId: due.id, failed: true, error: String(err) }, { level: 'error' })
     return { dispatched: false as const, error: String(err) }
@@ -197,6 +219,19 @@ export async function dispatchDueCampaignMessage(now: Date) {
   return recorded.ok
     ? { dispatched: true as const, messageId: due.id, campaignId: due.campaignId }
     : { dispatched: true as const, messageId: due.id, campaignId: due.campaignId, unrecorded: true as const }
+}
+
+/**
+ * The whole SMS cron step: close out orphaned SENDING messages, then dispatch. Errors are
+ * reported, not thrown, so a failing SMS step never fails the caller (the reminder run).
+ */
+export async function runSmsDispatch(now: Date) {
+  const smsRecovery = await recoverStuckMessages(now).catch((err: unknown) => ({ recovered: 0, error: String(err) }))
+  const smsBroadcast = await dispatchDueCampaignMessage(now).catch((err: unknown) => ({
+    dispatched: false as const,
+    error: String(err),
+  }))
+  return { smsBroadcast, smsRecovery }
 }
 
 /**
