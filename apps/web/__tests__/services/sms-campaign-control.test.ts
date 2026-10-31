@@ -9,6 +9,8 @@ import {
   addCampaignMessage,
   resendCampaignMessage,
   rescheduleCampaignMessage,
+  removeCampaignMessage,
+  canEditMessage,
 } from '@vesta/shared/server/services'
 
 const ADMIN = 'test-smscontrol-admin'
@@ -118,6 +120,44 @@ describe('controlling a running campaign (db)', () => {
     await expect(resendCampaignMessage(c.messages[0].id, ADMIN, day(23), NOW)).rejects.toThrow(/failed or missed/)
     await testPrisma.smsCampaignMessage.update({ where: { id: c.messages[0].id }, data: { status: 'MISSED' } })
     await expect(resendCampaignMessage(c.messages[0].id, ADMIN, day(23), NOW)).resolves.toBeTruthy()
+  })
+
+  it('a failed or missed message is not edited or moved in place; resend is the path', async () => {
+    const c = await series('NoRevive', [27, 28])
+    const [failed, missed] = c.messages
+    await testPrisma.smsCampaignMessage.update({ where: { id: failed.id }, data: { status: 'FAILED', lastError: 'boom' } })
+    await testPrisma.smsCampaignMessage.update({ where: { id: missed.id }, data: { status: 'MISSED' } })
+    await expect(updateCampaignMessage(failed.id, ADMIN, { body: 'x' })).rejects.toThrow(/failed message cannot be changed/)
+    await expect(updateCampaignMessage(missed.id, ADMIN, { body: 'x' })).rejects.toThrow(/missed message cannot be changed/)
+    await expect(rescheduleCampaignMessage(failed.id, ADMIN, day(29), NOW)).rejects.toThrow(/failed message cannot be changed/)
+    await expect(rescheduleCampaignMessage(missed.id, ADMIN, day(29), NOW)).rejects.toThrow(/missed message cannot be changed/)
+    const got = await getCampaign(c.id)
+    expect(got?.messages.map((m) => m.status)).toEqual(['FAILED', 'MISSED'])
+    expect(canEditMessage('FAILED')).toBe(false)
+    expect(canEditMessage('MISSED')).toBe(false)
+    expect(canEditMessage('PLANNED')).toBe(true)
+  })
+
+  it('removes an unsent message, frees its day and audits it', async () => {
+    const c = await series('Remove', [2, 3])
+    await removeCampaignMessage(c.messages[0].id, ADMIN)
+    const got = await getCampaign(c.id)
+    expect(got?.messages.map((m) => m.id)).toEqual([c.messages[1].id])
+    expect(await audit(c.messages[0].id, 'REMOVE_SMS_MESSAGE')).toBeTruthy()
+    await expect(series('Reuse', [2])).resolves.toBeTruthy()
+  })
+
+  it('refuses to remove the last message (delete the campaign), a sent/failed one, or from a cancelled campaign', async () => {
+    const solo = await series('Solo', [4])
+    await expect(removeCampaignMessage(solo.messages[0].id, ADMIN)).rejects.toThrow(/delete the campaign/)
+
+    const c = await series('Guarded', [5, 6, 7])
+    await testPrisma.smsCampaignMessage.update({ where: { id: c.messages[0].id }, data: { status: 'SENT', sentAt: NOW } })
+    await testPrisma.smsCampaignMessage.update({ where: { id: c.messages[1].id }, data: { status: 'FAILED' } })
+    await expect(removeCampaignMessage(c.messages[0].id, ADMIN)).rejects.toThrow(/sent message/)
+    await expect(removeCampaignMessage(c.messages[1].id, ADMIN)).rejects.toThrow(/failed message/)
+    await cancelCampaign(c.id, ADMIN, NOW)
+    await expect(removeCampaignMessage(c.messages[2].id, ADMIN)).rejects.toThrow(/cancelled/)
   })
 
   it('delete is refused once any message was sent, allowed before, and audited', async () => {

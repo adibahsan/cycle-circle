@@ -21,6 +21,7 @@ vi.mock('@vesta/shared/server/services/sms-settings-service', async (importOrigi
 const {
   planCampaign,
   rescheduleCampaignMessage,
+  resendCampaignMessage,
   updateCampaignMessage,
   dispatchDueCampaignMessage,
   sendCampaignMessage,
@@ -87,7 +88,7 @@ describe('SMS campaign messages: edit, send, dispatch', () => {
     await expect(rescheduleCampaignMessage(m.id, ADMIN, day(2))).rejects.toThrow(/sent/i)
   })
 
-  it('moves a planned message to a free day and resets a FAILED one', async () => {
+  it('moves a planned message to a free day, but never a FAILED one in place', async () => {
     const m = await plan(day(1))
     const moved = await rescheduleCampaignMessage(m.id, ADMIN, day(2))
     expect(moved.status).toBe('PLANNED')
@@ -97,10 +98,8 @@ describe('SMS campaign messages: edit, send, dispatch', () => {
       where: { id: m.id },
       data: { status: 'FAILED', lastError: 'boom', sendAttempts: 3 },
     })
-    const r = await rescheduleCampaignMessage(m.id, ADMIN, day(3))
-    expect(r.status).toBe('PLANNED')
-    expect(r.lastError).toBeNull()
-    expect(r.sendAttempts).toBe(0)
+    await expect(rescheduleCampaignMessage(m.id, ADMIN, day(3))).rejects.toThrow(/failed message cannot be changed/)
+    expect((await load(m.id)).status).toBe('FAILED')
   })
 
   it('refuses to move a message onto a day another campaign uses, naming it', async () => {
@@ -180,7 +179,7 @@ describe('SMS campaign messages: edit, send, dispatch', () => {
     expect(row.status).not.toBe('FAILED')
   })
 
-  it('recovers a message stuck in SENDING as "outcome unknown", and the admin can move it', async () => {
+  it('recovers a message stuck in SENDING as "outcome unknown", and the admin resends it on a free day', async () => {
     const stuck = await plan(day(1), 'stuck')
     const fresh = await plan(day(2), 'fresh')
     const now = new Date()
@@ -197,9 +196,10 @@ describe('SMS campaign messages: edit, send, dispatch', () => {
     expect(row.lastError).toMatch(/outcome unknown/i)
     expect((await load(fresh.id)).status).toBe('SENDING')
 
-    const again = await rescheduleCampaignMessage(stuck.id, ADMIN, day(3))
+    await expect(rescheduleCampaignMessage(stuck.id, ADMIN, day(3))).rejects.toThrow(/cannot be changed/)
+    const again = await resendCampaignMessage(stuck.id, ADMIN, day(3), new Date('2041-03-01T00:00:00Z'))
     expect(again.status).toBe('PLANNED')
-    expect(again.lastError).toBeNull()
+    expect(again.body).toBe('stuck')
   })
 
   it('a successful dispatch marks SENT, clears the error and keeps both BDApps ids', async () => {

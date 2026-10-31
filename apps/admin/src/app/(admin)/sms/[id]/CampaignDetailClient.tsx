@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CalendarClock, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { ArrowLeft, CalendarClock, Pencil, Plus, RotateCcw, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
-import { cancelSmsCampaign, deleteSmsCampaign } from '@/app/actions/sms-actions'
+import { cancelSmsCampaign, deleteSmsCampaign, removeSmsMessage } from '@/app/actions/sms-actions'
 import { canDeleteCampaign, canEditMessage } from '@vesta/shared/utils/sms'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
@@ -29,6 +29,7 @@ export function CampaignDetailClient({ campaign }: { campaign: SmsCampaign }) {
   const [addOpen, setAddOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [removeTarget, setRemoveTarget] = useState<SmsMessage | null>(null)
   const [busy, setBusy] = useState(false)
 
   const sent = campaign.messages.filter((m) => m.status === 'SENT').length
@@ -71,6 +72,26 @@ export function CampaignDetailClient({ campaign }: { campaign: SmsCampaign }) {
       setBusy(false)
     }
   }
+
+  async function handleRemove() {
+    if (!removeTarget) return
+    setBusy(true)
+    try {
+      const result = await removeSmsMessage(removeTarget.id)
+      if ('error' in result) {
+        toast.error(result.error)
+        return
+      }
+      setRemoveTarget(null)
+      toast.success('Message removed')
+      refresh()
+    } catch {
+      toast.error('Could not remove the message')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-6 page-enter">
       <Link
@@ -158,6 +179,11 @@ export function CampaignDetailClient({ campaign }: { campaign: SmsCampaign }) {
                         <button type="button" onClick={() => setMoveTarget(m)} className={ICON_BUTTON} aria-label={`Move message for ${formatDay(m.day)} to another day`} title="Move to another day">
                           <CalendarClock size={15} aria-hidden="true" />
                         </button>
+                        {!cancelled && (
+                          <button type="button" onClick={() => setRemoveTarget(m)} className={ICON_BUTTON} aria-label={`Remove message for ${formatDay(m.day)}`} title="Remove from campaign">
+                            <X size={15} aria-hidden="true" />
+                          </button>
+                        )}
                       </>
                     )}
                     {!cancelled && (m.status === 'FAILED' || m.status === 'MISSED') && (
@@ -184,6 +210,15 @@ export function CampaignDetailClient({ campaign }: { campaign: SmsCampaign }) {
         title="Cancel this campaign?"
         message="Days that have not gone out are cancelled. Messages already sent stay in the history."
         confirmLabel="Cancel campaign"
+        loading={busy}
+      />
+      <ConfirmModal
+        open={removeTarget !== null}
+        onClose={() => setRemoveTarget(null)}
+        onConfirm={handleRemove}
+        title="Remove this message?"
+        message={removeTarget ? `The message for ${formatDay(removeTarget.day)} will not be sent and the day becomes free again.` : ''}
+        confirmLabel="Remove"
         loading={busy}
       />
       <ConfirmModal

@@ -2,8 +2,6 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import { testPrisma } from '../helpers/test-db'
 import {
   planCampaign,
-  createOneDayCampaign,
-  createOneDayCampaignsBulk,
   deleteCampaign,
   deriveCampaignStatus,
   listCampaigns,
@@ -125,52 +123,6 @@ describe('campaigns (db)', () => {
     await expect(planCampaign(ADMIN, { name: 'n', messages: [] })).rejects.toThrow()
     await expect(planCampaign(ADMIN, { name: 'n', messages: [{ day: '2043-13-40', body: 'a' }] })).rejects.toThrow(/day/i)
     await expect(planCampaign(ADMIN, { name: 'n', messages: [{ day: day(6), body: ' ' }] })).rejects.toThrow(/empty/i)
-  })
-
-  it('a one-day campaign composes its single body from the English and Bengali text', async () => {
-    const both = await createOneDayCampaign(ADMIN, {
-      message: 'Hello', messageBn: 'হ্যালো', scheduledFor: '2043-05-10T08:00:00Z', now: new Date('2043-05-01T00:00:00Z'),
-    })
-    expect(both.messages[0].body).toBe('Hello\nহ্যালো')
-    expect(both.name).toBe('Hello হ্যালো 2043-05-10')
-
-    const bn = await createOneDayCampaign(ADMIN, {
-      message: 'Hello', messageBn: 'হ্যালো', sendLanguage: 'BN', scheduledFor: '2043-05-11T08:00:00Z', now: new Date('2043-05-01T00:00:00Z'),
-    })
-    expect(bn.messages[0].body).toBe('হ্যালো')
-
-    await expect(
-      createOneDayCampaign(ADMIN, { message: 'Hello', sendLanguage: 'BN', scheduledFor: '2043-05-12T08:00:00Z', now: new Date() }),
-    ).rejects.toThrow()
-  })
-
-  it('the day of a one-day campaign is the Bangladesh day of the scheduled instant', async () => {
-    // 20:00Z on the 12th is already the 13th in Bangladesh
-    const c = await createOneDayCampaign(ADMIN, { message: 'late', scheduledFor: '2043-05-12T20:00:00Z', now: new Date('2043-05-01T00:00:00Z') })
-    expect(c.messages[0].day.toISOString().slice(0, 10)).toBe(day(13))
-  })
-
-  it('without a date it takes the next free day from tomorrow', async () => {
-    const now = new Date('2043-05-19T10:00:00Z') // Bangladesh 16:00 on the 19th
-    await planCampaign(ADMIN, { name: 'taken', messages: [{ day: day(20), body: 'x' }] })
-    const c = await createOneDayCampaign(ADMIN, { message: 'auto', now })
-    expect(c.messages[0].day.toISOString().slice(0, 10)).toBe(day(21))
-  })
-
-  it('bulk creates one one-day campaign per line, and refuses a clash before writing anything', async () => {
-    const now = new Date('2043-05-01T00:00:00Z')
-    const made = await createOneDayCampaignsBulk(
-      ADMIN,
-      [{ messageEn: 'x', messageBn: 'এক্স', scheduledDate: '2043-05-22' }, { messageEn: 'y', messageBn: 'ওয়াই' }],
-      { startDate: '2043-05-23', sendLanguage: 'EN', now },
-    )
-    expect(made.map((c) => c.messages[0].day.toISOString().slice(0, 10))).toEqual([day(22), day(23)])
-    expect(made.map((c) => c.messages[0].body)).toEqual(['x', 'y'])
-
-    await expect(
-      createOneDayCampaignsBulk(ADMIN, [{ messageEn: 'fresh', scheduledDate: '2043-05-24' }, { messageEn: 'clash', scheduledDate: '2043-05-22' }], { now }),
-    ).rejects.toThrow()
-    expect(await testPrisma.smsCampaignMessage.count({ where: { campaign: { createdBy: ADMIN }, body: 'fresh' } })).toBe(0)
   })
 
   it('imports a day,text CSV as one campaign with one message per row, and audits it', async () => {

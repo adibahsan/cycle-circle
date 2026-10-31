@@ -998,6 +998,46 @@ test.describe('Campaign control', () => {
     }
   })
 
+  test('an unsent message can be removed after a confirm; the last one and failed ones cannot', async ({ browser, viewport }) => {
+    const runId = randomBytes(3).toString('hex')
+    const [d1, d2, d3] = distinctDays(3)
+    const campaign = await seedCampaign(`E2E SMS Remove ${runId}`, [
+      { day: d1, body: `Remove failed ${runId}`, status: 'FAILED', lastError: 'E2E gateway down' },
+      { day: d2, body: `Remove keep ${runId}`, status: 'PLANNED' },
+      { day: d3, body: `Remove drop ${runId}`, status: 'PLANNED' },
+    ])
+    const admin = await createLoggedInAdmin(browser, { viewport })
+    try {
+      const { page } = admin
+      await page.goto(`/sms/${campaign.id}`)
+      // A failed day is resent, never edited, moved or removed in place.
+      const failedRow = page.getByRole('row').filter({ hasText: `Remove failed ${runId}` })
+      await expect(failedRow.getByRole('button', { name: /^Resend message/ })).toBeVisible()
+      for (const name of [/^Edit message/, /^Move message/, /^Remove message/]) {
+        await expect(failedRow.getByRole('button', { name })).toHaveCount(0)
+      }
+
+      const dropRow = page.getByRole('row').filter({ hasText: `Remove drop ${runId}` })
+      const confirm = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Remove this message?' }) })
+      // Cancelling the confirm keeps the message.
+      await press(dropRow.getByRole('button', { name: /^Remove message/ }))
+      await press(confirm.getByRole('button', { name: 'Cancel', exact: true }))
+      await expect(page.getByRole('heading', { name: 'Remove this message?' })).toHaveCount(0)
+      expect(await e2eDb().smsCampaignMessage.count({ where: { campaignId: campaign.id } })).toBe(3)
+
+      await press(dropRow.getByRole('button', { name: /^Remove message/ }))
+      await press(confirm.getByRole('button', { name: 'Remove', exact: true }))
+      await expect(page.getByRole('heading', { name: 'Remove this message?' })).toHaveCount(0, { timeout: 15_000 })
+      await expect(dropRow).toHaveCount(0, { timeout: 15_000 })
+      const rows = await e2eDb().smsCampaignMessage.findMany({ where: { campaignId: campaign.id }, orderBy: { day: 'asc' } })
+      expect(rows.map((r) => r.day.toISOString().slice(0, 10))).toEqual([d1, d2])
+      expect(await e2eDb().adminAuditLog.count({ where: { action: 'REMOVE_SMS_MESSAGE', metadata: { path: ['campaignId'], equals: campaign.id } } })).toBe(1)
+    } finally {
+      await admin.context.close()
+      await removeCampaigns(runId)
+    }
+  })
+
   test('a campaign with nothing sent can be deleted from its page', async ({ browser, viewport }) => {
     const runId = randomBytes(3).toString('hex')
     const [d1] = distinctDays(1)

@@ -10,6 +10,7 @@ import {
   sendCampaignMessage,
   updateCampaignMessage,
   rescheduleCampaignMessage,
+  removeCampaignMessage,
   cancelCampaign,
   resendCampaignMessage,
 } from '@vesta/shared/server/services'
@@ -95,17 +96,20 @@ export async function deleteSmsCampaign(campaignId: string): Promise<{ success: 
   }
 }
 
-export async function sendSmsMessage(messageId: string) {
+/** Send one planned message now. Refusals, including "sent but saving failed", come back as `{ error }`. */
+export async function sendSmsMessage(messageId: string): Promise<{ success: true } | { error: string }> {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
   try {
     await sendCampaignMessage(messageId, admin.id, new Date())
+    return { success: true }
+  } catch (err) {
+    return refusal(err)
   } finally {
     // Also after a failed send, so the list shows the FAILED status.
     revalidateTag(adminCacheTags.sms, { expire: 0 })
   }
-  return { success: true }
 }
 
 /** Edit the text of an unsent message. */
@@ -129,6 +133,20 @@ export async function rescheduleSmsMessage(messageId: string, day: string): Prom
 
   try {
     await rescheduleCampaignMessage(messageId, admin.id, day, new Date())
+    revalidateTag(adminCacheTags.sms, { expire: 0 })
+    return { success: true }
+  } catch (err) {
+    return refusal(err)
+  }
+}
+
+/** Remove an unsent message from a campaign (never its last one: delete the campaign instead). */
+export async function removeSmsMessage(messageId: string): Promise<{ success: true } | { error: string }> {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  try {
+    await removeCampaignMessage(messageId, admin.id)
     revalidateTag(adminCacheTags.sms, { expire: 0 })
     return { success: true }
   } catch (err) {

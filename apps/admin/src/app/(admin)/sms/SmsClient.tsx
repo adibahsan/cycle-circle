@@ -120,9 +120,13 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
     if (!sendTarget) return
     setSending(true)
     try {
-      await sendSmsMessage(sendTarget.id)
+      const result = await sendSmsMessage(sendTarget.id)
       setSendTarget(null)
-      toast.success('Message sent')
+      if ('error' in result) {
+        toast.error(result.error)
+      } else {
+        toast.success('Message sent')
+      }
       router.refresh()
     } catch (err) {
       toast.error(err instanceof Error && err.message ? err.message : 'Could not send the message')
