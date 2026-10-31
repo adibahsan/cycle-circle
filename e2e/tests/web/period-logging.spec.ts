@@ -107,7 +107,6 @@ test.describe('Period logging', () => {
   })
 
   test('delete a past period updates calendar', async ({ newUser, days }) => {
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/136')
     const { page } = await newUser()
     await suppressAutoPrompts(page)
     await setupProfile(page, { name: 'Delete Period User' })
@@ -126,10 +125,8 @@ test.describe('Period logging', () => {
     const modal = page.getByRole('dialog')
     await expect(modal.getByRole('heading', { name: 'Edit Period Log' })).toBeVisible()
 
-    // Web UI currently lacks a delete button in PeriodLogModal (#136)
-    const deleteBtn = modal.getByRole('button', { name: /delete/i })
-    await expect(deleteBtn).toBeVisible()
-    await deleteBtn.click()
+    await modal.getByRole('button', { name: 'Delete Period' }).click()
+    await modal.getByRole('button', { name: 'Yes, Delete' }).click()
 
     await expect(modal).toBeHidden()
     await page.reload()

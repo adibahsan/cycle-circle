@@ -56,3 +56,16 @@ describe('source bans', () => {
     expect(src('components/PeriodLogModal.tsx')).not.toMatch(/setTimeout\(onClose/)
   })
 })
+
+describe('period delete (issue 136)', () => {
+  const s = src('components/PeriodLogModal.tsx')
+  it('offers delete only in edit mode, behind an inline confirm', () => {
+    expect(s).toMatch(/deletePeriodLog\(logId\)/)
+    expect(s).toMatch(/isEdit && \(/)
+    expect(s).toMatch(/confirmingDelete/)
+    expect(s).toMatch(/dashboard\.deletePeriodConfirmButton/)
+    expect(s).toMatch(/dashboard\.deletePeriodCancel/)
+    expect(s).toMatch(/dashboard\.deletePeriodFailed/)
+    expect(s).not.toMatch(/window\.confirm|\bconfirm\(/)
+  })
+})
