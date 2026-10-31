@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { requireAdminUser } from './auth-queries'
-import { listSubscriptionCheckRuns, getSubscriptionCheckRun } from '@vesta/shared/server/services'
+import { listSubscriptionCheckRuns, getSubscriptionCheckRun, listProPriceHistory } from '@vesta/shared/server/services'
 
 /** The last 30 runs of the daily subscription check, newest first. */
 export const getSubscriptionCheckHistory = cache(async () => {
@@ -17,4 +17,10 @@ export const getLatestSubscriptionCheckRun = cache(async () => {
 export const getSubscriptionCheckRunDetail = cache(async (id: string) => {
   await requireAdminUser()
   return getSubscriptionCheckRun(id)
+})
+
+/** Every Pro price entry, newest effective day first. */
+export const getProPriceHistory = cache(async () => {
+  await requireAdminUser()
+  return listProPriceHistory()
 })

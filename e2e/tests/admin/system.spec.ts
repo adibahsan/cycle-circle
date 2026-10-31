@@ -2,7 +2,6 @@ import { test, expect } from '../../support/fixtures'
 import { createLoggedInAdmin } from '../../support/admin'
 import { e2eDb } from '../../support/db'
 import { SECRETS, URLS } from '../../support/slot'
-import { toDbPhone } from '../../support/users'
 
 // The caas-check cron setting is global to the slot DB. Restore it in finally.
 test.describe('Admin system', () => {
@@ -136,7 +135,7 @@ test.describe('Admin system', () => {
     timezoneId,
   }) => {
     // One writer of the ProPrice table. The entry takes effect in 2099 so the price in effect today
-    // stays 5 taka per day for every other spec; it is removed in finally.
+    // stays 5 taka a day for every other spec; it is removed in finally.
     test.skip(isMobile, 'viewport-independent; one writer of the price table')
     const admin = await createLoggedInAdmin(browser, {
       viewport,
@@ -152,7 +151,7 @@ test.describe('Admin system', () => {
       const { page } = admin
       await page.goto('/system')
       await expect(page.getByRole('heading', { name: 'Pro price', level: 2 })).toBeVisible()
-      await expect(page.getByText('Current: ৳5 per day')).toBeVisible()
+      await expect(page.getByText('Current: ৳5/day')).toBeVisible()
       await expect(page.getByText('This does not change what BDApps charges', { exact: false })).toBeVisible()
 
       // Invalid price is refused by the server and nothing is saved
@@ -160,17 +159,21 @@ test.describe('Admin system', () => {
       await page.getByLabel('Takes effect (Bangladesh day)').fill(day)
       await page.getByRole('button', { name: 'Set price', exact: true }).click()
       await expect(page.getByText('Price must be a number greater than 0')).toBeVisible()
-      expect(await e2eDb().proPrice.count({ where: { effectiveFrom: new Date(`${day}T00:00:00Z`) } })).toBe(0)
+      // After a reload the history shows the seeded price and no row for the refused day
+      await page.reload()
+      const history = page.getByRole('table', { name: 'Pro price history' })
+      await expect(history.getByRole('row', { name: /In effect.*2000-01-01/ })).toBeVisible()
+      await expect(history.getByRole('row', { name: new RegExp(day) })).toHaveCount(0)
 
       await page.getByLabel('Amount (taka)').fill('7.5')
+      await page.getByLabel('Takes effect (Bangladesh day)').fill(day)
       await page.getByRole('button', { name: 'Set price', exact: true }).click()
-      const history = page.getByRole('table', { name: 'Pro price history' })
-      await expect(history.getByRole('row', { name: /৳7\.5 per day.*Scheduled.*2099-01-01/ })).toBeVisible()
+      await expect(history.getByRole('row', { name: /৳7\.5\/day.*Scheduled.*2099-01-01/ })).toBeVisible()
 
       // Kept after reload; the price in effect today is unchanged
       await page.reload()
-      await expect(history.getByRole('row', { name: /৳7\.5 per day.*2099-01-01/ })).toBeVisible()
-      await expect(history.getByRole('row', { name: /৳5 per day.*In effect.*2000-01-01/ })).toBeVisible()
+      await expect(history.getByRole('row', { name: /৳7\.5\/day.*2099-01-01/ })).toBeVisible()
+      await expect(history.getByRole('row', { name: /৳5\/day.*In effect.*2000-01-01/ })).toBeVisible()
 
       const log = await e2eDb().adminAuditLog.findFirst({
         where: { action: 'PRO_PRICE_SET', targetType: 'ProPrice' },
@@ -179,76 +182,6 @@ test.describe('Admin system', () => {
       expect(log).not.toBeNull()
     } finally {
       await e2eDb().proPrice.deleteMany({ where: { effectiveFrom: new Date(`${day}T00:00:00Z`) } })
-      await admin.context.close()
-    }
-  })
-
-  test('a manual subscription check shows in the run history, and its run lists the user it moved to Free', async ({
-    browser,
-    newUser,
-    fakeBdapps,
-    viewport,
-    userAgent,
-    isMobile,
-    hasTouch,
-    deviceScaleFactor,
-    locale,
-    timezoneId,
-  }) => {
-    test.slow()
-    const { phone } = await newUser()
-    const maskedId = (await fakeBdapps.subscriber(phone))!.maskedId
-    const user = await e2eDb().user.findUniqueOrThrow({ where: { phone: toDbPhone(phone) } })
-    const marker = `E2E Moved ${phone.slice(-6)}`
-    await e2eDb().user.update({ where: { id: user.id }, data: { fullName: marker } })
-    // BDApps unsubscribes the number; our DB still says Pro.
-    const res = await fetch(new URL('/subscription/send', fakeBdapps.baseUrl), {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        applicationId: SECRETS.bdappsAppId,
-        password: SECRETS.bdappsPassword,
-        subscriberId: maskedId,
-        action: '0',
-      }),
-    })
-    expect(res.ok).toBe(true)
-
-    const admin = await createLoggedInAdmin(browser, {
-      viewport,
-      userAgent,
-      isMobile,
-      hasTouch,
-      deviceScaleFactor,
-      locale,
-      timezoneId,
-    })
-    try {
-      const { page } = admin
-      await page.goto('/system')
-      await page
-        .getByRole('button', { name: 'Run Daily subscription check cron job now' })
-        .click()
-      await page.getByRole('button', { name: 'Run now', exact: true }).last().click()
-      await expect(page.getByText('Job completed successfully.')).toBeVisible({ timeout: 30_000 })
-
-      // The run is kept: it is still in the history after a reload, with Bangladesh-time label.
-      await page.reload()
-      const history = page.getByTestId('run-history')
-      await expect(history).toBeVisible()
-      await expect(page.getByText('Started (Bangladesh time)')).toBeVisible()
-      const run = await e2eDb().subscriptionCheckRun.findFirstOrThrow({
-        where: { trigger: 'MANUAL', outcomes: { some: { userId: user.id } } },
-        orderBy: { startedAt: 'desc' },
-      })
-      expect(run.movedCount).toBeGreaterThanOrEqual(1)
-
-      await page.goto(`/system/runs/${run.id}`)
-      const moved = page.getByTestId('moved-users')
-      await expect(moved.getByRole('link', { name: marker })).toHaveAttribute('href', `/users/${user.id}`)
-      await expect(moved).toContainText('UNREGISTERED')
-      await expect(moved).not.toContainText(phone.slice(-9))
-    } finally {
       await admin.context.close()
     }
   })

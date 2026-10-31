@@ -53,7 +53,12 @@ function scrubPhones(text: string): string {
   return text.replace(/\+?8801\d{9}/g, '<phone>')
 }
 
-async function recordConfirmed(userId: string, status: string, at: Date) {
+/**
+ * Store when BDApps last answered for a subscriber. A legacy Pro user has no Subscription row
+ * (only a phone id), so one is created that mirrors what they already are: Pro, with that same id,
+ * no amount and no override. Their plan and the id the check asks about do not change.
+ */
+async function recordConfirmed(userId: string, subscriberId: string, status: string, at: Date) {
   const row = await prisma.subscription.findFirst({
     where: { userId },
     orderBy: { createdAt: 'desc' },
@@ -64,6 +69,15 @@ async function recordConfirmed(userId: string, status: string, at: Date) {
       where: { id: row.id },
       data: { lastConfirmedAt: at, lastReportedStatus: status },
     })
+    return
+  }
+  try {
+    await prisma.subscription.create({
+      data: { userId, status: 'PRO', bdappsSubscriberId: subscriberId, lastConfirmedAt: at, lastReportedStatus: status },
+    })
+  } catch (err) {
+    // The user was deleted since the list was read: nothing left to record.
+    if (!isForeignKeyError(err)) throw err
   }
 }
 
@@ -124,7 +138,7 @@ export async function runDailySubscriptionCheck(
       checked++
       try {
         const status = await getStatus(subscriberId)
-        await recordConfirmed(sub.userId, status, now)
+        await recordConfirmed(sub.userId, subscriberId, status, now)
         if (status === 'UNREGISTERED' && isPhoneSubscriberId(subscriberId)) {
           // Masked-number apps reject raw phone ids with E1951, which reads as
           // UNREGISTERED: ambiguous, so never downgrade a legacy phone-id row.
@@ -148,9 +162,10 @@ export async function runDailySubscriptionCheck(
 
     // Revoked users: a new BDApps subscription ends the admin override (ADR 0006).
     for (const sub of await listRevokedSubscribers()) {
+      checked++
       try {
         const status = await getStatus(sub.subscriberId)
-        await recordConfirmed(sub.userId, status, now)
+        await recordConfirmed(sub.userId, sub.subscriberId, status, now)
         if (status === 'REGISTERED') {
           await applyBdappsSubscription(sub.userId, sub.subscriberId, true, 'nightly-check')
           reinstated++

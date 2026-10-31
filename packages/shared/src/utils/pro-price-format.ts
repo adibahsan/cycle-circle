@@ -12,14 +12,12 @@ const UNITS = {
   bn: { DAILY: 'দিন', WEEKLY: 'সপ্তাহ', MONTHLY: 'মাস' },
 } as const
 
-const BN_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯']
-
 const isBangla = (lang: string) => lang === 'bn' || lang.startsWith('bn-')
 
 /** The taka sign and amount, e.g. `৳5` or `৳৭.৫`. */
 function formatAmount(amount: number, bn: boolean): string {
-  const text = String(amount)
-  return `৳${bn ? text.replace(/\d/g, (d) => BN_DIGITS[Number(d)]) : text}`
+  const text = new Intl.NumberFormat(bn ? 'bn-BD' : 'en', { useGrouping: false, maximumFractionDigits: 2 }).format(amount)
+  return `৳${text}`
 }
 
 /** Pieces for interpolating into translated text: `{{price}}`, `{{amount}}`, `{{period}}`. */
