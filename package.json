@@ -26,6 +26,7 @@
     "test:tz": "rc=0; for tz in Asia/Dhaka America/New_York; do echo \"== TZ=$tz\"; TZ=$tz pnpm --filter @vesta/shared test || rc=1; TZ=$tz pnpm --filter @vesta/web backend:test || rc=1; done; exit $rc",
     "db:generate": "pnpm --filter @vesta/shared db:generate",
     "db:migrate": "pnpm --filter @vesta/shared db:migrate",
+    "db:drift": "pnpm --filter @vesta/shared db:drift",
     "db:studio": "pnpm --filter @vesta/shared db:studio",
     "docs:sync": "node scripts/sync-netlify-docs.mjs --sync",
     "docs:check": "node scripts/sync-netlify-docs.mjs --check",

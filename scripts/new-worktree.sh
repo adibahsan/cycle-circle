@@ -32,5 +32,20 @@ git worktree add -q "$wt" -b "$branch" "$base"
 for f in "${ENV_FILES[@]}"; do
   if [[ -f "$f" ]]; then cp "$f" "$wt/$f"; else echo "warning: $f not found, skipped" >&2; fi
 done
+
+# Isolation: the lowest slot (1-99) no other worktree holds gives this one its own E2E ports and
+# database (.e2e-slot, read by e2e/support/slot.ts) and its own vitest DB (vesta_test_<slot>), so
+# parallel agents never share state and their briefs need no isolation section.
+used=" $(git worktree list --porcelain | sed -n 's/^worktree //p' | while read -r d; do cat "$d/.e2e-slot" 2>/dev/null; echo; done | tr '\n' ' ') "
+slot=1
+while [[ "$used" == *" $slot "* ]]; do slot=$((slot + 1)); done
+(( slot <= 99 )) || { echo "no free E2E slot (1-99)" >&2; exit 1; }
+echo "$slot" > "$wt/.e2e-slot"
+web_env="$wt/apps/web/.env.local"
+if [[ -f "$web_env" ]]; then
+  db_url="$(sed -n 's/^DATABASE_URL=//p' "$web_env" | head -1 | tr -d '"')"
+  [[ -n "$db_url" ]] && printf '\nTEST_DATABASE_URL=%s\n' "$(sed -E "s#/[^/?]+([?]|$)#/vesta_test_${slot}\1#" <<<"$db_url")" >> "$web_env"
+fi
+
 (cd "$wt" && pnpm install --frozen-lockfile >/dev/null && pnpm db:generate >/dev/null)
-echo "ready: $wt on $branch @ $(git -C "$wt" rev-parse --short HEAD)"
+echo "ready: $wt on $branch @ $(git -C "$wt" rev-parse --short HEAD), E2E slot $slot, vitest DB vesta_test_$slot"

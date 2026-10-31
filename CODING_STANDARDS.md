@@ -36,6 +36,10 @@ Full file-by-file audits with line numbers are in `review/`:
 - `review/ADMIN-UI-REVIEW.md` — admin app audit (2026-05-30)
 - `review/FIX-PLAN.md` — architecture migration plan (2026-05-29)
 
+## DB-backed unit tests
+
+Read `apps/web/__tests__/REVIEW.md` before writing or reviewing a test that uses the test database.
+
 ## E2E tests
 
 Once the e2e package is on main, read `e2e/REVIEW.md` before writing or reviewing E2E tests.

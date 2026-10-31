@@ -10,8 +10,10 @@ import { fileURLToPath } from 'node:url'
 export const E2E_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 export const REPO_DIR = path.resolve(E2E_DIR, '..')
 
+/** `E2E_SLOT`, else the worktree's `.e2e-slot` (written by scripts/new-worktree.sh), else 0. */
 function readSlot(): number {
-  const raw = process.env.E2E_SLOT ?? '0'
+  const file = path.join(REPO_DIR, '.e2e-slot')
+  const raw = process.env.E2E_SLOT ?? (fs.existsSync(file) ? fs.readFileSync(file, 'utf-8').trim() : '0')
   const n = Number(raw)
   if (!Number.isInteger(n) || n < 0 || n > 99) throw new Error(`E2E_SLOT must be an integer 0-99, got "${raw}"`)
   return n

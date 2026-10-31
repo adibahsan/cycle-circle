@@ -14,6 +14,7 @@ coverage/
 tsconfig.tsbuildinfo
 
 # Local environment
+.e2e-slot
 .env*
 !.env.example
 !ops/monitoring/stub/.env.*

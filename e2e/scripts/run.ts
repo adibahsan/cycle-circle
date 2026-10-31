@@ -72,6 +72,11 @@ async function prepareDatabase() {
     await recreateDatabase(ENV.db.DATABASE_URL)
     await prisma(`migrate ${DB_NAME}`, 'migrate', 'deploy')
     await prisma(`seed ${DB_NAME}`, 'db', 'seed')
+    // Next's data cache (unstable_cache, served stale-while-revalidate) lives on disk and would
+    // hand the first request of this run the previous run's rows.
+    for (const app of ['web', 'admin']) {
+      fs.rmSync(path.join(REPO_DIR, 'apps', app, '.next', 'cache', 'fetch-cache'), { recursive: true, force: true })
+    }
   }
   // A fake BDApps left running (E2E_REUSE_SERVERS=1) still holds last run's subscribers.
   await new FakeBdappsClient().reset().catch(() => {})

@@ -12,7 +12,8 @@ import { resolve } from 'node:path'
 import { PrismaClient } from '@prisma/client'
 
 const SHARED_DIR = resolve(__dirname, '../../../../packages/shared')
-const LOCAL_ALLOWED = [/^vesta_test$/, /^vesta_vitest$/, /^vesta_e2e(_\d+)?$/]
+// vesta_test_<n>: a ticket worktree's own test DB (scripts/new-worktree.sh writes TEST_DATABASE_URL).
+const LOCAL_ALLOWED = [/^vesta_test(_\d+)?$/, /^vesta_vitest$/, /^vesta_e2e(_\d+)?$/]
 
 function loadEnvLocal(): void {
   try {
@@ -57,7 +58,7 @@ export function resolveTestDatabaseUrl(env: NodeJS.ProcessEnv): string {
   const name = dbName(target)
   if (!isAllowed(name, ci)) {
     throw new Error(
-      `Refusing to run tests against database "${name}". Allowed: vesta_test, vesta_vitest, vesta_e2e[_n]` +
+      `Refusing to run tests against database "${name}". Allowed: vesta_test[_n], vesta_vitest, vesta_e2e[_n]` +
         (ci ? ', vesta_ci' : '') +
         '.',
     )
