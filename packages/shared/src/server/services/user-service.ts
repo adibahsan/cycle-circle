@@ -1,7 +1,7 @@
 import { AUDIT_ACTIONS } from './audit-actions'
 import { AuthMethod, type Prisma } from '@prisma/client'
 import { prisma } from '../db'
-import { applyBdappsSubscription, unsubscribeUserOnBdapps } from './subscription-service'
+import { applyBdappsSubscription, unsubscribeUserOnBdapps, type BdappsUnsubscribeResult } from './subscription-service'
 import { ApiError } from '../api-error'
 import { bumpSessionsValidAfter } from '../auth'
 import { fillDaySeries, resolveDaySeriesRange, type DaySeriesOpts } from '../../utils/day-series'
@@ -191,13 +191,24 @@ export async function completeUserProfile(userId: string, data: CompleteUserProf
   return { id: updated.id, fullName: updated.fullName, profileCompleted: updated.profileCompleted }
 }
 
+/** Admin accounts (including the caller) are managed outside the user list. */
+async function assertManageableTarget(userId: string) {
+  const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
+  if (!target) throw new ApiError(404, 'User not found', 'USER_NOT_FOUND')
+  if (target.role === 'ADMIN') {
+    throw new ApiError(403, "Admin accounts can't be suspended or deleted.", 'ADMIN_TARGET')
+  }
+}
+
 /**
  * Suspend a user (reason required), invalidate their sessions and unsubscribe their
  * number on BDApps (ADR 0006). A BDApps failure is returned, never thrown; the suspension applies.
+ * Refuses unknown users (404) and admin targets (403).
  */
 export async function suspendUser(userId: string, adminId: string, reason: string, now: Date) {
   const trimmed = reason?.trim()
   if (!trimmed) throw new ApiError(400, 'A suspension reason is required', 'REASON_REQUIRED')
+  await assertManageableTarget(userId)
 
   await prisma.user.update({
     where: { id: userId },
@@ -225,6 +236,10 @@ export async function suspendUser(userId: string, adminId: string, reason: strin
  * Lifts only our block; never re-subscribes on BDApps (ADR 0006).
  */
 export async function reactivateUser(userId: string, adminId: string) {
+  const target = await prisma.user.findUnique({ where: { id: userId }, select: { suspendedAt: true } })
+  if (!target) throw new ApiError(404, 'User not found', 'USER_NOT_FOUND')
+  if (!target.suspendedAt) return { success: true as const, alreadyActive: true as const }
+
   await prisma.user.update({
     where: { id: userId },
     data: { suspendedAt: null, suspendedBy: null },
@@ -239,14 +254,24 @@ export async function reactivateUser(userId: string, adminId: string) {
     },
   })
 
-  return { success: true }
+  return { success: true as const, alreadyActive: false as const }
 }
 
 /**
  * Soft-delete a user by setting deletedAt and unsubscribe their number on BDApps
  * (ADR 0006). A BDApps failure is returned, never thrown; the deletion applies.
+ * Refuses unknown users (404) and admin targets (403). Already-deleted is a no-op so the
+ * restore window is not reset.
  */
-export async function softDeleteUser(userId: string, adminId: string, now: Date) {
+export async function softDeleteUser(
+  userId: string,
+  adminId: string,
+  now: Date,
+): Promise<{ success: true; bdapps: BdappsUnsubscribeResult | null; alreadyDeleted: boolean }> {
+  await assertManageableTarget(userId)
+  const current = await prisma.user.findUnique({ where: { id: userId }, select: { deletedAt: true } })
+  if (current?.deletedAt) return { success: true, bdapps: null, alreadyDeleted: true }
+
   await prisma.user.update({
     where: { id: userId },
     data: { deletedAt: now },
@@ -265,7 +290,7 @@ export async function softDeleteUser(userId: string, adminId: string, now: Date)
     },
   })
 
-  return { success: true, bdapps }
+  return { success: true, bdapps, alreadyDeleted: false }
 }
 
 /**
@@ -550,27 +575,70 @@ export async function getUserStatusBreakdown(): Promise<
   ]
 }
 
-export async function getUserDetailForAdmin(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: {
-      profiles: {
-        include: {
-          periodLogs: { orderBy: { startDate: 'desc' }, take: 5 },
-          predictions: true,
-          notificationPref: true,
-          _count: { select: { periodLogs: true, symptomLogs: true } },
-        },
+/** Single source of truth for what the admin user-detail page may receive. No secret columns. */
+const adminUserDetailSelect = {
+  id: true,
+  phone: true,
+  email: true,
+  fullName: true,
+  authMethod: true,
+  subscriptionStatus: true,
+  role: true,
+  profileCompleted: true,
+  suspendedAt: true,
+  deletedAt: true,
+  lastLoginAt: true,
+  createdAt: true,
+  emailTrialExpiresAt: true,
+  profiles: {
+    select: {
+      id: true,
+      name: true,
+      relation: true,
+      cycleLength: true,
+      periodLength: true,
+      periodLogs: {
+        select: { id: true, startDate: true, endDate: true },
+        orderBy: { startDate: 'desc' },
+        take: 5,
       },
-      subscriptions: {
-        include: {
-          caasTransactions: { orderBy: { createdAt: 'desc' }, take: 10 },
-        },
+      predictions: {
+        select: { id: true, tier: true, nextPeriodStart: true, confidence: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
       },
-      feedback: { orderBy: { createdAt: 'desc' }, take: 10 },
+      notificationPref: {
+        select: { id: true, periodAlert: true, fertileWindow: true, loggingReminder: true },
+      },
+      _count: { select: { periodLogs: true, symptomLogs: true } },
     },
-  })
+  },
+  subscriptions: {
+    select: {
+      id: true,
+      status: true,
+      adminOverride: true,
+      adminOverrideAt: true,
+      createdAt: true,
+      caasTransactions: {
+        select: { id: true, amount: true, status: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+  },
+  feedback: {
+    select: { id: true, category: true, message: true, rating: true, createdAt: true },
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+  },
+} satisfies Prisma.UserSelect
 
-  if (!user) throw new Error('User not found')
-  return user
+export type AdminUserDetail = Prisma.UserGetPayload<{ select: typeof adminUserDetailSelect }>
+
+/** Returns null when the user does not exist. */
+export async function getUserDetailForAdmin(userId: string): Promise<AdminUserDetail | null> {
+  return prisma.user.findUnique({ where: { id: userId }, select: adminUserDetailSelect })
 }
