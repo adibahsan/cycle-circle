@@ -44,6 +44,10 @@ function maskSubscriberId(subscriberId: string): string {
   return isPhoneSubscriberId(subscriberId) ? 'phone-id (not stored)' : subscriberId
 }
 
+function isForeignKeyError(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2003'
+}
+
 /** Strip any raw Bangladesh phone number out of free text before it is stored. */
 function scrubPhones(text: string): string {
   return text.replace(/\+?8801\d{9}/g, '<phone>')
@@ -156,6 +160,35 @@ export async function runDailySubscriptionCheck(
         recordError(sub.userId, sub.subscriberId, err)
       }
     }
+
+    // A user can be deleted while the run is going: keep their outcome (it answers "why did I lose
+    // Pro?") with no user link, instead of failing on the foreign key.
+    if (outcomes.length > 0) {
+      const present = new Set(
+        (
+          await prisma.user.findMany({
+            where: { id: { in: outcomes.map((o) => o.userId) } },
+            select: { id: true },
+          })
+        ).map((u) => u.id),
+      )
+      const rows = outcomes.map((o) => ({ ...o, userId: present.has(o.userId) ? o.userId : null }))
+      try {
+        await prisma.subscriptionCheckOutcome.createMany({ data: rows })
+      } catch (err) {
+        if (!isForeignKeyError(err)) throw err
+        // A user was deleted between the check above and this write: store rows one by one and
+        // drop the link of whichever user vanished.
+        for (const row of rows) {
+          try {
+            await prisma.subscriptionCheckOutcome.create({ data: row })
+          } catch (rowErr) {
+            if (!isForeignKeyError(rowErr)) throw rowErr
+            await prisma.subscriptionCheckOutcome.create({ data: { ...row, userId: null } })
+          }
+        }
+      }
+    }
   } catch (err) {
     await prisma.subscriptionCheckRun.update({
       where: { id: run.id },
@@ -171,7 +204,6 @@ export async function runDailySubscriptionCheck(
     throw err
   }
 
-  if (outcomes.length > 0) await prisma.subscriptionCheckOutcome.createMany({ data: outcomes })
   await prisma.subscriptionCheckRun.update({
     where: { id: run.id },
     data: { status: 'OK', finishedAt: clock(), checkedCount: checked, movedCount: moved, errorCount: errors },

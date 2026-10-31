@@ -8,6 +8,15 @@ import { Card } from '@/components/ui/Card'
 import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 import { RUN_TIME_FORMAT, runDuration, runStatusBadge } from '../../RunHistory'
 
+function UserLink({ userId, user }: { userId: string | null; user: { fullName: string | null; email: string | null } | null }) {
+  if (!userId || !user) return <span className="font-medium text-[var(--color-text-muted)]">Deleted user</span>
+  return (
+    <Link href={`/users/${userId}`} className="font-medium text-[var(--color-primary)] hover:underline">
+      {user.fullName ?? user.email ?? userId}
+    </Link>
+  )
+}
+
 export default async function SubscriptionCheckRunPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdminUser()
   const { id } = await params
@@ -44,9 +53,7 @@ export default async function SubscriptionCheckRunPage({ params }: { params: Pro
           <ul className="mt-3 divide-y divide-[var(--color-border)]" data-testid="moved-users">
             {moved.map((o) => (
               <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                <Link href={`/users/${o.userId}`} className="font-medium text-[var(--color-primary)] hover:underline">
-                  {o.user.fullName ?? o.user.email ?? o.userId}
-                </Link>
+                <UserLink userId={o.userId} user={o.user} />
                 <span className="font-mono text-xs text-[var(--color-text-muted)]">
                   {o.maskedSubscriberId} · BDApps said {o.bdappsStatus}
                 </span>
@@ -64,9 +71,7 @@ export default async function SubscriptionCheckRunPage({ params }: { params: Pro
           <ul className="mt-3 divide-y divide-[var(--color-border)]" data-testid="errored-users">
             {errored.map((o) => (
               <li key={o.id} className="py-2 text-sm">
-                <Link href={`/users/${o.userId}`} className="font-medium text-[var(--color-primary)] hover:underline">
-                  {o.user.fullName ?? o.user.email ?? o.userId}
-                </Link>
+                <UserLink userId={o.userId} user={o.user} />
                 <span className="ml-2 font-mono text-xs text-[var(--color-text-muted)]">{o.maskedSubscriberId}</span>
                 <p className="text-xs text-[var(--color-danger)]">{o.error}</p>
               </li>

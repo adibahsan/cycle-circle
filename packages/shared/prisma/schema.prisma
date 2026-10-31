@@ -302,7 +302,8 @@ model SubscriptionCheckRun {
 model SubscriptionCheckOutcome {
   id                 String                       @id @default(cuid())
   runId              String
-  userId             String
+  /// Null once the user is deleted: the outcome stays, keyed by the masked id.
+  userId             String?
   /// Masked subscriber id; a raw phone id is never stored here.
   maskedSubscriberId String
   outcome            SubscriptionCheckOutcomeKind
@@ -311,7 +312,7 @@ model SubscriptionCheckOutcome {
   createdAt          DateTime                     @default(now())
 
   run  SubscriptionCheckRun @relation(fields: [runId], references: [id], onDelete: Cascade)
-  user User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([runId])
   @@index([userId])
