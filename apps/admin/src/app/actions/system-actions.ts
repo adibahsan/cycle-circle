@@ -9,6 +9,9 @@ import {
   setCronEnabled,
   setSmsSendTime,
   setSmsDeliveryReports,
+  setProPrice,
+  type ProPriceEntry,
+  type ProPricePeriod,
   SMS_SEND_TIME_KEY,
   SMS_DELIVERY_REPORTS_KEY,
   type CronSlug,
@@ -172,6 +175,26 @@ export async function setSmsDeliveryReportsAction(
     })
     revalidatePath('/system')
     return { ok: true, enabled }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Failed to update' }
+  }
+}
+
+/**
+ * Set the Pro price (taka and period) from a Bangladesh day. Audited by the service. This does not
+ * change what BDApps charges.
+ */
+export async function setProPriceAction(input: {
+  amount: number
+  period: ProPricePeriod
+  effectiveFrom: string
+}): Promise<{ ok: true; entry: ProPriceEntry } | { ok: false; error: string }> {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+  try {
+    const entry = await setProPrice(admin.id, input, new Date())
+    revalidatePath('/system')
+    return { ok: true, entry }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to update' }
   }

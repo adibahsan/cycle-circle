@@ -124,4 +124,61 @@ test.describe('Admin system', () => {
       await admin.context.close()
     }
   })
+  test('the Pro price is set with a warning and an effective day, kept in history and audited', async ({
+    browser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    // One writer of the ProPrice table. The entry takes effect in 2099 so the price in effect today
+    // stays 5 taka per day for every other spec; it is removed in finally.
+    test.skip(isMobile, 'viewport-independent; one writer of the price table')
+    const admin = await createLoggedInAdmin(browser, {
+      viewport,
+      userAgent,
+      isMobile,
+      hasTouch,
+      deviceScaleFactor,
+      locale,
+      timezoneId,
+    })
+    const day = '2099-01-01'
+    try {
+      const { page } = admin
+      await page.goto('/system')
+      await expect(page.getByRole('heading', { name: 'Pro price', level: 2 })).toBeVisible()
+      await expect(page.getByText('Current: ৳5 per day')).toBeVisible()
+      await expect(page.getByText('This does not change what BDApps charges', { exact: false })).toBeVisible()
+
+      // Invalid price is refused by the server and nothing is saved
+      await page.getByLabel('Amount (taka)').fill('-1')
+      await page.getByLabel('Takes effect (Bangladesh day)').fill(day)
+      await page.getByRole('button', { name: 'Set price', exact: true }).click()
+      await expect(page.getByText('Price must be a number greater than 0')).toBeVisible()
+      expect(await e2eDb().proPrice.count({ where: { effectiveFrom: new Date(`${day}T00:00:00Z`) } })).toBe(0)
+
+      await page.getByLabel('Amount (taka)').fill('7.5')
+      await page.getByRole('button', { name: 'Set price', exact: true }).click()
+      const history = page.getByRole('table', { name: 'Pro price history' })
+      await expect(history.getByRole('row', { name: /৳7\.5 per day.*Scheduled.*2099-01-01/ })).toBeVisible()
+
+      // Kept after reload; the price in effect today is unchanged
+      await page.reload()
+      await expect(history.getByRole('row', { name: /৳7\.5 per day.*2099-01-01/ })).toBeVisible()
+      await expect(history.getByRole('row', { name: /৳5 per day.*In effect.*2000-01-01/ })).toBeVisible()
+
+      const log = await e2eDb().adminAuditLog.findFirst({
+        where: { action: 'PRO_PRICE_SET', targetType: 'ProPrice' },
+        orderBy: { createdAt: 'desc' },
+      })
+      expect(log).not.toBeNull()
+    } finally {
+      await e2eDb().proPrice.deleteMany({ where: { effectiveFrom: new Date(`${day}T00:00:00Z`) } })
+      await admin.context.close()
+    }
+  })
 })

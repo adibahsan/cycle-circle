@@ -13,8 +13,10 @@ import {
   setCronEnabledAction,
 } from '@/app/actions/system-actions'
 import { SmsSendTimeCard } from './SmsSendTimeCard'
+import { ProPriceCard } from './ProPriceCard'
 import { SmsDeliveryReportsCard } from './SmsDeliveryReportsCard'
 import type { CronJobResult, CronSlug } from '@/app/actions/system-actions'
+import type { ProPriceEntry } from '@vesta/shared/server/services'
 
 function CountsDisplay({ counts }: { counts: Record<string, number> }) {
   const entries = Object.entries(counts)
@@ -151,10 +153,14 @@ export function SystemClient({
   initialSettings,
   initialSmsSendTime,
   initialSmsDeliveryReports,
+  initialProPrices,
+  today,
 }: {
   initialSettings: Record<CronSlug, boolean>
   initialSmsSendTime: string
   initialSmsDeliveryReports: boolean
+  initialProPrices: ProPriceEntry[]
+  today: string
 }) {
   const [remindersResult, setRemindersResult] = useState<CronJobResult | null>(null)
   const [caasResult, setCaasResult] = useState<CronJobResult | null>(null)
@@ -256,6 +262,7 @@ export function SystemClient({
         />
       </div>
 
+      <ProPriceCard initialHistory={initialProPrices} today={today} />
       <SmsSendTimeCard initialTime={initialSmsSendTime} />
       <SmsDeliveryReportsCard initialEnabled={initialSmsDeliveryReports} />
 
