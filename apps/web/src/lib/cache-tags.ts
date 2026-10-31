@@ -22,6 +22,8 @@ export const cacheTags = {
   symptoms: (profileId: string) => `symptoms:${profileId}`,
   /** Published articles (global). */
   articles: 'articles',
+  /** The Pro price in effect (global). Admin busts it when it sets a price. */
+  proPrice: 'pro-price',
 } as const
 
 /**
@@ -29,5 +31,5 @@ export const cacheTags = {
  * `/api/internal/revalidate` endpoint. Prevents arbitrary tag busting.
  */
 export function isAllowedRevalidationTag(tag: string): boolean {
-  return tag === cacheTags.articles || /^(user|profiles|tracking|symptoms):.+/.test(tag)
+  return tag === cacheTags.articles || tag === cacheTags.proPrice || /^(user|profiles|tracking|symptoms):.+/.test(tag)
 }

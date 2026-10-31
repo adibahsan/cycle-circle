@@ -133,10 +133,15 @@ export async function createArticle(opts: {
  * and on a fresh DB (CI) another spec has usually cached the list first.
  */
 export async function revalidateWebArticles(): Promise<void> {
+  await revalidateWebTags(['articles'])
+}
+
+/** Bust web cache tags the way the admin app does (e.g. `pro-price` after a DB-only price change). */
+export async function revalidateWebTags(tags: string[]): Promise<void> {
   const res = await fetch(`${URLS.web}/api/internal/revalidate`, {
     method: 'POST',
     headers: { authorization: `Bearer ${SECRETS.cronSecret}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ tags: ['articles'] }),
+    body: JSON.stringify({ tags }),
   })
   if (!res.ok) throw new Error(`web revalidate failed: HTTP ${res.status}`)
 }

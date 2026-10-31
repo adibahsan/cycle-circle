@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { revalidateWebTags } from '@/lib/revalidate-web'
 import { requireAdminAuth, getAuthUser } from '@vesta/shared/server/auth'
 import {
   AUDIT_ACTIONS,
@@ -188,13 +189,15 @@ export async function setProPriceAction(input: {
   amount: number
   period: ProPricePeriod
   effectiveFrom: string
-}): Promise<{ ok: true; entry: ProPriceEntry } | { ok: false; error: string }> {
+}): Promise<{ ok: true; entry: ProPriceEntry; webCacheRefreshed: boolean } | { ok: false; error: string }> {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
   try {
     const entry = await setProPrice(admin.id, input, new Date())
     revalidatePath('/system')
-    return { ok: true, entry }
+    // The web app caches the price for customers; bust it so the new price shows without a deploy.
+    const webCacheRefreshed = await revalidateWebTags(['pro-price'])
+    return { ok: true, entry, webCacheRefreshed }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to update' }
   }

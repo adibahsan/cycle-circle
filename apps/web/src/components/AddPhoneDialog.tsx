@@ -10,6 +10,7 @@ import { PhoneField } from '@/components/auth/PhoneField';
 import { OtpCodeField } from '@/components/auth/OtpCodeField';
 import { toLocalPhone } from '@/lib/phone';
 import { useHasMounted } from '@/components/motion/useHasMounted';
+import { useProPriceVars } from '@/components/ProPriceProvider';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -46,6 +47,7 @@ interface AddPhoneDialogProps {
 
 export function AddPhoneDialog({ open, onClose, onVerified, initialPhone, purpose = 'keep-account' }: AddPhoneDialogProps) {
   const { t } = useTranslation();
+  const proPrice = useProPriceVars();
   const hasMounted = useHasMounted();
   const prefersReduced = useReducedMotion();
   const prm = hasMounted && prefersReduced;
@@ -271,6 +273,11 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone, purpos
             <p id="trial-phone-notice" className="mt-2 text-xs text-[var(--color-text-muted)] leading-relaxed">
               {t('auth.loginNotice')}
             </p>
+            {purpose === 'upgrade' && proPrice && (
+              <p id="trial-price-notice" className="mt-2 text-xs font-medium text-[var(--color-text-secondary)] leading-relaxed">
+                {t('subscription.confirmDeduction', proPrice)}
+              </p>
+            )}
           </div>
 
           {process.env.NEXT_PUBLIC_DEV_MODE === 'true' && (
