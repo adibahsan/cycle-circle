@@ -9,6 +9,9 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # Nightly maintenance 02:30 UTC: MAE snapshot + purge of accounts deleted >30 days ago (host crontab only)
 0 8 * * * curl -fsS -X POST -H "Authorization: Bearer CRON_SECRET_PLACEHOLDER" https://cycle-circle.com/api/cron/daily-reminders >> /var/log/vesta/cron-daily-reminders.log 2>&1
 0 2 * * * curl -fsS -X POST -H "Authorization: Bearer CRON_SECRET_PLACEHOLDER" https://cycle-circle.com/api/cron/caas-check >> /var/log/vesta/cron-caas-check.log 2>&1
+# SMS campaign dispatch every 15 minutes: sends today's message once the daily send time
+# (System page, Bangladesh time) has passed, and marks missed days. Safe to repeat.
+*/15 * * * * curl -fsS -X POST -H "Authorization: Bearer CRON_SECRET_PLACEHOLDER" https://cycle-circle.com/api/cron/sms-dispatch >> /var/log/vesta/cron-sms-dispatch.log 2>&1
 30 2 * * * curl -fsS -X POST -H "Authorization: Bearer CRON_SECRET_PLACEHOLDER" https://cycle-circle.com/api/cron/nightly-maintenance >> /var/log/vesta/cron-nightly-maintenance.log 2>&1
 
 # TLS renewal (certbot no-ops unless cert expires within 30 days)

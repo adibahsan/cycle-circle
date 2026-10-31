@@ -7,6 +7,8 @@ import {
   createAuditLog,
   getCronSettings,
   setCronEnabled,
+  setSmsSendTime,
+  SMS_SEND_TIME_KEY,
   type CronSlug,
 } from '@vesta/shared/server/services'
 
@@ -131,5 +133,25 @@ export async function setCronEnabledAction(
     return { ok: true, enabled }
   } catch (e) {
     return { ok: false, enabled: !enabled, error: e instanceof Error ? e.message : 'Failed to update' }
+  }
+}
+
+/** Set the daily SMS send time (`HH:MM`, Bangladesh time). Audited. */
+export async function setSmsSendTimeAction(
+  time: string,
+): Promise<{ ok: true; time: string } | { ok: false; error: string }> {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+  try {
+    const { previous } = await setSmsSendTime(time, admin.id)
+    await createAuditLog(admin.id, AUDIT_ACTIONS.SET_SMS_SEND_TIME, 'SystemSetting', SMS_SEND_TIME_KEY, {
+      from: previous,
+      to: time,
+      timezone: 'Asia/Dhaka',
+    })
+    revalidatePath('/system')
+    return { ok: true, time }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Failed to update' }
   }
 }

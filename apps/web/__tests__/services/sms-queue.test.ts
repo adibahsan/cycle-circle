@@ -18,6 +18,11 @@ const {
   dispatchDueCampaignMessage,
   sendCampaignMessage,
   recoverStuckMessages,
+  markMissedMessages,
+  runSmsDispatch,
+  setSmsSendTime,
+  getSmsSendTime,
+  DEFAULT_SMS_SEND_TIME,
   SMS_STUCK_SENDING_MS,
 } = await import('@vesta/shared/server/services')
 
@@ -26,6 +31,7 @@ const ADMIN = 'test-smsqueue-admin'
 const day = (n: number) => `2041-03-${String(n).padStart(2, '0')}`
 
 async function cleanup() {
+  await testPrisma.systemSetting.deleteMany({ where: { key: 'sms.dailySendTime' } })
   await testPrisma.smsCampaign.deleteMany({ where: { createdBy: ADMIN } })
   await testPrisma.adminAuditLog.deleteMany({ where: { adminId: ADMIN } })
   await testPrisma.user.deleteMany({ where: { id: ADMIN } })
@@ -47,6 +53,7 @@ describe('SMS campaign messages: edit, send, dispatch', () => {
   })
   afterAll(cleanup)
   beforeEach(async () => {
+    await testPrisma.systemSetting.deleteMany({ where: { key: 'sms.dailySendTime' } })
     await testPrisma.smsCampaign.deleteMany({ where: { createdBy: ADMIN } })
     bdapps.smsSend.mockReset()
     bdapps.smsSend.mockResolvedValue({ requestId: 'req-1', messageId: 'q1' })
@@ -104,7 +111,7 @@ describe('SMS campaign messages: edit, send, dispatch', () => {
   it('a failed dispatch makes one provider call and marks FAILED with the last error', async () => {
     bdapps.smsSend.mockRejectedValue(new Error('gateway down'))
     const m = await plan('2020-01-01')
-    const res = await dispatchDueCampaignMessage(new Date('2020-01-02'))
+    const res = await dispatchDueCampaignMessage(new Date('2020-01-01T09:00:00Z'))
     expect(res.dispatched).toBe(false)
     expect(bdapps.smsSend).toHaveBeenCalledTimes(1)
     const row = await load(m.id)
@@ -113,7 +120,7 @@ describe('SMS campaign messages: edit, send, dispatch', () => {
     expect(row.lastError).toContain('gateway down')
     // FAILED rows are not picked up again, so the queue is not held across days
     bdapps.smsSend.mockClear()
-    await dispatchDueCampaignMessage(new Date('2020-01-03'))
+    await dispatchDueCampaignMessage(new Date('2020-01-02T09:00:00Z'))
     expect(bdapps.smsSend).not.toHaveBeenCalled()
   })
 
@@ -145,8 +152,8 @@ describe('SMS campaign messages: edit, send, dispatch', () => {
     bdapps.smsSend.mockImplementation(() => new Promise((r) => setTimeout(() => r({ requestId: 'r', messageId: 'x' }), 50)))
     const m = await plan('2020-01-01')
     await Promise.allSettled([
-      sendCampaignMessage(m.id, ADMIN, new Date('2020-01-02')),
-      dispatchDueCampaignMessage(new Date('2020-01-02')),
+      sendCampaignMessage(m.id, ADMIN, new Date('2020-01-01T09:00:00Z')),
+      dispatchDueCampaignMessage(new Date('2020-01-01T09:00:00Z')),
     ])
     expect(bdapps.smsSend).toHaveBeenCalledTimes(1)
   })
@@ -191,17 +198,17 @@ describe('SMS campaign messages: edit, send, dispatch', () => {
   it('a successful dispatch marks SENT, clears the error and keeps both BDApps ids', async () => {
     const m = await plan('2020-01-01')
     await testPrisma.smsCampaignMessage.update({ where: { id: m.id }, data: { lastError: 'old', sendAttempts: 1 } })
-    const res = await dispatchDueCampaignMessage(new Date('2020-01-02'))
+    const res = await dispatchDueCampaignMessage(new Date('2020-01-01T09:00:00Z'))
     expect(res).toMatchObject({ dispatched: true, messageId: m.id, campaignId: m.campaignId })
     const row = await load(m.id)
     expect(row).toMatchObject({
       status: 'SENT', lastError: null, providerRequestId: 'req-1', providerMessageId: 'q1', sendAttempts: 2,
     })
-    expect(row.sentAt?.toISOString()).toBe('2020-01-02T00:00:00.000Z')
+    expect(row.sentAt?.toISOString()).toBe('2020-01-01T09:00:00.000Z')
     expect(bdapps.smsSend).toHaveBeenCalledWith('Hi', ['tel:all'])
   })
 
-  it('dispatch sends the oldest due message, never a future day or a cancelled campaign', async () => {
+  it('dispatch sends only today\'s message, never a future day or a cancelled campaign', async () => {
     const future = await plan(day(5), 'future')
     const cancelled = await plan('2020-01-01', 'cancelled')
     await testPrisma.smsCampaign.update({ where: { id: cancelled.campaignId }, data: { cancelledAt: new Date() } })
@@ -213,6 +220,84 @@ describe('SMS campaign messages: edit, send, dispatch', () => {
     expect(bdapps.smsSend).toHaveBeenCalledWith('due', ['tel:all'])
     expect((await load(future.id)).status).toBe('PLANNED')
     expect((await load(cancelled.id)).status).toBe('PLANNED')
+  })
+
+  describe('daily send time', () => {
+    // 14:00 Bangladesh = 08:00 UTC
+    const before = new Date('2020-01-02T07:59:00Z')
+    const after = new Date('2020-01-02T08:00:00Z')
+
+    it('defaults to 14:00 Bangladesh time when never set', async () => {
+      expect(await getSmsSendTime()).toBe(DEFAULT_SMS_SEND_TIME)
+      expect(DEFAULT_SMS_SEND_TIME).toBe('14:00')
+    })
+
+    it('rejects a malformed send time and keeps the old one', async () => {
+      await setSmsSendTime('09:30', ADMIN)
+      for (const bad of ['24:00', '9:30', '12:60', '', 'noon']) {
+        await expect(setSmsSendTime(bad, ADMIN)).rejects.toThrow(/HH:MM/)
+      }
+      expect(await getSmsSendTime()).toBe('09:30')
+    })
+
+    it('sends nothing before the send time, then sends once it has passed', async () => {
+      const m = await plan('2020-01-02', 'today')
+      expect(await dispatchDueCampaignMessage(before)).toMatchObject({ dispatched: false })
+      expect(bdapps.smsSend).not.toHaveBeenCalled()
+      expect((await load(m.id)).status).toBe('PLANNED')
+
+      expect(await dispatchDueCampaignMessage(after)).toMatchObject({ dispatched: true, messageId: m.id })
+      expect(bdapps.smsSend).toHaveBeenCalledTimes(1)
+      expect((await load(m.id)).status).toBe('SENT')
+    })
+
+    it('follows a changed send time (Bangladesh time)', async () => {
+      await setSmsSendTime('09:30', ADMIN) // 03:30 UTC
+      const m = await plan('2020-01-02', 'today')
+      await dispatchDueCampaignMessage(new Date('2020-01-02T03:29:00Z'))
+      expect(bdapps.smsSend).not.toHaveBeenCalled()
+      await dispatchDueCampaignMessage(new Date('2020-01-02T03:30:00Z'))
+      expect(bdapps.smsSend).toHaveBeenCalledTimes(1)
+      expect((await load(m.id)).status).toBe('SENT')
+    })
+
+    it('is idempotent when the cron runs many times a day', async () => {
+      const m = await plan('2020-01-02', 'today')
+      for (let i = 0; i < 4; i++) {
+        await dispatchDueCampaignMessage(new Date(after.getTime() + i * 15 * 60_000))
+      }
+      await Promise.all([dispatchDueCampaignMessage(after), dispatchDueCampaignMessage(after)])
+      expect(bdapps.smsSend).toHaveBeenCalledTimes(1)
+      expect((await load(m.id)).sendAttempts).toBe(1)
+    })
+
+    it('marks past unsent days MISSED and never sends them late', async () => {
+      const past = await plan('2020-01-01', 'yesterday')
+      const today = await plan('2020-01-02', 'today')
+      const res = await dispatchDueCampaignMessage(after)
+      expect(res).toMatchObject({ dispatched: true, messageId: today.id })
+      expect(bdapps.smsSend).toHaveBeenCalledTimes(1)
+      expect(bdapps.smsSend).toHaveBeenCalledWith('today', ['tel:all'])
+      expect((await load(past.id)).status).toBe('MISSED')
+    })
+
+    it('marks a missed day even before today\'s send time, and leaves cancelled campaigns alone', async () => {
+      const past = await plan('2020-01-01', 'yesterday')
+      const cancelled = await plan('2019-12-31', 'cancelled')
+      await testPrisma.smsCampaign.update({ where: { id: cancelled.campaignId }, data: { cancelledAt: new Date() } })
+      expect(await markMissedMessages(before)).toMatchObject({ missed: expect.any(Number) })
+      await dispatchDueCampaignMessage(before)
+      expect((await load(past.id)).status).toBe('MISSED')
+      expect((await load(cancelled.id)).status).toBe('PLANNED')
+      expect(bdapps.smsSend).not.toHaveBeenCalled()
+    })
+
+    it('the cron step reports under smsBroadcast and smsRecovery and does not throw', async () => {
+      const m = await plan('2020-01-02', 'today')
+      const res = await runSmsDispatch(after)
+      expect(res.smsBroadcast).toMatchObject({ dispatched: true, messageId: m.id })
+      expect(res.smsRecovery).toMatchObject({ recovered: expect.any(Number) })
+    })
   })
 
   it('a send writes an audit row against the campaign message', async () => {

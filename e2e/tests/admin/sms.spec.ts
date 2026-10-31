@@ -92,8 +92,12 @@ function randomDay(fromIso: string, spanDays: number): string {
 }
 /** Far in the future: the message stays PLANNED until an admin sends it. */
 const futureDay = () => randomDay('2060-01-01', 14_000)
-/** Long past: the daily cron treats it as due. */
+/** Long past: the cron marks it Missed and never sends it. */
 const pastDay = () => randomDay('1971-01-01', 10_000)
+
+const SEND_TIME_KEY = 'sms.dailySendTime'
+/** Today's Bangladesh day, stored the way the message `day` column is. */
+const todayStored = () => new Date(`${new Date(Date.now() + 6 * 3_600_000).toISOString().slice(0, 10)}T00:00:00.000Z`)
 
 /** Remove a test's campaigns (and so their messages) so no PLANNED row outlives it. */
 async function removeCampaigns(runId: string) {
@@ -291,7 +295,7 @@ test.describe('Admin SMS campaigns', () => {
     }
   })
 
-  test('a planned message goes out when the daily-reminders cron runs on or after its day', async ({
+  test('the cron sends today\'s planned message after the daily send time, and marks a past day Missed', async ({
     browser,
     newUser,
     fakeBdapps,
@@ -303,6 +307,8 @@ test.describe('Admin SMS campaigns', () => {
     locale,
     timezoneId,
   }) => {
+    // Today's Bangladesh day holds one planned message across the slot: run it once, on desktop.
+    test.skip(!!isMobile, 'cron dispatch is viewport-independent; desktop only')
     const runId = randomBytes(3).toString('hex')
     const enMarker = `E2E SMS Sched ${runId}`
     const bnMarker = `E2E SMS Sched BN ${runId}`
@@ -313,32 +319,60 @@ test.describe('Admin SMS campaigns', () => {
     })
 
     const sinceSeq = (await fakeBdapps.calls({ path: '/sms/send' })).at(-1)?.seq ?? 0
+    const db = e2eDb()
+    const previousSendTime = await db.systemSetting.findUnique({ where: { key: SEND_TIME_KEY } })
     try {
+      // Midnight Bangladesh time: the send time has passed whenever the cron runs today.
+      await db.systemSetting.upsert({
+        where: { key: SEND_TIME_KEY },
+        create: { key: SEND_TIME_KEY, value: '00:00' },
+        update: { value: '00:00' },
+      })
       await withAdminPage(
         browser,
         { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
         async ({ page, context }) => {
           const dialog = await openCreateModal(page)
-          // The composer refuses past days, so plan a future day and age it in the database.
+          // The composer refuses past days: plan a future day, then move it below.
           await fillCampaign(dialog, enMarker, [{ day: futureDay(), body: `${enMarker}\n${bnMarker}` }])
           await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           await expect(campaignRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
           await expect(campaignRow(page, enMarker).getByText('Planned', { exact: true })).toBeVisible()
-          await e2eDb().smsCampaignMessage.updateMany({
-            where: { body: { contains: enMarker } },
-            data: { day: new Date(`${pastDay()}T00:00:00Z`) },
+
+          // Move it to today (Bangladesh), and plant an unsent message on a long-past day.
+          await db.smsCampaignMessage.updateMany({
+            where: { campaign: { name: { contains: runId } } },
+            data: { day: todayStored() },
+          })
+          const creator = await db.smsCampaign.findFirstOrThrow({ where: { name: { contains: runId } }, select: { createdBy: true } })
+          const pastCampaign = await db.smsCampaign.create({
+            data: {
+              name: `Past ${runId}`,
+              createdBy: creator.createdBy,
+              messages: { create: { day: new Date(`${pastDay()}T00:00:00.000Z`), body: `E2E past ${runId}` } },
+            },
           })
 
           const mine = await dispatchUntilMarker(context.request, fakeBdapps, enMarker, sinceSeq, cronUser.id)
           expect(mine[mine.length - 1].body.message).toBe(`${enMarker}\n${bnMarker}`)
           expect(mine[mine.length - 1].body.destinationAddresses).toEqual(['tel:all'])
 
+          // The past day is Missed, and nothing was sent for it.
+          const past = await db.smsCampaignMessage.findFirstOrThrow({ where: { campaignId: pastCampaign.id } })
+          expect(past.status).toBe('MISSED')
+          expect(smsCallsWithMarker(await fakeBdapps.calls({ path: '/sms/send', sinceSeq }), `E2E past ${runId}`)).toHaveLength(0)
+
           await page.getByRole('button', { name: 'Refresh data' }).click()
           await expect(campaignRow(page, enMarker).getByText('Finished', { exact: true })).toBeVisible({ timeout: 15_000 })
         },
       )
     } finally {
+      if (previousSendTime) {
+        await db.systemSetting.update({ where: { key: SEND_TIME_KEY }, data: { value: previousSendTime.value } })
+      } else {
+        await db.systemSetting.deleteMany({ where: { key: SEND_TIME_KEY } })
+      }
       // Leave no past-due PLANNED row for later cron polls in this slot.
       await removeCampaigns(runId)
     }

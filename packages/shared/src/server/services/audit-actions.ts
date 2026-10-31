@@ -32,6 +32,7 @@ export const AUDIT_ACTIONS = {
   TRIGGER_CRON_DAILY_REMINDERS: 'TRIGGER_CRON_DAILY_REMINDERS',
   TRIGGER_CRON_CAAS_CHECK: 'TRIGGER_CRON_CAAS_CHECK',
   SET_CRON_ENABLED: 'SET_CRON_ENABLED',
+  SET_SMS_SEND_TIME: 'SET_SMS_SEND_TIME',
 } as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]
@@ -49,6 +50,7 @@ export const AUDIT_TARGET_TYPES = [
   'Profile',
   'Feedback',
   'CronJob',
+  'SystemSetting',
 ] as const
 
 /** Human label for an action: USER_SUSPENDED -> "User Suspended". */
