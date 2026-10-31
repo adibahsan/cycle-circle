@@ -56,15 +56,13 @@ describe('getUserDetailForAdmin', () => {
     expect(user!.subscriptions[0].createdAt.getTime()).toBe(base + 11 * 1000)
   })
 
-  // Prediction.profileId is @unique, so the DB holds at most one per profile; `take: 10` is
-  // a defensive cap that the select must keep, and the nested shape must stay narrow.
-  it('returns predictions with a narrow shape', async () => {
+  // The page never renders predictions, so they are not sent to the browser at all.
+  it('does not send predictions', async () => {
     const at = new Date('2026-01-01T00:00:00Z')
     await testPrisma.prediction.create({
       data: { profileId: PROFILE, tier: 'AVERAGE', nextPeriodStart: at, ovulationDay: at, fertileStart: at, fertileEnd: at, confidence: 0.5 },
     })
     const user = await svc.getUserDetailForAdmin(USER)
-    expect(user!.profiles[0].predictions).toHaveLength(1)
-    expect(user!.profiles[0].predictions[0]).not.toHaveProperty('profileId')
+    expect(user!.profiles[0]).not.toHaveProperty('predictions')
   })
 })

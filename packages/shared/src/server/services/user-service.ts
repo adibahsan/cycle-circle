@@ -602,11 +602,6 @@ const adminUserDetailSelect = {
         orderBy: { startDate: 'desc' },
         take: 5,
       },
-      predictions: {
-        select: { id: true, tier: true, nextPeriodStart: true, confidence: true, createdAt: true },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-      },
       notificationPref: {
         select: { id: true, periodAlert: true, fertileWindow: true, loggingReminder: true },
       },
