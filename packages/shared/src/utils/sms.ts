@@ -75,6 +75,19 @@ export function countSmsParts(text: string): SmsPartCount {
 /** Admin warns above this many parts. */
 export const SMS_PART_WARN_THRESHOLD = 2
 
+/** Planning limits, enforced by the server and mirrored in the composer. */
+export const SMS_MAX_PARTS = 6
+export const SMS_MAX_CAMPAIGN_MESSAGES = 120
+export const SMS_MAX_CAMPAIGN_NAME = 80
+
+/** Why a message text cannot be planned (empty, or longer than SMS_MAX_PARTS parts); null when fine. */
+export function validateSmsBody(body: string): string | null {
+  if (!body.trim()) return 'Message cannot be empty'
+  const { parts } = countSmsParts(body)
+  if (parts > SMS_MAX_PARTS) return `Message is ${parts} SMS parts long; the limit is ${SMS_MAX_PARTS}`
+  return null
+}
+
 // ── Line parser ────────────────────────────────────────────────────────────────
 
 /** One message per non-empty line; optional Bengali after '|': "English | Bengali". */

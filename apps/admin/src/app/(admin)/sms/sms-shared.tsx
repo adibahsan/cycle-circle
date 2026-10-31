@@ -1,7 +1,7 @@
 'use client'
 
 import { Badge } from '@/components/ui/Badge'
-import { countSmsParts, SMS_PART_WARN_THRESHOLD, type SmsSendLanguage } from '@vesta/shared/utils/sms'
+import { countSmsParts, SMS_PART_WARN_THRESHOLD, SMS_MAX_PARTS } from '@vesta/shared/utils/sms'
 import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 type Instant = Date | string
@@ -46,64 +46,23 @@ export function formatSentAt(at: Instant | null): string {
   return formatDhaka(at, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-// ─── Language picker + part counter ─────────────────────────────────────────
-
-const LANGUAGE_OPTIONS: { value: SmsSendLanguage; label: string }[] = [
-  { value: 'BOTH', label: 'Bengali + English' },
-  { value: 'BN', label: 'Bengali only' },
-  { value: 'EN', label: 'English only' },
-]
-
-export function LanguagePicker({
-  value,
-  onChange,
-  idPrefix,
-}: {
-  value: SmsSendLanguage
-  onChange: (v: SmsSendLanguage) => void
-  idPrefix: string
-}) {
-  return (
-    <fieldset className="space-y-1.5">
-      <legend className="block text-sm font-medium text-[var(--color-text-secondary)]">Send language</legend>
-      <div className="flex flex-wrap gap-2">
-        {LANGUAGE_OPTIONS.map((o) => (
-          <label
-            key={o.value}
-            htmlFor={`${idPrefix}-${o.value}`}
-            className={[
-              'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-colors focus-within:ring-2 focus-within:ring-[var(--color-primary)]/30',
-              value === o.value
-                ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-text-primary)]'
-                : 'border-[var(--color-border)] text-[var(--color-text-muted)]',
-            ].join(' ')}
-          >
-            <input
-              id={`${idPrefix}-${o.value}`}
-              type="radio"
-              name={`${idPrefix}-language`}
-              value={o.value}
-              checked={value === o.value}
-              onChange={() => onChange(o.value)}
-              className="sr-only"
-            />
-            {o.label}
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  )
-}
+// ─── Part counter ─────────────────────────────────────────────────────────────
 
 export function PartCounter({ text }: { text: string }) {
   const { encoding, parts, charsLeft } = countSmsParts(text)
   const warn = parts > SMS_PART_WARN_THRESHOLD
+  const tooLong = parts > SMS_MAX_PARTS
   return (
     <div className="space-y-1" aria-live="polite">
       <p className={`text-xs tabular-nums ${warn ? 'text-[var(--color-warning)] font-medium' : 'text-[var(--color-text-muted)]'}`}>
         {parts} SMS part{parts !== 1 ? 's' : ''} · {encoding === 'UCS2' ? 'Unicode (Bengali), 70/67 per part' : 'GSM-7, 160/153 per part'} · {charsLeft} left in this part
       </p>
-      {warn && (
+      {tooLong && (
+        <p className="text-xs font-medium text-[var(--color-danger)]">
+          Too long: the limit is {SMS_MAX_PARTS} SMS parts. Shorten the message to plan it.
+        </p>
+      )}
+      {warn && !tooLong && (
         <p className="text-xs text-[var(--color-warning)]" role="status">
           Over {SMS_PART_WARN_THRESHOLD} parts: every subscriber is charged for {parts} SMS. Consider shortening the message.
         </p>

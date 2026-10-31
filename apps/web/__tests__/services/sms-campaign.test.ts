@@ -10,6 +10,11 @@ import {
   getCampaign,
   getNextPlannedCampaignId,
   campaignNameFor,
+  createCampaign,
+  addCampaignMessage,
+  validateSmsBody,
+  SMS_MAX_PARTS,
+  SMS_MAX_CAMPAIGN_MESSAGES,
 } from '@vesta/shared/server/services'
 
 const ADMIN = 'test-smscampaign-admin'
@@ -45,6 +50,24 @@ describe('campaign names', () => {
   it('is the first 40 characters of the text plus the day', () => {
     expect(campaignNameFor('Hello\n  world', '2026-11-01')).toBe('Hello world 2026-11-01')
     expect(campaignNameFor('x'.repeat(50), '2026-11-01')).toBe(`${'x'.repeat(40)} 2026-11-01`)
+  })
+})
+
+describe('validateSmsBody', () => {
+  it('accepts English, Bengali and mixed text within the limit', () => {
+    expect(validateSmsBody('Drink water today')).toBeNull()
+    expect(validateSmsBody('আজ পর্যাপ্ত পানি পান করুন।')).toBeNull()
+    expect(validateSmsBody('Drink water আজ পানি পান করুন')).toBeNull()
+  })
+  it('refuses empty text', () => expect(validateSmsBody('  ')).toMatch(/empty/i))
+  it('limit depends on the encoding: Bengali hits it sooner than English', () => {
+    const edgeEn = 'a'.repeat(SMS_MAX_PARTS * 153)
+    const edgeBn = 'ক'.repeat(SMS_MAX_PARTS * 67)
+    expect(validateSmsBody(edgeEn)).toBeNull()
+    expect(validateSmsBody(edgeEn + 'a')).toMatch(/parts/)
+    expect(validateSmsBody(edgeBn)).toBeNull()
+    expect(validateSmsBody(edgeBn + 'ক')).toMatch(/parts/)
+    expect(validateSmsBody('a'.repeat(SMS_MAX_PARTS * 67 + 1))).toBeNull()
   })
 })
 
@@ -187,5 +210,56 @@ describe('campaigns (db)', () => {
     await testPrisma.smsCampaignMessage.update({ where: { id: sent.messages[0].id }, data: { status: 'SENT', sentAt: new Date() } })
     await expect(deleteCampaign(sent.id, ADMIN)).rejects.toThrow(/sent/i)
     expect(await getCampaign(sent.id)).not.toBeNull()
+  })
+
+  describe('composer rules (createCampaign / addCampaignMessage)', () => {
+    const NOW = new Date('2043-05-10T10:00:00Z') // Bangladesh 16:00 on the 10th
+
+    it('plans from today on, audits it, and refuses past Bangladesh days', async () => {
+      const c = await createCampaign(ADMIN, { name: 'Composer', messages: [{ day: day(10), body: 'today' }, { day: day(12), body: 'later' }] }, NOW)
+      expect(c.messages).toHaveLength(2)
+      await expect(
+        createCampaign(ADMIN, { name: 'Old', messages: [{ day: day(9), body: 'past' }] }, NOW),
+      ).rejects.toThrow(/past/)
+      expect(await testPrisma.smsCampaign.count({ where: { createdBy: ADMIN, name: 'Old' } })).toBe(0)
+    })
+
+    it('uses the Bangladesh day, not the UTC day, for "today"', async () => {
+      const lateUtc = new Date('2043-05-10T20:00:00Z') // already the 11th in Bangladesh
+      await expect(createCampaign(ADMIN, { name: 'Edge', messages: [{ day: day(10), body: 'x' }] }, lateUtc)).rejects.toThrow(/past/)
+      await expect(createCampaign(ADMIN, { name: 'Edge ok', messages: [{ day: day(11), body: 'x' }] }, lateUtc)).resolves.toBeTruthy()
+    })
+
+    it('refuses over-long text, a long name and too many messages on the server', async () => {
+      await expect(
+        createCampaign(ADMIN, { name: 'Long', messages: [{ day: day(14), body: 'ক'.repeat(SMS_MAX_PARTS * 67 + 1) }] }, NOW),
+      ).rejects.toThrow(/parts/)
+      await expect(
+        createCampaign(ADMIN, { name: 'n'.repeat(81), messages: [{ day: day(14), body: 'a' }] }, NOW),
+      ).rejects.toThrow(/name/i)
+      const many = Array.from({ length: SMS_MAX_CAMPAIGN_MESSAGES + 1 }, (_, i) => ({ day: `2044-${String(1 + Math.floor(i / 28)).padStart(2, '0')}-${String(1 + (i % 28)).padStart(2, '0')}`, body: 'a' }))
+      await expect(createCampaign(ADMIN, { name: 'Many', messages: many }, NOW)).rejects.toThrow(/at most/)
+    })
+
+    it('names the clashing campaign, including one whose message was already sent', async () => {
+      const first = await createCampaign(ADMIN, { name: 'Holder', messages: [{ day: day(15), body: 'a' }, { day: day(16), body: 'b' }] }, NOW)
+      await testPrisma.smsCampaignMessage.update({ where: { id: first.messages[1].id }, data: { status: 'SENT' } })
+      await expect(createCampaign(ADMIN, { name: 'Clash1', messages: [{ day: day(15), body: 'x' }] }, NOW)).rejects.toThrow(/"Holder"/)
+      await expect(createCampaign(ADMIN, { name: 'Clash2', messages: [{ day: day(16), body: 'x' }] }, NOW)).rejects.toThrow(/"Holder"/)
+    })
+
+    it('adds a message on a free day, audits it, and refuses clashes, past days and cancelled campaigns', async () => {
+      const c = await createCampaign(ADMIN, { name: 'Grow', messages: [{ day: day(17), body: 'a' }] }, NOW)
+      const added = await addCampaignMessage(c.id, ADMIN, { day: day(19), body: 'b' }, NOW)
+      expect((await getCampaign(c.id))?.messages).toHaveLength(2)
+      const log = await testPrisma.adminAuditLog.findFirst({ where: { adminId: ADMIN, targetId: added.id } })
+      expect(log).toMatchObject({ action: 'ADD_SMS_MESSAGE', targetType: 'SmsCampaignMessage' })
+
+      await expect(addCampaignMessage(c.id, ADMIN, { day: day(17), body: 'c' }, NOW)).rejects.toThrow(/"Grow"/)
+      await expect(addCampaignMessage(c.id, ADMIN, { day: day(9), body: 'c' }, NOW)).rejects.toThrow(/past/)
+      await expect(addCampaignMessage(c.id, ADMIN, { day: day(20), body: ' ' }, NOW)).rejects.toThrow(/empty/i)
+      await testPrisma.smsCampaign.update({ where: { id: c.id }, data: { cancelledAt: new Date() } })
+      await expect(addCampaignMessage(c.id, ADMIN, { day: day(21), body: 'c' }, NOW)).rejects.toThrow(/cancelled/)
+    })
   })
 })
