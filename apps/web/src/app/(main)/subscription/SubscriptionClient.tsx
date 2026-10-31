@@ -26,6 +26,7 @@ import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { useProPriceVars } from '@/components/ProPriceProvider'
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 interface SubscriptionClientProps {
@@ -65,6 +66,7 @@ const FREE_FEATURE_KEYS = [
 export function SubscriptionClient({ user }: SubscriptionClientProps) {
   const { t } = useTranslation()
   const router = useRouter()
+  const proPrice = useProPriceVars()
 
   // Local override so the UI reflects success without a full page reload
   const [localStatus, setLocalStatus] = useState<SubscriptionStatus | null>(null)
@@ -255,10 +257,12 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
                   </div>
 
                   <div>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-3xl font-extrabold text-[var(--color-text-primary)]">৳5</span>
-                      <span className="text-[var(--color-text-secondary)] text-sm">/{t('subscription.dayUnit')}</span>
-                    </div>
+                    {proPrice && (
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-3xl font-extrabold text-[var(--color-text-primary)]">{proPrice.amount}</span>
+                        <span className="text-[var(--color-text-secondary)] text-sm">/{proPrice.period}</span>
+                      </div>
+                    )}
                     <p className="text-[var(--color-text-muted)] text-xs mt-0.5">
                       {t('subscription.billedViaBDApps')}
                     </p>

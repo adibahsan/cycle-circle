@@ -48,6 +48,7 @@ export function ProPriceCard({ initialHistory, today }: { initialHistory: ProPri
         )
         setAmount('')
         toast.success(`Pro price set to ${money(res.entry)} from ${res.entry.effectiveFrom}`)
+        if (!res.webCacheRefreshed) toast.error('Saved, but the web app cache did not refresh. Customers may see the old price for a few minutes.')
       } else {
         toast.error(res.error)
       }

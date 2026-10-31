@@ -125,6 +125,7 @@ Notes on the tally:
 | W52 | Pro-only features gated for Free users | Pro-gated routes and UI | `e2e/tests/web/billing.spec.ts` | partial (SMS alerts gated via cron, proven; Data Export and Advanced Predictions ungated, asserted as current behaviour, deferred by FR-GATE; Ad-free has no UI) | #125 |
 | W53 | BDApps failure during subscribe: clear error, plan unchanged | phone OTP request (`/api/billing/subscribe` is CAAS_DISABLED) | `e2e/tests/web/billing.spec.ts` | full (scoped E1601 failure: error shown, plan Free after reload) | #125 (fake failures: #118) |
 | W54 | Subscription page: status, plan, trial pill | `/subscription` | `e2e/tests/web/billing.spec.ts` | partial (Free and Pro plan card, upgrade/unsubscribe buttons, Free vs Pro table by role and name, per-feature Free/Pro values: #153) | #125 |
+| W54b | Customers see the admin-set Pro price (subscription page, upgrade confirmation, Terms) in English and Bangla; a change shows without a redeploy | `/subscription`, `/terms`, `/system` (admin) | `e2e/tests/web/subscription-price.spec.ts` (serial `cron` project) | full | #203 |
 
 ### Web: landing and public pages
 

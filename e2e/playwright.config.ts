@@ -23,7 +23,7 @@ const phone = devices['Pixel 7']
  * serial `cron` project after all parallel projects finish — see README.
  */
 export const CRON_SERIAL_SPECS =
-  /(?:^|[/\\])(cron-daily-reminders|cron-nightly-maintenance|cron-caas-check|webhooks-bdapps|health|bdapps-health)\.spec\.ts$/
+  /(?:^|[/\\])(subscription-price|cron-daily-reminders|cron-nightly-maintenance|cron-caas-check|webhooks-bdapps|health|bdapps-health)\.spec\.ts$/
 
 function pair(name: 'web' | 'admin' | 'cross-app', baseURL: string): Project[] {
   const ignore = name === 'web' ? { testIgnore: CRON_SERIAL_SPECS } : {}
