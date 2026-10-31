@@ -25,7 +25,7 @@ E2E_SLOT=2 pnpm e2e                                   # another worktree at the 
 
 | Env | Effect |
 |---|---|
-| `E2E_SLOT=<0-99>` | Offsets ports and the DB name (default 0). |
+| `E2E_SLOT=<0-99>` | Offsets ports and the DB name. Default: the worktree's `.e2e-slot` (written by `scripts/new-worktree.sh`), else 0. |
 | `E2E_SKIP_BUILD=1` | Skip `next build` (fails if there is no build yet). Rebuild after any app change. |
 | `E2E_SKIP_RESET=1` | Don't wipe the DB: apply pending migrations (`migrate deploy`), and seed only a DB that is new. Faster reruns; throwaway phones stay unique. Opt-in for speed only: the default reset (drop + create the slot DB, `migrate deploy`, seed) works for AI agents too. |
 | `E2E_REUSE_SERVERS=1` | Reuse already-running fake BDApps / web / admin on the slot's ports. |

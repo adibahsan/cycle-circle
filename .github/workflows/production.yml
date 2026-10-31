@@ -46,6 +46,8 @@ jobs:
       - run: pnpm db:generate
       - name: Apply migrations to the CI database
         run: pnpm --filter @vesta/shared exec prisma migrate deploy --schema ./prisma/schema.prisma
+      - name: Migrations match schema.prisma
+        run: pnpm db:drift
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm docs:check
