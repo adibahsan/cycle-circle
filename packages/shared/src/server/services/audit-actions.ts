@@ -63,9 +63,14 @@ export const AUDIT_TARGET_TYPES = [
   'ProPrice',
 ] as const
 
+/** Stored action names stay as written; these labels replace the generated ones (no "CaaS" in admin text). */
+const LABEL_OVERRIDES: Record<string, string> = {
+  TRIGGER_CRON_CAAS_CHECK: 'Trigger Cron Subscription Check',
+}
+
 /** Human label for an action: USER_SUSPENDED -> "User Suspended". */
 export function auditActionLabel(action: string): string {
-  return action
+  return LABEL_OVERRIDES[action] ?? action
     .toLowerCase()
     .split('_')
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))

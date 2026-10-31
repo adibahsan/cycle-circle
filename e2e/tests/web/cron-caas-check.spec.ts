@@ -2,6 +2,7 @@ import { test, expect } from '../../support/fixtures'
 import { SECRETS, URLS } from '../../support/slot.ts'
 import { e2eDb } from '../../support/db'
 import { toDbPhone } from '../../support/users'
+import { createLoggedInAdmin } from '../../support/admin'
 
 /**
  * The route slug is historical: today the job calls `/subscription/getStatus` for
@@ -102,5 +103,54 @@ test.describe('cron: caas-check', () => {
     const run = await e2eDb().subscriptionCheckRun.findUniqueOrThrow({ where: { id: body.runId } })
     expect(run.trigger).toBe('CRON')
     expect(['OK', 'SKIPPED']).toContain(run.status)
+  })
+
+  // Serial `cron` project: nothing else writes runs now, so the newest run is the one made here.
+  test('the admin Subscriptions strip shows the latest run, and warns when the latest run failed or was skipped', async ({
+    browser,
+    newUser,
+    request,
+  }) => {
+    await newUser()
+    const res = await request.post(`${URLS.web}/api/cron/caas-check`, {
+      headers: { authorization: `Bearer ${SECRETS.cronSecret}` },
+      data: { overrideDisabled: true },
+    })
+    const body = await res.json()
+    const inserted: string[] = []
+    const admin = await createLoggedInAdmin(browser)
+    try {
+      const { page } = admin
+      const strip = page.getByTestId('check-strip')
+
+      await page.goto('/subscriptions')
+      await expect(strip).toHaveAttribute('data-state', 'ok')
+      await expect(page.getByTestId('check-strip-checked')).toHaveText(String(body.checked))
+      await expect(page.getByTestId('check-strip-moved')).toHaveText(String(body.downgraded))
+      await expect(page.getByTestId('check-strip-errors')).toHaveText('0')
+      await expect(strip).toContainText('Bangladesh time')
+      await expect(page.getByTestId('check-strip-warning')).toHaveCount(0)
+      await expect(page.getByText(/caas/i)).toHaveCount(0)
+
+      const failed = await e2eDb().subscriptionCheckRun.create({
+        data: { startedAt: new Date(Date.now() + 60_000), trigger: 'CRON', status: 'FAILED', error: 'boom' },
+      })
+      inserted.push(failed.id)
+      await page.reload()
+      await expect(strip).toHaveAttribute('data-state', 'failed')
+      await expect(page.getByTestId('check-strip-warning')).toContainText('failed')
+
+      const skipped = await e2eDb().subscriptionCheckRun.create({
+        data: { startedAt: new Date(Date.now() + 120_000), trigger: 'CRON', status: 'SKIPPED' },
+      })
+      inserted.push(skipped.id)
+      await page.reload()
+      await expect(strip).toHaveAttribute('data-state', 'skipped')
+      await expect(page.getByTestId('check-strip-warning')).toContainText('skipped')
+      await expect(page.getByTestId('check-strip-checked')).toHaveCount(0)
+    } finally {
+      await e2eDb().subscriptionCheckRun.deleteMany({ where: { id: { in: inserted } } })
+      await admin.context.close()
+    }
   })
 })

@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useUrlParams } from '@/lib/use-url-params'
 import { useState, useTransition } from 'react'
-import { CreditCard, Mail, Smartphone, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, CreditCard, Mail, Smartphone, ShieldCheck } from 'lucide-react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
@@ -18,6 +18,7 @@ import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { CHART_VAR } from '@/lib/chart-palette'
 import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
+import { describeLastCheck } from '@vesta/shared/utils/subscription-check-strip'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types — mirror the Prisma include shape from getSubscriptions
@@ -31,6 +32,8 @@ interface SubscriptionRow {
   adminOverride: boolean
   adminOverrideBy: string | null
   adminOverrideAt: Date | null
+  lastConfirmedAt: Date | null
+  lastReportedStatus: string | null
   createdAt: Date
   updatedAt: Date
   user: {
@@ -52,6 +55,16 @@ interface SubscriptionsClientProps {
   trend: { date: string; count: number }[]
   statusBreakdown: { status: string; count: number }[]
   range: string
+  latestRun: {
+    startedAt: Date
+    status: 'OK' | 'FAILED' | 'SKIPPED'
+    checkedCount: number
+    movedCount: number
+    errorCount: number
+    error: string | null
+  } | null
+  /** Taken at the page edge (ADR 0009). */
+  now: Date
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -76,6 +89,48 @@ function formatDate(d: Date | null | undefined) {
     day: 'numeric',
     year: 'numeric',
   })
+}
+
+function formatDateTime(d: Date | null | undefined) {
+  if (!d) return 'never'
+  return formatDhaka(d, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+/** The latest run of the daily subscription check, with a warning when it is stale or failed. */
+function CheckStrip({ run, now }: { run: SubscriptionsClientProps['latestRun']; now: Date }) {
+  const { state, warning } = describeLastCheck(run, now)
+  return (
+    <section
+      aria-label="Daily subscription check"
+      data-testid="check-strip"
+      data-state={state}
+      className="rounded-xl border border-[var(--color-border)] glass px-4 py-3 space-y-2"
+    >
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+        <span className="flex items-center gap-2 font-medium text-[var(--color-text-primary)]">
+          <CreditCard size={16} aria-hidden="true" className="text-[var(--color-primary)]" />
+          Daily subscription check
+        </span>
+        <span className="text-[var(--color-text-secondary)]" data-testid="check-strip-last-run">
+          Last run: {run ? `${formatDateTime(run.startedAt)} (Bangladesh time)` : 'never'}
+        </span>
+        {run && run.status !== 'SKIPPED' && (
+          <>
+            <span className="text-[var(--color-text-secondary)]">Checked: <b data-testid="check-strip-checked">{run.checkedCount}</b></span>
+            <span className="text-[var(--color-text-secondary)]">Moved to Free: <b data-testid="check-strip-moved">{run.movedCount}</b></span>
+            <span className="text-[var(--color-text-secondary)]">Errors: <b data-testid="check-strip-errors">{run.errorCount}</b></span>
+          </>
+        )}
+      </div>
+      {warning && (
+        <p role="alert" data-testid="check-strip-warning" className="flex items-center gap-2 text-sm text-[var(--color-warning)]">
+          <AlertTriangle size={14} aria-hidden="true" className="shrink-0" />
+          {warning}
+          {run?.error ? ` ${run.error}` : ''}
+        </p>
+      )}
+    </section>
+  )
 }
 
 function formatAmount(cents: number | null | undefined) {
@@ -143,7 +198,7 @@ function ActionsCell({ row, onGrant, onRevoke, onSetFree }: ActionsCellProps) {
 
 const bdappsFailedMessage = (e: string) => `Plan changed, but the BDApps unsubscribe failed: ${e}. The user may still be charged.`
 
-export function SubscriptionsClient({ data, trend, statusBreakdown, range }: SubscriptionsClientProps) {
+export function SubscriptionsClient({ data, trend, statusBreakdown, range, latestRun, now }: SubscriptionsClientProps) {
   const router = useRouter()
   const { searchParams, updateParams } = useUrlParams({ clearOn: ['all'] })
   const [actionPending, startActionTransition] = useTransition()
@@ -263,6 +318,18 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, range }: Sub
       ),
     },
     {
+      key: 'lastConfirmed',
+      header: 'Last confirmed by BDApps',
+      render: (row) => (
+        <span className="text-sm text-[var(--color-text-secondary)]" data-testid="last-confirmed">
+          {formatDateTime(row.lastConfirmedAt)}
+          {row.lastReportedStatus && (
+            <span className="block text-xs text-[var(--color-text-muted)]">{row.lastReportedStatus}</span>
+          )}
+        </span>
+      ),
+    },
+    {
       key: 'adminOverride',
       header: 'Admin Override',
       render: (row) => {
@@ -303,15 +370,9 @@ export function SubscriptionsClient({ data, trend, statusBreakdown, range }: Sub
           title="Subscriptions"
           description={`${data.total.toLocaleString()} total subscriptions`}
           tags={[adminCacheTags.subscriptions]}
-          actions={
-            <div className="hidden sm:flex items-center gap-2 rounded-xl border border-[var(--color-border)] glass px-4 py-2.5">
-              <CreditCard size={16} aria-hidden="true" className="text-[var(--color-primary)]" />
-              <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-                BDApps subscription
-              </span>
-            </div>
-          }
         />
+
+        <CheckStrip run={latestRun} now={now} />
 
         {/* Charts — date-range controlled trend plus status breakdown */}
         <section aria-label="Subscription charts">

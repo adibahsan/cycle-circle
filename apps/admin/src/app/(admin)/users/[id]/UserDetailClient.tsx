@@ -65,6 +65,8 @@ interface Subscription {
   adminOverride?: boolean | null
   adminOverrideBy?: string | null
   adminOverrideAt?: Date | null
+  lastConfirmedAt?: Date | null
+  lastReportedStatus?: string | null
   createdAt: Date
   caasTransactions: CaasTransaction[]
 }
@@ -532,6 +534,14 @@ function SubscriptionTab({
             <div>
               <p className="text-xs text-[var(--color-text-muted)]">Since</p>
               <p className="font-medium text-[var(--color-text-primary)]">{formatDate(activeSub.createdAt)}</p>
+            </div>
+            <div className="col-span-2" data-testid="last-confirmed">
+              <p className="text-xs text-[var(--color-text-muted)]">Last confirmed by BDApps</p>
+              <p className="font-medium text-[var(--color-text-primary)]">
+                {activeSub.lastConfirmedAt
+                  ? `${formatDateTime(activeSub.lastConfirmedAt)}${activeSub.lastReportedStatus ? ` (reported ${activeSub.lastReportedStatus})` : ''}`
+                  : 'never'}
+              </p>
             </div>
             {activeSub.adminOverride && (
               <>
