@@ -14,7 +14,7 @@
  * Confetti is skipped under reduced motion.
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { CheckCircle2, X } from 'lucide-react';
@@ -24,8 +24,7 @@ import { Z_CLASS } from '@vesta/shared/utils/popup-core';
 import {
   celebrationCopy,
   shouldShowConfetti,
-  TOAST_AFTER_POPUP_MS,
-  TOAST_VISIBLE_MS,
+  createToastScheduler,
   type CelebrationKind,
 } from '@/lib/toast-core';
 import '@vesta/shared/utils/i18n';
@@ -68,34 +67,23 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const [item, setItem] = useState<ToastItem | null>(null);
   const seq = useRef(0);
-  const showTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearTimers = useCallback(() => {
-    if (showTimer.current) clearTimeout(showTimer.current);
-    if (hideTimer.current) clearTimeout(hideTimer.current);
-  }, []);
-
-  const present = useCallback((next: Omit<ToastItem, 'seq'>, delayMs: number) => {
-    clearTimers();
-    const run = () => {
+  const [scheduler] = useState(() =>
+    createToastScheduler((next) => {
+      if (!next) return setItem(null);
       seq.current += 1;
       setItem({ ...next, seq: seq.current });
-      hideTimer.current = setTimeout(() => setItem(null), TOAST_VISIBLE_MS);
-    };
-    if (delayMs > 0) showTimer.current = setTimeout(run, delayMs);
-    else run();
-  }, [clearTimers]);
+    }),
+  );
 
-  useEffect(() => clearTimers, [clearTimers]);
+  useEffect(() => () => scheduler.dispose(), [scheduler]);
 
   const api = useMemo<ToastApi>(() => ({
-    show: (message) => present({ message, celebrate: false }, 0),
+    show: (message) => scheduler.show({ message }),
     celebrate: (kind, count) => {
       const c = celebrationCopy(kind, count);
-      present({ title: t(c.titleKey, c.values), message: t(c.bodyKey, c.values), celebrate: true }, TOAST_AFTER_POPUP_MS);
+      scheduler.celebrate({ title: t(c.titleKey, c.values), message: t(c.bodyKey, c.values) });
     },
-  }), [present, t]);
+  }), [scheduler, t]);
 
   return (
     <ToastContext.Provider value={api}>
@@ -146,7 +134,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setItem(null)}
+                    onClick={scheduler.dismiss}
                     aria-label={t('common.close')}
                     className="-my-1 -mr-1 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                   >

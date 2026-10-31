@@ -298,19 +298,21 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.42, delay: 0.15 }}
         >
-          <SectionHeader title={t('subscription.freeVsPro')} />
+          <SectionHeader id="free-vs-pro-title" title={t('subscription.freeVsPro')} />
+
+          <div role="table" aria-labelledby="free-vs-pro-title">
 
           <Card tone="panel" className="p-0 overflow-hidden divide-y divide-[var(--color-border)]">
-            <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3 bg-tint-peach">
-              <div className="px-4 sm:px-5 py-2.5 text-xs font-semibold text-[var(--color-text-secondary)] col-span-1">
+            <div role="row" className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3 bg-tint-peach">
+              <div role="columnheader" className="px-4 sm:px-5 py-2.5 text-xs font-semibold text-[var(--color-text-secondary)] col-span-1">
                 {t('subscription.featureHeader')}
               </div>
-              <div className="px-1 sm:px-2 py-2.5 text-center">
+              <div role="columnheader" className="px-1 sm:px-2 py-2.5 text-center">
                 <span className="text-xs font-semibold text-[var(--color-text-muted)]">
                   {t('subscription.free')}
                 </span>
               </div>
-              <div className="px-1 sm:px-2 py-2.5 text-center">
+              <div role="columnheader" className="px-1 sm:px-2 py-2.5 text-center">
                 <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-[var(--color-bg-card)] text-accent-peach">
                   <Crown size={10} aria-hidden="true" /> {t('subscription.pro')}
                 </span>
@@ -320,19 +322,22 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
             {COMPARISON_FEATURE_KEYS.map(({ key, labelKey, free, pro }) => (
               <div
                 key={key}
+                role="row"
                 className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] sm:grid-cols-3 xl:min-h-11 2xl:min-h-[52px] xl:items-center"
               >
-                <div className="px-4 sm:px-5 py-2.5 text-sm text-[var(--color-text-secondary)] col-span-1">
+                <div role="rowheader" className="px-4 sm:px-5 py-2.5 text-sm text-[var(--color-text-secondary)] col-span-1">
                   {t(labelKey)}
                 </div>
-                <div className="px-1 sm:px-2 py-2.5 flex justify-center items-center">
+                <div role="cell" className="px-1 sm:px-2 py-2.5 flex justify-center items-center">
+                  <span className="sr-only">{t(free ? 'subscription.included' : 'subscription.notIncluded')}</span>
                   {free ? (
                     <Check size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
                   ) : (
                     <X size={16} className="text-[var(--color-border)]" aria-hidden="true" />
                   )}
                 </div>
-                <div className="px-1 sm:px-2 py-2.5 flex justify-center items-center">
+                <div role="cell" className="px-1 sm:px-2 py-2.5 flex justify-center items-center">
+                  <span className="sr-only">{t(pro ? 'subscription.included' : 'subscription.notIncluded')}</span>
                   {pro ? (
                     <Check size={16} strokeWidth={2.5} className="text-accent-mint" aria-hidden="true" />
                   ) : (
@@ -342,6 +347,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               </div>
             ))}
           </Card>
+          </div>
         </motion.div>
       </div>
 

@@ -12,8 +12,9 @@ Production env files live at `/opt/vesta/.env.web.production` and `/opt/vesta/.e
 
 | Rule | Why |
 |---|---|
-| `JWT_SECRET` — byte-identical in both files | Web issues the auth JWT; admin verifies the same token format for its own session cookie. A mismatch breaks admin login silently. |
+| `APP_ENV` — same value in both files | `production` (or `staging` on the staging box). It becomes the token issuer `vesta:<APP_ENV>`; a mismatch makes the two apps reject each other's session checks for no visible reason. |
 | `CRON_SECRET` — byte-identical in both files | Admin's System page triggers web cron routes (`withCronAuth`) using this secret; the host crontab also uses it. |
+| `JWT_SECRET` — must **differ** | Web and admin sign with their own secret, and every token also carries an audience (`vesta-web` / `vesta-admin`). A web login can never open admin or the reverse ([ADR 0007](../adr/0007-auth-tokens-scoped-per-app-and-environment.md)). |
 | `AUTH_COOKIE_NAME` — must **differ** | Web uses `vesta_token`, admin uses `vesta_admin_token`. Both apps share the domain's DNS but not necessarily the same host — differing names stop one session cookie from colliding with or overwriting the other. |
 | Admin's `APP_URL` = web's public URL | Not admin's own URL. Admin's System page calls `{APP_URL}/api/cron/*` and revalidates web's cache — it must point at `https://cycle-circle.com`, not `https://admin.cycle-circle.com`. |
 | `DATABASE_URL` / `DIRECT_URL` — same value in prod | Self-hosted Postgres has no PgBouncer pooler, so there's no separate pooled vs. direct connection string like Supabase's. Both vars point at the same `postgres:5432` service. |
@@ -23,7 +24,7 @@ Production env files live at `/opt/vesta/.env.web.production` and `/opt/vesta/.e
 ## Secret generation
 
 ```bash
-# JWT_SECRET (min 32 chars, zod-enforced) — same value in both env files
+# JWT_SECRET (min 32 chars, zod-enforced) — run once per app: web and admin each get their own value
 openssl rand -hex 32
 
 # CRON_SECRET — same value in both env files
@@ -32,10 +33,10 @@ openssl rand -hex 16
 # Postgres password (POSTGRES_PASSWORD, used inside DATABASE_URL/DIRECT_URL)
 openssl rand -hex 20
 
-# Verify JWT_SECRET is identical across files without printing it
+# Verify JWT_SECRET is DIFFERENT across files without printing it
 diff <(sha256sum < <(grep ^JWT_SECRET= /opt/vesta/.env.web.production)) \
      <(sha256sum < <(grep ^JWT_SECRET= /opt/vesta/.env.admin.production)) \
-  && echo "JWT_SECRET matches" || echo "MISMATCH"
+  >/dev/null && echo "SAME (wrong: regenerate admin's)" || echo "differ (correct)"
 ```
 
 ---
@@ -52,8 +53,9 @@ diff <(sha256sum < <(grep ^JWT_SECRET= /opt/vesta/.env.web.production)) \
 | `BDAPPS_BASE_URL` | No | Leave **unset** | Zod default is `https://developer.bdapps.com` — the correct prod value. Do not override. |
 | `BDAPPS_WEBHOOK_IPS` | No (but functionally required before go-live) | `<from BDApps egress IPs>` (comma-separated) | **Security-critical.** Empty = `validateWebhookSource()` accepts every source IP. Must be set before real BDApps traffic reaches the four webhook routes. |
 | `BDAPPS_SIMULATOR_BASE_URL` | No | Leave **unset** | Dev/local-only; points at the Docker simulator. Never set in prod. |
-| `JWT_SECRET` | Yes (min 32 chars) | `<generate: openssl rand -hex 32>` | Must match admin's `JWT_SECRET` exactly. |
-| `AUTH_COOKIE_NAME` | No | `vesta_token` (schema default) | Set explicitly for clarity even though it's the default. |
+| `JWT_SECRET` | Yes (min 32 chars) | `<generate: openssl rand -hex 32>` | Must **differ** from admin's. Startup fails when `APP_ENV` is `production`/`staging` and it starts with `local-dev`. |
+| `AUTH_COOKIE_NAME` | **Yes** (no default) | `vesta_token` | Startup fails if unset, so admin can't fall back to the web name. |
+| `APP_ENV` | No (default `local`); set it | `production` (or `staging`) | One of `local`, `staging`, `production`. Token issuer is `vesta:<APP_ENV>`. |
 | `APP_URL` | No (but should be set) | `https://cycle-circle.com` | Used for magic-link callback URLs. Schema default is `http://localhost:3000` — wrong in prod if left unset. |
 | `RESEND_API_KEY` | No, but required for real email | `<from Resend dashboard>` (`re_...`) | When unset, `packages/shared/src/server/adapters/mail.ts` falls back to Mailpit SMTP — do not leave unset in prod. |
 | `RESEND_FROM_EMAIL` | No | `Vesta <noreply@cycle-circle.com>` | Schema default is `noreply@vesta.app` — override to a domain verified in Resend. |
@@ -85,8 +87,9 @@ Admin imports the same shared Zod schema, so every field above is technically va
 |---|---|---|---|
 | `DATABASE_URL` | Yes | `postgresql://vesta:<pw>@postgres:5432/vesta` | Same Postgres instance as web. |
 | `DIRECT_URL` | Optional in schema, required in practice | Same value as `DATABASE_URL` | Used for `prisma migrate deploy`/`resolve` if ever run from the admin context. |
-| `JWT_SECRET` | Yes | `<generate: openssl rand -hex 32>` | **Byte-identical to web's.** |
-| `AUTH_COOKIE_NAME` | No | `vesta_admin_token` (schema default) | Set explicitly. Must differ from web's `vesta_token`. |
+| `JWT_SECRET` | Yes | `<generate: openssl rand -hex 32>` | Its own value: **must differ from web's**. |
+| `AUTH_COOKIE_NAME` | **Yes** (no default) | `vesta_admin_token` | Must differ from web's `vesta_token`. |
+| `APP_ENV` | No (default `local`); set it | `production` (or `staging`) | Same value as web's. |
 | `APP_URL` | No (but should be set) | `https://cycle-circle.com` | The **web** app's public URL — admin's System page calls web's cron routes and revalidates web's cache through this. Not admin's own URL. |
 | `CRON_SECRET` | Optional in schema, required for System-page cron triggers | `<generate: openssl rand -hex 16>` | **Byte-identical to web's.** |
 | `RESEND_API_KEY` | No | `<from Resend dashboard>` (`re_...`) | Optional — enables delivery-status refresh on the admin `/emails` page (`apps/admin/src/app/actions/email-delivery-actions.ts`). Reuse the same key as web's, or leave unset if that page isn't needed. |

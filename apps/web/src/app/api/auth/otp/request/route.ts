@@ -26,7 +26,7 @@ export async function POST(request: Request): Promise<Response> {
 
     // SRS FR-AUTH: OTP resend only after a 60s cooldown. Checked before the
     // abuse limiter so a blocked resend doesn't consume the per-minute budget.
-    const cooldown = await getOtpResendCooldownRemaining(normalizedPhone)
+    const cooldown = await getOtpResendCooldownRemaining(normalizedPhone, new Date())
     if (cooldown > 0) {
       throw new ApiError(
         429,
@@ -42,7 +42,7 @@ export async function POST(request: Request): Promise<Response> {
     await assertOtpIpLimit(request)
 
     const lang = parseLang((await cookies()).get(LANG_COOKIE)?.value)
-    const otp = await requestLoginOtp(normalizedPhone, lang)
+    const otp = await requestLoginOtp(normalizedPhone, lang, new Date())
 
     if (otp.kind === 'fallback') {
       // Existing subscriber we can't SMS (ADR 0002): the client offers email login or unsubscribe-and-retry.

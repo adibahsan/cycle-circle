@@ -1,13 +1,20 @@
 'use client'
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useState, useTransition } from 'react'
+import { useUrlParams } from '@/lib/use-url-params'
+import { useState } from 'react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
 import { Pagination } from '@/components/ui/Pagination'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
+import {
+  AUDIT_ACTION_VALUES,
+  AUDIT_TARGET_TYPES,
+  auditActionLabel,
+  type AuditAction,
+} from '@vesta/shared/server/services/audit-actions'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 type AuditLogRow = {
   id: string
@@ -32,40 +39,37 @@ interface AuditLogClientProps {
 
 const ACTION_OPTIONS = [
   { value: '', label: 'All Actions' },
-  { value: 'SUSPEND_USER', label: 'Suspend User' },
-  { value: 'REACTIVATE_USER', label: 'Reactivate User' },
-  { value: 'SOFT_DELETE_USER', label: 'Delete User' },
-  { value: 'GRANT_PRO', label: 'Grant Pro' },
-  { value: 'REVOKE_PRO', label: 'Revoke Pro' },
-  { value: 'CREATE_ARTICLE', label: 'Create Article' },
-  { value: 'UPDATE_ARTICLE', label: 'Update Article' },
-  { value: 'DELETE_ARTICLE', label: 'Delete Article' },
-  { value: 'SEND_SMS_BROADCAST', label: 'Send SMS Broadcast' },
+  ...AUDIT_ACTION_VALUES.map((value) => ({ value, label: auditActionLabel(value) })),
 ]
 
 const TARGET_TYPE_OPTIONS = [
   { value: '', label: 'All Types' },
-  { value: 'USER', label: 'User' },
-  { value: 'ARTICLE', label: 'Article' },
-  { value: 'SUBSCRIPTION', label: 'Subscription' },
-  { value: 'SMS_BROADCAST', label: 'SMS Broadcast' },
+  ...AUDIT_TARGET_TYPES.map((value) => ({ value, label: value.replace(/([a-z])([A-Z])/g, '$1 $2') })),
 ]
 
-const ACTION_VARIANT_MAP: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
-  SUSPEND_USER: 'danger',
-  SOFT_DELETE_USER: 'danger',
-  REVOKE_PRO: 'danger',
-  DELETE_ARTICLE: 'danger',
-  REACTIVATE_USER: 'success',
-  GRANT_PRO: 'success',
-  CREATE_ARTICLE: 'info',
-  UPDATE_ARTICLE: 'info',
+type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral'
+
+const ACTION_VARIANT_MAP: Partial<Record<AuditAction, BadgeVariant>> = {
+  USER_SUSPENDED: 'danger',
+  USER_DELETED: 'danger',
+  PRO_REVOKED: 'danger',
+  ARTICLE_DELETED: 'danger',
+  USER_REACTIVATED: 'success',
+  USER_RESTORED: 'success',
+  PRO_GRANTED: 'success',
+  ARTICLE_CREATED: 'info',
   SEND_SMS_BROADCAST: 'warning',
+  DISPATCH_SMS_BROADCAST: 'warning',
+  UPDATE_SMS_BROADCAST: 'info',
+  RESCHEDULE_SMS_BROADCAST: 'info',
+  SET_CRON_ENABLED: 'warning',
+  TRIGGER_CRON_DAILY_REMINDERS: 'info',
+  TRIGGER_CRON_CAAS_CHECK: 'info',
 }
 
 function ActionBadge({ action }: { action: string }) {
-  const variant = ACTION_VARIANT_MAP[action] ?? 'neutral'
-  const label = action.replace(/_/g, ' ')
+  const variant = ACTION_VARIANT_MAP[action as AuditAction] ?? 'neutral'
+  const label = auditActionLabel(action)
   return (
     <Badge variant={variant} size="sm">
       {label}
@@ -74,13 +78,13 @@ function ActionBadge({ action }: { action: string }) {
 }
 
 function formatDateTime(d: Date) {
-  return new Intl.DateTimeFormat(undefined, {
+  return formatDhaka(d, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(d))
+  })
 }
 
 function MetadataCell({ metadata }: { metadata: unknown }) {
@@ -164,10 +168,7 @@ const COLUMNS: Column<AuditLogRow>[] = [
 ]
 
 export function AuditLogClient({ data }: AuditLogClientProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const [, startTransition] = useTransition()
+  const { searchParams, updateParams } = useUrlParams()
 
   const currentAction = searchParams.get('action') ?? ''
   const currentTargetType = searchParams.get('targetType') ?? ''
@@ -175,23 +176,6 @@ export function AuditLogClient({ data }: AuditLogClientProps) {
   const currentPage = data.page
   const currentPageSize = data.pageSize
 
-  const updateParams = useCallback(
-    (updates: Record<string, string | number>) => {
-      const params = new URLSearchParams(searchParams.toString())
-      Object.entries(updates).forEach(([k, v]) => {
-        if (v === '' || v === undefined) {
-          params.delete(k)
-        } else {
-          params.set(k, String(v))
-        }
-      })
-      if (!('page' in updates)) params.set('page', '1')
-      startTransition(() => {
-        router.push(`${pathname}?${params.toString()}`)
-      })
-    },
-    [router, pathname, searchParams]
-  )
 
   function handleSearch(value: string) {
     updateParams({ search: value })

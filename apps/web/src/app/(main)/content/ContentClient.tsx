@@ -32,7 +32,7 @@ interface Article {
   excerptBn: string
   cyclePhases: string[]
   publishedAt: Date | string | null
-  category: { name: string } | null
+  category: { name: string; nameBn?: string | null } | null
   author: { fullName: string | null } | null
 }
 
@@ -67,6 +67,9 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
   const currentFilter = (activePhase as FilterTab) || 'all'
 
   // Locale fallback helpers — BN→EN only
+  const categoryLabel = (c: { name: string; nameBn?: string | null }) =>
+    language === 'bn' && c.nameBn ? c.nameBn : c.name
+
   const titleIsFallback = (a: Article) => language === 'bn' && !a.titleBn
   // Excerpt fallback: BN user, no BN excerpt available for the card.
   const excerptIsFallback = (a: Article) => language === 'bn' && !a.excerptBn
@@ -152,10 +155,10 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
 
         {/* From xl the article keeps a reading measure and the spare width holds what to read next. */}
         <div className="flex flex-col gap-5 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start 2xl:grid-cols-[minmax(0,1fr)_24rem]">
-          <article className="glass rounded-2xl p-6 sm:p-8">
+          <article aria-label={getTitle(selectedArticle)} className="glass rounded-2xl p-6 sm:p-8">
             {selectedArticle.category && (
               <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)] mb-3">
-                {selectedArticle.category.name}
+                {categoryLabel(selectedArticle.category)}
               </span>
             )}
 
@@ -329,7 +332,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                     <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
                       {article.category && (
                         <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)]">
-                          {article.category.name}
+                          {categoryLabel(article.category)}
                         </span>
                       )}
                       {/* "For you" badge when surfacing */}

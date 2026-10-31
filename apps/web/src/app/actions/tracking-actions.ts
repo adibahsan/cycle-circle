@@ -26,10 +26,11 @@ const createPeriodLogSchema = z.object({
  * Server-action errors are scrubbed in production (only a digest reaches the client), so an
  * expected overlap is returned as a value the client can read instead of thrown.
  */
-export type PeriodOverlapResult = { error: 'PERIOD_OVERLAP' }
+export type PeriodLogRejection = { error: 'PERIOD_OVERLAP' | 'PERIOD_IN_FUTURE' }
 
-function asOverlap(err: unknown): PeriodOverlapResult | null {
-  return err instanceof ApiError && err.code === 'PERIOD_OVERLAP' ? { error: 'PERIOD_OVERLAP' } : null
+function asRejection(err: unknown): PeriodLogRejection | null {
+  if (!(err instanceof ApiError)) return null
+  return err.code === 'PERIOD_OVERLAP' || err.code === 'PERIOD_IN_FUTURE' ? { error: err.code } : null
 }
 
 export async function createPeriodLog(input: z.infer<typeof createPeriodLogSchema>) {
@@ -43,9 +44,9 @@ export async function createPeriodLog(input: z.infer<typeof createPeriodLogSchem
       startDate: data.startDate,
       endDate: data.endDate,
       flowIntensity: data.flowIntensity,
-    })
+    }, new Date())
   } catch (err) {
-    const overlap = asOverlap(err)
+    const overlap = asRejection(err)
     if (overlap) return overlap
     throw err
   }
@@ -71,9 +72,9 @@ export async function updatePeriodLog(logId: string, input: z.infer<typeof updat
 
   let updated
   try {
-    updated = await svcUpdatePeriodLog(logId, user.id, data)
+    updated = await svcUpdatePeriodLog(logId, user.id, data, new Date())
   } catch (err) {
-    const overlap = asOverlap(err)
+    const overlap = asRejection(err)
     if (overlap) return overlap
     throw err
   }
@@ -132,7 +133,7 @@ export async function markAllGoodToday(profileId: string, date?: string) {
   const user = await getAuthUser(jwt.sub)
   const data = allGoodSchema.parse({ profileId, date })
 
-  await setAllGoodToday(data.profileId, user.id, data.date)
+  await setAllGoodToday(data.profileId, user.id, new Date(), data.date)
 
   revalidateTag(cacheTags.symptoms(data.profileId), { expire: 0 })
   revalidateTag(cacheTags.tracking(data.profileId), { expire: 0 })

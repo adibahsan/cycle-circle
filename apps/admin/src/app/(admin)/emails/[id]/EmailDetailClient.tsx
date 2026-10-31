@@ -8,6 +8,7 @@ import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { getEmailLogPreviewHtml } from '@/app/actions/email-preview-actions'
 import { refreshEmailDeliveryStatus } from '@/app/actions/email-delivery-actions'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 type EmailLogDetail = {
   id: string
@@ -60,7 +61,7 @@ function deliveryBadge(status: string) {
 }
 
 function formatDateTime(d: Date) {
-  return new Date(d).toLocaleString(undefined, {
+  return formatDhaka(d, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

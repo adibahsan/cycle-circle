@@ -1,6 +1,5 @@
 'use client';
 
-import { deviceDayString } from '@/lib/local-date';
 import { motion } from 'motion/react';
 import { useReducedMotion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +15,8 @@ interface ConsistencyEntry {
 }
 
 interface ConsistencyGridProps {
+  /** The Bangladesh day, from the Server Component. The grid ends on it. */
+  today: string;
   last30: ConsistencyEntry[];
   onBackfill: (date: string) => void;
   variant?: 'inline' | 'full';
@@ -24,28 +25,20 @@ interface ConsistencyGridProps {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function getTodayStr(): string {
-  return deviceDayString();
-}
-
-function isFuture(dateStr: string): boolean {
-  return dateStr > getTodayStr();
-}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function ConsistencyGrid({ last30, onBackfill, variant = 'inline', className }: ConsistencyGridProps) {
+export function ConsistencyGrid({ today: todayStr, last30, onBackfill, variant = 'inline', className }: ConsistencyGridProps) {
   const { t } = useTranslation();
   const language = useLanguage();
   const mounted = useHasMounted();
   const reduceRaw = useReducedMotion() ?? false;
   const prm = mounted && reduceRaw;
 
-  const todayStr = getTodayStr();
-
   // Inline: last 14 entries; full: all 30
   const entries = variant === 'inline' ? last30.slice(-14) : last30;
 
+  // eslint-disable-next-line no-restricted-syntax -- entry days are local-midnight Dates; formatting in the same local zone keeps the day
   const dateFormatter = new Intl.DateTimeFormat(
     language === 'bn' ? 'bn-BD' : undefined,
     { month: 'short', day: 'numeric' }
@@ -60,7 +53,7 @@ export function ConsistencyGrid({ last30, onBackfill, variant = 'inline', classN
 
   function renderDot(entry: ConsistencyEntry, index: number) {
     const isToday = entry.date === todayStr;
-    const isFutureDate = isFuture(entry.date);
+    const isFutureDate = entry.date > todayStr;
     const isBackfillable = !isToday && !isFutureDate && !entry.logged;
     const label = getCellLabel(entry);
 

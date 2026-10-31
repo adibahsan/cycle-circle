@@ -1,5 +1,6 @@
 import type { FlowIntensity } from '@prisma/client'
 import { prisma } from '../db'
+import { ApiError } from '../api-error'
 import { ensurePeriodLogFromProfile } from '../period-log-sync'
 import { defaultNotificationPrefsForGoal } from '../../utils/goal'
 
@@ -40,7 +41,9 @@ export async function createProfile(
 ) {
   const profile = await prisma.$transaction(async (tx) => {
     const count = await tx.profile.count({ where: { userId } })
-    if (count >= 6) throw new Error('Maximum of 6 profiles allowed')
+    if (count >= 6) {
+      throw new ApiError(409, 'You can have up to 6 profiles. Delete one to add another.', 'PROFILE_LIMIT_REACHED')
+    }
 
     const created = await tx.profile.create({
       data: {

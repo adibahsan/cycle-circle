@@ -9,7 +9,7 @@ export async function POST(request: Request): Promise<Response> {
       // Read the session before it is blacklisted so the line carries the user.
       const jwt = await verifyAuth()
       if (jwt) setRequestUser(jwt.sub)
-      await logoutAndBlacklist()
+      await logoutAndBlacklist(new Date())
       const cookieStore = await cookies()
       cookieStore.delete('vesta_active_profile')
       logger.customer('auth.logout', { ok: true, hadSession: Boolean(jwt) })

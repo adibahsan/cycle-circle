@@ -27,6 +27,7 @@ import { AccountControl } from '@/components/onboarding/AccountControl';
 import { useAppStore } from '@/lib/store';
 import { createProfile, setActiveProfileCookie } from '@/app/actions/profile-actions';
 import type { ProfileRelation } from '@vesta/shared/types';
+import { lastPeriodDateBounds } from '@/lib/day-ranges';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -393,7 +394,9 @@ function StepCycleHistory({
   onPeriodLength,
   onLastPeriodDate,
   onFlowIntensity,
+  today,
 }: {
+  today: string;
   cycleLength: number;
   periodLength: number;
   lastPeriodDate: string;
@@ -406,9 +409,8 @@ function StepCycleHistory({
 }) {
   const { t } = useTranslation();
 
-  // Max date is today; min date is 90 days ago
-  const today = new Date().toISOString().split('T')[0];
-  const minDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // Max date is the Bangladesh today; min date is 90 days before it
+  const { min: minDate, max: maxDate } = lastPeriodDateBounds(today);
 
   return (
     <div className="flex flex-col gap-6 mx-auto w-full max-w-2xl">
@@ -477,7 +479,7 @@ function StepCycleHistory({
             type="date"
             value={lastPeriodDate}
             min={minDate}
-            max={today}
+            max={maxDate}
             error={lastPeriodError}
             onChange={(e) => onLastPeriodDate(e.target.value)}
           />
@@ -667,6 +669,7 @@ function StepDone({
       value: `${state.periodLength} ${t('onboarding.days')}`,
     },
     ...(state.lastPeriodDate
+      // eslint-disable-next-line no-restricted-syntax -- parsed as local midnight and formatted in the same local zone, so the day cannot shift
       ? [{ label: t('onboarding.lastPeriodLabel'), value: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(state.lastPeriodDate + 'T00:00:00')) }]
       : []),
     {
@@ -777,9 +780,11 @@ function StepDone({
 
 interface OnboardingClientProps {
   user: { phone: string | null; email: string | null; fullName: string | null };
+  /** The Bangladesh day, from the Server Component. */
+  today: string;
 }
 
-export default function OnboardingClient({ user }: OnboardingClientProps) {
+export default function OnboardingClient({ user, today }: OnboardingClientProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const { setOnboardingComplete, setActiveProfile } = useAppStore();
@@ -982,6 +987,7 @@ export default function OnboardingClient({ user }: OnboardingClientProps) {
       case 4:
         return (
           <StepCycleHistory
+            today={today}
             cycleLength={state.cycleLength}
             periodLength={state.periodLength}
             lastPeriodDate={state.lastPeriodDate}

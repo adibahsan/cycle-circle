@@ -6,8 +6,8 @@ import type { FlowIntensity } from '@vesta/shared/types'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { FlowIcon } from '@/components/ui/PhaseIcon'
-import { deviceDayString } from '@/lib/local-date'
-import { createPeriodLog, updatePeriodLog } from '@/app/actions/tracking-actions'
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
+import { createPeriodLog, updatePeriodLog, deletePeriodLog } from '@/app/actions/tracking-actions'
 import '@vesta/shared/utils/i18n'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -79,15 +79,21 @@ function PeriodLogModalBody({
   const { profileId: logProfileId, existingLogId: logId } = frozen.current
 
   const isEdit = Boolean(logId)
-  const todayStr = deviceDayString()
+  // Read when the form opens (the body remounts per open session), not from the page's render.
+  const [todayStr] = useState(bangladeshToday)
   const [startDate, setStartDate] = useState(initialStart || (isEdit ? '' : todayStr))
   const [endDate, setEndDate] = useState(initialEnd || (isEdit ? '' : todayStr))
   const [flow, setFlow] = useState<FlowIntensity>(initialFlow)
-  const [error, setError] = useState<false | 'overlap' | 'generic'>(false)
+  const [error, setError] = useState<false | 'overlap' | 'future' | 'generic' | 'delete'>(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const handleSave = () => {
     if (!startDate || !endDate) return
+    if (startDate > todayStr || endDate > todayStr) {
+      setError('future')
+      return
+    }
     setError(false)
     startTransition(async () => {
       try {
@@ -106,8 +112,8 @@ function PeriodLogModalBody({
             flowIntensity: toActionFlow(flow),
           })
         }
-        if ('error' in result && result.error === 'PERIOD_OVERLAP') {
-          setError('overlap')
+        if ('error' in result) {
+          setError(result.error === 'PERIOD_IN_FUTURE' ? 'future' : 'overlap')
           return
         }
         if (typeof window !== 'undefined') {
@@ -118,6 +124,25 @@ function PeriodLogModalBody({
       } catch (err) {
         console.error('Failed to save period log:', err)
         setError('generic')
+      }
+    })
+  }
+
+  const handleDelete = () => {
+    if (!logId) return
+    setError(false)
+    startTransition(async () => {
+      try {
+        await deletePeriodLog(logId)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
+        }
+        onSaved()
+        onClose()
+      } catch (err) {
+        console.error('Failed to delete period log:', err)
+        setConfirmingDelete(false)
+        setError('delete')
       }
     })
   }
@@ -140,7 +165,13 @@ function PeriodLogModalBody({
       <div aria-live="polite">
         {error && (
           <p role="alert" className="mb-2 text-sm text-[var(--color-error)]">
-            {error === 'overlap' ? t('dashboard.periodOverlap') : t('common.error')}
+            {error === 'overlap'
+              ? t('dashboard.periodOverlap')
+              : error === 'future'
+                ? t('dashboard.periodFuture')
+                : error === 'delete'
+                  ? t('dashboard.deletePeriodFailed')
+                  : t('common.error')}
           </p>
         )}
       </div>
@@ -153,6 +184,44 @@ function PeriodLogModalBody({
       >
         {isPending ? t('common.loading') : isEdit ? t('dashboard.updateLog') : t('dashboard.savePeriod')}
       </Button>
+      {isEdit && (
+        <div className="mt-2" aria-live="polite">
+          {confirmingDelete ? (
+            <div role="alert" className="rounded-xl border p-3" style={{ borderColor: 'var(--color-border)' }}>
+              <p className="mb-2 text-sm text-[var(--color-text-primary)]">{t('dashboard.deletePeriodConfirm')}</p>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={handleDelete}
+                  disabled={isPending}
+                  className="!text-[var(--color-error)] focus-visible:ring-2 focus-visible:ring-[var(--color-error)]"
+                >
+                  {t('dashboard.deletePeriodConfirmButton')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  fullWidth
+                  onClick={() => setConfirmingDelete(false)}
+                  disabled={isPending}
+                >
+                  {t('dashboard.deletePeriodCancel')}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              fullWidth
+              onClick={() => setConfirmingDelete(true)}
+              disabled={isPending}
+              className="!text-[var(--color-error)]"
+            >
+              {t('dashboard.deletePeriodLog')}
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   )
 

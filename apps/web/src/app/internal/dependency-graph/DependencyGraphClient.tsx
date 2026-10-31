@@ -359,11 +359,11 @@ const FLOWS: FlowNode[] = [
     steps: ['User clicks Upgrade to Pro', 'BDAppsModal shows confirm state', 'billing.subscribe(99) → POST /api/billing/subscribe', 'Generate externalTrxId, call caasDirectDebit', 'Upsert Subscription (status=PRO)', 'Create CaasTransaction record', 'Update User.subscriptionStatus = PRO'],
   },
   {
-    id: 'caas-check', name: 'CAAS Balance Check', desc: 'Cron checks BDApps wallet for all PRO subscribers. 3 consecutive failures → demote to LAPSED.',
+    id: 'caas-check', name: 'Daily Subscription Check', desc: 'Cron asks BDApps for each Pro subscriber\'s subscriber status. UNREGISTERED → downgrade to FREE; REGISTERED revoked users → restored.',
     group: 5, type: 'cron', status: 'complete', deps: ['jwt-middleware', 'bdapps-client', 'prisma-client'],
     api: ['/api/cron/caas-check'], store: [],
     files: ['src/app/api/cron/caas-check/route.ts'],
-    steps: ['withCronAuth validates CRON_SECRET', 'Query all PRO subscriptions with user.phone', 'For each: caasGetBalance(phone)', 'Success: reset consecutiveFailures', 'Failure: increment consecutiveFailures', 'If >=3 failures: status=LAPSED on Subscription + User'],
+    steps: ['withCronAuth validates CRON_SECRET', 'Query all PRO subscriptions with user.phone', 'For each: getSubscriptionStatus(subscriberId)', 'UNREGISTERED: downgrade Pro user to FREE', 'REGISTERED + revoked: restore Pro', 'Errors and unmapped ids are counted and skipped'],
   },
   {
     id: 'daily-reminders', name: 'Daily Reminders', desc: 'POST /api/cron/daily-reminders (08:00 UTC). Period alerts (0-2 days ahead), fertile alerts (today), logging reminders (3+ days stale). Per-profile try/catch.',

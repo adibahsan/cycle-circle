@@ -12,7 +12,7 @@ describe('getDashboardStats freshness', () => {
 
   it('stamps generatedAt with the time the stats were computed', async () => {
     const before = Date.now()
-    const stats = await getDashboardStats()
+    const stats = await getDashboardStats(new Date())
     const after = Date.now()
     const t = new Date(stats.generatedAt).getTime()
     expect(t).toBeGreaterThanOrEqual(before)
@@ -20,32 +20,17 @@ describe('getDashboardStats freshness', () => {
   })
 
   it('reflects a new user and period log immediately', async () => {
-    await getDashboardStats() // a cached implementation would pin this result
+    await getDashboardStats(new Date()) // a cached implementation would pin this result
     const { profile } = await createTestUser('9001')
     await insertPeriodLogs(profile.id, ['2026-01-01'])
 
-    // Other test files write to the same DB in parallel, so global counts can move (up and
-    // down) while we measure. Only trust a reading taken in a quiet window: counts equal
-    // before and after the call. In a quiet window the stats must equal the live counts
-    // exactly, which includes our fixture; a cached result would miss it.
-    const counts = () =>
-      Promise.all([
-        testPrisma.user.count({ where: { deletedAt: null } }),
-        testPrisma.profile.count(),
-      ])
-    let stable: { stats: Awaited<ReturnType<typeof getDashboardStats>>; users: number; profiles: number } | null = null
-    for (let attempt = 0; attempt < 50 && !stable; attempt++) {
-      const [usersBefore, profilesBefore] = await counts()
-      const stats = await getDashboardStats()
-      const [usersAfter, profilesAfter] = await counts()
-      if (usersBefore === usersAfter && profilesBefore === profilesAfter) {
-        stable = { stats, users: usersAfter, profiles: profilesAfter }
-      } else {
-        await new Promise((r) => setTimeout(r, 100))
-      }
-    }
-    expect(stable, 'DB never quiet long enough to compare counts').not.toBeNull()
-    const { stats, users, profiles } = stable!
+    // This file runs alone, after the parallel group (vitest.config.ts), so the global
+    // counts can't move under us. A cached implementation would miss our fixture.
+    const [users, profiles] = await Promise.all([
+      testPrisma.user.count({ where: { deletedAt: null } }),
+      testPrisma.profile.count(),
+    ])
+    const stats = await getDashboardStats(new Date())
     expect(stats.totalUsers).toBe(users)
     expect(stats.totalProfiles).toBe(profiles)
     expect(stats.dailyLogs).toBeGreaterThanOrEqual(1)

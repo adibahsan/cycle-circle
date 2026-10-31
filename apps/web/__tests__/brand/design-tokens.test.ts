@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -204,10 +204,12 @@ describe('web typography', () => {
     expect(css).toMatch(/:lang\(bn\)[^{]*h1[^{]*\.text-display[^{]*{\s*letter-spacing:\s*0;?\s*}/)
   })
 
-  it('loads only the Noto Sans Bengali weights the portal uses (no 800/900)', () => {
+  it('loads Noto Sans Bengali as one bundled variable file under 150 KB', () => {
     const layout = read('apps/web/src/app/layout.tsx')
-    const weights = /Noto_Sans_Bengali\(\{[^}]*weight:\s*\[([^\]]*)\]/.exec(layout)![1]
-    expect(weights).not.toMatch(/'(800|900)'/)
+    const src = /const notoBengali = localFont\(\{[^}]*src:\s*'([^']+)'/.exec(layout)?.[1]
+    expect(src).toBe('./fonts/noto-sans-bengali-bengali-wght.woff2')
+    const bytes = statSync(path.resolve(__dirname, '../../src/app', src!)).size
+    expect(bytes).toBeLessThan(150 * 1024)
   })
 })
 

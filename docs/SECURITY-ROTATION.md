@@ -17,7 +17,7 @@ Use this after production secrets were removed from git history. **Purging histo
 openssl rand -hex 32
 ```
 
-Update the **same** value in Vercel web + admin (shared auth cookie).
+Web and admin each have their own `JWT_SECRET` (ADR 0007): rotate the one for the app you are rotating, and never copy the value across apps.
 
 ## 3. CRON_SECRET
 
@@ -37,11 +37,13 @@ Update in Vercel web project (used by `/api/cron/*` Bearer auth).
 ## 5. Resend webhook signing secret
 
 1. Resend → **Webhooks** → rotate signing secret for your endpoint
-2. Update Vercel `RESEND_WEBHOOK_SECRET` and local `apps/web/env.prod`
+2. On the VPS, edit `RESEND_WEBHOOK_SECRET` in `/opt/vesta/.env.web.production`
+3. From `/opt/vesta`: `docker compose -f ops/deploy/compose.prod.yml up -d web`
+4. Verify with the "Verify" step in [ops/03-deployment.md](./ops/03-deployment.md) §7 (human sends a test event, agent checks the nginx log for a 200)
 
 ## 6. Post-rotation
 
-- [ ] Redeploy web and admin on Vercel
+- [ ] Redeploy web and admin on the VPS (see [ops/03-deployment.md](./ops/03-deployment.md) §5)
 - [ ] Verify login, cron jobs, email send, and Resend webhooks
 - [ ] Re-clone the repo on any machine that had a pre-purge copy
 - [ ] If the repo was public, [request GitHub sensitive data removal](https://support.github.com/)

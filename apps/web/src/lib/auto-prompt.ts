@@ -40,7 +40,7 @@ export const LOCAL_UTC_OFFSET_MS = 6 * HOUR // Bangladesh, UTC+6
 export const PROFILE_MIN_GAP_MS = 3 * 24 * HOUR
 export const PROFILE_MIN_ACCOUNT_AGE_MS = 24 * HOUR
 
-/** Bangladesh calendar day (fixed UTC+6, independent of the device clock; see deviceDayString for the device day) as YYYY-MM-DD. */
+/** Bangladesh calendar day (fixed UTC+6, independent of the device clock) as YYYY-MM-DD. */
 export function bdDayKey(ms: number): string {
   return new Date(ms + LOCAL_UTC_OFFSET_MS).toISOString().slice(0, 10)
 }

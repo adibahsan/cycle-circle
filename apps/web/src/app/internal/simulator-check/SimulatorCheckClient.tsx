@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date';
 import {
   Activity,
   BellRing,
@@ -344,7 +345,7 @@ export function SimulatorCheckClient() {
                     <span className="rounded-md bg-[#d7ff80] px-2 py-1 text-xs font-black text-[#162013]">
                       {event.type}
                     </span>
-                    <span className="font-mono text-xs text-[#b9c8be]">{new Date(event.receivedAt).toLocaleString()}</span>
+                    <span className="font-mono text-xs text-[#b9c8be]">{formatDhaka(event.receivedAt, { dateStyle: 'medium', timeStyle: 'medium' })}</span>
                   </div>
                   <pre className="max-h-72 overflow-auto rounded-md bg-black/30 p-3 text-xs leading-5 text-[#dfeee3]">
                     {pretty(event.payload)}

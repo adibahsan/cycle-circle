@@ -31,6 +31,7 @@ import {
   type InsightKey,
 } from '@/lib/insights-data'
 import type { ChartType } from './InsightsCharts'
+import { insightsCutoffDay } from '@/lib/day-ranges'
 
 // Recharts loads only when a chart renders (never on the empty state).
 function ChartPlaceholder({ className }: { className: string }) {
@@ -61,6 +62,8 @@ export interface InsightsClientProps {
   periodRegularity: PeriodRegularity
   fertileWindowHistory: FertileWindowPoint[]
   goal: string | null
+  /** The Bangladesh day, from the Server Component. The range filter ends on it. */
+  today: string
 }
 
 type DateRange = '3m' | '6m' | '1y' | 'all'
@@ -81,25 +84,16 @@ const TOGGLE_OFF =
 
 // ─── Date range helpers ───────────────────────────────────────────────────────
 
-function cutoffDate(range: DateRange): Date | null {
-  if (range === 'all') return null
-  const now = new Date()
-  if (range === '3m') return new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
-  if (range === '6m') return new Date(now.getFullYear(), now.getMonth() - 6, now.getDate())
-  // 1y
-  return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
+function filterByDate<T extends { date: string }>(arr: T[], range: DateRange, today: string): T[] {
+  const cutoff = insightsCutoffDay(range, today)
+  if (!cutoff) return arr
+  return arr.filter((p) => p.date.slice(0, 10) >= cutoff)
 }
 
-function filterByDate<T extends { date: string }>(arr: T[], range: DateRange): T[] {
-  const cutoff = cutoffDate(range)
+function filterFertileByDate(arr: FertileWindowPoint[], range: DateRange, today: string): FertileWindowPoint[] {
+  const cutoff = insightsCutoffDay(range, today)
   if (!cutoff) return arr
-  return arr.filter((p) => new Date(p.date) >= cutoff)
-}
-
-function filterFertileByDate(arr: FertileWindowPoint[], range: DateRange): FertileWindowPoint[] {
-  const cutoff = cutoffDate(range)
-  if (!cutoff) return arr
-  return arr.filter((p) => new Date(p.cycleStart) >= cutoff)
+  return arr.filter((p) => p.cycleStart.slice(0, 10) >= cutoff)
 }
 
 function filterSymptomByDate(
@@ -334,6 +328,7 @@ export function InsightsClient({
   symptomFrequency,
   periodRegularity,
   fertileWindowHistory,
+  today,
 }: InsightsClientProps) {
   const { t } = useTranslation()
   const language = useLanguage()
@@ -350,8 +345,8 @@ export function InsightsClient({
 
   // ── Client-side filtered series ──────────────────────────────────────────
   const filteredCycleLengthTrend = useMemo(
-    () => filterByDate(cycleLengthTrend, dateRange),
-    [cycleLengthTrend, dateRange]
+    () => filterByDate(cycleLengthTrend, dateRange, today),
+    [cycleLengthTrend, dateRange, today]
   )
 
   const filteredSymptomFrequency = useMemo(
@@ -360,8 +355,8 @@ export function InsightsClient({
   )
 
   const filteredFertileWindowHistory = useMemo(
-    () => filterFertileByDate(fertileWindowHistory, dateRange),
-    [fertileWindowHistory, dateRange]
+    () => filterFertileByDate(fertileWindowHistory, dateRange, today),
+    [fertileWindowHistory, dateRange, today]
   )
 
   const noData = t('insights.noData')
@@ -423,8 +418,9 @@ export function InsightsClient({
           transition={{ delay: 0.15, duration: 0.4 }}
         >
           <Card tone="panel" padding="sm" className="p-4">
-            <div className="flex flex-col gap-2 xl:h-full">
+            <section aria-labelledby="cycle-length-title" className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
+                id="cycle-length-title"
                 variant="inline"
                 title={t('insights.cycleLengthTrend')}
                 subtitle={t(RANGE_LABEL_KEYS[dateRange])}
@@ -441,6 +437,7 @@ export function InsightsClient({
                 </ChartSummary>
               )}
               <CycleLengthTrendChart
+                ariaLabel={`${t('insights.cycleLengthTrend')}, ${t(`insights.${chartType}Chart`)}`}
                 data={filteredCycleLengthTrend}
                 chartType={chartType}
                 cycleLengthLabel={t('insights.cycleLengthLabel')}
@@ -454,7 +451,7 @@ export function InsightsClient({
                 headers={[t('insights.dateColumn'), t('insights.cycleLengthLabel')]}
                 rows={filteredCycleLengthTrend.map((d) => [monthTick(d.date), num(d.cycleLength)])}
               />
-            </div>
+            </section>
           </Card>
         </motion.div>
         )}
@@ -467,8 +464,9 @@ export function InsightsClient({
           transition={{ delay: 0.22, duration: 0.4 }}
         >
           <Card tone="panel" padding="sm" className="p-4">
-            <div className="flex flex-col gap-2 xl:h-full">
+            <section aria-labelledby="symptom-frequency-title" className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
+                id="symptom-frequency-title"
                 variant="inline"
                 title={t('insights.symptomFrequency')}
                 subtitle={t('insights.allTime')}
@@ -484,6 +482,7 @@ export function InsightsClient({
                 </ChartSummary>
               )}
               <SymptomFrequencyChart
+                ariaLabel={t('insights.symptomFrequency')}
                 data={filteredSymptomFrequency}
                 countLabel={t('insights.count')}
                 categoryLabel={categoryLabel}
@@ -495,7 +494,7 @@ export function InsightsClient({
                 headers={[t('insights.categoryColumn'), t('insights.count')]}
                 rows={filteredSymptomFrequency.map((d) => [categoryLabel(d.category), num(d.count)])}
               />
-            </div>
+            </section>
           </Card>
         </motion.div>
         )}
@@ -508,14 +507,15 @@ export function InsightsClient({
           transition={{ delay: 0.29, duration: 0.4 }}
         >
           <Card tone="panel" padding="sm" className="p-4">
-            <div className="flex flex-col gap-2 xl:h-full">
+            <section aria-labelledby="period-regularity-title" className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
+                id="period-regularity-title"
                 variant="inline"
                 title={t('insights.periodRegularity')}
                 subtitle={t('insights.sampleSize', { n: num(periodRegularity.sampleSize) })}
               />
               <PeriodRegularityCard data={periodRegularity} lang={language} />
-            </div>
+            </section>
           </Card>
         </motion.div>
         )}
@@ -528,14 +528,15 @@ export function InsightsClient({
           transition={{ delay: 0.36, duration: 0.4 }}
         >
           <Card tone="panel" padding="sm" className="p-4">
-            <div className="flex flex-col gap-2 xl:h-full">
+            <section aria-labelledby="fertile-window-title" className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
+                id="fertile-window-title"
                 variant="inline"
                 title={t('insights.fertileWindowHistory')}
                 subtitle={t(RANGE_LABEL_KEYS[dateRange])}
               />
               <FertileWindowHistoryList data={filteredFertileWindowHistory} lang={language} />
-            </div>
+            </section>
           </Card>
         </motion.div>
         )}

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const envSchema = z.object({
+const envObject = z.object({
   // Database
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   // Direct DB connection for migrations (bypasses PgBouncer)
@@ -19,7 +19,10 @@ const envSchema = z.object({
   // Auth
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   // Auth cookie name — override per-app so web (vesta_token) and admin (vesta_admin_token) sessions don't collide on localhost
-  AUTH_COOKIE_NAME: z.string().default('vesta_token'),
+  // Required (no default) so admin can never silently fall back to the web cookie name.
+  AUTH_COOKIE_NAME: z.string().min(1, 'AUTH_COOKIE_NAME is required (web: vesta_token, admin: vesta_admin_token)'),
+  // Which environment this deploy is. Becomes the JWT issuer (`vesta:<APP_ENV>`), so tokens never cross environments.
+  APP_ENV: z.enum(['local', 'staging', 'production']).default('local'),
 
   // App URL (used for magic-link callbacks)
   APP_URL: z.string().default('http://localhost:3000'),
@@ -44,6 +47,21 @@ const envSchema = z.object({
     .transform((v) => v === 'true'),
 })
 
+const envSchema = envObject.superRefine((value, ctx) => {
+  if (value.APP_ENV !== 'local' && value.JWT_SECRET.startsWith('local-dev')) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['JWT_SECRET'],
+      message: `JWT_SECRET must not be a local-dev value when APP_ENV is ${value.APP_ENV}`,
+    })
+  }
+})
+
 export type Env = z.infer<typeof envSchema>
 
-export const env: Env = envSchema.parse(process.env)
+/** Parses and validates an env source; exported so tests can exercise the rules without touching process.env. */
+export function parseEnv(source: Record<string, string | undefined>): Env {
+  return envSchema.parse(source)
+}
+
+export const env: Env = parseEnv(process.env)

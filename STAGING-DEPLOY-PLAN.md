@@ -148,8 +148,8 @@ DATABASE_URL="<staging DIRECT_URL>" DIRECT_URL="<staging DIRECT_URL>" \
 
 Source of truth = the gitignored `apps/web/env.prod` / `apps/admin/env.prod`. Set in
 Settings → Environment Variables (Production). Generate fresh secrets where noted
-(`openssl rand -hex 32` for `JWT_SECRET`, `-hex 16` for `CRON_SECRET`). `JWT_SECRET`
-and `CRON_SECRET` must be **byte-identical across web and admin**. Secret values are
+(`openssl rand -hex 32` for `JWT_SECRET`, `-hex 16` for `CRON_SECRET`). `CRON_SECRET`
+must be **byte-identical across web and admin**; `JWT_SECRET` must **differ** (ADR 0007), and set `APP_ENV=staging` in both. Secret values are
 never reproduced here.
 
 **Web (`cycle-circle`):** `DATABASE_URL` (pooler :6543 `?pgbouncer=true`),
@@ -166,7 +166,7 @@ and the login screen prefills the dev phone. No BDApps creds needed. ⚠️ OFF 
 real launch (otherwise anyone can log in with `420420`).
 
 **Admin (`vesta-admin`):** `DATABASE_URL` (pooler), `DIRECT_URL` (:5432),
-`JWT_SECRET` (**identical to web**), `AUTH_COOKIE_NAME=vesta_admin_token` (isolates
+`JWT_SECRET` (**different from web**), `AUTH_COOKIE_NAME=vesta_admin_token` (isolates
 admin sessions from web on the same host), `APP_URL` (the web URL — the System page
 triggers web crons + cache revalidation), `CRON_SECRET` (**identical to web**),
 `NODE_ENV=production`, `RESEND_API_KEY` (optional — admin `/emails` delivery status).

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { addDaysToDay, bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -109,7 +110,7 @@ const API_SECTIONS = [
     icon: '💳',
     endpoints: [
       { method: 'POST', path: '/api/billing/subscribe', desc: 'Initiate BDApps CAAS subscription charge' },
-      { method: 'POST', path: '/api/cron/caas-check', desc: 'Daily cron — check and renew subscriptions' },
+      { method: 'POST', path: '/api/cron/caas-check', desc: 'Daily subscription check — BDApps subscriber status; downgrades unsubscribed Pro users' },
     ],
   },
   {
@@ -345,8 +346,8 @@ export default function BackendChecklistClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             profileId: 'demo-profile-id',
-            startDate: new Date().toISOString().split('T')[0],
-            endDate: new Date(Date.now() + 4 * 86400000).toISOString().split('T')[0],
+            startDate: bangladeshToday(),
+            endDate: addDaysToDay(bangladeshToday(), 4),
             flowIntensity: 'medium',
           }),
         }),

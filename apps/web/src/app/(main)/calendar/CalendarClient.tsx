@@ -31,7 +31,7 @@ import { DAY_STYLES, TODAY_GLOW_SWATCH, dayStyleKind, type DayStyleKind } from '
 import { MonthGrid, type MonthDayAction, type MonthDayState } from '@/components/calendar/MonthGrid'
 import { cyclePhaseOn, periodStarts } from '@/lib/calendar-phase'
 import { SectionHeader } from '@/components/ui/SectionHeader'
-import { toDeviceDay } from '@/lib/local-date'
+import { storedDay } from '@/lib/day-ranges'
 import { canLogPastPeriod } from './period-backfill'
 import { appLocale } from '@/lib/language'
 import { PageContainer } from '@/components/ui/PageContainer'
@@ -97,6 +97,8 @@ interface Props {
   profiles: PrismaProfile[]
   activeProfileId: string
   month: string
+  /** The Bangladesh day (YYYY-MM-DD), computed once by the Server Component. */
+  today: string
   days: CalendarDay[] | null
   /** prev + visible + next month days, so a window straddling a month edge isn't truncated */
   windowDays?: CalendarDay[]
@@ -141,6 +143,8 @@ function Legend() {
 // ─── Day Detail Sheet ──────────────────────────────────────────────────────────
 
 interface DayDetailProps {
+  /** The Bangladesh day as a local-midnight Date. */
+  today: Date
   date: Date
   meta: DayMeta
   symptoms: SymptomLog[]
@@ -149,11 +153,10 @@ interface DayDetailProps {
   onAddLog?: () => void
 }
 
-function DayDetail({ date, meta, symptoms, onClose, onAddLog }: DayDetailProps) {
+function DayDetail({ date, today, meta, symptoms, onClose, onAddLog }: DayDetailProps) {
   const { t } = useTranslation()
   const language = useLanguage()
   const dateLocale = language === 'bn' ? bn : undefined
-  const today = new Date()
   const isFuture = date > today
   const ref = useRef<HTMLDivElement>(null)
   const reduce = useReducedMotion()
@@ -302,9 +305,11 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
   const totalPages = Math.ceil(periodLogs.length / PAGE_SIZE)
   const slice = periodLogs.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
+  // Stored dates are UTC midnight; format them in UTC so a phone west of UTC shows the same day.
   const fmt = new Intl.DateTimeFormat(appLocale(language), {
     month: 'short',
     day: 'numeric',
+    timeZone: 'UTC',
   })
 
   function toDate(val: Date | string): Date {
@@ -409,17 +414,16 @@ function RecentPeriods({ periodLogs, language, onEditLog }: RecentPeriodsProps) 
 // ─── Calendar Client ───────────────────────────────────────────────────────────
 
 /** Latest logged period start that is not in the future (YYYY-MM-DD), or null. */
-function lastPeriodStartIso(logs: PeriodLog[]): string | null {
-  const today = format(new Date(), 'yyyy-MM-dd')
+function lastPeriodStartIso(logs: PeriodLog[], today: string): string | null {
   let best: string | null = null
   for (const l of logs) {
-    const s = format(new Date(l.startDate), 'yyyy-MM-dd')
+    const s = storedDay(l.startDate)
     if (s <= today && (!best || s > best)) best = s
   }
   return best
 }
 
-export function CalendarClient({ profiles, activeProfileId, month, days, windowDays, symptomLogs, periodLogs }: Props) {
+export function CalendarClient({ profiles, activeProfileId, month, today: todayDay, days, windowDays, symptomLogs, periodLogs }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const language = useLanguage()
@@ -431,7 +435,8 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
 
   // Stable across renders so dayMetaMap isn't rebuilt (and all DayCells re-rendered)
   // on every unrelated state change, e.g. opening/closing the edit modal.
-  const today = useMemo(() => new Date(), [])
+  // The Bangladesh day from the Server Component, as a local-midnight Date for date-fns.
+  const today = useMemo(() => parseISO(todayDay), [todayDay])
   const currentMonth = useMemo(() => {
     const [year, monthNum] = month.split('-').map(Number)
     return new Date(year, monthNum - 1, 1)
@@ -452,7 +457,7 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
   const todayStr = format(today, 'yyyy-MM-dd')
   const thirtyDaysAgoStr = format(subDays(today, 30), 'yyyy-MM-dd')
   const loggedRanges = useMemo(
-    () => periodLogs.map((l) => ({ startDate: toDeviceDay(l.startDate), endDate: toDeviceDay(l.endDate) })),
+    () => periodLogs.map((l) => ({ startDate: storedDay(l.startDate), endDate: storedDay(l.endDate) })),
     [periodLogs],
   )
 
@@ -474,7 +479,7 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
 
   // Cycle starts: logged period starts plus the first day of each period run (logged or predicted).
   const cycleStarts = useMemo(
-    () => periodStarts(periodLogs.map((l) => toDeviceDay(l.startDate)), windowDays ?? days ?? []),
+    () => periodStarts(periodLogs.map((l) => storedDay(l.startDate)), windowDays ?? days ?? []),
     [periodLogs, windowDays, days],
   )
 
@@ -500,7 +505,7 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
   const symptomsByDate = useMemo(() => {
     const map = new Map<string, SymptomLog[]>()
     for (const log of symptomLogs) {
-      const dateStr = format(new Date(log.date), 'yyyy-MM-dd')
+      const dateStr = storedDay(log.date)
       const existing = map.get(dateStr) ?? []
       existing.push(log)
       map.set(dateStr, existing)
@@ -563,10 +568,10 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
   // Extract prediction summary from calendar data for the monthly summary card.
   const firstPredictedPeriod = days?.find((d) => d.predicted && d.period)
   const nextPeriodDaysLate = firstPredictedPeriod
-    ? differenceInCalendarDays(new Date(), parseISO(firstPredictedPeriod.date))
+    ? differenceInCalendarDays(today, parseISO(firstPredictedPeriod.date))
     : 0
   const ovulationDay = days?.find((d) => d.ovulation)
-  const fertileWindow = selectFertileWindow(windowDays ?? days ?? [], format(new Date(), 'yyyy-MM-dd'), lastPeriodStartIso(periodLogs))
+  const fertileWindow = selectFertileWindow(windowDays ?? days ?? [], todayStr, lastPeriodStartIso(periodLogs, todayStr))
 
   return (
     <PageContainer width="canvas" className="relative overflow-hidden">
@@ -610,6 +615,7 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
               <DayDetail
                 key={format(selectedDate, 'yyyy-MM-dd')}
                 date={selectedDate}
+                today={today}
                 meta={selectedMeta}
                 symptoms={selectedSymptoms}
                 onClose={() => setSelectedDate(null)}
@@ -700,8 +706,8 @@ export function CalendarClient({ profiles, activeProfileId, month, days, windowD
         open={editingLog !== null}
         profileId={editingLog?.profileId ?? activeProfileId}
         existingLogId={editingLog?.id}
-        initialStart={editingLog ? toDeviceDay(editingLog.startDate) : undefined}
-        initialEnd={editingLog ? toDeviceDay(editingLog.endDate) : undefined}
+        initialStart={editingLog ? storedDay(editingLog.startDate) : undefined}
+        initialEnd={editingLog ? storedDay(editingLog.endDate) : undefined}
         initialFlow={editingLog ? (editingLog.flowIntensity.toLowerCase() as FlowIntensity) : undefined}
         onClose={() => setEditingLog(null)}
         onSaved={() => {

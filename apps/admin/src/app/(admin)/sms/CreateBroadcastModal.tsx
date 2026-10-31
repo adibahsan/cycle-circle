@@ -8,6 +8,7 @@ import { DateTimePicker } from '@/components/ui/DateTimePicker'
 import { createSmsBroadcast, createSmsBroadcastsBulk, createSmsBroadcastsFromCsv, previewSmsCsv } from '@/app/actions/sms-actions'
 import { composeSms, countSmsParts, SMS_CSV_TEMPLATE, SMS_PART_WARN_THRESHOLD, type SmsSendLanguage } from '@vesta/shared/utils/sms'
 import { LanguagePicker, PartCounter, statusBadge } from './sms-shared'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 // ─── Create Broadcast Modal ─────────────────────────────────────────────────
 
@@ -447,7 +448,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
                           const { parts } = countSmsParts(text)
                           return (
                             <tr key={i} className="border-t border-[var(--color-border)] align-top">
-                              <td className="px-3 py-2 whitespace-nowrap tabular-nums">{new Date(r.sendAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                              <td className="px-3 py-2 whitespace-nowrap tabular-nums">{formatDhaka(r.sendAt, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                               <td className="px-3 py-2" lang={language === 'EN' ? 'en' : 'bn'}>
                                 {bad ? <span className="text-[var(--color-danger)]">Missing Bengali text</span> : text}
                               </td>

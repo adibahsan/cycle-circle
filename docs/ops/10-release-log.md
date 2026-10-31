@@ -4,6 +4,38 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
+## 2026-10-30 — Bangladesh day everywhere, E2E suite (PRs #158, #177)
+
+**Shipped** (spec #167, tickets #168–#176; fixes #115 #146 #147 #148 #151 #155 #160 #161):
+
+- One "today" everywhere, the Bangladesh day (ADR 0008 amended, ADR 0009 new). Between 00:00 and 06:00 Bangladesh the dashboard, late-period alert, reminders, Check-in and symptoms page no longer use yesterday, and the dashboard and calendar hydrate.
+- Admin per-day series group by the Bangladesh day; `days=N` returns exactly N buckets (was N+1 with an empty first one).
+- Lint bans clock reads in shared server services and date-fns local-day functions; CI runs `test:tz` (Asia/Dhaka, America/New_York).
+- The E2E suite (#158) ships with it; it changes no runtime behaviour beyond its listed fixes.
+
+**Migrations:** none.
+
+**Post-deploy data fix** (forward-only fix, past rows not backfilled; spec Out of Scope): one "All good" Check-in sentinel was saved at 2026-10-18 04:48 Bangladesh on the UTC day 2026-10-17 (#155). Moved to 2026-10-18 by id, in a transaction, after checking nothing else of that profile is on that day. The old bug also deleted real symptom logs of the previous day when "All good" was tapped in that window; that can't be recovered from the DB.
+
+**Deploy:** merge #177, then `git push origin origin/main:production`. The workflow's deploy job failed (a transient Google Fonts fetch in the web build), then its rerun hit a GitHub `startup_failure` during a GitHub incident, so the same command was run over SSH: `cd /opt/vesta && bash ops/deploy/scripts/deploy.sh 0faeed3b18205c6531d71300ec5f6703b2022c5f`.
+
+---
+
+## 2026-10-25 — Auth tokens scoped per app and environment (PR #110)
+
+**Effect:** every existing session (web and admin) is invalidated once on deploy, because old tokens carry no audience or issuer. Users log in again. See [ADR 0007](../adr/0007-auth-tokens-scoped-per-app-and-environment.md).
+
+**Pre-deploy steps on the VPS** (done before the 2026-10-25 deploy; checked 2026-10-30: `APP_ENV` and `AUTH_COOKIE_NAME` set in both env files, the two `JWT_SECRET`s differ)
+
+1. In both `/opt/vesta/.env.web.production` and `/opt/vesta/.env.admin.production` add `APP_ENV=production` (staging box: `APP_ENV=staging`).
+2. Generate a new, distinct admin secret and put it in `.env.admin.production` as `JWT_SECRET`: `openssl rand -hex 32`. Web keeps its current `JWT_SECRET` (it must not start with `local-dev`). Do not reuse web's value.
+3. Confirm `AUTH_COOKIE_NAME` is set in both files (`vesta_token` web, `vesta_admin_token` admin); the apps no longer start without it.
+4. Check the two secrets differ: see the `diff` check in [04-env-reference.md](./04-env-reference.md).
+
+**Post-deploy:** log in to web and to admin; expect to be asked once. A start-up error naming `JWT_SECRET`, `AUTH_COOKIE_NAME` or `APP_ENV` means step 1-3 was missed.
+
+---
+
 ## 2026-10-19 — Admin portal to SRS v1.4 (PR #105, tag 2.2.0)
 
 **Shipped** (spec #84, tickets #85–#104):

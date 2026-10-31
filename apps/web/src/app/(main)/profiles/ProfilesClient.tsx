@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { useHeld } from '@/lib/use-held';
 import { cn } from '@/lib/cn';
-import { deviceDayString } from '@/lib/local-date';
+import { lastPeriodDateBounds } from '@/lib/day-ranges';
 import '@vesta/shared/utils/i18n';
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -242,6 +242,8 @@ function ProfileCard({ profile, isActive, isSwitching, onSwitch, onDelete, onEdi
 // ─── Add Profile Form ─────────────────────────────────────────────────────────
 
 interface AddProfileFormProps {
+  /** The Bangladesh day, from the Server Component. */
+  today: string;
   onClose: () => void;
   serverError?: string;
   disabled?: boolean;
@@ -256,7 +258,7 @@ interface AddProfileFormProps {
   }) => void;
 }
 
-function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfileFormProps) {
+function AddProfileForm({ today, onClose, onSubmit, serverError, disabled }: AddProfileFormProps) {
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [relation, setRelation] = useState<ProfileRelation>('sister');
@@ -462,8 +464,8 @@ function AddProfileForm({ onClose, onSubmit, serverError, disabled }: AddProfile
               setLastPeriodDate(e.target.value);
               if (lastPeriodError) setLastPeriodError('');
             }}
-            max={deviceDayString()}
-            min={deviceDayString(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))}
+            max={lastPeriodDateBounds(today).max}
+            min={lastPeriodDateBounds(today).min}
             required
             aria-invalid={!!lastPeriodError}
             aria-describedby={lastPeriodError ? 'last-period-date-error' : undefined}
@@ -802,9 +804,11 @@ function DeleteDialog({ open, profileName, error, onConfirm, onCancel, disabled 
 
 interface ProfilesClientProps {
   profiles: Profile[];
+  /** The Bangladesh day, from the Server Component. */
+  today: string;
 }
 
-export function ProfilesClient({ profiles }: ProfilesClientProps) {
+export function ProfilesClient({ profiles, today }: ProfilesClientProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const activeProfileId = useAppStore((s) => s.activeProfileId);
@@ -979,6 +983,7 @@ export function ProfilesClient({ profiles }: ProfilesClientProps) {
               {showForm ? (
                 <AddProfileForm
                   key="form"
+                  today={today}
                   onClose={closeAddForm}
                   serverError={addError}
                   onSubmit={handleAddProfile}

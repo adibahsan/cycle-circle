@@ -102,6 +102,23 @@ describe('exports (db)', () => {
     expect(csv).toContain("'=cmd|evil")
   })
 
+  it('users export honours search and status filters', async () => {
+    await prisma.user.update({ where: { id: userId }, data: { suspendedAt: new Date() } })
+    try {
+      const bySearch = await generateUsersCsv(adminId, { search: `${P}-u@` })
+      expect(bySearch).toContain(userId)
+      expect(bySearch).not.toContain(adminId)
+      const active = await generateUsersCsv(adminId, { search: `${P}-`, status: 'active' })
+      expect(active).toContain(adminId)
+      expect(active).not.toContain(userId)
+      const suspended = await generateUsersCsv(adminId, { search: `${P}-`, status: 'suspended' })
+      expect(suspended).toContain(userId)
+      expect(suspended).not.toContain(adminId)
+    } finally {
+      await prisma.user.update({ where: { id: userId }, data: { suspendedAt: null } })
+    }
+  })
+
   it('each export writes an audit-log entry', async () => {
     await prisma.adminAuditLog.deleteMany({ where: { adminId } })
     await generateFeedbackCsv(adminId)

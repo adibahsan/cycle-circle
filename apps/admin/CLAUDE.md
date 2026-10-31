@@ -8,4 +8,4 @@ Single Super Admin account (email/password login at `/login`). Seeded via `packa
 
 **Pattern:** RSC pages fetch data via `queries/*.ts` (thin `cache()` wrappers over shared services), pass to `*Client.tsx` components. Mutations go through `actions/*.ts` (thin `'use server'` wrappers over shared services + `revalidatePath`).
 
-**Env:** Admin requires `DATABASE_URL`, `DIRECT_URL` (for migrations), `JWT_SECRET`, `AUTH_COOKIE_NAME=vesta_admin_token`, `APP_URL` (web URL, for cron-trigger calls from System page), and `CRON_SECRET` (same as web). `REDIS_URL` and BDApps vars are optional (in-memory fallback / not used by admin).
+**Env:** Admin requires `DATABASE_URL`, `DIRECT_URL` (for migrations), `JWT_SECRET` (its own, different from web's), `AUTH_COOKIE_NAME=vesta_admin_token` (required, no default), `APP_ENV`, `APP_URL` (web URL, for cron-trigger calls from System page), and `CRON_SECRET` (same as web). `REDIS_URL` and BDApps vars are optional (in-memory fallback / not used by admin).

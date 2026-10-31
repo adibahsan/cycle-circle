@@ -2,7 +2,8 @@ import { readFileSync } from 'fs'
 import { resolve, join } from 'path'
 import { tmpdir } from 'os'
 
-process.env.TZ = 'UTC'
+// Default to UTC, but keep a TZ the caller set (pnpm test:tz runs the suite under other zones).
+process.env.TZ ??= 'UTC'
 
 const envPath = resolve(__dirname, '../../.env.local')
 try {
@@ -21,6 +22,9 @@ try {
 } catch {
   // .env.local not found — rely on environment variables
 }
+
+// AUTH_COOKIE_NAME has no schema default; tests run as the web app.
+process.env.AUTH_COOKIE_NAME ??= 'vesta_token'
 
 // Server logs (ADR 0004): keep test runs out of ./logs and off stdout.
 process.env.LOG_DIR ??= join(tmpdir(), 'vesta-test-logs')

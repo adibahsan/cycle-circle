@@ -46,6 +46,7 @@ import { sendUserReminders, type CronJobResult } from '@/app/actions/system-acti
 import { isWithinRestoreWindow, RESTORE_WINDOW_DAYS } from '@vesta/shared/utils/restore-window'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types (mirror the Prisma include shape from getUserDetail)
@@ -132,22 +133,12 @@ interface UserDetailClientProps {
 
 function formatDate(d: Date | null | undefined) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+  return formatDhaka(d, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 function formatDateTime(d: Date | null | undefined) {
   if (!d) return '—'
-  return new Date(d).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return formatDhaka(d, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
 type UserStatus = 'active' | 'suspended' | 'deleted'

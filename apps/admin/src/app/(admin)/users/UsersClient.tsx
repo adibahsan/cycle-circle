@@ -1,7 +1,7 @@
 'use client'
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useState, useTransition } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useState } from 'react'
 import {
   Phone,
   Mail,
@@ -21,6 +21,8 @@ import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
+import { bangladeshToday, formatDhaka } from '@vesta/shared/utils/dhaka-date'
+import { useUrlParams } from '@/lib/use-url-params'
 
 type UserRow = {
   id: string
@@ -71,7 +73,7 @@ function getUserStatus(user: UserRow): 'active' | 'suspended' | 'deleted' {
 
 function formatDate(d: Date | null) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString(undefined, {
+  return formatDhaka(d, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -213,9 +215,7 @@ export function UsersClient({
   statusBreakdown,
 }: UsersClientProps) {
   const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [, startTransition] = useTransition()
   const [exporting, setExporting] = useState(false)
 
   const currentSearch = searchParams.get('search') ?? ''
@@ -225,24 +225,7 @@ export function UsersClient({
   const currentSort = data.sort
   const currentOrder = data.order
 
-  const updateParams = useCallback(
-    (updates: Record<string, string | number>) => {
-      const params = new URLSearchParams(searchParams.toString())
-      Object.entries(updates).forEach(([k, v]) => {
-        if (v === '' || v === undefined) {
-          params.delete(k)
-        } else {
-          params.set(k, String(v))
-        }
-      })
-      // Reset page when filter changes
-      if (!('page' in updates)) params.set('page', '1')
-      startTransition(() => {
-        router.push(`${pathname}?${params.toString()}`)
-      })
-    },
-    [router, pathname, searchParams]
-  )
+  const { updateParams } = useUrlParams()
 
   function handleSearch(value: string) {
     updateParams({ search: value })
@@ -271,12 +254,12 @@ export function UsersClient({
   async function handleExport() {
     setExporting(true)
     try {
-      const csv = await exportUsersCsv()
+      const csv = await exportUsersCsv({ search: currentSearch, status: currentStatus })
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `users-${new Date().toISOString().split('T')[0]}.csv`
+      a.download = `users-${bangladeshToday()}.csv`
       a.click()
       URL.revokeObjectURL(url)
     } finally {
@@ -288,9 +271,8 @@ export function UsersClient({
 
   // Signup trend: format date label to "MMM D" for readability
   const signupData = signupTrend.map((row) => ({
-    date: new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(
-      new Date(row.date + 'T00:00:00Z')
-    ),
+    // row.date is a Bangladesh day: anchor at Dhaka midnight so the label can't shift a day.
+    date: formatDhaka(`${row.date}T00:00:00+06:00`, { month: 'short', day: 'numeric' }),
     count: row.count,
   }))
 

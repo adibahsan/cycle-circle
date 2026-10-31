@@ -15,7 +15,7 @@ import { SaveErrorStatus } from '@/components/symptoms/SaveErrorStatus';
 import { saveSymptoms, markAllGoodToday } from '@/app/actions/tracking-actions';
 import { QuickSymptomModal } from '@/components/modals/QuickSymptomModal';
 import { useToast } from '@/components/ui/Toast';
-import { deviceDayString } from '@/lib/local-date';
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date';
 import type { PopupLayer } from '@vesta/shared/utils/popup-core';
 import '@vesta/shared/utils/i18n';
 
@@ -152,7 +152,7 @@ export function TodayCheckInModal({
       if (addedPayload.length) {
         await saveSymptoms({
           profileId,
-          date: deviceDayString(),
+          date: bangladeshToday(),
           added: addedPayload,
           removed: [],
         });

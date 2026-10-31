@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Manrope, Noto_Sans_Bengali } from 'next/font/google';
+import localFont from 'next/font/local';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Providers } from '@/components/Providers';
@@ -8,17 +8,19 @@ import { themeBootScript } from '@vesta/shared/utils/theme';
 import { LANG_COOKIE, langBootScript, parseLang } from '@/lib/language';
 import './globals.css';
 
-const manrope = Manrope({
-  subsets: ['latin'],
+// Bundled locally (see ./fonts/README.md) so the build never calls Google Fonts.
+const manrope = localFont({
+  src: './fonts/manrope-latin-wght.woff2',
+  weight: '200 800',
   variable: '--font-display',
   display: 'swap',
 });
 
-const notoBengali = Noto_Sans_Bengali({
-  subsets: ['bengali'],
+const notoBengali = localFont({
+  src: './fonts/noto-sans-bengali-bengali-wght.woff2',
+  weight: '100 900',
   variable: '--font-bengali',
   display: 'swap',
-  weight: ['400', '500', '600', '700'],
 });
 
 const siteUrl = 'https://test-vesta.velirasolutions.com';

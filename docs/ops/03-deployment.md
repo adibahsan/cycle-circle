@@ -286,7 +286,8 @@ server {
 # to match apps/web/vercel.json's schedule (08:00 / 02:00 UTC = 14:00 / 08:00 Asia/Dhaka).
 # If the server stays on Europe/Berlin, these fire 1–2 h earlier in UTC terms (DST-dependent).
 
-# Mirrors apps/web/vercel.json crons: daily-reminders 08:00 UTC, caas-check 02:00 UTC.
+# Mirrors apps/web/vercel.json crons: daily-reminders 08:00 UTC, caas-check 02:00 UTC
+# (caas-check is the daily subscription check: BDApps subscriber status only; the slug is historical).
 # apps/web/worker/index.ts (BullMQ) is a LOCAL DEV alternative only — do not run it in prod.
 0 8 * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/daily-reminders >> /var/log/vesta/cron-daily-reminders.log 2>&1
 0 2 * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/caas-check >> /var/log/vesta/cron-caas-check.log 2>&1
@@ -359,7 +360,7 @@ Run these as the `vesta` user (sudo where noted). Assumes §2's artifacts exist 
    chmod 600 /opt/vesta/.env.*.production
    # Edit each with a real editor (vim/nano) — never echo secrets into shell history.
    ```
-   Double-check: `JWT_SECRET` and `CRON_SECRET` identical across web and admin; postgres password in `DATABASE_URL` matches `POSTGRES_PASSWORD` in `.env.postgres.production`. For VPS v1 staging, use `DEV_MODE=true` in web env and `NEXT_PUBLIC_DEV_MODE=true` in `ops/deploy/.env` before web build — see [07-dns-and-env-runbook.md §5](./07-dns-and-env-runbook.md).
+   Double-check: `CRON_SECRET` identical across web and admin; `JWT_SECRET` **different** in each; `APP_ENV=production` (staging: `staging`) in both; postgres password in `DATABASE_URL` matches `POSTGRES_PASSWORD` in `.env.postgres.production`. For VPS v1 staging, use `DEV_MODE=true` in web env and `NEXT_PUBLIC_DEV_MODE=true` in `ops/deploy/.env` before web build — see [07-dns-and-env-runbook.md §5](./07-dns-and-env-runbook.md).
 
 4. **Build the images:**
    ```bash
@@ -553,13 +554,25 @@ Since 2026-10-18 `deploy.sh` refuses dev mode and placeholder BDApps creds (§5)
    ```bash
    docker compose -f ops/deploy/compose.prod.yml up -d web
    ```
-5. Send a test event from the Resend dashboard and confirm a `200` response; without `RESEND_WEBHOOK_SECRET` set, the route falls back to a "headers present" sanity check and accepts unsigned requests — do not run production traffic in that state.
+
+Without `RESEND_WEBHOOK_SECRET` set, the route falls back to a "headers present" sanity check and accepts unsigned requests — do not run production traffic in that state.
+
+### Verify
+
+Resend API keys are either full access or sending-only, so an agent cannot read the webhook config with the prod (sending-only) key. Verify through traffic instead:
+
+1. Human: press "Send test event" on the webhook in the Resend dashboard.
+2. Agent: confirm a `200` in the nginx log:
+   ```bash
+   ssh vesta 'docker logs --since 10m vesta-nginx-1 2>&1 | grep /api/webhooks/resend'
+   ```
+3. Secret rotation: [SECURITY-ROTATION.md](../SECURITY-ROTATION.md) §5. After changing the secret, restart with `docker compose -f ops/deploy/compose.prod.yml up -d web` from `/opt/vesta`.
 
 ---
 
 ## Supabase / RLS finding
 
-`CLAUDE.md` and `STAGING-DEPLOY-PLAN.md` both describe the original target as Supabase Postgres with RLS. A grep of every migration under `packages/shared/prisma/migrations/` (`0_init`, `20260616210000_v1_3_consolidated`, `20260629120000_v1_4_consolidated`) for `auth.`, `anon`, `authenticated`, `service_role`, `ENABLE ROW LEVEL SECURITY`, `GRANT`, `REVOKE` returned **no matches**. RLS policies were never actually built into the schema — isolation is app-layer only (JWT → Prisma `userId` scoping in `middleware.ts`), matching `STAGING-DEPLOY-PLAN.md`'s own "Postgres RLS / pgcrypto — not built" note. Practical result: the existing migrations are plain-Postgres-compatible as-is — `ops/docker/postgres/init.sql` (`CREATE EXTENSION IF NOT EXISTS pgcrypto;`) is all the self-hosted container needs beyond creating the `vesta` role/database (handled by `POSTGRES_USER`/`POSTGRES_DB` env vars on the official Postgres image). No migration edits are required to run on self-hosted Postgres instead of Supabase.
+`STAGING-DEPLOY-PLAN.md` describes the original target as Supabase Postgres with RLS. A grep of every migration under `packages/shared/prisma/migrations/` (`0_init`, `20260616210000_v1_3_consolidated`, `20260629120000_v1_4_consolidated`) for `auth.`, `anon`, `authenticated`, `service_role`, `ENABLE ROW LEVEL SECURITY`, `GRANT`, `REVOKE` returned **no matches**. RLS policies were never actually built into the schema — isolation is app-layer only (JWT → Prisma `userId` scoping in `middleware.ts`), matching `STAGING-DEPLOY-PLAN.md`'s own "Postgres RLS / pgcrypto — not built" note. Practical result: the existing migrations are plain-Postgres-compatible as-is — `ops/docker/postgres/init.sql` (`CREATE EXTENSION IF NOT EXISTS pgcrypto;`) is all the self-hosted container needs beyond creating the `vesta` role/database (handled by `POSTGRES_USER`/`POSTGRES_DB` env vars on the official Postgres image). No migration edits are required to run on self-hosted Postgres instead of Supabase.
 
 ---
 

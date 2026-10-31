@@ -7,6 +7,7 @@ import {
   getPeriodRegularity,
   getFertileWindowHistory,
 } from '@/app/queries/insights-queries'
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 import { InsightsClient } from './InsightsClient'
 
 export default async function InsightsPage({
@@ -42,6 +43,7 @@ export default async function InsightsPage({
       periodRegularity={periodRegularity}
       fertileWindowHistory={fertileWindowHistory}
       goal={activeProfile?.goal ?? null}
+      today={bangladeshToday()}
     />
   )
 }

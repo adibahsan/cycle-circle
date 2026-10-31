@@ -18,6 +18,7 @@ export interface DayNameInput {
 }
 
 export function dayAccessibleName({ date, flags, phase, isToday, language }: DayNameInput, t: (key: string) => string): string {
+  // eslint-disable-next-line no-restricted-syntax -- grid dates are local-midnight Dates; formatting in the same local zone keeps the day
   const fullDate = new Intl.DateTimeFormat(appLocale(language), {
     weekday: 'long',
     month: 'long',

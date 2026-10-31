@@ -1,3 +1,4 @@
+import { AUDIT_ACTIONS } from './audit-actions'
 import sanitizeHtml from 'sanitize-html'
 import { prisma } from '../db'
 import { articlePublishWarnings, isBlankBody } from '../../utils/article-warnings'
@@ -58,7 +59,7 @@ export async function listArticles(
     prisma.article.findMany({
       where,
       include: {
-        category: { select: { name: true } },
+        category: { select: { name: true, nameBn: true } },
         author: { select: { fullName: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -117,9 +118,10 @@ export async function createArticle(
     cyclePhases?: string[]
     status?: string
   },
+  now: Date,
 ) {
   assertArticleStatus(data.status)
-  const slug = slugify(data.titleEn) + '-' + Date.now().toString(36)
+  const slug = slugify(data.titleEn) + '-' + now.getTime().toString(36)
 
   const article = await prisma.article.create({
     data: {
@@ -134,14 +136,14 @@ export async function createArticle(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       status: (data.status as never) || 'DRAFT',
       authorId,
-      publishedAt: data.status === 'PUBLISHED' ? new Date() : null,
+      publishedAt: data.status === 'PUBLISHED' ? now : null,
     },
   })
 
   await prisma.adminAuditLog.create({
     data: {
       adminId: authorId,
-      action: 'ARTICLE_CREATED',
+      action: AUDIT_ACTIONS.ARTICLE_CREATED,
       targetType: 'Article',
       targetId: article.id,
     },
@@ -162,6 +164,7 @@ export async function updateArticle(
     cyclePhases?: string[]
     status?: string
   },
+  now: Date,
 ) {
   assertArticleStatus(data.status)
   const updateData: Record<string, unknown> = { ...data }
@@ -176,7 +179,7 @@ export async function updateArticle(
   if (data.status === 'PUBLISHED') {
     const existing = await prisma.article.findUnique({ where: { id } })
     if (existing && !existing.publishedAt) {
-      updateData.publishedAt = new Date()
+      updateData.publishedAt = now
     }
   } else if (data.status === 'DRAFT' || data.status === 'ARCHIVED') {
     updateData.publishedAt = null
@@ -198,7 +201,7 @@ export async function removeArticle(id: string, adminId: string) {
   await prisma.adminAuditLog.create({
     data: {
       adminId,
-      action: 'ARTICLE_DELETED',
+      action: AUDIT_ACTIONS.ARTICLE_DELETED,
       targetType: 'Article',
       targetId: id,
     },
@@ -209,14 +212,16 @@ export async function removeArticle(id: string, adminId: string) {
 
 // ── Category mutations ─────────────────────────────────────────────────────────
 
-export async function createCategory(name: string) {
+export async function createCategory(name: string, nameBn?: string | null) {
   const slug = slugify(name)
-  return prisma.articleCategory.create({ data: { name, slug } })
+  return prisma.articleCategory.create({ data: { name, nameBn: nameBn?.trim() || null, slug } })
 }
 
-export async function updateCategory(id: string, name: string) {
+export async function updateCategory(id: string, name: string, nameBn?: string | null) {
   const slug = slugify(name)
-  return prisma.articleCategory.update({ where: { id }, data: { name, slug } })
+  const data: { name: string; slug: string; nameBn?: string | null } = { name, slug }
+  if (nameBn !== undefined) data.nameBn = nameBn?.trim() || null
+  return prisma.articleCategory.update({ where: { id }, data })
 }
 
 export async function removeCategory(id: string) {
@@ -346,7 +351,7 @@ export async function listPublishedArticles(
         status: true,
         cyclePhases: true,
         publishedAt: true,
-        category: { select: { name: true } },
+        category: { select: { name: true, nameBn: true } },
         author: { select: { fullName: true } },
       },
       orderBy: { publishedAt: 'desc' },
@@ -385,7 +390,7 @@ export async function getPublishedArticleById(id: string) {
       bodyBn: true,
       cyclePhases: true,
       publishedAt: true,
-      category: { select: { name: true } },
+      category: { select: { name: true, nameBn: true } },
     },
   })
 }

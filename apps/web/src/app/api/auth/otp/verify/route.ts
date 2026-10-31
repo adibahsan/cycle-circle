@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { parseBody } from '@vesta/shared/server/validation'
 import { handleApiError, ApiError } from '@vesta/shared/server/api-error'
-import { issueJwt, setAuthCookie } from '@vesta/shared/server/auth'
+import { WEB_AUDIENCE, issueJwt, setAuthCookie } from '@vesta/shared/server/auth'
 import { verifyOtp, isSubscribed, storedSubscriberId } from '@vesta/shared/server/adapters/bdapps'
 import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
 import { findOtpChallenge, completeOtpAuth, verifyAppOtp } from '@vesta/shared/server/services'
@@ -45,7 +45,7 @@ export async function POST(request: Request): Promise<Response> {
     let subscriberId = challenge.phone
     let user
     if (appOtp) {
-      user = await verifyAppOtp(body.referenceNo, body.otp)
+      user = await verifyAppOtp(body.referenceNo, body.otp, new Date())
     } else {
       if (challenge.verified) {
         throw new ApiError(400, 'OTP challenge already verified', 'ALREADY_VERIFIED')
@@ -64,7 +64,7 @@ export async function POST(request: Request): Promise<Response> {
         registered = isSubscribed(result.subscriptionStatus)
         subscriberId = storedSubscriberId(result, challenge.phone)
       }
-      user = await completeOtpAuth(challenge.id, challenge.phone, registered, subscriberId)
+      user = await completeOtpAuth(challenge.id, challenge.phone, registered, new Date(), subscriberId)
     }
     setRequestUser(user.id)
     revalidateTag(cacheTags.user(user.id), { expire: 0 })
@@ -73,7 +73,7 @@ export async function POST(request: Request): Promise<Response> {
       sub: user.id,
       phone: user.phone ?? undefined,
       role: user.role,
-    })
+    }, WEB_AUDIENCE)
     await setAuthCookie(token)
 
     logger.customer('auth.otp.verify', {

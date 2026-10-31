@@ -32,7 +32,7 @@ export async function createArticle(data: {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  const article = await svcCreateArticle(admin.id, data)
+  const article = await svcCreateArticle(admin.id, data, new Date())
 
   revalidateContentTags()
   const webCacheRefreshed = await revalidateWebTags(['articles'])
@@ -53,7 +53,7 @@ export async function updateArticle(
 ) {
   await requireAdminAuth()
 
-  const article = await svcUpdateArticle(id, data)
+  const article = await svcUpdateArticle(id, data, new Date())
 
   revalidateContentTags(id)
   const webCacheRefreshed = await revalidateWebTags(['articles'])
@@ -71,19 +71,19 @@ export async function deleteArticle(id: string) {
   return { success: true }
 }
 
-export async function createCategory(name: string) {
+export async function createCategory(name: string, nameBn?: string | null) {
   await requireAdminAuth()
 
-  const category = await svcCreateCategory(name)
+  const category = await svcCreateCategory(name, nameBn)
 
   revalidateContentTags()
   return category
 }
 
-export async function updateCategory(id: string, name: string) {
+export async function updateCategory(id: string, name: string, nameBn?: string | null) {
   await requireAdminAuth()
 
-  const category = await svcUpdateCategory(id, name)
+  const category = await svcUpdateCategory(id, name, nameBn)
 
   revalidateContentTags()
   await revalidateWebTags(['articles'])

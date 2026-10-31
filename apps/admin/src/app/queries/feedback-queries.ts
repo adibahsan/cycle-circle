@@ -56,7 +56,7 @@ export const getFeedbackDetail = cache(async (id: string) => {
 export const getFeedbackVolume = cache(async (days: number) => {
   await requireAdminUser()
   return unstable_cache(
-    () => getFeedbackVolumeByDate({ days }),
+    () => getFeedbackVolumeByDate({ days, now: new Date() }),
     ['admin-feedback-volume', String(days)],
     { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
   )()
@@ -65,7 +65,7 @@ export const getFeedbackVolume = cache(async (days: number) => {
 export const getFeedbackCategories = cache(async (days: number) => {
   await requireAdminUser()
   return unstable_cache(
-    () => getFeedbackByCategory({ days }),
+    () => getFeedbackByCategory({ days, now: new Date() }),
     ['admin-feedback-categories', String(days)],
     { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
   )()
@@ -74,7 +74,7 @@ export const getFeedbackCategories = cache(async (days: number) => {
 export const getFeedbackRatings = cache(async (days: number) => {
   await requireAdminUser()
   return unstable_cache(
-    () => getFeedbackRatingDistribution({ days }),
+    () => getFeedbackRatingDistribution({ days, now: new Date() }),
     ['admin-feedback-ratings', String(days)],
     { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
   )()

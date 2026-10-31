@@ -1,15 +1,17 @@
-import { AuthMethod } from '@prisma/client'
+import { AUDIT_ACTIONS } from './audit-actions'
+import { AuthMethod, type Prisma } from '@prisma/client'
 import { prisma } from '../db'
 import { applyBdappsSubscription, unsubscribeUserOnBdapps } from './subscription-service'
 import { ApiError } from '../api-error'
 import { bumpSessionsValidAfter } from '../auth'
+import { fillDaySeries, resolveDaySeriesRange, type DaySeriesOpts } from '../../utils/day-series'
 import { RESTORE_WINDOW_DAYS, isWithinRestoreWindow } from '../../utils/restore-window'
 
 /**
  * Throw a typed 409 if a supplied phone/email already belongs to a DIFFERENT
  * user. Inputs must already be normalized (phone → validateMsisdn, email →
  * normalizeEmail). Best-effort pre-check; the inherent pre-check↔write race is
- * still caught by `mapContactP2002` at write time.
+ * still caught by the unique index at write time (P2002).
  */
 export async function assertContactAvailable(
   userId: string,
@@ -33,27 +35,6 @@ export async function assertContactAvailable(
       throw new ApiError(409, 'Email already registered to another account', 'EMAIL_TAKEN')
     }
   }
-}
-
-/**
- * Map a Prisma P2002 (unique constraint) on phone/email to a typed ApiError so a
- * racing duplicate surfaces the same code as the pre-check. Returns the original
- * error otherwise (to be re-thrown).
- */
-function mapContactP2002(e: unknown): unknown {
-  const err = e as { code?: string; meta?: { target?: string[] | string } }
-  if (err.code === 'P2002') {
-    const target = Array.isArray(err.meta?.target)
-      ? err.meta.target.join(',')
-      : String(err.meta?.target ?? '')
-    if (target.includes('email')) {
-      return new ApiError(409, 'Email already registered to another account', 'EMAIL_TAKEN')
-    }
-    if (target.includes('phone')) {
-      return new ApiError(409, 'Phone already registered to another account', 'PHONE_TAKEN')
-    }
-  }
-  return e
 }
 
 // ---------------------------------------------------------------------------
@@ -97,25 +78,12 @@ export interface ListUsersResult {
   order: 'asc' | 'desc'
 }
 
-/**
- * Paginated user list for admin use. Supports search, status/role filtering,
- * and sorting. The caller is responsible for auth — this function is pure
- * data access with no auth check of its own.
- */
-export async function listUsers(params: ListUsersParams = {}): Promise<ListUsersResult> {
-  const {
-    page = 1,
-    pageSize = 20,
-    search,
-    status = 'all',
-    role = 'all',
-    sort,
-    order = 'desc',
-  } = params
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = {}
-
+/** Single source of truth for the admin user list and CSV export filters. */
+export function buildUsersWhere(
+  filters: Pick<ListUsersParams, 'search' | 'status' | 'role'> = {},
+): Prisma.UserWhereInput {
+  const { search, status = 'all', role = 'all' } = filters
+  const where: Prisma.UserWhereInput = {}
   if (status === 'active') {
     where.deletedAt = null
     where.suspendedAt = null
@@ -140,6 +108,27 @@ export async function listUsers(params: ListUsersParams = {}): Promise<ListUsers
       { phone: { contains: search } },
     ]
   }
+
+  return where
+}
+
+/**
+ * Paginated user list for admin use. Supports search, status/role filtering,
+ * and sorting. The caller is responsible for auth — this function is pure
+ * data access with no auth check of its own.
+ */
+export async function listUsers(params: ListUsersParams = {}): Promise<ListUsersResult> {
+  const {
+    page = 1,
+    pageSize = 20,
+    search,
+    status = 'all',
+    role = 'all',
+    sort,
+    order = 'desc',
+  } = params
+
+  const where = buildUsersWhere({ search, status, role })
 
   const safeSort = sort && SORTABLE_COLUMNS.has(sort) ? sort : 'createdAt'
   const safeOrder: 'asc' | 'desc' = order === 'asc' ? 'asc' : 'desc'
@@ -187,27 +176,17 @@ export async function listUsers(params: ListUsersParams = {}): Promise<ListUsers
 
 export interface CompleteUserProfileData {
   fullName: string
-  phone?: string
 }
 
 /**
- * Mark a user's profile as completed and update their name/phone.
+ * Mark a user's profile as completed and set their name.
  */
 export async function completeUserProfile(userId: string, data: CompleteUserProfileData) {
-  await assertContactAvailable(userId, { phone: data.phone })
-  let updated
-  try {
-    updated = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        fullName: data.fullName,
-        phone: data.phone,
-        profileCompleted: true,
-      },
-    })
-  } catch (e) {
-    throw mapContactP2002(e)
-  }
+  // Phone and email are never set here: they change only through OTP / email-code verification.
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: { fullName: data.fullName, profileCompleted: true },
+  })
 
   return { id: updated.id, fullName: updated.fullName, profileCompleted: updated.profileCompleted }
 }
@@ -216,22 +195,22 @@ export async function completeUserProfile(userId: string, data: CompleteUserProf
  * Suspend a user (reason required), invalidate their sessions and unsubscribe their
  * number on BDApps (ADR 0006). A BDApps failure is returned, never thrown; the suspension applies.
  */
-export async function suspendUser(userId: string, adminId: string, reason: string) {
+export async function suspendUser(userId: string, adminId: string, reason: string, now: Date) {
   const trimmed = reason?.trim()
   if (!trimmed) throw new ApiError(400, 'A suspension reason is required', 'REASON_REQUIRED')
 
   await prisma.user.update({
     where: { id: userId },
-    data: { suspendedAt: new Date(), suspendedBy: adminId },
+    data: { suspendedAt: now, suspendedBy: adminId },
   })
   // Existing sessions stop working on their next request.
-  await bumpSessionsValidAfter(userId)
+  await bumpSessionsValidAfter(userId, now)
   const bdapps = await unsubscribeUserOnBdapps(userId, adminId)
 
   await prisma.adminAuditLog.create({
     data: {
       adminId,
-      action: 'USER_SUSPENDED',
+      action: AUDIT_ACTIONS.USER_SUSPENDED,
       targetType: 'User',
       targetId: userId,
       metadata: { reason: trimmed, bdapps: bdapps.status },
@@ -254,7 +233,7 @@ export async function reactivateUser(userId: string, adminId: string) {
   await prisma.adminAuditLog.create({
     data: {
       adminId,
-      action: 'USER_REACTIVATED',
+      action: AUDIT_ACTIONS.USER_REACTIVATED,
       targetType: 'User',
       targetId: userId,
     },
@@ -267,19 +246,19 @@ export async function reactivateUser(userId: string, adminId: string) {
  * Soft-delete a user by setting deletedAt and unsubscribe their number on BDApps
  * (ADR 0006). A BDApps failure is returned, never thrown; the deletion applies.
  */
-export async function softDeleteUser(userId: string, adminId: string) {
+export async function softDeleteUser(userId: string, adminId: string, now: Date) {
   await prisma.user.update({
     where: { id: userId },
-    data: { deletedAt: new Date() },
+    data: { deletedAt: now },
   })
   // Existing sessions stop working on their next request.
-  await bumpSessionsValidAfter(userId)
+  await bumpSessionsValidAfter(userId, now)
   const bdapps = await unsubscribeUserOnBdapps(userId, adminId)
 
   await prisma.adminAuditLog.create({
     data: {
       adminId,
-      action: 'USER_DELETED',
+      action: AUDIT_ACTIONS.USER_DELETED,
       targetType: 'User',
       targetId: userId,
       metadata: { bdapps: bdapps.status },
@@ -293,7 +272,7 @@ export async function softDeleteUser(userId: string, adminId: string) {
  * Restore a soft-deleted user within the restore window. Clears deletedAt only;
  * never re-subscribes on BDApps (ADR 0006). Refused after 30 days.
  */
-export async function restoreUser(userId: string, adminId: string, now: Date = new Date()) {
+export async function restoreUser(userId: string, adminId: string, now: Date) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { deletedAt: true } })
   if (!user) throw new ApiError(404, 'User not found', 'USER_NOT_FOUND')
   if (!user.deletedAt) throw new ApiError(409, 'User is not deleted', 'NOT_DELETED')
@@ -303,7 +282,7 @@ export async function restoreUser(userId: string, adminId: string, now: Date = n
 
   await prisma.user.update({ where: { id: userId }, data: { deletedAt: null } })
   await prisma.adminAuditLog.create({
-    data: { adminId, action: 'USER_RESTORED', targetType: 'User', targetId: userId },
+    data: { adminId, action: AUDIT_ACTIONS.USER_RESTORED, targetType: 'User', targetId: userId },
   })
 
   return { success: true }
@@ -320,24 +299,6 @@ export async function getUserById(userId: string) {
 
 export async function updateUserName(userId: string, fullName: string) {
   return prisma.user.update({ where: { id: userId }, data: { fullName } })
-}
-
-export async function updateUserContact(
-  userId: string,
-  data: { email?: string; phone?: string },
-) {
-  await assertContactAvailable(userId, data)
-  try {
-    return await prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(data.email !== undefined && { email: data.email }),
-        ...(data.phone !== undefined && { phone: data.phone }),
-      },
-    })
-  } catch (e) {
-    throw mapContactP2002(e)
-  }
 }
 
 /**
@@ -460,10 +421,10 @@ export async function getProfileCompletionStatus(
 /**
  * Mark the onboarding tour as completed for a user by recording the timestamp.
  */
-export async function completeOnboardingTour(userId: string): Promise<void> {
+export async function completeOnboardingTour(userId: string, now: Date): Promise<void> {
   await prisma.user.update({
     where: { id: userId },
-    data: { onboardingTourCompletedAt: new Date() },
+    data: { onboardingTourCompletedAt: now },
   })
 }
 
@@ -487,57 +448,34 @@ export async function setProfileReminderOptOut(
 // Chart-data aggregations for admin Users section
 // ---------------------------------------------------------------------------
 
-export interface ChartDateRangeOpts {
-  days?: number
-  dateFrom?: Date
-  dateTo?: Date
-}
+export type ChartDateRangeOpts = DaySeriesOpts
 
 /**
  * Daily new-user signups over the given date range (default: last 30 days).
  * Gap-fills days with zero so the chart always has a continuous x-axis.
  */
 export async function getUserSignupTrend(
-  opts: ChartDateRangeOpts = {},
+  opts: ChartDateRangeOpts,
 ): Promise<{ date: string; count: number }[]> {
-  const { dateTo = new Date(), dateFrom, days = 30 } = opts
-  const resolvedFrom =
-    dateFrom ?? new Date(new Date(dateTo).setDate(dateTo.getDate() - days + 1))
+  const { from, to, fromDay, toDay } = resolveDaySeriesRange(opts)
 
-  // Truncate time component so grouping is day-level only
-  const from = new Date(
-    Date.UTC(resolvedFrom.getFullYear(), resolvedFrom.getMonth(), resolvedFrom.getDate()),
-  )
-  const to = new Date(
-    Date.UTC(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999),
-  )
-
+  // Bucket by Bangladesh day (UTC+6), not UTC day. "createdAt" is a UTC timestamp without zone, so tag it UTC first.
   const rows = await prisma.$queryRaw<{ date: string; count: bigint }[]>`
     SELECT
-      TO_CHAR(DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS date,
+      TO_CHAR(DATE_TRUNC('day', ("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Dhaka'), 'YYYY-MM-DD') AS date,
       COUNT(*)::bigint AS count
     FROM "User"
     WHERE "createdAt" >= ${from} AND "createdAt" <= ${to}
-    GROUP BY DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC')
-    ORDER BY DATE_TRUNC('day', "createdAt" AT TIME ZONE 'UTC') ASC
+    GROUP BY DATE_TRUNC('day', ("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Dhaka')
+    ORDER BY DATE_TRUNC('day', ("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Dhaka') ASC
   `
 
-  // Build a lookup from the raw results
   const lookup = new Map<string, number>()
   for (const row of rows) {
     lookup.set(row.date, Number(row.count))
   }
 
-  // Gap-fill: walk day by day from `from` to `to`
-  const result: { date: string; count: number }[] = []
-  const cursor = new Date(from)
-  while (cursor <= to) {
-    const key = cursor.toISOString().slice(0, 10)
-    result.push({ date: key, count: lookup.get(key) ?? 0 })
-    cursor.setUTCDate(cursor.getUTCDate() + 1)
-  }
-
-  return result
+  return fillDaySeries(fromDay, toDay, lookup)
 }
 
 /**

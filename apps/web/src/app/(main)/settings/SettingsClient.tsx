@@ -33,7 +33,8 @@ import { Card } from '@/components/ui/Card'
 import { TINT_CLASSES, type CardTint } from '@/components/ui/tints'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { updateNotificationPrefs, exportUserDataCsv, exportUserDataRows, updateProfileReminderOptOut } from '@/app/actions/settings-actions'
-import { updateContactInfo } from '@/app/actions/user-actions'
+import { AddEmailVerification } from '@/components/AddEmailVerification'
+import { AddPhoneDialog } from '@/components/AddPhoneDialog'
 import type { AuthUser } from '@vesta/shared/server/auth'
 import type { Language, Theme } from '@vesta/shared/types'
 import { isPro as isProHelper, getSubscriptionTier } from '@vesta/shared/utils/subscription'
@@ -152,11 +153,7 @@ function Toggle({
 }
 
 
-// Contact (add email / add phone) row buttons: the same three styles for both rows.
-const CONTACT_SAVE =
-  'min-h-11 px-3 py-2 rounded-lg text-xs font-semibold text-[var(--color-on-accent)] bg-[var(--goal-accent)] disabled:opacity-50 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]'
-const CONTACT_CANCEL =
-  'min-h-11 px-2 py-2 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]'
+// Contact (add email / add phone) row button.
 const CONTACT_ADD =
   'flex items-center gap-2 w-full min-h-11 text-xs font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--goal-accent)]'
 
@@ -249,12 +246,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
 
   const [exportAll, setExportAll] = useState(false)
   const [addingEmail, setAddingEmail] = useState(false)
-  const [addingPhone, setAddingPhone] = useState(false)
-  const [contactEmail, setContactEmail] = useState('')
-  const [contactPhone, setContactPhone] = useState('')
-  const [contactSaving, setContactSaving] = useState(false)
-  const [emailError, setEmailError] = useState('')
-  const [phoneError, setPhoneError] = useState('')
+  const [addPhoneOpen, setAddPhoneOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
   const exportingRef = useRef(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
@@ -319,51 +311,21 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
     }
   }
 
-  // ── Contact info handlers ──
-  const handleAddEmail = async () => {
-    if (!contactEmail) return
-    setContactSaving(true)
-    setEmailError('')
-    try {
-      const res = await updateContactInfo({ email: contactEmail })
-      if (res.ok) {
-        showToast(t('settings.emailAdded'))
-        setAddingEmail(false)
-        setContactEmail('')
-        setEmailError('')
-        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
-        router.refresh()
-      } else {
-        setEmailError(res.code === 'EMAIL_TAKEN' ? t('settings.emailInUse') : t('settings.emailAddFailed'))
-      }
-    } catch {
-      setEmailError(t('settings.emailAddFailed'))
-    } finally {
-      setContactSaving(false)
-    }
+  // ── Contact info (both additions go through verification) ──
+  const refreshProfile = () => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
+    router.refresh()
   }
 
-  const handleAddPhone = async () => {
-    if (!contactPhone) return
-    setContactSaving(true)
-    setPhoneError('')
-    try {
-      const res = await updateContactInfo({ phone: contactPhone })
-      if (res.ok) {
-        showToast(t('settings.phoneAdded'))
-        setAddingPhone(false)
-        setContactPhone('')
-        setPhoneError('')
-        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
-        router.refresh()
-      } else {
-        setPhoneError(res.code === 'PHONE_TAKEN' ? t('settings.phoneInUse') : t('settings.phoneAddFailed'))
-      }
-    } catch {
-      setPhoneError(t('settings.phoneAddFailed'))
-    } finally {
-      setContactSaving(false)
-    }
+  const handleEmailVerified = () => {
+    showToast(t('settings.emailVerified'))
+    setAddingEmail(false)
+    refreshProfile()
+  }
+
+  const handlePhoneVerified = () => {
+    showToast(t('settings.phoneAdded'))
+    refreshProfile()
   }
 
   // ── Export handlers ──
@@ -654,43 +616,10 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   {!user.email && (
                     <div className="pt-1 border-t border-[var(--color-border)]">
                       {addingEmail ? (
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <label htmlFor="settings-contact-email" className="sr-only">{t('settings.email')}</label>
-                            <input
-                              id="settings-contact-email"
-                              type="email"
-                              name="email"
-                              autoComplete="email"
-                              placeholder={t('settings.emailInputPlaceholder')}
-                              value={contactEmail}
-                              onChange={(e) => { setContactEmail(e.target.value); if (emailError) setEmailError('') }}
-                              className="flex-1 min-w-0 min-h-11 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
-                              spellCheck={false}
-                            />
-                            <button
-                              onClick={handleAddEmail}
-                              disabled={!contactEmail || contactSaving}
-                              className={CONTACT_SAVE}
-                            >
-                              {contactSaving ? '…' : t('common.save')}
-                            </button>
-                            <button
-                              onClick={() => { setAddingEmail(false); setContactEmail(''); setEmailError('') }}
-                              className={CONTACT_CANCEL}
-                            >
-                              {t('common.cancel')}
-                            </button>
-                          </div>
-                          {emailError && (
-                            <p role="alert" aria-live="polite" className="text-xs text-[var(--color-error)] mt-1">
-                              {emailError}
-                            </p>
-                          )}
-                        </div>
+                        <AddEmailVerification onVerified={handleEmailVerified} onCancel={() => setAddingEmail(false)} />
                       ) : (
                         <button
-                          onClick={() => { setAddingEmail(true); setEmailError('') }}
+                          onClick={() => setAddingEmail(true)}
                           className={CONTACT_ADD}
                         >
                           <Mail size={12} aria-hidden="true" />
@@ -703,50 +632,14 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   {/* Add missing phone */}
                   {!user.phone && (
                     <div className="pt-1 border-t border-[var(--color-border)]">
-                      {addingPhone ? (
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <label htmlFor="settings-contact-phone" className="sr-only">{t('settings.phone')}</label>
-                            <input
-                              id="settings-contact-phone"
-                              type="tel"
-                              name="phone"
-                              autoComplete="tel"
-                              placeholder={t('auth.phonePlaceholder')}
-                              value={contactPhone}
-                              onChange={(e) => { setContactPhone(e.target.value); if (phoneError) setPhoneError('') }}
-                              className="flex-1 min-w-0 min-h-11 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-xs text-[var(--color-text-primary)] font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
-                              spellCheck={false}
-                            />
-                            <button
-                              onClick={handleAddPhone}
-                              disabled={!contactPhone || contactSaving}
-                              className={CONTACT_SAVE}
-                            >
-                              {contactSaving ? '…' : t('common.save')}
-                            </button>
-                            <button
-                              onClick={() => { setAddingPhone(false); setContactPhone(''); setPhoneError('') }}
-                              className={CONTACT_CANCEL}
-                            >
-                              {t('common.cancel')}
-                            </button>
-                          </div>
-                          {phoneError && (
-                            <p role="alert" aria-live="polite" className="text-xs text-[var(--color-error)] mt-1">
-                              {phoneError}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => { setAddingPhone(true); setPhoneError('') }}
-                          className={CONTACT_ADD}
-                        >
-                          <Phone size={12} aria-hidden="true" />
-                          {t('settings.addPhone')}
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => setAddPhoneOpen(true)}
+                        className={CONTACT_ADD}
+                      >
+                        <Phone size={12} aria-hidden="true" />
+                        {t('settings.addPhone')}
+                      </button>
                     </div>
                   )}
 
@@ -867,6 +760,12 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
         </div>
       </PageContainer>
 
+      <AddPhoneDialog
+        open={addPhoneOpen}
+        onClose={() => setAddPhoneOpen(false)}
+        onVerified={handlePhoneVerified}
+        purpose="keep-account"
+      />
       <LogoutConfirmModal
         open={showLogoutConfirm}
         onClose={() => setShowLogoutConfirm(false)}

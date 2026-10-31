@@ -36,7 +36,7 @@ The app uses a **RSC + Server Actions** pattern throughout:
 - **Server Actions** (`apps/web/src/app/actions/`) handle all mutations (`'use server'` functions).
 - **Cached queries** (`apps/web/src/app/queries/`) use React `cache()` for request-level deduplication.
 - **Zustand store** (`apps/web/src/lib/store.ts`) holds UI-only state: theme, language, `activeProfileId`, `onboardingComplete`. All DB state removed.
-- **`next/font/google`** self-hosts Manrope + Noto Sans Bengali — no render-blocking external font requests.
+- **`next/font/local`** serves Manrope + Noto Sans Bengali from `src/app/fonts/` (bundled woff2) — no external font requests at build or run time.
 - **`proxy.ts`** (`apps/web/src/proxy.ts`) performs server-side auth redirect via cookie presence check (renamed from `middleware.ts` for Next.js 16 compatibility).
 - Route conventions in use: `loading.tsx`, `error.tsx`, `not-found.tsx`.
 - Deleted files (no longer in codebase): `api.ts` (client API wrapper), `api-mappers.ts`, `dummy-data.ts`, `hydrate-store.ts`. All data now comes from the DB.
@@ -79,9 +79,38 @@ Top systemic issues (both apps): `transition-all` anti-pattern (~55 instances), 
 
 ## Test Coverage
 
-- **Web app**: 22/22 Vitest tests passing across 5 test files located at `apps/web/__tests__/actions/`. Tests updated to reflect the shared services layer (mocks target service modules, not direct Prisma calls). Covers all Server Actions with deterministic mocks (Prisma, Redis, BDApps). Run with `just test` or `pnpm --filter @vesta/web backend:test`.
-- **Admin app**: TypeScript typecheck passes (`just typecheck-all`). No automated test suite yet — manual QA only.
-- **Manual QA**: See [`TESTING.md`](TESTING.md) for environment setup, test accounts, and per-FR scenarios.
+### Unit / integration (Vitest)
+
+- **Web app**: Vitest under `apps/web/__tests__/` (actions, UI contracts, latin-scan). Mocks target shared services, not Prisma. Run: `pnpm --filter @vesta/web backend:test` (or `just test`).
+- **Shared / admin**: covered by package and admin Vitest where present; typecheck via `pnpm typecheck`.
+- **Manual QA**: [`TESTING.md`](TESTING.md) — environment, seeded accounts, per-FR scenarios.
+
+### E2E suite (`@vesta/e2e`, spec #114)
+
+Production builds of web + admin, fake BDApps, Mailpit, and a per-slot `vesta_e2e` database. Coverage map: [`e2e/COVERAGE.md`](e2e/COVERAGE.md) (enforced by `pnpm --dir e2e coverage:check` — no `none` / `look-only` rows). Harness docs: [`e2e/README.md`](e2e/README.md).
+
+**Run** (Compose Postgres :5431 + Mailpit required):
+
+```bash
+pnpm e2e                                                    # build, reset DB, all projects
+E2E_SLOT=18 E2E_SKIP_RESET=1 E2E_SKIP_BUILD=1 pnpm e2e -- --workers=2
+E2E_SUITE=desktop pnpm e2e                                  # PR job: no *-phone, no web-bengali
+E2E_SUITE=full pnpm e2e                                     # nightly / e2e-full: phones + Bengali + cron
+```
+
+| Project | What |
+|---|---|
+| `web-desktop` / `web-phone` | `e2e/tests/web/` |
+| `admin-desktop` / `admin-phone` | `e2e/tests/admin/` |
+| `cross-app-desktop` / `cross-app-phone` | `e2e/tests/cross-app/` |
+| `web-bengali` | `e2e/tests/bengali/` — BN cookie, English leftover scan (`E2E_SUITE=full` only) |
+| `cron` | Serial cron/webhook/health specs after parallel projects |
+
+**Slots:** `E2E_SLOT=n` offsets ports and DB name so multiple worktrees can run together. AI agents use `E2E_SKIP_RESET=1` (Prisma blocks destructive reset). First run in a slot builds; later runs use `E2E_SKIP_BUILD=1`. Prefer `--workers=2` on shared Postgres.
+
+**CI:** PR → `main` runs `E2E_SUITE=desktop`. Nightly / `workflow_dispatch` / PR label `e2e-full` runs `E2E_SUITE=full`. Expected failures use `test.fail()` linked to an open issue (no app code changes in E2E tickets).
+
+The older look-only suite in `apps/web/e2e/` (dev server, dev-login) remains: `pnpm --filter @vesta/web e2e`.
 
 ### Web App Route Inventory (rev 3)
 
@@ -424,7 +453,7 @@ Pro means BDApps reports the number as `REGISTERED` (ADR 0002). CaaS direct debi
 - `apps/web/src/app/api/webhooks/subscription/notify/route.ts` — real-time status updates
 
 **Parked, still in the code (slated for removal):**
-- `apps/web/src/app/api/billing/subscribe/route.ts` (CaaS direct debit) and `apps/web/src/app/api/cron/caas-check/route.ts` (CaaS balance check, `vercel.json` cron entry)
+- `apps/web/src/app/api/billing/subscribe/route.ts` (CaaS direct debit) and `apps/web/src/app/api/cron/caas-check/route.ts` (nightly BDApps `getStatus` subscription check for Pro subscribers; no CaaS balance call, see SRS §CaaS)
 - `CaasTransaction` model (`Subscription.consecutiveFailures` / `gracePeriodEndsAt` dropped by migration `20261019990000_remove_grace_period`)
 
 **What's implemented:**
@@ -469,7 +498,7 @@ Pro means BDApps reports the number as `REGISTERED` (ADR 0002). CaaS direct debi
 **Files:**
 - `packages/shared/src/utils/i18n.ts` — i18next initialization with full EN and BN translation namespaces; `LanguageDetector` removed — Zustand is the single source of truth for language
 - `apps/web/src/components/ui/LanguageToggle.tsx` — Language toggle component; present on ALL screens including auth and onboarding (UIR-02 compliance)
-- `apps/web/src/app/layout.tsx` — Root layout; `next/font/google` loads Manrope + Noto Sans Bengali (self-hosted, no render-blocking)
+- `apps/web/src/app/layout.tsx` — Root layout; `next/font/local` loads Manrope + Noto Sans Bengali from `src/app/fonts/` (bundled, no render-blocking)
 - `apps/web/src/components/Providers.tsx` — Dynamically updates HTML `lang` attribute based on Zustand language state
 
 **What's implemented:**
@@ -478,7 +507,7 @@ Pro means BDApps reports the number as `REGISTERED` (ADR 0002). CaaS direct debi
 - i18next + react-i18next initialized; language sourced from Zustand (no localStorage LanguageDetector)
 - Language toggle UI present on all screens including auth and onboarding
 - `date-fns` Bengali locale (`bn`) used for date formatting when language is BN
-- `next/font/google` self-hosts Manrope + Noto Sans Bengali — no external font requests
+- `next/font/local` serves the bundled Manrope + Noto Sans Bengali — no external font requests
 - HTML `lang` attribute dynamically updated via `Providers.tsx`
 
 **What's missing:**

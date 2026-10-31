@@ -1,7 +1,9 @@
 'use client'
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useTransition } from 'react'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
+import { useRouter } from 'next/navigation'
+import { useUrlParams } from '@/lib/use-url-params'
+import { useCallback } from 'react'
 import {
   Mail,
   Send,
@@ -120,16 +122,16 @@ function deliveryBadge(deliveryStatus: string) {
 
 // ── Date formatter ─────────────────────────────────────────────────────────
 
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
+const DATE_OPTIONS: Intl.DateTimeFormatOptions = {
   month: 'short',
   day: 'numeric',
   year: 'numeric',
   hour: '2-digit',
   minute: '2-digit',
-})
+}
 
 function formatSentAt(d: Date) {
-  return dateFormatter.format(new Date(d))
+  return formatDhaka(d, DATE_OPTIONS)
 }
 
 // ── Stats helpers ──────────────────────────────────────────────────────────
@@ -150,9 +152,7 @@ function topEntry(record: Record<string, number>): string {
 
 export function EmailsClient({ data, stats }: EmailsClientProps) {
   const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const [, startTransition] = useTransition()
+  const { searchParams, updateParams } = useUrlParams({ clearOn: ['all'] })
 
   const currentType = searchParams.get('type') ?? 'all'
   const currentStatus = searchParams.get('status') ?? 'all'
@@ -166,23 +166,6 @@ export function EmailsClient({ data, stats }: EmailsClientProps) {
     [router],
   )
 
-  const updateParams = useCallback(
-    (updates: Record<string, string | number>) => {
-      const params = new URLSearchParams(searchParams.toString())
-      Object.entries(updates).forEach(([k, v]) => {
-        if (v === '' || v === undefined || v === 'all') {
-          params.delete(k)
-        } else {
-          params.set(k, String(v))
-        }
-      })
-      if (!('page' in updates)) params.set('page', '1')
-      startTransition(() => {
-        router.push(`${pathname}?${params.toString()}`)
-      })
-    },
-    [router, pathname, searchParams]
-  )
 
   function handleTypeChange(value: string) {
     updateParams({ type: value })

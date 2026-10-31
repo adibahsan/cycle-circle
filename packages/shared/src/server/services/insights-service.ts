@@ -1,8 +1,8 @@
-import { differenceInDays, addDays, format } from 'date-fns'
 import { prisma } from '../db'
 import { assertProfileOwnership } from './profile-service'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
 import { getCurrentPhase, MS_PER_DAY } from '../../utils/cycle-utils'
+import { bangladeshToday, dayToStoredDate, storedDateToDay } from '../../utils/dhaka-date'
 import type { CyclePhase } from '../../types/types'
 
 // ─── Return-shape interfaces ───────────────────────────────────────────────────
@@ -41,8 +41,13 @@ export interface InsightsRangeOpts {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/** Stored date-only values are 00:00 UTC; add whole days in UTC so the process timezone never matters. */
+function addUtcDays(d: Date, n: number): Date {
+  return new Date(d.getTime() + n * MS_PER_DAY)
+}
+
 function toYMD(d: Date): string {
-  return format(d, 'yyyy-MM-dd')
+  return storedDateToDay(d)
 }
 
 /**
@@ -53,7 +58,7 @@ function toYMD(d: Date): string {
 function computeCycleLengths(sortedStarts: Date[]): CycleLengthPoint[] {
   const result: CycleLengthPoint[] = []
   for (let i = 1; i < sortedStarts.length; i++) {
-    const gap = differenceInDays(sortedStarts[i], sortedStarts[i - 1])
+    const gap = Math.round((sortedStarts[i].getTime() - sortedStarts[i - 1].getTime()) / MS_PER_DAY)
     if (gap > 0) {
       result.push({ date: toYMD(sortedStarts[i]), cycleLength: gap })
     }
@@ -230,9 +235,9 @@ export async function getFertileWindowHistory(
     const cycleStart = logs[i].startDate
     const nextStart = logs[i + 1].startDate
 
-    const ovulation = addDays(nextStart, -14)
-    const fertileStart = addDays(ovulation, -5)
-    const fertileEnd = addDays(ovulation, 1)
+    const ovulation = addUtcDays(nextStart, -14)
+    const fertileStart = addUtcDays(ovulation, -5)
+    const fertileEnd = addUtcDays(ovulation, 1)
 
     result.push({
       cycleStart: toYMD(cycleStart),
@@ -354,8 +359,9 @@ export function rankRecentSymptoms({ todayMs, symptomLogs, limit = 3 }: RankRece
 }
 
 /** Loads a profile's recent symptom logs and ranks its symptom pattern. Caller has checked ownership. */
-export async function loadRecentSymptomPattern(profileId: string, now: Date = new Date()): Promise<PhasePatternEntry[]> {
-  const todayMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+export async function loadRecentSymptomPattern(profileId: string, now: Date): Promise<PhasePatternEntry[]> {
+  // Today is the Bangladesh day (UTC+6), so a log dated the next Bangladesh day counts after 18:00 UTC.
+  const todayMs = dayToStoredDate(bangladeshToday(now)).getTime()
   const symptomLogs = await prisma.symptomLog.findMany({
     where: {
       profileId,

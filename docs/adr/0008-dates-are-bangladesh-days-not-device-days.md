@@ -1,0 +1,9 @@
+# Dates are Bangladesh days, not device days
+
+Every date the product shows, defaults to or stores is a **Bangladesh day**: a calendar day in fixed UTC+6, the same day `bdDayKey` and the server's Asia/Dhaka helpers use. The web app currently defaults the log forms, profile date limits and dashboard "today" to the device's day (`deviceDayString`), which was introduced to stop the UTC-day bug (yesterday between 00:00 and 06:00 in Bangladesh). It fixes that bug only for devices set to Bangladesh time. For any other device, a log saved near midnight lands on a different day than the server's late-period count, reminders and admin filters use. We chose one Bangladesh day over "each user logs their own day" because the product serves Bangladesh: the server already counts in Bangladesh days, and two different "todays" split the same log across two days. E2E browsers run in `Asia/Dhaka`, and an expected-to-fail test with a non-Bangladesh device timezone tracks the switch away from device days. Decided 2026-10-25.
+
+**Amended 2026-10-30.** Three refinements, decided while grilling the Group A spec:
+
+- Per-day counts group events by the Bangladesh day their moment falls on. That includes admin series such as signups, SMS and feedback per day. Admin date filters already use Bangladesh days, and a chart grouped by UTC day disagrees with its own filter.
+- Server and shared code give the same answer under any process `TZ`. Prod runs at UTC but dev does not, which is how the period-log sync went off by one (#151). Day math runs on `YYYY-MM-DD` strings through UTC-only helpers next to `bangladeshToday`. date-fns' local-time day functions are banned there by lint. A second unit run under `TZ=Asia/Dhaka` and `TZ=America/New_York` in CI proves it.
+- The device-day helpers (`deviceDayString`, `toDeviceDay`) are deleted. Under this ADR, a day computed from the device clock has no correct use.
