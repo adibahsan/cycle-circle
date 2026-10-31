@@ -21,7 +21,7 @@ beforeEach(async () => {
   await testPrisma.user.create({
     data: {
       id: USER,
-      phone: '+8801940000001',
+      phone: '+8801947185001',
       authMethod: 'OTP',
       fullName: 'Detail User',
       passwordHash: 'SECRET-HASH',

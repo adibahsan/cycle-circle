@@ -154,7 +154,7 @@ export async function planCampaign(
         createdBy,
         messages: { create: input.messages.map((m) => ({ day: dayToStoredDate(m.day), body: m.body })) },
       },
-      include: { messages: true },
+      include: { messages: { orderBy: { day: 'asc' } } },
     })
     await createAuditLog(createdBy, opts.auditAction ?? AUDIT_ACTIONS.CREATE_SMS_CAMPAIGN, 'SmsCampaign', campaign.id, {
       name: campaign.name,
