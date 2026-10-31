@@ -116,7 +116,7 @@ export function DateRangeControl({ range, className }: { range: DateRangeControl
             To
             <input id="range-to" name="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className={INPUT} />
           </label>
-          <button type="submit" className={[BUTTON, 'bg-[var(--color-primary)] text-white'].join(' ')}>
+          <button type="submit" className={[BUTTON, 'border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-border)]'].join(' ')}>
             Apply
           </button>
         </form>
