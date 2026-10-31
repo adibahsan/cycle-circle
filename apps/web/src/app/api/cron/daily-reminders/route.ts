@@ -1,5 +1,5 @@
 import { withCronAuth } from '@vesta/shared/server/middleware'
-import { runDailyReminders, dispatchScheduledBroadcast, isCronEnabled } from '@vesta/shared/server/services'
+import { runDailyReminders, dispatchScheduledBroadcast, recoverStuckBroadcasts, isCronEnabled } from '@vesta/shared/server/services'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -41,12 +41,17 @@ const handler = withCronAuth(async (request) => {
 
   // Send the day's scheduled SMS broadcast (one per day). Failures here must not
   // fail the reminder run, so it is reported alongside rather than thrown.
+  // Close out any broadcast orphaned in SENDING first, so it cannot sit there forever.
+  const smsRecovery = await recoverStuckBroadcasts(new Date()).catch((err: unknown) => ({
+    recovered: 0,
+    error: String(err),
+  }))
   const smsBroadcast = await dispatchScheduledBroadcast(new Date()).catch((err: unknown) => ({
     dispatched: false as const,
     error: String(err),
   }))
 
-  return Response.json({ ...result, smsBroadcast })
+  return Response.json({ ...result, smsBroadcast, smsRecovery })
 })
 
 export const GET = handler

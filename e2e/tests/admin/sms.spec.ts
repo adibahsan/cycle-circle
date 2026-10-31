@@ -330,7 +330,7 @@ test.describe('Admin SMS broadcasting', () => {
     }
   })
 
-  test('a scripted BDApps failure is retried and the broadcast ends Sent', async ({
+  test('a scripted BDApps failure is not re-sent and the broadcast ends Failed', async ({
     browser,
     newUser,
     fakeBdapps,
@@ -343,7 +343,6 @@ test.describe('Admin SMS broadcasting', () => {
     timezoneId,
   }) => {
     const runId = randomBytes(3).toString('hex')
-    // Retry + 45 s send wait + 45 s fake poll: more than the 60 s default on a CI runner.
     test.setTimeout(150_000)
     const enMarker = `E2E SMS Retry ${runId}`
     const bnMarker = `E2E SMS Retry BN ${runId}`
@@ -381,17 +380,70 @@ test.describe('Admin SMS broadcasting', () => {
 
       await clickRowAction(page, enMarker, 'Send broadcast')
       await page.getByRole('button', { name: 'Send Now', exact: true }).click()
-      await expect(page.getByText('Broadcast sent')).toBeVisible({ timeout: 45_000 })
 
-      const mine = await waitForSmsCalls(fakeBdapps, enMarker, { sinceSeq, min: 2, timeoutMs: 45_000 })
-      expect(mine.length).toBeGreaterThanOrEqual(2)
+      // One layer retries and a rejected send is final: exactly one provider call, row Failed.
+      const mine = await waitForSmsCalls(fakeBdapps, enMarker, { sinceSeq })
+      await expect.poll(async () => (await e2eDb().smsBroadcast.findFirst({ where: { message: enMarker } }))?.status, {
+        timeout: 30_000,
+      }).toBe('FAILED')
+      expect(mine).toHaveLength(1)
       expect(mine[0].response).toMatchObject({ statusCode: 'E1601' })
-      expect(mine[mine.length - 1].response).toMatchObject({ statusCode: 'S1000' })
-      expect(mine[mine.length - 1].body.message).toContain(enMarker)
-
       const dbRow = await e2eDb().smsBroadcast.findFirst({ where: { message: enMarker } })
-      expect(dbRow?.status).toBe('SENT')
-      expect(dbRow?.lastError).toBeNull()
+      expect(dbRow?.lastError).toBeTruthy()
+    } finally {
+      await admin.context.close()
+    }
+  })
+
+  test('double-click on Send Now records exactly one send at BDApps', async ({
+    browser,
+    newUser,
+    fakeBdapps,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    const runId = randomBytes(3).toString('hex')
+    test.setTimeout(150_000)
+    const enMarker = `E2E SMS Dbl ${runId}`
+    const bnMarker = `E2E SMS Dbl BN ${runId}`
+    await newUser()
+
+    const sinceSeq = (await fakeBdapps.calls({ path: '/sms/send' })).at(-1)?.seq ?? 0
+    const admin = await createLoggedInAdmin(browser, {
+      viewport,
+      userAgent,
+      isMobile,
+      hasTouch,
+      deviceScaleFactor,
+      locale,
+      timezoneId,
+    })
+
+    try {
+      const { page } = admin
+      await page.goto('/sms?pageSize=100')
+      await expect(page.getByRole('heading', { name: 'SMS Broadcasts' })).toBeVisible()
+
+      const dialog = await openCreateModal(page)
+      await fillBilingualDraft(dialog, enMarker, bnMarker)
+      await dialog.getByRole('button', { name: 'Save as Draft' }).click()
+      await expect(page.getByRole('heading', { name: 'New SMS Broadcast' })).toHaveCount(0)
+      await expect(broadcastRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
+
+      await clickRowAction(page, enMarker, 'Send broadcast')
+      await page.getByRole('button', { name: 'Send Now', exact: true }).dblclick()
+
+      await expect.poll(async () => (await e2eDb().smsBroadcast.findFirst({ where: { message: enMarker } }))?.status, {
+        timeout: 30_000,
+      }).toBe('SENT')
+      await expect(page.getByText('Broadcast sent')).toBeVisible({ timeout: 30_000 })
+      const mine = smsCallsWithMarker(await fakeBdapps.calls({ path: '/sms/send', sinceSeq }), enMarker)
+      expect(mine).toHaveLength(1)
     } finally {
       await admin.context.close()
     }
