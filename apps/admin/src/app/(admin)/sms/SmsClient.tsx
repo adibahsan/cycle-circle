@@ -97,7 +97,11 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      await deleteSmsCampaign(deleteTarget.id)
+      const result = await deleteSmsCampaign(deleteTarget.id)
+      if ('error' in result) {
+        toast.error(result.error)
+        return
+      }
       setDeleteTarget(null)
       toast.success('Campaign deleted')
       router.refresh()

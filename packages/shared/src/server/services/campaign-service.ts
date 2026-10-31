@@ -311,8 +311,12 @@ export async function createOneDayCampaignsBulk(
 // ── Editing and deleting ───────────────────────────────────────────────────────
 
 async function loadEditable(messageId: string) {
-  const m = await prisma.smsCampaignMessage.findUnique({ where: { id: messageId } })
+  const m = await prisma.smsCampaignMessage.findUnique({
+    where: { id: messageId },
+    include: { campaign: { select: { cancelledAt: true } } },
+  })
   if (!m) throw new Error('Message not found')
+  if (m.campaign.cancelledAt) throw new Error('A cancelled campaign cannot be changed')
   if (!canEditMessage(m.status)) {
     throw new Error(
       m.status === 'SENT'
@@ -348,8 +352,9 @@ export async function updateCampaignMessage(messageId: string, adminUserId: stri
 }
 
 /** Move an unsent message to another Bangladesh day (refused on a clash). Resets a FAILED one. */
-export async function rescheduleCampaignMessage(messageId: string, adminUserId: string, day: string) {
+export async function rescheduleCampaignMessage(messageId: string, adminUserId: string, day: string, now?: Date) {
   assertDay(day)
+  if (now) assertNotPast(day, now)
   const m = await loadEditable(messageId)
   await assertDaysFree([day], m.id)
 
@@ -383,6 +388,52 @@ export async function deleteCampaign(campaignId: string, adminUserId: string) {
     name: campaign.name,
   })
   return { success: true }
+}
+
+/**
+ * Cancel a campaign: every message still PLANNED becomes CANCELLED and the campaign is stamped
+ * `cancelledAt`. Sent, sending, failed and missed messages stay as they are, so the campaign can
+ * show "Cancelled, N of M sent". Refused when it is already cancelled.
+ */
+export async function cancelCampaign(campaignId: string, adminUserId: string, now: Date) {
+  const campaign = await prisma.smsCampaign.findUnique({ where: { id: campaignId }, select: { name: true, cancelledAt: true } })
+  if (!campaign) throw new Error('Campaign not found')
+  if (campaign.cancelledAt) throw new Error('This campaign is already cancelled')
+
+  const [cancelled] = await prisma.$transaction([
+    prisma.smsCampaignMessage.updateMany({ where: { campaignId, status: 'PLANNED' }, data: { status: 'CANCELLED' } }),
+    prisma.smsCampaign.update({ where: { id: campaignId }, data: { cancelledAt: now } }),
+  ])
+  const total = await prisma.smsCampaignMessage.count({ where: { campaignId } })
+  const sent = await prisma.smsCampaignMessage.count({ where: { campaignId, status: 'SENT' } })
+  await createAuditLog(adminUserId, AUDIT_ACTIONS.CANCEL_SMS_CAMPAIGN, 'SmsCampaign', campaignId, {
+    name: campaign.name,
+    cancelledMessages: cancelled.count,
+    sent,
+    total,
+  })
+  return { cancelled: cancelled.count, sent, total }
+}
+
+/**
+ * Resend a FAILED or MISSED message on a chosen free Bangladesh day: a new PLANNED message with
+ * the same text joins the campaign (same clash and past-day rules as planning). The failed or
+ * missed day stays in the history and never moves a later day.
+ */
+export async function resendCampaignMessage(messageId: string, adminUserId: string, day: string, now: Date) {
+  const original = await prisma.smsCampaignMessage.findUnique({ where: { id: messageId } })
+  if (!original) throw new Error('Message not found')
+  if (original.status !== 'FAILED' && original.status !== 'MISSED') {
+    throw new Error('Only a failed or missed message can be resent')
+  }
+  const added = await addCampaignMessage(original.campaignId, adminUserId, { day, body: original.body }, now)
+  await createAuditLog(adminUserId, AUDIT_ACTIONS.RESEND_SMS_MESSAGE, 'SmsCampaignMessage', messageId, {
+    campaignId: original.campaignId,
+    newMessageId: added.id,
+    from: storedDateToDay(original.day),
+    to: day,
+  })
+  return added
 }
 
 // ── Reading ────────────────────────────────────────────────────────────────────
