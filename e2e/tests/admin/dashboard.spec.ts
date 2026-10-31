@@ -21,20 +21,10 @@ function parseExactStatInteger(display: string, label: string): number {
   return Number.parseInt(trimmed, 10)
 }
 
-/**
- * StatCard value sits in the `<p>` after the title row.
- * No role/name or data-testid on the value (a11y gap #135).
- */
+/** StatCard exposes its value as a definition inside a group named by the card title. */
 async function readStatCardValue(page: Page, title: string): Promise<string> {
-  return page.getByText(title, { exact: true }).evaluate((titleEl) => {
-    const titleRow = titleEl.parentElement
-    const valueEl = titleRow?.nextElementSibling
-    if (valueEl && valueEl.tagName === 'P') return valueEl.textContent?.trim() ?? ''
-    const card = titleEl.parentElement?.parentElement
-    if (!card) return ''
-    const paragraphs = Array.from(card.querySelectorAll('p'))
-    return paragraphs.find((p) => p !== titleEl)?.textContent?.trim() ?? ''
-  })
+  const value = page.getByRole('group', { name: title, exact: true }).getByRole('definition')
+  return ((await value.textContent()) ?? '').trim()
 }
 
 async function readExactStat(page: Page, title: string): Promise<number> {
@@ -177,9 +167,19 @@ test.describe('Admin dashboard', () => {
 
       await expect(page.getByRole('heading', { name: 'New Signups' })).toBeVisible()
       await expect(page.getByText('Daily new user registrations — last 30 days')).toBeVisible()
-      // Recharts AreaChart exposes no accessible per-day counts (#135); today's bucket is
-      // asserted via the same User.createdAt day grouping the chart reads (see COVERAGE.md A02).
-      expect(afterToday - beforeToday).toBeGreaterThanOrEqual(2)
+      // The chart's screen-reader table carries the per-day counts; today's row must hold the new users.
+      const todayRow = page
+        .getByRole('table', { name: 'New signups per day' })
+        .getByRole('row', { name: new RegExp(`^${bangladeshDayOf(await serverNow())}\\b`) })
+      await expect
+        .poll(
+          async () => {
+            await refreshDashboard(page)
+            return Number.parseInt(((await todayRow.getByRole('cell').textContent()) ?? '0').trim(), 10)
+          },
+          { timeout: 20_000 },
+        )
+        .toBeGreaterThanOrEqual(beforeToday + 2)
     } finally {
       await admin.context.close()
     }

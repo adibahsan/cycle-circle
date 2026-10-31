@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { clsx } from 'clsx';
 import { Card } from './Card';
 
@@ -10,13 +11,15 @@ interface StatCardProps {
 }
 
 export function StatCard({ title, value, change, icon, className }: StatCardProps) {
+  const titleId = useId();
   const isPositive = change && change.value >= 0;
   const isNegative = change && change.value < 0;
 
   return (
     <Card className={clsx('flex flex-col gap-3', className)}>
+      <div role="group" aria-labelledby={titleId} className="flex flex-col gap-3">
       <div className="flex items-start justify-between">
-        <p className="text-sm font-medium text-[var(--color-text-muted)]">{title}</p>
+        <p id={titleId} className="text-sm font-medium text-[var(--color-text-muted)]">{title}</p>
         {icon && (
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-bg-secondary)] text-[var(--color-primary)]">
             {icon}
@@ -24,9 +27,12 @@ export function StatCard({ title, value, change, icon, className }: StatCardProp
         )}
       </div>
 
-      <p className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)]">
-        {value}
-      </p>
+      <dl>
+        <dt className="sr-only">{title}</dt>
+        <dd className="text-3xl font-bold tracking-tight tabular-nums text-[var(--color-text-primary)]">
+          {value}
+        </dd>
+      </dl>
 
       {change && (
         <div
@@ -71,6 +77,7 @@ export function StatCard({ title, value, change, icon, className }: StatCardProp
           </span>
         </div>
       )}
+      </div>
     </Card>
   );
 }

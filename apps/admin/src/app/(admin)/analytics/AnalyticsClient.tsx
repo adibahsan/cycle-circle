@@ -263,7 +263,7 @@ export function AnalyticsClient({
       <AdminPageHeader
         title="Analytics"
         description="Platform health metrics and cycle intelligence insights"
-        tags={[adminCacheTags.analytics]}
+        tags={[adminCacheTags.analytics, adminCacheTags.feedback]}
       />
 
       {/* Every panel carries its own range (and metric) selector, each bound to its own URL param. */}
