@@ -35,7 +35,11 @@ export function EditBroadcastModal({
     }
     setSaving(true)
     try {
-      await updateSmsMessage(target.id, { body: body.trim() })
+      const result = await updateSmsMessage(target.id, { body: body.trim() })
+      if ('error' in result) {
+        toast.error(result.error)
+        return
+      }
       toast.success(target.status === 'FAILED' ? 'Message updated and planned again' : 'Message updated')
       onSaved()
       onClose()

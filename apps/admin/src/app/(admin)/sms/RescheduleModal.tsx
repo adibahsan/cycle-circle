@@ -34,7 +34,11 @@ export function RescheduleModal({
     }
     setSaving(true)
     try {
-      await rescheduleSmsMessage(target.id, day)
+      const result = await rescheduleSmsMessage(target.id, day)
+      if ('error' in result) {
+        toast.error(result.error)
+        return
+      }
       toast.success('Message moved')
       onSaved()
       onClose()

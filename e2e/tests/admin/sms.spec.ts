@@ -723,6 +723,184 @@ test.describe('Campaign detail', () => {
   })
 })
 
+test.describe('Campaign control', () => {
+  /** Distinct far-future days for one test: the global one-per-day index must never see two alike. */
+  function distinctDays(n: number): string[] {
+    const days = new Set<string>()
+    while (days.size < n) days.add(futureDay())
+    return [...days].sort()
+  }
+
+  const stored = (day: string) => new Date(`${day}T00:00:00Z`)
+
+  /** Keyboard activation: no hit-test, so sticky chrome or a toast over the button can't swallow it. */
+  async function press(locator: import('@playwright/test').Locator) {
+    await locator.scrollIntoViewIfNeeded()
+    await locator.focus()
+    await locator.press('Enter')
+  }
+
+  async function seedCampaign(
+    name: string,
+    messages: { day: string; body: string; status: 'PLANNED' | 'SENT' | 'FAILED' | 'MISSED'; lastError?: string }[],
+  ) {
+    const adminUser = await e2eDb().user.findFirstOrThrow({ where: { role: 'ADMIN' } })
+    return e2eDb().smsCampaign.create({
+      data: {
+        name,
+        createdBy: adminUser.id,
+        messages: {
+          create: messages.map((m) => ({
+            day: stored(m.day),
+            body: m.body,
+            status: m.status,
+            lastError: m.lastError,
+            ...(m.status === 'SENT' ? { sentAt: new Date(), audienceSize: 2 } : {}),
+          })),
+        },
+      },
+      include: { messages: { orderBy: { day: 'asc' } } },
+    })
+  }
+
+  test('cancelling mid-campaign stops the remaining days and shows "Cancelled, 1 of 3 sent"', async ({ browser, viewport }) => {
+    const runId = randomBytes(3).toString('hex')
+    const [d1, d2, d3] = distinctDays(3)
+    const campaign = await seedCampaign(`E2E SMS Cancel ${runId}`, [
+      { day: d1, body: `Cancel one ${runId}`, status: 'SENT' },
+      { day: d2, body: `Cancel two ${runId}`, status: 'PLANNED' },
+      { day: d3, body: `Cancel three ${runId}`, status: 'PLANNED' },
+    ])
+    const admin = await createLoggedInAdmin(browser, { viewport })
+    try {
+      const { page } = admin
+      await admin.page.goto(`/sms/${campaign.id}`)
+      await expect(page.getByRole('heading', { name: campaign.name })).toBeVisible()
+      // A campaign that has sent a message can no longer be deleted.
+      await expect(page.getByRole('button', { name: 'Delete campaign' })).toHaveCount(0)
+
+      await press(page.getByRole('button', { name: 'Cancel campaign', exact: true }))
+      const confirm = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Cancel this campaign?' }) })
+      await press(confirm.getByRole('button', { name: 'Cancel campaign', exact: true }))
+
+      await expect(page.getByTestId('campaign-cancelled-summary')).toHaveText('Cancelled, 1 of 3 sent', { timeout: 15_000 })
+      await expect(page.getByTestId('campaign-status').getByText('Cancelled', { exact: true })).toBeVisible()
+      const rows = await e2eDb().smsCampaignMessage.findMany({ where: { campaignId: campaign.id }, orderBy: { day: 'asc' } })
+      expect(rows.map((r) => r.status)).toEqual(['SENT', 'CANCELLED', 'CANCELLED'])
+      expect((await e2eDb().smsCampaign.findUniqueOrThrow({ where: { id: campaign.id } })).cancelledAt).not.toBeNull()
+      expect(await e2eDb().adminAuditLog.count({ where: { action: 'CANCEL_SMS_CAMPAIGN', targetId: campaign.id } })).toBe(1)
+      // No controls are left on a cancelled campaign.
+      await expect(page.getByRole('button', { name: 'Add day' })).toHaveCount(0)
+    } finally {
+      await admin.context.close()
+      await removeCampaigns(runId)
+    }
+  })
+
+  test('an unsent message can be edited and a sent one is locked; a clashing added day is refused, a free one accepted', async ({
+    browser,
+    viewport,
+  }) => {
+    const runId = randomBytes(3).toString('hex')
+    const [d1, d2, clash, free] = distinctDays(4)
+    const campaign = await seedCampaign(`E2E SMS Run ${runId}`, [
+      { day: d1, body: `Run one ${runId}`, status: 'SENT' },
+      { day: d2, body: `Run two ${runId}`, status: 'PLANNED' },
+    ])
+    const holder = await seedCampaign(`E2E SMS Holder ${runId}`, [{ day: clash, body: `Holder ${runId}`, status: 'PLANNED' }])
+    const admin = await createLoggedInAdmin(browser, { viewport })
+    try {
+      const { page } = admin
+      await page.goto(`/sms/${campaign.id}`)
+      const sentRow = page.getByRole('row').filter({ hasText: `Run one ${runId}` })
+      const plannedRow = page.getByRole('row').filter({ hasText: `Run two ${runId}` })
+      await expect(sentRow).toBeVisible()
+      await expect(sentRow.getByRole('button', { name: /^Edit message/ })).toHaveCount(0)
+
+      await press(plannedRow.getByRole('button', { name: /^Edit message/ }))
+      const edit = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Edit message' }) })
+      await edit.getByLabel('Message', { exact: true }).fill(`Run two edited ${runId}`)
+      await press(edit.getByRole('button', { name: 'Save changes' }))
+      await expect(page.getByRole('row').filter({ hasText: `Run two edited ${runId}` })).toBeVisible({ timeout: 15_000 })
+
+      // A clashing day is refused inline, naming the other campaign; nothing is added.
+      await press(page.getByRole('button', { name: 'Add day' }))
+      const add = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Add a day' }) })
+      await add.getByLabel('Day (Bangladesh)').fill(clash)
+      await add.getByLabel('New message').fill(`Run three ${runId}`)
+      await press(add.getByRole('button', { name: 'Add day', exact: true }))
+      await expect(add.getByRole('alert')).toContainText(holder.name, { timeout: 15_000 })
+      expect(await e2eDb().smsCampaignMessage.count({ where: { campaignId: campaign.id } })).toBe(2)
+
+      // A free day is accepted.
+      await add.getByLabel('Day (Bangladesh)').fill(free)
+      await press(add.getByRole('button', { name: 'Add day', exact: true }))
+      await expect(page.getByRole('row').filter({ hasText: `Run three ${runId}` })).toBeVisible({ timeout: 15_000 })
+      expect(await e2eDb().smsCampaignMessage.count({ where: { campaignId: campaign.id } })).toBe(3)
+      expect(await e2eDb().adminAuditLog.count({ where: { action: 'ADD_SMS_MESSAGE', targetId: { in: (await e2eDb().smsCampaignMessage.findMany({ where: { campaignId: campaign.id }, select: { id: true } })).map((m) => m.id) } } })).toBe(1)
+    } finally {
+      await admin.context.close()
+      await removeCampaigns(runId)
+    }
+  })
+
+  test('a failed day is skipped without moving later days, and can be resent on a free day', async ({ browser, viewport }) => {
+    const runId = randomBytes(3).toString('hex')
+    const [d1, d2, d3, free] = distinctDays(4)
+    const campaign = await seedCampaign(`E2E SMS Resend ${runId}`, [
+      { day: d1, body: `Resend one ${runId}`, status: 'FAILED', lastError: 'E2E gateway down' },
+      { day: d2, body: `Resend two ${runId}`, status: 'PLANNED' },
+      { day: d3, body: `Resend three ${runId}`, status: 'PLANNED' },
+    ])
+    const admin = await createLoggedInAdmin(browser, { viewport })
+    try {
+      const { page } = admin
+      await page.goto(`/sms/${campaign.id}`)
+      const failedRow = page.getByRole('row').filter({ hasText: `Resend one ${runId}` })
+      await press(failedRow.getByRole('button', { name: /^Resend message/ }))
+      const dialog = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Resend on a free day' }) })
+
+      // A taken day is refused inline.
+      await dialog.getByLabel('Free day (Bangladesh)').fill(d2)
+      await press(dialog.getByRole('button', { name: 'Plan on this day' }))
+      await expect(dialog.getByRole('alert')).toContainText(campaign.name, { timeout: 15_000 })
+
+      await dialog.getByLabel('Free day (Bangladesh)').fill(free)
+      await press(dialog.getByRole('button', { name: 'Plan on this day' }))
+      await expect(page.getByRole('row').filter({ hasText: `Resend one ${runId}` })).toHaveCount(2, { timeout: 15_000 })
+
+      const rows = await e2eDb().smsCampaignMessage.findMany({ where: { campaignId: campaign.id }, orderBy: { day: 'asc' } })
+      expect(rows.map((r) => [r.day.toISOString().slice(0, 10), r.status])).toEqual(
+        [[d1, 'FAILED'], [d2, 'PLANNED'], [d3, 'PLANNED'], [free, 'PLANNED']].sort((a, b) => (a[0] < b[0] ? -1 : 1)),
+      )
+      expect(await e2eDb().adminAuditLog.count({ where: { action: 'RESEND_SMS_MESSAGE', targetId: rows.find((r) => r.status === 'FAILED')!.id } })).toBe(1)
+    } finally {
+      await admin.context.close()
+      await removeCampaigns(runId)
+    }
+  })
+
+  test('a campaign with nothing sent can be deleted from its page', async ({ browser, viewport }) => {
+    const runId = randomBytes(3).toString('hex')
+    const [d1] = distinctDays(1)
+    const campaign = await seedCampaign(`E2E SMS Drop ${runId}`, [{ day: d1, body: `Drop ${runId}`, status: 'PLANNED' }])
+    const admin = await createLoggedInAdmin(browser, { viewport })
+    try {
+      const { page } = admin
+      await page.goto(`/sms/${campaign.id}`)
+      await press(page.getByRole('button', { name: 'Delete campaign' }))
+      const confirm = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Delete this campaign?' }) })
+      await press(confirm.getByRole('button', { name: 'Delete', exact: true }))
+      await expect(page).toHaveURL(/\/sms$/, { timeout: 15_000 })
+      expect(await e2eDb().smsCampaign.count({ where: { id: campaign.id } })).toBe(0)
+      expect(await e2eDb().adminAuditLog.count({ where: { action: 'DELETE_SMS_CAMPAIGN', targetId: campaign.id } })).toBe(1)
+    } finally {
+      await admin.context.close()
+      await removeCampaigns(runId)
+    }
+  })
+})
+
 test.describe('Server render', () => {
   test('SMS page hydrates when a message was sent between 18:00Z and 24:00Z', async ({ browser, days, viewport }) => {
     // 18:00Z is 00:00 Bangladesh: server (UTC) and browser (Asia/Dhaka) must print the same date.

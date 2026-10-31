@@ -8,6 +8,8 @@ import {
   sendCampaignMessage,
   updateCampaignMessage,
   rescheduleCampaignMessage,
+  cancelCampaign,
+  resendCampaignMessage,
 } from '@vesta/shared/server/services'
 import { revalidateTag } from 'next/cache'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
@@ -54,14 +56,17 @@ export async function addSmsMessage(
   }
 }
 
-export async function deleteSmsCampaign(campaignId: string) {
+export async function deleteSmsCampaign(campaignId: string): Promise<{ success: true } | { error: string }> {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await deleteCampaign(campaignId, admin.id)
-
-  revalidateTag(adminCacheTags.sms, { expire: 0 })
-  return { success: true }
+  try {
+    await deleteCampaign(campaignId, admin.id)
+    revalidateTag(adminCacheTags.sms, { expire: 0 })
+    return { success: true }
+  } catch (err) {
+    return refusal(err)
+  }
 }
 
 export async function sendSmsMessage(messageId: string) {
@@ -78,23 +83,59 @@ export async function sendSmsMessage(messageId: string) {
 }
 
 /** Edit the text of an unsent message. */
-export async function updateSmsMessage(messageId: string, input: { body: string }) {
+export async function updateSmsMessage(messageId: string, input: { body: string }): Promise<{ success: true } | { error: string }> {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await updateCampaignMessage(messageId, admin.id, input)
-
-  revalidateTag(adminCacheTags.sms, { expire: 0 })
-  return { success: true }
+  try {
+    await updateCampaignMessage(messageId, admin.id, input)
+    revalidateTag(adminCacheTags.sms, { expire: 0 })
+    return { success: true }
+  } catch (err) {
+    return refusal(err)
+  }
 }
 
 /** Move an unsent message to another Bangladesh day (`YYYY-MM-DD`). */
-export async function rescheduleSmsMessage(messageId: string, day: string) {
+export async function rescheduleSmsMessage(messageId: string, day: string): Promise<{ success: true } | { error: string }> {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await rescheduleCampaignMessage(messageId, admin.id, day)
+  try {
+    await rescheduleCampaignMessage(messageId, admin.id, day, new Date())
+    revalidateTag(adminCacheTags.sms, { expire: 0 })
+    return { success: true }
+  } catch (err) {
+    return refusal(err)
+  }
+}
 
-  revalidateTag(adminCacheTags.sms, { expire: 0 })
-  return { success: true }
+/** Cancel the rest of a campaign: remaining planned days are cancelled, sent ones stay. */
+export async function cancelSmsCampaign(
+  campaignId: string,
+): Promise<{ cancelled: number; sent: number; total: number } | { error: string }> {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  try {
+    const result = await cancelCampaign(campaignId, admin.id, new Date())
+    revalidateTag(adminCacheTags.sms, { expire: 0 })
+    return result
+  } catch (err) {
+    return refusal(err)
+  }
+}
+
+/** Resend a failed or missed message on a chosen free Bangladesh day. */
+export async function resendSmsMessage(messageId: string, day: string): Promise<{ id: string } | { error: string }> {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  try {
+    const message = await resendCampaignMessage(messageId, admin.id, day, new Date())
+    revalidateTag(adminCacheTags.sms, { expire: 0 })
+    return { id: message.id }
+  } catch (err) {
+    return refusal(err)
+  }
 }
