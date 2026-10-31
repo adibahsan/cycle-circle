@@ -1,5 +1,6 @@
 import { test, expect } from '../../support/fixtures'
 import { createLoggedInAdmin } from '../../support/admin'
+import { URLS } from '../../support/slot'
 
 test.describe('Admin API docs', () => {
   test('the API reference page loads with the rendered OpenAPI operations', async ({
@@ -35,4 +36,17 @@ test.describe('Admin API docs', () => {
       await admin.context.close()
     }
   })
+
+  for (const path of ['/openapi.yaml', '/swagger-ui/swagger-ui-bundle.js']) {
+    test(`an anonymous request for ${path} is redirected to login`, async ({ playwright }) => {
+      const anon = await playwright.request.newContext({ baseURL: URLS.admin })
+      try {
+        const res = await anon.get(path, { maxRedirects: 0 })
+        expect([307, 308]).toContain(res.status())
+        expect(res.headers()['location']).toMatch(/\/login$/)
+      } finally {
+        await anon.dispose()
+      }
+    })
+  }
 })

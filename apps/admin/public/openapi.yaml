@@ -38,7 +38,7 @@ tags:
   - name: Webhooks
     description: Inbound webhooks (BDApps SMS/USSD/subscription, Resend email)
   - name: Cron
-    description: Scheduled jobs (Bearer CRON_SECRET; invoked by Vercel Cron via GET)
+    description: Scheduled jobs (Bearer CRON_SECRET; invoked by the VPS host crontab via POST)
   - name: Health
     description: Liveness / dependency health checks (public)
 
@@ -56,7 +56,7 @@ components:
     cronBearer:
       type: http
       scheme: bearer
-      description: "Authorization: Bearer <CRON_SECRET> (injected by Vercel Cron)."
+      description: "Authorization: Bearer <CRON_SECRET> (sent by the VPS host crontab via curl -X POST)."
 
   schemas:
     Error:
@@ -922,7 +922,7 @@ paths:
     get:
       tags: [Cron]
       summary: Daily subscription check (BDApps subscriber status) + keep-alive
-      description: Runs a keep-alive query, then asks BDApps for each Pro subscriber's subscriber status (getStatus). Downgrades numbers reported UNREGISTERED and restores revoked users reported REGISTERED. Makes no CaaS calls. Invoked by Vercel Cron via GET (identical handler on POST).
+      description: Runs a keep-alive query, then asks BDApps for each Pro subscriber's subscriber status (getStatus). Downgrades numbers reported UNREGISTERED and restores revoked users reported REGISTERED. Makes no CaaS calls. Invoked by the VPS host crontab at 02:00 UTC via POST (identical handler on GET).
       security: [{ cronBearer: [] }]
       responses:
         '200':

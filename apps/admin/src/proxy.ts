@@ -31,5 +31,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)'],
+  // Dotted paths are NOT blanket-excluded: public/openapi.yaml and public/swagger-ui/* must hit
+  // the auth decision (#186). Only assets the unauthenticated pages need are skipped.
+  matcher: [
+    '/((?!(?:_next/static|_next/image|brand)(?:/|$)|(?:favicon\\.ico|icon\\.png|apple-icon\\.png)$).*)',
+  ],
 }
