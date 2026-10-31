@@ -131,7 +131,12 @@ async function fillCampaign(
   await dialog.getByLabel('Campaign name').fill(name)
   for (const [i, m] of messages.entries()) {
     if (i > 0) await dialog.getByRole('button', { name: 'Add another day' }).click()
-    await dialog.getByLabel(`Day ${i + 1}`, { exact: true }).fill(m.day)
+    // Fill until the value sticks: a controlled date input can lose a fill that lands mid-hydration.
+    const dayInput = dialog.getByLabel(`Day ${i + 1}`, { exact: true })
+    await expect(async () => {
+      await dayInput.fill(m.day, { timeout: 3_000 })
+      await expect(dayInput).toHaveValue(m.day, { timeout: 1_000 })
+    }).toPass({ timeout: 20_000 })
     await dialog.getByLabel(`Message ${i + 1}`, { exact: true }).fill(m.body)
   }
 }
