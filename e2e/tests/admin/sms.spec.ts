@@ -534,7 +534,11 @@ test.describe('Server render', () => {
       if (/Minified React error #(418|423|425)|hydrat/i.test(e.message)) reactErrors.push(e.message)
     })
     try {
+      // The /sms list is cached (5 min); bust it, then reload so the server renders the new row.
       await admin.page.goto('/sms?pageSize=100')
+      await admin.page.getByRole('button', { name: 'Refresh data' }).click()
+      await expect(broadcastRow(admin.page, marker)).toBeVisible()
+      await admin.page.reload()
       await expect(broadcastRow(admin.page, marker)).toBeVisible()
       await admin.page.waitForLoadState('networkidle')
       expect(reactErrors).toEqual([])

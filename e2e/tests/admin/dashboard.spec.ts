@@ -89,13 +89,14 @@ async function ensureExactTotalUsersHeadroom(maxActive = 850): Promise<void> {
   })
 }
 
-/** Today's signup bucket: users created on the current Bangladesh day, as getUserTrend groups them. */
-async function todaySignupBucketCount(): Promise<number> {
+/** How many of these users fall in today's signup bucket (the current Bangladesh day, as getUserTrend groups them). */
+async function inTodaySignupBucket(phones: string[]): Promise<number> {
   const today = bangladeshDayOf(await serverNow())
   const start = bangladeshDayStart(today)
   const end = new Date(start.getTime() + 24 * 3_600_000 - 1)
+  // Only this test's users: the global bucket can shrink while another worker soft-deletes throwaways.
   return e2eDb().user.count({
-    where: { deletedAt: null, createdAt: { gte: start, lte: end } },
+    where: { phone: { in: phones.map(toDbPhone) }, deletedAt: null, createdAt: { gte: start, lte: end } },
   })
 }
 
@@ -146,14 +147,10 @@ test.describe('Admin dashboard', () => {
         )
         .toBeGreaterThanOrEqual(0)
 
-      const beforeToday = await todaySignupBucketCount()
-
       // Throwaway web users (real OTP) — never the seeded read-only personas.
-      await newUser()
-      await newUser()
-
-      const afterToday = await todaySignupBucketCount()
-      expect(afterToday).toBeGreaterThanOrEqual(beforeToday + 2)
+      const { phone: phoneA } = await newUser()
+      const { phone: phoneB } = await newUser()
+      expect(await inTodaySignupBucket([phoneA, phoneB])).toBe(2)
 
       // Parallel-safe: refresh until UI is at least before+2 (monotonic ≥, not exact DB match).
       await expect
@@ -180,7 +177,8 @@ test.describe('Admin dashboard', () => {
           },
           { timeout: 20_000 },
         )
-        .toBeGreaterThanOrEqual(beforeToday + 2)
+        // ≥ 2, not before+2: another worker may soft-delete today's throwaways meanwhile.
+        .toBeGreaterThanOrEqual(2)
     } finally {
       await admin.context.close()
     }
@@ -208,7 +206,10 @@ test.describe('Server render', () => {
       if (/Minified React error #(418|423|425)|hydrat/i.test(e.message)) reactErrors.push(e.message)
     })
     try {
+      // Dashboard stats are cached (5 min); bust them, then reload so the server renders this user.
       await admin.page.goto('/')
+      await admin.page.getByRole('button', { name: 'Refresh data' }).click()
+      await admin.page.reload()
       await expect(admin.page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
       await admin.page.waitForLoadState('networkidle')
       expect(reactErrors).toEqual([])
