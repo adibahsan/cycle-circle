@@ -89,7 +89,7 @@
 | # | Requirement | Status | Notes |
 |---|-------------|--------|-------|
 | 1 | Every UI string in EN + BN | PARTIAL | i18n file complete, but **~20+ hardcoded English strings** not using t() |
-| 2 | Noto Sans Bengali font loaded | DONE | Google Fonts link in root layout |
+| 2 | Noto Sans Bengali font loaded | DONE | Bundled woff2 via `next/font/local` in root layout |
 | 3 | Language preference persisted | DONE | Zustand persist → localStorage |
 | 4 | Language toggle on every screen | PARTIAL | Present on all post-auth screens. **Missing from auth + onboarding** |
 

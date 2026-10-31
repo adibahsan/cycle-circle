@@ -36,7 +36,7 @@ The app uses a **RSC + Server Actions** pattern throughout:
 - **Server Actions** (`apps/web/src/app/actions/`) handle all mutations (`'use server'` functions).
 - **Cached queries** (`apps/web/src/app/queries/`) use React `cache()` for request-level deduplication.
 - **Zustand store** (`apps/web/src/lib/store.ts`) holds UI-only state: theme, language, `activeProfileId`, `onboardingComplete`. All DB state removed.
-- **`next/font/google`** self-hosts Manrope + Noto Sans Bengali — no render-blocking external font requests.
+- **`next/font/local`** serves Manrope + Noto Sans Bengali from `src/app/fonts/` (bundled woff2) — no external font requests at build or run time.
 - **`proxy.ts`** (`apps/web/src/proxy.ts`) performs server-side auth redirect via cookie presence check (renamed from `middleware.ts` for Next.js 16 compatibility).
 - Route conventions in use: `loading.tsx`, `error.tsx`, `not-found.tsx`.
 - Deleted files (no longer in codebase): `api.ts` (client API wrapper), `api-mappers.ts`, `dummy-data.ts`, `hydrate-store.ts`. All data now comes from the DB.
@@ -453,7 +453,7 @@ Pro means BDApps reports the number as `REGISTERED` (ADR 0002). CaaS direct debi
 - `apps/web/src/app/api/webhooks/subscription/notify/route.ts` — real-time status updates
 
 **Parked, still in the code (slated for removal):**
-- `apps/web/src/app/api/billing/subscribe/route.ts` (CaaS direct debit) and `apps/web/src/app/api/cron/caas-check/route.ts` (CaaS balance check, `vercel.json` cron entry)
+- `apps/web/src/app/api/billing/subscribe/route.ts` (CaaS direct debit) and `apps/web/src/app/api/cron/caas-check/route.ts` (nightly BDApps `getStatus` subscription check for Pro subscribers; no CaaS balance call, see SRS §CaaS)
 - `CaasTransaction` model (`Subscription.consecutiveFailures` / `gracePeriodEndsAt` dropped by migration `20261019990000_remove_grace_period`)
 
 **What's implemented:**
@@ -498,7 +498,7 @@ Pro means BDApps reports the number as `REGISTERED` (ADR 0002). CaaS direct debi
 **Files:**
 - `packages/shared/src/utils/i18n.ts` — i18next initialization with full EN and BN translation namespaces; `LanguageDetector` removed — Zustand is the single source of truth for language
 - `apps/web/src/components/ui/LanguageToggle.tsx` — Language toggle component; present on ALL screens including auth and onboarding (UIR-02 compliance)
-- `apps/web/src/app/layout.tsx` — Root layout; `next/font/google` loads Manrope + Noto Sans Bengali (self-hosted, no render-blocking)
+- `apps/web/src/app/layout.tsx` — Root layout; `next/font/local` loads Manrope + Noto Sans Bengali from `src/app/fonts/` (bundled, no render-blocking)
 - `apps/web/src/components/Providers.tsx` — Dynamically updates HTML `lang` attribute based on Zustand language state
 
 **What's implemented:**
@@ -507,7 +507,7 @@ Pro means BDApps reports the number as `REGISTERED` (ADR 0002). CaaS direct debi
 - i18next + react-i18next initialized; language sourced from Zustand (no localStorage LanguageDetector)
 - Language toggle UI present on all screens including auth and onboarding
 - `date-fns` Bengali locale (`bn`) used for date formatting when language is BN
-- `next/font/google` self-hosts Manrope + Noto Sans Bengali — no external font requests
+- `next/font/local` serves the bundled Manrope + Noto Sans Bengali — no external font requests
 - HTML `lang` attribute dynamically updated via `Providers.tsx`
 
 **What's missing:**
