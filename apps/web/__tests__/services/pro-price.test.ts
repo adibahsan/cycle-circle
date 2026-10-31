@@ -7,6 +7,7 @@ import {
   listProPriceHistory,
   AUDIT_ACTIONS,
 } from '@vesta/shared/server/services'
+import { withProPriceStates } from '@vesta/shared/utils/pro-price-state'
 
 const ADMIN = 'test-proprice-admin'
 // Far-future days keep these entries clear of the seeded first entry (5 taka/day from 2000-01-01).
@@ -65,6 +66,19 @@ describe('Pro price (db)', () => {
     expect((await getProPriceOn('2045-05-05'))?.amount).toBe(10)
     const mine = (await listProPriceHistory()).filter((e) => e.createdBy === ADMIN)
     expect(mine.map((e) => e.amount)).toEqual([10, 8])
+  })
+
+  it('the state shown for each entry agrees with the price the service picks', async () => {
+    await setProPrice(ADMIN, { amount: 6, period: 'DAILY', effectiveFrom: '2045-05-01' }, NOW)
+    await setProPrice(ADMIN, { amount: 7, period: 'DAILY', effectiveFrom: '2045-05-20' }, NOW)
+    await setProPrice(ADMIN, { amount: 8, period: 'DAILY', effectiveFrom: '2045-05-20' }, NOW)
+    const states = withProPriceStates(await listProPriceHistory(), '2045-05-01')
+    const inEffect = states.filter((x) => x.state === 'IN_EFFECT')
+    expect(inEffect).toHaveLength(1)
+    expect(inEffect[0].id).toBe((await getCurrentProPrice(NOW))!.id)
+    expect(states.find((x) => x.amount === 7)?.state).toBe('REPLACED')
+    expect(states.find((x) => x.amount === 8)?.state).toBe('SCHEDULED')
+    expect((await getProPriceOn('2045-05-20'))!.amount).toBe(8)
   })
 
   it('lists history newest effective day first, including the seeded entry', async () => {

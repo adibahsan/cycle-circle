@@ -901,7 +901,7 @@ The following security issues were identified and resolved in the current sprint
 1. **Internal dev pages guarded in production** — `dev-login` and similar routes return `notFound()` when `NODE_ENV === 'production'`.
 2. **Webhook IP validation fixed** — `validateWebhookSource` now reads `x-real-ip` (set by infra/reverse-proxy) instead of the spoofable `x-forwarded-for` header.
 3. **OTP verify rate-limited** — max 5 attempts per `referenceNo` enforced server-side (brute-force protection).
-4. **Billing amount server-side only** — `SUBSCRIPTION_AMOUNT_BDT` is a server constant; users cannot influence the charge amount via request body.
+4. **Billing amount server-side only** — the Pro price is an admin-set record (ADR 0011, default ৳5/day); users cannot influence the amount via request body.
 5. **Magic-link trial not reset on re-login** — `emailTrialExpiresAt` is set only on user creation, not on every magic-link callback.
 6. **Charge-before-record fix** — `CaasTransaction` created with PENDING status before the CAAS network call; prevents silent double-charge on retry. (Parked in v1.4: CaaS is not the Pro gate.)
 7. **`env.local` added to `.gitignore`** — prevents accidental secret commit.

@@ -8,6 +8,8 @@ import { Select } from '@/components/ui/Select'
 import { useToast } from '@/components/ui/Toast'
 import { setProPriceAction } from '@/app/actions/system-actions'
 import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
+import { formatProPrice } from '@vesta/shared/utils/pro-price-format'
+import { withProPriceStates } from '@vesta/shared/utils/pro-price-state'
 import type { ProPriceEntry, ProPricePeriod } from '@vesta/shared/server/services'
 
 const PERIOD_OPTIONS: { value: ProPricePeriod; label: string }[] = [
@@ -15,9 +17,8 @@ const PERIOD_OPTIONS: { value: ProPricePeriod; label: string }[] = [
   { value: 'WEEKLY', label: 'Weekly' },
   { value: 'MONTHLY', label: 'Monthly' },
 ]
-const PERIOD_UNIT: Record<ProPricePeriod, string> = { DAILY: 'day', WEEKLY: 'week', MONTHLY: 'month' }
 
-const money = (e: Pick<ProPriceEntry, 'amount' | 'period'>) => `৳${e.amount} per ${PERIOD_UNIT[e.period]}`
+const money = (e: Pick<ProPriceEntry, 'amount' | 'period'>) => formatProPrice(e, 'en')
 
 const inputClass =
   'rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 tabular-nums text-[var(--color-text-primary)] transition-colors focus-visible:border-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30'
@@ -30,8 +31,9 @@ export function ProPriceCard({ initialHistory, today }: { initialHistory: ProPri
   const [pending, start] = useTransition()
   const toast = useToast()
 
-  // The entry in effect today: the first in the list (newest first) that starts on or before today.
-  const current = history.find((e) => e.effectiveFrom <= today)
+  // One rule for which entry is in effect, scheduled or replaced (shared with the price service).
+  const rows = withProPriceStates(history, today)
+  const current = rows.find((e) => e.state === 'IN_EFFECT')
   const parsed = Number(amount)
   const canSave = amount.trim() !== '' && Number.isFinite(parsed) && day !== ''
 
@@ -39,13 +41,7 @@ export function ProPriceCard({ initialHistory, today }: { initialHistory: ProPri
     start(async () => {
       const res = await setProPriceAction({ amount: parsed, period, effectiveFrom: day })
       if (res.ok) {
-        setHistory((h) =>
-          [...h, res.entry].sort(
-            (a, b) =>
-              b.effectiveFrom.localeCompare(a.effectiveFrom) ||
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-          ),
-        )
+        setHistory((h) => [...h, res.entry])
         setAmount('')
         toast.success(`Pro price set to ${money(res.entry)} from ${res.entry.effectiveFrom}`)
         if (!res.webCacheRefreshed) toast.error('Saved, but the web app cache did not refresh. Customers may see the old price for a few minutes.')
@@ -134,18 +130,18 @@ export function ProPriceCard({ initialHistory, today }: { initialHistory: ProPri
             </tr>
           </thead>
           <tbody>
-            {history.map((e) => (
+            {rows.map((e) => (
               <tr key={e.id} className="border-t border-[var(--color-border)]">
                 <td className="py-1.5 pr-4 tabular-nums">
                   {money(e)}
-                  {e.id === current?.id && (
+                  {e.state === 'IN_EFFECT' && (
                     <span className="ml-2 rounded-full bg-[var(--color-success-bg)] px-2 py-0.5 text-xs text-[var(--color-success)]">
                       In effect
                     </span>
                   )}
-                  {e.effectiveFrom > today && (
+                  {(e.state === 'SCHEDULED' || e.state === 'REPLACED') && (
                     <span className="ml-2 rounded-full bg-[var(--color-bg-muted)] px-2 py-0.5 text-xs text-[var(--color-text-muted)]">
-                      Scheduled
+                      {e.state === 'SCHEDULED' ? 'Scheduled' : 'Replaced'}
                     </span>
                   )}
                 </td>

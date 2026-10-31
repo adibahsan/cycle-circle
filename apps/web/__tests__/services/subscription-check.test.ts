@@ -5,6 +5,7 @@ import {
   listSubscriptionCheckRuns,
   getSubscriptionCheckRun,
   setCronEnabled,
+  listBdappsSubscribers,
 } from '@vesta/shared/server/services'
 
 const P = 'test-subchk'
@@ -90,6 +91,22 @@ describe('runDailySubscriptionCheck', () => {
     expect(boom!.lastConfirmedAt).toBeNull()
   })
 
+  it('records last-confirmed for a legacy Pro user with no subscription row, without changing their plan', async () => {
+    const row = await testPrisma.subscription.findFirst({ where: { userId: ids.legacy } })
+    expect(row).toMatchObject({
+      status: 'PRO',
+      adminOverride: false,
+      amount: null,
+      bdappsSubscriberId: LEGACY_PHONE,
+      lastReportedStatus: 'REGISTERED',
+      lastConfirmedAt: NOW,
+    })
+    expect((await testPrisma.user.findUnique({ where: { id: ids.legacy } }))!.subscriptionStatus).toBe('PRO')
+    expect(await testPrisma.subscription.count({ where: { userId: ids.legacy } })).toBe(1)
+    // Still checked on the next run, as a phone id (never downgraded on an ambiguous answer).
+    expect((await listBdappsSubscribers()).some((s) => s.userId === ids.legacy)).toBe(true)
+  })
+
   it('never stores a raw phone id', async () => {
     // The legacy phone user errors out so its outcome would be recorded.
     const answersWithLegacy = (id: string) =>
@@ -101,6 +118,32 @@ describe('runDailySubscriptionCheck', () => {
     expect(legacy).toBeDefined()
     expect(legacy!.maskedSubscriberId).not.toContain('8801955500009')
     expect(legacy!.error ?? '').not.toContain('8801955500009')
+  })
+
+  it('counts revoked subscribers asked at BDApps as checked, so errors never exceed checked', async () => {
+    const revoked = `${P}-revoked`
+    const rsid = 'tel:cmV2b2tlZA'
+    await testPrisma.user.create({ data: { id: revoked, phone: '+8801955500010', authMethod: 'OTP', subscriptionStatus: 'FREE' } })
+    await testPrisma.subscription.create({
+      data: { userId: revoked, status: 'FREE', adminOverride: true, adminOverrideAt: NOW, bdappsSubscriberId: rsid },
+    })
+    try {
+      const asked: string[] = []
+      const recording = async (id: string) => {
+        asked.push(id)
+        if (id === rsid) throw new Error('BDApps timeout')
+        return getStatus(id)
+      }
+      const result = await runDailySubscriptionCheck({ trigger: 'MANUAL', now: clockAt(500_000), clock, overrideDisabled: true, getStatus: recording })
+      expect(result.checked).toBe(asked.length)
+      expect(asked).toContain(rsid)
+      expect(result.errors).toBeGreaterThanOrEqual(1)
+      expect(result.errors).toBeLessThanOrEqual(result.checked)
+      expect(await getSubscriptionCheckRun(result.runId)).toMatchObject({ checkedCount: result.checked })
+    } finally {
+      await testPrisma.subscription.deleteMany({ where: { userId: revoked } })
+      await testPrisma.user.deleteMany({ where: { id: revoked } })
+    }
   })
 
   it('records a cron run as skipped when the job is switched off', async () => {
