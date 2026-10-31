@@ -294,6 +294,7 @@ server {
 # SMS campaign dispatch every 15 minutes (daily send time is set on the admin System page)
 */15 * * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/sms-dispatch >> /var/log/vesta/cron-sms-dispatch.log 2>&1
 30 2 * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/nightly-maintenance >> /var/log/vesta/cron-nightly-maintenance.log 2>&1
+55 17 * * * curl -fsS -X POST -H "Authorization: Bearer <CRON_SECRET>" https://cycle-circle.com/api/cron/pro-snapshot >> /var/log/vesta/cron-pro-snapshot.log 2>&1
 
 # TLS renewal, twice daily (certbot's own recommendation; it no-ops unless <30 days remain)
 0 3,15 * * * cd /opt/vesta && docker compose -f ops/deploy/compose.prod.yml run --rm certbot renew --webroot -w /var/www/certbot --quiet && docker compose -f ops/deploy/compose.prod.yml exec -T nginx nginx -s reload >> /var/log/vesta/certbot-renew.log 2>&1

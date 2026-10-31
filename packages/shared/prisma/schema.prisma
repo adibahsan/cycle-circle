@@ -164,6 +164,7 @@ model User {
   articles        Article[]
   smsCampaigns    SmsCampaign[]
   subscriptionCheckOutcomes SubscriptionCheckOutcome[]
+  churnEvents               ChurnEvent[]
   proPrices       ProPrice[]
   adminAuditLogs  AdminAuditLog[]
   emailLogs       EmailLog[]
@@ -596,4 +597,31 @@ model PredictionAccuracySnapshot {
   computedAt DateTime @default(now())
 
   @@unique([date, tier])
+}
+
+enum ChurnReason {
+  DAILY_CHECK
+  BDAPPS_UNSUBSCRIBE
+  ADMIN_REVOKE
+  ACCOUNT_DELETED
+}
+
+/// A Pro user becoming non-Pro, and why (GLOSSARY: Churn). Kept after the user is purged.
+model ChurnEvent {
+  id         String      @id @default(cuid())
+  userId     String?
+  reason     ChurnReason
+  occurredAt DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([occurredAt])
+  @@index([userId])
+}
+
+/// The Pro subscriber count at the end of one Bangladesh day, stored nightly.
+model ProSnapshot {
+  day        DateTime @id @db.Date // a Bangladesh day, stored as that day at 00:00 UTC
+  proCount   Int
+  computedAt DateTime @default(now())
 }

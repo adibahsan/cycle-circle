@@ -144,7 +144,7 @@ export async function runDailySubscriptionCheck(
           // UNREGISTERED: ambiguous, so never downgrade a legacy phone-id row.
           skipped++
         } else if (status === 'UNREGISTERED') {
-          await applyBdappsSubscription(sub.userId, subscriberId, false, 'nightly-check')
+          await applyBdappsSubscription(sub.userId, subscriberId, false, 'nightly-check', now)
           moved++
           movedUserIds.push(sub.userId)
           outcomes.push({

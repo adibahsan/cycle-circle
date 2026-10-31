@@ -342,6 +342,11 @@ Create the log directory once first: `mkdir -p /opt/vesta/logs`.
 # nightly admin maintenance (MAE snapshot + purge of accounts deleted >30 days ago) — 02:30 UTC
 30 2 * * * curl -fsS -X POST https://cycle-circle.com/api/cron/nightly-maintenance \
   -H "Authorization: Bearer $CRON_SECRET" >> /var/log/vesta/cron-nightly-maintenance.log 2>&1
+
+# Pro subscriber snapshot — 17:55 UTC = 23:55 Bangladesh time. Stores one Pro count per Bangladesh
+# day (ProSnapshot); churn rate and estimated revenue read it. A missed night leaves a gap, never a guess.
+55 17 * * * curl -fsS -X POST https://cycle-circle.com/api/cron/pro-snapshot \
+  -H "Authorization: Bearer $CRON_SECRET" >> /var/log/vesta/cron-pro-snapshot.log 2>&1
 ```
 
 **Human step: the VPS crontab is not changed by deploying this code.** Someone with SSH
