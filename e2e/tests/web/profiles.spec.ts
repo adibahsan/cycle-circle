@@ -106,11 +106,7 @@ test.describe('Profiles management and isolation', () => {
     await expect(page.getByRole('button', { name: /^Add$/i })).not.toBeVisible()
   })
 
-  test('API rejects seventh profile with 4xx when limit is exceeded', async ({ newUser, days }) => {
-    // Product bug: createProfile throws a plain Error, causing handleApiError to return 500 instead of 4xx.
-    // Issue: https://github.com/adibahsan/cycle-circle/issues/137 (Found by E2E ticket #121)
-    test.fail(true, 'POST /api/profiles returns 500 instead of 4xx on 6-profile limit https://github.com/adibahsan/cycle-circle/issues/137')
-
+  test('API rejects seventh profile with 409 PROFILE_LIMIT_REACHED when limit is exceeded', async ({ newUser, days }) => {
     const { page } = await newUser()
 
     for (let i = 1; i <= 6; i++) {
@@ -137,8 +133,8 @@ test.describe('Profiles management and isolation', () => {
         goal: 'tracking',
       },
     })
-    expect(seventhRes.status()).toBeGreaterThanOrEqual(400)
-    expect(seventhRes.status()).toBeLessThan(500)
+    expect(seventhRes.status()).toBe(409)
+    expect((await seventhRes.json()).error.code).toBe('PROFILE_LIMIT_REACHED')
   })
 
   test('switching profiles changes the dashboard, calendar and insights to that profile data', async ({ newUser, days }, testInfo) => {

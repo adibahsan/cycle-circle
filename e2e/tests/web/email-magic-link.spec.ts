@@ -45,63 +45,65 @@ test.describe('Email magic-link login', () => {
     await expect(pill).toHaveAccessibleName(/Trial ends in \d{2}:\d{2}:\d{2}/)
   })
 
-  // The callback answers with raw JSON (handleApiError), so these assert status + error code.
-  // The user-facing page is tracked in issue #140 (test.fail below).
-  test('an expired magic link is rejected with 400 TOKEN_EXPIRED', async ({ page, db }) => {
+  // The callback redirects bad links to /email-login?error=<code> (issue #140); the first three
+  // tests pin the redirect itself, the last three the page the user lands on.
+  test('an expired magic link is redirected to /email-login with TOKEN_EXPIRED', async ({ page, db }) => {
     const email = newEmail('e2e-expired')
     const callbackUrl = await requestLinkViaUi(page, email)
     const token = new URL(callbackUrl).searchParams.get('token')!
     await db.magicLink.update({ where: { token }, data: { expiresAt: new Date(Date.now() - 60_000) } })
 
-    const res = await page.request.get(callbackUrl)
-    expect(res.status()).toBe(400)
-    expect((await res.json()).error.code).toBe('TOKEN_EXPIRED')
+    const res = await page.request.get(callbackUrl, { maxRedirects: 0 })
+    expect(res.status()).toBe(302)
+    expect(res.headers()['location']).toContain('/email-login?error=TOKEN_EXPIRED')
     expect((await page.request.get('/api/auth/status')).ok()).toBe(false)
   })
 
-  test('a reused magic link is rejected with 400 TOKEN_USED', async ({ page }) => {
+  test('a reused magic link is redirected to /email-login with TOKEN_USED', async ({ page }) => {
     const email = newEmail('e2e-reused')
     const callbackUrl = await requestLinkViaUi(page, email)
 
     await page.goto(callbackUrl)
     await expect(page).toHaveURL(/\/onboarding|\/dashboard/)
 
-    const res = await page.request.get(callbackUrl)
-    expect(res.status()).toBe(400)
-    expect((await res.json()).error.code).toBe('TOKEN_USED')
+    const res = await page.request.get(callbackUrl, { maxRedirects: 0 })
+    expect(res.status()).toBe(302)
+    expect(res.headers()['location']).toContain('/email-login?error=TOKEN_USED')
   })
 
-  test('an unknown token is rejected with 400 INVALID_TOKEN', async ({ page }) => {
-    const res = await page.request.get('/api/auth/magic-link/callback?token=not-a-real-token')
-    expect(res.status()).toBe(400)
-    expect((await res.json()).error.code).toBe('INVALID_TOKEN')
+  test('an unknown token is redirected to /email-login with INVALID_TOKEN', async ({ page }) => {
+    const res = await page.request.get('/api/auth/magic-link/callback?token=not-a-real-token', { maxRedirects: 0 })
+    expect(res.status()).toBe(302)
+    expect(res.headers()['location']).toContain('/email-login?error=INVALID_TOKEN')
   })
 
-  // Issue #140: bad links render raw JSON instead of a user-facing page.
   test('an expired magic link shows a user-facing error', async ({ page, db }) => {
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/140')
     const email = newEmail('e2e-expired-ui')
     const callbackUrl = await requestLinkViaUi(page, email)
     const token = new URL(callbackUrl).searchParams.get('token')!
     await db.magicLink.update({ where: { token }, data: { expiresAt: new Date(Date.now() - 60_000) } })
     await page.goto(callbackUrl)
-    await expect(page.getByRole('alert').or(page.getByRole('heading'))).toBeVisible({ timeout: 3_000 })
+    await expect(page).toHaveURL(/\/email-login\?error=/)
+    await expect(page.getByRole('alert').filter({ hasText: /sign-in link/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Send Magic Link' })).toBeVisible()
   })
 
   test('a reused magic link shows a user-facing error', async ({ page }) => {
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/140')
     const email = newEmail('e2e-reused-ui')
     const callbackUrl = await requestLinkViaUi(page, email)
     await page.goto(callbackUrl)
     await expect(page).toHaveURL(/\/onboarding|\/dashboard/)
     await page.goto(callbackUrl)
-    await expect(page.getByRole('alert').or(page.getByRole('heading'))).toBeVisible({ timeout: 3_000 })
+    await expect(page).toHaveURL(/\/email-login\?error=/)
+    await expect(page.getByRole('alert').filter({ hasText: /sign-in link/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Send Magic Link' })).toBeVisible()
   })
 
   test('an unknown magic link shows a user-facing error', async ({ page }) => {
-    test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/140')
     await page.goto('/api/auth/magic-link/callback?token=not-a-real-token')
-    await expect(page.getByRole('alert').or(page.getByRole('heading'))).toBeVisible({ timeout: 3_000 })
+    await expect(page).toHaveURL(/\/email-login\?error=/)
+    await expect(page.getByRole('alert').filter({ hasText: /sign-in link/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Send Magic Link' })).toBeVisible()
   })
 })
 
