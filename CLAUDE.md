@@ -71,6 +71,7 @@ Single-context: `GLOSSARY.md` at repo root and ADRs in `docs/adr/`. See `docs/ag
 ### Cursor orchestration
 
 - Running implement-orchestrated from Cursor: read `docs/agents/implement-orchestrated.md`.
+- Ticket worktrees (any orchestrator): `scripts/new-worktree.sh <n> <slug> [base]` creates one ready for typecheck/lint/vitest; `--remove <n>` cleans up.
 
 ---
 

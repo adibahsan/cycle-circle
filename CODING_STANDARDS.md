@@ -39,3 +39,5 @@ Full file-by-file audits with line numbers are in `review/`:
 ## E2E tests
 
 Once the e2e package is on main, read `e2e/REVIEW.md` before writing or reviewing E2E tests.
+
+- After submitting a dialog in E2E, wait for it to close before the next action that opens one. Use `submitDialog()` from `e2e/support/dialogs.ts`; the list row can render a moment before the dialog closes, and the next open would reuse the old dialog. (Reviewer judgement.)

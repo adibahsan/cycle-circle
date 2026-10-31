@@ -1,0 +1,9 @@
+# ESLint on staged files only (each file linted with its own package's config).
+# Typecheck and tests run in CI (.github/workflows) and in agent verification; they are
+# too slow for every commit.
+pnpm exec lint-staged
+
+# code-review-graph change summary (was in .git/hooks before husky took over core.hooksPath).
+if command -v code-review-graph >/dev/null 2>&1; then
+  code-review-graph detect-changes --brief || true
+fi

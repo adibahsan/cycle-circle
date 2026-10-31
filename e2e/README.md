@@ -311,6 +311,16 @@ app: `translogFor(userId, { app: 'admin' })`, or merge both with `{ apps: ['web'
 - Reviewing an E2E diff? Apply [`REVIEW.md`](./REVIEW.md) (the judgement checklist the linter can't cover).
 - `next build` rewrites `apps/*/next-env.d.ts`; don't commit that change (`git checkout apps/*/next-env.d.ts`).
 
+## Global settings rows
+
+`systemSetting` and `cronSetting` rows are global: every parallel spec and both projects share them.
+One desktop-only writer per row (`test.skip(isMobile, ...)`), end on a fixed value, and do not restore the
+previous value (a restore races with other writers; each `pnpm e2e` run resets the DB). See the send-time
+comment in `tests/admin/system.spec.ts` for the example. The `local/no-global-setting-writes` lint rule
+flags writes (`create`, `upsert`, `update`, `updateMany`, `delete`, `deleteMany`, `createMany`) to these
+models outside the allowlist in `eslint.config.mjs`; add a new writer to that list deliberately, after
+checking no other spec writes the same row.
+
 ## Deliberate deviations
 
 - `apps/web/e2e/tests/symptoms-save.spec.ts` is left as is: that suite writes to `vesta_dev`, not `vesta_e2e`, so it is not part of this harness.
