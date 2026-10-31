@@ -18,6 +18,7 @@ import { randomBytes } from 'node:crypto'
 import { test, expect } from '../../support/fixtures'
 import { createLoggedInAdmin } from '../../support/admin'
 import { e2eDb } from '../../support/db'
+import { submitDialog } from '../../support/dialogs'
 import { toDbPhone } from '../../support/users'
 import { SECRETS, URLS } from '../../support/slot'
 import type { FakeBdappsClient, RecordedCall } from '../../support/fake-bdapps'
@@ -204,7 +205,7 @@ test.describe('Admin SMS campaigns', () => {
         async ({ page }) => {
           const dialog = await openCreateModal(page)
           await fillCampaign(dialog, enMarker, [{ day: futureDay(), body: `${enMarker}\n${bnMarker}` }])
-          await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
+          await submitDialog(dialog, 'Create campaign', { headingName: 'New SMS Campaign' })
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           // The list shows every status by default, so a planned campaign is there without filtering.
           await expect(campaignRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
@@ -279,7 +280,7 @@ test.describe('Admin SMS campaigns', () => {
           await fillCampaign(dialog, bnMarker, [{ day: futureDay(), body: banglaBody }])
           // Bengali text is counted as Unicode (70/67 per part).
           await expect(dialog.getByText(/Unicode \(Bengali\), 70\/67 per part/)).toBeVisible()
-          await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
+          await submitDialog(dialog, 'Create campaign', { headingName: 'New SMS Campaign' })
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           // The campaign is named from the composed body, which is the Bengali text only.
           await expect(campaignRow(page, bnMarker)).toBeVisible({ timeout: 15_000 })
@@ -339,7 +340,7 @@ test.describe('Admin SMS campaigns', () => {
           const dialog = await openCreateModal(page)
           // The composer refuses past days: plan a future day, then move it below.
           await fillCampaign(dialog, enMarker, [{ day: futureDay(), body: `${enMarker}\n${bnMarker}` }])
-          await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
+          await submitDialog(dialog, 'Create campaign', { headingName: 'New SMS Campaign' })
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           await expect(campaignRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
           await expect(campaignRow(page, enMarker).getByText('Planned', { exact: true })).toBeVisible()
@@ -403,7 +404,7 @@ test.describe('Admin SMS campaigns', () => {
         async ({ page }) => {
           const dialog = await openCreateModal(page)
           await fillCampaign(dialog, enMarker, [{ day: futureDay(), body: enMarker }])
-          await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
+          await submitDialog(dialog, 'Create campaign', { headingName: 'New SMS Campaign' })
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           await expect(campaignRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
 
@@ -457,7 +458,7 @@ test.describe('Admin SMS campaigns', () => {
         async ({ page }) => {
           const dialog = await openCreateModal(page)
           await fillCampaign(dialog, enMarker, [{ day: futureDay(), body: enMarker }])
-          await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
+          await submitDialog(dialog, 'Create campaign', { headingName: 'New SMS Campaign' })
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           await expect(campaignRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
 
@@ -505,7 +506,7 @@ test.describe('Admin SMS campaigns', () => {
         async ({ page }) => {
           const dialog = await openCreateModal(page)
           await fillCampaign(dialog, enMarker, [{ day: futureDay(), body: enMarker }])
-          await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
+          await submitDialog(dialog, 'Create campaign', { headingName: 'New SMS Campaign' })
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           await expect(campaignRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
 
@@ -583,14 +584,14 @@ test.describe('Admin SMS campaigns', () => {
         async ({ page }) => {
           const dialog = await openCreateModal(page)
           await fillCampaign(dialog, enMarker, [{ day: futureDay(), body: enMarker }])
-          await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
+          await submitDialog(dialog, 'Create campaign', { headingName: 'New SMS Campaign' })
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           await expect(campaignRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
 
           await clickRowAction(page, enMarker, 'Edit message')
           const edit = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Edit message' }) })
           await edit.getByLabel('Message', { exact: true }).fill(edited)
-          await edit.getByRole('button', { name: 'Save changes' }).click()
+          await submitDialog(edit, 'Save changes', { headingName: 'Edit message', exact: false })
           await expect(page.getByText('Message updated')).toBeVisible({ timeout: 15_000 })
           await expect
             .poll(async () => (await e2eDb().smsCampaignMessage.findFirst({ where: { body: edited } }))?.status, { timeout: 15_000 })
@@ -644,10 +645,7 @@ test.describe('Admin SMS campaigns', () => {
             { day, body: `${first} one` },
             { day: laterDay, body: `${first} two` },
           ])
-          await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
-          // The new row can render (refreshed with the action's response) a moment before the dialog
-          // closes; wait for the close, or the next "open" would reuse this dialog and its values.
-          await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0, { timeout: 15_000 })
+          await submitDialog(dialog, 'Create campaign', { headingName: 'New SMS Campaign' })
           await expect(campaignRow(page, first)).toBeVisible({ timeout: 15_000 })
           await expect(campaignRow(page, first).getByText('Planned', { exact: true })).toBeVisible()
           expect(await e2eDb().smsCampaignMessage.count({ where: { body: { contains: first } } })).toBe(2)
@@ -721,7 +719,7 @@ test.describe('Campaign results', () => {
       await page.goto('/sms?pageSize=100')
       const dialog = await openCreateModal(page)
       await fillCampaign(dialog, offMarker, [{ day: futureDay(), body: offMarker }])
-      await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
+      await submitDialog(dialog, 'Create campaign', { headingName: 'New SMS Campaign' })
       await expect(campaignRow(page, offMarker)).toBeVisible({ timeout: 15_000 })
       await clickRowAction(page, offMarker, 'Send message now')
       await page.getByRole('button', { name: 'Send Now', exact: true }).click()
@@ -763,7 +761,7 @@ test.describe('Campaign results', () => {
       await page.goto('/sms?pageSize=100')
       const dialog2 = await openCreateModal(page)
       await fillCampaign(dialog2, onMarker, [{ day: futureDay(), body: onMarker }])
-      await dialog2.getByRole('button', { name: 'Create campaign', exact: true }).click()
+      await submitDialog(dialog2, 'Create campaign', { headingName: 'New SMS Campaign' })
       await expect(campaignRow(page, onMarker)).toBeVisible({ timeout: 15_000 })
       await clickRowAction(page, onMarker, 'Send message now')
       await page.getByRole('button', { name: 'Send Now', exact: true }).click()

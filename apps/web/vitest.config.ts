@@ -10,6 +10,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    // Picks/creates/migrates a dedicated test DB and exports DATABASE_URL (never vesta_dev).
+    globalSetup: ['__tests__/helpers/global-setup.ts'],
     setupFiles: ['__tests__/helpers/setup-env.ts'],
     projects: [
       {
