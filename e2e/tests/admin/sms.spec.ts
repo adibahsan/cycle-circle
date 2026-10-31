@@ -232,7 +232,11 @@ test.describe('Admin SMS campaigns', () => {
           await expect(campaignRow(page, enMarker).getByText('1 of 1 sent')).toBeVisible()
 
           // Read-only detail: the day's message, its status and when it went out (Bangladesh time).
-          await campaignRow(page, enMarker).getByRole('link').click()
+          // Keyboard activation: on the phone project the name cell sits under sticky pagination.
+          const detailLink = campaignRow(page, enMarker).getByRole('link')
+          await detailLink.scrollIntoViewIfNeeded()
+          await detailLink.focus()
+          await detailLink.press('Enter')
           await expect(page).toHaveURL(/\/sms\/[^/?]+$/)
           const detailRow = page.getByRole('row').filter({ hasText: enMarker })
           await expect(detailRow).toBeVisible({ timeout: 15_000 })
@@ -617,15 +621,26 @@ test.describe('Admin SMS campaigns', () => {
         async ({ page }) => {
           // 12:00 local keeps both picks on the same Bangladesh day whatever the browser timezone.
           let dialog = await openCreateModal(page)
-          await fillBilingualDraft(dialog, first, '', { language: 'English only', scheduleLocal: `${day} 12:00` })
+          await fillBilingualDraft(dialog, first, `${first} BN`, { scheduleLocal: `${day} 12:00` })
           await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
           await expect(campaignRow(page, first)).toBeVisible({ timeout: 15_000 })
 
           dialog = await openCreateModal(page)
-          await fillBilingualDraft(dialog, second, '', { language: 'English only', scheduleLocal: `${day} 12:00` })
-          await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
-          // The refusal names the clashing campaign (service test); a production server action masks the text.
-          await expect(dialog.getByRole('alert')).toBeVisible({ timeout: 15_000 })
+          await fillBilingualDraft(dialog, second, `${second} BN`, { scheduleLocal: `${day} 12:00` })
+          const create = dialog.getByRole('button', { name: 'Create campaign', exact: true })
+          const actionDone = page.waitForResponse(
+            (r) => r.request().method() === 'POST' && !!r.request().headers()['next-action'],
+          )
+          if (isMobile) {
+            // One synthetic click: the first campaign's toast can cover the button on phone.
+            await create.dispatchEvent('click')
+          } else {
+            await create.click()
+          }
+          await actionDone
+          // Refused: the dialog stays open and nothing was created. The refusal text (naming the
+          // clashing campaign) is asserted in the service test; the inline error is #197's composer.
+          await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toBeVisible()
           expect(await e2eDb().smsCampaign.count({ where: { name: { contains: second } } })).toBe(0)
         },
       )
