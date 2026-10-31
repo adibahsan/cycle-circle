@@ -1,4 +1,5 @@
-import { AuthMethod } from '@prisma/client'
+import { AUDIT_ACTIONS } from './audit-actions'
+import { AuthMethod, type Prisma } from '@prisma/client'
 import { prisma } from '../db'
 import { applyBdappsSubscription, unsubscribeUserOnBdapps } from './subscription-service'
 import { ApiError } from '../api-error'
@@ -77,25 +78,12 @@ export interface ListUsersResult {
   order: 'asc' | 'desc'
 }
 
-/**
- * Paginated user list for admin use. Supports search, status/role filtering,
- * and sorting. The caller is responsible for auth — this function is pure
- * data access with no auth check of its own.
- */
-export async function listUsers(params: ListUsersParams = {}): Promise<ListUsersResult> {
-  const {
-    page = 1,
-    pageSize = 20,
-    search,
-    status = 'all',
-    role = 'all',
-    sort,
-    order = 'desc',
-  } = params
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = {}
-
+/** Single source of truth for the admin user list and CSV export filters. */
+export function buildUsersWhere(
+  filters: Pick<ListUsersParams, 'search' | 'status' | 'role'> = {},
+): Prisma.UserWhereInput {
+  const { search, status = 'all', role = 'all' } = filters
+  const where: Prisma.UserWhereInput = {}
   if (status === 'active') {
     where.deletedAt = null
     where.suspendedAt = null
@@ -120,6 +108,27 @@ export async function listUsers(params: ListUsersParams = {}): Promise<ListUsers
       { phone: { contains: search } },
     ]
   }
+
+  return where
+}
+
+/**
+ * Paginated user list for admin use. Supports search, status/role filtering,
+ * and sorting. The caller is responsible for auth — this function is pure
+ * data access with no auth check of its own.
+ */
+export async function listUsers(params: ListUsersParams = {}): Promise<ListUsersResult> {
+  const {
+    page = 1,
+    pageSize = 20,
+    search,
+    status = 'all',
+    role = 'all',
+    sort,
+    order = 'desc',
+  } = params
+
+  const where = buildUsersWhere({ search, status, role })
 
   const safeSort = sort && SORTABLE_COLUMNS.has(sort) ? sort : 'createdAt'
   const safeOrder: 'asc' | 'desc' = order === 'asc' ? 'asc' : 'desc'
@@ -201,7 +210,7 @@ export async function suspendUser(userId: string, adminId: string, reason: strin
   await prisma.adminAuditLog.create({
     data: {
       adminId,
-      action: 'USER_SUSPENDED',
+      action: AUDIT_ACTIONS.USER_SUSPENDED,
       targetType: 'User',
       targetId: userId,
       metadata: { reason: trimmed, bdapps: bdapps.status },
@@ -224,7 +233,7 @@ export async function reactivateUser(userId: string, adminId: string) {
   await prisma.adminAuditLog.create({
     data: {
       adminId,
-      action: 'USER_REACTIVATED',
+      action: AUDIT_ACTIONS.USER_REACTIVATED,
       targetType: 'User',
       targetId: userId,
     },
@@ -249,7 +258,7 @@ export async function softDeleteUser(userId: string, adminId: string, now: Date)
   await prisma.adminAuditLog.create({
     data: {
       adminId,
-      action: 'USER_DELETED',
+      action: AUDIT_ACTIONS.USER_DELETED,
       targetType: 'User',
       targetId: userId,
       metadata: { bdapps: bdapps.status },
@@ -273,7 +282,7 @@ export async function restoreUser(userId: string, adminId: string, now: Date) {
 
   await prisma.user.update({ where: { id: userId }, data: { deletedAt: null } })
   await prisma.adminAuditLog.create({
-    data: { adminId, action: 'USER_RESTORED', targetType: 'User', targetId: userId },
+    data: { adminId, action: AUDIT_ACTIONS.USER_RESTORED, targetType: 'User', targetId: userId },
   })
 
   return { success: true }

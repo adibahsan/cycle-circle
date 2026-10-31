@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useState, useTransition } from 'react'
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import {
   Phone,
   Mail,
@@ -22,6 +22,7 @@ import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
 import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
+import { createQueryTracker } from '@vesta/shared/utils/query-tracker'
 
 type UserRow = {
   id: string
@@ -226,23 +227,23 @@ export function UsersClient({
   const currentSort = data.sort
   const currentOrder = data.order
 
+  // Debounced search can fire before the router lands a just-picked filter, so merge
+  // into the newest query we asked for, not the (stale) rendered searchParams.
+  const trackerRef = useRef<ReturnType<typeof createQueryTracker> | null>(null)
+  if (!trackerRef.current) trackerRef.current = createQueryTracker(searchParams.toString())
+  const searchString = searchParams.toString()
+  useEffect(() => {
+    trackerRef.current?.sync(searchString)
+  }, [searchString])
+
   const updateParams = useCallback(
     (updates: Record<string, string | number>) => {
-      const params = new URLSearchParams(searchParams.toString())
-      Object.entries(updates).forEach(([k, v]) => {
-        if (v === '' || v === undefined) {
-          params.delete(k)
-        } else {
-          params.set(k, String(v))
-        }
-      })
-      // Reset page when filter changes
-      if (!('page' in updates)) params.set('page', '1')
+      const query = trackerRef.current!.apply(updates)
       startTransition(() => {
-        router.push(`${pathname}?${params.toString()}`)
+        router.push(`${pathname}?${query}`)
       })
     },
-    [router, pathname, searchParams]
+    [router, pathname]
   )
 
   function handleSearch(value: string) {
@@ -272,7 +273,7 @@ export function UsersClient({
   async function handleExport() {
     setExporting(true)
     try {
-      const csv = await exportUsersCsv()
+      const csv = await exportUsersCsv({ search: currentSearch, status: currentStatus })
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
