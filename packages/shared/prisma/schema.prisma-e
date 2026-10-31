@@ -1,0 +1,640 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum AuthMethod {
+  OTP
+  EMAIL
+}
+
+enum SubscriptionStatus {
+  FREE
+  PRO
+  LAPSED
+}
+
+enum Language {
+  EN
+  BN
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ProfileRelation {
+  SELF
+  WIFE
+  SISTER
+  MOTHER
+  DAUGHTER
+  GIRLFRIEND
+}
+
+enum FlowIntensity {
+  LIGHT
+  MEDIUM
+  HEAVY
+}
+
+enum SymptomCategory {
+  PHYSICAL
+  MOOD
+  DISCHARGE
+  LIFESTYLE
+}
+
+enum PredictionTier {
+  AVERAGE
+  ARIMA
+  LSTM
+}
+
+enum FeedbackCategory {
+  BUG
+  FEATURE
+  GENERAL
+  SATISFACTION
+}
+
+enum WebhookType {
+  SMS_RECEIVE
+  SMS_REPORT
+  USSD_RECEIVE
+  SUBSCRIPTION_NOTIFY
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CyclePhase {
+  MENSTRUAL
+  FOLLICULAR
+  OVULATION
+  LUTEAL
+}
+
+enum SmsMessageStatus {
+  PLANNED
+  SENDING
+  SENT
+  FAILED
+  MISSED
+  CANCELLED
+}
+
+enum EmailType {
+  MAGIC_LINK
+  PERIOD_ALERT
+  FERTILE_ALERT
+  LOGGING_REMINDER
+  PROFILE_COMPLETION_REMINDER
+  VERIFICATION_CODE
+}
+
+enum EmailStatus {
+  SENT
+  FAILED
+}
+
+enum EmailProvider {
+  RESEND
+  SMTP
+}
+
+enum DeliveryStatus {
+  PENDING
+  DELIVERED
+  BOUNCED
+  COMPLAINED
+  DELAYED
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id                  String             @id @default(cuid())
+  phone               String?            @unique
+  email               String?            @unique
+  fullName            String?
+  passwordHash        String?
+  authMethod          AuthMethod
+  subscriptionStatus  SubscriptionStatus @default(FREE)
+  language            Language           @default(EN)
+  emailTrialExpiresAt DateTime?
+  profileCompleted              Boolean            @default(false)
+  profileReminderOptOut         Boolean            @default(false)
+  onboardingTourCompletedAt     DateTime?
+  role                     Role               @default(USER)
+  suspendedAt         DateTime?
+  suspendedBy         String?
+  sessionsValidAfter  DateTime?
+  deletedAt           DateTime?
+  lastLoginAt         DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  profiles        Profile[]
+  subscriptions   Subscription[]
+  otpChallenges   OtpChallenge[]
+  magicLinks      MagicLink[]
+  feedback        Feedback[]
+  articles        Article[]
+  smsCampaigns    SmsCampaign[]
+  subscriptionCheckOutcomes SubscriptionCheckOutcome[]
+  churnEvents               ChurnEvent[]
+  proPrices       ProPrice[]
+  adminAuditLogs  AdminAuditLog[]
+  emailLogs       EmailLog[]
+  emailVerifications EmailVerification[]
+  activity        UserActivity[]
+
+  @@index([createdAt])
+  @@index([lastLoginAt])
+  @@index([deletedAt])
+}
+
+model Profile {
+  id              String          @id @default(cuid())
+  userId          String
+  name            String
+  relation        ProfileRelation
+  cycleLength     Int             @default(28)
+  periodLength    Int             @default(5)
+  lastPeriodStart DateTime?
+  goal            String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  periodLogs       PeriodLog[]
+  symptomLogs      SymptomLog[]
+  predictions      Prediction[]
+  notificationPref NotificationPreference?
+  emailLogs        EmailLog[]
+}
+
+model PeriodLog {
+  id            String        @id @default(cuid())
+  profileId     String
+  startDate     DateTime
+  endDate       DateTime
+  flowIntensity FlowIntensity
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // Composite index: nearly every read filters by profile AND orders/ranges
+  // by startDate (calendar, listPeriodLogs, insights, engagement, prediction).
+  // The leftmost prefix still serves profileId-only lookups / cascade deletes.
+  @@index([profileId, startDate])
+}
+
+model SymptomLog {
+  id        String          @id @default(cuid())
+  profileId String
+  date      DateTime
+  category  SymptomCategory
+  symptomId String
+  value     String
+  createdAt DateTime        @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, date])
+}
+
+model Prediction {
+  id              String         @id @default(cuid())
+  profileId       String         @unique
+  tier            PredictionTier
+  nextPeriodStart DateTime
+  ovulationDay    DateTime
+  fertileStart    DateTime
+  fertileEnd      DateTime
+  confidence      Float
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id                    String             @id @default(cuid())
+  userId                String
+  status                SubscriptionStatus @default(FREE)
+  bdappsSubscriberId    String?
+  paymentInstrumentName String?
+  amount                Int?
+  adminOverride         Boolean            @default(false)
+  adminOverrideBy       String?
+  adminOverrideAt       DateTime?
+  /// Revoke only: the BDApps unsubscribe failed, so a repeat REGISTERED must not end the override.
+  adminOverrideUnsubFailed Boolean @default(false)
+  /// When BDApps last answered the daily subscription check for this subscriber.
+  lastConfirmedAt       DateTime?
+  /// The status BDApps reported at that time (REGISTERED, UNREGISTERED, ...).
+  lastReportedStatus    String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caasTransactions CaasTransaction[]
+}
+
+enum SubscriptionCheckTrigger {
+  CRON
+  MANUAL
+}
+
+enum SubscriptionCheckStatus {
+  OK
+  FAILED
+  SKIPPED
+}
+
+enum SubscriptionCheckOutcomeKind {
+  MOVED_TO_FREE
+  ERROR
+}
+
+/// One run of the daily subscription check (cron slug `caas-check`).
+model SubscriptionCheckRun {
+  id           String                  @id @default(cuid())
+  startedAt    DateTime
+  finishedAt   DateTime?
+  trigger      SubscriptionCheckTrigger
+  status       SubscriptionCheckStatus
+  checkedCount Int                     @default(0)
+  movedCount   Int                     @default(0)
+  errorCount   Int                     @default(0)
+  /// Set when the run itself failed.
+  error        String?
+  createdAt    DateTime                @default(now())
+
+  outcomes SubscriptionCheckOutcome[]
+
+  @@index([startedAt])
+}
+
+/// A subscriber a run moved to Free, or hit an error on.
+model SubscriptionCheckOutcome {
+  id                 String                       @id @default(cuid())
+  runId              String
+  /// Null once the user is deleted: the outcome stays, keyed by the masked id.
+  userId             String?
+  /// Masked subscriber id; a raw phone id is never stored here.
+  maskedSubscriberId String
+  outcome            SubscriptionCheckOutcomeKind
+  bdappsStatus       String?
+  error              String?
+  createdAt          DateTime                     @default(now())
+
+  run  SubscriptionCheckRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  user User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([runId])
+  @@index([userId])
+}
+
+model CaasTransaction {
+  id             String   @id @default(cuid())
+  subscriptionId String?
+  externalTrxId  String   @unique
+  internalTrxId  String?
+  referenceId    String?
+  amount         Int
+  status         String
+  createdAt      DateTime @default(now())
+
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+}
+
+model OtpChallenge {
+  id          String   @id @default(cuid())
+  userId      String?
+  phone       String
+  referenceNo String
+  verified    Boolean  @default(false)
+  expiresAt   DateTime
+  /// App OTP only (GLOSSARY): HMAC of the code we sent by SMS. Null for a BDApps OTP, which BDApps checks.
+  codeHash    String?
+  /// Wrong App OTP codes entered so far.
+  attempts    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([phone])
+}
+
+/// A 6-digit code emailed to a signed-in user to prove they own an address before it is saved on their account.
+model EmailVerification {
+  id        String   @id @default(cuid())
+  userId    String
+  /// Lower-cased, trimmed address the code was sent to.
+  email     String
+  /// HMAC of the code; the code itself is never stored.
+  codeHash  String
+  /// Wrong codes entered so far.
+  attempts  Int      @default(0)
+  verified  Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model MagicLink {
+  id        String   @id @default(cuid())
+  userId    String?
+  email     String
+  token     String   @unique
+  used      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WebhookEvent {
+  id             String      @id @default(cuid())
+  type           WebhookType
+  payload        Json
+  idempotencyKey String      @unique
+  processedAt    DateTime?
+  createdAt      DateTime    @default(now())
+}
+
+model JobEvent {
+  id          String    @id @default(cuid())
+  type        String
+  payload     Json
+  status      JobStatus @default(PENDING)
+  attempts    Int       @default(0)
+  lastError   String?
+  scheduledAt DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model NotificationPreference {
+  id              String  @id @default(cuid())
+  profileId       String  @unique
+  periodAlert     Boolean @default(true)
+  fertileWindow   Boolean @default(true)
+  loggingReminder Boolean @default(true)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Feedback {
+  id        String           @id @default(cuid())
+  userId    String
+  profileId String?
+  category  FeedbackCategory
+  message   String
+  rating    Int?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Article {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  titleEn     String
+  titleBn     String?
+  bodyEn      String        @db.Text
+  bodyBn      String?       @db.Text
+  status      ArticleStatus @default(DRAFT)
+  categoryId  String?
+  cyclePhases CyclePhase[]  @default([])
+  authorId    String
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  category ArticleCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  author   User             @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([categoryId])
+  @@index([authorId])
+}
+
+model ArticleCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  nameBn    String?
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  articles Article[]
+}
+
+// A named series of campaign messages, one per Bangladesh day (ADR 0010). Its status is derived
+// from its messages (see deriveCampaignStatus); a one-off SMS is a one-day campaign.
+model SmsCampaign {
+  id          String    @id @default(cuid())
+  name        String
+  createdBy   String
+  cancelledAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  creator  User                 @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  messages SmsCampaignMessage[]
+
+  @@index([createdAt])
+}
+
+// One SMS to all subscribers on one Bangladesh day. At most one PLANNED/SENDING message exists per
+// day across all campaigns: a raw partial unique index in the 20261101120000 migration enforces it.
+model SmsCampaignMessage {
+  id                String           @id @default(cuid())
+  campaignId        String
+  // Bangladesh day, stored via dayToStoredDate().
+  day               DateTime         @db.Date
+  body              String
+  status            SmsMessageStatus @default(PLANNED)
+  sentAt            DateTime?
+  // BDApps requestId: delivery reports correlate on this.
+  providerRequestId String?
+  // First destinationResponses[].messageId.
+  providerMessageId String?
+  audienceSize      Int?
+  deliveredCount    Int?
+  failedCount       Int?
+  sendAttempts      Int              @default(0)
+  lastError         String?
+  // Set only for rows migrated from the old SmsBroadcast table.
+  legacyBroadcastId String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  campaign SmsCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([day])
+  @@index([status])
+  @@index([providerRequestId])
+  @@index([providerMessageId])
+}
+
+// Value-bearing system settings (SMS daily send time, delivery-report switch, ...).
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
+enum ProPricePeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+// Pro price history (ADR 0011). The price in effect on a Bangladesh day is the latest entry whose
+// effectiveFrom is on or before that day (ties: the newest createdAt). Entries are never edited.
+model ProPrice {
+  id            String         @id @default(cuid())
+  amount        Decimal        @db.Decimal(10, 2) // taka
+  period        ProPricePeriod
+  effectiveFrom DateTime       @db.Date // a Bangladesh day, stored as that day at 00:00 UTC
+  createdBy     String? // null for the seeded first entry
+  createdAt     DateTime       @default(now())
+
+  creator User? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([effectiveFrom, createdAt])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  action     String
+  targetType String
+  targetId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id], onDelete: Restrict)
+
+  @@index([adminId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}
+
+model EmailLog {
+  id             String         @id @default(cuid())
+  type           EmailType
+  to             String
+  subject        String
+  status         EmailStatus
+  error          String?
+  provider       EmailProvider
+  resendId       String?
+  deliveryStatus DeliveryStatus @default(PENDING)
+  userId         String?
+  profileId      String?
+  sentAt         DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  profile Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+
+  @@index([to])
+  @@index([type, profileId, sentAt])
+  @@index([resendId])
+  @@index([sentAt])
+}
+
+/// Per-cron on/off switch for scheduled (Vercel Cron) execution.
+/// An absent row means the cron is enabled, so existing deployments keep
+/// running with no behavior change. The manual "Run now" admin trigger bypasses
+/// this flag via an explicit override.
+model CronSetting {
+  slug      String   @id // 'daily-reminders' | 'caas-check'
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  updatedBy String? // admin user id who last changed it
+}
+
+/// Nightly prediction-accuracy snapshot: one row per tier per UTC date (ADR 0006
+/// nightly job). The admin dashboard and analytics read the latest date.
+model PredictionAccuracySnapshot {
+  id         String   @id @default(cuid())
+  date       DateTime @db.Date
+  tier       String // 'AVERAGE' | 'ARIMA'
+  maeDays    Float? // null when the tier had no sample
+  sampleSize Int
+  computedAt DateTime @default(now())
+
+  @@unique([date, tier])
+}
+
+<<<<<<< HEAD
+enum ChurnReason {
+  DAILY_CHECK
+  BDAPPS_UNSUBSCRIBE
+  ADMIN_REVOKE
+  ACCOUNT_DELETED
+}
+
+/// A Pro user becoming non-Pro, and why (GLOSSARY: Churn). Kept after the user is purged.
+model ChurnEvent {
+  id         String      @id @default(cuid())
+  userId     String?
+  reason     ChurnReason
+  occurredAt DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([occurredAt])
+  @@index([userId])
+}
+
+/// The Pro subscriber count at the end of one Bangladesh day, stored nightly.
+model ProSnapshot {
+  day        DateTime @id @db.Date // a Bangladesh day, stored as that day at 00:00 UTC
+  proCount   Int
+  computedAt DateTime @default(now())
+=======
+/// One row per user per Bangladesh day on which the user opened the app (spec #192, ticket #206).
+model UserActivity {
+  userId String
+  day    DateTime @db.Date // a Bangladesh day, stored as that day at 00:00 UTC
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, day])
+  @@index([day])
+>>>>>>> origin/feat/insights-reports
+}

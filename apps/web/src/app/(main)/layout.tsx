@@ -1,4 +1,7 @@
 import { cookies } from 'next/headers';
+import { after } from 'next/server';
+import { recordUserActivity } from '@vesta/shared/server/services';
+import { getCurrentUser } from '@/app/queries/auth-queries';
 import { MainShell } from '@/components/shell/MainShell';
 import { getShellInitial } from '@/app/queries/shell-queries';
 import { getProPrice } from '@/app/queries/pro-price-queries';
@@ -11,6 +14,12 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const clientShell =
     process.env.NODE_ENV !== 'production' && (await cookies()).has('vesta_e2e_client_shell');
   const price = await getProPrice();
+  // Active user (GLOSSARY): opening the app on a Bangladesh day. Once per user per day, after the response.
+  const authUser = await getCurrentUser();
+  if (authUser) {
+    const now = new Date();
+    after(() => recordUserActivity(authUser.id, now).catch(() => {}));
+  }
   return (
     <ProPriceProvider price={price}>
       <MainShell initial={clientShell ? undefined : getShellInitial()}>{children}</MainShell>
