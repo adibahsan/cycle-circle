@@ -4,6 +4,19 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
+## 2026-10-31 — Pregnancy mode removed, new tagline (PR #182)
+
+**Shipped:** the pregnancy goal is gone. Goals are now tracking, conceive and perimenopause, and legacy `pregnancy`/`pregnant` values read as tracking. The tagline is now "Smarter Periods, Personalised Care." / "স্মার্ট পিরিয়ড, ব্যক্তিগত যত্ন।". Admin no longer says CaaS on the Subscriptions badge or the charge history.
+
+**Migrations:** `20261025120000_remove_pregnancy_goal` (one-way data change).
+- It moves pregnancy profiles to `tracking`.
+- It re-enables all three alerts where pregnancy's all-off default was still set.
+- Prod before deploy: 1 pregnancy profile, 3 tracking. Approved by the owner because there are no real users yet.
+
+**Deploy:** `git push origin origin/main:production`.
+
+---
+
 ## 2026-10-31 — E2E bug batch, delete past period, Bengali category names, bundled fonts (PRs #179, #180, #181)
 
 **Shipped:**
