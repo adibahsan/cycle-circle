@@ -111,7 +111,7 @@ test.describe('fake BDApps: scripted failures', () => {
     expect((await ask(addrA)).json).toMatchObject({ statusCode: 'E1601' })
   })
 
-  // Broadcast sends all use destinationAddresses: ['tel:all']; messageContains scopes the failure.
+  // Campaign message sends all use destinationAddresses: ['tel:all']; messageContains scopes the failure.
   test('a messageContains failure on /sms/send only hits the matching message', async ({ fakeBdapps }) => {
     const path = '/sms/send'
     const markerA = `E2E msgContains A ${Date.now()}-${Math.random().toString(36).slice(2)}`

@@ -1,5 +1,5 @@
 import { withCronAuth } from '@vesta/shared/server/middleware'
-import { runDailyReminders, dispatchScheduledBroadcast, recoverStuckBroadcasts, isCronEnabled } from '@vesta/shared/server/services'
+import { runDailyReminders, dispatchDueCampaignMessage, recoverStuckMessages, isCronEnabled } from '@vesta/shared/server/services'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -10,7 +10,7 @@ export const maxDuration = 60
  *
  * Runs at 08:00 UTC every day. Sends period alerts, fertile-window alerts,
  * logging reminders, and profile-completion reminders, then dispatches the
- * day's scheduled SMS content broadcast (FR-SMS — folded in here to stay within
+ * day's planned SMS campaign message (FR-SMS — folded in here to stay within
  * the 2-job Vercel Hobby cron budget).
  *
  * Protected by withCronAuth (Authorization: Bearer <CRON_SECRET>).
@@ -39,14 +39,14 @@ const handler = withCronAuth(async (request) => {
   }
   const result = await runDailyReminders({ now: new Date(), userId: body.userId, force: body.force })
 
-  // Send the day's scheduled SMS broadcast (one per day). Failures here must not
+  // Send the day's planned campaign message (one per day). Failures here must not
   // fail the reminder run, so it is reported alongside rather than thrown.
-  // Close out any broadcast orphaned in SENDING first, so it cannot sit there forever.
-  const smsRecovery = await recoverStuckBroadcasts(new Date()).catch((err: unknown) => ({
+  // Close out any message orphaned in SENDING first, so it cannot sit there forever.
+  const smsRecovery = await recoverStuckMessages(new Date()).catch((err: unknown) => ({
     recovered: 0,
     error: String(err),
   }))
-  const smsBroadcast = await dispatchScheduledBroadcast(new Date()).catch((err: unknown) => ({
+  const smsBroadcast = await dispatchDueCampaignMessage(new Date()).catch((err: unknown) => ({
     dispatched: false as const,
     error: String(err),
   }))

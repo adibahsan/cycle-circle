@@ -5,12 +5,12 @@ import { Send, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { DateTimePicker } from '@/components/ui/DateTimePicker'
-import { createSmsBroadcast, createSmsBroadcastsBulk, createSmsBroadcastsFromCsv, previewSmsCsv } from '@/app/actions/sms-actions'
+import { createSmsCampaign, createSmsCampaignsBulk, createSmsCampaignsFromCsv, previewSmsCsv } from '@/app/actions/sms-actions'
 import { composeSms, countSmsParts, SMS_CSV_TEMPLATE, SMS_PART_WARN_THRESHOLD, type SmsSendLanguage } from '@vesta/shared/utils/sms'
-import { LanguagePicker, PartCounter, statusBadge } from './sms-shared'
+import { LanguagePicker, PartCounter } from './sms-shared'
 import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
-// ─── Create Broadcast Modal ─────────────────────────────────────────────────
+// ─── Create Campaign Modal ─────────────────────────────────────────────────
 
 interface CreateModalProps {
   open: boolean
@@ -78,7 +78,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'sms-broadcast-template.csv'
+    a.download = 'sms-campaign-template.csv'
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -94,7 +94,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
       }
       setSubmitting(true)
       try {
-        await createSmsBroadcastsFromCsv(csvText, bulkStartDate || undefined, language)
+        await createSmsCampaignsFromCsv(csvText, bulkStartDate || undefined, language)
         onCreated()
         onClose()
       } catch (err) {
@@ -112,7 +112,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
       }
       setSubmitting(true)
       try {
-        await createSmsBroadcast(
+        await createSmsCampaign(
           message.trim(),
           messageBn.trim() || undefined,
           scheduledFor || undefined,
@@ -132,7 +132,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
       }
       setSubmitting(true)
       try {
-        await createSmsBroadcastsBulk(bulkText, bulkStartDate || undefined, language)
+        await createSmsCampaignsBulk(bulkText, bulkStartDate || undefined, language)
         onCreated()
         onClose()
       } catch (err) {
@@ -157,7 +157,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
     <Modal
       open={open}
       onClose={onClose}
-      titleId="create-broadcast-title"
+      titleId="create-campaign-title"
       dismissible={!submitting}
       panelClassName="max-w-lg"
       initialFocusRef={textareaRef}
@@ -169,8 +169,8 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
               <Send size={15} className="text-[var(--color-primary)]" aria-hidden="true" />
             </div>
-            <h2 id="create-broadcast-title" className="text-base font-bold text-[var(--color-text-primary)]">
-              New SMS Broadcast
+            <h2 id="create-campaign-title" className="text-base font-bold text-[var(--color-text-primary)]">
+              New SMS Campaign
             </h2>
           </div>
           <button
@@ -189,7 +189,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
           <div
             className="flex gap-1 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-1"
             role="group"
-            aria-label="Broadcast mode"
+            aria-label="Campaign mode"
           >
             <button
               type="button"
@@ -302,7 +302,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
                   className="block text-sm font-medium text-[var(--color-text-secondary)]"
                 >
                   Schedule For{' '}
-                  <span className="text-[var(--color-text-muted)] font-normal">(optional — leave blank to save as draft)</span>
+                  <span className="text-[var(--color-text-muted)] font-normal">(optional — leave blank to use the next free day from tomorrow)</span>
                 </label>
                 <DateTimePicker
                   id="sms-scheduled"
@@ -315,8 +315,11 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
 
               {/* Status preview */}
               <div className="flex items-center gap-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-4 py-2.5 text-sm text-[var(--color-text-secondary)]">
-                <span>Will be saved as:</span>
-                {statusBadge(isScheduled ? 'SCHEDULED' : 'DRAFT')}
+                <span>
+                  {isScheduled
+                    ? 'A one-day campaign, sent on that Bangladesh day.'
+                    : 'A one-day campaign, sent on the next free day from tomorrow.'}
+                </span>
               </div>
             </>
           ) : mode === 'bulk' ? (
@@ -349,7 +352,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
                   className="text-xs font-medium text-[var(--color-text-secondary)]"
                   aria-live="polite"
                 >
-                  {bulkLineCount} message{bulkLineCount !== 1 ? 's' : ''} will be scheduled
+                  {bulkLineCount} campaign{bulkLineCount !== 1 ? 's' : ''} will be planned
                 </p>
               </div>
 
@@ -391,7 +394,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
                 />
                 <p className="text-xs text-[var(--color-text-muted)]">
                   Columns: <span className="font-mono">scheduled_date, message_en, message_bn</span>. Leave the date empty to
-                  schedule one per day from the start date.{' '}
+                  plan one per day from the start date.{' '}
                   <button
                     type="button"
                     onClick={downloadTemplate}
@@ -435,7 +438,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
                       <caption className="sr-only">Send date preview</caption>
                       <thead className="bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)]">
                         <tr>
-                          <th scope="col" className="px-3 py-2 font-medium">Goes out</th>
+                          <th scope="col" className="px-3 py-2 font-medium">Goes out on</th>
                           <th scope="col" className="px-3 py-2 font-medium">Message</th>
                           <th scope="col" className="px-3 py-2 font-medium">Parts</th>
                         </tr>
@@ -448,7 +451,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
                           const { parts } = countSmsParts(text)
                           return (
                             <tr key={i} className="border-t border-[var(--color-border)] align-top">
-                              <td className="px-3 py-2 whitespace-nowrap tabular-nums">{formatDhaka(r.sendAt, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                              <td className="px-3 py-2 whitespace-nowrap tabular-nums">{formatDhaka(r.day, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                               <td className="px-3 py-2" lang={language === 'EN' ? 'en' : 'bn'}>
                                 {bad ? <span className="text-[var(--color-danger)]">Missing Bengali text</span> : text}
                               </td>
@@ -460,7 +463,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
                     </table>
                   </div>
                   <p className="text-xs font-medium text-[var(--color-text-secondary)]">
-                    {csvPreview.rows.length} message{csvPreview.rows.length !== 1 ? 's' : ''} will be scheduled
+                    {csvPreview.rows.length} campaign{csvPreview.rows.length !== 1 ? 's' : ''} will be planned
                   </p>
                 </div>
               )}
@@ -492,12 +495,10 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
               loading={submitting}
             >
               {mode === 'csv'
-                ? `Schedule ${csvPreview?.rows.length ?? ''} message${csvPreview?.rows.length === 1 ? '' : 's'}`.trim()
+                ? `Create ${csvPreview?.rows.length ?? ''} campaign${csvPreview?.rows.length === 1 ? '' : 's'}`.trim()
                 : mode === 'bulk'
-                ? `Schedule ${bulkLineCount > 0 ? bulkLineCount : ''} message${bulkLineCount !== 1 ? 's' : ''}`.trim()
-                : isScheduled
-                  ? 'Schedule Broadcast'
-                  : 'Save as Draft'}
+                ? `Create ${bulkLineCount > 0 ? bulkLineCount : ''} campaign${bulkLineCount !== 1 ? 's' : ''}`.trim()
+                : 'Create campaign'}
             </Button>
           </div>
         </form>

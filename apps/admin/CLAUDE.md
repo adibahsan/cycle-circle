@@ -4,7 +4,7 @@ Single Super Admin account (email/password login at `/login`). Seeded via `packa
 
 **Auth flow:** bcrypt password verification in `@vesta/shared/server/auth` (`verifyAdminLogin`), same JWT/cookie system as web app with `role=ADMIN` check in Edge proxy + server-side `requireAdminAuth()`.
 
-**Pages:** Dashboard, Users (list + detail), Subscriptions, Content/CMS (Tiptap 3.x rich-text editor with EN/BN side-by-side), Analytics (Recharts 3.x), SMS Broadcasts, Feedback.
+**Pages:** Dashboard, Users (list + detail), Subscriptions, Content/CMS (Tiptap 3.x rich-text editor with EN/BN side-by-side), Analytics (Recharts 3.x), SMS Campaigns, Feedback.
 
 **Pattern:** RSC pages fetch data via `queries/*.ts` (thin `cache()` wrappers over shared services), pass to `*Client.tsx` components. Mutations go through `actions/*.ts` (thin `'use server'` wrappers over shared services + `revalidatePath`).
 
