@@ -1,6 +1,8 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidateWebTags } from '@/lib/revalidate-web'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { requireAdminAuth, getAuthUser } from '@vesta/shared/server/auth'
 import {
   AUDIT_ACTIONS,
@@ -9,6 +11,9 @@ import {
   setCronEnabled,
   setSmsSendTime,
   setSmsDeliveryReports,
+  setProPrice,
+  type ProPriceEntry,
+  type ProPricePeriod,
   SMS_SEND_TIME_KEY,
   SMS_DELIVERY_REPORTS_KEY,
   type CronSlug,
@@ -60,6 +65,12 @@ async function runJob(
     )
     if (!res.ok) {
       return { ok: false, error: `Web app returned ${res.status}`, counts }
+    }
+    if (slug === 'caas-check') {
+      // The run lands in the history, the Subscriptions strip and the last-confirmed column.
+      revalidatePath('/system')
+      revalidatePath('/subscriptions')
+      revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
     }
     return { ok: true, counts }
   } catch (e) {
@@ -172,6 +183,28 @@ export async function setSmsDeliveryReportsAction(
     })
     revalidatePath('/system')
     return { ok: true, enabled }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Failed to update' }
+  }
+}
+
+/**
+ * Set the Pro price (taka and period) from a Bangladesh day. Audited by the service. This does not
+ * change what BDApps charges.
+ */
+export async function setProPriceAction(input: {
+  amount: number
+  period: ProPricePeriod
+  effectiveFrom: string
+}): Promise<{ ok: true; entry: ProPriceEntry; webCacheRefreshed: boolean } | { ok: false; error: string }> {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+  try {
+    const entry = await setProPrice(admin.id, input, new Date())
+    revalidatePath('/system')
+    // The web app caches the price for customers; bust it so the new price shows without a deploy.
+    const webCacheRefreshed = await revalidateWebTags(['pro-price'])
+    return { ok: true, entry, webCacheRefreshed }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to update' }
   }

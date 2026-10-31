@@ -4,6 +4,7 @@ import {
   getSubscriptionTrend,
   getSubscriptionStatusBreakdown,
 } from '@/app/queries/subscription-queries'
+import { getLatestSubscriptionCheckRun } from '@/app/queries/system-queries'
 import { SubscriptionsClient } from './SubscriptionsClient'
 
 const RANGE_TO_DAYS: Record<string, number> = {
@@ -23,7 +24,7 @@ export default async function SubscriptionsPage({
   const range = params.range ?? '30d'
   const days = RANGE_TO_DAYS[range] ?? 30
 
-  const [data, trend, statusBreakdown] = await Promise.all([
+  const [data, trend, statusBreakdown, latestRun] = await Promise.all([
     getSubscriptions({
       page: Number(params.page) || 1,
       pageSize: Number(params.pageSize) || 20,
@@ -31,6 +32,7 @@ export default async function SubscriptionsPage({
     }),
     getSubscriptionTrend(days),
     getSubscriptionStatusBreakdown(),
+    getLatestSubscriptionCheckRun(),
   ])
 
   return (
@@ -39,6 +41,8 @@ export default async function SubscriptionsPage({
       trend={trend}
       statusBreakdown={statusBreakdown}
       range={range}
+      latestRun={latestRun}
+      now={new Date()}
     />
   )
 }

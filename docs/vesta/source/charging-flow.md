@@ -1,10 +1,12 @@
 # Charging & Subscriber Management Flow
 
+The Pro price is ৳5/day and is set by an admin on the System page, kept as a history (ADR 0011). BDApps does the charging; changing the price in the admin does not change what BDApps charges.
+
 ```mermaid
 flowchart TD
     A([User Enters Platform]) --> B{OTP Verified?}
 
-    B -- Yes --> C[Auto-charge 2 BDT\nvia Subscription API]
+    B -- Yes --> C[Auto-charge the Pro price\n(৳5/day, set by an admin)\nvia Subscription API]
     B -- No --> D[Store Mobile Number\nin Database]
 
     C --> E[Store Mobile Number\nin Database]

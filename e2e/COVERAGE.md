@@ -125,6 +125,7 @@ Notes on the tally:
 | W52 | Pro-only features gated for Free users | Pro-gated routes and UI | `e2e/tests/web/billing.spec.ts` | partial (SMS alerts gated via cron, proven; Data Export and Advanced Predictions ungated, asserted as current behaviour, deferred by FR-GATE; Ad-free has no UI) | #125 |
 | W53 | BDApps failure during subscribe: clear error, plan unchanged | phone OTP request (`/api/billing/subscribe` is CAAS_DISABLED) | `e2e/tests/web/billing.spec.ts` | full (scoped E1601 failure: error shown, plan Free after reload) | #125 (fake failures: #118) |
 | W54 | Subscription page: status, plan, trial pill | `/subscription` | `e2e/tests/web/billing.spec.ts` | partial (Free and Pro plan card, upgrade/unsubscribe buttons, Free vs Pro table by role and name, per-feature Free/Pro values: #153) | #125 |
+| W54b | Customers see the admin-set Pro price (subscription page, upgrade confirmation, Terms) in English and Bangla; a change shows without a redeploy | `/subscription`, `/terms`, `/system` (admin) | `e2e/tests/web/subscription-price.spec.ts` (serial `cron` project) | full | #203 |
 
 ### Web: landing and public pages
 
@@ -155,7 +156,7 @@ Notes on the tally:
 | A02 | Dashboard KPIs and signup trend | `/` | `e2e/tests/admin/dashboard.spec.ts` | full (Total Users UI ≥ before+2 after creates — parallel-safe; today's signup count from the chart's screen-reader table: #135) | #126 |
 | A03 | Users: search and filter | `/users` | `e2e/tests/admin/users.spec.ts` | deep (search narrows; Suspended set up before load; hides active) | #126 |
 | A04 | User detail: profile, plan history, Translog tabs; hydrates when its dates differ between UTC and Bangladesh | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts`, `e2e/tests/admin/users.spec.ts` | full (Profiles empty state; Plan history after grant/revoke; Translog via `translogFor(..., { app: 'admin' })` — no Translog tab in UI; no React #418 for a user deleted at 18:00Z; an admin's own page has no Suspend/Delete; unknown id returns 404) | #127, #185, #189 |
-| A05 | Subscriptions list with status filter | `/subscriptions` | `e2e/tests/admin/subscriptions.spec.ts` | deep (explicit PRO/FREE via setUserSubscription; pageSize=100; all visible rows match filter) | #126 |
+| A05 | Subscriptions list with status filter | `/subscriptions` | `e2e/tests/admin/subscriptions.spec.ts` | deep (explicit PRO/FREE via setUserSubscription; pageSize=100; all visible rows match filter; last-confirmed column and user-detail field in Bangladesh time, "never" when null; the check strip shows the latest run and warns on failed or skipped runs: asserted in the serial cron spec) | #126, #205 |
 
 ### Admin: user actions
 
@@ -195,7 +196,8 @@ Notes on the tally:
 | A17 | Emails: log and bilingual template preview | `/emails`, `/emails/[id]`, `/emails/preview` | `e2e/tests/admin/emails.spec.ts` | deep (magic-link email in log + detail; previews EN/BN real Bengali text) | #131 |
 | A18 | Audit log search | `/audit-logs` | `e2e/tests/admin/audit-logs.spec.ts` | full (real suspend appears in search + metadata; Action filter finds it: #152) | #131 |
 | A19 | Log reader with OTPs masked | `/logs` | `e2e/tests/admin/logs.spec.ts` | deep (real OTP verify line found, OTP masked, raw code absent) | #131 |
-| A20 | System: cron settings saved and applied | `/system` | `e2e/tests/admin/system.spec.ts` | deep (caas-check toggle saved after reload, cron route skips; restored) | #131 |
+| A20b | System: Pro price set with warning, history, audit | `/system` | `e2e/tests/admin/system.spec.ts` | deep (invalid refused, scheduled entry kept after reload, today's price unchanged, audit row) | #202 |
+| A20 | System: cron settings saved and applied; subscription check run history and run detail | `/system`, `/system/runs/[id]` | `e2e/tests/admin/system.spec.ts` | deep (caas-check toggle saved after reload, cron route skips; restored. A manual run is kept in the history and lists the moved user, linked to user detail) | #131, #204 |
 | A21 | API docs page loads | `/api-docs` | `e2e/tests/admin/api-docs.spec.ts` | deep (heading + Swagger UI renders operations; anonymous `/openapi.yaml` and `/swagger-ui/*` redirect to `/login`) | #131, #186 |
 
 ## Server-only paths (not counted in the 63 / 21)

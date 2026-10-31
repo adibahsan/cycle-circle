@@ -53,7 +53,7 @@ describe('marketing + legal files', () => {
     for (const rel of [
       'app/(marketing)/welcome/sections/LandingFooter.tsx',
       'app/(marketing)/privacy/page.tsx',
-      'app/(marketing)/terms/page.tsx',
+      'app/(marketing)/terms/TermsClient.tsx',
     ]) {
       expect(readFileSync(join(SRC, rel), 'utf8'), rel).toContain('ContactBlock')
     }

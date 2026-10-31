@@ -129,6 +129,7 @@ broadcast tests:
 |---|---|
 | `cron-daily-reminders.spec.ts` | Even with `userId`, keep broadcast/reminder side-effects out of the parallel wave |
 | `cron-nightly-maintenance.spec.ts` | Purges every soft-deleted user past 30 days |
+| `subscription-price.spec.ts` | Changes the Pro price in effect today, which the System spec and every customer price text read |
 | `cron-caas-check.spec.ts` | `getStatus` over every BDApps PRO subscriber (can flip plans) |
 | `webhooks-bdapps.spec.ts` | Shared fake + webhook recording; kept with the cron wave |
 | `health.spec.ts` / `bdapps-health.spec.ts` | `bdapps-health` scripts `/health` with `{ any: true }` |

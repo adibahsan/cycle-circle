@@ -75,4 +75,75 @@ test.describe('Admin subscriptions', () => {
       await admin.context.close()
     }
   })
+
+  test('the table and user detail show when BDApps last confirmed a subscriber, in Bangladesh time', async ({
+    browser,
+    newUser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    const confirmed = await newUser()
+    const never = await newUser()
+    const confirmedMarker = `E2E LastConf ${confirmed.phone.slice(-6)}`
+    const neverMarker = `E2E NeverConf ${never.phone.slice(-6)}`
+    const confirmedUser = await e2eDb().user.findUniqueOrThrow({ where: { phone: toDbPhone(confirmed.phone) } })
+    const neverUser = await e2eDb().user.findUniqueOrThrow({ where: { phone: toDbPhone(never.phone) } })
+    await e2eDb().user.update({ where: { id: confirmedUser.id }, data: { fullName: confirmedMarker } })
+    await e2eDb().user.update({ where: { id: neverUser.id }, data: { fullName: neverMarker } })
+    await setUserSubscription({ userId: confirmedUser.id, status: 'PRO' })
+    await setUserSubscription({ userId: neverUser.id, status: 'PRO' })
+    // 18:30 UTC on the 10th is 00:30 on the 11th in Bangladesh.
+    await e2eDb().subscription.updateMany({
+      where: { userId: confirmedUser.id },
+      data: { lastConfirmedAt: new Date('2026-06-10T18:30:00Z'), lastReportedStatus: 'REGISTERED', updatedAt: new Date() },
+    })
+    await e2eDb().subscription.updateMany({
+      where: { userId: neverUser.id },
+      data: { lastConfirmedAt: null, lastReportedStatus: null, updatedAt: new Date() },
+    })
+
+    const admin = await createLoggedInAdmin(browser, {
+      viewport,
+      userAgent,
+      isMobile,
+      hasTouch,
+      deviceScaleFactor,
+      locale,
+      timezoneId,
+    })
+    try {
+      const { page } = admin
+      // The strip's numbers depend on the global latest run (checked in the serial cron spec);
+      // here it only has to be there, with no CaaS wording.
+      await page.goto('/subscriptions?pageSize=97')
+      await expect(page.getByTestId('check-strip')).toBeVisible()
+      await expect(page.getByText(/caas/i)).toHaveCount(0)
+      await expect(page.getByRole('columnheader', { name: 'Last confirmed by BDApps' })).toBeVisible()
+
+      const confirmedRow = page.getByRole('row').filter({ has: page.getByText(confirmedMarker) })
+      // The list is cached with stale-while-revalidate (KPI TTL) and the cache outlives a DB reset,
+      // so the first view can be an older run's page: reload until the refreshed list arrives.
+      await expect(async () => {
+        if (!(await confirmedRow.isVisible())) await page.reload()
+        await expect(confirmedRow).toBeVisible({ timeout: 3_000 })
+      }).toPass({ timeout: 30_000 })
+      await expect(confirmedRow.getByTestId('last-confirmed')).toContainText(/Jun 11, 2026.*12:30 AM/)
+      await expect(confirmedRow.getByTestId('last-confirmed')).toContainText('REGISTERED')
+      const neverRow = page.getByRole('row').filter({ has: page.getByText(neverMarker) })
+      await expect(neverRow.getByTestId('last-confirmed')).toHaveText('never')
+
+      await page.goto(`/users/${confirmedUser.id}?tab=subscription`)
+      await expect(page.getByTestId('last-confirmed')).toContainText(/Last confirmed by BDApps/)
+      await expect(page.getByTestId('last-confirmed')).toContainText(/Jun 11, 2026.*12:30 AM \(reported REGISTERED\)/)
+      await page.goto(`/users/${neverUser.id}?tab=subscription`)
+      await expect(page.getByTestId('last-confirmed')).toContainText('never')
+    } finally {
+      await admin.context.close()
+    }
+  })
 })

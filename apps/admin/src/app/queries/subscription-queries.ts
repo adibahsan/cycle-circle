@@ -6,7 +6,7 @@ import {
   getSubscriptionTrend as svcGetSubscriptionTrend,
   getSubscriptionStatusBreakdown as svcGetSubscriptionStatusBreakdown,
 } from '@vesta/shared/server/services'
-import { adminCacheTags, ADMIN_CACHE_TTL, KPI_CACHE_TTL } from '@/lib/admin-cache-tags'
+import { adminCacheTags, KPI_CACHE_TTL } from '@/lib/admin-cache-tags'
 
 interface SubscriptionListParams {
   page?: number
@@ -28,7 +28,7 @@ export const getSubscriptions = cache(async (params: SubscriptionListParams = {}
   return unstable_cache(
     () => listSubscriptions(params),
     subscriptionsCacheKey(params),
-    { tags: [adminCacheTags.subscriptions], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.subscriptions], revalidate: KPI_CACHE_TTL }
   )()
 })
 

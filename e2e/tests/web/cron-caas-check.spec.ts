@@ -1,5 +1,8 @@
 import { test, expect } from '../../support/fixtures'
 import { SECRETS, URLS } from '../../support/slot.ts'
+import { e2eDb } from '../../support/db'
+import { toDbPhone } from '../../support/users'
+import { createLoggedInAdmin } from '../../support/admin'
 
 /**
  * The route slug is historical: today the job calls `/subscription/getStatus` for
@@ -73,5 +76,153 @@ test.describe('cron: caas-check', () => {
     expect((await (await page.request.get('/api/auth/status')).json()).user).toMatchObject({
       subscriptionStatus: 'FREE',
     })
+
+    // The run is recorded with the user it moved, under their masked subscriber id.
+    expect(typeof body.runId).toBe('string')
+    const user = await e2eDb().user.findUniqueOrThrow({ where: { phone: toDbPhone(phone) } })
+    const run = await e2eDb().subscriptionCheckRun.findUniqueOrThrow({
+      where: { id: body.runId },
+      include: { outcomes: true },
+    })
+    expect(run).toMatchObject({ status: 'OK', trigger: 'MANUAL' })
+    expect(run.outcomes.find((o) => o.userId === user.id)).toMatchObject({
+      outcome: 'MOVED_TO_FREE',
+      maskedSubscriberId: expect.stringMatching(/^tel:/),
+    })
+    expect(
+      await e2eDb().subscription.findFirstOrThrow({ where: { userId: user.id } }),
+    ).toMatchObject({ lastReportedStatus: 'UNREGISTERED' })
+  })
+
+  test('a scheduled run (no override) is recorded as a cron run', async ({ request }) => {
+    const res = await request.post(`${URLS.web}/api/cron/caas-check`, {
+      headers: { authorization: `Bearer ${SECRETS.cronSecret}` },
+    })
+    expect(res.ok()).toBe(true)
+    const body = await res.json()
+    const run = await e2eDb().subscriptionCheckRun.findUniqueOrThrow({ where: { id: body.runId } })
+    expect(run.trigger).toBe('CRON')
+    expect(['OK', 'SKIPPED']).toContain(run.status)
+  })
+
+  // Serial `cron` project: nothing else writes runs now, so the newest run is the one made here.
+  test('the admin Subscriptions strip shows the latest run, and warns when the latest run failed or was skipped', async ({
+    browser,
+    newUser,
+    request,
+  }) => {
+    await newUser()
+    const res = await request.post(`${URLS.web}/api/cron/caas-check`, {
+      headers: { authorization: `Bearer ${SECRETS.cronSecret}` },
+      data: { overrideDisabled: true },
+    })
+    const body = await res.json()
+    const inserted: string[] = []
+    const admin = await createLoggedInAdmin(browser)
+    try {
+      const { page } = admin
+      const strip = page.getByTestId('check-strip')
+
+      await page.goto('/subscriptions')
+      await expect(strip).toHaveAttribute('data-state', 'ok')
+      await expect(page.getByTestId('check-strip-checked')).toHaveText(String(body.checked))
+      await expect(page.getByTestId('check-strip-moved')).toHaveText(String(body.downgraded))
+      await expect(page.getByTestId('check-strip-errors')).toHaveText('0')
+      await expect(strip).toContainText('Bangladesh time')
+      await expect(page.getByTestId('check-strip-warning')).toHaveCount(0)
+      await expect(page.getByText(/caas/i)).toHaveCount(0)
+
+      const failed = await e2eDb().subscriptionCheckRun.create({
+        data: { startedAt: new Date(Date.now() + 60_000), trigger: 'CRON', status: 'FAILED', error: 'boom' },
+      })
+      inserted.push(failed.id)
+      await page.reload()
+      await expect(strip).toHaveAttribute('data-state', 'failed')
+      await expect(page.getByTestId('check-strip-warning')).toContainText('failed')
+
+      const skipped = await e2eDb().subscriptionCheckRun.create({
+        data: { startedAt: new Date(Date.now() + 120_000), trigger: 'CRON', status: 'SKIPPED' },
+      })
+      inserted.push(skipped.id)
+      await page.reload()
+      await expect(strip).toHaveAttribute('data-state', 'skipped')
+      await expect(page.getByTestId('check-strip-warning')).toContainText('skipped')
+      await expect(page.getByTestId('check-strip-checked')).toHaveCount(0)
+    } finally {
+      await e2eDb().subscriptionCheckRun.deleteMany({ where: { id: { in: inserted } } })
+      await admin.context.close()
+    }
+  })
+
+  // Moved here from system.spec.ts: the manual run asks BDApps about every Pro user, so it must not
+  // overlap parallel specs (e2e/REVIEW.md §7).
+  test('a manual subscription check shows in the run history, and its run lists the user it moved to Free', async ({
+    browser,
+    newUser,
+    fakeBdapps,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    test.slow()
+    const { phone } = await newUser()
+    const maskedId = (await fakeBdapps.subscriber(phone))!.maskedId
+    const user = await e2eDb().user.findUniqueOrThrow({ where: { phone: toDbPhone(phone) } })
+    const marker = `E2E Moved ${phone.slice(-6)}`
+    await e2eDb().user.update({ where: { id: user.id }, data: { fullName: marker } })
+    // BDApps unsubscribes the number; our DB still says Pro.
+    const res = await fetch(new URL('/subscription/send', fakeBdapps.baseUrl), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        applicationId: SECRETS.bdappsAppId,
+        password: SECRETS.bdappsPassword,
+        subscriberId: maskedId,
+        action: '0',
+      }),
+    })
+    expect(res.ok).toBe(true)
+
+    const admin = await createLoggedInAdmin(browser, {
+      viewport,
+      userAgent,
+      isMobile,
+      hasTouch,
+      deviceScaleFactor,
+      locale,
+      timezoneId,
+    })
+    try {
+      const { page } = admin
+      await page.goto('/system')
+      await page
+        .getByRole('button', { name: 'Run Daily subscription check cron job now' })
+        .click()
+      await page.getByRole('button', { name: 'Run now', exact: true }).last().click()
+      await expect(page.getByText('Job completed successfully.')).toBeVisible({ timeout: 30_000 })
+
+      // The run is kept: it is still in the history after a reload, with Bangladesh-time label.
+      await page.reload()
+      const history = page.getByTestId('run-history')
+      await expect(history).toBeVisible()
+      await expect(page.getByText('Started (Bangladesh time)')).toBeVisible()
+      const run = await e2eDb().subscriptionCheckRun.findFirstOrThrow({
+        where: { trigger: 'MANUAL', outcomes: { some: { userId: user.id } } },
+        orderBy: { startedAt: 'desc' },
+      })
+      expect(run.movedCount).toBeGreaterThanOrEqual(1)
+
+      await page.goto(`/system/runs/${run.id}`)
+      const moved = page.getByTestId('moved-users')
+      await expect(moved.getByRole('link', { name: marker })).toHaveAttribute('href', `/users/${user.id}`)
+      await expect(moved).toContainText('UNREGISTERED')
+      await expect(moved).not.toContainText(phone.slice(-9))
+    } finally {
+      await admin.context.close()
+    }
   })
 })

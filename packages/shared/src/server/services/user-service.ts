@@ -614,6 +614,8 @@ const adminUserDetailSelect = {
       status: true,
       adminOverride: true,
       adminOverrideAt: true,
+      lastConfirmedAt: true,
+      lastReportedStatus: true,
       createdAt: true,
       caasTransactions: {
         select: { id: true, amount: true, status: true, createdAt: true },
