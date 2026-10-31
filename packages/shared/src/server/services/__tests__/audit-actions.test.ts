@@ -26,3 +26,10 @@ describe('audit action names', () => {
     expect(Object.keys(AUDIT_ACTIONS).every((k) => k === AUDIT_ACTIONS[k as keyof typeof AUDIT_ACTIONS])).toBe(true)
   })
 })
+
+describe('audit action labels', () => {
+  it('never say CaaS', () => {
+    for (const a of AUDIT_ACTION_VALUES) expect(auditActionLabel(a), a).not.toMatch(/caas/i)
+    expect(auditActionLabel('TRIGGER_CRON_CAAS_CHECK')).toBe('Trigger Cron Subscription Check')
+  })
+})

@@ -65,4 +65,14 @@ describe('getUserDetailForAdmin', () => {
     const user = await svc.getUserDetailForAdmin(USER)
     expect(user!.profiles[0]).not.toHaveProperty('predictions')
   })
+
+  it('returns when BDApps last confirmed the subscriber and the status it reported', async () => {
+    const at = new Date('2026-06-10T03:00:00Z')
+    await testPrisma.subscription.create({
+      data: { userId: USER, lastConfirmedAt: at, lastReportedStatus: 'REGISTERED' },
+    })
+    const user = await svc.getUserDetailForAdmin(USER)
+    expect(user!.subscriptions[0].lastConfirmedAt).toEqual(at)
+    expect(user!.subscriptions[0].lastReportedStatus).toBe('REGISTERED')
+  })
 })

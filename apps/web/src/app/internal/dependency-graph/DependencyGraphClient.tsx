@@ -352,7 +352,7 @@ const FLOWS: FlowNode[] = [
   // GROUP 5: BILLING & NOTIFICATIONS
   // ══════════════════════════════════════════════════════
   {
-    id: 'billing-subscribe', name: 'Pro Subscribe', desc: 'User upgrades to Pro via BDApps CAAS direct debit (৳99/month). Upserts Subscription + CaasTransaction. Updates User to PRO.',
+    id: 'billing-subscribe', name: 'Pro Subscribe', desc: 'User upgrades to Pro via BDApps CAAS direct debit (at the admin-set Pro price). Upserts Subscription + CaasTransaction. Updates User to PRO.',
     group: 5, type: 'billing', status: 'complete', deps: ['jwt-middleware', 'bdapps-client', 'prisma-client'],
     api: ['/api/billing/subscribe'], store: [],
     files: ['src/app/api/billing/subscribe/route.ts'],
@@ -454,7 +454,7 @@ const FLOWS: FlowNode[] = [
     steps: ['Build date strip: 7 past + today + 2 future', 'Horizontal scrollable DateChip components', 'Animated category tabs with motion indicator', 'SYMPTOMS_DATA grid with bilingual names', 'SymptomChip toggle → store.toggleSymptom', 'Fixed bottom summary bar with count'],
   },
   {
-    id: 'fe-subscription', name: 'Subscription Page', desc: 'Free vs Pro comparison. BDApps modal: confirm → loading → success. Trial countdown for email users. ৳99/month.',
+    id: 'fe-subscription', name: 'Subscription Page', desc: 'Free vs Pro comparison. BDApps modal: confirm → loading → success. Trial countdown for email users. Shows the admin-set Pro price.',
     group: 6, type: 'frontend', status: 'complete', deps: ['zustand-store', 'api-client'],
     api: ['/api/billing/subscribe'], store: [],
     files: ['src/app/(main)/subscription/page.tsx'],

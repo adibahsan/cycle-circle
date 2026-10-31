@@ -2,15 +2,8 @@ import { withCronAuth } from '@vesta/shared/server/middleware'
 import { revalidateTag } from 'next/cache'
 import { cacheTags } from '@/lib/cache-tags'
 import { handleApiError } from '@vesta/shared/server/api-error'
-import {
-  listBdappsSubscribers,
-  listRevokedSubscribers,
-  applyBdappsSubscription,
-  isCronEnabled,
-} from '@vesta/shared/server/services'
-import { getSubscriptionStatus, isPhoneSubscriberId } from '@vesta/shared/server/adapters/bdapps'
+import { runDailySubscriptionCheck } from '@vesta/shared/server/services'
 import { prisma } from '@vesta/shared'
-import { logger } from '@vesta/shared/server/log'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -24,59 +17,32 @@ const handler = withCronAuth(async (request) => {
   const body = (
     request.method === 'POST' ? await request.json().catch(() => ({})) : {}
   ) as { overrideDisabled?: boolean }
-  if (!body.overrideDisabled && !(await isCronEnabled('caas-check'))) {
-    return Response.json({ skipped: true, reason: 'cron disabled' })
-  }
   try {
     // Keep Supabase Free tier alive (auto-pauses after 7 days of inactivity)
     await prisma.$queryRaw`SELECT 1`
 
-    // Future note: CaaS balance checks may return here if BDApps enables CaaS for our app.
-    // Today this job only reads subscriber status (getSubscriptionStatus); it makes no CaaS calls.
-    const subscribers = await listBdappsSubscribers()
-
-    let checked = 0
-    let downgraded = 0
-    let errors = 0
-    let skipped = 0
-
-    for (const sub of subscribers) {
-      const { subscriberId } = sub
-      checked++
-      try {
-        const status = await getSubscriptionStatus(subscriberId)
-        if (status === 'UNREGISTERED' && isPhoneSubscriberId(subscriberId)) {
-          // Masked-number apps reject raw phone ids with E1951, which reads as
-          // UNREGISTERED: ambiguous, so never downgrade a legacy phone-id row.
-          skipped++
-        } else if (status === 'UNREGISTERED') {
-          await applyBdappsSubscription(sub.userId, subscriberId, false, 'nightly-check')
-          revalidateTag(cacheTags.user(sub.userId), { expire: 0 })
-          downgraded++
-        }
-      } catch (err) {
-        // Never downgrade on errors.
-        errors++
-        logger.cron('caas-check.failed', { userId: sub.userId, subscriberId, error: String(err) }, { level: 'error' })
-      }
+    // Today this job only reads subscriber status (getSubscriptionStatus); it makes no BDApps charge calls.
+    // The scheduled call never sets overrideDisabled; the admin's "Run now" always does.
+    const result = await runDailySubscriptionCheck({
+      trigger: body.overrideDisabled ? 'MANUAL' : 'CRON',
+      now: new Date(),
+      clock: () => new Date(),
+      overrideDisabled: !!body.overrideDisabled,
+    })
+    if (result.status === 'SKIPPED') {
+      return Response.json({ skipped: true, reason: 'cron disabled', runId: result.runId })
     }
-
-    // Revoked users: a new BDApps subscription ends the admin override (ADR 0006).
-    let reinstated = 0
-    for (const sub of await listRevokedSubscribers()) {
-      try {
-        if ((await getSubscriptionStatus(sub.subscriberId)) === 'REGISTERED') {
-          await applyBdappsSubscription(sub.userId, sub.subscriberId, true, 'nightly-check')
-          revalidateTag(cacheTags.user(sub.userId), { expire: 0 })
-          reinstated++
-        }
-      } catch (err) {
-        errors++
-        logger.cron('caas-check.failed', { userId: sub.userId, subscriberId: sub.subscriberId, error: String(err) }, { level: 'error' })
-      }
+    for (const userId of [...result.movedUserIds, ...result.reinstatedUserIds]) {
+      revalidateTag(cacheTags.user(userId), { expire: 0 })
     }
-
-    return Response.json({ checked, downgraded, skipped, errors, reinstated })
+    return Response.json({
+      runId: result.runId,
+      checked: result.checked,
+      downgraded: result.moved,
+      skipped: result.skipped,
+      errors: result.errors,
+      reinstated: result.reinstated,
+    })
   } catch (error) {
     return handleApiError(error)
   }

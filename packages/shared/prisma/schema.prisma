@@ -163,6 +163,8 @@ model User {
   feedback        Feedback[]
   articles        Article[]
   smsCampaigns    SmsCampaign[]
+  subscriptionCheckOutcomes SubscriptionCheckOutcome[]
+  proPrices       ProPrice[]
   adminAuditLogs  AdminAuditLog[]
   emailLogs       EmailLog[]
   emailVerifications EmailVerification[]
@@ -250,11 +252,70 @@ model Subscription {
   adminOverrideAt       DateTime?
   /// Revoke only: the BDApps unsubscribe failed, so a repeat REGISTERED must not end the override.
   adminOverrideUnsubFailed Boolean @default(false)
+  /// When BDApps last answered the daily subscription check for this subscriber.
+  lastConfirmedAt       DateTime?
+  /// The status BDApps reported at that time (REGISTERED, UNREGISTERED, ...).
+  lastReportedStatus    String?
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   caasTransactions CaasTransaction[]
+}
+
+enum SubscriptionCheckTrigger {
+  CRON
+  MANUAL
+}
+
+enum SubscriptionCheckStatus {
+  OK
+  FAILED
+  SKIPPED
+}
+
+enum SubscriptionCheckOutcomeKind {
+  MOVED_TO_FREE
+  ERROR
+}
+
+/// One run of the daily subscription check (cron slug `caas-check`).
+model SubscriptionCheckRun {
+  id           String                  @id @default(cuid())
+  startedAt    DateTime
+  finishedAt   DateTime?
+  trigger      SubscriptionCheckTrigger
+  status       SubscriptionCheckStatus
+  checkedCount Int                     @default(0)
+  movedCount   Int                     @default(0)
+  errorCount   Int                     @default(0)
+  /// Set when the run itself failed.
+  error        String?
+  createdAt    DateTime                @default(now())
+
+  outcomes SubscriptionCheckOutcome[]
+
+  @@index([startedAt])
+}
+
+/// A subscriber a run moved to Free, or hit an error on.
+model SubscriptionCheckOutcome {
+  id                 String                       @id @default(cuid())
+  runId              String
+  /// Null once the user is deleted: the outcome stays, keyed by the masked id.
+  userId             String?
+  /// Masked subscriber id; a raw phone id is never stored here.
+  maskedSubscriberId String
+  outcome            SubscriptionCheckOutcomeKind
+  bdappsStatus       String?
+  error              String?
+  createdAt          DateTime                     @default(now())
+
+  run  SubscriptionCheckRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  user User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([runId])
+  @@index([userId])
 }
 
 model CaasTransaction {
@@ -450,6 +511,27 @@ model SystemSetting {
   value     String
   updatedAt DateTime @updatedAt
   updatedBy String?
+}
+
+enum ProPricePeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+// Pro price history (ADR 0011). The price in effect on a Bangladesh day is the latest entry whose
+// effectiveFrom is on or before that day (ties: the newest createdAt). Entries are never edited.
+model ProPrice {
+  id            String         @id @default(cuid())
+  amount        Decimal        @db.Decimal(10, 2) // taka
+  period        ProPricePeriod
+  effectiveFrom DateTime       @db.Date // a Bangladesh day, stored as that day at 00:00 UTC
+  createdBy     String? // null for the seeded first entry
+  createdAt     DateTime       @default(now())
+
+  creator User? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([effectiveFrom, createdAt])
 }
 
 model AdminAuditLog {

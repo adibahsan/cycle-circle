@@ -40,7 +40,7 @@ export const getUserDetail = cache(async (userId: string) => {
   return unstable_cache(
     () => getUserDetailForAdmin(userId),
     ['admin-user-detail', userId],
-    { tags: [adminCacheTags.user(userId), adminCacheTags.users], revalidate: ADMIN_CACHE_TTL }
+    { tags: [adminCacheTags.user(userId), adminCacheTags.users], revalidate: KPI_CACHE_TTL }
   )()
 })
 

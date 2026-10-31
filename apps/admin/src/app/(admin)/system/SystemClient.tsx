@@ -1,6 +1,7 @@
 'use client'
 
-import { useTransition, useState } from 'react'
+import { useTransition, useState, type ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
 import { ServerCog, Play } from 'lucide-react'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { Button } from '@/components/ui/Button'
@@ -13,8 +14,10 @@ import {
   setCronEnabledAction,
 } from '@/app/actions/system-actions'
 import { SmsSendTimeCard } from './SmsSendTimeCard'
+import { ProPriceCard } from './ProPriceCard'
 import { SmsDeliveryReportsCard } from './SmsDeliveryReportsCard'
 import type { CronJobResult, CronSlug } from '@/app/actions/system-actions'
+import type { ProPriceEntry } from '@vesta/shared/server/services'
 
 function CountsDisplay({ counts }: { counts: Record<string, number> }) {
   const entries = Object.entries(counts)
@@ -151,11 +154,18 @@ export function SystemClient({
   initialSettings,
   initialSmsSendTime,
   initialSmsDeliveryReports,
+  runHistory,
+  initialProPrices,
+  today,
 }: {
   initialSettings: Record<CronSlug, boolean>
   initialSmsSendTime: string
   initialSmsDeliveryReports: boolean
+  runHistory: ReactNode
+  initialProPrices: ProPriceEntry[]
+  today: string
 }) {
+  const router = useRouter()
   const [remindersResult, setRemindersResult] = useState<CronJobResult | null>(null)
   const [caasResult, setCaasResult] = useState<CronJobResult | null>(null)
   const [settings, setSettings] = useState(initialSettings)
@@ -179,6 +189,7 @@ export function SystemClient({
         const result = await job()
         set(result)
         report(label, result)
+        router.refresh()
       } catch (err) {
         toast.error(err instanceof Error && err.message ? err.message : `${label} failed`)
       }
@@ -256,6 +267,9 @@ export function SystemClient({
         />
       </div>
 
+      {runHistory}
+
+      <ProPriceCard initialHistory={initialProPrices} today={today} />
       <SmsSendTimeCard initialTime={initialSmsSendTime} />
       <SmsDeliveryReportsCard initialEnabled={initialSmsDeliveryReports} />
 
