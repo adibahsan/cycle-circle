@@ -19,7 +19,7 @@ import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { CreateBroadcastModal } from './CreateBroadcastModal'
 import { EditBroadcastModal } from './EditBroadcastModal'
 import { RescheduleModal } from './RescheduleModal'
-import { SendPreview, formatDay, formatSentAt, statusBadge, type SmsCampaign, type SmsMessage } from './sms-shared'
+import { SendPreview, TotalsLines, formatDay, formatSentAt, statusBadge, type SmsCampaign, type SmsMessage } from './sms-shared'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { canDeleteCampaign, canEditMessage, canSendMessage } from '@vesta/shared/utils/sms'
 
@@ -174,6 +174,7 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
             <p className="text-xs tabular-nums text-[var(--color-text-muted)]">
               {sent} of {row.messages.length} sent
             </p>
+            <TotalsLines messages={row.messages} />
             {failed?.lastError && (
               <p className="max-w-[220px] text-xs text-[var(--color-danger)]" title={failed.lastError}>
                 {failed.lastError.length > 80 ? `${failed.lastError.slice(0, 80)}…` : failed.lastError}

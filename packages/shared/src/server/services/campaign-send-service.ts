@@ -4,7 +4,7 @@ import { logger } from '../log'
 import { smsSend } from '../adapters/bdapps'
 import { createAuditLog } from './audit-service'
 import { bangladeshToday, dayToStoredDate } from '../../utils/dhaka-date'
-import { getSmsSendTime, smsSendMoment } from './sms-settings-service'
+import { getSmsDeliveryReports, getSmsSendTime, smsSendMoment } from './sms-settings-service'
 import { env } from '../../utils/env'
 import { canSendMessage } from '../../utils/sms'
 
@@ -41,22 +41,45 @@ async function claimForSending(id: string): Promise<boolean> {
  * never re-sends a request BDApps may already have accepted. Throws if the send failed.
  */
 async function providerSend(message: SendableMessage) {
+  const reports = await getSmsDeliveryReports()
+  // null = no delivery reports were requested for this message ("delivery reports off" in the
+  // admin); 0 = requested, none received yet. The webhook then adds to the counts.
+  const initialCount = reports ? 0 : null
   if (isDevSend()) {
     console.log(`[SMS Campaign DEV] id=${message.id} message="${message.body}"`)
     return {
       providerRequestId: `dev-req-${message.id}`,
       providerMessageId: `dev-${message.id}`,
       audienceSize: 1 as number | null,
-      deliveredCount: 1,
+      deliveredCount: reports ? 1 : null,
+      failedCount: initialCount,
     }
   }
-  const res = await smsSend(message.body, ['tel:all'])
-  // Real per-recipient counts arrive asynchronously via /api/webhooks/sms/report.
+  const audienceSize = await estimateAudience()
+  const res = await smsSend(message.body, ['tel:all'], reports ? 1 : 0)
   return {
     providerRequestId: res.requestId || null,
     providerMessageId: res.messageId || null,
-    audienceSize: null as number | null,
-    deliveredCount: 0,
+    audienceSize,
+    deliveredCount: initialCount,
+    failedCount: initialCount,
+  }
+}
+
+/**
+ * How many subscribers a `tel:all` send reaches. BDApps does not say (the response has one
+ * destination for the whole broadcast), so this is our own record of who is subscribed: Pro
+ * subscriptions with a stored BDApps subscriber id (ADR 0002: Pro means REGISTERED on BDApps).
+ * It is an estimate: a subscriber who unsubscribed on BDApps since the nightly check still
+ * counts, and one subscribed outside the app does not. Null when it cannot be counted; a
+ * counting error must never stop a send.
+ */
+async function estimateAudience(): Promise<number | null> {
+  try {
+    return await prisma.subscription.count({ where: { status: 'PRO', bdappsSubscriberId: { not: null } } })
+  } catch (error) {
+    logger.cron('sms.audience.count.failed', { error: String(error) }, { level: 'error' })
+    return null
   }
 }
 
@@ -77,7 +100,7 @@ async function recordSent(messageId: string, now: Date, result: SendResult) {
         providerMessageId: result.providerMessageId,
         audienceSize: result.audienceSize,
         deliveredCount: result.deliveredCount,
-        failedCount: 0,
+        failedCount: result.failedCount,
         lastError: null,
         sendAttempts: { increment: 1 },
       },
@@ -277,14 +300,31 @@ export async function recordSmsDeliveryReport(requestId: string, deliveryStatus:
     }))
   if (!message) return { matched: false as const }
 
-  const status = (deliveryStatus || '').toUpperCase()
-  if (status === 'DELIVERED') {
+  const outcome = classifyDeliveryStatus(deliveryStatus)
+  if (outcome === 'delivered') {
     await prisma.$executeRaw`UPDATE "SmsCampaignMessage" SET "deliveredCount" = COALESCE("deliveredCount", 0) + 1 WHERE "id" = ${message.id}`
     return { matched: true as const, counted: true as const }
   }
-  if (status === 'FAILED') {
+  if (outcome === 'failed') {
     await prisma.$executeRaw`UPDATE "SmsCampaignMessage" SET "failedCount" = COALESCE("failedCount", 0) + 1 WHERE "id" = ${message.id}`
     return { matched: true as const, counted: true as const }
   }
-  return { matched: true as const, counted: false as const } // PENDING / unknown
+  // ACCEPTED / UNKNOWN / anything new: not an outcome, so not counted. Logged so a status BDApps
+  // adds later shows up in the logs instead of silently skewing the totals.
+  logger.webhook('sms.report.unclassified', { messageId: message.id, deliveryStatus }, { level: 'warn' })
+  return { matched: true as const, counted: false as const }
+}
+
+/**
+ * BDApps' delivery-report statuses (docs/vesta/source/bdapps-tap-api.html): DELIVERED, EXPIRED,
+ * DELETED, UNDELIVERABLE, ACCEPTED, UNKNOWN, REJECTED. DELIVERED is the only success; the
+ * terminal failures count as failed; ACCEPTED (still in flight) and UNKNOWN are neither. The
+ * vendor sample apps and the older TAP docs use "DeliveredToTerminal" / "DeliveryImpossible",
+ * accepted too. Case and separators are ignored.
+ */
+export function classifyDeliveryStatus(status: string | null | undefined): 'delivered' | 'failed' | 'unknown' {
+  const key = (status || '').toUpperCase().replace(/[^A-Z]/g, '')
+  if (key === 'DELIVERED' || key === 'DELIVEREDTOTERMINAL') return 'delivered'
+  if (['FAILED', 'UNDELIVERABLE', 'EXPIRED', 'DELETED', 'REJECTED', 'DELIVERYIMPOSSIBLE'].includes(key)) return 'failed'
+  return 'unknown'
 }

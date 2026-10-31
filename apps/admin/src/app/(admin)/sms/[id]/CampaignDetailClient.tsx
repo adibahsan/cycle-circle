@@ -11,7 +11,7 @@ import { cancelSmsCampaign, deleteSmsCampaign } from '@/app/actions/sms-actions'
 import { canDeleteCampaign, canEditMessage } from '@vesta/shared/utils/sms'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
-import { dayText, formatDay, formatSentAt, statusBadge, type SmsCampaign, type SmsMessage } from '../sms-shared'
+import { dayText, formatDay, formatSentAt, statusBadge, ResultCell, TotalsLines, type SmsCampaign, type SmsMessage } from '../sms-shared'
 import { EditBroadcastModal } from '../EditBroadcastModal'
 import { RescheduleModal } from '../RescheduleModal'
 import { AddDayModal, ResendModal } from './CampaignDayModals'
@@ -116,6 +116,8 @@ export function CampaignDetailClient({ campaign }: { campaign: SmsCampaign }) {
         </p>
       )}
 
+      <TotalsLines messages={campaign.messages} />
+
       <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
         <table className="w-full text-left text-sm">
           <caption className="sr-only">Messages in {campaign.name}</caption>
@@ -125,6 +127,7 @@ export function CampaignDetailClient({ campaign }: { campaign: SmsCampaign }) {
               <th scope="col" className="px-4 py-2.5 font-medium">Message</th>
               <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
               <th scope="col" className="px-4 py-2.5 font-medium">Sent (Bangladesh time)</th>
+              <th scope="col" className="px-4 py-2.5 font-medium">Result</th>
               <th scope="col" className="px-4 py-2.5 font-medium"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -144,6 +147,7 @@ export function CampaignDetailClient({ campaign }: { campaign: SmsCampaign }) {
                   </div>
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 tabular-nums text-[var(--color-text-muted)]">{formatSentAt(m.sentAt)}</td>
+                <td className="px-4 py-3"><ResultCell message={m} /></td>
                 <td className="whitespace-nowrap px-4 py-3">
                   <div className="flex items-center gap-1">
                     {canEditMessage(m.status) && (

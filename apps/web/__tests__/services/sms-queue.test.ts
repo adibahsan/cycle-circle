@@ -11,6 +11,13 @@ vi.mock('@vesta/shared/utils/env', async (importOriginal) => {
   return { ...mod, env: { ...mod.env, DEV_MODE: false, NODE_ENV: 'test' } }
 })
 
+// The delivery-report switch is one global row that sms-delivery-report.test.ts writes; pin it
+// off here so these tests never see a value that file left behind.
+vi.mock('@vesta/shared/server/services/sms-settings-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@vesta/shared/server/services/sms-settings-service')>()),
+  getSmsDeliveryReports: async () => false,
+}))
+
 const {
   planCampaign,
   rescheduleCampaignMessage,
@@ -205,7 +212,7 @@ describe('SMS campaign messages: edit, send, dispatch', () => {
       status: 'SENT', lastError: null, providerRequestId: 'req-1', providerMessageId: 'q1', sendAttempts: 2,
     })
     expect(row.sentAt?.toISOString()).toBe('2020-01-01T09:00:00.000Z')
-    expect(bdapps.smsSend).toHaveBeenCalledWith('Hi', ['tel:all'])
+    expect(bdapps.smsSend).toHaveBeenCalledWith('Hi', ['tel:all'], 0)
   })
 
   it('dispatch sends only today\'s message, never a future day or a cancelled campaign', async () => {
@@ -217,7 +224,7 @@ describe('SMS campaign messages: edit, send, dispatch', () => {
     const res = await dispatchDueCampaignMessage(new Date('2020-01-02T12:00:00Z'))
     expect(res).toMatchObject({ dispatched: true, messageId: due.id })
     expect(bdapps.smsSend).toHaveBeenCalledTimes(1)
-    expect(bdapps.smsSend).toHaveBeenCalledWith('due', ['tel:all'])
+    expect(bdapps.smsSend).toHaveBeenCalledWith('due', ['tel:all'], 0)
     expect((await load(future.id)).status).toBe('PLANNED')
     expect((await load(cancelled.id)).status).toBe('PLANNED')
   })
@@ -277,7 +284,7 @@ describe('SMS campaign messages: edit, send, dispatch', () => {
       const res = await dispatchDueCampaignMessage(after)
       expect(res).toMatchObject({ dispatched: true, messageId: today.id })
       expect(bdapps.smsSend).toHaveBeenCalledTimes(1)
-      expect(bdapps.smsSend).toHaveBeenCalledWith('today', ['tel:all'])
+      expect(bdapps.smsSend).toHaveBeenCalledWith('today', ['tel:all'], 0)
       expect((await load(past.id)).status).toBe('MISSED')
     })
 

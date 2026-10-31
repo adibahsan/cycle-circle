@@ -684,6 +684,116 @@ test.describe('Admin SMS campaigns', () => {
   })
 })
 
+/**
+ * Results and the delivery-report switch (#200). The switch is one global row, so a single
+ * desktop-only test is its only writer: it starts and ends with the row absent (= off), and the
+ * other tests here read nothing from it. Counts are asserted per message, which records at send
+ * time whether reports were requested, so a stray send from a parallel test cannot disturb them.
+ */
+test.describe('Campaign results', () => {
+  test('reports off shows "delivery reports off"; switching on requests reports and the webhook moves the counts', async ({
+    browser,
+    newUser,
+    fakeBdapps,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    test.skip(isMobile, 'viewport-independent; one writer of the global delivery-report row')
+    test.setTimeout(180_000)
+    const key = 'sms.deliveryReports'
+    const runId = randomBytes(3).toString('hex')
+    const offMarker = `E2E SMS Off ${runId}`
+    const onMarker = `E2E SMS On ${runId}`
+    const recipient = await newUser()
+    const maskedId = (await fakeBdapps.subscriber(recipient.phone))!.maskedId
+    await e2eDb().systemSetting.deleteMany({ where: { key } })
+    const sinceSeq = (await fakeBdapps.calls({ path: '/sms/send' })).at(-1)?.seq ?? 0
+
+    const admin = await createLoggedInAdmin(browser, { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId })
+    const { page } = admin
+    try {
+      // 1. Switch off (default): the send asks for no reports and the pages say so.
+      await page.goto('/sms?pageSize=100')
+      const dialog = await openCreateModal(page)
+      await fillCampaign(dialog, offMarker, [{ day: futureDay(), body: offMarker }])
+      await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
+      await expect(campaignRow(page, offMarker)).toBeVisible({ timeout: 15_000 })
+      await clickRowAction(page, offMarker, 'Send message now')
+      await page.getByRole('button', { name: 'Send Now', exact: true }).click()
+      await expect(page.getByText('Message sent')).toBeVisible({ timeout: 30_000 })
+      const offCall = (await waitForSmsCalls(fakeBdapps, offMarker, { sinceSeq })).at(-1)!
+      expect(offCall.body.deliveryStatusRequest).toBe('0')
+      const offMsg = await e2eDb().smsCampaignMessage.findFirstOrThrow({ where: { body: offMarker } })
+      expect(offMsg.audienceSize).not.toBeNull()
+      expect(offMsg.deliveredCount).toBeNull()
+
+      // The list reflects the send (cache expires within a minute) and shows totals.
+      await expect(async () => {
+        await page.goto('/sms?pageSize=100')
+        await expect(campaignRow(page, offMarker).getByTestId('campaign-totals')).toContainText('Delivery reports off')
+      }).toPass({ timeout: 75_000 })
+      await expect(campaignRow(page, offMarker).getByTestId('campaign-totals')).toContainText(`audience ${offMsg.audienceSize}`)
+      await page.goto(`/sms/${offMsg.campaignId}`)
+      const offRow = page.getByRole('row').filter({ hasText: offMarker })
+      await expect(offRow.getByTestId('message-result')).toContainText(`Audience: ${offMsg.audienceSize}`)
+      await expect(offRow.getByTestId('message-result')).toContainText('Delivery reports off')
+
+      // 2. Turn the switch on in System: saved after reload and audited.
+      await page.goto('/system')
+      const toggle = page.getByRole('switch', { name: 'SMS delivery reports' })
+      await expect(toggle).toHaveAttribute('aria-checked', 'false')
+      await toggle.click()
+      await expect(toggle).toHaveAttribute('aria-checked', 'true')
+      await expect(toggle).toBeEnabled()
+      await page.reload()
+      await expect(page.getByRole('switch', { name: 'SMS delivery reports' })).toHaveAttribute('aria-checked', 'true')
+      expect((await e2eDb().systemSetting.findUniqueOrThrow({ where: { key } })).value).toBe('on')
+      const log = await e2eDb().adminAuditLog.findFirst({
+        where: { action: 'SET_SMS_DELIVERY_REPORTS', targetId: key },
+        orderBy: { createdAt: 'desc' },
+      })
+      expect(log?.metadata).toMatchObject({ from: false, to: true })
+
+      // 3. A message sent now requests reports; the webhook moves its counts.
+      await page.goto('/sms?pageSize=100')
+      const dialog2 = await openCreateModal(page)
+      await fillCampaign(dialog2, onMarker, [{ day: futureDay(), body: onMarker }])
+      await dialog2.getByRole('button', { name: 'Create campaign', exact: true }).click()
+      await expect(campaignRow(page, onMarker)).toBeVisible({ timeout: 15_000 })
+      await clickRowAction(page, onMarker, 'Send message now')
+      await page.getByRole('button', { name: 'Send Now', exact: true }).click()
+      await expect(page.getByText('Message sent')).toBeVisible({ timeout: 30_000 })
+      const onCall = (await waitForSmsCalls(fakeBdapps, onMarker, { sinceSeq })).at(-1)!
+      expect(onCall.body.deliveryStatusRequest).toBe('1')
+      const onMsg = await e2eDb().smsCampaignMessage.findFirstOrThrow({ where: { body: onMarker } })
+      expect(onMsg).toMatchObject({ deliveredCount: 0, failedCount: 0, providerRequestId: onCall.response.requestId })
+
+      for (const [dest, deliveryStatus] of [[maskedId, 'DELIVERED'], [`${maskedId}-b`, 'DELIVERED'], [`${maskedId}-c`, 'UNDELIVERABLE'], [`${maskedId}-d`, 'ACCEPTED']] as const) {
+        const res = await fakeBdapps.sendWebhook('/api/webhooks/sms/report', {
+          destinationAddress: dest, requestId: onMsg.providerRequestId!, deliveryStatus, timeStamp: stamp(),
+        })
+        expect(res).toMatchObject({ status: 200, body: { statusCode: 'S1000' } })
+      }
+      const counted = await e2eDb().smsCampaignMessage.findUniqueOrThrow({ where: { id: onMsg.id } })
+      expect(counted).toMatchObject({ deliveredCount: 2, failedCount: 1 })
+
+      await expect(async () => {
+        await page.goto(`/sms/${onMsg.campaignId}`)
+        await expect(page.getByRole('row').filter({ hasText: onMarker }).getByTestId('message-result')).toContainText('Delivered 2 · Failed 1')
+      }).toPass({ timeout: 75_000 })
+    } finally {
+      await e2eDb().systemSetting.deleteMany({ where: { key } })
+      await removeCampaigns(runId)
+      await admin.context.close()
+    }
+  })
+})
+
 test.describe('Campaign detail', () => {
   test('lists every day with its text, status and send time in Bangladesh time', async ({ browser, viewport }) => {
     const runId = randomBytes(3).toString('hex')
