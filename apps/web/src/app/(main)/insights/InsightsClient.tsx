@@ -418,8 +418,9 @@ export function InsightsClient({
           transition={{ delay: 0.15, duration: 0.4 }}
         >
           <Card tone="panel" padding="sm" className="p-4">
-            <div className="flex flex-col gap-2 xl:h-full">
+            <section aria-labelledby="cycle-length-title" className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
+                id="cycle-length-title"
                 variant="inline"
                 title={t('insights.cycleLengthTrend')}
                 subtitle={t(RANGE_LABEL_KEYS[dateRange])}
@@ -436,6 +437,7 @@ export function InsightsClient({
                 </ChartSummary>
               )}
               <CycleLengthTrendChart
+                ariaLabel={`${t('insights.cycleLengthTrend')}, ${t(`insights.${chartType}Chart`)}`}
                 data={filteredCycleLengthTrend}
                 chartType={chartType}
                 cycleLengthLabel={t('insights.cycleLengthLabel')}
@@ -449,7 +451,7 @@ export function InsightsClient({
                 headers={[t('insights.dateColumn'), t('insights.cycleLengthLabel')]}
                 rows={filteredCycleLengthTrend.map((d) => [monthTick(d.date), num(d.cycleLength)])}
               />
-            </div>
+            </section>
           </Card>
         </motion.div>
         )}
@@ -462,8 +464,9 @@ export function InsightsClient({
           transition={{ delay: 0.22, duration: 0.4 }}
         >
           <Card tone="panel" padding="sm" className="p-4">
-            <div className="flex flex-col gap-2 xl:h-full">
+            <section aria-labelledby="symptom-frequency-title" className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
+                id="symptom-frequency-title"
                 variant="inline"
                 title={t('insights.symptomFrequency')}
                 subtitle={t('insights.allTime')}
@@ -479,6 +482,7 @@ export function InsightsClient({
                 </ChartSummary>
               )}
               <SymptomFrequencyChart
+                ariaLabel={t('insights.symptomFrequency')}
                 data={filteredSymptomFrequency}
                 countLabel={t('insights.count')}
                 categoryLabel={categoryLabel}
@@ -490,7 +494,7 @@ export function InsightsClient({
                 headers={[t('insights.categoryColumn'), t('insights.count')]}
                 rows={filteredSymptomFrequency.map((d) => [categoryLabel(d.category), num(d.count)])}
               />
-            </div>
+            </section>
           </Card>
         </motion.div>
         )}
@@ -503,14 +507,15 @@ export function InsightsClient({
           transition={{ delay: 0.29, duration: 0.4 }}
         >
           <Card tone="panel" padding="sm" className="p-4">
-            <div className="flex flex-col gap-2 xl:h-full">
+            <section aria-labelledby="period-regularity-title" className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
+                id="period-regularity-title"
                 variant="inline"
                 title={t('insights.periodRegularity')}
                 subtitle={t('insights.sampleSize', { n: num(periodRegularity.sampleSize) })}
               />
               <PeriodRegularityCard data={periodRegularity} lang={language} />
-            </div>
+            </section>
           </Card>
         </motion.div>
         )}
@@ -523,14 +528,15 @@ export function InsightsClient({
           transition={{ delay: 0.36, duration: 0.4 }}
         >
           <Card tone="panel" padding="sm" className="p-4">
-            <div className="flex flex-col gap-2 xl:h-full">
+            <section aria-labelledby="fertile-window-title" className="flex flex-col gap-2 xl:h-full">
               <SectionHeader
+                id="fertile-window-title"
                 variant="inline"
                 title={t('insights.fertileWindowHistory')}
                 subtitle={t(RANGE_LABEL_KEYS[dateRange])}
               />
               <FertileWindowHistoryList data={filteredFertileWindowHistory} lang={language} />
-            </div>
+            </section>
           </Card>
         </motion.div>
         )}

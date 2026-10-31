@@ -15,9 +15,6 @@ const FIXTURE_PNG = path.join(
   '../../fixtures/article-red-1x1.png',
 )
 
-/** Tiptap surfaces no accessible name on the contenteditable — a11y issue #141. */
-const EDITOR = '.ProseMirror'
-
 function uniqueId(): string {
   return randomBytes(4).toString('hex')
 }
@@ -253,16 +250,14 @@ test.describe('Admin content authoring (seen on web)', () => {
       await adminPage.getByLabel('English Title').fill(titleEn)
       await adminPage.getByLabel('Bengali Title').fill(titleBn)
 
-      // CSS: editors lack accessible names (#141).
-      const editors = adminPage.locator(EDITOR)
+      const editors = adminPage.getByRole('textbox', { name: /^(English|Bengali) Body$/ })
       await expect(editors).toHaveCount(2)
       await fillEditor(editors.nth(0), bodyEnMarker)
       await fillEditor(editors.nth(1), bodyBnMarker)
 
       await adminPage.getByLabel('Choose an image to insert').first().setInputFiles(FIXTURE_PNG)
-      // Image has alt from filename; still scope under editor (no name on editor).
-      // eslint-disable-next-line playwright/no-raw-locators -- uploaded editor image has no accessible name (#141)
-      const enUploadImg = editors.nth(0).locator('img[src^="/uploads/"]')
+      // Image alt comes from the filename.
+      const enUploadImg = editors.nth(0).getByRole('img', { name: 'article-red-1x1' })
       await expect(enUploadImg).toBeVisible({ timeout: 15_000 })
 
       await adminPage.getByRole('checkbox', { name: 'Follicular' }).check()
@@ -310,8 +305,7 @@ test.describe('Admin content authoring (seen on web)', () => {
       await expect(web.page.getByRole('heading', { name: titleEn })).toBeVisible()
       await expect(web.page.getByText(bodyEnMarker)).toBeVisible({ timeout: 15_000 })
 
-      // Reader <article> has no accessible name — scoped by body marker (#141).
-      const enReader = web.page.locator('article').filter({ hasText: bodyEnMarker })
+      const enReader = web.page.getByRole('article', { name: titleEn })
       await expect(enReader).toBeVisible()
       // Image was inserted only in the EN body.
       await expectImgLoaded(enReader.getByRole('img').first())
@@ -321,7 +315,7 @@ test.describe('Admin content authoring (seen on web)', () => {
       await expect(web.page.getByRole('heading', { name: titleEn })).toHaveCount(0)
       await expect(web.page.getByText(bodyBnMarker)).toBeVisible({ timeout: 15_000 })
       // BN body was text-only (no image upload into BN editor).
-      const bnReader = web.page.locator('article').filter({ hasText: bodyBnMarker })
+      const bnReader = web.page.getByRole('article', { name: titleBn })
       await expect(bnReader).toBeVisible()
       await expect(bnReader.getByRole('img')).toHaveCount(0)
     } finally {
@@ -362,14 +356,13 @@ test.describe('Admin content authoring (seen on web)', () => {
       await adminPage.getByLabel('English Title').fill(titleEn)
       await adminPage.getByLabel('Bengali Title').fill(titleBn)
 
-      const editors = adminPage.locator(EDITOR)
+      const editors = adminPage.getByRole('textbox', { name: /^(English|Bengali) Body$/ })
       await expect(editors).toHaveCount(2)
 
       // Obtain a real /uploads src that sanitize-html allows.
       await fillEditor(editors.nth(0), 'upload-seed')
       await adminPage.getByLabel('Choose an image to insert').first().setInputFiles(FIXTURE_PNG)
-      // eslint-disable-next-line playwright/no-raw-locators -- uploaded editor image has no accessible name (#141)
-      const uploadImg = editors.nth(0).locator('img[src^="/uploads/"]')
+      const uploadImg = editors.nth(0).getByRole('img', { name: 'article-red-1x1' })
       await expect(uploadImg).toBeVisible({ timeout: 15_000 })
       const uploadSrc = await uploadImg.getAttribute('src')
       expect(uploadSrc).toMatch(/^\/uploads\//)
@@ -395,8 +388,8 @@ test.describe('Admin content authoring (seen on web)', () => {
       // Reopen in admin: editor must not surface script/iframe/evil hosts
       await openAdminArticleRow(adminPage, titleEn)
       await expect(adminPage.getByRole('heading', { name: 'Edit Article' })).toBeVisible()
-      const editEditors = adminPage.locator(EDITOR)
-      const editHtml = await editEditors.nth(0).innerHTML()
+      const editEditors = adminPage.getByRole('textbox', { name: 'English Body' })
+      const editHtml = await editEditors.innerHTML()
       expect(editHtml).not.toContain('<script')
       expect(editHtml).not.toContain('<iframe')
       expect(editHtml).not.toContain('evil.example')
@@ -405,7 +398,7 @@ test.describe('Admin content authoring (seen on web)', () => {
       await expectPublishedOnWeb(web.page, '/content?phase=LUTEAL', titleEn)
       await web.page.getByRole('button', { name: titleEn }).click()
 
-      const reader = web.page.locator('article').filter({ hasText: safeMarker })
+      const reader = web.page.getByRole('article', { name: titleEn })
       await expect(reader).toBeVisible({ timeout: 15_000 })
       // Tiptap may strip formatting on paste; assert hard security removals always.
       // Safe formatting / uploads img: assert when present in stored HTML.
@@ -462,12 +455,11 @@ test.describe('Admin content authoring (seen on web)', () => {
       await adminPage.getByLabel('English Title').fill(titleEn)
       await adminPage.getByLabel('Bengali Title').fill(titleBn)
 
-      const editors = adminPage.locator(EDITOR)
+      const editors = adminPage.getByRole('textbox', { name: /^(English|Bengali) Body$/ })
       await expect(editors).toHaveCount(2)
       await fillEditor(editors.nth(0), 'upload-seed')
       await adminPage.getByLabel('Choose an image to insert').first().setInputFiles(FIXTURE_PNG)
-      // eslint-disable-next-line playwright/no-raw-locators -- uploaded editor image has no accessible name (#141)
-      const uploadImg = editors.nth(0).locator('img[src^="/uploads/"]')
+      const uploadImg = editors.nth(0).getByRole('img', { name: 'article-red-1x1' })
       await expect(uploadImg).toBeVisible({ timeout: 15_000 })
       const uploadSrc = await uploadImg.getAttribute('src')
       expect(uploadSrc).toMatch(/^\/uploads\//)
@@ -492,7 +484,7 @@ test.describe('Admin content authoring (seen on web)', () => {
       await expectPublishedOnWeb(web.page, '/content?phase=OVULATION', titleEn)
       await web.page.getByRole('button', { name: titleEn }).click()
 
-      const reader = web.page.locator('article').filter({ hasText: safeMarker })
+      const reader = web.page.getByRole('article', { name: titleEn })
       await expect(reader).toBeVisible({ timeout: 15_000 })
       await assertReaderSanitized(reader, {
         safeMarker,

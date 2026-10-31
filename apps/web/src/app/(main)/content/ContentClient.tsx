@@ -152,7 +152,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
 
         {/* From xl the article keeps a reading measure and the spare width holds what to read next. */}
         <div className="flex flex-col gap-5 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start 2xl:grid-cols-[minmax(0,1fr)_24rem]">
-          <article className="glass rounded-2xl p-6 sm:p-8">
+          <article aria-label={getTitle(selectedArticle)} className="glass rounded-2xl p-6 sm:p-8">
             {selectedArticle.category && (
               <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)] mb-3">
                 {selectedArticle.category.name}

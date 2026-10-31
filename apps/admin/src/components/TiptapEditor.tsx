@@ -16,6 +16,8 @@ interface TiptapEditorProps {
   minHeight?: string
   /** BCP-47 language of the content, set on the editable element (e.g. 'bn'). */
   lang?: string
+  /** Accessible name of the editable region (match the visible section label). */
+  ariaLabel?: string
 }
 
 interface ToolbarButtonProps {
@@ -69,6 +71,7 @@ export function TiptapEditor({
   placeholder,
   minHeight = '200px',
   lang,
+  ariaLabel,
 }: TiptapEditorProps) {
   const editorRef = useRef<Editor | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -102,6 +105,7 @@ export function TiptapEditor({
       },
       attributes: {
         ...(lang ? { lang } : {}),
+        ...(ariaLabel ? { role: 'textbox', 'aria-multiline': 'true', 'aria-label': ariaLabel } : {}),
         class: 'prose prose-sm max-w-none focus:outline-none text-[var(--color-text-primary)]',
       },
     },

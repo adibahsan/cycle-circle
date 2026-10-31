@@ -210,6 +210,7 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
                   </span>
                 </div>
                 <TiptapEditor
+                  ariaLabel="English Body"
                   content={bodyEn}
                   onChange={(v) => { setBodyEn(v); setIsDirty(true) }}
                   placeholder="Write the article content in English…"
@@ -228,6 +229,7 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
                   </span>
                 </div>
                 <TiptapEditor
+                  ariaLabel="Bengali Body"
                   content={bodyBn}
                   onChange={(v) => { setBodyBn(v); setIsDirty(true) }}
                   lang="bn"
