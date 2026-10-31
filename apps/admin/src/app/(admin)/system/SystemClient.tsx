@@ -15,6 +15,7 @@ import {
 } from '@/app/actions/system-actions'
 import { SmsSendTimeCard } from './SmsSendTimeCard'
 import { ProPriceCard } from './ProPriceCard'
+import { ReportsCard } from './ReportsCard'
 import { SmsDeliveryReportsCard } from './SmsDeliveryReportsCard'
 import type { CronJobResult, CronSlug } from '@/app/actions/system-actions'
 import type { ProPriceEntry } from '@vesta/shared/server/services'
@@ -154,6 +155,7 @@ export function SystemClient({
   initialSettings,
   initialSmsSendTime,
   initialSmsDeliveryReports,
+  initialReportRecipients,
   runHistory,
   initialProPrices,
   today,
@@ -161,6 +163,7 @@ export function SystemClient({
   initialSettings: Record<CronSlug, boolean>
   initialSmsSendTime: string
   initialSmsDeliveryReports: boolean
+  initialReportRecipients: string[]
   runHistory: ReactNode
   initialProPrices: ProPriceEntry[]
   today: string
@@ -269,6 +272,7 @@ export function SystemClient({
 
       {runHistory}
 
+      <ReportsCard initialRecipients={initialReportRecipients} initialEnabled={settings.reports} />
       <ProPriceCard initialHistory={initialProPrices} today={today} />
       <SmsSendTimeCard initialTime={initialSmsSendTime} />
       <SmsDeliveryReportsCard initialEnabled={initialSmsDeliveryReports} />

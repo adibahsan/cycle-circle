@@ -46,6 +46,9 @@ export type EmailMeta = {
   type: EmailType
   userId?: string
   profileId?: string
+  /** Plain-text mail body, sent beside the HTML. */
+  text?: string
+  attachments?: { filename: string; content: string; contentType?: string }[]
 }
 
 // ─── Generic email sender ─────────────────────────────────────────────────────
@@ -80,6 +83,8 @@ export async function sendEmail(
         to,
         subject,
         html,
+        text: meta?.text,
+        attachments: meta?.attachments?.map((a) => ({ filename: a.filename, content: Buffer.from(a.content, 'utf8') })),
       })
       resendId = data?.id ?? undefined
     } else {
@@ -88,6 +93,8 @@ export async function sendEmail(
         to,
         subject,
         html,
+        text: meta?.text,
+        attachments: meta?.attachments,
       })
     }
 

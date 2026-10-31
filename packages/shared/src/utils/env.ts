@@ -26,6 +26,8 @@ const envObject = z.object({
 
   // App URL (used for magic-link callbacks)
   APP_URL: z.string().default('http://localhost:3000'),
+  // Public URL of the admin app; emailed reports link to its Overview. Unset: reports carry no link.
+  ADMIN_APP_URL: z.string().optional(),
 
   // Email
   RESEND_API_KEY: z.string().optional(),

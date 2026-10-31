@@ -1,9 +1,9 @@
 import { prisma } from '../db'
 
 /** Slugs of the scheduled cron jobs that can be toggled on/off. */
-export type CronSlug = 'daily-reminders' | 'caas-check'
+export type CronSlug = 'daily-reminders' | 'caas-check' | 'reports'
 
-export const CRON_SLUGS: readonly CronSlug[] = ['daily-reminders', 'caas-check']
+export const CRON_SLUGS: readonly CronSlug[] = ['daily-reminders', 'caas-check', 'reports']
 
 /**
  * Whether a scheduled cron is currently enabled. An absent row means enabled,

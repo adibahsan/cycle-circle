@@ -347,7 +347,22 @@ Create the log directory once first: `mkdir -p /opt/vesta/logs`.
 # day (ProSnapshot); churn rate and estimated revenue read it. A missed night leaves a gap, never a guess.
 55 17 * * * curl -fsS -X POST https://cycle-circle.com/api/cron/pro-snapshot \
   -H "Authorization: Bearer $CRON_SECRET" >> /var/log/vesta/cron-pro-snapshot.log 2>&1
+
+# Emailed Overview reports. Weekly: Sunday 03:00 UTC = 09:00 Bangladesh, the previous 7 complete
+# Bangladesh days. Monthly: the 1st at 03:00 UTC, the previous calendar month. Recipients and an
+# on/off switch are on the admin /system page ("Emailed reports"); with no recipients nothing is sent.
+# Each period is sent once: a repeated hit returns {"status":"already-sent"} and sends nothing.
+0 3 * * 0 curl -fsS -X POST "https://cycle-circle.com/api/cron/reports?kind=weekly" \
+  -H "Authorization: Bearer $CRON_SECRET" >> /var/log/vesta/cron-reports.log 2>&1
+0 3 1 * * curl -fsS -X POST "https://cycle-circle.com/api/cron/reports?kind=monthly" \
+  -H "Authorization: Bearer $CRON_SECRET" >> /var/log/vesta/cron-reports.log 2>&1
 ```
+
+**Human step (emailed reports):** add the two `reports` lines to the VPS crontab (repo copy:
+`ops/deploy/vesta-crontab`) and set `ADMIN_APP_URL=https://admin.cycle-circle.com` in the web
+app's env file, then recreate the web container. Without `ADMIN_APP_URL` the reports still send
+but carry no Overview link. To re-send a period by hand add `&force=true` to the URL. Each send is
+in the admin **Emails** log with type `REPORT`.
 
 **Human step: the VPS crontab is not changed by deploying this code.** Someone with SSH
 must add the `*/15 * * * *` `sms-dispatch` line above (the repo copy is

@@ -10,6 +10,8 @@ import {
   getCronSettings,
   setCronEnabled,
   setSmsSendTime,
+  setReportRecipients,
+  REPORT_RECIPIENTS_KEY,
   setSmsDeliveryReports,
   setProPrice,
   type ProPriceEntry,
@@ -164,6 +166,25 @@ export async function setSmsSendTimeAction(
     })
     revalidatePath('/system')
     return { ok: true, time }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Failed to update' }
+  }
+}
+
+/** Set who gets the emailed Overview reports (emails separated by commas, spaces or new lines). Audited. */
+export async function setReportRecipientsAction(
+  input: string,
+): Promise<{ ok: true; emails: string[] } | { ok: false; error: string }> {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+  try {
+    const { previous, emails } = await setReportRecipients(input, admin.id)
+    await createAuditLog(admin.id, AUDIT_ACTIONS.SET_REPORT_RECIPIENTS, 'SystemSetting', REPORT_RECIPIENTS_KEY, {
+      from: previous,
+      to: emails,
+    })
+    revalidatePath('/system')
+    return { ok: true, emails }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Failed to update' }
   }
