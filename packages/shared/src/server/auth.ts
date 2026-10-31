@@ -14,7 +14,12 @@ import {
   isJtiBlacklisted,
   getSessionsValidAfterCache,
   setSessionsValidAfterCache,
+  peekRateLimit,
+  recordRateLimitHit,
 } from './adapters/redis'
+import { AUDIT_ACTIONS } from './services/audit-actions'
+import { log, logger } from './log'
+import { z } from 'zod'
 
 const COOKIE_NAME = env.AUTH_COOKIE_NAME
 const JWT_EXPIRY_SECONDS = 60 * 60 * 24 * 30 // 30 days (web app)
@@ -183,20 +188,114 @@ export async function getAuthUser(userId: string): Promise<AuthUser> {
   return user as AuthUser
 }
 
+/**
+ * Valid bcrypt hash (cost 12) of a throwaway string. Compared against when the email is
+ * unknown / not an admin / has no hash, so every attempt costs one bcrypt compare.
+ */
+const DUMMY_PASSWORD_HASH = '$2b$12$t9prWBNso.OBZz0.QvUL5OPuoZYLQVtQPhQAWquBgqD1LBwt03vo6'
+
 export async function verifyAdminLogin(email: string, password: string, now: Date): Promise<AuthUser> {
   const bcrypt = await import('bcryptjs')
-  const user = await prisma.user.findUnique({ where: { email } })
-  if (!user || user.role !== 'ADMIN' || !user.passwordHash) {
-    throw new ApiError(401, 'Invalid email or password', 'INVALID_CREDENTIALS')
-  }
-  const valid = await bcrypt.compare(password, user.passwordHash)
-  if (!valid) {
+  const user = await prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } } })
+  const isAdminWithHash = !!user && user.role === 'ADMIN' && !!user.passwordHash
+  // Always compare, so response time does not reveal which emails are admins.
+  const valid = await bcrypt.compare(password, isAdminWithHash ? user.passwordHash! : DUMMY_PASSWORD_HASH)
+  if (!user || !isAdminWithHash || !valid) {
     throw new ApiError(401, 'Invalid email or password', 'INVALID_CREDENTIALS')
   }
   if (user.suspendedAt) throw new ApiError(403, 'Account suspended', 'ACCOUNT_SUSPENDED')
   if (user.deletedAt) throw new ApiError(401, 'User not found', 'USER_NOT_FOUND')
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: now } })
   return user as AuthUser
+}
+
+/** Admin login body: email is trimmed and lowercased. (zod lives here; the admin app does not depend on it.) */
+export const adminLoginSchema = z.object({
+  email: z.string().trim().toLowerCase().email(),
+  password: z.string().min(1),
+})
+
+const ADMIN_LOGIN_WINDOW_SECONDS = 15 * 60
+const ADMIN_LOGIN_EMAIL_LIMIT = 5
+const ADMIN_LOGIN_IP_LIMIT = 20
+
+/** Audit write that never throws: auditing must not turn a login/logout into an error. */
+async function writeAdminAudit(
+  adminId: string,
+  action: typeof AUDIT_ACTIONS.ADMIN_LOGIN | typeof AUDIT_ACTIONS.ADMIN_LOGIN_FAILED | typeof AUDIT_ACTIONS.ADMIN_LOGOUT,
+  metadata: Record<string, string | undefined>,
+): Promise<void> {
+  try {
+    await prisma.adminAuditLog.create({
+      data: { adminId, action, targetType: 'User', targetId: adminId, metadata },
+    })
+  } catch (err) {
+    logger.error('admin.audit_write_failed', err, { action })
+  }
+}
+
+/** Audits a failed login only when the email belongs to a real ADMIN; otherwise just a warning. */
+async function auditFailedAdminLogin(email: string, ip: string | undefined, reason: string): Promise<void> {
+  try {
+    const admin = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' }, role: 'ADMIN' },
+      select: { id: true },
+    })
+    if (admin) {
+      await writeAdminAudit(admin.id, AUDIT_ACTIONS.ADMIN_LOGIN_FAILED, { ip, reason })
+    } else {
+      log('customer', { event: 'admin.login_failed.unknown_email', level: 'warn', data: { email, ip, reason } })
+    }
+  } catch (err) {
+    logger.error('admin.audit_lookup_failed', err)
+  }
+}
+
+/**
+ * Admin password login with rate limiting (failed attempts only: 5 per email and 20 per IP
+ * per 15 min) and audit rows. `email` must already be trimmed and lowercased.
+ */
+export async function attemptAdminLogin(input: {
+  email: string
+  password: string
+  ip?: string
+  now: Date
+}): Promise<AuthUser> {
+  const { email, password, ip, now } = input
+  const emailKey = `admin-login:email:${email}`
+  const ipKey = ip ? `admin-login:ip:${ip}` : null
+
+  const emailPeek = await peekRateLimit(emailKey, ADMIN_LOGIN_EMAIL_LIMIT, ADMIN_LOGIN_WINDOW_SECONDS)
+  const ipPeek = ipKey ? await peekRateLimit(ipKey, ADMIN_LOGIN_IP_LIMIT, ADMIN_LOGIN_WINDOW_SECONDS) : null
+  if (!emailPeek.allowed || (ipPeek && !ipPeek.allowed)) {
+    await auditFailedAdminLogin(email, ip, 'RATE_LIMITED')
+    throw new ApiError(429, 'Too many login attempts. Try again later.', 'RATE_LIMITED')
+  }
+
+  let user: AuthUser
+  try {
+    user = await verifyAdminLogin(email, password, now)
+  } catch (err) {
+    if (err instanceof ApiError && (err.statusCode === 401 || err.statusCode === 403)) {
+      if (err.statusCode === 401) {
+        await recordRateLimitHit(emailKey, ADMIN_LOGIN_WINDOW_SECONDS)
+        if (ipKey) await recordRateLimitHit(ipKey, ADMIN_LOGIN_WINDOW_SECONDS)
+      }
+      await auditFailedAdminLogin(email, ip, err.statusCode === 403 ? 'SUSPENDED' : 'BAD_PASSWORD')
+    }
+    throw err
+  }
+  await writeAdminAudit(user.id, AUDIT_ACTIONS.ADMIN_LOGIN, { ip })
+  return user
+}
+
+/** Logs the current admin session out, auditing it when there is a valid admin session. */
+export async function logoutAdmin(now: Date, ip?: string): Promise<void> {
+  const payload = await verifyAuth(ADMIN_AUDIENCE)
+  if (payload?.role === 'ADMIN' && payload.sub) {
+    await writeAdminAudit(payload.sub, AUDIT_ACTIONS.ADMIN_LOGOUT, { ip })
+  }
+  await logoutAndBlacklist(now, ADMIN_AUDIENCE)
 }
 
 export async function requireAdminAuth(): Promise<JwtPayload> {

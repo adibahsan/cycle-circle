@@ -74,7 +74,7 @@ diff <(sha256sum < <(grep ^JWT_SECRET= /opt/vesta/.env.web.production)) \
 | Variable | Notes |
 |---|---|
 | `ADMIN_EMAIL` | Defaults to `admin@vesta.health` if unset — always override in prod. |
-| `ADMIN_PASSWORD` | Defaults to `admin123` if unset — always override in prod (`<from password manager>`). |
+| `ADMIN_PASSWORD` | Seed only. With `NODE_ENV=production` the seed refuses to run (exits non-zero, before writing anything) unless this is set to a strong value (unset, empty or `admin123` are rejected). Outside production it defaults to `admin123` for local dev. The seed only creates the admin when missing and never changes an existing admin's password or role; the password is never printed. There is no documented rotation route, so changing it needs a manual DB update of `User.passwordHash` with a fresh bcrypt hash (cost 12). |
 | `SEED_DEMO` | Seed script (`packages/shared/prisma/seed.ts`): `seedDemo = NODE_ENV !== 'production' || SEED_DEMO === 'true'`. In prod, demo/dummy data is skipped unless you explicitly set `SEED_DEMO=true` (e.g. for a one-off staging smoke seed). Leave unset for a real prod seed (admin account only). |
 
 ---

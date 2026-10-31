@@ -151,10 +151,10 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A01 | Login with email and password; non-admin sees forbidden page; logout | `/login`, `/forbidden`, `/api/auth/login`, `/api/auth/logout` | `e2e/tests/admin/login.spec.ts` | deep (wrong password, non-admin form error, unauth redirect, forged-token forbidden, logout) | #126 |
+| A01 | Login with email and password; non-admin sees forbidden page; logout | `/login`, `/forbidden`, `/api/auth/login`, `/api/auth/logout` | `e2e/tests/admin/login.spec.ts` | deep (wrong password, non-admin form error, unauth redirect, forged-token forbidden, logout; 6th failed login gets 429, malformed body gets 400, mixed-case email logs in) | #126, #188 |
 | A02 | Dashboard KPIs and signup trend | `/` | `e2e/tests/admin/dashboard.spec.ts` | full (Total Users UI ≥ before+2 after creates — parallel-safe; today's signup count from the chart's screen-reader table: #135) | #126 |
 | A03 | Users: search and filter | `/users` | `e2e/tests/admin/users.spec.ts` | deep (search narrows; Suspended set up before load; hides active) | #126 |
-| A04 | User detail: profile, plan history, Translog tabs; hydrates when its dates differ between UTC and Bangladesh | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts`, `e2e/tests/admin/users.spec.ts` | full (Profiles empty state; Plan history after grant/revoke; Translog via `translogFor(..., { app: 'admin' })` — no Translog tab in UI; no React #418 for a user deleted at 18:00Z) | #127 |
+| A04 | User detail: profile, plan history, Translog tabs; hydrates when its dates differ between UTC and Bangladesh | `/users/[id]` | `e2e/tests/admin/user-actions.spec.ts`, `e2e/tests/admin/users.spec.ts` | full (Profiles empty state; Plan history after grant/revoke; Translog via `translogFor(..., { app: 'admin' })` — no Translog tab in UI; no React #418 for a user deleted at 18:00Z; an admin's own page has no Suspend/Delete; unknown id returns 404) | #127, #185, #189 |
 | A05 | Subscriptions list with status filter | `/subscriptions` | `e2e/tests/admin/subscriptions.spec.ts` | deep (explicit PRO/FREE via setUserSubscription; pageSize=100; all visible rows match filter) | #126 |
 
 ### Admin: user actions
@@ -196,7 +196,7 @@ Notes on the tally:
 | A18 | Audit log search | `/audit-logs` | `e2e/tests/admin/audit-logs.spec.ts` | full (real suspend appears in search + metadata; Action filter finds it: #152) | #131 |
 | A19 | Log reader with OTPs masked | `/logs` | `e2e/tests/admin/logs.spec.ts` | deep (real OTP verify line found, OTP masked, raw code absent) | #131 |
 | A20 | System: cron settings saved and applied | `/system` | `e2e/tests/admin/system.spec.ts` | deep (caas-check toggle saved after reload, cron route skips; restored) | #131 |
-| A21 | API docs page loads | `/api-docs` | `e2e/tests/admin/api-docs.spec.ts` | deep (heading + Swagger UI renders operations) | #131 |
+| A21 | API docs page loads | `/api-docs` | `e2e/tests/admin/api-docs.spec.ts` | deep (heading + Swagger UI renders operations; anonymous `/openapi.yaml` and `/swagger-ui/*` redirect to `/login`) | #131, #186 |
 
 ## Server-only paths (not counted in the 63 / 21)
 

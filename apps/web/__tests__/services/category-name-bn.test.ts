@@ -8,10 +8,13 @@ import {
 
 const prisma = new PrismaClient()
 const created: string[] = []
+// Own author: picking any ADMIN races other test files that create and delete admins.
+const AUTHOR = 'test-catbn-author'
 
 afterAll(async () => {
   await prisma.article.deleteMany({ where: { categoryId: { in: created } } })
   await prisma.articleCategory.deleteMany({ where: { id: { in: created } } })
+  await prisma.user.deleteMany({ where: { id: AUTHOR } })
   await prisma.$disconnect()
 })
 
@@ -41,8 +44,11 @@ describe('ArticleCategory.nameBn', () => {
     const stamp = Date.now()
     const cat = await createCategory(`test-catbn-art-${stamp}`, 'বিভাগ')
     created.push(cat.id)
-    const author = await prisma.user.findFirst({ where: { role: 'ADMIN' } })
-    if (!author) return
+    const author = await prisma.user.upsert({
+      where: { id: AUTHOR },
+      update: {},
+      create: { id: AUTHOR, email: `${AUTHOR}@example.test`, role: 'ADMIN', authMethod: 'EMAIL' },
+    })
     const art = await prisma.article.create({
       data: {
         slug: `test-catbn-${stamp}`,

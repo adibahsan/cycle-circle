@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import { ADMIN_AUDIENCE, logoutAndBlacklist } from '@vesta/shared/server/auth'
+import { logoutAdmin } from '@vesta/shared/server/auth'
+import { requestIp } from '@vesta/shared/server/request-ip'
 
-export async function POST() {
-  await logoutAndBlacklist(new Date(), ADMIN_AUDIENCE)
+export async function POST(request: Request) {
+  await logoutAdmin(new Date(), requestIp(request))
   return NextResponse.json({ success: true })
 }

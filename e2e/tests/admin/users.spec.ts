@@ -279,4 +279,30 @@ test.describe('Server render', () => {
       await admin.context.close()
     }
   })
+
+  test("an admin's own detail page has no Suspend or Delete", async ({ browser, viewport }) => {
+    const admin = await createLoggedInAdmin(browser, { viewport })
+    try {
+      await admin.page.goto(`/users/${admin.id}`)
+      await expect(admin.page.getByRole('heading', { name: 'E2E Admin', exact: true })).toBeVisible()
+      await expect(admin.page.getByRole('button', { name: 'Suspend', exact: true })).toHaveCount(0)
+      await expect(admin.page.getByRole('button', { name: 'Delete', exact: true })).toHaveCount(0)
+    } finally {
+      await admin.context.close()
+    }
+  })
+
+  // The (admin) segment streams behind loading.tsx, so the status line is already 200 when
+  // notFound() runs (same as every other admin detail page). What matters: the not-found
+  // page renders, not the error boundary.
+  test('an unknown user id shows the not-found page', async ({ browser, viewport }) => {
+    const admin = await createLoggedInAdmin(browser, { viewport })
+    try {
+      await admin.page.goto('/users/does-not-exist')
+      await expect(admin.page.getByRole('heading', { name: 'This page could not be found.' })).toBeVisible()
+      await expect(admin.page.getByText('Something went wrong')).toHaveCount(0)
+    } finally {
+      await admin.context.close()
+    }
+  })
 })

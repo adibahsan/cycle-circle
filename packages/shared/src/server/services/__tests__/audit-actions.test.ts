@@ -8,7 +8,7 @@ const servicesDir = join(__dirname, '..')
 describe('audit action names', () => {
   it('include the actions the filter used to miss', () => {
     expect(AUDIT_ACTION_VALUES).toEqual(
-      expect.arrayContaining(['USER_SUSPENDED', 'USER_REACTIVATED', 'USER_DELETED', 'USER_RESTORED', 'PRO_GRANTED', 'PRO_REVOKED', 'ARTICLE_CREATED', 'SET_CRON_ENABLED']),
+      expect.arrayContaining(['USER_SUSPENDED', 'USER_REACTIVATED', 'USER_DELETED', 'USER_RESTORED', 'PRO_GRANTED', 'PRO_REVOKED', 'ARTICLE_CREATED', 'SET_CRON_ENABLED', 'ADMIN_LOGIN', 'ADMIN_LOGIN_FAILED', 'ADMIN_LOGOUT']),
     )
     expect(AUDIT_ACTION_VALUES).not.toContain('SUSPEND_USER')
   })
