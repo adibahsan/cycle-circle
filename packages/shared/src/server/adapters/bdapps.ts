@@ -45,9 +45,40 @@ const USER_ERRORS: Record<string, { status: number; message: string; code: strin
   E1351: { status: 409, message: 'This number is already subscribed', code: 'ALREADY_SUBSCRIBED' },
 }
 
+/** Every BDApps call gives up after this long, so a hung connection cannot hold a request or a cron run. */
+const DEFAULT_TIMEOUT_MS = 15_000
+/** The SMS send gets a little longer: a `tel:all` broadcast is fanned out by BDApps. */
+const SMS_TIMEOUT_MS = 20_000
+
+/** Node/undici codes for "the connection was never made", so BDApps cannot have seen the request. */
+const NOT_SENT_CODES = new Set([
+  'ECONNREFUSED',
+  'ENOTFOUND',
+  'EAI_AGAIN',
+  'ENETUNREACH',
+  'EHOSTUNREACH',
+  'UND_ERR_CONNECT_TIMEOUT',
+])
+
+function isNotSentError(error: unknown): boolean {
+  const code = (error as { cause?: { code?: unknown } } | null)?.cause?.code
+  return typeof code === 'string' && NOT_SENT_CODES.has(code)
+}
+
+interface FetchOptions {
+  timeoutMs?: number
+  /**
+   * 'all' (default) retries any failure. 'unsent-only' is for calls that must not run twice
+   * (an SMS broadcast): only a failure that proves the request never reached BDApps is retried,
+   * never a 5xx or a timeout after the request went out.
+   */
+  retry?: 'all' | 'unsent-only'
+}
+
 async function fetchWithRetry(
   url: string,
   body: Record<string, unknown>,
+  { timeoutMs = DEFAULT_TIMEOUT_MS, retry = 'all' }: FetchOptions = {},
 ): Promise<Record<string, unknown>> {
   let lastError: unknown
 
@@ -57,6 +88,7 @@ async function fetchWithRetry(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(timeoutMs),
       })
 
       if (!response.ok) {
@@ -67,7 +99,7 @@ async function fetchWithRetry(
           'BDAPPS_HTTP_ERROR',
         )
         // 4xx (e.g. a 404 on a disabled API) won't fix itself on retry
-        if (response.status < 500) throw new NonRetryable(err)
+        if (response.status < 500 || retry === 'unsent-only') throw new NonRetryable(err)
         throw err
       }
 
@@ -93,6 +125,12 @@ async function fetchWithRetry(
       return data
     } catch (error) {
       if (error instanceof NonRetryable) throw error.error
+      const timedOut = error instanceof Error && error.name === 'TimeoutError'
+      if (retry === 'unsent-only' && !isNotSentError(error)) {
+        throw timedOut
+          ? new ApiError(504, `BDApps did not answer within ${timeoutMs / 1000}s`, 'BDAPPS_TIMEOUT')
+          : error
+      }
       lastError = error
       if (attempt < RETRY_DELAYS.length) {
         await new Promise((resolve) =>
@@ -384,7 +422,7 @@ export async function smsSend(
     message,
     destinationAddresses: destinationAddresses.map(toTelUri),
     deliveryStatusRequest: String(deliveryStatusRequest),
-  })
+  }, { timeoutMs: SMS_TIMEOUT_MS, retry: 'unsent-only' })
   const first = (data.destinationResponses as Array<Record<string, unknown>> | undefined)?.[0]
   return {
     requestId: data.requestId as string | undefined,
