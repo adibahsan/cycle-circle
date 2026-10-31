@@ -11,27 +11,18 @@ Use when running Matt Pocock’s **implement-orchestrated** skill from **Cursor*
 
 Skip bridge preflight (`agent-bridge status`, `cursor-agent` / `opencode` / `agy` on PATH).
 
-### Worktree bootstrap
+### Worktrees
 
-Before the first typecheck in a **new** worktree:
-
-```bash
-pnpm install
-pnpm db:generate
-```
-
-### Worktrees (manual)
-
-Cursor has no built-in per-ticket worktree isolation. The orchestrator creates one worktree per ticket:
+Cursor has no built-in per-ticket worktree isolation. The orchestrator creates one worktree per ticket with the repo script, which copies the gitignored `.env.local` files, installs dependencies and generates the Prisma client:
 
 ```bash
 # From main checkout on feat/<feature-slug>, after prior merges:
-git worktree add ../cycle-circle-wt-<NN> -b ticket/<NN>-<slug> HEAD
+scripts/new-worktree.sh <NN> <slug> HEAD
 ```
 
 - **Base ref:** branch from **current `HEAD`** on the feature branch (same intent as Claude `worktree.baseRef: "head"`). Stay on `feat/<feature-slug>` in the main checkout; do not branch coders from `origin/main` while the feature branch is ahead.
 - **Fix rounds:** reuse the same worktree path; do not spawn a second worktree for the same ticket.
-- **Cleanup:** after merge, `git worktree remove ../cycle-circle-wt-<NN>` and delete `ticket/<NN>-<slug>`.
+- **Cleanup:** after merge, `scripts/new-worktree.sh --remove <NN>`.
 
 Put orchestration state under `/tmp/implement-orchestrated/<feature-slug>/state.md` (or the session scratchpad if one exists).
 

@@ -27,6 +27,8 @@ export default tseslint.config(
       'playwright/missing-playwright-await': 'error',
       'playwright/no-page-pause': 'error',
       'local/test-fail-links-issue': 'error',
+      // Global singleton rows: one desktop-only writer per row. Add writers here deliberately (README "Global settings rows").
+      'local/no-global-setting-writes': ['error', { allow: ['tests/admin/system.spec.ts', 'tests/admin/sms.spec.ts'] }],
     },
   },
 )

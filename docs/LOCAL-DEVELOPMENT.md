@@ -144,6 +144,10 @@ Server logs are written as dated files per channel under `apps/web/logs/<channel
 
 Run `just health` after the web app is running to probe API health routes.
 
+### Tests use their own database
+
+`pnpm --filter @vesta/web backend:test` never runs against `vesta_dev`. A vitest `globalSetup` (`apps/web/__tests__/helpers/global-setup.ts`) switches `DATABASE_URL` to `vesta_test` on the same server, creates it if missing, and runs `prisma migrate deploy` on it before any test. Nothing to set up by hand, and migrations never touch your dev data. Override with `TEST_DATABASE_URL` (allowed names: `vesta_test`, `vesta_vitest`, `vesta_e2e[_n]`; anything else, `vesta_dev` included, throws). CI uses its own `vesta_ci` database as configured.
+
 ### Browser e2e and screenshots (local only, orchestrator-run)
 
 Playwright lives in `apps/web/e2e/`. These commands need Postgres (port 5431) and `DEV_MODE=true` in `apps/web/.env.local`. They start their own `next dev` on a free port, so they do not collide with port 3000. They are **not run in CI and not by ticket implementers**: run one at a time, from one machine.
