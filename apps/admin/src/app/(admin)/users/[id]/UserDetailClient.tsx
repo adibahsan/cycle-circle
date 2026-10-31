@@ -49,7 +49,7 @@ import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
 import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Types (mirror the Prisma include shape from getUserDetail)
+// Types (structural subset of AdminUserDetail from getUserDetailForAdmin)
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface CaasTransaction {
@@ -111,7 +111,6 @@ interface UserDetail {
   role: string
   profileCompleted?: boolean | null
   suspendedAt: Date | null
-  suspendedBy?: string | null
   deletedAt: Date | null
   lastLoginAt: Date | null
   createdAt: Date
@@ -771,6 +770,7 @@ export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
   const status = getUserStatus(user)
   const isSuspended = status === 'suspended'
   const isDeleted = status === 'deleted'
+  const isAdminTarget = user.role === 'ADMIN'
   const userTier = getSubscriptionTier(user)
   const isPro = userTier === 'PRO'
   const canRestore = isDeleted && !!user.deletedAt && isWithinRestoreWindow(new Date(user.deletedAt))
@@ -784,11 +784,27 @@ export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
         const res = modalAction === 'suspend'
           ? await suspendUser(user.id, suspendReason.trim())
           : await softDeleteUser(user.id)
+        if ('error' in res) {
+          // Close the modal so the banner under the header is visible.
+          setActionError(res.error)
+          setModalAction(null)
+          setSuspendReason('')
+          return
+        }
         if (res.bdappsError) {
           toast.error(`${modalAction === 'suspend' ? 'User suspended' : 'User deleted'}, but the BDApps unsubscribe failed: ${res.bdappsError}. The user may still be charged.`)
         }
       }
-      else if (modalAction === 'reactivate') await reactivateUser(user.id)
+      else if (modalAction === 'reactivate') {
+        const res = await reactivateUser(user.id)
+        if ('error' in res) {
+          // Close the modal so the banner under the header is visible.
+          setActionError(res.error)
+          setModalAction(null)
+          setSuspendReason('')
+          return
+        }
+      }
       else if (modalAction === 'restore') await restoreUser(user.id)
       else if (modalAction === 'setStatus' && pendingStatus) {
         const res = await setUserSubscriptionStatus(user.id, pendingStatus)
@@ -920,7 +936,7 @@ export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
                   <CheckCircle size={14} aria-hidden="true" />
                   Reactivate
                 </Button>
-              ) : (
+              ) : !isAdminTarget && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -932,15 +948,17 @@ export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
                 </Button>
               )}
 
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => setModalAction('delete')}
-                disabled={isPending}
-              >
-                <Trash2 size={14} aria-hidden="true" />
-                Delete
-              </Button>
+              {!isAdminTarget && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => setModalAction('delete')}
+                  disabled={isPending}
+                >
+                  <Trash2 size={14} aria-hidden="true" />
+                  Delete
+                </Button>
+              )}
             </div>
           )}
 

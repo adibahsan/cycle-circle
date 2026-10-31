@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation'
 import { requireAdminUser } from '@/app/queries/auth-queries'
 import { getUserDetail } from '@/app/queries/user-queries'
 import { getUserPlanHistory } from '@/app/queries/log-queries'
@@ -17,5 +18,6 @@ export default async function UserDetailPage({
     getUserDetail(id),
     tab === 'plan' ? getUserPlanHistory(id) : Promise.resolve(null),
   ])
+  if (!user) notFound()
   return <UserDetailClient user={user} planHistory={planHistory} />
 }
