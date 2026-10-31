@@ -44,7 +44,7 @@ describe('recordUserActivity', () => {
 
   it('never records suspended or deleted users', async () => {
     const s = await makeUser('3', { suspendedAt: at('2017-01-01T00:00:00Z') })
-    const d = await makeUser('4', { deletedAt: at('2017-01-01T00:00:00Z') })
+    const d = await makeUser('4', { deletedAt: new Date() }) // real clock: 2017 would sit inside nightly-maintenance's purge window
     await recordUserActivity(s.id, at('2017-03-10T05:00:00Z'))
     await recordUserActivity(d.id, at('2017-03-10T05:00:00Z'))
     expect(await testPrisma.userActivity.count({ where: { userId: { in: [s.id, d.id] } } })).toBe(0)
@@ -60,7 +60,7 @@ describe('getDailyActiveUsers', () => {
     for (const u of [a, b, c]) await recordUserActivity(u.id, now)
     const base = await countOn('2017-04-10', now)
     await testPrisma.user.update({ where: { id: b.id }, data: { suspendedAt: now } })
-    await testPrisma.user.update({ where: { id: c.id }, data: { deletedAt: now } })
+    await testPrisma.user.update({ where: { id: c.id }, data: { deletedAt: new Date() } })
     expect(await countOn('2017-04-10', now)).toBe(base! - 2)
   })
 
