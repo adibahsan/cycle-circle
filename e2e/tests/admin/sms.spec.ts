@@ -1066,3 +1066,140 @@ test.describe('Server render', () => {
     }
   })
 })
+
+/** Import a campaign from CSV, and search the whole campaign history (#201). */
+test.describe('Campaign CSV import and search', () => {
+  test('a valid CSV becomes one campaign with a message per row; an invalid row rejects the whole file inline', async ({
+    browser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    test.setTimeout(150_000)
+    const runId = randomBytes(3).toString('hex')
+    const name = `E2E SMS Import ${runId}`
+    const badName = `E2E SMS Import Bad ${runId}`
+    const dayA = futureDay()
+    let dayB = futureDay()
+    while (dayB === dayA) dayB = futureDay()
+    const csv = (rows: string[]) => Buffer.from(['day,text', ...rows].join('\n'))
+
+    try {
+      await withAdminPage(
+        browser,
+        { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
+        async ({ page }) => {
+          const importInto = async (campaignName: string, file: Buffer) => {
+            const dialog = await openCreateModal(page)
+            await dialog.getByRole('tab', { name: 'Import CSV' }).dispatchEvent('click')
+            await dialog.getByLabel('Campaign name').fill(campaignName)
+            await dialog.getByLabel('CSV file').setInputFiles({ name: 'campaign.csv', mimeType: 'text/csv', buffer: file })
+            await expect(dialog.getByText('Selected: campaign.csv')).toBeVisible()
+            await dialog.getByRole('button', { name: 'Import campaign', exact: true }).dispatchEvent('click')
+            return dialog
+          }
+
+          // One invalid row (a past day) refuses the whole file, naming the line; nothing is created.
+          let dialog = await importInto(badName, csv([`${dayA},"fine, ${runId}"`, `2020-01-01,too old ${runId}`]))
+          await expect(dialog.getByRole('alert')).toContainText('Line 3', { timeout: 15_000 })
+          await expect(dialog.getByRole('alert')).toContainText(/past/i)
+          await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toBeVisible()
+          expect(await e2eDb().smsCampaign.count({ where: { name: { contains: runId } } })).toBe(0)
+
+          // Fix the file: one campaign, one message per row, and an audit row.
+          await dialog.getByLabel('CSV file').setInputFiles({
+            name: 'campaign.csv',
+            mimeType: 'text/csv',
+            buffer: csv([`${dayA},"one, ${runId}"`, `${dayB},দুই ${runId}`]),
+          })
+          await dialog.getByLabel('Campaign name').fill(name)
+          await dialog.getByRole('button', { name: 'Import campaign', exact: true }).dispatchEvent('click')
+          // The row can render before the dialog closes; wait for the close before anything reopens it.
+          await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0, { timeout: 15_000 })
+          await expect(campaignRow(page, name)).toBeVisible({ timeout: 15_000 })
+
+          const campaign = await e2eDb().smsCampaign.findFirstOrThrow({
+            where: { name },
+            include: { messages: { orderBy: { day: 'asc' } } },
+          })
+          expect(campaign.messages).toHaveLength(2)
+          expect(campaign.messages.map((m) => m.body).sort()).toEqual([`one, ${runId}`, `দুই ${runId}`].sort())
+          const audit = await e2eDb().adminAuditLog.findFirst({
+            where: { action: 'IMPORT_SMS_CAMPAIGN', targetId: campaign.id },
+          })
+          expect(audit).not.toBeNull()
+        },
+      )
+    } finally {
+      await removeCampaigns(runId)
+      await e2eDb().adminAuditLog.deleteMany({ where: { action: 'IMPORT_SMS_CAMPAIGN', metadata: { path: ['name'], string_contains: runId } } })
+    }
+  })
+
+  test('search finds a campaign by name or message text even when it is not on the first page', async ({
+    browser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    test.setTimeout(150_000)
+    const runId = randomBytes(3).toString('hex')
+    const target = `E2E SMS Needle ${runId}`
+    const filler = `E2E SMS Filler ${runId}`
+
+    try {
+      await withAdminPage(
+        browser,
+        { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
+        async ({ page, id }) => {
+          const db = e2eDb()
+          // The target is the oldest campaign, then more than a page of newer ones push it off page 1.
+          const targetDay = futureDay()
+          await db.smsCampaign.create({
+            data: {
+              name: target,
+              createdBy: id,
+              createdAt: new Date(Date.now() - 60_000),
+              messages: { create: [{ day: new Date(`${targetDay}T00:00:00.000Z`), body: `body marker ${runId}` }] },
+            },
+          })
+          await db.smsCampaign.createMany({
+            data: Array.from({ length: 25 }, (_, i) => ({ name: `${filler} ${i}`, createdBy: id })),
+          })
+
+          await page.goto('/sms?pageSize=10')
+          await expect(page.getByRole('heading', { name: 'SMS Campaigns' })).toBeVisible()
+          await expect(campaignRow(page, filler).first()).toBeVisible({ timeout: 15_000 })
+          await expect(campaignRow(page, target)).toHaveCount(0)
+
+          // By name: kept in the URL, found server-side, the filler rows are gone.
+          const search = page.getByPlaceholder('Search campaigns…')
+          await search.fill(`Needle ${runId}`)
+          await expect(page).toHaveURL(new RegExp(`q=`), { timeout: 15_000 })
+          await expect(campaignRow(page, target)).toBeVisible({ timeout: 15_000 })
+          await expect(campaignRow(page, filler)).toHaveCount(0)
+
+          // By message text, also across pages.
+          await search.fill(`body marker ${runId}`)
+          await expect(campaignRow(page, target)).toBeVisible({ timeout: 15_000 })
+
+          // The URL restores the search on a fresh load.
+          await page.goto(`/sms?pageSize=10&q=${encodeURIComponent(`Needle ${runId}`)}`)
+          await expect(campaignRow(page, target)).toBeVisible({ timeout: 15_000 })
+          await expect(page.getByPlaceholder('Search campaigns…')).toHaveValue(`Needle ${runId}`)
+          await expect(campaignRow(page, filler)).toHaveCount(0)
+        },
+      )
+    } finally {
+      await removeCampaigns(runId)
+    }
+  })
+})

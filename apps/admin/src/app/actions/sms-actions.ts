@@ -3,6 +3,8 @@
 import { requireAdminAuth, getAuthUser } from '@vesta/shared/server/auth'
 import {
   createCampaign,
+  importCampaignCsv,
+  CampaignImportError,
   addCampaignMessage,
   deleteCampaign,
   sendCampaignMessage,
@@ -35,6 +37,30 @@ export async function createSmsCampaign(input: CampaignComposerInput): Promise<{
     revalidateTag(adminCacheTags.sms, { expire: 0 })
     return { id: campaign.id }
   } catch (err) {
+    return refusal(err)
+  }
+}
+
+/** The rows an import was refused for; `error` is the summary line. */
+export interface CampaignImportRefusal {
+  error: string
+  rowErrors?: { line: number; message: string }[]
+}
+
+/** Import a campaign from a `day,text` CSV. Any bad row refuses the whole file, listed by line. */
+export async function importSmsCampaignCsv(input: {
+  name: string
+  csv: string
+}): Promise<{ id: string } | CampaignImportRefusal> {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  try {
+    const campaign = await importCampaignCsv(admin.id, input, new Date())
+    revalidateTag(adminCacheTags.sms, { expire: 0 })
+    return { id: campaign.id }
+  } catch (err) {
+    if (err instanceof CampaignImportError) return { error: err.message, rowErrors: err.rowErrors }
     return refusal(err)
   }
 }

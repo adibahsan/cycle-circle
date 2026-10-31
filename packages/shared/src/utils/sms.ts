@@ -2,7 +2,7 @@
 
 export type SmsSendLanguage = 'BN' | 'EN' | 'BOTH'
 
-/** One campaign line, produced by both the line parser and the CSV parser. */
+/** One campaign line, produced by the line parser. */
 export interface SmsDraft {
   messageEn: string
   messageBn?: string
@@ -103,16 +103,24 @@ export function parseBulkSmsInput(text: string): SmsDraft[] {
     .filter((r) => r.messageEn.length > 0)
 }
 
-// ── CSV parser ─────────────────────────────────────────────────────────────────
+// ── Campaign CSV parser ─────────────────────────────────────────────────────────────────
 
-export const SMS_CSV_TEMPLATE =
-  'scheduled_date,message_en,message_bn\n' +
-  '2026-11-01,"Drink water today, stay hydrated.",আজ পর্যাপ্ত পানি পান করুন।\n' +
-  ',English only message with no fixed date,\n'
-
+/** Why a CSV row (or the file) is refused. `line` is the 1-based line in the file (the header is line 1). */
 export interface SmsCsvError {
   line: number
   message: string
+}
+
+/** The import file's size cap, enforced by the server before parsing. */
+export const SMS_MAX_CSV_CHARS = 200_000
+
+/** A downloadable example for the import: header plus two rows starting at `firstDay`. */
+export function campaignCsvTemplate(firstDay: string, secondDay: string): string {
+  return (
+    'day,text\n' +
+    `${firstDay},"Drink water today, stay hydrated."\n` +
+    `${secondDay},আজ পর্যাপ্ত পানি পান করুন।\n`
+  )
 }
 
 /** RFC-4180 record splitter: quoted fields, "" escapes, embedded newlines, CRLF. */
@@ -157,41 +165,74 @@ function splitCsvRecords(input: string): { fields: string[]; line: number }[] {
   return records
 }
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?(Z|[+-]\d{2}:\d{2})?)?$/
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/
 
-/** Parse a CSV (header: scheduled_date, message_en, message_bn) into drafts + per-line errors. */
-export function parseSmsCsv(text: string): { drafts: SmsDraft[]; errors: SmsCsvError[] } {
+/** A real calendar day (rejects 2026-02-31, which `Date.parse` would roll over). */
+function isRealDay(day: string): boolean {
+  if (!DAY_RE.test(day)) return false
+  const t = Date.parse(`${day}T00:00:00Z`)
+  return !Number.isNaN(t) && new Date(t).toISOString().slice(0, 10) === day
+}
+
+export interface CampaignCsvRow {
+  line: number
+  day: string
+  body: string
+}
+
+/**
+ * Parse a campaign CSV (header `day,text`, columns in any order, one row per Bangladesh day) into
+ * rows plus row-level errors. Checks only what the file itself shows: day format, repeated days,
+ * empty or over-long text, the row cap. Past days and clashes with other campaigns need the
+ * database and are checked by the server. Blank rows are skipped.
+ */
+export function parseCampaignCsv(text: string): { rows: CampaignCsvRow[]; errors: SmsCsvError[] } {
   const records = splitCsvRecords(text)
-  const drafts: SmsDraft[] = []
+  const rows: CampaignCsvRow[] = []
   const errors: SmsCsvError[] = []
   const header = records.shift()
-  if (!header) return { drafts, errors: [{ line: 1, message: 'The file is empty' }] }
+  if (!header) return { rows, errors: [{ line: 1, message: 'The file is empty' }] }
   const cols = header.fields.map((h) => h.trim().toLowerCase())
-  const iEn = cols.indexOf('message_en')
-  const iBn = cols.indexOf('message_bn')
-  const iDate = cols.indexOf('scheduled_date')
-  if (iEn < 0) return { drafts, errors: [{ line: 1, message: 'Missing "message_en" column in the header' }] }
-
-  for (const rec of records) {
-    const cell = (i: number) => (i >= 0 ? (rec.fields[i] ?? '').trim() : '')
-    const en = cell(iEn)
-    const bn = cell(iBn)
-    const date = cell(iDate)
-    if (!en && !bn && !date) continue // blank row
-    if (!en) {
-      errors.push({ line: rec.line, message: 'message_en is required' })
-      continue
-    }
-    if (date && (!DATE_RE.test(date) || Number.isNaN(Date.parse(date)))) {
-      errors.push({ line: rec.line, message: `Invalid date "${date}" (use YYYY-MM-DD)` })
-      continue
-    }
-    const draft: SmsDraft = { messageEn: en }
-    if (bn) draft.messageBn = bn
-    if (date) draft.scheduledDate = date
-    drafts.push(draft)
+  const iDay = cols.indexOf('day')
+  const iText = cols.indexOf('text')
+  if (iDay < 0 || iText < 0) {
+    return { rows, errors: [{ line: 1, message: 'The header must have "day" and "text" columns' }] }
   }
-  return { drafts, errors }
+
+  const seen = new Map<string, number>()
+  let count = 0
+  for (const rec of records) {
+    const day = (rec.fields[iDay] ?? '').trim()
+    const body = (rec.fields[iText] ?? '').trim()
+    if (!day && !body) continue // blank row
+    count++
+    if (count === SMS_MAX_CAMPAIGN_MESSAGES + 1) {
+      errors.push({ line: rec.line, message: `Too many rows: a campaign can have at most ${SMS_MAX_CAMPAIGN_MESSAGES} messages` })
+    }
+    if (count > SMS_MAX_CAMPAIGN_MESSAGES) continue
+    if (!day) {
+      errors.push({ line: rec.line, message: 'day is required' })
+      continue
+    }
+    if (!isRealDay(day)) {
+      errors.push({ line: rec.line, message: `Invalid day "${day}" (use YYYY-MM-DD)` })
+      continue
+    }
+    const first = seen.get(day)
+    if (first !== undefined) {
+      errors.push({ line: rec.line, message: `${day} is already used on line ${first}` })
+      continue
+    }
+    seen.set(day, rec.line)
+    const problem = validateSmsBody(body)
+    if (problem) {
+      errors.push({ line: rec.line, message: problem })
+      continue
+    }
+    rows.push({ line: rec.line, day, body })
+  }
+  if (count === 0) errors.push({ line: 1, message: 'The file has no rows' })
+  return { rows, errors }
 }
 
 // ── Scheduling ─────────────────────────────────────────────────────────────────

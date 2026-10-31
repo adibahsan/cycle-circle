@@ -11,6 +11,8 @@ import {
   getNextPlannedCampaignId,
   campaignNameFor,
   createCampaign,
+  importCampaignCsv,
+  CampaignImportError,
   addCampaignMessage,
   validateSmsBody,
   SMS_MAX_PARTS,
@@ -169,6 +171,61 @@ describe('campaigns (db)', () => {
       createOneDayCampaignsBulk(ADMIN, [{ messageEn: 'fresh', scheduledDate: '2043-05-24' }, { messageEn: 'clash', scheduledDate: '2043-05-22' }], { now }),
     ).rejects.toThrow()
     expect(await testPrisma.smsCampaignMessage.count({ where: { campaign: { createdBy: ADMIN }, body: 'fresh' } })).toBe(0)
+  })
+
+  it('imports a day,text CSV as one campaign with one message per row, and audits it', async () => {
+    const now = new Date('2043-05-01T00:00:00Z')
+    const csv = `day,text\n${day(10)},"Hello, one"\n${day(12)},দুই\n`
+    const c = await importCampaignCsv(ADMIN, { name: 'Imported', csv }, now)
+    const got = await getCampaign(c.id)
+    expect(got?.messages.map((m) => [m.day.toISOString().slice(0, 10), m.body])).toEqual([
+      [day(10), 'Hello, one'],
+      [day(12), 'দুই'],
+    ])
+    const log = await testPrisma.adminAuditLog.findFirst({ where: { adminId: ADMIN, targetId: c.id } })
+    expect(log).toMatchObject({ action: 'IMPORT_SMS_CAMPAIGN', targetType: 'SmsCampaign' })
+  })
+
+  it('rejects the whole import with row-level errors: past day, clash naming the other campaign, repeated day, bad text', async () => {
+    const now = new Date('2043-05-05T00:00:00Z')
+    await planCampaign(ADMIN, { name: 'Holder', messages: [{ day: day(14), body: 'a' }] })
+    const csv = ['day,text', `${day(1)},old`, `${day(14)},clash`, `${day(15)},fine`, `${day(15)},again`, `${day(16)},`].join('\n')
+    const err = await importCampaignCsv(ADMIN, { name: 'Bad', csv }, now).catch((e) => e)
+    expect(err).toBeInstanceOf(CampaignImportError)
+    expect(err.rowErrors.map((e: { line: number }) => e.line)).toEqual([2, 3, 5, 6])
+    expect(err.rowErrors[0].message).toMatch(/past/)
+    expect(err.rowErrors[1].message).toContain('"Holder"')
+    expect(await testPrisma.smsCampaign.count({ where: { createdBy: ADMIN, name: 'Bad' } })).toBe(0)
+  })
+
+  it('refuses an over-long name, a missing name and an oversized file', async () => {
+    const now = new Date('2043-05-01T00:00:00Z')
+    const csv = `day,text\n${day(10)},ok`
+    await expect(importCampaignCsv(ADMIN, { name: ' ', csv }, now)).rejects.toThrow(/name/)
+    await expect(importCampaignCsv(ADMIN, { name: 'x'.repeat(200), csv }, now)).rejects.toThrow(/too long/)
+    await expect(importCampaignCsv(ADMIN, { name: 'Big', csv: csv + ' '.repeat(300_000) }, now)).rejects.toThrow(/too large/)
+  })
+
+  it('searches all campaigns by name or message text, case-insensitively, with correct paging', async () => {
+    await planCampaign(ADMIN, { name: 'Zeta-Needle', messages: [{ day: day(1), body: 'plain' }] })
+    await planCampaign(ADMIN, { name: 'Other', messages: [{ day: day(2), body: 'has a HAYSTACKWORD inside' }] })
+    for (let i = 0; i < 3; i++) {
+      await planCampaign(ADMIN, { name: `Filler ${i}`, messages: [{ day: day(20 + i), body: `filler ${i}` }] })
+    }
+    // "Zeta-Needle" is the oldest, so it is beyond the first page of size 2.
+    const byName = await listCampaigns({ q: 'zeta-needle', pageSize: 2 })
+    expect(byName.campaigns.map((c) => c.name)).toEqual(['Zeta-Needle'])
+    expect(byName.total).toBe(1)
+    expect(byName.totalPages).toBe(1)
+    const byBody = await listCampaigns({ q: 'haystackword' })
+    expect(byBody.campaigns.map((c) => c.name)).toEqual(['Other'])
+    const filler = await listCampaigns({ q: 'Filler', pageSize: 2, page: 2 })
+    expect(filler.total).toBe(3)
+    expect(filler.totalPages).toBe(2)
+    expect(filler.campaigns).toHaveLength(1)
+    expect(filler.overallTotal).toBeGreaterThanOrEqual(5)
+    const withStatus = await listCampaigns({ q: 'filler', status: 'cancelled' })
+    expect(withStatus.total).toBe(0)
   })
 
   it('lists newest first across all statuses, with derived status, and filters by status', async () => {

@@ -10,8 +10,11 @@ import {
   canEditMessage,
   canDeleteCampaign,
   validateSmsBody,
+  parseCampaignCsv,
+  SMS_MAX_CSV_CHARS,
   SMS_MAX_CAMPAIGN_MESSAGES,
   SMS_MAX_CAMPAIGN_NAME,
+  type SmsCsvError,
   type SmsDraft,
   type SmsSendLanguage,
 } from '../../utils/sms'
@@ -150,6 +153,7 @@ async function nextFreeDay(fromDay: string): Promise<string> {
 export async function planCampaign(
   createdBy: string,
   input: { name: string; messages: PlannedMessageInput[] },
+  opts: { auditAction?: string } = {},
 ) {
   if (!input.name.trim()) throw new Error('A campaign needs a name')
   if (input.messages.length === 0) throw new Error('A campaign needs at least one message')
@@ -168,7 +172,7 @@ export async function planCampaign(
       },
       include: { messages: true },
     })
-    await createAuditLog(createdBy, AUDIT_ACTIONS.CREATE_SMS_CAMPAIGN, 'SmsCampaign', campaign.id, {
+    await createAuditLog(createdBy, opts.auditAction ?? AUDIT_ACTIONS.CREATE_SMS_CAMPAIGN, 'SmsCampaign', campaign.id, {
       name: campaign.name,
       days: input.messages.length,
     })
@@ -200,6 +204,64 @@ export async function createCampaign(
     assertNotPast(m.day, now)
   }
   return planCampaign(createdBy, input)
+}
+
+/** An import refused for these rows (or the file as a whole): nothing was written. */
+export class CampaignImportError extends Error {
+  constructor(readonly rowErrors: SmsCsvError[]) {
+    super(
+      rowErrors.length === 1
+        ? `Line ${rowErrors[0].line}: ${rowErrors[0].message}`
+        : `${rowErrors.length} rows have problems; nothing was imported`,
+    )
+  }
+}
+
+/**
+ * Import a campaign from a CSV with columns `day,text`: one campaign, one message per row. It
+ * gets the same rules as the composer (no past Bangladesh day, no day another campaign holds,
+ * no repeated day, valid texts, the message cap) and is all-or-nothing: any bad row throws a
+ * `CampaignImportError` listing every problem by line, and nothing is written.
+ */
+export async function importCampaignCsv(
+  createdBy: string,
+  input: { name: string; csv: string },
+  now: Date,
+) {
+  if (input.name.trim().length > SMS_MAX_CAMPAIGN_NAME) {
+    throw new Error(`Campaign name is too long (limit ${SMS_MAX_CAMPAIGN_NAME} characters)`)
+  }
+  if (!input.name.trim()) throw new Error('A campaign needs a name')
+  if (input.csv.length > SMS_MAX_CSV_CHARS) throw new Error('The file is too large')
+
+  const { rows, errors } = parseCampaignCsv(input.csv)
+  const today = bangladeshDayOf(now)
+  const future = rows.filter((r) => {
+    if (r.day >= today) return true
+    errors.push({ line: r.line, message: `${r.day} is in the past` })
+    return false
+  })
+
+  if (future.length > 0) {
+    const holders = await prisma.smsCampaignMessage.findMany({
+      where: { day: { in: future.map((r) => dayToStoredDate(r.day)) }, status: { in: [...ACTIVE_DAY_STATUSES] } },
+      include: { campaign: { select: { name: true } } },
+    })
+    const holderByDay = new Map(holders.map((h) => [storedDateToDay(h.day), h.campaign.name]))
+    for (const r of future) {
+      const holder = holderByDay.get(r.day)
+      if (holder) errors.push({ line: r.line, message: `${r.day} already has a message in the campaign "${holder}"` })
+    }
+  }
+
+  if (errors.length > 0) throw new CampaignImportError(errors.sort((a, b) => a.line - b.line))
+
+  const campaign = await planCampaign(
+    createdBy,
+    { name: input.name, messages: rows.map(({ day, body }) => ({ day, body })) },
+    { auditAction: AUDIT_ACTIONS.IMPORT_SMS_CAMPAIGN },
+  )
+  return campaign
 }
 
 /** Add one message to an existing, not-cancelled campaign (same rules as `createCampaign`). */
@@ -455,6 +517,8 @@ export interface CampaignListParams {
   pageSize?: number
   /** A derived status, or 'all' / undefined for every campaign. */
   status?: string
+  /** Case-insensitive match on the campaign name or any message text, across all pages. */
+  q?: string
 }
 
 /**
@@ -464,6 +528,15 @@ export interface CampaignListParams {
 export async function listCampaigns(params: CampaignListParams = {}) {
   const { page = 1, pageSize = 20, status } = params
   const wanted = status && status !== 'all' ? status : null
+  const q = params.q?.trim().slice(0, 100)
+  const where: Prisma.SmsCampaignWhereInput = q
+    ? {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { messages: { some: { body: { contains: q, mode: 'insensitive' } } } },
+        ],
+      }
+    : {}
 
   const include = { creator: creatorSelect, messages: { orderBy: { day: 'asc' as const } } }
   const withStatus = <T extends { cancelledAt: Date | null; messages: { status: string }[] }>(c: T) => ({
@@ -475,19 +548,20 @@ export async function listCampaigns(params: CampaignListParams = {}) {
   let total: number
   if (wanted) {
     // The status is derived, so filter after loading. A campaign list stays small.
-    const all = (await prisma.smsCampaign.findMany({ include, orderBy: [{ createdAt: 'desc' as const }, { id: 'desc' as const }] })).map(withStatus)
+    const all = (await prisma.smsCampaign.findMany({ where, include, orderBy: [{ createdAt: 'desc' as const }, { id: 'desc' as const }] })).map(withStatus)
     const matching = all.filter((c) => c.status === wanted)
     total = matching.length
     rows = matching.slice((page - 1) * pageSize, page * pageSize)
   } else {
     const [found, count] = await Promise.all([
       prisma.smsCampaign.findMany({
+        where,
         include,
         orderBy: [{ createdAt: 'desc' as const }, { id: 'desc' as const }],
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      prisma.smsCampaign.count(),
+      prisma.smsCampaign.count({ where }),
     ])
     total = count
     rows = found.map(withStatus)
@@ -497,7 +571,7 @@ export async function listCampaigns(params: CampaignListParams = {}) {
     campaigns: rows,
     total,
     /** All campaigns regardless of filter: tells "none yet" from "no filter match". */
-    overallTotal: wanted ? await prisma.smsCampaign.count() : total,
+    overallTotal: wanted || q ? await prisma.smsCampaign.count() : total,
     page,
     pageSize,
     totalPages: Math.ceil(total / pageSize),

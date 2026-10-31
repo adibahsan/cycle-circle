@@ -34,6 +34,7 @@ export default async function SmsPage({
       page: Number(params.page) || 1,
       pageSize: Number(params.pageSize) || 20,
       status: params.status ?? 'all',
+      q: params.q?.trim().slice(0, 100) || undefined,
     }),
     getSmsSendHistory(days),
     getSmsDeliveryBreakdown(),
