@@ -10,6 +10,7 @@ import {
   adminSetNotificationPrefs,
 } from '@vesta/shared/server/services'
 import { grantPro, revokePro, bdappsFailureText } from '@vesta/shared/server/services'
+import { ApiError } from '@vesta/shared/server/api-error'
 import { revalidateTag } from 'next/cache'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { revalidateWebTags } from '@/lib/revalidate-web'
@@ -20,37 +21,55 @@ function revalidateUserTags(userId: string) {
   revalidateTag(adminCacheTags.dashboard, { expire: 0 })
 }
 
+/** Thrown messages are redacted in production, so expected refusals are returned as `{ error }`. */
+function refusal(err: unknown): { error: string } {
+  if (err instanceof ApiError) return { error: err.message }
+  throw err
+}
+
 export async function suspendUser(userId: string, reason: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  const { bdapps } = await svcSuspendUser(userId, admin.id, reason, new Date())
+  try {
+    const { bdapps } = await svcSuspendUser(userId, admin.id, reason, new Date())
 
-  revalidateUserTags(userId)
-  await revalidateWebTags([`user:${userId}`])
-  return { success: true, bdappsError: bdappsFailureText(bdapps) }
+    revalidateUserTags(userId)
+    await revalidateWebTags([`user:${userId}`])
+    return { success: true as const, bdappsError: bdappsFailureText(bdapps) }
+  } catch (err) {
+    return refusal(err)
+  }
 }
 
 export async function reactivateUser(userId: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await svcReactivateUser(userId, admin.id)
+  try {
+    await svcReactivateUser(userId, admin.id)
 
-  revalidateUserTags(userId)
-  await revalidateWebTags([`user:${userId}`])
-  return { success: true }
+    revalidateUserTags(userId)
+    await revalidateWebTags([`user:${userId}`])
+    return { success: true as const }
+  } catch (err) {
+    return refusal(err)
+  }
 }
 
 export async function softDeleteUser(userId: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  const { bdapps } = await svcSoftDeleteUser(userId, admin.id, new Date())
+  try {
+    const { bdapps } = await svcSoftDeleteUser(userId, admin.id, new Date())
 
-  revalidateUserTags(userId)
-  await revalidateWebTags([`user:${userId}`])
-  return { success: true, bdappsError: bdappsFailureText(bdapps) }
+    revalidateUserTags(userId)
+    await revalidateWebTags([`user:${userId}`])
+    return { success: true as const, bdappsError: bdappsFailureText(bdapps) }
+  } catch (err) {
+    return refusal(err)
+  }
 }
 
 export async function restoreUser(userId: string) {
