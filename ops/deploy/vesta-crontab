@@ -13,6 +13,8 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # (System page, Bangladesh time) has passed, and marks missed days. Safe to repeat.
 */15 * * * * curl -fsS -X POST -H "Authorization: Bearer CRON_SECRET_PLACEHOLDER" https://cycle-circle.com/api/cron/sms-dispatch >> /var/log/vesta/cron-sms-dispatch.log 2>&1
 30 2 * * * curl -fsS -X POST -H "Authorization: Bearer CRON_SECRET_PLACEHOLDER" https://cycle-circle.com/api/cron/nightly-maintenance >> /var/log/vesta/cron-nightly-maintenance.log 2>&1
+# Pro subscriber snapshot 17:55 UTC (23:55 Bangladesh time): one count per Bangladesh day, for churn rate and estimated revenue
+55 17 * * * curl -fsS -X POST -H "Authorization: Bearer CRON_SECRET_PLACEHOLDER" https://cycle-circle.com/api/cron/pro-snapshot >> /var/log/vesta/cron-pro-snapshot.log 2>&1
 
 # TLS renewal (certbot no-ops unless cert expires within 30 days)
 0 3,15 * * * cd /opt/vesta && sg docker -c 'docker compose -f ops/deploy/compose.prod.yml run --rm certbot renew --webroot -w /var/www/certbot --quiet && docker compose -f ops/deploy/compose.prod.yml exec -T nginx nginx -s reload' >> /var/log/vesta/certbot-renew.log 2>&1

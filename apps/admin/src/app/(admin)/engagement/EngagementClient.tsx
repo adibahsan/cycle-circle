@@ -32,6 +32,7 @@ interface RetentionPoint {
 }
 
 interface EngagementClientProps {
+  activeUsers: ActiveLoggerPoint[]
   activeLoggers: ActiveLoggerPoint[]
   loggingRate: LoggingRatePoint[]
   streakDistribution: StreakBucket[]
@@ -74,6 +75,7 @@ function RetentionRates({ data }: { data: RetentionPoint[] }) {
 // ── Root component ─────────────────────────────────────────────────────────
 
 export function EngagementClient({
+  activeUsers,
   activeLoggers,
   loggingRate,
   streakDistribution,
@@ -103,9 +105,25 @@ export function EngagementClient({
       <div className="flex justify-end">
         <DateRangeControl range={range} />
       </div>
+      <p className="text-sm text-text-secondary">
+        Daily Active Users counts users who opened the app; Daily Active Loggers counts profiles that logged a symptom.
+        Active-user history starts on the day recording began, so earlier days show zero.
+      </p>
 
       {/* Charts grid — 2 columns on lg+, single column on mobile */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* 0 — Daily Active Users (opened the app); history starts when recording began */}
+        <ChartPanel
+          title="Daily Active Users"
+          data={activeUsers.map((d) => ({ ...d } as Record<string, string | number | null>))}
+          xKey="date"
+          series={[{ key: 'count', label: 'Users', color: CHART_VAR.primary }]}
+          kinds={['line', 'area', 'bar']}
+          defaultKind="area"
+          height={240}
+          emptyLabel="No activity recorded for this period."
+        />
+
         {/* 1 — Daily Active Loggers */}
         <ChartPanel
           title="Daily Active Loggers"

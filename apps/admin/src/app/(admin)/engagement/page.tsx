@@ -1,6 +1,7 @@
 import { requireAdminUser } from '@/app/queries/auth-queries'
 import {
   getDailyActiveLoggers,
+  getDailyActiveUsers,
   getSymptomLoggingRate,
   getLoggingStreakDistribution,
   getLoggingRetention,
@@ -17,7 +18,8 @@ export default async function EngagementPage({
 
   const range = parseDateRange(await searchParams, new Date())
 
-  const [activeLoggers, loggingRate, streakDistribution, retention] = await Promise.all([
+  const [activeUsers, activeLoggers, loggingRate, streakDistribution, retention] = await Promise.all([
+    getDailyActiveUsers(range),
     getDailyActiveLoggers(range),
     getSymptomLoggingRate(range),
     getLoggingStreakDistribution(range),
@@ -26,6 +28,7 @@ export default async function EngagementPage({
 
   return (
     <EngagementClient
+      activeUsers={activeUsers}
       activeLoggers={activeLoggers}
       loggingRate={loggingRate}
       streakDistribution={streakDistribution}

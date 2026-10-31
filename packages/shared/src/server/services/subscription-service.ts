@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client'
 import { fillDaySeries, resolveDaySeriesRange, type DaySeriesOpts } from '../../utils/day-series'
 import { logger } from '../log'
 import { isPhoneSubscriberId, setSubscription } from '../adapters/bdapps'
+import { recordChurnEvent } from './churn-service'
 
 /** What caused a plan change; recorded on every translog line. */
 export type PlanChangeCause =
@@ -138,6 +139,7 @@ export async function revokePro(userId: string, adminId: string, now: Date) {
     },
   })
   logPlanChange(userId, before?.subscriptionStatus ?? null, 'LAPSED', 'admin', { adminId, adminOverride: true, bdapps: bdapps.status })
+  if (before?.subscriptionStatus === 'PRO') await recordChurnEvent(userId, 'ADMIN_REVOKE', now)
 
   return { success: true, bdapps }
 }
@@ -183,6 +185,7 @@ export async function setSubscriptionStatus(
     },
   })
   logPlanChange(userId, previous, status, 'admin', { adminId, adminOverride: true, bdapps: bdapps?.status })
+  if (previous === 'PRO' && status !== 'PRO') await recordChurnEvent(userId, 'ADMIN_REVOKE', now)
 
   return { success: true, bdapps }
 }
@@ -271,6 +274,7 @@ export async function applyBdappsSubscription(
   subscriberId: string,
   registered: boolean,
   cause: PlanChangeCause = 'unknown',
+  now?: Date,
 ): Promise<'FREE' | 'PRO' | 'LAPSED'> {
   const before = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
@@ -319,6 +323,9 @@ export async function applyBdappsSubscription(
   }
   await prisma.user.update({ where: { id: userId }, data: { subscriptionStatus: status } })
   logPlanChange(userId, before.subscriptionStatus, status, cause, { subscriberId, ...(overrideEnded && { overrideEnded }) })
+  if (before.subscriptionStatus === 'PRO' && status !== 'PRO') {
+    await recordChurnEvent(userId, cause === 'nightly-check' ? 'DAILY_CHECK' : 'BDAPPS_UNSUBSCRIBE', now)
+  }
   return status
 }
 

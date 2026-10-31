@@ -8,6 +8,7 @@ import {
   getUserRetention as svcGetUserRetention,
   getUserTrend as svcGetUserTrend,
   getDailyActiveLoggers as svcGetDailyActiveLoggers,
+  getDailyActiveUsers as svcGetDailyActiveUsers,
   getSymptomLoggingRate as svcGetSymptomLoggingRate,
   getLoggingStreakDistribution as svcGetLoggingStreakDistribution,
   getLoggingRetention as svcGetLoggingRetention,
@@ -89,6 +90,15 @@ export const getDailyActiveLoggers = cache(async (range: DateRange) => {
   return unstable_cache(
     () => svcGetDailyActiveLoggers(range, new Date()),
     ['admin-daily-active-loggers', range.key],
+    { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
+  )()
+})
+
+export const getDailyActiveUsers = cache(async (range: DateRange) => {
+  await requireAdminUser()
+  return unstable_cache(
+    () => svcGetDailyActiveUsers(range, new Date()),
+    ['admin-daily-active-users', range.key],
     { tags: [adminCacheTags.analytics], revalidate: KPI_CACHE_TTL }
   )()
 })
