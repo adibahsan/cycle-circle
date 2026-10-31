@@ -4,6 +4,25 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
+## 2026-10-31 — E2E bug batch, delete past period, Bengali category names, bundled fonts (PRs #179, #180, #181)
+
+**Shipped:**
+
+- #179: follow-ups to the Bangladesh-day release (flaky tests fixed, admin user-detail dates in Bangladesh time).
+- #180: 16 bugs found by the E2E suite (#134 #135 #137 #138 #139 #140 #141 #144 #145 #152 #153 #154 #157 #159 #166 #178).
+  - **API:** a full profile list returns 409 `PROFILE_LIMIT_REACHED` (was 500), and a future period returns 400 `PERIOD_IN_FUTURE`.
+  - **Admin:** every admin date renders in Bangladesh time.
+  - **Admin `/sms`:** delivery counts show after Refresh data or the 5-min cache.
+- #181: users can delete a past period from the Edit Period Log dialog (#136). Learn categories get an optional Bengali name (#156). Manrope and Noto Sans Bengali are bundled (`next/font/local`), so the build no longer fetches Google Fonts.
+
+**Migrations:** `20261031120000_article_category_name_bn` (adds a nullable `ArticleCategory.nameBn`). Applied by `deploy.sh`.
+
+**Deploy:** `git push origin origin/main:production` (6e4494a); the workflow deploy job succeeded.
+
+**Found after deploy:** the magic-link callback redirected to `https://localhost:3000` because the route used `request.url` behind nginx. This hit the success path, which was broken before this release too, and the #140 error path. The fix is #183.
+
+---
+
 ## 2026-10-30 — Bangladesh day everywhere, E2E suite (PRs #158, #177)
 
 **Shipped** (spec #167, tickets #168–#176; fixes #115 #146 #147 #148 #151 #155 #160 #161):

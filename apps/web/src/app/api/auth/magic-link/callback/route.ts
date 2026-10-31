@@ -5,6 +5,11 @@ import { revalidateTag } from 'next/cache'
 import { cacheTags } from '@/lib/cache-tags'
 import { withRequestContext, setRequestUser, logger } from '@vesta/shared/server/log'
 import { logCustomerRefusal } from '@/app/api/auth/log-failure'
+import { env } from '@vesta/shared/utils/env'
+
+// Redirect to the public origin. Behind nginx, request.url is the internal
+// upstream (http://localhost:3000), so it can't be the base.
+const publicUrl = (path: string) => new URL(path, env.APP_URL)
 
 const LINK_ERROR_CODES = new Set(['TOKEN_EXPIRED', 'TOKEN_USED', 'INVALID_TOKEN'])
 
@@ -42,13 +47,13 @@ export async function GET(request: Request): Promise<Response> {
     await setAuthCookie(jwtToken)
 
     logger.customer('auth.magic-link.verify', { email: magicLink.email, ok: true })
-    return Response.redirect(new URL('/?auth=success', request.url), 302)
+    return Response.redirect(publicUrl('/?auth=success'), 302)
   } catch (error) {
     logCustomerRefusal('auth.magic-link.verify', error)
     // A link opened from an email is a page navigation: send expected failures to the
     // login page with a user-facing message instead of raw JSON.
     if (error instanceof ApiError && error.code && LINK_ERROR_CODES.has(error.code)) {
-      return Response.redirect(new URL(`/email-login?error=${error.code}`, request.url), 302)
+      return Response.redirect(publicUrl(`/email-login?error=${error.code}`), 302)
     }
     return handleApiError(error)
   }
