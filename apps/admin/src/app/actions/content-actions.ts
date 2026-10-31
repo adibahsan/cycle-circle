@@ -71,19 +71,19 @@ export async function deleteArticle(id: string) {
   return { success: true }
 }
 
-export async function createCategory(name: string) {
+export async function createCategory(name: string, nameBn?: string | null) {
   await requireAdminAuth()
 
-  const category = await svcCreateCategory(name)
+  const category = await svcCreateCategory(name, nameBn)
 
   revalidateContentTags()
   return category
 }
 
-export async function updateCategory(id: string, name: string) {
+export async function updateCategory(id: string, name: string, nameBn?: string | null) {
   await requireAdminAuth()
 
-  const category = await svcUpdateCategory(id, name)
+  const category = await svcUpdateCategory(id, name, nameBn)
 
   revalidateContentTags()
   await revalidateWebTags(['articles'])

@@ -394,6 +394,7 @@ model Article {
 model ArticleCategory {
   id        String   @id @default(cuid())
   name      String   @unique
+  nameBn    String?
   slug      String   @unique
   createdAt DateTime @default(now())
 

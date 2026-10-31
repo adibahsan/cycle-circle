@@ -212,6 +212,57 @@ async function installRawBodyRewrite(page: Page, placeholder: string, rawBodyEn:
 }
 
 test.describe('Admin content authoring (seen on web)', () => {
+  test('category Bengali name is saved on create and inline edit (#156)', async ({
+    browser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    const runId = uniqueId()
+    const name = `E2E156 Category ${runId}`
+    const bnCreated = `পরীক্ষা বিভাগ ${runId}`
+    const bnEdited = `নতুন বিভাগ ${runId}`
+    const admin = await createLoggedInAdmin(browser, {
+      viewport,
+      userAgent,
+      isMobile,
+      hasTouch,
+      deviceScaleFactor,
+      locale,
+      timezoneId,
+    })
+    try {
+      const page = admin.page
+      await page.goto('/content')
+      await page.getByRole('button', { name: 'Manage Categories' }).click()
+      await page.getByLabel('New Category').fill(name)
+      await page.getByLabel('Bengali Name (optional)').fill(bnCreated)
+      await page.getByRole('button', { name: 'Add', exact: true }).click()
+      await expect(page.getByText(name, { exact: true })).toBeVisible()
+      await expect(page.getByText(bnCreated, { exact: true })).toBeVisible()
+
+      await page.getByRole('button', { name: `Rename category ${name}` }).click()
+      const bn = page.getByLabel(`Bengali name for category ${name}`)
+      // Moving focus between the two inputs must not save early.
+      await page.getByLabel(`Rename category ${name}`).focus()
+      await bn.focus()
+      await expect(bn).toBeEditable()
+      await bn.fill(bnEdited)
+      await bn.press('Enter')
+      await expect(page.getByText(bnEdited, { exact: true })).toBeVisible()
+
+      const row = await e2eDb().articleCategory.findUnique({ where: { name } })
+      expect(row?.nameBn).toBe(bnEdited)
+    } finally {
+      await e2eDb().articleCategory.deleteMany({ where: { name } })
+      await admin.context.close()
+    }
+  })
+
   test('draft stays off web; publish shows under phase in English and Bengali with image', async ({
     browser,
     newUser,

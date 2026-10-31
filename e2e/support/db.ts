@@ -63,6 +63,8 @@ export async function createArticle(opts: {
   status?: ArticleStatus
   cyclePhases?: CyclePhase[]
   categoryName?: string
+  /** Bengali name set on the category (created or updated). */
+  categoryNameBn?: string
 }) {
   const db = getDb()
   let author = await db.user.findFirst({ where: { role: 'ADMIN' } })
@@ -84,11 +86,14 @@ export async function createArticle(opts: {
     if (!cat) {
       try {
         cat = await db.articleCategory.create({
-          data: { name: opts.categoryName, slug },
+          data: { name: opts.categoryName, nameBn: opts.categoryNameBn, slug },
         })
       } catch {
         cat = await db.articleCategory.findFirst({ where: { name: opts.categoryName } })
       }
+    }
+    if (cat && opts.categoryNameBn && cat.nameBn !== opts.categoryNameBn) {
+      await db.articleCategory.update({ where: { id: cat.id }, data: { nameBn: opts.categoryNameBn } })
     }
     categoryId = cat?.id
   }

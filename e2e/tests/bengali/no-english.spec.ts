@@ -34,9 +34,7 @@ async function prepareSignedIn(page: Page, context: BrowserContext, phone: strin
 test.describe('bengali: signed-in pages', () => {
   for (const route of SIGNED_IN) {
     test(route, async ({ newUser }) => {
-      // Learn category chip "Cycle Health" is still English (#156).
       if (route === '/content') {
-        test.fail(true, 'https://github.com/adibahsan/cycle-circle/issues/156')
         // The chip shows only while a published article has that category; on a fresh DB that
         // depended on content.spec having run first. Publish one here (and bust web's list cache).
         await createArticle({
@@ -47,6 +45,7 @@ test.describe('bengali: signed-in pages', () => {
           bodyBn: '<p>চক্রের স্বাস্থ্যের প্রাথমিক কথা।</p>',
           cyclePhases: ['MENSTRUAL'],
           categoryName: 'Cycle Health',
+          categoryNameBn: 'চক্রের স্বাস্থ্য',
           status: 'PUBLISHED',
         })
       }
