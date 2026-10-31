@@ -62,6 +62,38 @@ _Avoid_: OTP (alone), subscription OTP
 A one-time code that Cycle Circle sends by SMS to an existing subscriber; verifying it proves the person holds the number and logs them in, without subscribing anything.
 _Avoid_: manual OTP, our OTP, login code
 
+**Daily subscription check**:
+The once-a-day job that asks BDApps whether each subscriber is still subscribed, and moves anyone who no longer is back to Free.
+_Avoid_: CaaS check, CAAS, subscription sync
+
+**Pro price**:
+The amount a subscriber is charged and how often (daily, weekly or monthly), as set by an admin. It is what the customer app shows and what estimated revenue is counted from; it must match what BDApps actually charges.
+_Avoid_: CAAS fee, subscription fee, plan cost
+
+### SMS campaigns
+
+**Campaign**:
+A named series of SMS messages sent to every subscriber, one message per Bangladesh day over one or more days. A one-off SMS is a one-day campaign.
+_Avoid_: broadcast, blast, SMS job
+
+**Campaign message**:
+One day's SMS within a campaign: its text and the Bangladesh day it goes out.
+_Avoid_: broadcast, campaign day, SMS (alone)
+
+### Activity
+
+**Active user**:
+A user who opened the app on a given Bangladesh day. Suspended and deleted users never count.
+_Avoid_: DAU (alone), logged-in user, active logger
+
+**Churn**:
+A Pro user becoming non-Pro within a period, for one of four reasons: the daily subscription check found them unsubscribed, BDApps reported an unsubscribe, an admin revoked Pro, or the account was deleted. Admin revokes are reported but kept out of the churn rate.
+_Avoid_: cancellation, lapse (alone), drop-off
+
+**Estimated revenue**:
+What Pro subscribers would have paid in a period at the Pro price in effect each day; an estimate, because BDApps does not report what it actually charged.
+_Avoid_: revenue (alone), earnings, billing total
+
 ### Operations logs
 
 **Log channel**:
