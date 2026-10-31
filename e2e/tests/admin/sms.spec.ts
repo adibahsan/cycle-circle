@@ -1104,7 +1104,7 @@ test.describe('Campaign CSV import and search', () => {
           }
 
           // One invalid row (a past day) refuses the whole file, naming the line; nothing is created.
-          let dialog = await importInto(badName, csv([`${dayA},"fine, ${runId}"`, `2020-01-01,too old ${runId}`]))
+          const dialog = await importInto(badName, csv([`${dayA},"fine, ${runId}"`, `2020-01-01,too old ${runId}`]))
           await expect(dialog.getByRole('alert')).toContainText('Line 3', { timeout: 15_000 })
           await expect(dialog.getByRole('alert')).toContainText(/past/i)
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toBeVisible()
