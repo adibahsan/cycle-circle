@@ -645,6 +645,9 @@ test.describe('Admin SMS campaigns', () => {
             { day: laterDay, body: `${first} two` },
           ])
           await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
+          // The new row can render (refreshed with the action's response) a moment before the dialog
+          // closes; wait for the close, or the next "open" would reuse this dialog and its values.
+          await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0, { timeout: 15_000 })
           await expect(campaignRow(page, first)).toBeVisible({ timeout: 15_000 })
           await expect(campaignRow(page, first).getByText('Planned', { exact: true })).toBeVisible()
           expect(await e2eDb().smsCampaignMessage.count({ where: { body: { contains: first } } })).toBe(2)
