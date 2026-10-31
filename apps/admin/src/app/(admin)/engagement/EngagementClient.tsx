@@ -27,8 +27,9 @@ interface StreakBucket {
 interface RetentionPoint {
   week: string
   created: number
-  retained: number
-  rate: number
+  /** Null until the week after the cohort has fully elapsed. */
+  retained: number | null
+  rate: number | null
 }
 
 interface EngagementClientProps {
@@ -61,11 +62,11 @@ function RetentionRates({ data }: { data: RetentionPoint[] }) {
           </p>
           <p
             className="text-lg font-bold tabular-nums"
-            style={{ color: d.rate >= 50 ? CHART_VAR.good : d.rate >= 25 ? CHART_VAR.mid : CHART_VAR.low }}
+            style={{ color: d.rate === null ? 'var(--color-text-muted)' : d.rate >= 50 ? CHART_VAR.good : d.rate >= 25 ? CHART_VAR.mid : CHART_VAR.low }}
           >
-            {d.rate}%
+            {d.rate === null ? '—' : `${d.rate}%`}
           </p>
-          <p className="text-[10px] text-[var(--color-text-muted)]">retained</p>
+          <p className="text-[10px] text-[var(--color-text-muted)]">{d.rate === null ? 'not yet measured' : 'retained'}</p>
         </div>
       ))}
     </div>

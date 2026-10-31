@@ -474,17 +474,19 @@ export async function getSubscriptionTrend(
 }
 
 /**
- * Count of subscriptions grouped by status (FREE, PRO, LAPSED).
+ * Count of live users grouped by plan status (FREE, PRO, LAPSED). Counts users, so Pro matches
+ * countProUsers() on every page.
  */
 export async function getSubscriptionStatusBreakdown(): Promise<
   { status: string; count: number }[]
 > {
-  const rows = await prisma.subscription.groupBy({
-    by: ['status'],
+  const rows = await prisma.user.groupBy({
+    by: ['subscriptionStatus'],
+    where: { deletedAt: null },
     _count: { _all: true },
   })
 
-  return rows.map((r) => ({ status: r.status as string, count: r._count._all }))
+  return rows.map((r) => ({ status: r.subscriptionStatus as string, count: r._count._all }))
 }
 
 export interface SubscriptionListParams {

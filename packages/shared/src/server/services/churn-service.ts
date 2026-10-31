@@ -67,12 +67,20 @@ export async function getChurnSummary(range: ChurnRange, now: Date): Promise<Chu
 }
 
 /**
+ * The Pro subscriber count every admin page shows: users on the Pro plan who are not deleted.
+ * Counts users, never subscription rows, so a deleted user's leftover row can't inflate it.
+ */
+export async function countProUsers(): Promise<number> {
+  return prisma.user.count({ where: { subscriptionStatus: 'PRO', deletedAt: null } })
+}
+
+/**
  * Store the Pro subscriber count for the Bangladesh day `now` falls on (re-runs the same day
  * overwrite). Counts users who are Pro and not deleted. Run it late in the day.
  */
 export async function snapshotProCount(now: Date): Promise<{ day: string; proCount: number }> {
   const day = bangladeshDayOf(now)
-  const proCount = await prisma.user.count({ where: { subscriptionStatus: 'PRO', deletedAt: null } })
+  const proCount = await countProUsers()
   await prisma.proSnapshot.upsert({
     where: { day: dayToStoredDate(day) },
     create: { day: dayToStoredDate(day), proCount },
