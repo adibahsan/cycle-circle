@@ -485,6 +485,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                 <div className="flex-1">
                   <Input
                     id="new-category-name-bn"
+                    name="categoryNameBn"
                     label="Bengali Name (optional)"
                     placeholder="যেমন: পুষ্টি…"
                     lang="bn"
@@ -535,7 +536,12 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                 }
                               }}
                             >
+                              <label htmlFor={`rename-category-${cat.id}`} className="sr-only">
+                                {`Rename category ${cat.name}`}
+                              </label>
                               <input
+                                id={`rename-category-${cat.id}`}
+                                name="categoryName"
                                 type="text"
                                 value={editingCategoryName}
                                 onChange={(e) => {
@@ -555,10 +561,14 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                 autoFocus
                                 spellCheck={false}
                                 autoComplete="off"
-                                aria-label={`Rename category ${cat.name}`}
                                 className="w-full px-2 py-1 text-sm font-medium rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] focus-visible:outline-none disabled:opacity-60"
                               />
+                              <label htmlFor={`rename-category-bn-${cat.id}`} className="sr-only">
+                                {`Bengali name for category ${cat.name}`}
+                              </label>
                               <input
+                                id={`rename-category-bn-${cat.id}`}
+                                name="categoryNameBn"
                                 type="text"
                                 lang="bn"
                                 value={editingCategoryNameBn}
@@ -576,7 +586,6 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                 spellCheck={false}
                                 autoComplete="off"
                                 placeholder="Bengali name (optional)…"
-                                aria-label={`Bengali name for category ${cat.name}`}
                                 className="w-full px-2 py-1 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] focus-visible:outline-none disabled:opacity-60"
                               />
                               {renameError && (
