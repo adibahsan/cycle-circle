@@ -5,32 +5,28 @@ import {
   getSubscriptionStatusBreakdown,
 } from '@/app/queries/subscription-queries'
 import { getLatestSubscriptionCheckRun } from '@/app/queries/system-queries'
+import { parseDateRange } from '@vesta/shared/utils/date-range'
 import { SubscriptionsClient } from './SubscriptionsClient'
-
-const RANGE_TO_DAYS: Record<string, number> = {
-  '7d': 7,
-  '30d': 30,
-  '90d': 90,
-  '1y': 365,
-}
 
 export default async function SubscriptionsPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string>>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   await requireAdminUser()
   const params = await searchParams
-  const range = params.range ?? '30d'
-  const days = RANGE_TO_DAYS[range] ?? 30
+  const range = parseDateRange(params, new Date())
+  const status = typeof params.status === 'string' ? params.status : undefined
 
   const [data, trend, statusBreakdown, latestRun] = await Promise.all([
     getSubscriptions({
       page: Number(params.page) || 1,
       pageSize: Number(params.pageSize) || 20,
-      status: params.status,
+      status,
+      dateFrom: range.from,
+      dateTo: range.to,
     }),
-    getSubscriptionTrend(days),
+    getSubscriptionTrend(range),
     getSubscriptionStatusBreakdown(),
     getLatestSubscriptionCheckRun(),
   ])

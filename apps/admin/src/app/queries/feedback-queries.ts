@@ -54,35 +54,31 @@ export const getFeedbackDetail = cache(async (id: string) => {
   )()
 })
 
-/** The Feedback page still passes a day count until #211 moves it to the shared range. */
-type FeedbackWindow = number | DateRange
-const feedbackWindow = (w: FeedbackWindow) =>
-  typeof w === 'number' ? { days: w, now: new Date() } : { dateFrom: w.from, dateTo: w.to, now: new Date() }
-const windowKey = (w: FeedbackWindow) => (typeof w === 'number' ? String(w) : w.key)
+const feedbackWindow = (w: DateRange) => ({ dateFrom: w.from, dateTo: w.to, now: new Date() })
 
-export const getFeedbackVolume = cache(async (range: FeedbackWindow) => {
+export const getFeedbackVolume = cache(async (range: DateRange) => {
   await requireAdminUser()
   return unstable_cache(
     () => getFeedbackVolumeByDate(feedbackWindow(range)),
-    ['admin-feedback-volume', windowKey(range)],
+    ['admin-feedback-volume', range.key],
     { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
   )()
 })
 
-export const getFeedbackCategories = cache(async (range: FeedbackWindow) => {
+export const getFeedbackCategories = cache(async (range: DateRange) => {
   await requireAdminUser()
   return unstable_cache(
     () => getFeedbackByCategory(feedbackWindow(range)),
-    ['admin-feedback-categories', windowKey(range)],
+    ['admin-feedback-categories', range.key],
     { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
   )()
 })
 
-export const getFeedbackRatings = cache(async (range: FeedbackWindow) => {
+export const getFeedbackRatings = cache(async (range: DateRange) => {
   await requireAdminUser()
   return unstable_cache(
     () => getFeedbackRatingDistribution(feedbackWindow(range)),
-    ['admin-feedback-ratings', windowKey(range)],
+    ['admin-feedback-ratings', range.key],
     { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
   )()
 })

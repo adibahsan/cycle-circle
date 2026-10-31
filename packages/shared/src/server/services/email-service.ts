@@ -12,6 +12,9 @@ export interface EmailLogListParams {
   deliveryStatus?: string
   userId?: string
   search?: string
+  /** Shared dashboard range: mails sent from `dateFrom` to `dateTo` inclusive. */
+  dateFrom?: Date
+  dateTo?: Date
 }
 
 export async function listEmailLogs(params: EmailLogListParams = {}) {
@@ -23,6 +26,8 @@ export async function listEmailLogs(params: EmailLogListParams = {}) {
     deliveryStatus,
     userId,
     search,
+    dateFrom,
+    dateTo,
   } = params
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,6 +37,7 @@ export async function listEmailLogs(params: EmailLogListParams = {}) {
   if (status) where.status = status
   if (deliveryStatus) where.deliveryStatus = deliveryStatus
   if (userId) where.userId = userId
+  if (dateFrom || dateTo) where.sentAt = { ...(dateFrom && { gte: dateFrom }), ...(dateTo && { lte: dateTo }) }
   if (search) {
     where.OR = [
       { to: { contains: search, mode: 'insensitive' } },
@@ -64,12 +70,16 @@ export async function listEmailLogs(params: EmailLogListParams = {}) {
 
 // ── Stats ──────────────────────────────────────────────────────────────────────
 
-export async function getEmailLogStats() {
+/** Counts of logged mails; with `dateFrom`/`dateTo` only those sent inside the shared range. */
+export async function getEmailLogStats(range: { dateFrom?: Date; dateTo?: Date } = {}) {
+  const where = range.dateFrom || range.dateTo
+    ? { sentAt: { ...(range.dateFrom && { gte: range.dateFrom }), ...(range.dateTo && { lte: range.dateTo }) } }
+    : {}
   const [total, byTypeRows, byStatusRows, byProviderRows] = await Promise.all([
-    prisma.emailLog.count(),
-    prisma.emailLog.groupBy({ by: ['type'], _count: { _all: true } }),
-    prisma.emailLog.groupBy({ by: ['status'], _count: { _all: true } }),
-    prisma.emailLog.groupBy({ by: ['provider'], _count: { _all: true } }),
+    prisma.emailLog.count({ where }),
+    prisma.emailLog.groupBy({ by: ['type'], where, _count: { _all: true } }),
+    prisma.emailLog.groupBy({ by: ['status'], where, _count: { _all: true } }),
+    prisma.emailLog.groupBy({ by: ['provider'], where, _count: { _all: true } }),
   ])
 
   const byType: Record<string, number> = {}

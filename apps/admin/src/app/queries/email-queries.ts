@@ -7,6 +7,7 @@ import {
   getEmailLogById,
 } from '@vesta/shared/server/services'
 import type { EmailLogListParams } from '@vesta/shared/server/services'
+import type { DateRange } from '@vesta/shared/utils/date-range'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
 function emailLogsCacheKey(params: EmailLogListParams) {
@@ -19,6 +20,8 @@ function emailLogsCacheKey(params: EmailLogListParams) {
     params.deliveryStatus ?? '',
     params.userId ?? '',
     params.search ?? '',
+    params.dateFrom?.toISOString() ?? '',
+    params.dateTo?.toISOString() ?? '',
   ]
 }
 
@@ -31,11 +34,11 @@ export const getEmailLogList = cache(async (params: EmailLogListParams = {}) => 
   )()
 })
 
-export const getEmailLogStatsData = cache(async () => {
+export const getEmailLogStatsData = cache(async (range?: DateRange) => {
   await requireAdminUser()
   return unstable_cache(
-    () => getEmailLogStats(),
-    ['admin-email-log-stats'],
+    () => getEmailLogStats(range ? { dateFrom: range.from, dateTo: range.to } : {}),
+    ['admin-email-log-stats', range?.key ?? 'all'],
     { tags: [adminCacheTags.emails], revalidate: ADMIN_CACHE_TTL }
   )()
 })

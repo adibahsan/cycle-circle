@@ -20,7 +20,8 @@ import { CreateBroadcastModal } from './CreateBroadcastModal'
 import { EditBroadcastModal } from './EditBroadcastModal'
 import { RescheduleModal } from './RescheduleModal'
 import { SendPreview, TotalsLines, formatDay, formatSentAt, statusBadge, type SmsCampaign, type SmsMessage } from './sms-shared'
-import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
+import { DateRangeControl, type DateRangeControlValue } from '@/components/charts/DateRangeControl'
+import { TableCsvExport } from '@/components/charts/TableCsvExport'
 import { canDeleteCampaign, canEditMessage, canSendMessage } from '@vesta/shared/utils/sms'
 
 type SmsSendHistoryPoint = { date: string; count: number }
@@ -37,7 +38,7 @@ interface SmsClientProps {
   }
   sendHistory: SmsSendHistoryPoint[]
   deliveryBreakdown: SmsDeliveryBreakdownItem[]
-  range: string
+  range: DateRangeControlValue
   nextSendId: string | null
 }
 
@@ -59,7 +60,7 @@ function daysLabel(messages: SmsMessage[]) {
 
 // ─── Main Client ─────────────────────────────────────────────────────────────
 
-export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: SmsClientProps) {
+export function SmsClient({ data, sendHistory, deliveryBreakdown, range, nextSendId }: SmsClientProps) {
   const toast = useToast()
   const router = useRouter()
   const { searchParams, updateParams } = useUrlParams()
@@ -291,9 +292,9 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
 
       {/* ── Charts ─────────────────────────────────────────────────────── */}
       <div className="space-y-4">
-        {/* Date range toggle — drives the send-history panel via ?range= */}
+        {/* Shared date range — drives the send history (the campaign list below is a planning list, not cut by it) */}
         <div className="flex justify-end">
-          <UrlSegmentedControl />
+          <DateRangeControl range={range} />
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -340,6 +341,9 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
       />
 
       {/* Table */}
+      <div className="-mb-3 flex justify-end">
+        <TableCsvExport table="sms-campaigns" panel="Campaigns" />
+      </div>
       <DataTable
         columns={COLUMNS}
         data={data.campaigns as unknown as SmsCampaign[]}

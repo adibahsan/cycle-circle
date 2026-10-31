@@ -20,7 +20,7 @@ import {
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
-import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
+import { DateRangeControl, type DateRangeControlValue } from '@/components/charts/DateRangeControl'
 import { bangladeshToday, formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 type FeedbackItem = {
@@ -40,7 +40,7 @@ interface FeedbackClientProps {
     pageSize: number
     totalPages: number
   }
-  range: string
+  range: DateRangeControlValue
   volumeData: { date: string; count: number }[]
   categoryData: { category: string; count: number }[]
   ratingData: { rating: number | null; count: number }[]
@@ -134,7 +134,7 @@ function MessageCell({ message }: { message: string }) {
 
 // ─── Main Client ─────────────────────────────────────────────────────────────
 
-export function FeedbackClient({ data, volumeData, categoryData, ratingData }: FeedbackClientProps) {
+export function FeedbackClient({ data, range, volumeData, categoryData, ratingData }: FeedbackClientProps) {
   const router = useRouter()
   const { searchParams, updateParams } = useUrlParams({ clearOn: ['all'] })
   const [exporting, setExporting] = useState(false)
@@ -272,7 +272,7 @@ export function FeedbackClient({ data, volumeData, categoryData, ratingData }: F
           <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
             Analytics
           </h2>
-          <UrlSegmentedControl paramKey="range" />
+          <DateRangeControl range={range} />
         </div>
 
         {/* Chart grid */}

@@ -35,6 +35,8 @@ export function DateRangeControl({ range, className }: { range: DateRangeControl
   function push(updates: Record<string, string | undefined>) {
     const params = new URLSearchParams(searchParams.toString())
     for (const key of Object.values(RANGE_PARAMS)) params.delete(key)
+    // A new range changes the row count, so any page number in the URL no longer means anything.
+    params.delete('page')
     for (const [k, v] of Object.entries(updates)) if (v) params.set(k, v)
     const query = params.toString()
     router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
