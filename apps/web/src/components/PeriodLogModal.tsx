@@ -84,11 +84,15 @@ function PeriodLogModalBody({
   const [startDate, setStartDate] = useState(initialStart || (isEdit ? '' : todayStr))
   const [endDate, setEndDate] = useState(initialEnd || (isEdit ? '' : todayStr))
   const [flow, setFlow] = useState<FlowIntensity>(initialFlow)
-  const [error, setError] = useState<false | 'overlap' | 'generic'>(false)
+  const [error, setError] = useState<false | 'overlap' | 'future' | 'generic'>(false)
   const [isPending, startTransition] = useTransition()
 
   const handleSave = () => {
     if (!startDate || !endDate) return
+    if (startDate > todayStr || endDate > todayStr) {
+      setError('future')
+      return
+    }
     setError(false)
     startTransition(async () => {
       try {
@@ -107,8 +111,8 @@ function PeriodLogModalBody({
             flowIntensity: toActionFlow(flow),
           })
         }
-        if ('error' in result && result.error === 'PERIOD_OVERLAP') {
-          setError('overlap')
+        if ('error' in result) {
+          setError(result.error === 'PERIOD_IN_FUTURE' ? 'future' : 'overlap')
           return
         }
         if (typeof window !== 'undefined') {
@@ -141,7 +145,11 @@ function PeriodLogModalBody({
       <div aria-live="polite">
         {error && (
           <p role="alert" className="mb-2 text-sm text-[var(--color-error)]">
-            {error === 'overlap' ? t('dashboard.periodOverlap') : t('common.error')}
+            {error === 'overlap'
+              ? t('dashboard.periodOverlap')
+              : error === 'future'
+                ? t('dashboard.periodFuture')
+                : t('common.error')}
           </p>
         )}
       </div>
