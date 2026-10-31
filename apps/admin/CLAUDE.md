@@ -1,6 +1,6 @@
 ## Admin App
 
-Single Super Admin account (email/password login at `/login`). Seeded via `packages/shared/prisma/seed.ts` with env vars `ADMIN_EMAIL` / `ADMIN_PASSWORD` (defaults: `admin@vesta.health` / `admin123`).
+Single Super Admin account (email/password login at `/login`). Seeded via `packages/shared/prisma/seed.ts` with env vars `ADMIN_EMAIL` / `ADMIN_PASSWORD` (local-dev defaults: `admin@vesta.health` / `admin123`; the seed refuses `admin123` when `NODE_ENV=production`, only creates the admin and never changes an existing admin's password).
 
 **Auth flow:** bcrypt password verification in `@vesta/shared/server/auth` (`verifyAdminLogin`), same JWT/cookie system as web app with `role=ADMIN` check in Edge proxy + server-side `requireAdminAuth()`.
 

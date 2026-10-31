@@ -389,7 +389,7 @@ Run these as the `vesta` user (sudo where noted). Assumes §2's artifacts exist 
      --entrypoint sh web -c \
      "cd packages/shared && pnpm exec prisma db seed --schema ./prisma/schema.prisma"
    ```
-   Save the credentials in a password manager immediately — never commit them.
+   The seed refuses to run with `NODE_ENV=production` unless `ADMIN_PASSWORD` is a strong value (not unset, empty or `admin123`). It only creates the admin if that email is missing; an existing admin's password is never changed (a password change needs a manual DB update with a fresh bcrypt hash). The password is not printed. Keep the credentials in a password manager and never commit them; avoid leaving the password in shell history (e.g. pass it from an env file or a prompt-read variable).
 
 8. **Start everything:**
    ```bash
