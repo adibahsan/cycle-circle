@@ -1,7 +1,8 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { revalidateWebTags } from '@/lib/revalidate-web'
+import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { requireAdminAuth, getAuthUser } from '@vesta/shared/server/auth'
 import {
   AUDIT_ACTIONS,
@@ -64,6 +65,12 @@ async function runJob(
     )
     if (!res.ok) {
       return { ok: false, error: `Web app returned ${res.status}`, counts }
+    }
+    if (slug === 'caas-check') {
+      // The run lands in the history, the Subscriptions strip and the last-confirmed column.
+      revalidatePath('/system')
+      revalidatePath('/subscriptions')
+      revalidateTag(adminCacheTags.subscriptions, { expire: 0 })
     }
     return { ok: true, counts }
   } catch (e) {
