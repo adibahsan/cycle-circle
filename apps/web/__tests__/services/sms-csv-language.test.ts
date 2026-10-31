@@ -4,10 +4,7 @@ import {
   campaignCsvTemplate,
   SMS_MAX_PARTS,
   SMS_MAX_CAMPAIGN_MESSAGES,
-  parseBulkSmsInput,
   countSmsParts,
-  composeSms,
-  scheduleDrafts,
 } from '@vesta/shared/server/services'
 
 describe('parseCampaignCsv', () => {
@@ -67,12 +64,6 @@ describe('parseCampaignCsv', () => {
   })
 })
 
-describe('parseBulkSmsInput', () => {
-  it('shares draft shape with the line parser', () => {
-    expect(parseBulkSmsInput('A | বি')[0]).toEqual({ messageEn: 'A', messageBn: 'বি' })
-  })
-})
-
 describe('countSmsParts', () => {
   it('GSM-7 boundaries 160 / 153', () => {
     expect(countSmsParts('a'.repeat(160))).toEqual({ encoding: 'GSM7', parts: 1, charsLeft: 0 })
@@ -100,35 +91,5 @@ describe('countSmsParts', () => {
 
   it('empty text is zero parts', () => {
     expect(countSmsParts('')).toEqual({ encoding: 'GSM7', parts: 0, charsLeft: 160 })
-  })
-})
-
-describe('composeSms', () => {
-  it('EN sends English only', () => expect(composeSms('Hi', 'হাই', 'EN')).toBe('Hi'))
-  it('BN sends Bengali only', () => expect(composeSms('Hi', 'হাই', 'BN')).toBe('হাই'))
-  it('BOTH joins EN then BN', () => expect(composeSms('Hi', 'হাই', 'BOTH')).toBe('Hi\nহাই'))
-  it('BOTH without Bengali falls back to English', () => expect(composeSms('Hi', null, 'BOTH')).toBe('Hi'))
-  it('BN without Bengali text throws', () => {
-    expect(() => composeSms('Hi', '  ', 'BN')).toThrow()
-  })
-})
-
-describe('scheduleDrafts', () => {
-  const now = new Date('2026-10-19T10:00:00Z')
-  it('dated rows use their own date at 08:00 UTC; undated fill from start date by order', () => {
-    const dates = scheduleDrafts(
-      [{ messageEn: 'a' }, { messageEn: 'b', scheduledDate: '2026-12-25' }, { messageEn: 'c' }],
-      '2026-11-01',
-      now,
-    )
-    expect(dates.map((d) => d.toISOString())).toEqual([
-      '2026-11-01T08:00:00.000Z',
-      '2026-12-25T08:00:00.000Z',
-      '2026-11-02T08:00:00.000Z',
-    ])
-  })
-  it('defaults the start to tomorrow', () => {
-    const [d] = scheduleDrafts([{ messageEn: 'a' }], undefined, now)
-    expect(d.toISOString()).toBe('2026-10-20T08:00:00.000Z')
   })
 })

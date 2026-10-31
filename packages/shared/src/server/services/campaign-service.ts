@@ -2,11 +2,9 @@ import { Prisma } from '@prisma/client'
 import { AUDIT_ACTIONS } from './audit-actions'
 import { prisma } from '../db'
 import { createAuditLog } from './audit-service'
-import { addDaysToDay, bangladeshDayOf, dayToStoredDate, storedDateToDay } from '../../utils/dhaka-date'
+import { bangladeshDayOf, dayToStoredDate, storedDateToDay } from '../../utils/dhaka-date'
 import { fillDaySeries, resolveDaySeriesRange, type DaySeriesOpts } from '../../utils/day-series'
 import {
-  composeSms,
-  scheduleDrafts,
   canEditMessage,
   canDeleteCampaign,
   validateSmsBody,
@@ -15,8 +13,6 @@ import {
   SMS_MAX_CAMPAIGN_MESSAGES,
   SMS_MAX_CAMPAIGN_NAME,
   type SmsCsvError,
-  type SmsDraft,
-  type SmsSendLanguage,
 } from '../../utils/sms'
 
 // ── Pure helpers ───────────────────────────────────────────────────────────────
@@ -132,18 +128,6 @@ async function assertDaysFree(days: string[], exceptMessageId?: string) {
   if (clash) {
     throw new Error(`${storedDateToDay(clash.day)} already has a message in the campaign "${clash.campaign.name}"`)
   }
-}
-
-/** First day from `fromDay` on with no PLANNED/SENDING/SENT message. */
-async function nextFreeDay(fromDay: string): Promise<string> {
-  const taken = await prisma.smsCampaignMessage.findMany({
-    where: { day: { gte: dayToStoredDate(fromDay) }, status: { in: [...ACTIVE_DAY_STATUSES] } },
-    select: { day: true },
-  })
-  const used = new Set(taken.map((t) => storedDateToDay(t.day)))
-  let day = fromDay
-  while (used.has(day)) day = addDaysToDay(day, 1)
-  return day
 }
 
 /**
@@ -300,76 +284,6 @@ export async function addCampaignMessage(
   }
 }
 
-/**
- * Today's admin flow: one SMS is a one-day campaign. The text is composed from the English and
- * Bengali fields the way the send language says; the day is the Bangladesh day of `scheduledFor`
- * (an ISO instant), or the next free day from tomorrow when none is given.
- */
-export async function createOneDayCampaign(
-  createdBy: string,
-  input: {
-    message: string
-    messageBn?: string
-    scheduledFor?: string
-    sendLanguage?: SmsSendLanguage
-    now: Date
-  },
-) {
-  const body = composeSms(input.message, input.messageBn, input.sendLanguage ?? 'BOTH')
-  let day: string
-  if (input.scheduledFor) {
-    const when = new Date(input.scheduledFor)
-    if (Number.isNaN(when.getTime())) throw new Error('Invalid schedule date')
-    day = bangladeshDayOf(when)
-  } else {
-    day = await nextFreeDay(addDaysToDay(bangladeshDayOf(input.now), 1))
-  }
-  return planCampaign(createdBy, { name: campaignNameFor(body, day), messages: [{ day, body }] })
-}
-
-/**
- * Create one one-day campaign per draft (line parser or CSV). Dated drafts go out on their own
- * date, undated ones one per day from `startDate` (or tomorrow). Every draft is validated and
- * every day checked before anything is written.
- */
-export async function createOneDayCampaignsBulk(
-  createdBy: string,
-  rows: SmsDraft[],
-  opts: { startDate?: string; sendLanguage?: SmsSendLanguage; now: Date },
-) {
-  const lang = opts.sendLanguage ?? 'BOTH'
-  const bodies = rows.map((r) => composeSms(r.messageEn, r.messageBn, lang))
-  const days = scheduleDrafts(rows, opts.startDate, opts.now).map(bangladeshDayOf)
-  bodies.forEach(assertBody)
-  await assertDaysFree(days)
-
-  return prisma.$transaction(async (tx) => {
-    const created = []
-    for (let i = 0; i < rows.length; i++) {
-      created.push(
-        await tx.smsCampaign.create({
-          data: {
-            name: campaignNameFor(bodies[i], days[i]),
-            createdBy,
-            messages: { create: [{ day: dayToStoredDate(days[i]), body: bodies[i] }] },
-          },
-          include: { messages: true },
-        }),
-      )
-    }
-    await tx.adminAuditLog.createMany({
-      data: created.map((c) => ({
-        adminId: createdBy,
-        action: AUDIT_ACTIONS.CREATE_SMS_CAMPAIGN,
-        targetType: 'SmsCampaign',
-        targetId: c.id,
-        metadata: { name: c.name, days: 1 },
-      })),
-    })
-    return created
-  })
-}
-
 // ── Editing and deleting ───────────────────────────────────────────────────────
 
 async function loadEditable(messageId: string) {
@@ -391,29 +305,19 @@ async function loadEditable(messageId: string) {
   return m
 }
 
-/**
- * Edit an unsent message's text. A FAILED message goes back to PLANNED (its error cleared) when
- * its day is still free.
- */
+/** Edit an unsent (PLANNED) message's text. A failed or missed day is resent, never edited in place. */
 export async function updateCampaignMessage(messageId: string, adminUserId: string, input: { body: string }) {
   const m = await loadEditable(messageId)
   assertBody(input.body)
-  if (m.status === 'FAILED') await assertDaysFree([storedDateToDay(m.day)], m.id)
 
-  const updated = await prisma.smsCampaignMessage.update({
-    where: { id: messageId },
-    data: {
-      body: input.body,
-      ...(m.status === 'FAILED' ? { status: 'PLANNED', lastError: null, sendAttempts: 0 } : {}),
-    },
-  })
+  const updated = await prisma.smsCampaignMessage.update({ where: { id: messageId }, data: { body: input.body } })
   await createAuditLog(adminUserId, AUDIT_ACTIONS.UPDATE_SMS_MESSAGE, 'SmsCampaignMessage', messageId, {
     campaignId: m.campaignId,
   })
   return updated
 }
 
-/** Move an unsent message to another Bangladesh day (refused on a clash). Resets a FAILED one. */
+/** Move an unsent (PLANNED) message to another Bangladesh day (refused on a clash). */
 export async function rescheduleCampaignMessage(messageId: string, adminUserId: string, day: string, now?: Date) {
   assertDay(day)
   if (now) assertNotPast(day, now)
@@ -423,7 +327,7 @@ export async function rescheduleCampaignMessage(messageId: string, adminUserId: 
   try {
     const updated = await prisma.smsCampaignMessage.update({
       where: { id: messageId },
-      data: { day: dayToStoredDate(day), status: 'PLANNED', lastError: null, sendAttempts: 0 },
+      data: { day: dayToStoredDate(day) },
     })
     await createAuditLog(adminUserId, AUDIT_ACTIONS.RESCHEDULE_SMS_MESSAGE, 'SmsCampaignMessage', messageId, {
       from: storedDateToDay(m.day),
@@ -434,6 +338,24 @@ export async function rescheduleCampaignMessage(messageId: string, adminUserId: 
     if (isUniqueViolation(e)) throw new Error(`${day} was just taken by another campaign`)
     throw e
   }
+}
+
+/**
+ * Remove an unsent (PLANNED) message from a campaign and free its day. Refused for the campaign's
+ * last message (delete the campaign instead), for a cancelled campaign and for any non-PLANNED message.
+ */
+export async function removeCampaignMessage(messageId: string, adminUserId: string) {
+  const m = await loadEditable(messageId)
+  const total = await prisma.smsCampaignMessage.count({ where: { campaignId: m.campaignId } })
+  if (total <= 1) throw new Error("This is the campaign's last message; delete the campaign instead")
+
+  const removed = await prisma.smsCampaignMessage.deleteMany({ where: { id: messageId, status: 'PLANNED' } })
+  if (removed.count === 0) throw new Error('This message can no longer be removed')
+  await createAuditLog(adminUserId, AUDIT_ACTIONS.REMOVE_SMS_MESSAGE, 'SmsCampaignMessage', messageId, {
+    campaignId: m.campaignId,
+    day: storedDateToDay(m.day),
+  })
+  return { success: true }
 }
 
 /** Delete a campaign none of whose messages has been sent (or is being sent). */

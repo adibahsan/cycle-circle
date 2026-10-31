@@ -1,43 +1,14 @@
 // Client-safe SMS helpers (no DB / server imports) — shared by the sms-service and the admin UI.
 
-export type SmsSendLanguage = 'BN' | 'EN' | 'BOTH'
-
-/** One campaign line, produced by the line parser. */
-export interface SmsDraft {
-  messageEn: string
-  messageBn?: string
-  /** YYYY-MM-DD (or ISO datetime); absent = fill from the start date */
-  scheduledDate?: string
-}
-
 // ── Status guards ──────────────────────────────────────────────────────────────
 
-/** What an admin may do with a campaign message in each status; the services guard and the UI both use these. */
-export const canEditMessage = (status: string) => status === 'PLANNED' || status === 'FAILED'
+/** What an admin may do with a campaign message in each status; the services guard and the UI both use these.
+ * Only a PLANNED message is editable or movable; a failed or missed day is resent on a free day instead. */
+export const canEditMessage = (status: string) => status === 'PLANNED'
 export const canSendMessage = (status: string) => status === 'PLANNED'
 /** A campaign can be deleted while none of its messages has gone out (or is going out). */
 export const canDeleteCampaign = (messages: { status: string }[]) =>
   messages.every((m) => m.status !== 'SENT' && m.status !== 'SENDING')
-
-// ── Composition ────────────────────────────────────────────────────────────────
-
-export function combineBilingualSms(messageEn: string, messageBn?: string | null): string {
-  return messageBn && messageBn.trim() ? `${messageEn}\n${messageBn}` : messageEn
-}
-
-/** Build the text handsets receive for the chosen send language. */
-export function composeSms(
-  messageEn: string,
-  messageBn: string | null | undefined,
-  language: SmsSendLanguage,
-): string {
-  if (language === 'EN') return messageEn
-  if (language === 'BN') {
-    if (!messageBn || !messageBn.trim()) throw new Error('A Bengali message is required to send in Bengali')
-    return messageBn
-  }
-  return combineBilingualSms(messageEn, messageBn)
-}
 
 // ── Part counter ───────────────────────────────────────────────────────────────
 
@@ -86,21 +57,6 @@ export function validateSmsBody(body: string): string | null {
   const { parts } = countSmsParts(body)
   if (parts > SMS_MAX_PARTS) return `Message is ${parts} SMS parts long; the limit is ${SMS_MAX_PARTS}`
   return null
-}
-
-// ── Line parser ────────────────────────────────────────────────────────────────
-
-/** One message per non-empty line; optional Bengali after '|': "English | Bengali". */
-export function parseBulkSmsInput(text: string): SmsDraft[] {
-  return text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0)
-    .map((line) => {
-      const [en, bn] = line.split('|').map((s) => s.trim())
-      return bn ? { messageEn: en, messageBn: bn } : { messageEn: en }
-    })
-    .filter((r) => r.messageEn.length > 0)
 }
 
 // ── Campaign CSV parser ─────────────────────────────────────────────────────────────────
@@ -233,27 +189,4 @@ export function parseCampaignCsv(text: string): { rows: CampaignCsvRow[]; errors
   }
   if (count === 0) errors.push({ line: 1, message: 'The file has no rows' })
   return { rows, errors }
-}
-
-// ── Scheduling ─────────────────────────────────────────────────────────────────
-
-/**
- * Send time per draft. Dated drafts go out on their date at 08:00 UTC (date-only) ;
- * undated drafts take consecutive days from startDate (default tomorrow), in order.
- */
-export function scheduleDrafts(drafts: SmsDraft[], startDate?: string, now: Date = new Date()): Date[] {
-  const base = startDate ? new Date(startDate) : new Date(now)
-  if (!startDate) base.setUTCDate(base.getUTCDate() + 1)
-  base.setUTCHours(8, 0, 0, 0)
-  let undated = 0
-  return drafts.map((d) => {
-    if (d.scheduledDate) {
-      const when = new Date(d.scheduledDate)
-      if (/^\d{4}-\d{2}-\d{2}$/.test(d.scheduledDate)) when.setUTCHours(8, 0, 0, 0)
-      return when
-    }
-    const when = new Date(base)
-    when.setUTCDate(base.getUTCDate() + undated++)
-    return when
-  })
 }
