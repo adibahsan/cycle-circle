@@ -126,6 +126,12 @@ test.describe('Admin subscriptions', () => {
       await expect(page.getByRole('columnheader', { name: 'Last confirmed by BDApps' })).toBeVisible()
 
       const confirmedRow = page.getByRole('row').filter({ has: page.getByText(confirmedMarker) })
+      // The list is cached with stale-while-revalidate (KPI TTL) and the cache outlives a DB reset,
+      // so the first view can be an older run's page: reload until the refreshed list arrives.
+      await expect(async () => {
+        if (!(await confirmedRow.isVisible())) await page.reload()
+        await expect(confirmedRow).toBeVisible({ timeout: 3_000 })
+      }).toPass({ timeout: 30_000 })
       await expect(confirmedRow.getByTestId('last-confirmed')).toContainText(/Jun 11, 2026.*12:30 AM/)
       await expect(confirmedRow.getByTestId('last-confirmed')).toContainText('REGISTERED')
       const neverRow = page.getByRole('row').filter({ has: page.getByText(neverMarker) })
