@@ -80,7 +80,7 @@ async function withAdmin(
 }
 
 test.describe('Admin analytics', () => {
-  test('symptoms-by-phase: N-1 / boundary / N+1 edges, PanelRange click, exact top count', async ({
+  test('symptoms-by-phase: N-1 / boundary / N+1 edges, shared range click, exact top count', async ({
     browser,
     newUser,
     days,
@@ -94,12 +94,11 @@ test.describe('Admin analytics', () => {
   }) => {
     const runId = randomBytes(3).toString('hex')
     // Distinct ids so labels stay unique under parallel workers (humanize keeps alphanumerics).
-    // Clear inside (N-1 relative to a comfortable margin), exact boundary N=30, outside N+1=31.
-    // UTC-aligned [to−30d, to]: BD midnight of daysAgo(30) is usually just inside or just
-    // outside depending on `now` within the UTC day — we treat presence of boundary as the
-    // observed side and always require daysAgo(1) inside / daysAgo(35) outside.
+    // The 30d preset is the 30 Bangladesh days ending today, inclusive: daysAgo(29) is the first
+    // day inside, daysAgo(30) the first outside, at every hour (#207).
     const nearId = `e2e130p1${runId}`
-    const boundaryId = `e2e130p30${runId}`
+    const boundaryId = `e2e130p29${runId}`
+    const justOutsideId = `e2e130p30${runId}`
     const outsideId = `e2e130p35${runId}`
     // topN=5 per phase; purge prior #130 phase markers so --repeat-each cannot fill top-N.
     const copies = 40
@@ -110,20 +109,19 @@ test.describe('Admin analytics', () => {
     const profile = await ensureProfileForPhone(throwaway.phone, `E2E 130 phase ${runId}`)
 
     await seedMenstrualSymptom(profile.id, days, { dayOffset: 1, symptomId: nearId, copies })
-    await seedMenstrualSymptom(profile.id, days, { dayOffset: 30, symptomId: boundaryId, copies })
+    await seedMenstrualSymptom(profile.id, days, { dayOffset: 29, symptomId: boundaryId, copies })
+    await seedMenstrualSymptom(profile.id, days, { dayOffset: 30, symptomId: justOutsideId, copies })
     await seedMenstrualSymptom(profile.id, days, { dayOffset: 35, symptomId: outsideId, copies })
 
     await withAdmin(
       browser,
       { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
       async (page) => {
-        await page.goto('/analytics?phase=30d&sym=30d&mae=30d&trend=7d&tm=active')
+        await page.goto('/analytics?range=30d&tm=active')
         await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible()
 
-        const phaseCard = chartCard(page, 'Symptom Logs by Cycle Phase')
-        await expect(
-          phaseCard.getByRole('group', { name: 'Date range' }).getByRole('button', { name: '30d' }),
-        ).toHaveAttribute('aria-pressed', 'true')
+        const rangeGroup = page.getByRole('group', { name: 'Date range' })
+        await expect(rangeGroup.getByRole('button', { name: '30d' })).toHaveAttribute('aria-pressed', 'true')
 
         await expect
           .poll(
@@ -139,8 +137,9 @@ test.describe('Admin analytics', () => {
         const dl = phaseSymptomsDl(page)
         await expect(dl).toContainText(`${nearId} (${copies})`)
         await expect(dl).not.toContainText(outsideId)
-        // Boundary daysAgo(30): record which side the UTC-aligned window landed on.
-        const boundaryInside = (await dl.innerText()).includes(`${boundaryId} (${copies})`)
+        // Both edges are exact: daysAgo(29) inside, daysAgo(30) outside.
+        await expect(dl).toContainText(`${boundaryId} (${copies})`)
+        await expect(dl).not.toContainText(justOutsideId)
 
         const phaseTable = await openChartTable(page, 'Symptom Logs by Cycle Phase')
         const menstrualRow = phaseTable.getByRole('row', { name: /MENSTRUAL/i })
@@ -151,13 +150,10 @@ test.describe('Admin analytics', () => {
         )
         expect(menstrualCount).toBeGreaterThanOrEqual(copies)
 
-        // Widen via PanelRange: 90d must surface the outside seed (topN=5 — parallel
-        // desktop+phone each seed 3 ids, so only assert the previously excluded outside).
-        await chartCard(page, 'Symptom Logs by Cycle Phase')
-          .getByRole('group', { name: 'Date range' })
-          .getByRole('button', { name: '90d' })
-          .click()
-        await expect(page).toHaveURL(/phase=90d/)
+        // Widen via the shared range: 90d must surface the outside seed (topN=5 — parallel
+        // desktop+phone each seed 4 ids, so only assert the previously excluded outside).
+        await rangeGroup.getByRole('button', { name: '90d' }).click()
+        await expect(page).toHaveURL(/range=90d/)
         await expect
           .poll(
             async () => {
@@ -169,20 +165,13 @@ test.describe('Admin analytics', () => {
           )
           .toBe(true)
 
-        await chartCard(page, 'Symptom Logs by Cycle Phase')
-          .getByRole('group', { name: 'Date range' })
-          .getByRole('button', { name: '30d' })
-          .click()
-        await expect(page).toHaveURL(/phase=30d/)
+        await rangeGroup.getByRole('button', { name: '30d' }).click()
+        await expect(page).toHaveURL(/range=30d/)
         await refreshData(page)
         const dl30 = phaseSymptomsDl(page)
         await expect(dl30).toContainText(`${nearId} (${copies})`)
         await expect(dl30).not.toContainText(outsideId)
-        if (boundaryInside) {
-          await expect(dl30).toContainText(`${boundaryId} (${copies})`)
-        } else {
-          await expect(dl30).not.toContainText(boundaryId)
-        }
+        await expect(dl30).not.toContainText(justOutsideId)
       },
     )
   })
@@ -214,13 +203,11 @@ test.describe('Admin analytics', () => {
 
     const db = e2eDb()
     const latestSnapDate = new Date(days.now.toISOString().slice(0, 10))
-    // Snapshots are keyed by UTC date (ADR 0006) and the 30d range is [UTC today - 30, UTC today]
-    // (resolvePanelRange): count from the server's UTC day, not the Bangladesh day, so the edges hold
-    // at every hour (from the Bangladesh day they only held 00:00-06:00 Bangladesh).
-    const utcDaysAgo = (n: number) => new Date(latestSnapDate.getTime() - n * 24 * 60 * 60 * 1000)
-    const trendInsideDate = utcDaysAgo(5)
-    const trendBoundaryDate = utcDaysAgo(30)
-    const trendOutsideDate = utcDaysAgo(31)
+    // The 30d range is the 30 Bangladesh days ending today; a snapshot row is labelled by its date,
+    // so daysAgo(29) is the first day inside and daysAgo(30) the first outside, at every hour (#207).
+    const trendInsideDate = days.dateOf(days.daysAgo(5))
+    const trendBoundaryDate = days.dateOf(days.daysAgo(29))
+    const trendOutsideDate = days.dateOf(days.daysAgo(30))
 
     const touchDates = [latestSnapDate, trendInsideDate, trendBoundaryDate, trendOutsideDate]
     const backup = await db.predictionAccuracySnapshot.findMany({
@@ -251,7 +238,7 @@ test.describe('Admin analytics', () => {
         browser,
         { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
         async (page) => {
-          await page.goto('/analytics?phase=30d&mae=30d&trend=7d&tm=active')
+          await page.goto('/analytics?range=30d&tm=active')
           await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible()
 
           await expect
@@ -283,16 +270,17 @@ test.describe('Admin analytics', () => {
           await expect(maeTable.getByRole('row', { name: /^AVERAGE\b/ })).toContainText(String(avgMae))
           await expect(maeTable.getByRole('row', { name: /^ARIMA\b/ })).toContainText(String(arimaMae))
 
-          const maeCard = chartCard(page, 'Prediction MAE Trend (days)')
-          await maeCard.getByRole('group', { name: 'Date range' }).getByRole('button', { name: '30d' }).click()
-          await expect(page).toHaveURL(/mae=30d/)
+          await expect(page.getByRole('group', { name: 'Date range' }).getByRole('button', { name: '30d' })).toHaveAttribute(
+            'aria-pressed',
+            'true',
+          )
 
           const maeTrendTable = await openChartTable(page, 'Prediction MAE Trend (days)')
           const insideKey = utcDayKey(trendInsideDate)
           const boundaryKey = utcDayKey(trendBoundaryDate)
           const outsideKey = utcDayKey(trendOutsideDate)
           await expect(maeTrendTable.getByRole('row', { name: new RegExp(`^${insideKey}\\b`) })).toBeVisible()
-          // UTC today - 30 is the inclusive edge; UTC today - 31 is outside.
+          // Bangladesh today - 29 is the inclusive edge; today - 30 is outside.
           await expect(maeTrendTable.getByRole('row', { name: new RegExp(`^${boundaryKey}\\b`) })).toBeVisible()
           await expect(maeTrendTable.getByRole('row', { name: new RegExp(`^${outsideKey}\\b`) })).toHaveCount(0)
         },
@@ -328,7 +316,7 @@ test.describe('Admin analytics', () => {
     }
   })
 
-  test('7d activity trend: N-1 inside, boundary side documented, N+1 outside; PanelRange + metrics', async ({
+  test('7d activity trend: edges exact; shared range + metrics', async ({
     browser,
     newUser,
     days,
@@ -345,8 +333,7 @@ test.describe('Admin analytics', () => {
     const profile = await ensureProfileForPhone(throwaway.phone, `E2E 130 trend ${runId}`)
     const db = e2eDb()
 
-    // getTrendMetric(active, 7) → rolling now−7d. Boundary daysAgo(7) at BD midnight is
-    // typically *outside* when server now is later that clock-time (startDate = now−7d).
+    // 7d = the 7 Bangladesh days ending today: daysAgo(6) is the first day inside, daysAgo(7) outside.
     const insideAt = days.dateOf(days.daysAgo(6))
     const boundaryAt = days.dateOf(days.daysAgo(7))
     const outsideAt = days.dateOf(days.daysAgo(8))
@@ -373,11 +360,11 @@ test.describe('Admin analytics', () => {
       browser,
       { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
       async (page) => {
-        await page.goto('/analytics?trend=7d&tm=active')
+        await page.goto('/analytics?range=7d&tm=active')
         await expect(page.getByRole('heading', { name: 'User Activity Trend' })).toBeVisible()
 
         const trendCard = chartCard(page, 'User Activity Trend')
-        const rangeGroup = trendCard.getByRole('group', { name: 'Date range' })
+        const rangeGroup = page.getByRole('group', { name: 'Date range' })
         const metricGroup = trendCard.getByRole('group', { name: 'Metric' })
         await expect(rangeGroup.getByRole('button', { name: '7d' })).toHaveAttribute('aria-pressed', 'true')
         await expect(metricGroup.getByRole('button', { name: 'Active loggers' })).toHaveAttribute(
@@ -403,19 +390,17 @@ test.describe('Admin analytics', () => {
         const trendTable = await openChartTable(page, 'User Activity Trend')
         await expect(trendTable.getByRole('row', { name: new RegExp(`^${outsideDay}\\b`) })).toHaveCount(0)
 
-        // Exercise PanelRange + metric picker.
+        // Exercise the shared range + metric picker.
         await rangeGroup.getByRole('button', { name: '30d' }).click()
-        await expect(page).toHaveURL(/trend=30d/)
+        await expect(page).toHaveURL(/range=30d/)
         await rangeGroup.getByRole('button', { name: '7d' }).click()
-        await expect(page).toHaveURL(/trend=7d/)
+        await expect(page).toHaveURL(/range=7d/)
         await metricGroup.getByRole('button', { name: 'Sign-ups' }).click()
         await expect(page).toHaveURL(/tm=signups/)
         await metricGroup.getByRole('button', { name: 'Logging rate' }).click()
         await expect(page).toHaveURL(/tm=logRate/)
         await metricGroup.getByRole('button', { name: 'Active loggers' }).click()
         await expect(page).toHaveURL(/tm=active/)
-        await rangeGroup.getByRole('button', { name: '1y' }).click()
-        await expect(page).toHaveURL(/trend=1y/)
       },
     )
   })
@@ -448,7 +433,7 @@ test.describe('Admin analytics', () => {
       browser,
       { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
       async (page) => {
-        await page.goto('/analytics?trend=7d&tm=signups')
+        await page.goto('/analytics?range=7d&tm=signups')
         await expect(page.getByRole('heading', { name: 'User Activity Trend' })).toBeVisible()
         await expect
           .poll(
@@ -509,9 +494,7 @@ test.describe('Admin analytics', () => {
       browser,
       { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
       async (page) => {
-        await page.goto('/analytics?cyc=90d')
-        const card = chartCard(page, 'Cycle Length Distribution')
-        await card.getByRole('group', { name: 'Date range' }).getByRole('button', { name: '90d' }).click()
+        await page.goto('/analytics?range=90d')
         await expect
           .poll(
             async () => {
@@ -555,9 +538,7 @@ test.describe('Admin analytics', () => {
       browser,
       { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
       async (page) => {
-        await page.goto('/analytics?sym=30d')
-        const card = chartCard(page, 'Symptoms by Category')
-        await card.getByRole('group', { name: 'Date range' }).getByRole('button', { name: '30d' }).click()
+        await page.goto('/analytics?range=30d')
         await expect
           .poll(
             async () => {
@@ -607,9 +588,8 @@ test.describe('Admin analytics', () => {
       browser,
       { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
       async (page) => {
-        await page.goto('/analytics?acc=30d&accm=count')
+        await page.goto('/analytics?range=30d&accm=count')
         const card = chartCard(page, 'Prediction Accuracy by Tier')
-        await card.getByRole('group', { name: 'Date range' }).getByRole('button', { name: '30d' }).click()
         await card.getByRole('group', { name: 'Metric' }).getByRole('button', { name: 'Predictions' }).click()
         await expect(page).toHaveURL(/accm=count/)
         await expect
@@ -628,7 +608,7 @@ test.describe('Admin analytics', () => {
     )
   })
 
-  test('retention panel range control is exercised', async ({
+  test('shared range control moves every panel to the picked preset', async ({
     browser,
     viewport,
     userAgent,
@@ -642,17 +622,13 @@ test.describe('Admin analytics', () => {
       browser,
       { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
       async (page) => {
-        await page.goto('/analytics?ret=30d')
+        await page.goto('/analytics?range=30d')
         await expect(page.getByRole('heading', { name: 'Retention by Signup Cohort' })).toBeVisible()
-        const retRange = () =>
-          chartCard(page, 'Retention by Signup Cohort').getByRole('group', { name: 'Date range' })
-        await expect(retRange().getByRole('button', { name: '30d' })).toHaveAttribute('aria-pressed', 'true')
-        await retRange().getByRole('button', { name: '60d' }).click()
-        await expect(page).toHaveURL(/ret=60d/)
-        await expect(retRange().getByRole('button', { name: '60d' })).toHaveAttribute('aria-pressed', 'true')
-        await retRange().getByRole('button', { name: '90d' }).click()
-        await expect(page).toHaveURL(/ret=90d/)
-        await expect(retRange().getByRole('button', { name: '90d' })).toHaveAttribute('aria-pressed', 'true')
+        const rangeGroup = page.getByRole('group', { name: 'Date range' })
+        await expect(rangeGroup.getByRole('button', { name: '30d' })).toHaveAttribute('aria-pressed', 'true')
+        await rangeGroup.getByRole('button', { name: '90d' }).click()
+        await expect(page).toHaveURL(/range=90d/)
+        await expect(rangeGroup.getByRole('button', { name: '90d' })).toHaveAttribute('aria-pressed', 'true')
       },
     )
   })
@@ -674,11 +650,9 @@ test.describe('Admin analytics', () => {
       browser,
       { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
       async (page) => {
-        await page.goto('/analytics?fb=7d')
+        await page.goto('/analytics?range=7d')
         await expect(page.getByRole('heading', { name: 'Feedback', exact: true })).toBeVisible()
-        const fbRange = page
-          .getByRole('region', { name: 'Feedback analytics' })
-          .getByRole('group', { name: 'Date range' })
+        const fbRange = page.getByRole('group', { name: 'Date range' })
         // Feedback section uses <section aria-label>; if empty, assert empty labels.
         await expect(fbRange.getByRole('button', { name: '7d' })).toHaveAttribute('aria-pressed', 'true')
 
@@ -690,7 +664,7 @@ test.describe('Admin analytics', () => {
         } else {
           // Parallel worker feedback may fill 7d — still exercise the range control.
           await fbRange.getByRole('button', { name: '30d' }).click()
-          await expect(page).toHaveURL(/fb=30d/)
+          await expect(page).toHaveURL(/range=30d/)
         }
       },
     )
@@ -712,10 +686,8 @@ test.describe('Admin analytics', () => {
       browser,
       { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
       async (page) => {
-        await page.goto('/analytics?fb=7d')
-        const fbRange = page
-          .getByRole('region', { name: 'Feedback analytics' })
-          .getByRole('group', { name: 'Date range' })
+        await page.goto('/analytics?range=7d')
+        const fbRange = page.getByRole('group', { name: 'Date range' })
         await fbRange.getByRole('button', { name: '7d' }).click()
         await expect
           .poll(
@@ -738,12 +710,48 @@ test.describe('Admin analytics', () => {
 
         await expect(page.getByRole('heading', { name: 'By Category', exact: true })).toBeVisible()
         await expect(page.getByRole('heading', { name: 'Rating Distribution', exact: true })).toBeVisible()
-        await page
-          .getByRole('region', { name: 'Feedback analytics' })
-          .getByRole('group', { name: 'Date range' })
-          .getByRole('button', { name: '1y' })
-          .click()
-        await expect(page).toHaveURL(/fb=1y/)
+        await fbRange.getByRole('button', { name: '90d' }).click()
+        await expect(page).toHaveURL(/range=90d/)
+      },
+    )
+  })
+
+  // #207: a custom Bangladesh-day range lives in the URL and survives a reload.
+  test('custom range in the URL survives reload; over 366 days is refused with a message', async ({
+    browser,
+    days,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    const toDay = days.daysAgo(1)
+    const fromDay = days.daysAgo(10)
+    await withAdmin(
+      browser,
+      { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
+      async (page) => {
+        await page.goto('/analytics?range=7d')
+        const rangeGroup = page.getByRole('group', { name: 'Date range' })
+        await rangeGroup.getByRole('button', { name: 'Custom' }).click()
+        await page.getByLabel('From', { exact: true }).fill(fromDay)
+        await page.getByLabel('To', { exact: true }).fill(toDay)
+        await page.getByRole('button', { name: 'Apply' }).click()
+        await expect(page).toHaveURL(new RegExp(`from=${fromDay}&to=${toDay}`))
+        await expect(page.getByText(`${fromDay} to ${toDay}`)).toBeVisible()
+
+        await page.reload()
+        await expect(page).toHaveURL(new RegExp(`from=${fromDay}&to=${toDay}`))
+        await expect(page.getByText(`${fromDay} to ${toDay}`)).toBeVisible()
+        await expect(rangeGroup.getByRole('button', { name: 'Custom' })).toHaveAttribute('aria-pressed', 'true')
+
+        // A hand-edited URL over the cap shows the message and falls back to 30d.
+        await page.goto(`/analytics?from=${days.daysAgo(400)}&to=${toDay}`)
+        await expect(page.getByText('Pick a range of 366 days or fewer.')).toBeVisible()
+        await expect(rangeGroup.getByRole('button', { name: '30d' })).toHaveAttribute('aria-pressed', 'true')
       },
     )
   })

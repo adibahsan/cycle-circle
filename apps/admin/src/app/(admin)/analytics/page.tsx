@@ -14,12 +14,8 @@ import {
   getFeedbackCategories,
   getFeedbackRatings,
 } from '@/app/queries/feedback-queries'
-import {
-  ACCURACY_METRICS,
-  TREND_METRICS,
-  resolveMetric,
-  resolvePanelRange,
-} from '@/lib/analytics-panels'
+import { ACCURACY_METRICS, TREND_METRICS, resolveMetric } from '@/lib/analytics-panels'
+import { parseDateRange } from '@vesta/shared/utils/date-range'
 import { AnalyticsClient } from './AnalyticsClient'
 
 export default async function AnalyticsPage({
@@ -31,14 +27,7 @@ export default async function AnalyticsPage({
 
   const params = await searchParams
   const now = new Date()
-  const cycleLength = resolvePanelRange(params, 'cycleLength', now)
-  const symptoms = resolvePanelRange(params, 'symptoms', now)
-  const phase = resolvePanelRange(params, 'phase', now)
-  const accuracy = resolvePanelRange(params, 'accuracy', now)
-  const mae = resolvePanelRange(params, 'mae', now)
-  const retention = resolvePanelRange(params, 'retention', now)
-  const trend = resolvePanelRange(params, 'trend', now)
-  const feedback = resolvePanelRange(params, 'feedback', now)
+  const range = parseDateRange(params, now)
   const accuracyMetric = resolveMetric(params, ACCURACY_METRICS)
   const trendMetric = resolveMetric(params, TREND_METRICS)
 
@@ -55,21 +44,22 @@ export default async function AnalyticsPage({
     feedbackRatings,
     symptomsByPhase,
   ] = await Promise.all([
-    getCycleLengthDistribution(cycleLength.range),
-    getSymptomsByCategory(symptoms.range),
-    getPredictionAccuracy(accuracy.range),
-    getUserRetention(retention.range),
-    getTrendMetric(trendMetric, trend.days),
+    getCycleLengthDistribution(range),
+    getSymptomsByCategory(range),
+    getPredictionAccuracy(range),
+    getUserRetention(range),
+    getTrendMetric(trendMetric, range),
     getPredictionMae(),
-    getPredictionMaeTrend(mae.range),
-    getFeedbackVolume(feedback.days),
-    getFeedbackCategories(feedback.days),
-    getFeedbackRatings(feedback.days),
-    getSymptomsByPhase(phase.range),
+    getPredictionMaeTrend(range),
+    getFeedbackVolume(range),
+    getFeedbackCategories(range),
+    getFeedbackRatings(range),
+    getSymptomsByPhase(range),
   ])
 
   return (
     <AnalyticsClient
+      range={range}
       cycleLengths={cycleLengths}
       symptoms={symptomsData}
       predictions={predictions}

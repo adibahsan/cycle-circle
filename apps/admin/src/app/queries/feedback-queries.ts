@@ -8,6 +8,7 @@ import {
   getFeedbackByCategory,
   getFeedbackRatingDistribution,
 } from '@vesta/shared/server/services'
+import type { DateRange } from '@vesta/shared/utils/date-range'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
 interface FeedbackListParams {
@@ -53,29 +54,35 @@ export const getFeedbackDetail = cache(async (id: string) => {
   )()
 })
 
-export const getFeedbackVolume = cache(async (days: number) => {
+/** The Feedback page still passes a day count until #211 moves it to the shared range. */
+type FeedbackWindow = number | DateRange
+const feedbackWindow = (w: FeedbackWindow) =>
+  typeof w === 'number' ? { days: w, now: new Date() } : { dateFrom: w.from, dateTo: w.to, now: new Date() }
+const windowKey = (w: FeedbackWindow) => (typeof w === 'number' ? String(w) : w.key)
+
+export const getFeedbackVolume = cache(async (range: FeedbackWindow) => {
   await requireAdminUser()
   return unstable_cache(
-    () => getFeedbackVolumeByDate({ days, now: new Date() }),
-    ['admin-feedback-volume', String(days)],
+    () => getFeedbackVolumeByDate(feedbackWindow(range)),
+    ['admin-feedback-volume', windowKey(range)],
     { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
   )()
 })
 
-export const getFeedbackCategories = cache(async (days: number) => {
+export const getFeedbackCategories = cache(async (range: FeedbackWindow) => {
   await requireAdminUser()
   return unstable_cache(
-    () => getFeedbackByCategory({ days, now: new Date() }),
-    ['admin-feedback-categories', String(days)],
+    () => getFeedbackByCategory(feedbackWindow(range)),
+    ['admin-feedback-categories', windowKey(range)],
     { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
   )()
 })
 
-export const getFeedbackRatings = cache(async (days: number) => {
+export const getFeedbackRatings = cache(async (range: FeedbackWindow) => {
   await requireAdminUser()
   return unstable_cache(
-    () => getFeedbackRatingDistribution({ days, now: new Date() }),
-    ['admin-feedback-ratings', String(days)],
+    () => getFeedbackRatingDistribution(feedbackWindow(range)),
+    ['admin-feedback-ratings', windowKey(range)],
     { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
   )()
 })

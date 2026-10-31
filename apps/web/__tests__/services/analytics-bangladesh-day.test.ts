@@ -1,5 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest'
 import { testPrisma } from '../helpers/test-db'
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 import {
   getUserTrend,
   getDailyActiveLoggers,
@@ -101,7 +102,7 @@ describe('getLoggingStreakDistribution counts from the Bangladesh today', () => 
     await symptom(profile.id, '2016-05-11')
     await symptom(profile.id, '2016-05-10')
     await symptom(profile.id, '2016-05-09')
-    const dist = await getLoggingStreakDistribution(at(iso))
+    const dist = await getLoggingStreakDistribution({ toDay: bangladeshToday(at(iso)) }, at(iso))
     const nonZero = Object.fromEntries(dist.filter((b) => b.bucket !== '0').map((b) => [b.bucket, b.count]))
     expect(nonZero['3-6']).toBe(1)
     await testPrisma.symptomLog.deleteMany({ where: { profileId: profile.id } })
@@ -112,7 +113,7 @@ describe('getLoggingStreakDistribution counts from the Bangladesh today', () => 
     const { profile } = await makeUser('4', at('2016-05-01T00:00:00Z'))
     await symptom(profile.id, '2016-05-10')
     await symptom(profile.id, '2016-05-09')
-    const dist = await getLoggingStreakDistribution(at('2016-05-10T20:00:00Z')) // Bangladesh 05-11 02:00
+    const dist = await getLoggingStreakDistribution({ toDay: '2016-05-11' }, at('2016-05-10T20:00:00Z')) // Bangladesh 05-11 02:00
     expect(Object.fromEntries(dist.map((b) => [b.bucket, b.count]))['1-2']).toBe(1)
   })
 })

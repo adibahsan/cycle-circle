@@ -138,8 +138,6 @@ test.describe('Admin engagement', () => {
         await expect(page).toHaveURL(/range=30d/)
         await rangeGroup.getByRole('button', { name: '90d' }).click()
         await expect(page).toHaveURL(/range=90d/)
-        await rangeGroup.getByRole('button', { name: '1y' }).click()
-        await expect(page).toHaveURL(/range=1y/)
         await rangeGroup.getByRole('button', { name: '7d' }).click()
         await expect(page).toHaveURL(/range=7d/)
       },

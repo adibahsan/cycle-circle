@@ -2,6 +2,7 @@ import { prisma } from '../db'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
 import { predictCycleLength, getPredictionTier, getCurrentPhase, MS_PER_DAY } from '../../utils/cycle-utils'
 import { fillDaySeries, resolveDaySeriesRange } from '../../utils/day-series'
+import type { DateRange } from '../../utils/date-range'
 import {
   addDaysToDay,
   bangladeshDayOf,
@@ -11,11 +12,19 @@ import {
   storedDateToDay,
 } from '../../utils/dhaka-date'
 
-type SeriesOpts = number | { days?: number; dateFrom?: Date; dateTo?: Date }
+type SeriesOpts = number | DateRange | { days?: number; dateFrom?: Date; dateTo?: Date }
 
-/** The Bangladesh days a per-day series covers; `days` counts the last N days ending today, inclusive. */
+/**
+ * The Bangladesh days a per-day series covers; `days` counts the last N days ending today, inclusive.
+ * A shared `DateRange` (see utils/date-range) gives exactly its days.
+ */
 function seriesDays(opts: SeriesOpts, now: Date) {
-  const o = typeof opts === 'number' ? { days: opts } : opts
+  const o =
+    typeof opts === 'number'
+      ? { days: opts }
+      : 'fromDay' in opts
+        ? { dateFrom: opts.from, dateTo: opts.to }
+        : opts
   const { fromDay, toDay, from, to } = resolveDaySeriesRange({ ...o, now })
   const list = fillDaySeries(fromDay, toDay, new Map()).map((r) => r.date)
   return { startDay: fromDay, endDay: toDay, from, to, list }
@@ -107,11 +116,11 @@ export async function getUserTrend(
   return list.map((date) => ({ date, count: dailyCounts[date] }))
 }
 
-/** Date window every analytics panel query takes; #103 adds metric/config fields. */
-export interface AnalyticsRange {
-  from: Date
-  to: Date
-}
+/**
+ * Date window every analytics panel query takes. A shared `DateRange` (utils/date-range) fits:
+ * `from` starts its first Bangladesh day and `to` is the last millisecond of its last.
+ */
+export type AnalyticsRange = Pick<DateRange, 'from' | 'to'>
 
 /** Measured gaps outside this many days are treated as missed logs, not real cycles. */
 export const PLAUSIBLE_CYCLE_MIN_DAYS = 15
@@ -339,16 +348,19 @@ export async function getSymptomLoggingRate(
  * A streak day is any day with at least one SymptomLog (including the all_good sentinel).
  * Computes streaks over the last ~40 days in JS (efficient at v1 scale).
  */
-export async function getLoggingStreakDistribution(now: Date): Promise<
-  { bucket: string; count: number }[]
-> {
+export async function getLoggingStreakDistribution(
+  range: Pick<DateRange, 'toDay'>,
+  now: Date,
+): Promise<{ bucket: string; count: number }[]> {
   const LOOK_BACK = 40
-  const today = bangladeshToday(now)
+  // Streaks are measured as of the range's last day (never later than the Bangladesh today).
+  const todayBd = bangladeshToday(now)
+  const today = range.toDay < todayBd ? range.toDay : todayBd
   const yesterday = addDaysToDay(today, -1)
 
   // Symptom log dates are stored as UTC midnight of their calendar day.
   const logs = await prisma.symptomLog.findMany({
-    where: { date: { gte: dayToStoredDate(addDaysToDay(today, -LOOK_BACK)) } },
+    where: { date: { gte: dayToStoredDate(addDaysToDay(today, -LOOK_BACK)), lte: dayToStoredDate(today) } },
     select: { profileId: true, date: true },
   })
 
@@ -519,8 +531,9 @@ export async function getLatestPredictionMae(): Promise<{
 
 /** Snapshot history for the analytics trend: one point per tier per night, oldest first. */
 export async function getPredictionMaeTrend({ from, to }: AnalyticsRange) {
+  // Snapshots are labelled by day: the range's first and last Bangladesh days bound them inclusively.
   const rows = await prisma.predictionAccuracySnapshot.findMany({
-    where: { date: { gte: snapshotDay(from), lte: snapshotDay(to) } },
+    where: { date: { gte: dayToStoredDate(bangladeshDayOf(from)), lte: dayToStoredDate(bangladeshDayOf(to)) } },
     orderBy: [{ date: 'asc' }, { tier: 'asc' }],
   })
   return rows.map((r) => ({
@@ -532,7 +545,7 @@ export async function getPredictionMaeTrend({ from, to }: AnalyticsRange) {
 }
 
 /**
- * Return weekly cohort logging retention over the past N weeks (default 8).
+ * Return weekly cohort logging retention over the weeks of the selected range.
  *
  * Cohort = profiles whose first SymptomLog falls in the cohort week.
  * "Retained" = that profile also has a SymptomLog in a subsequent week
@@ -540,15 +553,17 @@ export async function getPredictionMaeTrend({ from, to }: AnalyticsRange) {
  * Mirrors getUserRetention but cohorting by first log rather than account creation.
  */
 export async function getLoggingRetention(
+  range: Pick<DateRange, 'days' | 'to'>,
   now: Date,
-  weeks: number = 8,
 ): Promise<{ week: string; created: number; retained: number; rate: number }[]> {
-  const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000
-  const retentionWindowStart = new Date(now.getTime() - MS_PER_WEEK)
+  // Cohort weeks are the 7-day blocks ending on the range's last Bangladesh day (never past `now`).
+  const weeks = Math.min(Math.max(Math.ceil(range.days / 7), 1), 53)
+  const endMs = Math.min(range.to.getTime(), parseDhakaDay(bangladeshToday(now), true)!.getTime()) + 1
+  const retentionWindowStart = new Date(endMs - MS_PER_WEEK)
   const cohorts = []
 
   for (let i = 0; i < weeks; i++) {
-    const weekStart = new Date(now.getTime() - (weeks - i) * MS_PER_WEEK)
+    const weekStart = new Date(endMs - (weeks - i) * MS_PER_WEEK)
     const weekEnd = new Date(weekStart.getTime() + MS_PER_WEEK)
 
     // Profiles whose first SymptomLog is in this cohort week
@@ -568,7 +583,7 @@ export async function getLoggingRetention(
       const retainedProfiles = await prisma.symptomLog.findMany({
         where: {
           profileId: { in: cohortIds },
-          date: { gte: retentionWindowStart },
+          date: { gte: retentionWindowStart, lt: new Date(endMs) },
         },
         select: { profileId: true },
         distinct: ['profileId'],
@@ -577,7 +592,7 @@ export async function getLoggingRetention(
     }
 
     cohorts.push({
-      week: weekStart.toISOString().split('T')[0],
+      week: bangladeshDayOf(weekStart),
       created,
       retained,
       rate: created > 0 ? Math.round((retained / created) * 100) : 0,
