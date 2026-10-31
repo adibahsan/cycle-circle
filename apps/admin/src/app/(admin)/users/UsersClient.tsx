@@ -21,7 +21,7 @@ import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { getTrialStatus, getTrialHoursLeft } from '@vesta/shared/utils/trial'
 import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
-import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
+import { bangladeshToday, formatDhaka } from '@vesta/shared/utils/dhaka-date'
 import { createQueryTracker } from '@vesta/shared/utils/query-tracker'
 
 type UserRow = {
@@ -73,7 +73,7 @@ function getUserStatus(user: UserRow): 'active' | 'suspended' | 'deleted' {
 
 function formatDate(d: Date | null) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString(undefined, {
+  return formatDhaka(d, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

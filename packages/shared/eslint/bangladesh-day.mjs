@@ -60,6 +60,32 @@ const shapes = [
   },
 ]
 
+const FORMAT_MESSAGE =
+  'Locale date formatting without a pinned timezone prints the server (UTC) day on the server and the browser day on the client, so the page fails to hydrate (React #418). Use formatDhaka(instant, options) from @vesta/shared/utils/dhaka-date (see #178).'
+
+const DATE_FIELDS = '/^(year|month|day|hour|minute|second|weekday|dateStyle|timeStyle)$/'
+const NO_TIME_ZONE = ':not(:has(ObjectExpression > Property[key.name="timeZone"]))'
+
+/**
+ * `toLocaleDateString` / `toLocaleTimeString` are always dates. `toLocaleString` is also used for
+ * numbers, so it is flagged only when it is clearly a date (options with date/time fields, or a
+ * `new Date(...)` receiver) and has no `timeZone`. Anything ambiguous is allowed.
+ */
+export const localeFormatSyntax = [
+  {
+    selector: 'CallExpression[callee.property.name=/^(toLocaleDateString|toLocaleTimeString)$/]',
+    message: FORMAT_MESSAGE,
+  },
+  {
+    selector: `CallExpression[callee.property.name="toLocaleString"]:has(ObjectExpression > Property[key.name=${DATE_FIELDS}])${NO_TIME_ZONE}`,
+    message: FORMAT_MESSAGE,
+  },
+  {
+    selector: `CallExpression[callee.property.name="toLocaleString"][callee.object.type="NewExpression"][callee.object.callee.name="Date"]${NO_TIME_ZONE}`,
+    message: FORMAT_MESSAGE,
+  },
+]
+
 export const bangladeshDayRestrictedSyntax = [
   ...shapes.flatMap(({ head, path, message }) =>
     currentInstant(path).map((receiver) => ({ selector: `${head}${receiver}`, message })),
@@ -68,6 +94,7 @@ export const bangladeshDayRestrictedSyntax = [
     selector: 'CallExpression[callee.property.name="toDateString"]',
     message: `toDateString() uses the device/server timezone. ${SEE}`,
   },
+  ...localeFormatSyntax,
 ]
 
 /** Flat-config object; spread into an app's eslint config array. */

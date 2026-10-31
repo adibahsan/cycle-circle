@@ -16,6 +16,7 @@ import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { CHART_VAR } from '@/lib/chart-palette'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types — mirror the Prisma include shape from getSubscriptions
@@ -69,7 +70,7 @@ const STATUS_OPTIONS = [
 
 function formatDate(d: Date | null | undefined) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString(undefined, {
+  return formatDhaka(d, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

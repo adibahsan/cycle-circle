@@ -502,3 +502,45 @@ test.describe('Admin SMS broadcasting', () => {
   // its fallback lands on whichever broadcast is active, so in this parallel file it corrupted
   // another test's counts and passed unexpectedly.
 })
+
+test.describe('Server render', () => {
+  test('SMS page hydrates when a broadcast was scheduled and sent between 18:00Z and 24:00Z', async ({
+    browser,
+    days,
+    viewport,
+  }) => {
+    // 18:00Z is 00:00 Bangladesh: server (UTC) and browser (Asia/Dhaka) must print the same date.
+    // FAILED + inactive so no cron or "latest content" logic picks this row up.
+    const marker = `E2E SMS hydrate ${randomBytes(3).toString('hex')}`
+    const adminUser = await e2eDb().user.findFirstOrThrow({ where: { role: 'ADMIN' } })
+    const instant = days.startOf(days.daysAgo(3))
+    const row = await e2eDb().smsBroadcast.create({
+      data: {
+        message: marker,
+        sendLanguage: 'EN',
+        status: 'FAILED',
+        active: false,
+        scheduledFor: instant,
+        sentAt: instant,
+        sendAttempts: 3,
+        lastError: 'E2E hydrate row',
+        createdBy: adminUser.id,
+      },
+    })
+    const admin = await createLoggedInAdmin(browser, { viewport })
+
+    const reactErrors: string[] = []
+    admin.page.on('pageerror', (e) => {
+      if (/Minified React error #(418|423|425)|hydrat/i.test(e.message)) reactErrors.push(e.message)
+    })
+    try {
+      await admin.page.goto('/sms?pageSize=100')
+      await expect(broadcastRow(admin.page, marker)).toBeVisible()
+      await admin.page.waitForLoadState('networkidle')
+      expect(reactErrors).toEqual([])
+    } finally {
+      await admin.context.close()
+      await e2eDb().smsBroadcast.delete({ where: { id: row.id } })
+    }
+  })
+})

@@ -165,3 +165,40 @@ test.describe('Admin feedback', () => {
     }
   })
 })
+
+test.describe('Server render', () => {
+  test('feedback detail hydrates when it was submitted between 18:00Z and 24:00Z', async ({
+    browser,
+    newUser,
+    days,
+    viewport,
+  }) => {
+    // 18:00Z is 00:00 Bangladesh: server (UTC) and browser (Asia/Dhaka) must print the same date.
+    const u = await newUser()
+    const dbUser = await e2eDb().user.findUniqueOrThrow({ where: { phone: toDbPhone(u.phone) } })
+    const fb = await e2eDb().feedback.create({
+      data: {
+        userId: dbUser.id,
+        category: 'BUG',
+        message: `E2E FB hydrate ${randomBytes(3).toString('hex')}`,
+        rating: 4,
+        createdAt: days.startOf(days.daysAgo(3)),
+      },
+    })
+    const admin = await createLoggedInAdmin(browser, { viewport })
+
+    const reactErrors: string[] = []
+    admin.page.on('pageerror', (e) => {
+      if (/Minified React error #(418|423|425)|hydrat/i.test(e.message)) reactErrors.push(e.message)
+    })
+    try {
+      await admin.page.goto(`/feedback/${fb.id}`)
+      await expect(admin.page.getByRole('link', { name: 'Back to feedback' })).toBeVisible()
+      await expect(admin.page.getByText(fb.message)).toBeVisible()
+      await admin.page.waitForLoadState('networkidle')
+      expect(reactErrors).toEqual([])
+    } finally {
+      await admin.context.close()
+    }
+  })
+})

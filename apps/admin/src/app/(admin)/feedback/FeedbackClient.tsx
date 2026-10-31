@@ -20,7 +20,7 @@ import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
-import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
+import { bangladeshToday, formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 type FeedbackItem = {
   id: string
@@ -97,7 +97,7 @@ function StarRating({ rating }: { rating: number | null }) {
 }
 
 function formatDate(d: Date) {
-  return new Date(d).toLocaleDateString(undefined, {
+  return formatDhaka(d, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

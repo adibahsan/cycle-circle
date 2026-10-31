@@ -5,6 +5,7 @@ import { ArrowLeft, User } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 type FeedbackDetail = {
   id: string
@@ -63,7 +64,7 @@ function StarRating({ rating }: { rating: number | null }) {
 }
 
 function formatDateTime(d: Date) {
-  return new Date(d).toLocaleString(undefined, {
+  return formatDhaka(d, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

@@ -15,6 +15,7 @@ import { deleteArticle, createCategory, updateCategory, deleteCategory } from '@
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 type ArticleRow = {
   id: string
@@ -95,7 +96,7 @@ function PhaseBadges({ phases }: { phases: string[] }) {
 
 function formatDate(d: Date | null | string) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString(undefined, {
+  return formatDhaka(d, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

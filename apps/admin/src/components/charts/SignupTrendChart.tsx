@@ -11,10 +11,10 @@ import {
 } from 'recharts'
 import { Card } from '@/components/ui/Card'
 import { CHART_VAR, useChartColors } from '@/lib/chart-palette'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 function formatDate(dateStr: string) {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return formatDhaka(dateStr, { month: 'short', day: 'numeric' })
 }
 
 function ChartTooltip({

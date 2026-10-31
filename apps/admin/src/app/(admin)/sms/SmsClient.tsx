@@ -20,6 +20,7 @@ import { RescheduleModal } from './RescheduleModal'
 import { SendPreview, statusBadge, type SmsBroadcast } from './sms-shared'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { canDeleteBroadcast, canEditBroadcast, canSendBroadcast } from '@vesta/shared/utils/sms'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 type SmsSendHistoryPoint = { date: string; count: number }
 type SmsDeliveryBreakdownItem = { status: string; count: number }
@@ -51,7 +52,7 @@ const STATUS_OPTIONS = [
 
 function formatDate(d: Date | null) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString(undefined, {
+  return formatDhaka(d, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

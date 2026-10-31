@@ -15,6 +15,7 @@ import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
 import { CHART_VAR } from '@/lib/chart-palette'
+import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
 const SignupTrendChart = dynamic(
   () => import('@/components/charts/SignupTrendChart').then((m) => m.SignupTrendChart),
@@ -58,8 +59,7 @@ interface DashboardClientProps {
 }
 
 function formatDate(dateStr: string) {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return formatDhaka(dateStr, { month: 'short', day: 'numeric' })
 }
 
 function formatNumber(n: number) {

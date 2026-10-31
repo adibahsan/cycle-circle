@@ -177,11 +177,12 @@ function CategoryHistoryBadge({ category }: { category: DbFeedback['category'] }
 
 // ── History item ───────────────────────────────────────────────────────────────
 function HistoryItem({ item, index }: { item: DbFeedback; index: number }) {
-  const date = new Date(item.createdAt).toLocaleDateString('en-GB', {
+  const date = new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-  })
+    timeZone: 'Asia/Dhaka',
+  }).format(new Date(item.createdAt))
 
   return (
     <motion.div custom={index} variants={FADE_UP} initial="hidden" animate="show">
