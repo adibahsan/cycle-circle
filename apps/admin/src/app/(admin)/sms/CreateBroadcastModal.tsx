@@ -1,16 +1,27 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, X } from 'lucide-react'
+import { Plus, Send, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
-import { DateTimePicker } from '@/components/ui/DateTimePicker'
-import { createSmsCampaign, createSmsCampaignsBulk, createSmsCampaignsFromCsv, previewSmsCsv } from '@/app/actions/sms-actions'
-import { composeSms, countSmsParts, SMS_CSV_TEMPLATE, SMS_PART_WARN_THRESHOLD, type SmsSendLanguage } from '@vesta/shared/utils/sms'
-import { LanguagePicker, PartCounter } from './sms-shared'
-import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
+import { createSmsCampaign } from '@/app/actions/sms-actions'
+import {
+  SMS_MAX_CAMPAIGN_MESSAGES,
+  SMS_MAX_CAMPAIGN_NAME,
+  validateSmsBody,
+} from '@vesta/shared/utils/sms'
+import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
+import { PartCounter, TEXTAREA_CLASS } from './sms-shared'
 
 // ─── Create Campaign Modal ─────────────────────────────────────────────────
+// One campaign = a name plus one text per Bangladesh day. Days may have gaps.
+
+interface DraftMessage {
+  key: number
+  /** Bangladesh day, `YYYY-MM-DD`; '' until picked. */
+  day: string
+  body: string
+}
 
 interface CreateModalProps {
   open: boolean
@@ -18,140 +29,79 @@ interface CreateModalProps {
   onCreated: () => void
 }
 
-export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
-  const [mode, setMode] = useState<'single' | 'bulk' | 'csv'>('single')
-  // Single mode state
-  const [message, setMessage] = useState('')
-  const [messageBn, setMessageBn] = useState('')
-  const [scheduledFor, setScheduledFor] = useState('')
-  // Bulk mode state
-  const [bulkText, setBulkText] = useState('')
-  const [bulkStartDate, setBulkStartDate] = useState('')
-  const [language, setLanguage] = useState<SmsSendLanguage>('BOTH')
-  // CSV mode state
-  const [csvText, setCsvText] = useState('')
-  const [csvPreview, setCsvPreview] = useState<Awaited<ReturnType<typeof previewSmsCsv>> | null>(null)
+const INPUT_CLASS =
+  'w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200'
 
+/** The first thing wrong with the draft, or null. Mirrors the server rules (which stay the authority). */
+function draftProblem(name: string, messages: DraftMessage[], today: string): string | null {
+  if (!name.trim()) return 'Give the campaign a name.'
+  if (messages.length > SMS_MAX_CAMPAIGN_MESSAGES) return `A campaign can have at most ${SMS_MAX_CAMPAIGN_MESSAGES} messages.`
+  const seen = new Set<string>()
+  for (const [i, m] of messages.entries()) {
+    const n = i + 1
+    if (!m.day) return `Pick a day for message ${n}.`
+    if (m.day < today) return `Message ${n}: ${m.day} is in the past.`
+    if (seen.has(m.day)) return `Message ${n}: ${m.day} is used twice in this campaign.`
+    seen.add(m.day)
+    const bodyProblem = validateSmsBody(m.body)
+    if (bodyProblem) return `Message ${n}: ${bodyProblem}.`
+  }
+  return null
+}
+
+export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalProps) {
+  const nextKey = useRef(1)
+  const newDraft = (): DraftMessage => ({ key: nextKey.current++, day: '', body: '' })
+
+  const [name, setName] = useState('')
+  const [messages, setMessages] = useState<DraftMessage[]>(() => [newDraft()])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const nameRef = useRef<HTMLInputElement>(null)
 
-  // Reset all state when the modal closes (the shell focuses [data-autofocus] on open)
+  // Reset when the modal closes (the shell focuses initialFocusRef on open)
   useEffect(() => {
     if (!open) {
-      setMode('single')
-      setMessage('')
-      setMessageBn('')
-      setScheduledFor('')
-      setBulkText('')
-      setBulkStartDate('')
-      setLanguage('BOTH')
-      setCsvText('')
-      setCsvPreview(null)
+      setName('')
+      setMessages([{ key: nextKey.current++, day: '', body: '' }])
       setError(null)
     }
   }, [open])
 
-  const bulkLineCount = bulkText
-    .split('\n')
-    .filter((l) => l.trim().length > 0).length
+  const today = bangladeshToday()
 
-  // Re-run the preview when the start date changes after a file was loaded
-  async function runPreview(text: string, start: string) {
-    try {
-      setCsvPreview(await previewSmsCsv(text, start || undefined))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not read the CSV.')
-    }
-  }
-
-  async function handleCsvFile(file: File | undefined) {
-    if (!file) return
-    setError(null)
-    const text = await file.text()
-    setCsvText(text)
-    await runPreview(text, bulkStartDate)
-  }
-
-  function downloadTemplate() {
-    const blob = new Blob(['\uFEFF' + SMS_CSV_TEMPLATE], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'sms-campaign-template.csv'
-    a.click()
-    URL.revokeObjectURL(url)
+  function patch(key: number, change: Partial<DraftMessage>) {
+    setMessages((list) => list.map((m) => (m.key === key ? { ...m, ...change } : m)))
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
 
-    if (mode === 'csv') {
-      if (!csvPreview || csvPreview.rows.length === 0) {
-        setError('Choose a CSV file with at least one valid message.')
-        return
-      }
-      setSubmitting(true)
-      try {
-        await createSmsCampaignsFromCsv(csvText, bulkStartDate || undefined, language)
-        onCreated()
-        onClose()
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong.')
-      } finally {
-        setSubmitting(false)
-      }
+    const problem = draftProblem(name, messages, today)
+    if (problem) {
+      setError(problem)
       return
     }
 
-    if (mode === 'single') {
-      if (!message.trim()) {
-        setError('Message cannot be empty.')
+    setSubmitting(true)
+    try {
+      const res = await createSmsCampaign({
+        name: name.trim(),
+        messages: messages.map((m) => ({ day: m.day, body: m.body })),
+      })
+      if ('error' in res) {
+        setError(res.error)
         return
       }
-      setSubmitting(true)
-      try {
-        await createSmsCampaign(
-          message.trim(),
-          messageBn.trim() || undefined,
-          scheduledFor || undefined,
-          language,
-        )
-        onCreated()
-        onClose()
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong.')
-      } finally {
-        setSubmitting(false)
-      }
-    } else {
-      if (bulkLineCount === 0) {
-        setError('Enter at least one message line.')
-        return
-      }
-      setSubmitting(true)
-      try {
-        await createSmsCampaignsBulk(bulkText, bulkStartDate || undefined, language)
-        onCreated()
-        onClose()
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong.')
-      } finally {
-        setSubmitting(false)
-      }
+      onCreated()
+      onClose()
+    } catch {
+      setError('Could not reach the server. Check your connection and try again.')
+    } finally {
+      setSubmitting(false)
     }
   }
-
-  const charCount = message.length
-  let composed = ''
-  let composeError: string | null = null
-  try {
-    composed = composeSms(message.trim(), messageBn.trim() || null, language)
-  } catch (e) {
-    composeError = e instanceof Error ? e.message : null
-  }
-  const isScheduled = Boolean(scheduledFor)
 
   return (
     <Modal
@@ -160,7 +110,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
       titleId="create-campaign-title"
       dismissible={!submitting}
       panelClassName="max-w-lg"
-      initialFocusRef={textareaRef}
+      initialFocusRef={nameRef}
     >
       <div>
         {/* Header */}
@@ -174,6 +124,7 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
             </h2>
           </div>
           <button
+            type="button"
             onClick={() => !submitting && onClose()}
             disabled={submitting}
             className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
@@ -184,321 +135,106 @@ export function CreateBroadcastModal({ open, onClose, onCreated }: CreateModalPr
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          {/* Mode toggle */}
-          <div
-            className="flex gap-1 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-1"
-            role="group"
-            aria-label="Campaign mode"
-          >
-            <button
-              type="button"
-              onClick={() => { setMode('single'); setError(null) }}
-              className={[
-                'flex-1 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]',
-                mode === 'single'
-                  ? 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] shadow-sm'
-                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
-              ].join(' ')}
-              aria-pressed={mode === 'single'}
-            >
-              Single
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMode('bulk'); setError(null) }}
-              className={[
-                'flex-1 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]',
-                mode === 'bulk'
-                  ? 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] shadow-sm'
-                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
-              ].join(' ')}
-              aria-pressed={mode === 'bulk'}
-            >
-              Bulk
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMode('csv'); setError(null) }}
-              className={[
-                'flex-1 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]',
-                mode === 'csv'
-                  ? 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] shadow-sm'
-                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
-              ].join(' ')}
-              aria-pressed={mode === 'csv'}
-            >
-              CSV
-            </button>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4" noValidate>
+          <div className="space-y-1.5">
+            <label htmlFor="campaign-name" className="block text-sm font-medium text-[var(--color-text-secondary)]">
+              Campaign name
+            </label>
+            <input
+              id="campaign-name"
+              name="campaign-name"
+              ref={nameRef}
+              type="text"
+              autoComplete="off"
+              maxLength={SMS_MAX_CAMPAIGN_NAME}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Ovulation week series…"
+              className={INPUT_CLASS}
+            />
           </div>
 
-          {mode === 'single' ? (
-            <>
-              {/* English message textarea */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="sms-message"
-                  className="block text-sm font-medium text-[var(--color-text-secondary)]"
-                >
-                  Message (English)
-                </label>
-                <textarea
-                  id="sms-message"
-                  ref={textareaRef}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={4}
-                  maxLength={480}
-                  placeholder="Type your SMS message here…"
-                  name="message"
-                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200 resize-none"
-                />
-                <p className={`text-right text-xs tabular-nums ${charCount > 440 ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-muted)]'}`}>{charCount}/480</p>
-              </div>
+          <p className="text-xs text-[var(--color-text-muted)]">
+            One SMS goes out per day, to every subscriber. Days are Bangladesh days (today is {today}); leave gaps if you like.
+          </p>
 
-              {/* Bengali message textarea (optional) */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="sms-message-bn"
-                  className="block text-sm font-medium text-[var(--color-text-secondary)]"
-                >
-                  Message (Bengali){' '}
-                  <span className="text-[var(--color-text-muted)] font-normal">— optional</span>
-                </label>
-                <textarea
-                  id="sms-message-bn"
-                  value={messageBn}
-                  onChange={(e) => setMessageBn(e.target.value)}
-                  rows={3}
-                  maxLength={480}
-                  placeholder="বাংলায় বার্তা লিখুন…"
-                  name="messageBn"
-                  lang="bn"
-                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200 resize-none"
-                />
-              </div>
-
-              <LanguagePicker value={language} onChange={setLanguage} idPrefix="sms-lang" />
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-[var(--color-text-secondary)]">What handsets receive</p>
-                {composeError ? (
-                  <p className="text-xs text-[var(--color-danger)]" role="alert">{composeError}</p>
-                ) : (
-                  <>
-                    {composed && (
-                      <p lang={language === 'EN' ? 'en' : 'bn'} className="whitespace-pre-wrap rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)]">
-                        {composed}
-                      </p>
-                    )}
-                    <PartCounter text={composed} />
-                  </>
-                )}
-              </div>
-
-              {/* Schedule date (optional) */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="sms-scheduled"
-                  className="block text-sm font-medium text-[var(--color-text-secondary)]"
-                >
-                  Schedule For{' '}
-                  <span className="text-[var(--color-text-muted)] font-normal">(optional — leave blank to use the next free day from tomorrow)</span>
-                </label>
-                <DateTimePicker
-                  id="sms-scheduled"
-                  aria-label="Schedule date and time"
-                  value={scheduledFor}
-                  onChange={setScheduledFor}
-                  minDate={new Date()}
-                />
-              </div>
-
-              {/* Status preview */}
-              <div className="flex items-center gap-2 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] px-4 py-2.5 text-sm text-[var(--color-text-secondary)]">
-                <span>
-                  {isScheduled
-                    ? 'A one-day campaign, sent on that Bangladesh day.'
-                    : 'A one-day campaign, sent on the next free day from tomorrow.'}
-                </span>
-              </div>
-            </>
-          ) : mode === 'bulk' ? (
-            <>
-              {/* Bulk textarea */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="sms-bulk"
-                  className="block text-sm font-medium text-[var(--color-text-secondary)]"
-                >
-                  Messages (one per line)
-                </label>
-                <textarea
-                  id="sms-bulk"
-                  ref={textareaRef}
-                  value={bulkText}
-                  onChange={(e) => setBulkText(e.target.value)}
-                  rows={8}
-                  placeholder={"English message\nAnother message | বাংলা বার্তা\nThird message | তৃতীয় বার্তা"}
-                  name="bulkText"
-                  spellCheck={false}
-                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:border-[var(--color-primary)] transition-colors duration-200 resize-none font-mono"
-                />
-                <p className="text-xs text-[var(--color-text-muted)]">
-                  One message per line. Add a Bengali translation after a vertical bar:{' '}
-                  <span className="font-mono text-[var(--color-text-secondary)]">English | বাংলা</span>
-                </p>
-                {/* Live preview line count */}
-                <p
-                  className="text-xs font-medium text-[var(--color-text-secondary)]"
-                  aria-live="polite"
-                >
-                  {bulkLineCount} campaign{bulkLineCount !== 1 ? 's' : ''} will be planned
-                </p>
-              </div>
-
-              <LanguagePicker value={language} onChange={setLanguage} idPrefix="sms-bulk-lang" />
-
-              {/* Bulk start date */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="sms-bulk-start"
-                  className="block text-sm font-medium text-[var(--color-text-secondary)]"
-                >
-                  Start date{' '}
-                  <span className="text-[var(--color-text-muted)] font-normal">
-                    (one message per day from here; defaults to tomorrow)
-                  </span>
-                </label>
-                <DateTimePicker
-                  id="sms-bulk-start"
-                  aria-label="Bulk start date"
-                  value={bulkStartDate}
-                  onChange={setBulkStartDate}
-                  minDate={new Date()}
-                />
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="space-y-1.5">
-                <label htmlFor="sms-csv" className="block text-sm font-medium text-[var(--color-text-secondary)]">
-                  CSV file
-                </label>
-                <input
-                  id="sms-csv"
-                                    type="file"
-                  name="csv"
-                  accept=".csv,text/csv"
-                  onChange={(e) => void handleCsvFile(e.target.files?.[0])}
-                  className="block w-full text-sm text-[var(--color-text-secondary)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--color-bg-secondary)] file:px-3 file:py-1.5 file:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
-                />
-                <p className="text-xs text-[var(--color-text-muted)]">
-                  Columns: <span className="font-mono">scheduled_date, message_en, message_bn</span>. Leave the date empty to
-                  plan one per day from the start date.{' '}
-                  <button
-                    type="button"
-                    onClick={downloadTemplate}
-                    className="underline text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 rounded"
-                  >
-                    Download template
-                  </button>
-                </p>
-              </div>
-
-              <LanguagePicker value={language} onChange={setLanguage} idPrefix="sms-csv-lang" />
-
-              <div className="space-y-1.5">
-                <label htmlFor="sms-csv-start" className="block text-sm font-medium text-[var(--color-text-secondary)]">
-                  Start date{' '}
-                  <span className="text-[var(--color-text-muted)] font-normal">(for lines without a date; defaults to tomorrow)</span>
-                </label>
-                <DateTimePicker
-                  id="sms-csv-start"
-                  aria-label="CSV start date"
-                  value={bulkStartDate}
-                  onChange={(v) => {
-                    setBulkStartDate(v)
-                    if (csvText) void runPreview(csvText, v)
-                  }}
-                  minDate={new Date()}
-                />
-              </div>
-
-              {csvPreview && (
-                <div className="space-y-2" aria-live="polite">
-                  {csvPreview.errors.length > 0 && (
-                    <ul className="space-y-0.5 text-xs text-[var(--color-danger)]" role="alert">
-                      {csvPreview.errors.map((er) => (
-                        <li key={er.line}>Line {er.line}: {er.message}</li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="max-h-56 overflow-auto overscroll-contain rounded-xl border border-[var(--color-border)]">
-                    <table className="w-full text-left text-xs">
-                      <caption className="sr-only">Send date preview</caption>
-                      <thead className="bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)]">
-                        <tr>
-                          <th scope="col" className="px-3 py-2 font-medium">Goes out on</th>
-                          <th scope="col" className="px-3 py-2 font-medium">Message</th>
-                          <th scope="col" className="px-3 py-2 font-medium">Parts</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {csvPreview.rows.map((r, i) => {
-                          let text = r.messageEn
-                          try { text = composeSms(r.messageEn, r.messageBn ?? null, language) } catch { /* flagged below */ }
-                          const bad = language === 'BN' && !r.messageBn
-                          const { parts } = countSmsParts(text)
-                          return (
-                            <tr key={i} className="border-t border-[var(--color-border)] align-top">
-                              <td className="px-3 py-2 whitespace-nowrap tabular-nums">{formatDhaka(r.day, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                              <td className="px-3 py-2" lang={language === 'EN' ? 'en' : 'bn'}>
-                                {bad ? <span className="text-[var(--color-danger)]">Missing Bengali text</span> : text}
-                              </td>
-                              <td className={`px-3 py-2 tabular-nums ${parts > SMS_PART_WARN_THRESHOLD ? 'text-[var(--color-warning)] font-medium' : ''}`}>{parts}</td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
+          <ol className="space-y-4">
+            {messages.map((m, i) => (
+              <li key={m.key} className="space-y-2 rounded-xl border border-[var(--color-border)] p-3">
+                <div className="flex items-end justify-between gap-3">
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor={`campaign-day-${m.key}`}
+                      className="block text-sm font-medium text-[var(--color-text-secondary)]"
+                    >
+                      Day {i + 1}
+                    </label>
+                    <input
+                      id={`campaign-day-${m.key}`}
+                      name={`campaign-day-${m.key}`}
+                      type="date"
+                      min={today}
+                      value={m.day}
+                      onChange={(e) => patch(m.key, { day: e.target.value })}
+                      className={`${INPUT_CLASS} tabular-nums`}
+                    />
                   </div>
-                  <p className="text-xs font-medium text-[var(--color-text-secondary)]">
-                    {csvPreview.rows.length} campaign{csvPreview.rows.length !== 1 ? 's' : ''} will be planned
-                  </p>
+                  {messages.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setMessages((list) => list.filter((x) => x.key !== m.key))}
+                      className="rounded-lg p-2 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-danger)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                      aria-label={`Remove message ${i + 1}`}
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
-              )}
-            </>
-          )}
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor={`campaign-body-${m.key}`}
+                    className="block text-sm font-medium text-[var(--color-text-secondary)]"
+                  >
+                    Message {i + 1}
+                  </label>
+                  <textarea
+                    id={`campaign-body-${m.key}`}
+                    name={`campaign-body-${m.key}`}
+                    rows={3}
+                    value={m.body}
+                    onChange={(e) => patch(m.key, { body: e.target.value })}
+                    placeholder="Write the SMS in English or Bengali…"
+                    className={TEXTAREA_CLASS}
+                  />
+                  <PartCounter text={m.body} />
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setMessages((list) => [...list, newDraft()])}
+            disabled={messages.length >= SMS_MAX_CAMPAIGN_MESSAGES}
+          >
+            <Plus size={14} aria-hidden="true" /> Add another day
+          </Button>
 
           {/* Error */}
           {error && (
-            <p className="text-sm text-[var(--color-danger)]" role="alert" aria-live="polite">
+            <p className="text-sm text-[var(--color-danger)]" role="alert">
               {error}
             </p>
           )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-1">
-            <Button
-              type="button"
-              variant="secondary"
-              fullWidth
-              onClick={onClose}
-              disabled={submitting}
-            >
+            <Button type="button" variant="secondary" fullWidth onClick={onClose} disabled={submitting}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              loading={submitting}
-            >
-              {mode === 'csv'
-                ? `Create ${csvPreview?.rows.length ?? ''} campaign${csvPreview?.rows.length === 1 ? '' : 's'}`.trim()
-                : mode === 'bulk'
-                ? `Create ${bulkLineCount > 0 ? bulkLineCount : ''} campaign${bulkLineCount !== 1 ? 's' : ''}`.trim()
-                : 'Create campaign'}
+            <Button type="submit" variant="primary" fullWidth loading={submitting}>
+              Create campaign
             </Button>
           </div>
         </form>

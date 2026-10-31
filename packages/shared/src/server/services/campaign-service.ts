@@ -9,6 +9,9 @@ import {
   scheduleDrafts,
   canEditMessage,
   canDeleteCampaign,
+  validateSmsBody,
+  SMS_MAX_CAMPAIGN_MESSAGES,
+  SMS_MAX_CAMPAIGN_NAME,
   type SmsDraft,
   type SmsSendLanguage,
 } from '../../utils/sms'
@@ -95,7 +98,13 @@ function assertDay(day: string) {
 }
 
 function assertBody(body: string) {
-  if (!body.trim()) throw new Error('Message cannot be empty')
+  const problem = validateSmsBody(body)
+  if (problem) throw new Error(problem)
+}
+
+/** Refuse a Bangladesh day before today's (ADR 0008: "today" is the Bangladesh day of `now`). */
+function assertNotPast(day: string, now: Date) {
+  if (day < bangladeshDayOf(now)) throw new Error(`${day} is in the past`)
 }
 
 const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002'
@@ -167,6 +176,64 @@ export async function planCampaign(
   } catch (e) {
     // Lost a race for the day against another planner: the partial unique index says no.
     if (isUniqueViolation(e)) throw new Error('One of those days was just taken by another campaign')
+    throw e
+  }
+}
+
+/**
+ * The composer's entry point: plan a campaign with the full set of rules. On top of `planCampaign`
+ * it refuses past Bangladesh days, over-long texts, an over-long name and too many messages.
+ */
+export async function createCampaign(
+  createdBy: string,
+  input: { name: string; messages: PlannedMessageInput[] },
+  now: Date,
+) {
+  if (input.name.trim().length > SMS_MAX_CAMPAIGN_NAME) {
+    throw new Error(`Campaign name is too long (limit ${SMS_MAX_CAMPAIGN_NAME} characters)`)
+  }
+  if (input.messages.length > SMS_MAX_CAMPAIGN_MESSAGES) {
+    throw new Error(`A campaign can have at most ${SMS_MAX_CAMPAIGN_MESSAGES} messages`)
+  }
+  for (const m of input.messages) {
+    assertDay(m.day)
+    assertNotPast(m.day, now)
+  }
+  return planCampaign(createdBy, input)
+}
+
+/** Add one message to an existing, not-cancelled campaign (same rules as `createCampaign`). */
+export async function addCampaignMessage(
+  campaignId: string,
+  adminUserId: string,
+  input: PlannedMessageInput,
+  now: Date,
+) {
+  assertDay(input.day)
+  assertNotPast(input.day, now)
+  assertBody(input.body)
+  const campaign = await prisma.smsCampaign.findUnique({
+    where: { id: campaignId },
+    select: { cancelledAt: true, _count: { select: { messages: true } } },
+  })
+  if (!campaign) throw new Error('Campaign not found')
+  if (campaign.cancelledAt) throw new Error('A cancelled campaign cannot get new messages')
+  if (campaign._count.messages >= SMS_MAX_CAMPAIGN_MESSAGES) {
+    throw new Error(`A campaign can have at most ${SMS_MAX_CAMPAIGN_MESSAGES} messages`)
+  }
+  await assertDaysFree([input.day])
+
+  try {
+    const message = await prisma.smsCampaignMessage.create({
+      data: { campaignId, day: dayToStoredDate(input.day), body: input.body },
+    })
+    await createAuditLog(adminUserId, AUDIT_ACTIONS.ADD_SMS_MESSAGE, 'SmsCampaignMessage', message.id, {
+      campaignId,
+      day: input.day,
+    })
+    return message
+  } catch (e) {
+    if (isUniqueViolation(e)) throw new Error(`${input.day} was just taken by another campaign`)
     throw e
   }
 }

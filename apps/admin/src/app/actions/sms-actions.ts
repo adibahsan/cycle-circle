@@ -2,56 +2,56 @@
 
 import { requireAdminAuth, getAuthUser } from '@vesta/shared/server/auth'
 import {
-  createOneDayCampaign,
-  createOneDayCampaignsBulk,
+  createCampaign,
+  addCampaignMessage,
   deleteCampaign,
   sendCampaignMessage,
   updateCampaignMessage,
   rescheduleCampaignMessage,
-  parseBulkSmsInput,
-  parseSmsCsv,
-  scheduleDrafts,
-  type SmsSendLanguage,
 } from '@vesta/shared/server/services'
-import { bangladeshDayOf } from '@vesta/shared/utils/dhaka-date'
 import { revalidateTag } from 'next/cache'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 
-/** Create a one-day campaign. `scheduledFor` is an ISO instant; its Bangladesh day is the send day. */
-export async function createSmsCampaign(
-  message: string,
-  messageBn?: string,
-  scheduledFor?: string,
-  sendLanguage: SmsSendLanguage = 'BOTH',
-) {
-  const jwt = await requireAdminAuth()
-  const admin = await getAuthUser(jwt.sub)
-
-  const campaign = await createOneDayCampaign(admin.id, {
-    message,
-    messageBn,
-    scheduledFor,
-    sendLanguage,
-    now: new Date(),
-  })
-
-  revalidateTag(adminCacheTags.sms, { expire: 0 })
-  return { id: campaign.id }
+/** What the composer sends: one text per Bangladesh day (`YYYY-MM-DD`). */
+export interface CampaignComposerInput {
+  name: string
+  messages: { day: string; body: string }[]
 }
 
-export async function createSmsCampaignsBulk(
-  rawText: string,
-  startDate?: string,
-  sendLanguage: SmsSendLanguage = 'BOTH',
-) {
+/** Domain refusals come back as `{ error }`: a thrown message is masked in production builds. */
+function refusal(err: unknown): { error: string } {
+  return { error: err instanceof Error ? err.message : 'Something went wrong' }
+}
+
+/** Plan a campaign. Past days, clashing days and bad texts are refused with a readable message. */
+export async function createSmsCampaign(input: CampaignComposerInput): Promise<{ id: string } | { error: string }> {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  const rows = parseBulkSmsInput(rawText)
-  const created = await createOneDayCampaignsBulk(admin.id, rows, { startDate, sendLanguage, now: new Date() })
+  try {
+    const campaign = await createCampaign(admin.id, input, new Date())
+    revalidateTag(adminCacheTags.sms, { expire: 0 })
+    return { id: campaign.id }
+  } catch (err) {
+    return refusal(err)
+  }
+}
 
-  revalidateTag(adminCacheTags.sms, { expire: 0 })
-  return { count: created.length }
+/** Add one message (a free Bangladesh day) to an existing campaign. */
+export async function addSmsMessage(
+  campaignId: string,
+  input: { day: string; body: string },
+): Promise<{ id: string } | { error: string }> {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  try {
+    const message = await addCampaignMessage(campaignId, admin.id, input, new Date())
+    revalidateTag(adminCacheTags.sms, { expire: 0 })
+    return { id: message.id }
+  } catch (err) {
+    return refusal(err)
+  }
 }
 
 export async function deleteSmsCampaign(campaignId: string) {
@@ -75,35 +75,6 @@ export async function sendSmsMessage(messageId: string) {
     revalidateTag(adminCacheTags.sms, { expire: 0 })
   }
   return { success: true }
-}
-
-/** Parse a CSV and return each line with the Bangladesh day it would go out. Nothing is saved. */
-export async function previewSmsCsv(csvText: string, startDate?: string) {
-  await requireAdminAuth()
-  const { drafts, errors } = parseSmsCsv(csvText)
-  const days = scheduleDrafts(drafts, startDate, new Date()).map(bangladeshDayOf)
-  return {
-    errors,
-    rows: drafts.map((d, i) => ({ ...d, day: days[i] })),
-  }
-}
-
-/** Create one-day campaigns from a CSV. Refuses if any line is invalid. */
-export async function createSmsCampaignsFromCsv(
-  csvText: string,
-  startDate?: string,
-  sendLanguage: SmsSendLanguage = 'BOTH',
-) {
-  const jwt = await requireAdminAuth()
-  const admin = await getAuthUser(jwt.sub)
-
-  const { drafts, errors } = parseSmsCsv(csvText)
-  if (errors.length > 0) throw new Error(`Fix ${errors.length} CSV line(s) first (line ${errors[0].line}: ${errors[0].message})`)
-  if (drafts.length === 0) throw new Error('The CSV has no messages')
-  const created = await createOneDayCampaignsBulk(admin.id, drafts, { startDate, sendLanguage, now: new Date() })
-
-  revalidateTag(adminCacheTags.sms, { expire: 0 })
-  return { count: created.length }
 }
 
 /** Edit the text of an unsent message. */

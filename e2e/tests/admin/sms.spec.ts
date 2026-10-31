@@ -118,27 +118,17 @@ async function openCreateModal(page: import('@playwright/test').Page) {
   return page.getByRole('dialog').filter({ has: heading })
 }
 
-async function fillBilingualDraft(
+/** Fill the composer: a name and the first day's text. Days are Bangladesh days (`YYYY-MM-DD`). */
+async function fillCampaign(
   dialog: import('@playwright/test').Locator,
-  en: string,
-  bn: string,
-  opts: { scheduleLocal?: string; language?: 'Bengali + English' | 'Bengali only' | 'English only' } = {},
+  name: string,
+  messages: { day: string; body: string }[],
 ) {
-  await dialog.getByLabel('Message (English)').fill(en)
-  await dialog.getByLabel(/Message \(Bengali\)/).fill(bn)
-  if (opts.language && opts.language !== 'Bengali + English') {
-    // Label wraps an sr-only radio; the visible label is the clickable control. Click until the
-    // radio is checked: on the phone project a click right after the dialog opens was once lost.
-    const label = dialog.getByText(opts.language, { exact: true })
-    const radio = dialog.getByRole('radio', { name: opts.language })
-    await expect(async () => {
-      if (!(await radio.isChecked())) await label.click({ timeout: 2_000 })
-      await expect(radio).toBeChecked({ timeout: 2_000 })
-    }).toPass({ timeout: 15_000 })
-  }
-  if (opts.scheduleLocal) {
-    await dialog.getByLabel('Schedule date and time').fill(opts.scheduleLocal)
-    await dialog.getByLabel('Schedule date and time').blur()
+  await dialog.getByLabel('Campaign name').fill(name)
+  for (const [i, m] of messages.entries()) {
+    if (i > 0) await dialog.getByRole('button', { name: 'Add another day' }).click()
+    await dialog.getByLabel(`Day ${i + 1}`, { exact: true }).fill(m.day)
+    await dialog.getByLabel(`Message ${i + 1}`, { exact: true }).fill(m.body)
   }
 }
 
@@ -178,7 +168,7 @@ async function withAdminPage(
 }
 
 test.describe('Admin SMS campaigns', () => {
-  test('BOTH send language reaches BDApps as composed EN+BN text, and the campaign shows in the list and detail', async ({
+  test('a campaign message reaches BDApps as its single body, and the campaign shows in the list and detail', async ({
     browser,
     newUser,
     fakeBdapps,
@@ -204,8 +194,7 @@ test.describe('Admin SMS campaigns', () => {
         { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
         async ({ page }) => {
           const dialog = await openCreateModal(page)
-          await fillBilingualDraft(dialog, enMarker, bnMarker, { scheduleLocal: `${futureDay()} 09:00` })
-          // Default send language is Bengali + English (BOTH).
+          await fillCampaign(dialog, enMarker, [{ day: futureDay(), body: `${enMarker}\n${bnMarker}` }])
           await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           // The list shows every status by default, so a planned campaign is there without filtering.
@@ -253,7 +242,7 @@ test.describe('Admin SMS campaigns', () => {
     }
   })
 
-  test('Bengali-only send reaches BDApps as BN body only', async ({
+  test('a Bengali message is counted as Unicode and reaches BDApps as written', async ({
     browser,
     newUser,
     fakeBdapps,
@@ -267,8 +256,8 @@ test.describe('Admin SMS campaigns', () => {
   }) => {
     test.setTimeout(150_000)
     const runId = randomBytes(3).toString('hex')
-    const enMarker = `E2E SMS BN-only EN ${runId}`
-    const bnMarker = `E2E SMS BN-only BN ${runId}`
+    const bnMarker = `E2E SMS Bangla ${runId}`
+    const banglaBody = `${bnMarker} আজ পর্যাপ্ত পানি পান করুন।`
     await newUser()
 
     const sinceSeq = (await fakeBdapps.calls({ path: '/sms/send' })).at(-1)?.seq ?? 0
@@ -278,10 +267,9 @@ test.describe('Admin SMS campaigns', () => {
         { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
         async ({ page }) => {
           const dialog = await openCreateModal(page)
-          await fillBilingualDraft(dialog, enMarker, bnMarker, {
-            language: 'Bengali only',
-            scheduleLocal: `${futureDay()} 09:00`,
-          })
+          await fillCampaign(dialog, bnMarker, [{ day: futureDay(), body: banglaBody }])
+          // Bengali text is counted as Unicode (70/67 per part).
+          await expect(dialog.getByText(/Unicode \(Bengali\), 70\/67 per part/)).toBeVisible()
           await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           // The campaign is named from the composed body, which is the Bengali text only.
@@ -294,8 +282,7 @@ test.describe('Admin SMS campaigns', () => {
           const mine = await waitForSmsCalls(fakeBdapps, bnMarker, { sinceSeq })
           const last = mine[mine.length - 1]
           expect(last.body.destinationAddresses).toEqual(['tel:all'])
-          expect(last.body.message).toBe(bnMarker)
-          expect(last.body.message).not.toContain(enMarker)
+          expect(last.body.message).toBe(banglaBody)
           expect(last.response).toMatchObject({ statusCode: 'S1000' })
         },
       )
@@ -332,12 +319,16 @@ test.describe('Admin SMS campaigns', () => {
         { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
         async ({ page, context }) => {
           const dialog = await openCreateModal(page)
-          // Past local time: DateTimePicker text entry does not enforce minDate (calendar does).
-          await fillBilingualDraft(dialog, enMarker, bnMarker, { scheduleLocal: `${pastDay()} 09:00` })
+          // The composer refuses past days, so plan a future day and age it in the database.
+          await fillCampaign(dialog, enMarker, [{ day: futureDay(), body: `${enMarker}\n${bnMarker}` }])
           await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           await expect(campaignRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
           await expect(campaignRow(page, enMarker).getByText('Planned', { exact: true })).toBeVisible()
+          await e2eDb().smsCampaignMessage.updateMany({
+            where: { body: { contains: enMarker } },
+            data: { day: new Date(`${pastDay()}T00:00:00Z`) },
+          })
 
           const mine = await dispatchUntilMarker(context.request, fakeBdapps, enMarker, sinceSeq, cronUser.id)
           expect(mine[mine.length - 1].body.message).toBe(`${enMarker}\n${bnMarker}`)
@@ -368,7 +359,6 @@ test.describe('Admin SMS campaigns', () => {
     const runId = randomBytes(3).toString('hex')
     test.setTimeout(150_000)
     const enMarker = `E2E SMS Retry ${runId}`
-    const bnMarker = `E2E SMS Retry BN ${runId}`
     await newUser()
 
     const sinceSeq = (await fakeBdapps.calls({ path: '/sms/send' })).at(-1)?.seq ?? 0
@@ -378,7 +368,7 @@ test.describe('Admin SMS campaigns', () => {
         { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
         async ({ page }) => {
           const dialog = await openCreateModal(page)
-          await fillBilingualDraft(dialog, enMarker, bnMarker, { scheduleLocal: `${futureDay()} 09:00` })
+          await fillCampaign(dialog, enMarker, [{ day: futureDay(), body: enMarker }])
           await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           await expect(campaignRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
@@ -423,7 +413,6 @@ test.describe('Admin SMS campaigns', () => {
     const runId = randomBytes(3).toString('hex')
     test.setTimeout(150_000)
     const enMarker = `E2E SMS Dbl ${runId}`
-    const bnMarker = `E2E SMS Dbl BN ${runId}`
     await newUser()
 
     const sinceSeq = (await fakeBdapps.calls({ path: '/sms/send' })).at(-1)?.seq ?? 0
@@ -433,7 +422,7 @@ test.describe('Admin SMS campaigns', () => {
         { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
         async ({ page }) => {
           const dialog = await openCreateModal(page)
-          await fillBilingualDraft(dialog, enMarker, bnMarker, { scheduleLocal: `${futureDay()} 09:00` })
+          await fillCampaign(dialog, enMarker, [{ day: futureDay(), body: enMarker }])
           await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           await expect(campaignRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
@@ -471,7 +460,6 @@ test.describe('Admin SMS campaigns', () => {
     test.setTimeout(150_000)
     const runId = randomBytes(3).toString('hex')
     const enMarker = `E2E SMS Report ${runId}`
-    const bnMarker = `E2E SMS Report BN ${runId}`
     const recipient = await newUser()
     const maskedId = (await fakeBdapps.subscriber(recipient.phone))!.maskedId
 
@@ -482,10 +470,7 @@ test.describe('Admin SMS campaigns', () => {
         { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
         async ({ page }) => {
           const dialog = await openCreateModal(page)
-          await fillBilingualDraft(dialog, enMarker, bnMarker, {
-            language: 'English only',
-            scheduleLocal: `${futureDay()} 09:00`,
-          })
+          await fillCampaign(dialog, enMarker, [{ day: futureDay(), body: enMarker }])
           await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           await expect(campaignRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
@@ -495,10 +480,8 @@ test.describe('Admin SMS campaigns', () => {
           await expect(page.getByText('Message sent')).toBeVisible({ timeout: 30_000 })
 
           const mine = await waitForSmsCalls(fakeBdapps, enMarker, { sinceSeq })
-          // English only: the Bengali marker must not appear.
           const sent = mine[mine.length - 1]
           expect(sent.body.message).toBe(enMarker)
-          expect(sent.body.message).not.toContain(bnMarker)
 
           const destResponses = sent.response.destinationResponses as Array<{ messageId?: string }> | undefined
           const fakeMessageId = destResponses?.[0]?.messageId
@@ -565,7 +548,7 @@ test.describe('Admin SMS campaigns', () => {
         { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
         async ({ page }) => {
           const dialog = await openCreateModal(page)
-          await fillBilingualDraft(dialog, enMarker, '', { language: 'English only', scheduleLocal: `${futureDay()} 09:00` })
+          await fillCampaign(dialog, enMarker, [{ day: futureDay(), body: enMarker }])
           await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toHaveCount(0)
           await expect(campaignRow(page, enMarker)).toBeVisible({ timeout: 15_000 })
@@ -598,7 +581,7 @@ test.describe('Admin SMS campaigns', () => {
     }
   })
 
-  test('a day already used by another campaign is refused and nothing is created', async ({
+  test('a campaign plans non-consecutive days; a clashing or past day is refused inline and nothing is created', async ({
     browser,
     viewport,
     userAgent,
@@ -613,34 +596,48 @@ test.describe('Admin SMS campaigns', () => {
     const first = `E2E SMS Clash A ${runId}`
     const second = `E2E SMS Clash B ${runId}`
     const day = futureDay()
+    const laterDay = futureDay()
+    const otherDay = futureDay()
 
     try {
       await withAdminPage(
         browser,
         { viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId },
         async ({ page }) => {
-          // 12:00 local keeps both picks on the same Bangladesh day whatever the browser timezone.
+          // Two non-consecutive days, each with its own text.
           let dialog = await openCreateModal(page)
-          await fillBilingualDraft(dialog, first, `${first} BN`, { scheduleLocal: `${day} 12:00` })
+          await fillCampaign(dialog, first, [
+            { day, body: `${first} one` },
+            { day: laterDay, body: `${first} two` },
+          ])
           await dialog.getByRole('button', { name: 'Create campaign', exact: true }).click()
           await expect(campaignRow(page, first)).toBeVisible({ timeout: 15_000 })
+          await expect(campaignRow(page, first).getByText('Planned', { exact: true })).toBeVisible()
+          expect(await e2eDb().smsCampaignMessage.count({ where: { body: { contains: first } } })).toBe(2)
 
+          // A second campaign whose later day is the first campaign's second day.
           dialog = await openCreateModal(page)
-          await fillBilingualDraft(dialog, second, `${second} BN`, { scheduleLocal: `${day} 12:00` })
+          await fillCampaign(dialog, second, [
+            { day: otherDay, body: `${second} one` },
+            { day: laterDay, body: `${second} two` },
+          ])
           const create = dialog.getByRole('button', { name: 'Create campaign', exact: true })
-          const actionDone = page.waitForResponse(
-            (r) => r.request().method() === 'POST' && !!r.request().headers()['next-action'],
-          )
           if (isMobile) {
             // One synthetic click: the first campaign's toast can cover the button on phone.
             await create.dispatchEvent('click')
           } else {
             await create.click()
           }
-          await actionDone
-          // Refused: the dialog stays open and nothing was created. The refusal text (naming the
-          // clashing campaign) is asserted in the service test; the inline error is #197's composer.
+          // Refused inline, naming the campaign that holds the day. Nothing was created.
+          await expect(dialog.getByRole('alert')).toContainText(`"${first}"`, { timeout: 15_000 })
+          await expect(dialog.getByRole('alert')).toContainText(laterDay)
           await expect(page.getByRole('heading', { name: 'New SMS Campaign' })).toBeVisible()
+          expect(await e2eDb().smsCampaign.count({ where: { name: { contains: second } } })).toBe(0)
+
+          // A past Bangladesh day is refused too.
+          await dialog.getByLabel('Day 1').fill('2020-01-01')
+          await create.dispatchEvent('click')
+          await expect(dialog.getByRole('alert')).toContainText(/past/i)
           expect(await e2eDb().smsCampaign.count({ where: { name: { contains: second } } })).toBe(0)
         },
       )
