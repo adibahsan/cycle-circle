@@ -333,7 +333,6 @@ test.describe('Admin SMS campaigns', () => {
 
     const sinceSeq = (await fakeBdapps.calls({ path: '/sms/send' })).at(-1)?.seq ?? 0
     const db = e2eDb()
-    const previousSendTime = await db.systemSetting.findUnique({ where: { key: SEND_TIME_KEY } })
     try {
       // Midnight Bangladesh time: the send time has passed whenever the cron runs today.
       await db.systemSetting.upsert({
@@ -380,11 +379,7 @@ test.describe('Admin SMS campaigns', () => {
         },
       )
     } finally {
-      if (previousSendTime) {
-        await db.systemSetting.update({ where: { key: SEND_TIME_KEY }, data: { value: previousSendTime.value } })
-      } else {
-        await db.systemSetting.deleteMany({ where: { key: SEND_TIME_KEY } })
-      }
+      // Send time stays 00:00 (see system.spec.ts): restoring could race the System test.
       // Leave no past-due PLANNED row for later cron polls in this slot.
       await removeCampaigns(runId)
     }

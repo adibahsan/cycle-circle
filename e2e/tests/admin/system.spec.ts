@@ -86,8 +86,12 @@ test.describe('Admin system', () => {
     locale,
     timezoneId,
   }) => {
+    // The send time is one global row that sms.spec.ts's cron test needs to be already passed.
+    // Every value written here is 00:00 or 00:01 Bangladesh time and the test ends on 00:00, so a
+    // parallel cron test never sees a future send time. Viewport-independent: desktop only, so the
+    // phone project doesn't write the same row at the same moment. Each `pnpm e2e` run resets the DB.
+    test.skip(isMobile, 'viewport-independent; one writer of the global send-time row')
     const key = 'sms.dailySendTime'
-    const before = await e2eDb().systemSetting.findUnique({ where: { key } })
     const admin = await createLoggedInAdmin(browser, {
       viewport,
       userAgent,
@@ -100,16 +104,17 @@ test.describe('Admin system', () => {
     try {
       const { page } = admin
       await page.goto('/system')
-      const input = page.getByLabel('Send time (Bangladesh)')
-      await expect(input).toBeVisible()
-      await input.fill('16:45')
-      await page.getByRole('button', { name: 'Save', exact: true }).click()
-      await expect(page.getByText('16:45 Bangladesh time')).toBeVisible()
-      await expect(page.getByText('10:45', { exact: true })).toBeVisible() // the same moment in UTC
-
-      await page.reload()
-      await expect(page.getByLabel('Send time (Bangladesh)')).toHaveValue('16:45')
-      expect((await e2eDb().systemSetting.findUniqueOrThrow({ where: { key } })).value).toBe('16:45')
+      for (const [bd, utc] of [['00:01', '18:01'], ['00:00', '18:00']] as const) {
+        const input = page.getByLabel('Send time (Bangladesh)')
+        await expect(input).toBeVisible()
+        await input.fill(bd)
+        await page.getByRole('button', { name: 'Save', exact: true }).click()
+        // Shown in Bangladesh time, with the same moment in UTC (the previous day)
+        await expect(page.getByText(`Current: ${bd} Bangladesh time (${utc} UTC)`, { exact: false })).toBeVisible()
+        await page.reload()
+        await expect(page.getByLabel('Send time (Bangladesh)')).toHaveValue(bd)
+        expect((await e2eDb().systemSetting.findUniqueOrThrow({ where: { key } })).value).toBe(bd)
+      }
       const log = await e2eDb().adminAuditLog.findFirst({
         where: { action: 'SET_SMS_SEND_TIME', targetId: key },
         orderBy: { createdAt: 'desc' },
@@ -117,8 +122,6 @@ test.describe('Admin system', () => {
       expect(log).not.toBeNull()
     } finally {
       await admin.context.close()
-      if (before) await e2eDb().systemSetting.update({ where: { key }, data: { value: before.value } })
-      else await e2eDb().systemSetting.deleteMany({ where: { key } })
     }
   })
 })
