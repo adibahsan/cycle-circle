@@ -13,7 +13,8 @@
 | `subscription-service` | Grant/revoke Pro, list subscriptions |
 | `audit-service` | Admin audit log creation |
 | `analytics-service` | Dashboard stats, trends, distributions, retention |
-| `sms-service` | Broadcast CRUD |
+| `campaign-service` | SMS campaigns: planning, edit, delete, list/get with derived status, chart data |
+| `campaign-send-service` | Sending campaign messages: claim/send/record, daily dispatch, stuck recovery, delivery reports |
 | `export-service` | CSV generation (feedback, users) |
 | `app-otp-service` | Phone login OTP request; App OTP for existing subscribers (ADR 0002) |
 

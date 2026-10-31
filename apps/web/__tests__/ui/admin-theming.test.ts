@@ -60,6 +60,7 @@ const THEMED_FILES = [
   'apps/admin/src/app/(admin)/sms/EditBroadcastModal.tsx',
   'apps/admin/src/app/(admin)/sms/RescheduleModal.tsx',
   'apps/admin/src/app/(admin)/sms/sms-shared.tsx',
+  'apps/admin/src/app/(admin)/sms/[id]/CampaignDetailClient.tsx',
   'apps/admin/src/app/(admin)/DashboardClient.tsx',
   'apps/admin/src/app/(admin)/content/ContentClient.tsx',
   'apps/admin/src/app/(admin)/feedback/FeedbackClient.tsx',

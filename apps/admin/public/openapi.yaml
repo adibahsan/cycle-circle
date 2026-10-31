@@ -956,8 +956,8 @@ paths:
   /api/cron/daily-reminders:
     get:
       tags: [Cron]
-      summary: Daily reminders + scheduled SMS broadcast
-      description: Sends period/fertile/logging/completion reminders and dispatches the day's SMS broadcast. Invoked by Vercel Cron via GET (identical handler on POST).
+      summary: Daily reminders + planned SMS campaign message
+      description: Sends period/fertile/logging/completion reminders and dispatches the day's planned SMS campaign message (response key `smsBroadcast`). Invoked by Vercel Cron via GET (identical handler on POST).
       security: [{ cronBearer: [] }]
       responses:
         '200':
@@ -972,7 +972,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
     post:
       tags: [Cron]
-      summary: Daily reminders + scheduled SMS broadcast (POST alias)
+      summary: Daily reminders + planned SMS campaign message (POST alias)
       description: Optional body `{ userId?, force? }` to re-trigger a specific user's reminders.
       security: [{ cronBearer: [] }]
       requestBody:

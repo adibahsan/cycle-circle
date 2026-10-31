@@ -323,7 +323,7 @@ Example entries (adjust times for the server's timezone — see
 Create the log directory once first: `mkdir -p /opt/vesta/logs`.
 
 ```cron
-# daily reminders + SMS broadcast — historically run at 08:00 UTC
+# daily reminders + SMS campaign message — historically run at 08:00 UTC
 0 8 * * * curl -fsS -X GET https://cycle-circle.com/api/cron/daily-reminders \
   -H "Authorization: Bearer $CRON_SECRET" >> /opt/vesta/logs/cron-reminders.log 2>&1
 

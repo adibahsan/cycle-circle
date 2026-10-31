@@ -184,7 +184,7 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| A14 | SMS broadcast: bilingual create, schedule, send; one composed body by send language (`tel:all`) | `/sms` | `e2e/tests/admin/sms.spec.ts` | full | #129 (wording: #143) |
+| A14 | SMS campaign: bilingual create (one-day campaign), plan, send; campaign list + detail; one composed body by send language (`tel:all`) | `/sms` | `e2e/tests/admin/sms.spec.ts` | full | #129 (wording: #143) |
 | A15 | SMS queue: failed send retried; delivery-report webhook updates counts (webhook path; prod E1312) | `/sms` | `e2e/tests/admin/sms.spec.ts` | full (counts via DB, then the Delivery column after Refresh: #144) | #129 |
 
 ### Admin: feedback, emails, audit, logs, system
@@ -211,6 +211,6 @@ Cron routes, BDApps webhooks, the Resend webhook and health endpoints have no sc
 | S05 | BDApps webhook: subscription notify (subscribed, unsubscribed) | `/api/webhooks/subscription/notify` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`; subscribed record); `bdapps-webhook-unsubscribe.spec.ts` (UNREGISTERED plan effect, #118); `billing.spec.ts` (REGISTERED: Free to Pro, translog) | full | #118, #125, #132 |
 | S06 | BDApps webhook: SMS received, recorded as Webhook event, duplicates ignored | `/api/webhooks/sms/receive` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`) | full | #132 |
 | S07 | BDApps webhook: USSD, recorded, duplicates ignored | `/api/webhooks/ussd/receive` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`) | full | #132 |
-| S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`), `e2e/tests/admin/sms.spec.ts` (admin counts) | full (route-level; UI counts: #144; unknown requestId leaves every broadcast unchanged: #145) | #132, #129 |
+| S08 | BDApps webhook: SMS delivery report | `/api/webhooks/sms/report` | `e2e/tests/web/webhooks-bdapps.spec.ts` (`cron`), `e2e/tests/admin/sms.spec.ts` (counts per requestId) | full (route-level; correlates on providerRequestId (#196); unknown requestId leaves every message unchanged: #145; UI counts: #198) | #132, #129 |
 | S09 | Resend webhook updates email log delivery status | `/api/webhooks/resend` | `e2e/tests/web/webhooks-resend.spec.ts` (Svix HMAC via `SECRETS.resendWebhookSecret`; bad sig→401; bounce→BOUNCED) | full | #132 |
 | S10 | Health endpoints up; BDApps reported down when fake BDApps fails | `/api/health/{db,redis,mailpit,bdapps,worker}` | `e2e/tests/web/health.spec.ts` + `bdapps-health.spec.ts` (`cron`; no Redis → redis `skipped`, worker `ok:false`) | full | #132 |

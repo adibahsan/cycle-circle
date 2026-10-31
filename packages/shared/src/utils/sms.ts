@@ -2,7 +2,7 @@
 
 export type SmsSendLanguage = 'BN' | 'EN' | 'BOTH'
 
-/** One broadcast line, produced by both the line parser and the CSV parser. */
+/** One campaign line, produced by both the line parser and the CSV parser. */
 export interface SmsDraft {
   messageEn: string
   messageBn?: string
@@ -12,10 +12,12 @@ export interface SmsDraft {
 
 // ── Status guards ──────────────────────────────────────────────────────────────
 
-/** What an admin may do with a broadcast in each status; the service guards and the UI both use these. */
-export const canEditBroadcast = (status: string) => status === 'DRAFT' || status === 'SCHEDULED' || status === 'FAILED'
-export const canDeleteBroadcast = canEditBroadcast
-export const canSendBroadcast = (status: string) => status === 'DRAFT' || status === 'SCHEDULED'
+/** What an admin may do with a campaign message in each status; the services guard and the UI both use these. */
+export const canEditMessage = (status: string) => status === 'PLANNED' || status === 'FAILED'
+export const canSendMessage = (status: string) => status === 'PLANNED'
+/** A campaign can be deleted while none of its messages has gone out (or is going out). */
+export const canDeleteCampaign = (messages: { status: string }[]) =>
+  messages.every((m) => m.status !== 'SENT' && m.status !== 'SENDING')
 
 // ── Composition ────────────────────────────────────────────────────────────────
 

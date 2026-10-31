@@ -2,21 +2,23 @@
 
 import { requireAdminAuth, getAuthUser } from '@vesta/shared/server/auth'
 import {
-  createBroadcast,
-  createBroadcastsBulk,
-  deleteBroadcast,
-  sendBroadcast,
-  updateBroadcast,
-  rescheduleBroadcast,
+  createOneDayCampaign,
+  createOneDayCampaignsBulk,
+  deleteCampaign,
+  sendCampaignMessage,
+  updateCampaignMessage,
+  rescheduleCampaignMessage,
   parseBulkSmsInput,
   parseSmsCsv,
   scheduleDrafts,
   type SmsSendLanguage,
 } from '@vesta/shared/server/services'
+import { bangladeshDayOf } from '@vesta/shared/utils/dhaka-date'
 import { revalidateTag } from 'next/cache'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 
-export async function createSmsBroadcast(
+/** Create a one-day campaign. `scheduledFor` is an ISO instant; its Bangladesh day is the send day. */
+export async function createSmsCampaign(
   message: string,
   messageBn?: string,
   scheduledFor?: string,
@@ -25,13 +27,19 @@ export async function createSmsBroadcast(
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  const broadcast = await createBroadcast(admin.id, message, messageBn, scheduledFor, sendLanguage)
+  const campaign = await createOneDayCampaign(admin.id, {
+    message,
+    messageBn,
+    scheduledFor,
+    sendLanguage,
+    now: new Date(),
+  })
 
   revalidateTag(adminCacheTags.sms, { expire: 0 })
-  return broadcast
+  return { id: campaign.id }
 }
 
-export async function createSmsBroadcastsBulk(
+export async function createSmsCampaignsBulk(
   rawText: string,
   startDate?: string,
   sendLanguage: SmsSendLanguage = 'BOTH',
@@ -40,44 +48,48 @@ export async function createSmsBroadcastsBulk(
   const admin = await getAuthUser(jwt.sub)
 
   const rows = parseBulkSmsInput(rawText)
-  const created = await createBroadcastsBulk(admin.id, rows, startDate, sendLanguage)
+  const created = await createOneDayCampaignsBulk(admin.id, rows, { startDate, sendLanguage, now: new Date() })
 
   revalidateTag(adminCacheTags.sms, { expire: 0 })
-  return { count: created.length, broadcasts: created }
+  return { count: created.length }
 }
 
-export async function deleteSmsBroadcast(id: string) {
-  await requireAdminAuth()
-
-  await deleteBroadcast(id)
-
-  revalidateTag(adminCacheTags.sms, { expire: 0 })
-  return { success: true }
-}
-
-export async function sendSmsBroadcast(id: string) {
+export async function deleteSmsCampaign(campaignId: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await sendBroadcast(id, admin.id, new Date())
+  await deleteCampaign(campaignId, admin.id)
 
   revalidateTag(adminCacheTags.sms, { expire: 0 })
   return { success: true }
 }
 
-/** Parse a CSV and return each line with the date it would go out — nothing is saved. */
+export async function sendSmsMessage(messageId: string) {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  try {
+    await sendCampaignMessage(messageId, admin.id, new Date())
+  } finally {
+    // Also after a failed send, so the list shows the FAILED status.
+    revalidateTag(adminCacheTags.sms, { expire: 0 })
+  }
+  return { success: true }
+}
+
+/** Parse a CSV and return each line with the Bangladesh day it would go out. Nothing is saved. */
 export async function previewSmsCsv(csvText: string, startDate?: string) {
   await requireAdminAuth()
   const { drafts, errors } = parseSmsCsv(csvText)
-  const dates = scheduleDrafts(drafts, startDate)
+  const days = scheduleDrafts(drafts, startDate, new Date()).map(bangladeshDayOf)
   return {
     errors,
-    rows: drafts.map((d, i) => ({ ...d, sendAt: dates[i].toISOString() })),
+    rows: drafts.map((d, i) => ({ ...d, day: days[i] })),
   }
 }
 
-/** Create SCHEDULED broadcasts from a CSV. Refuses if any line is invalid. */
-export async function createSmsBroadcastsFromCsv(
+/** Create one-day campaigns from a CSV. Refuses if any line is invalid. */
+export async function createSmsCampaignsFromCsv(
   csvText: string,
   startDate?: string,
   sendLanguage: SmsSendLanguage = 'BOTH',
@@ -88,32 +100,29 @@ export async function createSmsBroadcastsFromCsv(
   const { drafts, errors } = parseSmsCsv(csvText)
   if (errors.length > 0) throw new Error(`Fix ${errors.length} CSV line(s) first (line ${errors[0].line}: ${errors[0].message})`)
   if (drafts.length === 0) throw new Error('The CSV has no messages')
-  const created = await createBroadcastsBulk(admin.id, drafts, startDate, sendLanguage)
+  const created = await createOneDayCampaignsBulk(admin.id, drafts, { startDate, sendLanguage, now: new Date() })
 
   revalidateTag(adminCacheTags.sms, { expire: 0 })
   return { count: created.length }
 }
 
-/** Edit the text / language of an unsent broadcast. */
-export async function updateSmsBroadcast(
-  id: string,
-  input: { message: string; messageBn?: string; sendLanguage: SmsSendLanguage },
-) {
+/** Edit the text of an unsent message. */
+export async function updateSmsMessage(messageId: string, input: { body: string }) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await updateBroadcast(id, admin.id, input)
+  await updateCampaignMessage(messageId, admin.id, input)
 
   revalidateTag(adminCacheTags.sms, { expire: 0 })
   return { success: true }
 }
 
-/** Move an unsent broadcast to a new send time (`scheduledFor` is an ISO instant). */
-export async function rescheduleSmsBroadcast(id: string, scheduledFor: string) {
+/** Move an unsent message to another Bangladesh day (`YYYY-MM-DD`). */
+export async function rescheduleSmsMessage(messageId: string, day: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await rescheduleBroadcast(id, admin.id, scheduledFor)
+  await rescheduleCampaignMessage(messageId, admin.id, day)
 
   revalidateTag(adminCacheTags.sms, { expire: 0 })
   return { success: true }

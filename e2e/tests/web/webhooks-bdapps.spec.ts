@@ -88,26 +88,33 @@ test.describe('BDApps webhooks: recorded events and duplicates', () => {
     expect(rows[0]).toMatchObject({ type: 'SUBSCRIPTION_NOTIFY' })
   })
 
-  // Serial project on purpose: the bug's fallback lands on the newest active SENT broadcast, so beside
-  // the parallel admin SMS tests it would hit one of theirs (and pass here unexpectedly).
-  test('a delivery report with an unknown requestId leaves our broadcast counts unchanged', async ({ fakeBdapps, db }) => {
+  // Serial project on purpose: it asserts on a message sent "now" and shares the database with
+  // the parallel admin SMS tests.
+  test('a delivery report with an unknown requestId leaves our message counts unchanged', async ({ fakeBdapps, db }) => {
     const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     const admin = await db.user.findFirstOrThrow({ where: { role: 'ADMIN' } })
-    // Setup only: a sent broadcast with a known provider id, newest by sentAt (UI send can't fix the order).
-    const broadcast = await db.smsBroadcast.create({
+    // Setup only: a sent campaign message with known provider ids, newest by sentAt (UI send can't fix the order).
+    const campaign = await db.smsCampaign.create({
       data: {
-        message: `E2E SMS Bogus ${runId}`,
-        sendLanguage: 'EN',
-        status: 'SENT',
-        sentAt: new Date(),
-        active: true,
-        providerMessageId: `real-req-${runId}`,
-        targetCount: 1,
-        deliveredCount: 0,
-        failedCount: 0,
+        name: `E2E SMS Bogus ${runId}`,
         createdBy: admin.id,
+        messages: {
+          create: {
+            day: new Date('2012-05-05T00:00:00Z'),
+            body: `E2E SMS Bogus ${runId}`,
+            status: 'SENT',
+            sentAt: new Date(),
+            providerRequestId: `real-req-${runId}`,
+            providerMessageId: `real-msg-${runId}`,
+            audienceSize: 1,
+            deliveredCount: 0,
+            failedCount: 0,
+          },
+        },
       },
+      include: { messages: true },
     })
+    const message = campaign.messages[0]
     try {
       const res = await fakeBdapps.sendWebhook('/api/webhooks/sms/report', {
         destinationAddress: 'tel:8801700000097',
@@ -117,10 +124,20 @@ test.describe('BDApps webhooks: recorded events and duplicates', () => {
       })
       expect(res).toMatchObject({ status: 200, body: { statusCode: 'S1000' } })
 
-      const after = await db.smsBroadcast.findUniqueOrThrow({ where: { id: broadcast.id } })
-      expect(after).toMatchObject({ deliveredCount: 0, failedCount: 0, targetCount: 1 })
+      const after = await db.smsCampaignMessage.findUniqueOrThrow({ where: { id: message.id } })
+      expect(after).toMatchObject({ deliveredCount: 0, failedCount: 0, audienceSize: 1 })
+
+      // The real requestId does reach the message.
+      await fakeBdapps.sendWebhook('/api/webhooks/sms/report', {
+        destinationAddress: 'tel:8801700000097',
+        requestId: `real-req-${runId}`,
+        deliveryStatus: 'DELIVERED',
+        timeStamp: stamp(),
+      })
+      const counted = await db.smsCampaignMessage.findUniqueOrThrow({ where: { id: message.id } })
+      expect(counted.deliveredCount).toBe(1)
     } finally {
-      await db.smsBroadcast.update({ where: { id: broadcast.id }, data: { active: false } })
+      await db.smsCampaign.delete({ where: { id: campaign.id } })
     }
   })
 })

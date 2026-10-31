@@ -96,18 +96,13 @@ enum CyclePhase {
   LUTEAL
 }
 
-enum SmsBroadcastStatus {
-  DRAFT
-  SCHEDULED
+enum SmsMessageStatus {
+  PLANNED
   SENDING
   SENT
   FAILED
-}
-
-enum SmsSendLanguage {
-  BN
-  EN
-  BOTH
+  MISSED
+  CANCELLED
 }
 
 enum EmailType {
@@ -167,7 +162,7 @@ model User {
   magicLinks      MagicLink[]
   feedback        Feedback[]
   articles        Article[]
-  smsBroadcasts   SmsBroadcast[]
+  smsCampaigns    SmsCampaign[]
   adminAuditLogs  AdminAuditLog[]
   emailLogs       EmailLog[]
   emailVerifications EmailVerification[]
@@ -401,33 +396,60 @@ model ArticleCategory {
   articles Article[]
 }
 
-model SmsBroadcast {
-  id             String             @id @default(cuid())
-  message        String
-  messageBn      String?
-  sendLanguage   SmsSendLanguage    @default(BOTH)
-  scheduledFor   DateTime?
-  sentAt         DateTime?
-  status         SmsBroadcastStatus @default(DRAFT)
-  // Content-override: only the latest sent daily content stays active/visible.
-  active         Boolean            @default(true)
-  // BDApps sms/send messageId, used to correlate inbound delivery reports.
+// A named series of campaign messages, one per Bangladesh day (ADR 0010). Its status is derived
+// from its messages (see deriveCampaignStatus); a one-off SMS is a one-day campaign.
+model SmsCampaign {
+  id          String    @id @default(cuid())
+  name        String
+  createdBy   String
+  cancelledAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  creator  User                 @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  messages SmsCampaignMessage[]
+
+  @@index([createdAt])
+}
+
+// One SMS to all subscribers on one Bangladesh day. At most one PLANNED/SENDING message exists per
+// day across all campaigns: a raw partial unique index in the 20261101120000 migration enforces it.
+model SmsCampaignMessage {
+  id                String           @id @default(cuid())
+  campaignId        String
+  // Bangladesh day, stored via dayToStoredDate().
+  day               DateTime         @db.Date
+  body              String
+  status            SmsMessageStatus @default(PLANNED)
+  sentAt            DateTime?
+  // BDApps requestId: delivery reports correlate on this.
+  providerRequestId String?
+  // First destinationResponses[].messageId.
   providerMessageId String?
-  targetCount    Int?
-  deliveredCount Int?
-  failedCount    Int?
-  // Send attempts since last (re)schedule; FAILED once it reaches the retry cap.
-  sendAttempts   Int                @default(0)
-  lastError      String?
-  createdBy      String
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  audienceSize      Int?
+  deliveredCount    Int?
+  failedCount       Int?
+  sendAttempts      Int              @default(0)
+  lastError         String?
+  // Set only for rows migrated from the old SmsBroadcast table.
+  legacyBroadcastId String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
-  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  campaign SmsCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
+  @@index([day])
   @@index([status])
-  @@index([scheduledFor])
+  @@index([providerRequestId])
   @@index([providerMessageId])
+}
+
+// Value-bearing system settings (SMS daily send time, delivery-report switch, ...).
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+  updatedBy String?
 }
 
 model AdminAuditLog {

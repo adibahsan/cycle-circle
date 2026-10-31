@@ -22,7 +22,7 @@ const now = new Date('2030-01-01T00:00:00Z')
 const range = { dateFrom, dateTo, now }
 
 afterAll(async () => {
-  await testPrisma.smsBroadcast.deleteMany({ where: { id: { startsWith: `${P}-` } } })
+  await testPrisma.smsCampaign.deleteMany({ where: { id: { startsWith: `${P}-` } } })
   await testPrisma.user.deleteMany({ where: { id: { startsWith: `${P}-` } } })
   await testPrisma.$disconnect()
 })
@@ -53,8 +53,13 @@ describe('admin per-day series use the Bangladesh day', () => {
 
   it('sms: 20:00 UTC on D lands in D+1 and the range starts at the first requested day', async () => {
     const u = await makeUser('2')
-    await testPrisma.smsBroadcast.create({
-      data: { id: `${P}-b-1`, message: 'x', createdBy: u.id, status: 'SENT', sentAt: EVENT },
+    await testPrisma.smsCampaign.create({
+      data: {
+        id: `${P}-c-1`,
+        name: 'x',
+        createdBy: u.id,
+        messages: { create: { day: new Date('2011-03-11T00:00:00Z'), body: 'x', status: 'SENT', sentAt: EVENT } },
+      },
     })
     expect(await getSmsSendHistory(range)).toEqual([
       { date: '2011-03-11', count: 1 },

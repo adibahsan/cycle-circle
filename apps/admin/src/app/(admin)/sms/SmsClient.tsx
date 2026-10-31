@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useUrlParams } from '@/lib/use-url-params'
 import { useState } from 'react'
@@ -11,24 +12,23 @@ import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
-import { deleteSmsBroadcast, sendSmsBroadcast } from '@/app/actions/sms-actions'
+import { deleteSmsCampaign, sendSmsMessage } from '@/app/actions/sms-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { CreateBroadcastModal } from './CreateBroadcastModal'
 import { EditBroadcastModal } from './EditBroadcastModal'
 import { RescheduleModal } from './RescheduleModal'
-import { SendPreview, statusBadge, type SmsBroadcast } from './sms-shared'
+import { SendPreview, formatDay, formatSentAt, statusBadge, type SmsCampaign, type SmsMessage } from './sms-shared'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
-import { canDeleteBroadcast, canEditBroadcast, canSendBroadcast } from '@vesta/shared/utils/sms'
-import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
+import { canDeleteCampaign, canEditMessage, canSendMessage } from '@vesta/shared/utils/sms'
 
 type SmsSendHistoryPoint = { date: string; count: number }
 type SmsDeliveryBreakdownItem = { status: string; count: number }
 
 interface SmsClientProps {
   data: {
-    broadcasts: SmsBroadcast[]
+    campaigns: SmsCampaign[]
     total: number
     page: number
     pageSize: number
@@ -42,24 +42,19 @@ interface SmsClientProps {
 }
 
 const STATUS_OPTIONS = [
-  { value: 'queue', label: 'Queue (unsent)' },
   { value: 'all', label: 'All' },
-  { value: 'DRAFT', label: 'Draft' },
-  { value: 'SCHEDULED', label: 'Scheduled' },
-  { value: 'SENDING', label: 'Sending' },
-  { value: 'SENT', label: 'Sent' },
-  { value: 'FAILED', label: 'Failed' },
+  { value: 'planned', label: 'Planned' },
+  { value: 'running', label: 'Running' },
+  { value: 'finished', label: 'Finished' },
+  { value: 'cancelled', label: 'Cancelled' },
 ]
 
-function formatDate(d: Date | null) {
-  if (!d) return '—'
-  return formatDhaka(d, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+/** "Nov 1, 2026" for a one-day campaign, "Nov 1, 2026 – Nov 7, 2026 (5 days)" for a series. */
+function daysLabel(messages: SmsMessage[]) {
+  if (messages.length === 0) return '—'
+  const first = formatDay(messages[0].day)
+  if (messages.length === 1) return first
+  return `${first} – ${formatDay(messages[messages.length - 1].day)} (${messages.length} days)`
 }
 
 // ─── Main Client ─────────────────────────────────────────────────────────────
@@ -70,18 +65,17 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
   const { searchParams, updateParams } = useUrlParams()
 
   const [createOpen, setCreateOpen] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<SmsBroadcast | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<SmsCampaign | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [sendTarget, setSendTarget] = useState<SmsBroadcast | null>(null)
+  const [sendTarget, setSendTarget] = useState<SmsMessage | null>(null)
   const [sending, setSending] = useState(false)
-  const [editTarget, setEditTarget] = useState<SmsBroadcast | null>(null)
-  const [rescheduleTarget, setRescheduleTarget] = useState<SmsBroadcast | null>(null)
+  const [editTarget, setEditTarget] = useState<SmsMessage | null>(null)
+  const [rescheduleTarget, setRescheduleTarget] = useState<SmsMessage | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
 
-  const currentStatus = searchParams.get('status') ?? 'queue'
+  const currentStatus = searchParams.get('status') ?? 'all'
   const currentPage = data.page
   const currentPageSize = data.pageSize
-
 
   function handleStatusChange(value: string) {
     updateParams({ status: value })
@@ -103,12 +97,12 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      await deleteSmsBroadcast(deleteTarget.id)
+      await deleteSmsCampaign(deleteTarget.id)
       setDeleteTarget(null)
-      toast.success('Broadcast deleted')
+      toast.success('Campaign deleted')
       router.refresh()
     } catch (err) {
-      toast.error(err instanceof Error && err.message ? err.message : 'Could not delete the broadcast')
+      toast.error(err instanceof Error && err.message ? err.message : 'Could not delete the campaign')
     } finally {
       setDeleting(false)
     }
@@ -118,97 +112,85 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
     if (!sendTarget) return
     setSending(true)
     try {
-      await sendSmsBroadcast(sendTarget.id)
+      await sendSmsMessage(sendTarget.id)
       setSendTarget(null)
-      toast.success('Broadcast sent')
+      toast.success('Message sent')
       router.refresh()
     } catch (err) {
-      toast.error(err instanceof Error && err.message ? err.message : 'Could not send the broadcast')
+      toast.error(err instanceof Error && err.message ? err.message : 'Could not send the message')
       router.refresh()
     } finally {
       setSending(false)
     }
   }
 
-  const filteredBroadcasts = searchTerm.trim()
-    ? data.broadcasts.filter((b) =>
-        b.message.toLowerCase().includes(searchTerm.toLowerCase())
+  const needle = searchTerm.trim().toLowerCase()
+  const filteredCampaigns = needle
+    ? data.campaigns.filter(
+        (c) => c.name.toLowerCase().includes(needle) || c.messages.some((m) => m.body.toLowerCase().includes(needle)),
       )
-    : data.broadcasts
+    : data.campaigns
 
-  const COLUMNS: Column<SmsBroadcast>[] = [
+  const iconButton =
+    'p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]'
+
+  const COLUMNS: Column<SmsCampaign>[] = [
     {
-      key: 'message',
-      header: 'Message',
+      key: 'name',
+      header: 'Campaign',
       render: (row) => (
-        <span
-          className="block max-w-[300px] truncate text-sm text-[var(--color-text-primary)]"
-          title={row.message}
+        <Link
+          href={`/sms/${row.id}`}
+          className="block max-w-[300px] truncate text-sm font-medium text-[var(--color-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+          title={row.name}
         >
-          {row.message}
+          {row.name}
+        </Link>
+      ),
+    },
+    {
+      key: 'days',
+      header: 'Days',
+      render: (row) => (
+        <span className="inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+          {daysLabel(row.messages)}
+          {row.id === nextSendId && <Badge variant="info" size="sm">Next send</Badge>}
         </span>
       ),
     },
     {
       key: 'status',
       header: 'Status',
-      render: (row) => (
-        <div className="space-y-1">
-          {statusBadge(row.status)}
-          {row.status === 'FAILED' && row.lastError && (
-            <p className="max-w-[220px] text-xs text-[var(--color-danger)]" title={row.lastError}>
-              {row.lastError.length > 80 ? `${row.lastError.slice(0, 80)}…` : row.lastError}
+      render: (row) => {
+        const failed = row.messages.find((m) => m.status === 'FAILED' && m.lastError)
+        const sent = row.messages.filter((m) => m.status === 'SENT').length
+        return (
+          <div className="space-y-1">
+            {statusBadge(row.status)}
+            <p className="text-xs tabular-nums text-[var(--color-text-muted)]">
+              {sent} of {row.messages.length} sent
             </p>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'scheduledFor',
-      header: 'Scheduled For',
-      sortable: true,
-      render: (row) => (
-        <span className="inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
-          {formatDate(row.scheduledFor)}
-          {row.id === nextSendId && <Badge variant="info" size="sm">Next send</Badge>}
-        </span>
-      ),
+            {failed?.lastError && (
+              <p className="max-w-[220px] text-xs text-[var(--color-danger)]" title={failed.lastError}>
+                {failed.lastError.length > 80 ? `${failed.lastError.slice(0, 80)}…` : failed.lastError}
+              </p>
+            )}
+          </div>
+        )
+      },
     },
     {
       key: 'sentAt',
-      header: 'Sent At',
-      sortable: true,
-      render: (row) => (
-        <span className="text-sm text-[var(--color-text-muted)]">
-          {formatDate(row.sentAt)}
-        </span>
-      ),
-    },
-    {
-      key: 'delivery',
-      header: 'Delivery',
-      render: (row) =>
-        row.status === 'SENT' ? (
-          <span className="whitespace-nowrap text-sm tabular-nums text-[var(--color-text-secondary)]">
-            Delivered {row.deliveredCount ?? 0} · Failed {row.failedCount ?? 0}
-          </span>
-        ) : (
-          <span className="text-sm text-[var(--color-text-muted)]">—</span>
-        ),
-    },
-    {
-      key: 'active',
-      header: 'Active',
-      render: (row) =>
-        row.active && row.status === 'SENT' ? (
-          <Badge variant="success" size="sm">Active</Badge>
-        ) : (
-          <span className="text-sm text-[var(--color-text-muted)]">—</span>
-        ),
+      header: 'Last sent',
+      render: (row) => {
+        const sentAts = row.messages.map((m) => m.sentAt).filter((t): t is NonNullable<typeof t> => Boolean(t))
+        const last = sentAts.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
+        return <span className="text-sm text-[var(--color-text-muted)]">{formatSentAt(last ?? null)}</span>
+      },
     },
     {
       key: 'creator',
-      header: 'Creator',
+      header: 'Created by',
       render: (row) => (
         <span className="text-sm text-[var(--color-text-muted)]">
           {row.creator.fullName ?? row.creator.email ?? '—'}
@@ -218,71 +200,76 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
     {
       key: 'actions',
       header: '',
-      width: '120px',
-      render: (row) => (
-        <div className="flex items-center gap-1">
-          {canEditBroadcast(row.status) && (
-            <>
+      width: '140px',
+      render: (row) => {
+        // A one-day campaign has one message: the quick actions work on it. Longer series are
+        // managed from the campaign view.
+        const message = row.messages.length === 1 ? row.messages[0] : null
+        return (
+          <div className="flex items-center gap-1">
+            {message && canEditMessage(message.status) && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setEditTarget(message)
+                  }}
+                  className={iconButton}
+                  aria-label="Edit message"
+                  title="Edit"
+                >
+                  <Pencil size={15} aria-hidden="true" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setRescheduleTarget(message)
+                  }}
+                  className={iconButton}
+                  aria-label="Move message to another day"
+                  title="Move to another day"
+                >
+                  <CalendarClock size={15} aria-hidden="true" />
+                </button>
+              </>
+            )}
+            {message && canSendMessage(message.status) && (
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  setEditTarget(row)
+                  setSendTarget(message)
                 }}
-                className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-                aria-label="Edit broadcast"
-                title="Edit"
+                className={iconButton}
+                aria-label="Send message now"
+                title="Send Now"
               >
-                <Pencil size={15} aria-hidden="true" />
+                <Send size={15} aria-hidden="true" />
               </button>
+            )}
+            {canDeleteCampaign(row.messages) && (
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  setRescheduleTarget(row)
+                  setDeleteTarget(row)
                 }}
-                className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-                aria-label="Reschedule broadcast"
-                title="Reschedule"
+                className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                aria-label="Delete campaign"
+                title="Delete"
               >
-                <CalendarClock size={15} aria-hidden="true" />
+                <Trash2 size={15} aria-hidden="true" />
               </button>
-            </>
-          )}
-          {canSendBroadcast(row.status) && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setSendTarget(row)
-              }}
-              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-              aria-label="Send broadcast"
-              title="Send Now"
-            >
-              <Send size={15} aria-hidden="true" />
-            </button>
-          )}
-          {canDeleteBroadcast(row.status) && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setDeleteTarget(row)
-              }}
-              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-              aria-label="Delete broadcast"
-              title="Delete"
-            >
-              <Trash2 size={15} aria-hidden="true" />
-            </button>
-          )}
-        </div>
-      ),
+            )}
+          </div>
+        )
+      },
     },
   ]
 
   return (
     <div className="flex flex-1 flex-col gap-6 page-enter">
       <AdminPageHeader
-        title="SMS Broadcasts"
-        description={`${data.total.toLocaleString()} broadcast${data.total !== 1 ? 's' : ''} total`}
+        title="SMS Campaigns"
+        description={`${data.total.toLocaleString()} campaign${data.total !== 1 ? 's' : ''}`}
         tags={[adminCacheTags.sms]}
         actions={
           <Button
@@ -291,7 +278,7 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
             onClick={() => setCreateOpen(true)}
           >
             <Plus aria-hidden="true" size={15} />
-            New Broadcast
+            New Campaign
           </Button>
         }
       />
@@ -316,16 +303,16 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
             emptyLabel="No send history for this period"
           />
 
-          {/* Broadcast delivery-status breakdown */}
+          {/* Campaign-message status breakdown */}
           <ChartPanel
-            title="Delivery Status Breakdown"
+            title="Message Status Breakdown"
             data={deliveryBreakdown.map((d) => ({ status: d.status, count: d.count }))}
             xKey="status"
-            series={[{ key: 'count', label: 'Broadcasts' }]}
+            series={[{ key: 'count', label: 'Messages' }]}
             kinds={['bar', 'pie']}
             defaultKind="bar"
             height={260}
-            emptyLabel="No broadcast data yet"
+            emptyLabel="No campaign data yet"
           />
         </div>
       </div>
@@ -334,7 +321,7 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
       <FilterBar
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder="Search broadcasts…"
+        searchPlaceholder="Search campaigns…"
         filters={[
           {
             key: 'status',
@@ -349,11 +336,11 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
       {/* Table */}
       <DataTable
         columns={COLUMNS}
-        data={filteredBroadcasts as unknown as SmsBroadcast[]}
+        data={filteredCampaigns as unknown as SmsCampaign[]}
         emptyMessage={
           data.overallTotal === 0
-            ? 'No broadcasts yet. Create the first one with New Broadcast.'
-            : 'No broadcasts match your filters.'
+            ? 'No campaigns yet. Create the first one with New Campaign.'
+            : 'No campaigns match your filters.'
         }
         keyExtractor={(row) => row.id}
       />
@@ -364,7 +351,7 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
         totalPages={data.totalPages}
         pageSize={currentPageSize}
         total={data.total}
-        itemLabel="broadcast"
+        itemLabel="campaign"
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
       />
@@ -384,13 +371,13 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
         open={Boolean(sendTarget)}
         onClose={() => setSendTarget(null)}
         onConfirm={handleSend}
-        title="Send Broadcast Now?"
-        message="This sends to all subscribers and cannot be undone."
+        title="Send Message Now?"
+        message="This sends to all subscribers and cannot be undone. Only one message can go out per day."
         confirmLabel="Send Now"
         variant="warning"
         loading={sending}
       >
-        {sendTarget && <SendPreview broadcast={sendTarget} />}
+        {sendTarget && <SendPreview body={sendTarget.body} />}
       </ConfirmModal>
 
       {/* Delete Confirm */}
@@ -398,10 +385,10 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
         open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="Delete Broadcast?"
+        title="Delete Campaign?"
         message={
           deleteTarget
-            ? `Delete the "${deleteTarget.message.slice(0, 60)}${deleteTarget.message.length > 60 ? '…' : ''}" broadcast? This cannot be undone.`
+            ? `Delete the campaign "${deleteTarget.name}"? This cannot be undone.`
             : ''
         }
         confirmLabel="Delete"
