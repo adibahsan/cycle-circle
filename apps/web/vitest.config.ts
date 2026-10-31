@@ -28,6 +28,8 @@ export default defineConfig({
         test: {
           name: 'serial',
           include: SERIAL,
+          // Files in this group assert on global counts, so they also run one at a time.
+          fileParallelism: false,
           sequence: { groupOrder: 1 },
         },
       },
