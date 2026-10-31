@@ -4,19 +4,33 @@ import { useState, useRef } from 'react'
 import { Plus, Send, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
-import { createSmsCampaign } from '@/app/actions/sms-actions'
-import { SMS_MAX_CAMPAIGN_MESSAGES, SMS_MAX_CAMPAIGN_NAME, validateSmsBody } from '@vesta/shared/utils/sms'
-import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
+import { createSmsCampaign, importSmsCampaignCsv, type CampaignImportRefusal } from '@/app/actions/sms-actions'
+import {
+  SMS_MAX_CAMPAIGN_MESSAGES,
+  SMS_MAX_CAMPAIGN_NAME,
+  SMS_MAX_CSV_CHARS,
+  campaignCsvTemplate,
+  validateSmsBody,
+} from '@vesta/shared/utils/sms'
+import { addDaysToDay, bangladeshToday } from '@vesta/shared/utils/dhaka-date'
 import { PartCounter, TEXTAREA_CLASS } from './sms-shared'
 
 // ─── Create Campaign Modal ─────────────────────────────────────────────────
-// One campaign = a name plus one text per Bangladesh day. Days may have gaps.
+// One campaign = a name plus one text per Bangladesh day. Days may have gaps. The days are typed in
+// here, or imported from a `day,text` CSV (all-or-nothing: any bad row refuses the whole file).
 
 interface DraftMessage {
   key: number
   /** Bangladesh day, `YYYY-MM-DD`; '' until picked. */
   day: string
   body: string
+}
+
+type Mode = 'manual' | 'csv'
+
+interface RowError {
+  line: number
+  message: string
 }
 
 interface CreateModalProps {
@@ -96,6 +110,9 @@ function ComposerForm({
   const [name, setName] = useState('')
   const [messages, setMessages] = useState<DraftMessage[]>([{ key: 1, day: '', body: '' }])
   const [error, setError] = useState<string | null>(null)
+  const [mode, setMode] = useState<Mode>('manual')
+  const [csv, setCsv] = useState<{ fileName: string; text: string } | null>(null)
+  const [rowErrors, setRowErrors] = useState<RowError[]>([])
   const newDraft = (): DraftMessage => ({
     key: nextKey.current++,
     day: '',
@@ -103,6 +120,36 @@ function ComposerForm({
   })
 
   const today = bangladeshToday()
+  const templateHref = `data:text/csv;charset=utf-8,${encodeURIComponent(
+    campaignCsvTemplate(addDaysToDay(today, 1), addDaysToDay(today, 2)),
+  )}`
+
+  function switchMode(next: Mode) {
+    if (submitting) return
+    setMode(next)
+    setError(null)
+    setRowErrors([])
+  }
+
+  async function handleFile(file: File | undefined) {
+    setError(null)
+    setRowErrors([])
+    if (!file) {
+      setCsv(null)
+      return
+    }
+    if (file.size > SMS_MAX_CSV_CHARS) {
+      setCsv(null)
+      setError('That file is too large to import.')
+      return
+    }
+    try {
+      setCsv({ fileName: file.name, text: await file.text() })
+    } catch {
+      setCsv(null)
+      setError('Could not read that file.')
+    }
+  }
 
   function patch(key: number, change: Partial<DraftMessage>) {
     setMessages((list) => list.map((m) => (m.key === key ? { ...m, ...change } : m)))
@@ -111,8 +158,11 @@ function ComposerForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setRowErrors([])
 
-    const problem = draftProblem(name, messages, today)
+    let problem: string | null
+    if (mode === 'csv') problem = !name.trim() ? 'Give the campaign a name.' : !csv ? 'Choose a CSV file to import.' : null
+    else problem = draftProblem(name, messages, today)
     if (problem) {
       setError(problem)
       return
@@ -120,12 +170,16 @@ function ComposerForm({
 
     setSubmitting(true)
     try {
-      const res = await createSmsCampaign({
-        name: name.trim(),
-        messages: messages.map((m) => ({ day: m.day, body: m.body })),
-      })
+      const res =
+        mode === 'csv'
+          ? await importSmsCampaignCsv({ name: name.trim(), csv: csv!.text })
+          : await createSmsCampaign({
+              name: name.trim(),
+              messages: messages.map((m) => ({ day: m.day, body: m.body })),
+            })
       if ('error' in res) {
         setError(res.error)
+        setRowErrors((res as CampaignImportRefusal).rowErrors ?? [])
         return
       }
       onCreated()
@@ -180,6 +234,59 @@ function ComposerForm({
           />
         </div>
 
+        <div role="tablist" aria-label="How to add the days" className="flex gap-1 rounded-xl bg-[var(--color-bg-secondary)] p-1">
+          {([
+            ['manual', 'Add days'],
+            ['csv', 'Import CSV'],
+          ] as const).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              id={`campaign-mode-${value}`}
+              aria-selected={mode === value}
+              onClick={() => switchMode(value)}
+              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
+                mode === value
+                  ? 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] shadow-sm'
+                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {mode === 'csv' ? (
+          <div className="space-y-3">
+            <p className="text-xs text-[var(--color-text-muted)]">
+              One row per day: <code>day</code> (Bangladesh day, YYYY-MM-DD) and <code>text</code> (the message). Up to{' '}
+              {SMS_MAX_CAMPAIGN_MESSAGES} rows. Any invalid row refuses the whole file, so nothing is half-imported.{' '}
+              <a
+                href={templateHref}
+                download="campaign-template.csv"
+                className="font-medium text-[var(--color-primary)] underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+              >
+                Download template
+              </a>
+            </p>
+            <div className="space-y-1.5">
+              <label htmlFor="campaign-csv" className="block text-sm font-medium text-[var(--color-text-secondary)]">
+                CSV file
+              </label>
+              <input
+                id="campaign-csv"
+                name="campaign-csv"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(e) => void handleFile(e.target.files?.[0])}
+                className="block w-full text-sm text-[var(--color-text-secondary)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--color-bg-secondary)] file:px-3 file:py-2 file:text-sm file:font-medium file:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 rounded-lg"
+              />
+              {csv && <p className="text-xs text-[var(--color-text-muted)]">Selected: {csv.fileName}</p>}
+            </div>
+          </div>
+        ) : (
+          <>
         <p className="text-xs text-[var(--color-text-muted)]">
           One SMS goes out per day, to every subscriber. Days are Bangladesh days (today is {today}); leave gaps if you like.
         </p>
@@ -247,11 +354,23 @@ function ComposerForm({
           <Plus size={14} aria-hidden="true" /> Add another day
         </Button>
 
+          </>
+        )}
+
         {/* Error */}
         {error && (
-          <p className="text-sm text-[var(--color-danger)]" role="alert">
-            {error}
-          </p>
+          <div className="text-sm text-[var(--color-danger)]" role="alert">
+            <p>{error}</p>
+            {rowErrors.length > 1 && (
+              <ul className="mt-1 max-h-40 list-disc space-y-0.5 overflow-y-auto pl-5 overscroll-contain">
+                {rowErrors.map((r, i) => (
+                  <li key={i}>
+                    Line <span className="tabular-nums">{r.line}</span>: {r.message}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
 
         {/* Actions */}
@@ -260,7 +379,7 @@ function ComposerForm({
             Cancel
           </Button>
           <Button type="submit" variant="primary" fullWidth loading={submitting}>
-            Create campaign
+            {mode === 'csv' ? 'Import campaign' : 'Create campaign'}
           </Button>
         </div>
       </form>

@@ -14,10 +14,11 @@ interface SmsCampaignListParams {
   page?: number
   pageSize?: number
   status?: string
+  q?: string
 }
 
 function smsCacheKey(params: SmsCampaignListParams) {
-  return ['admin-sms-campaigns', String(params.page ?? 1), String(params.pageSize ?? 20), params.status ?? '']
+  return ['admin-sms-campaigns', String(params.page ?? 1), String(params.pageSize ?? 20), params.status ?? '', params.q ?? '']
 }
 
 // The cron (a different process) sends messages without telling this app, so the campaign views

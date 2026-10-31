@@ -71,14 +71,18 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
   const [sending, setSending] = useState(false)
   const [editTarget, setEditTarget] = useState<SmsMessage | null>(null)
   const [rescheduleTarget, setRescheduleTarget] = useState<SmsMessage | null>(null)
-  const [searchTerm, setSearchTerm] = useState('')
 
+  const currentSearch = searchParams.get('q') ?? ''
   const currentStatus = searchParams.get('status') ?? 'all'
   const currentPage = data.page
   const currentPageSize = data.pageSize
 
   function handleStatusChange(value: string) {
     updateParams({ status: value })
+  }
+
+  function handleSearch(value: string) {
+    updateParams({ q: value })
   }
 
   function handlePageChange(page: number) {
@@ -127,13 +131,6 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
       setSending(false)
     }
   }
-
-  const needle = searchTerm.trim().toLowerCase()
-  const filteredCampaigns = needle
-    ? data.campaigns.filter(
-        (c) => c.name.toLowerCase().includes(needle) || c.messages.some((m) => m.body.toLowerCase().includes(needle)),
-      )
-    : data.campaigns
 
   const iconButton =
     'p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]'
@@ -324,8 +321,8 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
 
       {/* Filters */}
       <FilterBar
-        searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
+        searchValue={currentSearch}
+        onSearchChange={handleSearch}
         searchPlaceholder="Search campaigns…"
         filters={[
           {
@@ -341,7 +338,7 @@ export function SmsClient({ data, sendHistory, deliveryBreakdown, nextSendId }: 
       {/* Table */}
       <DataTable
         columns={COLUMNS}
-        data={filteredCampaigns as unknown as SmsCampaign[]}
+        data={data.campaigns as unknown as SmsCampaign[]}
         emptyMessage={
           data.overallTotal === 0
             ? 'No campaigns yet. Create the first one with New Campaign.'
