@@ -59,7 +59,7 @@ export async function listArticles(
     prisma.article.findMany({
       where,
       include: {
-        category: { select: { name: true } },
+        category: { select: { name: true, nameBn: true } },
         author: { select: { fullName: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -212,14 +212,16 @@ export async function removeArticle(id: string, adminId: string) {
 
 // ── Category mutations ─────────────────────────────────────────────────────────
 
-export async function createCategory(name: string) {
+export async function createCategory(name: string, nameBn?: string | null) {
   const slug = slugify(name)
-  return prisma.articleCategory.create({ data: { name, slug } })
+  return prisma.articleCategory.create({ data: { name, nameBn: nameBn?.trim() || null, slug } })
 }
 
-export async function updateCategory(id: string, name: string) {
+export async function updateCategory(id: string, name: string, nameBn?: string | null) {
   const slug = slugify(name)
-  return prisma.articleCategory.update({ where: { id }, data: { name, slug } })
+  const data: { name: string; slug: string; nameBn?: string | null } = { name, slug }
+  if (nameBn !== undefined) data.nameBn = nameBn?.trim() || null
+  return prisma.articleCategory.update({ where: { id }, data })
 }
 
 export async function removeCategory(id: string) {
@@ -349,7 +351,7 @@ export async function listPublishedArticles(
         status: true,
         cyclePhases: true,
         publishedAt: true,
-        category: { select: { name: true } },
+        category: { select: { name: true, nameBn: true } },
         author: { select: { fullName: true } },
       },
       orderBy: { publishedAt: 'desc' },
@@ -388,7 +390,7 @@ export async function getPublishedArticleById(id: string) {
       bodyBn: true,
       cyclePhases: true,
       publishedAt: true,
-      category: { select: { name: true } },
+      category: { select: { name: true, nameBn: true } },
     },
   })
 }

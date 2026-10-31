@@ -34,6 +34,7 @@ type ArticleRow = {
 type CategoryOption = {
   id: string
   name: string
+  nameBn: string | null
   _count: { articles: number }
 }
 
@@ -114,6 +115,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
   // Category manager state
   const [showCategoryManager, setShowCategoryManager] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
+  const [newCategoryNameBn, setNewCategoryNameBn] = useState('')
   const [categoryToDelete, setCategoryToDelete] = useState<CategoryOption | null>(null)
   const [saving, setSaving] = useState(false)
   const [deletingCategory, setDeletingCategory] = useState(false)
@@ -123,6 +125,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
   // Inline category rename state
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
   const [editingCategoryName, setEditingCategoryName] = useState('')
+  const [editingCategoryNameBn, setEditingCategoryNameBn] = useState('')
   const [renamingSaving, setRenamingSaving] = useState(false)
   const [renameError, setRenameError] = useState('')
 
@@ -156,8 +159,9 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     setCategoryError('')
     setSaving(true)
     try {
-      await createCategory(name)
+      await createCategory(name, newCategoryNameBn.trim())
       setNewCategoryName('')
+      setNewCategoryNameBn('')
       router.refresh()
       categoryInputRef.current?.focus()
     } catch (err) {
@@ -182,12 +186,14 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
   function startEditCategory(cat: CategoryOption) {
     setEditingCategoryId(cat.id)
     setEditingCategoryName(cat.name)
+    setEditingCategoryNameBn(cat.nameBn ?? '')
     setRenameError('')
   }
 
   function cancelEditCategory() {
     setEditingCategoryId(null)
     setEditingCategoryName('')
+    setEditingCategoryNameBn('')
     setRenameError('')
   }
 
@@ -200,9 +206,10 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     setRenamingSaving(true)
     setRenameError('')
     try {
-      await updateCategory(id, name)
+      await updateCategory(id, name, editingCategoryNameBn.trim())
       setEditingCategoryId(null)
       setEditingCategoryName('')
+      setEditingCategoryNameBn('')
       router.refresh()
     } catch (err) {
       setRenameError(err instanceof Error ? err.message : 'Failed to rename category')
@@ -475,6 +482,21 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                     className="h-12"
                   />
                 </div>
+                <div className="flex-1">
+                  <Input
+                    id="new-category-name-bn"
+                    name="categoryNameBn"
+                    label="Bengali Name (optional)"
+                    placeholder="যেমন: পুষ্টি…"
+                    lang="bn"
+                    value={newCategoryNameBn}
+                    onChange={(e) => setNewCategoryNameBn(e.target.value)}
+                    autoComplete="off"
+                    spellCheck={false}
+                    disabled={saving}
+                    className="h-12"
+                  />
+                </div>
                 <Button
                   type="submit"
                   variant="primary"
@@ -505,15 +527,27 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                       <li key={cat.id} className="flex items-center justify-between gap-3 py-3">
                         <div className="min-w-0 flex-1">
                           {isEditing ? (
-                            <div className="flex flex-col gap-1">
+                            <div
+                              className="flex flex-col gap-1"
+                              onBlur={(e) => {
+                                // Commit only when focus leaves both inputs.
+                                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                                  commitRenameCategory(cat.id)
+                                }
+                              }}
+                            >
+                              <label htmlFor={`rename-category-${cat.id}`} className="sr-only">
+                                {`Rename category ${cat.name}`}
+                              </label>
                               <input
+                                id={`rename-category-${cat.id}`}
+                                name="categoryName"
                                 type="text"
                                 value={editingCategoryName}
                                 onChange={(e) => {
                                   setEditingCategoryName(e.target.value)
                                   if (renameError) setRenameError('')
                                 }}
-                                onBlur={() => commitRenameCategory(cat.id)}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') {
                                     e.preventDefault()
@@ -527,8 +561,32 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                                 autoFocus
                                 spellCheck={false}
                                 autoComplete="off"
-                                aria-label={`Rename category ${cat.name}`}
                                 className="w-full px-2 py-1 text-sm font-medium rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] focus-visible:outline-none disabled:opacity-60"
+                              />
+                              <label htmlFor={`rename-category-bn-${cat.id}`} className="sr-only">
+                                {`Bengali name for category ${cat.name}`}
+                              </label>
+                              <input
+                                id={`rename-category-bn-${cat.id}`}
+                                name="categoryNameBn"
+                                type="text"
+                                lang="bn"
+                                value={editingCategoryNameBn}
+                                onChange={(e) => setEditingCategoryNameBn(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault()
+                                    commitRenameCategory(cat.id)
+                                  } else if (e.key === 'Escape') {
+                                    e.stopPropagation()
+                                    cancelEditCategory()
+                                  }
+                                }}
+                                disabled={renamingSaving}
+                                spellCheck={false}
+                                autoComplete="off"
+                                placeholder="Bengali name (optional)…"
+                                className="w-full px-2 py-1 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-primary)] focus-visible:outline-none disabled:opacity-60"
                               />
                               {renameError && (
                                 <span className="text-xs text-[var(--color-danger)]" aria-live="polite">
@@ -541,6 +599,11 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                               <span className="text-sm font-medium text-[var(--color-text-primary)] truncate block">
                                 {cat.name}
                               </span>
+                              {cat.nameBn && (
+                                <span lang="bn" className="text-xs text-[var(--color-text-secondary)] truncate block">
+                                  {cat.nameBn}
+                                </span>
+                              )}
                               <span className="text-xs text-[var(--color-text-muted)]">
                                 {cat._count.articles} article{cat._count.articles !== 1 ? 's' : ''}
                               </span>

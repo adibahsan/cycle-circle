@@ -15,22 +15,22 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 
 | Area | Features | none | look-only | partial | full |
 |---|---|---|---|---|---|
-| Web: login and access | 9 | 0 | 0 | 2 | 7 |
+| Web: login and access | 9 | 0 | 0 | 1 | 8 |
 | Web: onboarding and profiles | 9 | 0 | 0 | 1 | 8 |
-| Web: logging | 9 | 0 | 0 | 4 | 5 |
-| Web: dashboard, calendar, predictions, insights | 12 | 0 | 0 | 1 | 11 |
+| Web: logging | 9 | 0 | 0 | 2 | 7 |
+| Web: dashboard, calendar, predictions, insights | 12 | 0 | 0 | 0 | 12 |
 | Web: content, feedback, settings | 8 | 0 | 0 | 0 | 8 |
 | Web: billing | 7 | 0 | 0 | 2 | 5 |
 | Web: landing and public pages | 4 | 0 | 0 | 0 | 4 |
 | Web: shell, phone and Bengali (cross-cutting) | 5 | 0 | 0 | 0 | 5 |
-| **Web total** | 63 | 0 | 0 | 10 | 53 |
-| Admin: access and read-only views | 5 | 0 | 0 | 1 | 4 |
-| Admin: user actions | 4 | 0 | 0 | 1 | 3 |
+| **Web total** | 63 | 0 | 0 | 6 | 57 |
+| Admin: access and read-only views | 5 | 0 | 0 | 0 | 5 |
+| Admin: user actions | 4 | 0 | 0 | 0 | 4 |
 | Admin: content | 2 | 0 | 0 | 0 | 2 |
 | Admin: analytics and engagement | 2 | 0 | 0 | 2 | 0 |
 | Admin: SMS | 2 | 0 | 0 | 0 | 2 |
-| Admin: feedback, emails, audit, logs, system | 6 | 0 | 0 | 1 | 5 |
-| **Admin total** | 21 | 0 | 0 | 5 | 16 |
+| Admin: feedback, emails, audit, logs, system | 6 | 0 | 0 | 0 | 6 |
+| **Admin total** | 21 | 0 | 0 | 2 | 19 |
 | Server-only (not counted) | 10 | 0 | 0 | 1 | 9 |
 
 Notes on the tally:
@@ -75,7 +75,7 @@ Notes on the tally:
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
 | W19 | Log a period; dashboard last-period card and calendar update after reload (prediction values not asserted; profile without a last-period date still shows the logged period: #154) | `/calendar`, `/dashboard`, `/api/tracking/period-logs` | `e2e/tests/web/period-logging.spec.ts` | partial | #122 |
-| W20 | Edit and delete a past period | `/calendar`, `/api/tracking/period-logs/[id]` | `e2e/tests/web/period-logging.spec.ts` (delete missing affordance: #136), `apps/web/e2e/tests/calendar-days.spec.ts` | partial | #122 |
+| W20 | Edit and delete a past period | `/calendar`, `/api/tracking/period-logs/[id]` | `e2e/tests/web/period-logging.spec.ts` (delete with inline confirm: #136), `apps/web/e2e/tests/calendar-days.spec.ts` | full | #122 |
 | W21 | Period date validation: end before start, future date | period log form, `/api/tracking/period-logs` | `e2e/tests/web/period-logging.spec.ts` (future date rejected with a visible alert and 400 `PERIOD_IN_FUTURE`: #139) | full | #122 |
 | W22 | Symptom logging across four categories (save, reload, still selected) | `/symptoms`, `/api/tracking/symptoms` | `e2e/tests/web/symptom-logging.spec.ts`, `apps/web/e2e/tests/symptoms-save.spec.ts`, `apps/web/e2e/tests/symptoms-look.spec.ts` | full | #122 |
 | W23 | Back-dated symptom logging with the date picker | `/symptoms` | `e2e/tests/web/symptom-logging.spec.ts` | full | #122 |

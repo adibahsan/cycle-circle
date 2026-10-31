@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { FlowIcon } from '@/components/ui/PhaseIcon'
 import { bangladeshToday } from '@vesta/shared/utils/dhaka-date'
-import { createPeriodLog, updatePeriodLog } from '@/app/actions/tracking-actions'
+import { createPeriodLog, updatePeriodLog, deletePeriodLog } from '@/app/actions/tracking-actions'
 import '@vesta/shared/utils/i18n'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -84,7 +84,8 @@ function PeriodLogModalBody({
   const [startDate, setStartDate] = useState(initialStart || (isEdit ? '' : todayStr))
   const [endDate, setEndDate] = useState(initialEnd || (isEdit ? '' : todayStr))
   const [flow, setFlow] = useState<FlowIntensity>(initialFlow)
-  const [error, setError] = useState<false | 'overlap' | 'future' | 'generic'>(false)
+  const [error, setError] = useState<false | 'overlap' | 'future' | 'generic' | 'delete'>(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const handleSave = () => {
@@ -127,6 +128,25 @@ function PeriodLogModalBody({
     })
   }
 
+  const handleDelete = () => {
+    if (!logId) return
+    setError(false)
+    startTransition(async () => {
+      try {
+        await deletePeriodLog(logId)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('vesta:profile-updated'))
+        }
+        onSaved()
+        onClose()
+      } catch (err) {
+        console.error('Failed to delete period log:', err)
+        setConfirmingDelete(false)
+        setError('delete')
+      }
+    })
+  }
+
   const title = isEdit ? t('dashboard.editPeriodLog') : t('dashboard.logPeriod')
 
   const header = (
@@ -149,7 +169,9 @@ function PeriodLogModalBody({
               ? t('dashboard.periodOverlap')
               : error === 'future'
                 ? t('dashboard.periodFuture')
-                : t('common.error')}
+                : error === 'delete'
+                  ? t('dashboard.deletePeriodFailed')
+                  : t('common.error')}
           </p>
         )}
       </div>
@@ -162,6 +184,44 @@ function PeriodLogModalBody({
       >
         {isPending ? t('common.loading') : isEdit ? t('dashboard.updateLog') : t('dashboard.savePeriod')}
       </Button>
+      {isEdit && (
+        <div className="mt-2" aria-live="polite">
+          {confirmingDelete ? (
+            <div role="alert" className="rounded-xl border p-3" style={{ borderColor: 'var(--color-border)' }}>
+              <p className="mb-2 text-sm text-[var(--color-text-primary)]">{t('dashboard.deletePeriodConfirm')}</p>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={handleDelete}
+                  disabled={isPending}
+                  className="!text-[var(--color-error)] focus-visible:ring-2 focus-visible:ring-[var(--color-error)]"
+                >
+                  {t('dashboard.deletePeriodConfirmButton')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  fullWidth
+                  onClick={() => setConfirmingDelete(false)}
+                  disabled={isPending}
+                >
+                  {t('dashboard.deletePeriodCancel')}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              fullWidth
+              onClick={() => setConfirmingDelete(true)}
+              disabled={isPending}
+              className="!text-[var(--color-error)]"
+            >
+              {t('dashboard.deletePeriodLog')}
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   )
 
