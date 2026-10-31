@@ -5,15 +5,17 @@ import { Card } from './Card';
 interface StatCardProps {
   title: string;
   value: string | number;
-  change?: { value: number; label: string };
+  /** `value` null means there is nothing to compare against (shown as a muted note). */
+  change?: { value: number | null; label: string };
   icon?: React.ReactNode;
   className?: string;
 }
 
 export function StatCard({ title, value, change, icon, className }: StatCardProps) {
   const titleId = useId();
-  const isPositive = change && change.value >= 0;
-  const isNegative = change && change.value < 0;
+  const hasChange = change && change.value !== null;
+  const isPositive = hasChange && change.value! >= 0;
+  const isNegative = hasChange && change.value! < 0;
 
   return (
     <Card className={clsx('flex flex-col gap-3', className)}>
@@ -32,7 +34,11 @@ export function StatCard({ title, value, change, icon, className }: StatCardProp
         {value}
       </p>
 
-      {change && (
+      {change && change.value === null && (
+        <div className="text-sm text-[var(--color-text-muted)]">No comparison {change.label}</div>
+      )}
+
+      {change && change.value !== null && (
         <div
           className={clsx('flex items-center gap-1 text-sm font-medium', {
             'text-[var(--color-success)]': isPositive,

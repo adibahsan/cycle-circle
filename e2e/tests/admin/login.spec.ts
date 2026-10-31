@@ -19,7 +19,7 @@ test.describe('Admin login', () => {
     await loginAsAdminViaUi(page, admin)
 
     await expect(page).toHaveURL(/\/$/)
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible()
   })
 
   test('wrong password shows a visible error and stays on login', async ({ page }) => {
@@ -115,7 +115,7 @@ test.describe('Admin login', () => {
     try {
       const { page } = admin
       await page.goto('/')
-      await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible()
 
       const openMenu = page.getByRole('button', { name: 'Open menu' })
       if (await openMenu.isVisible()) {

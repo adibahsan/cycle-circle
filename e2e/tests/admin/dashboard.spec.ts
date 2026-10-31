@@ -3,6 +3,7 @@ import { test, expect } from '../../support/fixtures'
 import { createLoggedInAdmin } from '../../support/admin'
 import { e2eDb } from '../../support/db'
 import { toDbPhone } from '../../support/users'
+import { openChartTable } from '../../support/admin-charts'
 import { bangladeshDayOf, bangladeshDayStart, serverNow } from '../../support/bangladesh-day'
 
 /**
@@ -100,7 +101,7 @@ async function inTodaySignupBucket(phones: string[]): Promise<number> {
   })
 }
 
-test.describe('Admin dashboard', () => {
+test.describe('Admin overview', () => {
   test('KPIs and the signup trend reflect users created in the run', async ({
     browser,
     newUser,
@@ -128,7 +129,7 @@ test.describe('Admin dashboard', () => {
       await ensureExactTotalUsersHeadroom()
 
       await page.goto('/')
-      await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible()
 
       // Snapshot UI before creates — refresh until cache drops abbreviated totals.
       let beforeTotal = -1
@@ -164,11 +165,11 @@ test.describe('Admin dashboard', () => {
         .toBeGreaterThanOrEqual(beforeTotal + 2)
 
       await expect(page.getByRole('heading', { name: 'New Signups' })).toBeVisible()
-      await expect(page.getByText('Daily new user registrations — last 30 days')).toBeVisible()
+      await expect(page.getByText('Every number is compared with the previous 30 days')).toBeVisible()
       // The chart's screen-reader table carries the per-day counts; today's row must hold the new users.
-      const todayRow = page
-        .getByRole('table', { name: 'New signups per day' })
-        .getByRole('row', { name: new RegExp(`^${bangladeshDayOf(await serverNow())}\\b`) })
+      const todayRow = (await openChartTable(page, 'New Signups')).getByRole('row', {
+        name: new RegExp(`^${bangladeshDayOf(await serverNow())}\\b`),
+      })
       await expect
         .poll(
           async () => {
@@ -186,7 +187,7 @@ test.describe('Admin dashboard', () => {
 })
 
 test.describe('Server render', () => {
-  test('dashboard hydrates when a user signed up between 18:00Z and 24:00Z', async ({
+  test('overview hydrates when a user signed up between 18:00Z and 24:00Z', async ({
     browser,
     newUser,
     days,
@@ -210,7 +211,7 @@ test.describe('Server render', () => {
       await admin.page.goto('/')
       await admin.page.getByRole('button', { name: 'Refresh data' }).click()
       await admin.page.reload()
-      await expect(admin.page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
+      await expect(admin.page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible()
       await admin.page.waitForLoadState('networkidle')
       expect(reactErrors).toEqual([])
     } finally {

@@ -17,6 +17,13 @@ export interface ChurnRange {
   to: string
 }
 
+/** What the churn functions accept: plain day strings, or the shared range's day window (`fromDay`/`toDay`). */
+export type ChurnRangeInput = ChurnRange | { fromDay: string; toDay: string }
+
+function toChurnRange(r: ChurnRangeInput): ChurnRange {
+  return 'fromDay' in r ? { from: r.fromDay, to: r.toDay } : r
+}
+
 /**
  * Record that a Pro user stopped being Pro. `at` defaults to the database clock; callers that
  * have `now` (ADR 0009) pass it.
@@ -40,7 +47,8 @@ export interface ChurnSummary {
  * Churn in a range of Bangladesh days: counts by reason, and the churn rate with admin revokes
  * left out. The range end is capped at today (`now`).
  */
-export async function getChurnSummary(range: ChurnRange, now: Date): Promise<ChurnSummary> {
+export async function getChurnSummary(input: ChurnRangeInput, now: Date): Promise<ChurnSummary> {
+  const range = toChurnRange(input)
   const today = bangladeshDayOf(now)
   const to = range.to > today ? today : range.to
   const byReason = Object.fromEntries(CHURN_REASONS.map((r) => [r, 0])) as Record<ChurnReasonValue, number>
@@ -90,7 +98,8 @@ export async function snapshotProCount(now: Date): Promise<{ day: string; proCou
 }
 
 /** Stored Pro counts for the range, oldest first. Days with no snapshot are absent. */
-export async function getProSnapshots(range: ChurnRange): Promise<{ day: string; proCount: number }[]> {
+export async function getProSnapshots(input: ChurnRangeInput): Promise<{ day: string; proCount: number }[]> {
+  const range = toChurnRange(input)
   const rows = await prisma.proSnapshot.findMany({
     where: { day: { gte: dayToStoredDate(range.from), lte: dayToStoredDate(range.to) } },
     orderBy: { day: 'asc' },

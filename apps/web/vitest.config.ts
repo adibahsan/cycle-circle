@@ -8,6 +8,7 @@ const SERIAL = [
   '__tests__/services/dashboard-freshness.test.ts',
   '__tests__/services/pro-snapshot.test.ts',
   '__tests__/services/admin-kpis-dashboard.test.ts',
+  '__tests__/services/overview-metrics.test.ts',
 ]
 
 export default defineConfig({
