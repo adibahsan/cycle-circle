@@ -7,7 +7,7 @@ import { demoNow, demoNowMs } from './demo-clock.ts'
 
 const DAY = 86_400_000
 /** Bangladesh day `n` days from now, stored as that day at 00:00 UTC. */
-const dayDate = (now: Date, n: number) => new Date(`${new Date(now.getTime() + 6 * 3_600_000 + n * DAY).toISOString().slice(0, 10)}T00:00:00.000Z`)
+const dayDateAhead = (now: Date, n: number) => new Date(`${new Date(now.getTime() + 6 * 3_600_000 + n * DAY).toISOString().slice(0, 10)}T00:00:00.000Z`)
 
 export const DEMO_EMAIL_IDS = {
   magicLink: 'hbmail-magic',
@@ -52,8 +52,8 @@ export async function seedDemoCampaign(db: PrismaClient): Promise<string> {
   ]
   await db.smsCampaignMessage.createMany({
     data: plan.map((p, i) => ({
-      id: `hbsms-msg-${i}`, campaignId: DEMO_CAMPAIGN_ID, day: dayDate(now, p.n), body: text[i]!, status: p.status,
-      sentAt: p.status === 'SENT' ? new Date(dayDate(now, p.n).getTime() + 8 * 3_600_000) : null,
+      id: `hbsms-msg-${i}`, campaignId: DEMO_CAMPAIGN_ID, day: dayDateAhead(now, p.n), body: text[i]!, status: p.status,
+      sentAt: p.status === 'SENT' ? new Date(dayDateAhead(now, p.n).getTime() + 8 * 3_600_000) : null,
       audienceSize: p.status === 'SENT' ? 21 : null, lastError: p.status === 'MISSED' ? 'Missed: not sent on its day.' : null,
     })),
     skipDuplicates: true,

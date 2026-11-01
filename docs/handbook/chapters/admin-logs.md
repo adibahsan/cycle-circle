@@ -27,7 +27,7 @@ Every line the servers write belongs to one of six **Log channels**: merchant, c
 
 1. Open **Logs**. With **Channel** on "All channels" the page mixes the three channels, newest first. The coloured label on each line says which channel it came from.
 2. To read one channel, pick it in **Channel** and press **Apply**.
-3. To find a customer-side event (a User logging in, a User's OTP), look at the merchant lines that match the User, or the translog lines for their plan changes. The customer, cron and error channels are only on the server.
+3. To find a User-side event (a User logging in, a User's OTP), look at the merchant lines that match the User, or the translog lines for their plan changes. The customer, cron and error channels are only on the server.
 
 ### Rules and limits
 

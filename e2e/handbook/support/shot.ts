@@ -55,8 +55,26 @@ export async function shot(page: Page, anchor: string, opts: ShotOptions = {}): 
   const file = path.join(SCREENSHOT_DIR, `${anchor}${opts.suffix ? `--${opts.suffix}` : ''}.png`)
   fs.mkdirSync(SCREENSHOT_DIR, { recursive: true })
   await page.evaluate(() => document.fonts.ready)
-  // Spring/slide animations (motion library) ignore `animations: 'disabled'`; let them settle.
-  await page.waitForTimeout(800)
+  // Streamed pages show a loading skeleton until their data lands; the network going quiet means it has.
+  await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => undefined)
+  // Spring/slide animations (motion library) ignore `animations: 'disabled'`: wait until the finite Web Animations
+  // have finished and the open dialog or sheet (if any) has held still for 12 frames. Promise/rAF based, bounded on
+  // the Node side. Under a paused fake clock (page.clock.install) neither progresses; the screenshot's own
+  // `animations: 'disabled'` then finishes the finite ones, so running out of time here is not an error.
+  await Promise.race([
+    page.evaluate(async () => {
+      await Promise.all(document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity).map((a) => a.finished.catch(() => undefined)))
+      const moving = () => JSON.stringify(document.querySelector('[role="dialog"]')?.getBoundingClientRect() ?? null)
+      let last = moving()
+      for (let still = 0; still < 12; ) {
+        await new Promise((r) => requestAnimationFrame(r))
+        const now = moving()
+        still = now === last ? still + 1 : 0
+        last = now
+      }
+    }),
+    new Promise((resolve) => setTimeout(resolve, 3_000)),
+  ])
   const options = { animations: 'disabled' as const, caret: 'hide' as const }
   const png = opts.of ? await opts.of.screenshot(options) : await page.screenshot({ ...options, fullPage: opts.fullPage ?? false })
   // Keep the committed file when the pixels are the same, so reruns leave no diff.
