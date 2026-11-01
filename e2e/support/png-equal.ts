@@ -3,6 +3,7 @@ import zlib from 'node:zlib'
 
 interface Decoded {
   header: string
+  channels: number
   pixels: Buffer
 }
 
@@ -54,15 +55,52 @@ function decode(png: Buffer): Decoded | null {
       out[y * stride + i] = (raw[src + i]! + add) & 255
     }
   }
-  return { header, pixels: out }
+  return { header, channels: bpp, pixels: out }
 }
 
-/** True when both PNGs decode to the same size and pixels. Undecodable input compares by bytes. */
+/** Per-pixel colour tolerance (YIQ distance, as Playwright's `threshold`) and share of pixels allowed to exceed it. */
+const THRESHOLD = 0.2
+const MAX_DIFF_RATIO = 0.002
+const MAX_YIQ_DELTA = 35215 * THRESHOLD * THRESHOLD // 35215 = largest possible YIQ delta
+
+function rgbOf(px: Buffer, o: number, ch: number): [number, number, number] {
+  const gray = ch <= 2
+  const r = px[o]!
+  const g = gray ? r : px[o + 1]!
+  const b = gray ? r : px[o + 2]!
+  const alpha = ch === 2 ? px[o + 1]! : ch === 4 ? px[o + 3]! : 255
+  const k = alpha / 255 // blend over white
+  return [255 + (r - 255) * k, 255 + (g - 255) * k, 255 + (b - 255) * k]
+}
+
+function pixelDiffers(a: Buffer, b: Buffer, o: number, ch: number): boolean {
+  let same = true
+  for (let i = 0; i < ch; i++) if (a[o + i] !== b[o + i]) same = false
+  if (same) return false
+  const [r1, g1, b1] = rgbOf(a, o, ch)
+  const [r2, g2, b2] = rgbOf(b, o, ch)
+  const y = (r1 - r2) * 0.29889531 + (g1 - g2) * 0.58662247 + (b1 - b2) * 0.11448223
+  const i = (r1 - r2) * 0.59597799 - (g1 - g2) * 0.2741761 - (b1 - b2) * 0.32180189
+  const q = (r1 - r2) * 0.21147017 - (g1 - g2) * 0.52261711 + (b1 - b2) * 0.31114694
+  return 0.5053 * y * y + 0.299 * i * i + 0.1957 * q * q > MAX_YIQ_DELTA
+}
+
+/**
+ * True when both PNGs have the same size and differ by no more than rendering noise: few pixels
+ * beyond the colour threshold. Undecodable input compares by bytes.
+ */
 export function pngPixelsEqual(a: Buffer, b: Buffer): boolean {
   try {
     const da = decode(a)
     const db = decode(b)
-    if (da && db) return da.header === db.header && da.pixels.equals(db.pixels)
+    if (da && db) {
+      if (da.header !== db.header) return false
+      const { channels, pixels } = da
+      const total = pixels.length / channels
+      let differing = 0
+      for (let o = 0; o < pixels.length; o += channels) if (pixelDiffers(pixels, db.pixels, o, channels)) differing++
+      return differing / total <= MAX_DIFF_RATIO
+    }
   } catch {
     // fall through to the byte comparison
   }
