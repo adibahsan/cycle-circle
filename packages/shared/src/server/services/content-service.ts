@@ -1,6 +1,13 @@
 import { AUDIT_ACTIONS } from './audit-actions'
 import sanitizeHtml from 'sanitize-html'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '../db'
+import {
+  ARTICLE_NO_CATEGORY,
+  ARTICLE_PHASES,
+  normalizeListOptions,
+  type ListArticlesOptions,
+} from '../../utils/article-list-params'
 import { articlePublishWarnings, isBlankBody } from '../../utils/article-warnings'
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
@@ -42,18 +49,29 @@ export function sanitizeArticleHtml(html: string): string {
 
 // ── Article queries ────────────────────────────────────────────────────────────
 
-export async function listArticles(
-  params: {
-    page?: number
-    pageSize?: number
-    status?: string
-    categoryId?: string
-  } = {},
-) {
-  const { page = 1, pageSize = 20, status, categoryId } = params
-  const where: Record<string, unknown> = {}
-  if (status && status !== 'all') where.status = status
-  if (categoryId && categoryId !== 'all') where.categoryId = categoryId
+export async function listArticles(options: ListArticlesOptions = {}) {
+  const { q, status, categoryId, phase, missingBangla, sort, page, pageSize } = normalizeListOptions(options)
+
+  const and: Prisma.ArticleWhereInput[] = []
+  if (q) {
+    // Prisma does not escape LIKE wildcards in `contains`; a typed % or _ must match literally.
+    const needle = q.replace(/[\\%_]/g, '\\$&')
+    and.push({
+      OR: [
+        { titleEn: { contains: needle, mode: 'insensitive' } },
+        { titleBn: { contains: needle, mode: 'insensitive' } },
+      ],
+    })
+  }
+  if (status) and.push({ status })
+  if (categoryId) and.push({ categoryId: categoryId === ARTICLE_NO_CATEGORY ? null : categoryId })
+  if (phase) and.push({ cyclePhases: { has: phase } })
+  // Blank bodies are stored as null (create/updateArticle normalise), so null covers them.
+  if (missingBangla) and.push({ OR: [{ titleBn: null }, { titleBn: '' }, { bodyBn: null }, { bodyBn: '' }] })
+  const where: Prisma.ArticleWhereInput = and.length ? { AND: and } : {}
+
+  const orderBy: Prisma.ArticleOrderByWithRelationInput[] =
+    sort === 'title' ? [{ titleEn: 'asc' }, { id: 'asc' }] : [{ createdAt: 'desc' }, { id: 'desc' }]
 
   const [articles, total] = await Promise.all([
     prisma.article.findMany({
@@ -62,7 +80,7 @@ export async function listArticles(
         category: { select: { name: true, nameBn: true } },
         author: { select: { fullName: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
@@ -107,6 +125,45 @@ function assertArticleStatus(status: string | undefined): void {
 
 export { articlePublishWarnings }
 
+/** An error whose message is safe to show an admin as-is. */
+export class ContentError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ContentError'
+  }
+}
+
+const GENERIC_ERROR = 'Something went wrong. Please try again.'
+
+/** Message an admin action should return for a thrown error (never leaks internals). */
+export function contentErrorMessage(err: unknown): string {
+  if (err instanceof ContentError) return err.message
+  const code = (err as { code?: unknown } | null)?.code
+  if (code === 'P2002') return 'That name is already in use.'
+  if (code === 'P2025') return 'That item no longer exists.'
+  return GENERIC_ERROR
+}
+
+async function assertArticleFields(
+  data: { titleEn?: string; bodyEn?: string; categoryId?: string | null; cyclePhases?: string[] },
+  mode: 'create' | 'update',
+): Promise<void> {
+  if ((mode === 'create' || data.titleEn !== undefined) && !data.titleEn?.trim()) {
+    throw new ContentError('English title is required.')
+  }
+  if ((mode === 'create' || data.bodyEn !== undefined) && isBlankBody(data.bodyEn)) {
+    throw new ContentError('English body is required.')
+  }
+  const bad = data.cyclePhases?.filter((p) => !(ARTICLE_PHASES as readonly string[]).includes(p))
+  if (bad?.length) {
+    throw new ContentError(`Invalid cycle phase "${bad[0]}". Expected one of ${ARTICLE_PHASES.join(', ')}.`)
+  }
+  if (data.categoryId) {
+    const found = await prisma.articleCategory.findUnique({ where: { id: data.categoryId }, select: { id: true } })
+    if (!found) throw new ContentError('That category no longer exists.')
+  }
+}
+
 export async function createArticle(
   authorId: string,
   data: {
@@ -121,6 +178,7 @@ export async function createArticle(
   now: Date,
 ) {
   assertArticleStatus(data.status)
+  await assertArticleFields(data, 'create')
   const slug = slugify(data.titleEn) + '-' + now.getTime().toString(36)
 
   const article = await prisma.article.create({
@@ -167,6 +225,7 @@ export async function updateArticle(
   now: Date,
 ) {
   assertArticleStatus(data.status)
+  await assertArticleFields(data, 'update')
   const updateData: Record<string, unknown> = { ...data }
 
   if (typeof data.bodyEn === 'string') updateData.bodyEn = sanitizeArticleHtml(data.bodyEn)
@@ -226,7 +285,7 @@ export async function updateCategory(id: string, name: string, nameBn?: string |
 
 export async function removeCategory(id: string) {
   const count = await prisma.article.count({ where: { categoryId: id } })
-  if (count > 0) throw new Error('Cannot delete category with articles')
+  if (count > 0) throw new ContentError('Cannot delete a category that still has articles.')
   await prisma.articleCategory.delete({ where: { id } })
   return { success: true }
 }

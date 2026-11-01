@@ -122,6 +122,10 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
           cyclePhases,
           status,
         })
+        if ('error' in result) {
+          setError(result.error)
+          return
+        }
         setIsDirty(false)
         if (!result.webCacheRefreshed) toast.error('Saved, but the web app cache did not refresh. Public pages may be stale for a few minutes.')
         router.push('/content')

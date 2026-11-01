@@ -8,10 +8,24 @@ import {
   createCategory as svcCreateCategory,
   updateCategory as svcUpdateCategory,
   removeCategory,
+  contentErrorMessage,
 } from '@vesta/shared/server/services'
 import { revalidateTag } from 'next/cache'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { revalidateWebTags } from '@/lib/revalidate-web'
+
+/** Every content action returns its result or `{ error }`; it never throws a validation/DB failure. */
+export type ActionError = { error: string }
+
+async function guarded<T>(fn: () => Promise<T>): Promise<T | ActionError> {
+  try {
+    return await fn()
+  } catch (err) {
+    const error = contentErrorMessage(err)
+    console.error('[content-actions]', err)
+    return { error }
+  }
+}
 
 function revalidateContentTags(articleId?: string) {
   revalidateTag(adminCacheTags.content, { expire: 0 })
@@ -32,11 +46,13 @@ export async function createArticle(data: {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  const article = await svcCreateArticle(admin.id, data, new Date())
+  return guarded(async () => {
+    const article = await svcCreateArticle(admin.id, data, new Date())
 
-  revalidateContentTags()
-  const webCacheRefreshed = await revalidateWebTags(['articles'])
-  return { article, webCacheRefreshed }
+    revalidateContentTags()
+    const webCacheRefreshed = await revalidateWebTags(['articles'])
+    return { article, webCacheRefreshed }
+  })
 }
 
 export async function updateArticle(
@@ -53,49 +69,59 @@ export async function updateArticle(
 ) {
   await requireAdminAuth()
 
-  const article = await svcUpdateArticle(id, data, new Date())
+  return guarded(async () => {
+    const article = await svcUpdateArticle(id, data, new Date())
 
-  revalidateContentTags(id)
-  const webCacheRefreshed = await revalidateWebTags(['articles'])
-  return { article, webCacheRefreshed }
+    revalidateContentTags(id)
+    const webCacheRefreshed = await revalidateWebTags(['articles'])
+    return { article, webCacheRefreshed }
+  })
 }
 
 export async function deleteArticle(id: string) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
-  await removeArticle(id, admin.id)
+  return guarded(async () => {
+    await removeArticle(id, admin.id)
 
-  revalidateContentTags(id)
-  await revalidateWebTags(['articles'])
-  return { success: true }
+    revalidateContentTags(id)
+    await revalidateWebTags(['articles'])
+    return { success: true as const }
+  })
 }
 
 export async function createCategory(name: string, nameBn?: string | null) {
   await requireAdminAuth()
 
-  const category = await svcCreateCategory(name, nameBn)
+  return guarded(async () => {
+    const category = await svcCreateCategory(name, nameBn)
 
-  revalidateContentTags()
-  return category
+    revalidateContentTags()
+    return category
+  })
 }
 
 export async function updateCategory(id: string, name: string, nameBn?: string | null) {
   await requireAdminAuth()
 
-  const category = await svcUpdateCategory(id, name, nameBn)
+  return guarded(async () => {
+    const category = await svcUpdateCategory(id, name, nameBn)
 
-  revalidateContentTags()
-  await revalidateWebTags(['articles'])
-  return category
+    revalidateContentTags()
+    await revalidateWebTags(['articles'])
+    return category
+  })
 }
 
 export async function deleteCategory(id: string) {
   await requireAdminAuth()
 
-  await removeCategory(id)
+  return guarded(async () => {
+    await removeCategory(id)
 
-  revalidateContentTags()
-  await revalidateWebTags(['articles'])
-  return { success: true }
+    revalidateContentTags()
+    await revalidateWebTags(['articles'])
+    return { success: true as const }
+  })
 }

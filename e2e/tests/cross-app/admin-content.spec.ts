@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import type { Locator, Page } from '@playwright/test'
 import { test, expect } from '../../support/fixtures'
 import { createLoggedInAdmin } from '../../support/admin'
-import { e2eDb, revalidateWebArticles } from '../../support/db'
+import { e2eDb, revalidateWebArticles, createArticle } from '../../support/db'
 
 const FIXTURE_PNG = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -212,6 +212,64 @@ async function installRawBodyRewrite(page: Page, placeholder: string, rawBodyEn:
 }
 
 test.describe('Admin content authoring (seen on web)', () => {
+  test('admin list search finds an article beyond page 1; filters and query survive reload (#213)', async ({
+    browser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    const runId = uniqueId()
+    const prefix = `E2E213 ${runId}`
+    const needle = `${prefix} needle`
+    const slugPrefix = `e2e213-${runId}`
+    // Needle first so the 21 newer rows push it off page 1 (page size 20).
+    await createArticle({
+      slug: `${slugPrefix}-needle`, titleEn: needle, bodyEn: '<p>x</p>',
+      status: 'DRAFT', cyclePhases: ['OVULATION'],
+    })
+    for (let i = 0; i < 21; i++) {
+      await createArticle({
+        slug: `${slugPrefix}-f${i}`, titleEn: `${prefix} filler ${i}`, titleBn: 'শিরোনাম',
+        bodyEn: '<p>x</p>', bodyBn: '<p>বাংলা</p>', status: 'PUBLISHED', cyclePhases: ['LUTEAL'],
+      })
+    }
+    const admin = await createLoggedInAdmin(browser, {
+      viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId,
+    })
+    try {
+      const page = admin.page
+      await page.goto('/content')
+      await expect(page.getByRole('button', { name: needle })).toBeHidden()
+
+      await page.getByRole('searchbox', { name: 'Search' }).fill(needle)
+      await expect(page.getByRole('button', { name: needle })).toBeVisible({ timeout: 10_000 })
+      await expect(page).toHaveURL(/[?&]q=/)
+
+      await page.reload()
+      await expect(page.getByRole('searchbox', { name: 'Search' })).toHaveValue(needle)
+      await expect(page.getByRole('button', { name: needle })).toBeVisible()
+
+      // Filters narrow the same search and also live in the URL.
+      await page.goto(`/content?q=${encodeURIComponent(prefix)}&status=PUBLISHED&phase=LUTEAL`)
+      await expect(page.getByRole('button', { name: `${prefix} filler 20` })).toBeVisible()
+      await expect(page.getByRole('button', { name: needle })).toBeHidden()
+
+      await page.goto(`/content?q=${encodeURIComponent(prefix)}&missingBangla=1`)
+      await expect(page.getByRole('button', { name: needle })).toBeVisible()
+      await expect(page.getByRole('button', { name: `${prefix} filler 20` })).toBeHidden()
+      await page.reload()
+      await expect(page.getByRole('button', { name: needle })).toBeVisible()
+      await expect(page).toHaveURL(/missingBangla=1/)
+    } finally {
+      await e2eDb().article.deleteMany({ where: { slug: { startsWith: slugPrefix } } })
+      await admin.context.close()
+    }
+  })
+
   test('category Bengali name is saved on create and inline edit (#156)', async ({
     browser,
     viewport,

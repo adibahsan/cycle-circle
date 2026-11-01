@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/Input'
 import { deleteArticle, createCategory, updateCategory, deleteCategory } from '@/app/actions/content-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
+import { useToast } from '@/components/ui/Toast'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
@@ -66,6 +67,16 @@ const PHASE_LABELS: Record<string, string> = {
   LUTEAL: 'Luteal',
 }
 
+const PHASE_OPTIONS = [
+  { value: 'all', label: 'All Phases' },
+  ...Object.entries(PHASE_LABELS).map(([value, label]) => ({ value, label })),
+]
+
+const BANGLA_OPTIONS = [
+  { value: 'all', label: 'Any' },
+  { value: '1', label: 'Missing Bangla' },
+]
+
 const PHASE_COLORS: Record<string, string> = {
   MENSTRUAL: 'bg-[color-mix(in_srgb,var(--color-menstrual)_22%,transparent)] text-[var(--color-text-primary)]',
   FOLLICULAR: 'bg-[color-mix(in_srgb,var(--color-follicular)_22%,transparent)] text-[var(--color-text-primary)]',
@@ -110,7 +121,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
   const { searchParams, updateParams } = useUrlParams({ clearOn: ['all'] })
   const [deleteTarget, setDeleteTarget] = useState<ArticleRow | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+  const toast = useToast()
 
   // Category manager state
   const [showCategoryManager, setShowCategoryManager] = useState(false)
@@ -131,12 +142,16 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
 
   const currentStatus = searchParams.get('status') ?? 'all'
   const currentCategoryId = searchParams.get('categoryId') ?? 'all'
+  const currentPhase = searchParams.get('phase') ?? 'all'
+  const currentMissingBangla = searchParams.get('missingBangla') === '1' ? '1' : 'all'
+  const currentQuery = searchParams.get('q') ?? ''
   const currentPage = data.page
   const currentPageSize = data.pageSize
 
 
   const categoryOptions = [
     { value: 'all', label: 'All Categories' },
+    { value: 'none', label: 'No category' },
     ...categories.map((c) => ({ value: c.id, label: `${c.name} (${c._count.articles})` })),
   ]
 
@@ -144,9 +159,16 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      await deleteArticle(deleteTarget.id)
+      const result = await deleteArticle(deleteTarget.id)
       setDeleteTarget(null)
+      if ('error' in result) {
+        toast.error(result.error)
+        return
+      }
       router.refresh()
+    } catch {
+      setDeleteTarget(null)
+      toast.error('Could not delete the article. Check your connection and try again.')
     } finally {
       setDeleting(false)
     }
@@ -159,7 +181,11 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     setCategoryError('')
     setSaving(true)
     try {
-      await createCategory(name, newCategoryNameBn.trim())
+      const result = await createCategory(name, newCategoryNameBn.trim())
+      if ('error' in result) {
+        setCategoryError(result.error)
+        return
+      }
       setNewCategoryName('')
       setNewCategoryNameBn('')
       router.refresh()
@@ -175,9 +201,16 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     if (!categoryToDelete) return
     setDeletingCategory(true)
     try {
-      await deleteCategory(categoryToDelete.id)
+      const result = await deleteCategory(categoryToDelete.id)
       setCategoryToDelete(null)
+      if ('error' in result) {
+        toast.error(result.error)
+        return
+      }
       router.refresh()
+    } catch {
+      setCategoryToDelete(null)
+      toast.error('Could not delete the category. Check your connection and try again.')
     } finally {
       setDeletingCategory(false)
     }
@@ -206,7 +239,11 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     setRenamingSaving(true)
     setRenameError('')
     try {
-      await updateCategory(id, name, editingCategoryNameBn.trim())
+      const result = await updateCategory(id, name, editingCategoryNameBn.trim())
+      if ('error' in result) {
+        setRenameError(result.error)
+        return
+      }
       setEditingCategoryId(null)
       setEditingCategoryName('')
       setEditingCategoryNameBn('')
@@ -217,13 +254,6 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
       setRenamingSaving(false)
     }
   }
-
-  const filteredArticles = searchTerm.trim()
-    ? data.articles.filter((a) =>
-        a.titleEn.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (a.titleBn ?? '').toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : data.articles
 
   const COLUMNS: Column<ArticleRow>[] = [
     {
@@ -379,8 +409,8 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
 
       {/* Filters */}
       <FilterBar
-        searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
+        searchValue={currentQuery}
+        onSearchChange={(q) => updateParams({ q })}
         searchPlaceholder="Search articles…"
         filters={[
           {
@@ -397,13 +427,27 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
             value: currentCategoryId,
             onChange: (v) => updateParams({ categoryId: v }),
           },
+          {
+            key: 'phase',
+            label: 'Phase',
+            options: PHASE_OPTIONS,
+            value: currentPhase,
+            onChange: (v) => updateParams({ phase: v }),
+          },
+          {
+            key: 'missingBangla',
+            label: 'Bangla',
+            options: BANGLA_OPTIONS,
+            value: currentMissingBangla,
+            onChange: (v) => updateParams({ missingBangla: v }),
+          },
         ]}
       />
 
       {/* Table */}
       <DataTable
         columns={COLUMNS}
-        data={filteredArticles as unknown as ArticleRow[]}
+        data={data.articles}
         emptyMessage="No articles match your filters."
         onRowClick={(row) => router.push(`/content/${row.id}`)}
         keyExtractor={(row) => row.id}
