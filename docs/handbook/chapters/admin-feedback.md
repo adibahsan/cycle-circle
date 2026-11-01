@@ -93,7 +93,7 @@ Click a row in the [Feedback inbox](#af-inbox), or open `/feedback/<id>`.
 |---|---|---|
 | A "not found" page | The id is wrong, or the User (and so the feedback) was permanently removed | Go back to the inbox |
 | "No message" as the text | The User sent only a category or rating | Nothing to fix |
-| No stars | The User gave no rating | Nothing to fix |
+| No rating | The User gave no rating | Nothing to fix |
 | No **Profile** block | The User had no profile selected, or it has been deleted | Nothing to fix |
 | The User link opens a deleted User | The account was deleted after sending | Restore it from the User page if needed ([Delete and restore](#us-delete-restore)) |
 

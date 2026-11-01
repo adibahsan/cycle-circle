@@ -48,7 +48,7 @@ export async function seedAnalyticsHistory(db: PrismaClient): Promise<void> {
       id: `hbac-pred-${p.id}`, profileId: p.id, tier: i % 3 === 0 ? ('ARIMA' as const) : ('AVERAGE' as const),
       nextPeriodStart: new Date(now.getTime() + (10 + i) * DAY), ovulationDay: new Date(now.getTime() - (2 - (i % 5)) * DAY),
       fertileStart: new Date(now.getTime() - (4 - (i % 5)) * DAY), fertileEnd: new Date(now.getTime() + (i % 5) * DAY),
-      confidence: i % 3 === 0 ? 78 + (i % 4) : 56 + (i % 5) * 2,
+      confidence: i % 3 === 0 ? 0.78 + (i % 4) / 100 : 0.56 + (i % 5) * 0.02,
     })),
     skipDuplicates: true,
   })

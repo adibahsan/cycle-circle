@@ -1,6 +1,6 @@
 # Analytics
 
-How to read the **Analytics** page, and the four business numbers behind it that live on the **Overview** page: churn, estimated revenue and the daily Pro count. All of them use Bangladesh days (UTC+6) and the terms in the [Glossary](#gl-terms): **Active user**, **Churn** and **Estimated revenue**.
+How to read the **Analytics** page, and the three business numbers behind it that live on the **Overview** page: churn, estimated revenue and the daily Pro count. All of them use Bangladesh days (UTC+6) and the terms in the [Glossary](#gl-terms): **Active user**, **Churn** and **Estimated revenue**.
 
 Two things are easy to miss:
 
@@ -120,16 +120,18 @@ Three panels on the Analytics page about the period predictions Users see ([Pred
 
 ### How to use it
 
-1. Pick the range ([Date ranges](#an-ranges)). It changes the first panel and the trend, not the MAE bars.
+1. Pick the range ([Date ranges](#an-ranges)). It changes the Cycle Length Distribution, the Prediction Accuracy by Tier panel and the trend, not the MAE bars.
 2. In **Prediction Accuracy by Tier** switch **Metric** between **Confidence** and **Predictions**, and **Bar** or **Pie**.
 3. Read "Lower MAE = more accurate predictions" under the MAE bars. Compare the AVERAGE bar with the ARIMA bar.
 
 ### Rules and limits
 
-- **"Accuracy by Tier" is not measured accuracy.** "Avg Confidence" is the confidence number the prediction engine stored with each prediction (for example 40 to 75 for the AVERAGE tier, up to 92 for ARIMA), shown without a % sign. It says how sure the engine was, not whether it was right. A prediction is one per profile, so "Predictions" counts profiles whose prediction was updated in the range. Profiles of deleted Users are left out.
+- **"Accuracy by Tier" is not measured accuracy.** "Avg Confidence" is the confidence number the prediction engine stored with each prediction. It is a number from 0.50 to 0.95 (50% plus 5% per logged cycle, capped at 95%, as in [Prediction tiers and confidence](#pr-tiers)) and shown as that number with two decimals, for example 0.76, with no % sign. It says how sure the engine was, not whether it was right. A prediction is one per profile, so "Predictions" counts profiles whose prediction was updated in the range. Profiles of deleted Users are left out.
 - **MAE is measured by a backtest.** For each profile the system walks through its logged cycles, predicts each next period start from the cycles before it, and compares with the real start. The tier is the one the engine would have used at that point (6 or more earlier cycles: ARIMA, fewer: AVERAGE).
 - The MAE bars come from the **latest nightly snapshot** and use all period-log history; the range does not apply to them. The nightly maintenance job writes a snapshot at 02:30 UTC (08:30 Bangladesh time) and labels it with the **UTC** date, so a day label can be one calendar day behind Bangladesh in the early morning ([Nightly maintenance](#sj-nightly)).
-- Only the **AVERAGE** and **ARIMA** tiers have MAE. Another tier that appears in the first panel has no MAE bar.
+- **Cycle Length Distribution** is the first panel on the page. It counts how many cycles of each length (in days) were logged in the range: the gap between a profile's period start and its previous start, counted when the later start falls in the range. Gaps shorter than 15 or longer than 90 days are left out, as are profiles of deleted Users. It measures logged gaps, not the cycle length Users typed in. With too few periods it reads "Not enough logged periods to measure cycles yet."
+- The MAE backtest uses the period logs of all profiles, **including deleted Users'**, while Prediction Accuracy by Tier leaves deleted Users out, so the two can rest on slightly different profiles.
+- Only the **AVERAGE** and **ARIMA** tiers have MAE. Another tier that appears in the Prediction Accuracy by Tier panel has no MAE bar.
 - A tier with no sample shows "no data".
 
 ### What can go wrong
@@ -164,7 +166,7 @@ What the Pro Users would have paid, calculated from the Pro price. It is the Ove
 ### How to use it
 
 1. Open the **Overview** and choose the period.
-2. Read **Estimated Daily Revenue** (the average per day) and the smaller line "N in total".
+2. Read **Estimated Daily Revenue** (the average per day) and the smaller line "<amount> in total" (the total taka for the period).
 3. Open "View data as table" under the chart for each day, or press the chart's **CSV**.
 
 ### Rules and limits
@@ -234,7 +236,7 @@ The **Pro Subscribers** card on the **Overview**.
 
 ### What it is
 
-Two panels about the symptoms Users logged: **Symptoms by Category** (Physical, Mood, Discharge, Lifestyle) and **Symptom Logs by Cycle Phase**, with the five most common symptoms under each phase. The data is anonymous totals; no User or profile is named.
+Two panels about the symptoms Users logged: **Symptoms by Category** (shown as PHYSICAL, MOOD, DISCHARGE and LIFESTYLE) and **Symptom Logs by Cycle Phase**, with the five most common symptoms under each phase. The data is anonymous totals; no User or profile is named.
 
 ### Where to find it
 
@@ -251,7 +253,7 @@ Two panels about the symptoms Users logged: **Symptoms by Category** (Physical, 
 ### Rules and limits
 
 - Only symptom logs **dated inside the range** count. The "all good" entry is excluded.
-- A log's phase comes from the profile's own period history: the most recent period start on or before the log, then the profile's cycle length and period length decide Menstrual, Follicular, Ovulation or Luteal. A log with no earlier period start belongs to no phase and is left out.
+- A log's phase comes from the profile's own period history: the most recent period start on or before the log, then the profile's cycle length and period length decide the phase, shown as MENSTRUAL, FOLLICULAR, OVULATION or LUTEAL. A log with no earlier period start belongs to no phase and is left out.
 - The list shows at most 5 symptoms per phase, ties broken alphabetically. A phase without logs reads "No logs".
 - Profiles of deleted Users are left out. Symptom names are shown as stored, with underscores replaced by spaces.
 - The phase is worked out afterwards from the cycle settings, so it can differ from the phase the User saw on the day.
