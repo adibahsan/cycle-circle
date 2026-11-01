@@ -27,7 +27,7 @@ test.describe('SMS', () => {
     await page.goto('/sms')
     await expect(page.getByText('Monsoon hygiene, 5 days')).toBeVisible()
     await page.getByPlaceholder('Search campaigns…').evaluate((el) => el.scrollIntoView({ block: 'start' }))
-    await shot(page, 'as-campaign-sms', { fullPage: true })
+    await shot(page, 'as-campaign-sms')
   })
 
   test('send time and delivery reports', async ({ page }) => {

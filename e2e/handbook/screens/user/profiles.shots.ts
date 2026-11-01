@@ -33,6 +33,8 @@ test.describe('Profiles', () => {
       // Open Profiles from the header chip, as a User does: the Dashboard has set the active profile by then.
       await page.goto('/dashboard')
       await expect(page.getByText('Hello, Rina')).toBeVisible()
+      // The Dashboard sets the active profile in an effect after it renders; wait for it to be stored.
+      await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('vesta-store') ?? '{}').state?.activeProfileId ?? '')).not.toBe('')
       await page.getByRole('link', { name: /^Profiles — Rina/ }).filter({ visible: true }).first().click()
       await expect(page.getByRole('heading', { name: 'My Profiles' })).toBeVisible()
       await expect(page.getByText('Active', { exact: true })).toBeVisible()
