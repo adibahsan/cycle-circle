@@ -56,7 +56,9 @@ Needs the local Compose stack (Postgres :5431, Mailpit :8025; `pnpm docker:dev`)
 ```bash
 pnpm handbook:capture                                   # build web + admin, reset the slot DB + seed, capture every chapter
 E2E_SKIP_BUILD=1 pnpm handbook:capture                  # reuse the last build
-E2E_SKIP_BUILD=1 pnpm handbook:capture -- --project=handbook-phone getting-started   # one chapter file
+E2E_SKIP_BUILD=1 pnpm handbook:capture getting-started  # one chapter file (`-- getting-started` works too)
 ```
+
+A full run captures the Admin screens first, then resets and reseeds the database (anchored on today's Bangladesh day) and captures the User screens. A screenshot is only rewritten when it really differs (small anti-aliasing noise is ignored), so a rerun with no UI change leaves most files untouched. About 15 shots still change on every run because they show genuinely run-specific content: log timestamps and request ids (`as-otp`, `sj-nightly`), generated chart data (`us-list--charts`, `su-filter`) and dates relative to today (`lc-calendar`, `st-plan-badge--*`). Commit those only when the section they illustrate changed.
 
 The capture project is separate from the E2E suite: `e2e/playwright.handbook.config.ts` loads only `e2e/handbook/screens/**/*.shots.ts`, and the E2E config never loads that folder. It uses the same fake BDApps, seeded personas and login helpers, and refuses any page that is not this slot's local web or admin app. Add screens for a chapter in `e2e/handbook/screens/user/<chapter>.shots.ts` (phone) or `screens/admin/<chapter>.shots.ts` (desktop), calling `shot(page, '<anchor>', { suffix })`.
