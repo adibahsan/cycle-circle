@@ -31,14 +31,14 @@ On a phone: **More > Profiles**, or tap the profile name next to the logo at the
 ### Rules and limits
 
 - Cards are in the order the profiles were created, oldest first.
-- The **Active** badge and the hidden bin on the active card appear only once the app has loaded the User's active profile in this visit, which happens on the Dashboard or Settings. A User who opens `/profiles` straight from a bookmark or after a refresh sees no **Active** badge and a bin on every card, including the one she is really using. Opening Profiles from the header name (after the Dashboard has loaded) shows it correctly. Deleting the profile that is really active this way is possible; the next screen simply falls back to the oldest profile.
+- The **Active** badge and the hidden bin on the active card depend on the active profile the browser remembers. The browser keeps it between visits, so a returning User sees the badge even after a refresh. A User on a new browser, or after clearing site data, sees no **Active** badge and a bin on every card, including the one she is really using, until the Dashboard or Settings has loaded her profile. Deleting the profile that is really active this way is possible; the next screen simply falls back to the oldest profile.
 - The page needs a logged-in User. A logged-out visitor is sent to the login page.
 
 ### What can go wrong
 
 | The User sees | Cause | Fix |
 |---|---|---|
-| No **Active** badge on any card | Page opened directly (refresh or bookmark) before the Dashboard loaded | Tap **Dashboard**, then open Profiles again from the name at the top |
+| No **Active** badge on any card | First visit in a new browser (or site data cleared) and the Dashboard has not loaded yet | Tap **Dashboard**, then open Profiles again from the name at the top |
 | The profile name at the top is not the one she expected | The active profile is the one in the "vesta_active_profile" cookie, or the oldest profile when that cookie is missing or points to a deleted profile | Switch to the right profile ([Switch the active profile](#pf-switch)) |
 | A full-screen lock instead of the page | Email trial ended and no phone is verified | See [Trial lock](#pa-trial-lock) |
 
@@ -162,11 +162,11 @@ Removes a profile and everything logged under it. It cannot be undone.
 
 ### Rules and limits
 
-- Deleting removes the profile's period logs, symptom logs, predictions, alert settings and email history. There is no recycle bin and no Admin tool to bring a deleted profile back.
+- Deleting removes the profile's period logs, symptom logs, predictions, alert settings. Email history stays, with its link to the profile cleared. There is no recycle bin and no Admin tool to bring a deleted profile back.
 - Feedback the User already sent stays; only its link to the profile is cleared.
 - The last remaining profile cannot be deleted.
 - After a delete the "slots remaining" count goes up by one.
-- The older SRS says deletion removes period logs, symptom logs and predictions; the code also removes the profile's alert settings and email history.
+- The older SRS says deletion removes period logs, symptom logs and predictions; the code also removes the profile's alert settings. Email history is kept, with its link to the profile cleared.
 
 ### What can go wrong
 
