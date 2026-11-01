@@ -106,7 +106,7 @@ export function TiptapEditor({
       attributes: {
         ...(lang ? { lang } : {}),
         ...(ariaLabel ? { role: 'textbox', 'aria-multiline': 'true', 'aria-label': ariaLabel } : {}),
-        class: 'prose prose-sm max-w-none focus:outline-none text-[var(--color-text-primary)]',
+        class: 'article-body max-w-none focus:outline-none',
       },
     },
   })

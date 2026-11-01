@@ -1,6 +1,7 @@
 @import "tailwindcss";
 /* Layer classes (Z_CLASS) are literal strings in the shared package; Tailwind must scan them. */
 @source "../../../../packages/shared/src/utils/popup-core.ts";
+@import "../../../../packages/shared/src/styles/article-typography.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
