@@ -24,7 +24,7 @@ The pink card at the top. It greets the User ("Hello, <profile name>", "Here is 
 | Fertile window | "Fertile window in 3 days" / "Fertile window open" / "Fertile window closed"; the line under it says "Opens <date>", "Until <date>" or "For this cycle"; "No fertile window yet" when there is no prediction | Where today sits against the predicted fertile window ([Fertile window](#pr-fertile-window)) |
 | Next period | "Next period in 18 days" / "Period due today" / "Period 2 days late"; under it "Expected <date>", or "Log it when it starts" when late | Days until the predicted next period start; "Next period not predicted yet" when there is no prediction |
 
-Two more cards belong to the hero area. **Your cycle journey** shows the four phases as steps with their day ranges (for a 28-day cycle and a 5-day period: Menstrual days 1-5, Follicular days 6-9, Ovulation days 10-15, Luteal days 16-28) and marks "You are here". A phase that a short cycle or long period squeezes out to zero days is left out. **Cycle progress** shows a ring with "Day N" and a caption ("18 days to your next period", or "Period expected" once the date has passed), and under it the "Smarter predictions" meter ([Prediction tiers and confidence](#pr-tiers)).
+Two more cards belong to the hero area. **Your cycle journey** shows the four phases as steps, each showing its range and length under the phase name, such as "Days 1–5 · 5 days" (for a 28-day cycle and a 5-day period: Menstrual days 1-5, Follicular days 6-9, Ovulation days 10-15, Luteal days 16-28) and marks "You are here". A phase that a short cycle or long period squeezes out to zero days is left out. **Cycle progress** shows a ring with the cycle day as a large number above the word "Day" and a caption ("18 days to your next period", or "Period expected" once the date has passed), and under it the "Smarter predictions" meter ([Prediction tiers and confidence](#pr-tiers)).
 
 ### Where to find it
 
@@ -65,7 +65,7 @@ Two more cards belong to the hero area. **Your cycle journey** shows the four ph
 
 ### What it is
 
-Two small cards: **Last period** (start date, "Lasted 5 days", "Medium flow") and **Predicted windows** ("Fertile window" with a date range, and "Ovulation day"). Both show real data only; a card is left out when its data is missing, and the pair is hidden in First-run and Menopause modes.
+Two small cards: **Last period** (start date, then "Lasted 5 days · Medium flow" on one line) and **Predicted windows** ("Fertile window" with a date range, and "Ovulation day"). Both show real data only; a card is left out when its data is missing, and the pair is hidden in First-run and Menopause modes.
 
 ### Where to find it
 
@@ -289,7 +289,7 @@ What a profile sees when it has **no period logged and no last-period date**. Th
 
 ### What it is
 
-The Dashboard for a profile whose goal is **perimenopause**. The hero is green: "Your cycle at a glance, without predictions." with one fact, "47 days since your last period" and "Started <date>" (or "No period logged yet" / "Log one to start counting."). No cycle day, fertile window, predictions, journey, progress ring or cycle dates. The check-in strip, "Your symptom pattern", the nudge and the toolkit remain.
+The Dashboard for a profile whose goal is **perimenopause**. The hero is green: the title "Hello, <name>" with the subtitle "Your cycle at a glance, without predictions." and one fact, "47 days since your last period" and "Started <date>" (or "No period logged yet" / "Log one to start counting."). No cycle day, fertile window, predictions, journey, progress ring or cycle dates. The check-in strip, "Your symptom pattern", the nudge and the toolkit remain.
 
 ### Where to find it
 
