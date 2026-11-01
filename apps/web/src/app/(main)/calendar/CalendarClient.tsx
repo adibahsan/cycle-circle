@@ -591,6 +591,7 @@ export function CalendarClient({ profiles, activeProfileId, month, today: todayD
         >
           <MonthGrid
             month={currentMonth}
+            today={today}
             onMonthChange={goToMonth}
             selected={selectedDate}
             onSelect={handleDayClick}

@@ -29,6 +29,7 @@ export default async function SymptomsPage({
       profiles={profiles}
       activeProfileId={profileId}
       date={date}
+      today={today}
       symptomLogs={symptomLogs}
       goal={activeProfile?.goal ?? null}
     />
