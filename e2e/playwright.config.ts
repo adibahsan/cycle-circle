@@ -6,7 +6,7 @@
  * - `E2E_SUITE=desktop` — every project whose name does not end with `-phone` and is not
  *   in the full-only set (PR job). New `*-desktop` / serial projects (e.g. #132 cron) are
  *   included automatically.
- * - `E2E_SUITE=full` — all projects including `*-phone` and `web-bengali` (nightly / `e2e-full`).
+ * - `E2E_SUITE=full` — all projects including `*-phone` and `web-bengali` (manual workflow_dispatch run).
  * - `CI_PROJECTS=a,b` — explicit project name list (overrides the suite).
  * - `CI_PROJECTS=desktop|full|all` — same as `E2E_SUITE`.
  */
@@ -47,7 +47,7 @@ function bengaliProject(): Project {
   }
 }
 
-/** Projects that run only on nightly / `e2e-full` (not the PR desktop job). */
+/** Projects that run only in the full suite (manual run; not the deploy desktop job). */
 const FULL_ONLY = new Set(['web-bengali'])
 
 function parallelProjects(): Project[] {

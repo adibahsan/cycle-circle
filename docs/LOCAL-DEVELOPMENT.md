@@ -144,6 +144,17 @@ Server logs are written as dated files per channel under `apps/web/logs/<channel
 
 Run `just health` after the web app is running to probe API health routes.
 
+### Checks before a PR
+
+GitHub Actions run **only when deploying** (a push to `production`, see `docs/ops/03-deployment.md` §5). PRs into `main` run nothing in CI, so run the same checks locally before opening or merging one. Needs Postgres on 5431.
+
+```bash
+pnpm typecheck && pnpm lint && pnpm docs:check && pnpm db:drift
+pnpm --filter @vesta/shared test && pnpm --filter @vesta/web backend:test
+pnpm test:tz        # same suites under Asia/Dhaka and America/New_York
+pnpm e2e            # Playwright harness (e2e/README.md); run one at a time
+```
+
 ### Tests use their own database
 
 `pnpm --filter @vesta/web backend:test` never runs against `vesta_dev`. A vitest `globalSetup` (`apps/web/__tests__/helpers/global-setup.ts`) switches `DATABASE_URL` to `vesta_test` on the same server, creates it if missing, and runs `prisma migrate deploy` on it before any test. Nothing to set up by hand, and migrations never touch your dev data. Override with `TEST_DATABASE_URL` (allowed names: `vesta_test`, `vesta_vitest`, `vesta_e2e[_n]`; anything else, `vesta_dev` included, throws). CI uses its own `vesta_ci` database as configured.
