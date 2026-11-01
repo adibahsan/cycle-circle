@@ -26,7 +26,7 @@ describe('shared article typography', () => {
 
   it.each([
     ['apps/admin/src/components/TiptapEditor.tsx'],
-    ['apps/web/src/app/(main)/content/ContentClient.tsx'],
+    ['apps/web/src/app/(main)/content/[id]/ArticleReaderClient.tsx'],
   ])('%s renders the article body with .article-body', (file) => {
     expect(read(file)).toMatch(/\barticle-body\b/)
   })

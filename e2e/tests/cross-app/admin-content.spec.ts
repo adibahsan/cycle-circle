@@ -51,8 +51,8 @@ async function switchWebLanguage(page: Page) {
 async function expectWebContentListSettled(page: Page) {
   await expect(page.getByRole('heading', { name: 'Health Articles' })).toBeVisible()
   const empty = page.getByText('No articles yet')
-  // Article cards are unnamed buttons that contain an h3 title (no listbox role).
-  const anyCard = page.getByRole('button').filter({ has: page.getByRole('heading', { level: 3 }) }).first()
+  // Article cards are links to /content/<id> that contain an h3 title.
+  const anyCard = page.getByRole('link').filter({ has: page.getByRole('heading', { level: 3 }) }).first()
   await expect(empty.or(anyCard)).toBeVisible({ timeout: 15_000 })
 }
 
@@ -65,7 +65,7 @@ async function expectWebContentListSettled(page: Page) {
 async function expectPublishedOnWeb(page: Page, path: string, title: string) {
   await page.goto(path)
   await expectWebContentListSettled(page)
-  const card = page.getByRole('button', { name: title })
+  const card = page.getByRole('link', { name: title })
   await expect(async () => {
     if (!(await card.isVisible())) {
       await revalidateWebArticles()
@@ -132,8 +132,8 @@ async function assertReaderSanitized(reader: Locator, opts: {
   await expect(reader.getByText(safeMarker)).toBeVisible()
 
   // Body HTML only — article chrome (phase chips) legitimately uses inline style=.
-  /* eslint-disable playwright/no-raw-locators -- sanitizer check inspects the raw rendered DOM (script/style/on* attrs, .prose body) that has no role or name */
-  const body = reader.locator('.prose')
+  /* eslint-disable playwright/no-raw-locators -- sanitizer check inspects the raw rendered DOM (script/style/on* attrs, .article-body) that has no role or name */
+  const body = reader.locator('.article-body')
   await expect(body).toBeVisible()
   await expect(body.locator('script')).toHaveCount(0)
   await expect(body.locator('iframe')).toHaveCount(0)
@@ -321,7 +321,7 @@ test.describe('Admin content authoring (seen on web)', () => {
       // ── Draft must not appear on web (same phase URL we use after publish) ─
       await web.page.goto('/content?phase=FOLLICULAR')
       await expectWebContentListSettled(web.page)
-      await expect(web.page.getByRole('button', { name: titleEn })).toHaveCount(0)
+      await expect(web.page.getByRole('link', { name: titleEn })).toHaveCount(0)
       await expect(web.page.getByText(titleEn)).toHaveCount(0)
 
       // ── Publish the same article ───────────────────────────────────────────
@@ -342,17 +342,19 @@ test.describe('Admin content authoring (seen on web)', () => {
       await web.page.getByRole('button', { name: 'Menstrual' }).click()
       await expect(web.page).toHaveURL(/phase=MENSTRUAL/)
       await expectWebContentListSettled(web.page)
-      await expect(web.page.getByRole('button', { name: titleEn })).toHaveCount(0)
+      await expect(web.page.getByRole('link', { name: titleEn })).toHaveCount(0)
 
       await web.page.getByRole('button', { name: 'Ovulation' }).click()
       await expect(web.page).toHaveURL(/phase=OVULATION/)
       await expectWebContentListSettled(web.page)
-      await expect(web.page.getByRole('button', { name: titleEn })).toHaveCount(0)
+      await expect(web.page.getByRole('link', { name: titleEn })).toHaveCount(0)
 
       await web.page.getByRole('button', { name: 'Follicular' }).click()
       await expect(web.page).toHaveURL(/phase=FOLLICULAR/)
       await expectWebContentListSettled(web.page)
-      await web.page.getByRole('button', { name: titleEn }).click()
+      await web.page.getByRole('link', { name: titleEn }).click()
+      // Each article has its own URL: /content/<article id>.
+      await expect(web.page).toHaveURL(/\/content\/[a-z0-9]+$/)
       await expect(web.page.getByRole('heading', { name: titleEn })).toBeVisible()
       await expect(web.page.getByText(bodyEnMarker)).toBeVisible({ timeout: 15_000 })
 
@@ -447,7 +449,7 @@ test.describe('Admin content authoring (seen on web)', () => {
       expect(editHtml).not.toMatch(/javascript:/i)
 
       await expectPublishedOnWeb(web.page, '/content?phase=LUTEAL', titleEn)
-      await web.page.getByRole('button', { name: titleEn }).click()
+      await web.page.getByRole('link', { name: titleEn }).click()
 
       const reader = web.page.getByRole('article', { name: titleEn })
       await expect(reader).toBeVisible({ timeout: 15_000 })
@@ -533,7 +535,7 @@ test.describe('Admin content authoring (seen on web)', () => {
       expect(stored).toContain(uploadSrc!)
 
       await expectPublishedOnWeb(web.page, '/content?phase=OVULATION', titleEn)
-      await web.page.getByRole('button', { name: titleEn }).click()
+      await web.page.getByRole('link', { name: titleEn }).click()
 
       const reader = web.page.getByRole('article', { name: titleEn })
       await expect(reader).toBeVisible({ timeout: 15_000 })

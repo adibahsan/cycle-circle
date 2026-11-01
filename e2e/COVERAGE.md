@@ -105,7 +105,7 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W40 | Learn: filter articles by phase, open the reader, English and Bengali | `/content` | `e2e/tests/web/content.spec.ts` | full | #124 |
+| W40 | Learn: filter articles by phase, open the reader on its own URL, English and Bengali; unknown or draft id is 404 | `/content`, `/content/[id]` | `e2e/tests/web/content.spec.ts` | full | #124 |
 | W41 | Draft article never shown to users | `/content` | `e2e/tests/web/content.spec.ts`, `e2e/tests/cross-app/admin-content.spec.ts` | full | #124, #128 |
 | W42 | Feedback: submit and see it in history | `/feedback` | `e2e/tests/web/feedback.spec.ts` | full | #124 |
 | W43 | Notification preferences and reminder opt-out (cron skips the user) | `/settings` | `e2e/tests/web/settings.spec.ts` | full | #124 (cron side: #132) |
