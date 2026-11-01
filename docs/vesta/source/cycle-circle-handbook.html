@@ -18546,57 +18546,1948 @@ channels</a>, <a href="#sj-sub-check">Daily subscription check</a>, <a href="#as
 </ul>
 <h2 data-number="3.5" id="troubleshooting"><span class="header-section-number">3.5</span> Troubleshooting</h2>
 <h3 data-number="3.5.1" id="ts-index"><span class="header-section-number">3.5.1</span> Symptom index</h3>
-<blockquote>
-<p>Placeholder: not written yet (ticket #250).</p>
-</blockquote>
+<h4 class="unnumbered" id="ts-index--what-it-is">What it is</h4>
+<p>A way in for support staff. Start from what the User or the Admin
+reports, find the symptom in one of the five groups below, and follow
+the link to the section that explains it. Every section of this handbook
+ends with a “What can go wrong” table with the exact message, the cause
+and the fix; this chapter does not repeat those tables. It groups them
+by symptom and gives the first step.</p>
+<h4 class="unnumbered" id="ts-index--where-to-find-it">Where to find
+it</h4>
+<p>This chapter has no screen of its own. The five groups are the
+sections that follow:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Group</th>
+<th>Use it when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#ts-login">Login and access</a></td>
+<td>A User cannot log in or is locked out, or an OTP or sign-in link
+does not work</td>
+</tr>
+<tr>
+<td><a href="#ts-billing">Billing and subscription</a></td>
+<td>The plan is wrong, a User is charged after unsubscribing, or a
+payment did not give Pro</td>
+</tr>
+<tr>
+<td><a href="#ts-notifications">Emails and SMS</a></td>
+<td>A reminder, report, sign-in email or campaign SMS did not
+arrive</td>
+</tr>
+<tr>
+<td><a href="#ts-data">Missing or wrong data</a></td>
+<td>A date, prediction, chart, streak, article or setting looks
+wrong</td>
+</tr>
+<tr>
+<td><a href="#ts-admin">Admin panel problems</a></td>
+<td>An Admin cannot sign in, a page shows an error, or a button does
+nothing</td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="ts-index--how-to-use-it">How to use it</h4>
+<ol type="1">
+<li>Ask for the exact words on the screen. Most messages are quoted in
+the tables, and the quote tells you the section.</li>
+<li>Find the symptom in the “Most common questions” table below. If it
+is not there, open the group above that fits and read down the first
+column.</li>
+<li>Open the linked “What can go wrong” table. It has the cause and the
+fix for each message.</li>
+<li>If the table sends you to a tool, use the one in “Tools for finding
+the cause”.</li>
+<li>If nothing explains it, write down the User’s phone or email, the
+time in Bangladesh time, and the message, and give it to the server
+owner.</li>
+</ol>
+<h4 class="unnumbered" id="ts-index--most-common-questions">Most common
+questions</h4>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>The reader says</th>
+<th>Go to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>“The OTP never arrived”</td>
+<td><a href="#ts-login--otp-never-arrives">OTP never arrives</a></td>
+</tr>
+<tr>
+<td>“It says my code is wrong or expired”</td>
+<td><a href="#ts-login">Login and access</a>, rows on codes</td>
+</tr>
+<tr>
+<td>“I am locked out”</td>
+<td><a href="#ts-login--locked-out">Locked out</a></td>
+</tr>
+<tr>
+<td>“My trial ended and I cannot do anything”</td>
+<td><a href="#ts-login--locked-out">Locked out</a> and <a href="#pa-trial-lock--what-can-go-wrong">Trial lock</a></td>
+</tr>
+<tr>
+<td>“I was charged after I unsubscribed”</td>
+<td><a href="#ts-billing--charged-after-unsubscribing">Charged after
+unsubscribing</a></td>
+</tr>
+<tr>
+<td>“I paid but I am still Free”</td>
+<td><a href="#ts-billing">Billing and subscription</a>, first row</td>
+</tr>
+<tr>
+<td>“I did not get my reminder email”</td>
+<td><a href="#ts-notifications">Emails and SMS</a>, reminder rows</td>
+</tr>
+<tr>
+<td>“The campaign SMS did not go out”</td>
+<td><a href="#ts-notifications">Emails and SMS</a>, campaign rows</td>
+</tr>
+<tr>
+<td>“My predicted date is wrong”</td>
+<td><a href="#ts-data">Missing or wrong data</a>, predictions rows</td>
+</tr>
+<tr>
+<td>“The number on the Overview is different from another page”</td>
+<td><a href="#ts-admin">Admin panel problems</a>, numbers rows</td>
+</tr>
+<tr>
+<td>“The Admin panel says Unauthorized or Not an admin”</td>
+<td><a href="#ts-admin">Admin panel problems</a></td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="ts-index--tools-for-finding-the-cause">Tools
+for finding the cause</h4>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Where</th>
+<th>What it tells you</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>User detail and Plan history</td>
+<td>Admin, <a href="#us-detail">User detail</a> and <a href="#us-history">Plan history</a></td>
+<td>The plan, the status, who changed it and why</td>
+</tr>
+<tr>
+<td>Logs</td>
+<td>Admin, <a href="#lg-channels">Log channels</a> and <a href="#lg-viewer">Logs viewer</a></td>
+<td>What Cycle Circle sent to BDApps, what BDApps answered, plan
+changes. Search the Text box for a phone number or masked id, or filter
+by request ID or User ID</td>
+</tr>
+<tr>
+<td>Email log</td>
+<td>Admin, <a href="#em-log">Email log</a></td>
+<td>Whether an email was sent, failed, bounced or is still pending</td>
+</tr>
+<tr>
+<td>Audit log</td>
+<td>Admin, <a href="#au-search">Audit log search</a></td>
+<td>Which Admin did what, and when</td>
+</tr>
+<tr>
+<td>Run history</td>
+<td>Admin, <a href="#sy-runs">Run history</a></td>
+<td>Whether the daily subscription check ran, failed or was skipped</td>
+</tr>
+<tr>
+<td>Subscriptions list</td>
+<td>Admin, <a href="#su-list">Subscriptions list</a></td>
+<td>Warns when the daily check has not run</td>
+</tr>
+<tr>
+<td>Server log files</td>
+<td>Server owner only</td>
+<td>The customer, cron and error channels, which the Admin Logs page
+does not show</td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="ts-index--reading-the-server-log-files">Reading the server log
+files</h4>
+<p>The Admin Logs page shows three of the six channels (merchant,
+webhook and translog). For the other three (customer, cron, error), or
+when the Admin app itself is down, the server owner reads the dated
+files. The commands are in <code>docs/ops/08-logging.md</code> (<a href="#rl-ops">Ops runbooks</a>); in short, each channel is a folder
+under <code>/var/log/vesta/app/</code> with one file per Bangladesh day.
+The files are not masked: they contain phone numbers and one-time
+passwords, so do not paste them into chats or tickets.</p>
+<h4 class="unnumbered" id="ts-index--rules-and-limits">Rules and
+limits</h4>
+<ul>
+<li>Times in logs and tables are Bangladesh time unless the table says
+otherwise. A day is a Bangladesh day (<a href="#gl-terms">Glossary</a>).</li>
+<li>When a screen’s own text disagrees with what the code does, this
+handbook says what the code does. Two examples that matter for support:
+the phone code is valid for 5 minutes although the screen says 10, and a
+sign-in link is valid for 1 hour although the screen and the email say
+15 minutes.</li>
+<li>App OTPs are written to the server logs on purpose, so support can
+read a User’s code; the Admin Logs page masks them (<a href="#lg-masking">OTP masking</a>). Treat any log extract as
+sensitive.</li>
+</ul>
+<h4 class="unnumbered" id="ts-index--what-can-go-wrong">What can go
+wrong</h4>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>The reader sees</th>
+<th>Cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A link in this chapter goes to a section that says
+“Placeholder”</td>
+<td>The section is not written yet</td>
+<td>Tell the team; the section anchors do not change</td>
+</tr>
+<tr>
+<td>The symptom is in no group</td>
+<td>It is not in any “What can go wrong” table yet</td>
+<td>Use the nearest group, then add the symptom to the right
+chapter</td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="ts-index--related">Related</h4>
+<ul>
+<li><a href="#ts-login">Login and access</a>, <a href="#ts-billing">Billing and subscription</a>, <a href="#ts-notifications">Emails and SMS</a>, <a href="#ts-data">Missing
+or wrong data</a>, <a href="#ts-admin">Admin panel problems</a></li>
+<li><a href="#rl-ops">Ops runbooks</a>, <a href="#gl-terms">Glossary</a></li>
+</ul>
 <h3 data-number="3.5.2" id="ts-login"><span class="header-section-number">3.5.2</span> Login and access</h3>
-<blockquote>
-<p>Placeholder: not written yet (ticket #250).</p>
-</blockquote>
+<h4 class="unnumbered" id="ts-login--what-it-is">What it is</h4>
+<p>Symptoms of a User who cannot log in, cannot get a code or a link, or
+is stopped by a lock or a block. Phone login uses a BDApps OTP, or an
+App OTP for a number that is already a Subscriber (<a href="#gs-phone-login">Phone login</a>). Email login uses a one-time
+sign-in link (<a href="#gs-email-login">Email login</a>). Admin sign-in
+problems are in <a href="#ts-admin">Admin panel problems</a>.</p>
+<h4 class="unnumbered" id="ts-login--where-to-find-it">Where to find
+it</h4>
+<p>This section has no screen of its own. The fixes are in the linked
+sections.</p>
+<h4 class="unnumbered" id="ts-login--otp-never-arrives">OTP never
+arrives</h4>
+<ol type="1">
+<li>Ask the User to wait for the full “Resend in 60s” countdown and
+resend once. More requests do not help: the limits are 3 requests per
+minute for a phone number and 10 per hour for a connection (<a href="#gs-otp-resend">Resend wait and OTP errors</a>).</li>
+<li>Look up the number in the Admin Logs, merchant channel (<a href="#lg-viewer">Logs viewer</a>). A line for the request shows what
+BDApps answered.</li>
+<li>If BDApps answered with an error or did not answer, see “BDApps
+health” below.</li>
+<li>If the number is already a Subscriber, the code is an App OTP sent
+by SMS to the stored masked id (<a href="#as-otp">OTP messages</a>). It
+can be read in the logs.</li>
+<li>If the operator is not supported, the User must log in by email (<a href="#gs-email-login">Email login</a>).</li>
+</ol>
+<h4 class="unnumbered" id="ts-login--locked-out">Locked out</h4>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>The reader sees</th>
+<th>Likely cause and first step</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A full-screen “Your 24-hour trial has ended”</td>
+<td>The email trial is over (24 hours from the first magic-link login).
+The User adds a phone and verifies it to become Pro (<a href="#pa-trial-lock">Trial lock</a>)</td>
+</tr>
+<tr>
+<td>The login page again after a correct code</td>
+<td>The account is Suspended or Deleted. An Admin reactivates it, or
+restores it within 30 days (<a href="#pa-admin-overrides">Admin
+overrides</a>)</td>
+</tr>
+<tr>
+<td>“Too many wrong codes. Request a new code.”</td>
+<td>5 wrong tries on one code. Resend the code</td>
+</tr>
+<tr>
+<td>“Too many attempts. Try again in a few minutes.”</td>
+<td>Rate limit. Wait; the App OTP daily cap is 5 per number and resets
+24 hours after the first code</td>
+</tr>
+<tr>
+<td>“This number is already registered to another account.”</td>
+<td>The number belongs to another User. Use another number or log in to
+that account</td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="ts-login--bdapps-health">BDApps health</h4>
+<p>There is no BDApps status page in the Admin panel. To check whether
+BDApps is the problem:</p>
+<ol type="1">
+<li>Open Admin <strong>Logs</strong>, channel merchant, and search the
+User’s number or a recent request (<a href="#lg-viewer">Logs
+viewer</a>). Each line holds BDApps’ status code. Many errors in a row,
+or lines with no answer, mean BDApps or the connection to it.</li>
+<li>Open <strong>System &gt; Run history</strong> (<a href="#sy-runs">Run history</a>): a daily subscription check that failed
+or shows “BDApps did not answer (timeout)” points to the same cause (<a href="#sy-run-detail">Run detail</a>).</li>
+<li>Read the code in the table below. The table comes from
+<code>docs/ops/09-bdapps-subscriptions.md</code>, section 6 (<a href="#rl-ops">Ops runbooks</a>).</li>
+</ol>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>BDApps code</th>
+<th>Meaning</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>E1303</td>
+<td>The calling server is not on BDApps’ allowed list</td>
+<td>Server owner; BDApps support</td>
+</tr>
+<tr>
+<td>E1312</td>
+<td>A delivery report was asked for and the SMS plan does not allow it;
+nothing is sent</td>
+<td>Turn off <a href="#sy-delivery-reports">SMS delivery reports</a>, or
+ask BDApps to enable them</td>
+</tr>
+<tr>
+<td>E1313</td>
+<td>Wrong app id or password</td>
+<td>Server owner checks the settings</td>
+</tr>
+<tr>
+<td>E1324</td>
+<td>Subscription over HTTP is disabled for the app</td>
+<td>BDApps support</td>
+</tr>
+<tr>
+<td>E1325</td>
+<td>Subscriber address in the wrong format</td>
+<td>Server owner; developers</td>
+</tr>
+<tr>
+<td>E1351</td>
+<td>The number is already subscribed, so no BDApps OTP is sent</td>
+<td>Expected: login falls back to an App OTP</td>
+</tr>
+<tr>
+<td>E1854</td>
+<td>The OTP was not found or has expired</td>
+<td>The User asks for a new code</td>
+</tr>
+<tr>
+<td>E1951</td>
+<td>Invalid address, or not subscribed</td>
+<td>For a masked id, BDApps is saying the number is unregistered</td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="ts-login--email-sign-in">Email sign-in</h4>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>The reader sees</th>
+<th>Likely cause and first step</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No email arrives</td>
+<td>Check spam and the address, then search the address in the <a href="#em-log">Email log</a>. “Failed”, “Bounced” or “Complained”
+explains it</td>
+</tr>
+<tr>
+<td>“This sign-in link has expired.”</td>
+<td>A link lasts 1 hour (the screen says 15 minutes)</td>
+</tr>
+<tr>
+<td>“This sign-in link has already been used.”</td>
+<td>A link works once. Request a new one and open it directly</td>
+</tr>
+<tr>
+<td>“Too many magic link requests. Try again later.”</td>
+<td>3 requests per hour per address. Use the latest email</td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="ts-login--other-login-symptoms">Other login
+symptoms</h4>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>The reader sees</th>
+<th>Likely cause and first step</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The app opens in the wrong language</td>
+<td>The language is a cookie on that phone and browser (<a href="#nl-language-persists">Language persists</a>)</td>
+</tr>
+<tr>
+<td>No app tour after the first login</td>
+<td>The tour opens only on the Dashboard, once (<a href="#gs-tour">Tour</a>)</td>
+</tr>
+<tr>
+<td>Settings opens the login screen</td>
+<td>The session ended; log in again (<a href="#st-overview">Settings
+overview</a>)</td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="ts-login--symptom-table">Symptom table</h4>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>The reader sees</th>
+<th>Likely cause and first step</th>
+<th>Full list</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>“Failed to send OTP. Please try again.”</td>
+<td>Often BDApps is down or slow. See “BDApps health”</td>
+<td><a href="#gs-phone-login--what-can-go-wrong">details</a>, <a href="#as-otp--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“We can’t send a code to this number’s mobile operator yet.”</td>
+<td>Unsupported operator. Log in by email</td>
+<td><a href="#gs-phone-login--what-can-go-wrong">details</a>, <a href="#sb-upgrade--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“This number is already subscribed, but we could not send it a
+code.”</td>
+<td>Two variants: log in with email, or unsubscribe the number on BDApps
+and log in again</td>
+<td><a href="#gs-phone-login--what-can-go-wrong">details</a>, <a href="#pa-pro--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“Invalid or expired code. Please try again.”</td>
+<td>The code is valid 5 minutes. Resend</td>
+<td><a href="#gs-phone-login--what-can-go-wrong">details</a>, <a href="#gs-otp-resend--what-can-go-wrong">details</a>, <a href="#as-otp--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Email trial: phone code messages</td>
+<td>Same limits as phone login</td>
+<td><a href="#gs-email-trial--what-can-go-wrong">details</a>, <a href="#st-phone--what-can-go-wrong">details</a>, <a href="#pa-keep-account--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Trial lock, again after logging in</td>
+<td>No phone verified yet</td>
+<td><a href="#pa-trial-lock--what-can-go-wrong">details</a>, <a href="#ap-trial-lock--what-can-go-wrong">details</a>, <a href="#pa-email-trial--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Cannot finish the welcome or onboarding steps (“Please select a goal
+to continue”, “Name is required”, a date that is not accepted)</td>
+<td>Onboarding has no skip; fields have limits</td>
+<td><a href="#gs-welcome--what-can-go-wrong">details</a>, <a href="#gs-onboarding--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Still logged in after tapping Log out, or the back button returns to
+Settings</td>
+<td>Logout rules</td>
+<td><a href="#st-logout--what-can-go-wrong">details</a>, <a href="#st-overview--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Back at the login page; blocked after a correct code</td>
+<td>Suspended or Deleted</td>
+<td><a href="#pa-admin-overrides--what-can-go-wrong">details</a>, <a href="#us-suspend--what-can-go-wrong">details</a>, <a href="#us-delete-restore--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>The app tour did not open</td>
+<td>Rules of the tour</td>
+<td><a href="#gs-tour--what-can-go-wrong">details</a>, <a href="#gs-tour-replay--what-can-go-wrong">details</a>, <a href="#ap-tour--what-can-go-wrong">details</a>, <a href="#st-replay-tour--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Pop-up the User did not expect</td>
+<td>Auto-prompt rules</td>
+<td><a href="#ap-rule--what-can-go-wrong">details</a></td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="ts-login--related">Related</h4>
+<ul>
+<li><a href="#gs-phone-login">Phone login</a>, <a href="#gs-email-login">Email login</a>, <a href="#as-otp">SMS: OTP
+messages</a></li>
+<li>Admin side: <a href="#us-detail">User detail</a>, <a href="#us-suspend">Suspend and reactivate</a></li>
+<li><a href="#ts-billing">Billing and subscription</a></li>
+</ul>
 <h3 data-number="3.5.3" id="ts-billing"><span class="header-section-number">3.5.3</span> Billing and subscription</h3>
-<blockquote>
-<p>Placeholder: not written yet (ticket #250).</p>
-</blockquote>
+<h4 class="unnumbered" id="ts-billing--what-it-is">What it is</h4>
+<p>Symptoms about the plan (Free, Pro, Trial, Expired) and about money.
+BDApps does the charging; Cycle Circle only learns the result, through
+the BDApps webhook and the daily subscription check (<a href="#bb-subscribe">BDApps billing events</a>). The Pro price shown to
+Users is the one an Admin set, not one read from BDApps (ADR 0011).</p>
+<h4 class="unnumbered" id="ts-billing--where-to-find-it">Where to find
+it</h4>
+<p>This section has no screen of its own.</p>
+<h4 class="unnumbered" id="ts-billing--charged-after-unsubscribing">Charged after
+unsubscribing</h4>
+<ol type="1">
+<li>Open the User (<a href="#us-detail">User detail</a>) and read the
+Plan history tab (<a href="#us-history">Plan history</a>). It shows when
+and why the plan changed, and a “failed” BDApps unsubscribe.</li>
+<li>Search the number in the Admin Logs, merchant channel, for the
+unsubscribe call and BDApps’ answer (<a href="#lg-viewer">Logs
+viewer</a>).</li>
+<li>If the unsubscribe failed or never happened, the number must be
+unsubscribed on BDApps by hand. Revoke, Suspend and Delete try to
+unsubscribe, and show a red toast when it fails (<a href="#us-pro-override">Pro override</a>).</li>
+<li>A Subscriber who unsubscribes on BDApps is moved to Free by the
+webhook, or at the next daily check (<a href="#bb-lapse">Lapse</a>).</li>
+<li>Remember the opposite case: a granted Pro User is never charged, and
+an Admin override wins until BDApps reports a new subscription (<a href="#pa-admin-overrides">Admin overrides</a>).</li>
+</ol>
+<h4 class="unnumbered" id="ts-billing--symptom-table">Symptom table</h4>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>The reader sees</th>
+<th>Likely cause and first step</th>
+<th>Full list</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>“I paid but I am Free” / “Go Pro” after subscribing</td>
+<td>Webhook or check has not caught up. Check the webhook and merchant
+logs, then run the check (<a href="#sy-manual-sub-check">Run the
+subscription check manually</a>) or ask the User to log in again</td>
+<td><a href="#bb-lapse--what-can-go-wrong">details</a>, <a href="#sb-status--what-can-go-wrong">details</a>, <a href="#pa-at-a-glance--what-can-go-wrong">details</a>, <a href="#st-plan-badge--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Pro User missing from the Subscriptions list</td>
+<td>Run the check, then look at User detail</td>
+<td><a href="#bb-subscribe--what-can-go-wrong">details</a>, <a href="#su-list--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Pro shown after unsubscribing on BDApps</td>
+<td>Wait for the daily check or use Run now</td>
+<td><a href="#bb-lapse--what-can-go-wrong">details</a>, <a href="#sj-sub-check--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“Couldn’t unsubscribe. Try again in a minute.”</td>
+<td>Retry; if it keeps failing, unsubscribe on BDApps by hand</td>
+<td><a href="#bb-unsubscribe--what-can-go-wrong">details</a>, <a href="#sb-unsubscribe--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Red toast “…the BDApps unsubscribe failed… The user may still be
+charged.”</td>
+<td>The plan changed here but BDApps did not unsubscribe. Ask BDApps to
+unsubscribe the number</td>
+<td><a href="#us-pro-override--what-can-go-wrong">details</a>, <a href="#us-set-status--what-can-go-wrong">details</a>, <a href="#us-suspend--what-can-go-wrong">details</a>, <a href="#us-delete-restore--what-can-go-wrong">details</a>, <a href="#su-list--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“Your Pro access was granted by our team, so it can’t be cancelled
+here.”</td>
+<td>An Admin granted Pro. An Admin sets Free</td>
+<td><a href="#sb-unsubscribe--what-can-go-wrong">details</a>, <a href="#pa-admin-overrides--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“Your subscription has expired. Renew to keep Pro.” / Expired
+badge</td>
+<td>The Lapsed plan; renewing is by phone login or Upgrade to Pro</td>
+<td><a href="#pa-lapsed--what-can-go-wrong">details</a>, <a href="#sb-status--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“Cycle Circle Free” although they pay</td>
+<td>Webhook not received or the number is not linked to this
+account</td>
+<td><a href="#pa-at-a-glance--what-can-go-wrong">details</a>, <a href="#bb-webhooks--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Revoked User is Pro again after some days</td>
+<td>Expected when BDApps reports a new subscription; use Suspend to keep
+someone out</td>
+<td><a href="#us-pro-override--what-can-go-wrong">details</a>, <a href="#pa-admin-overrides--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>The price differs from what is charged</td>
+<td>An Admin sets the price; it must match BDApps</td>
+<td><a href="#sb-price--what-can-go-wrong">details</a>, <a href="#sy-pro-price--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Daily check history shows “Failed”, “Errors” or “Skipped”</td>
+<td>Open the run; a skipped run means the job is switched off</td>
+<td><a href="#sj-sub-check--what-can-go-wrong">details</a>, <a href="#sy-runs--what-can-go-wrong">details</a>, <a href="#sy-jobs--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>No “subscription.notify” lines at all</td>
+<td>The webhook is not arriving or not accepted (server owner checks the
+allowed addresses)</td>
+<td><a href="#bb-webhooks--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Estimated revenue or churn “unavailable”</td>
+<td>No daily Pro counts stored for the period</td>
+<td><a href="#an-revenue--what-can-go-wrong">details</a>, <a href="#an-churn--what-can-go-wrong">details</a>, <a href="#an-pro-count--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Upgrading: “This number is already registered to another
+account.”</td>
+<td>The number belongs to another User</td>
+<td><a href="#sb-upgrade--what-can-go-wrong">details</a>, <a href="#pa-trial-lock--what-can-go-wrong">details</a>, <a href="#pa-keep-account--what-can-go-wrong">details</a></td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="ts-billing--related">Related</h4>
+<ul>
+<li><a href="#pa-at-a-glance">Plans and access</a>, <a href="#sb-status">Subscription</a>, <a href="#bb-subscribe">BDApps
+billing events</a></li>
+<li><a href="#sj-sub-check">Daily subscription check</a>, <a href="#sy-runs">Run history</a></li>
+<li><a href="#ts-login">Login and access</a></li>
+</ul>
 <h3 data-number="3.5.4" id="ts-notifications"><span class="header-section-number">3.5.4</span> Emails and SMS</h3>
-<blockquote>
-<p>Placeholder: not written yet (ticket #250).</p>
-</blockquote>
+<h4 class="unnumbered" id="ts-notifications--what-it-is">What it is</h4>
+<p>Symptoms of a message that did not arrive, arrived twice, or arrived
+at the wrong time. Emails (sign-in links, verification codes, reminders,
+reports) go through the email service and are listed in the Admin Email
+log. SMS comes in two kinds: login codes, and the daily campaign
+message. Reminders and campaign SMS are sent by scheduled jobs that run
+from the server’s crontab (<a href="#sj-overview">Jobs at a
+glance</a>).</p>
+<h4 class="unnumbered" id="ts-notifications--where-to-find-it">Where to
+find it</h4>
+<p>This section has no screen of its own.</p>
+<h4 class="unnumbered" id="ts-notifications--reminder-email-did-not-arrive">Reminder email did
+not arrive</h4>
+<ol type="1">
+<li>Search the User’s email in the <a href="#em-log">Email log</a>. A
+row with status “Sent” means the email service accepted it; “Pending”
+delivery can be refreshed on the <a href="#em-detail">Email
+detail</a>.</li>
+<li>No row at all: check the User has an email, that the reminder is
+switched on in <strong>Settings &gt; Notifications</strong>, that the
+profile has predictions, and that the job ran (<a href="#sj-daily-reminders">Daily reminder emails</a>, <a href="#sy-jobs">Job on/off switches</a>).</li>
+<li>“Bounced” or “Complained”: the address cannot receive mail. Ask the
+User for another one.</li>
+<li>No reminders for anyone: the daily schedule is off, or the server’s
+crontab is not calling the job (<a href="#sj-overview">Jobs at a
+glance</a>).</li>
+</ol>
+<h4 class="unnumbered" id="ts-notifications--campaign-sms-did-not-go-out">Campaign SMS did not
+go out</h4>
+<ol type="1">
+<li>Open the campaign (<a href="#sm-messages">Campaign messages</a>) and
+read the status of the day: Planned, Sending, Sent, Failed, Missed,
+Cancelled.</li>
+<li>“Missed” or still “Planned” after the day arrived: the dispatch job
+did not run, or ran after the day ended (<a href="#sj-sms-dispatch">SMS
+dispatch</a>, <a href="#sy-sms-time">SMS send time</a>).</li>
+<li>“Failed to send”: read the error, fix the cause, then resend on a
+free day (<a href="#sm-resend">Resend failed messages</a>).</li>
+<li>A message arrives later than the set send time: normal, the job runs
+every 15 minutes (<a href="#as-send-time">SMS send time</a>).</li>
+</ol>
+<h4 class="unnumbered" id="ts-notifications--symptom-table">Symptom
+table</h4>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>The reader sees</th>
+<th>Likely cause and first step</th>
+<th>Full list</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No email arrives (sign-in link or code)</td>
+<td>Spam, wrong address, or a failed or bounced send in the Email
+log</td>
+<td><a href="#ec-magic-link--what-can-go-wrong">details</a>, <a href="#ec-verification-code--what-can-go-wrong">details</a>, <a href="#em-log--what-can-go-wrong">details</a>, <a href="#gs-email-login--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Email status Failed, Bounced, Complained or Pending</td>
+<td>Open the row; refresh a Pending one</td>
+<td><a href="#ec-overview--what-can-go-wrong">details</a>, <a href="#em-log--what-can-go-wrong">details</a>, <a href="#em-detail--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“I log symptoms every day and still get the logging reminder”</td>
+<td>The reminder follows the last period log. Switch Logging Reminders
+off</td>
+<td><a href="#ec-logging-reminder--what-can-go-wrong">details</a>, <a href="#sj-daily-reminders--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“My subject says 0 days”</td>
+<td>Expected for the period alert on the day</td>
+<td><a href="#ec-period-alert--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“I never get a period alert” / no fertile window email</td>
+<td>Check predictions, the switches, and whether SMS needs Pro</td>
+<td><a href="#ec-period-alert--what-can-go-wrong">details</a>, <a href="#ec-fertile-window--what-can-go-wrong">details</a>, <a href="#sj-daily-reminders--what-can-go-wrong">details</a>, <a href="#st-notifications--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Profile completion email button opens a login page</td>
+<td>The button opens a login page; the User logs in and lands on the
+profile screen</td>
+<td><a href="#ec-profile-completion--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Reminders or reports stopped for everyone</td>
+<td>The job switch, or the crontab</td>
+<td><a href="#sj-overview--what-can-go-wrong">details</a>, <a href="#sy-jobs--what-can-go-wrong">details</a>, <a href="#sj-reports--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>No weekly or monthly report</td>
+<td>No recipients, the switch is off, or an address is invalid</td>
+<td><a href="#sj-reports--what-can-go-wrong">details</a>, <a href="#sy-report-recipients--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Red message “APP_URL or CRON_SECRET is not configured for the admin
+app”</td>
+<td>Admin app settings. See Admin panel problems</td>
+<td><a href="#sy-manual-reminders--what-can-go-wrong">details</a>, <a href="#sy-manual-sub-check--what-can-go-wrong">details</a>, <a href="#us-reminders--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Campaign day “Missed”, “Failed” or still “Planned”</td>
+<td>See “Campaign SMS did not go out”</td>
+<td><a href="#sm-send--what-can-go-wrong">details</a>, <a href="#sm-messages--what-can-go-wrong">details</a>, <a href="#sm-list--what-can-go-wrong">details</a>, <a href="#sm-resend--what-can-go-wrong">details</a>, <a href="#sj-sms-dispatch--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>SMS arrives later than the send time, or the time will not save</td>
+<td>The job runs every 15 minutes; the time is in 24-hour format</td>
+<td><a href="#as-send-time--what-can-go-wrong">details</a>, <a href="#sy-sms-time--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Emails of type REPORT are missing from the log</td>
+<td>Reports are sent only with recipients saved</td>
+<td><a href="#ec-reports--what-can-go-wrong">details</a>, <a href="#sj-reports--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“Delivery reports off”, or Delivered 0, Failed 0</td>
+<td>Delivery reports are not enabled, or no reports have arrived</td>
+<td><a href="#sm-delivery--what-can-go-wrong">details</a>, <a href="#as-delivery-reports--what-can-go-wrong">details</a>, <a href="#sy-delivery-reports--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Send failed with “E1312”</td>
+<td>The SMS plan does not allow delivery reports; turn the switch
+off</td>
+<td><a href="#sm-delivery--what-can-go-wrong">details</a>, <a href="#sy-delivery-reports--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Campaign form errors (“Message is N SMS parts long; the limit is 6”,
+“is in the past”, “already has a message”)</td>
+<td>Form rules</td>
+<td><a href="#sm-create--what-can-go-wrong">details</a>, <a href="#sm-import--what-can-go-wrong">details</a>, <a href="#sm-schedule--what-can-go-wrong">details</a>, <a href="#as-campaign-sms--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>A User received two SMS the same day</td>
+<td>Expected in one case; the daily guard is the email log</td>
+<td><a href="#sj-daily-reminders--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Pro User gets no SMS</td>
+<td>Check the phone on the User and the plan</td>
+<td><a href="#pa-pro--what-can-go-wrong">details</a>, <a href="#pa-pro-gating--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Login SMS in the wrong language, reminder email in English</td>
+<td>The email follows the saved language</td>
+<td><a href="#nl-switch-language--what-can-go-wrong">details</a>, <a href="#nl-language-persists--what-can-go-wrong">details</a></td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="ts-notifications--related">Related</h4>
+<ul>
+<li><a href="#ec-overview">Emails catalogue</a>, <a href="#as-otp">SMS</a>, <a href="#sj-overview">Scheduled jobs</a></li>
+<li>Admin: <a href="#em-log">Email log</a>, <a href="#sm-list">SMS
+campaigns</a>, <a href="#sy-jobs">System</a></li>
+</ul>
 <h3 data-number="3.5.5" id="ts-data"><span class="header-section-number">3.5.5</span> Missing or wrong data</h3>
-<blockquote>
-<p>Placeholder: not written yet (ticket #250).</p>
-</blockquote>
+<h4 class="unnumbered" id="ts-data--what-it-is">What it is</h4>
+<p>Symptoms where a User sees a date, prediction, chart, streak,
+article, profile or setting that looks missing or wrong. Most of these
+are rules of the product (Bangladesh days, the number of cycles logged,
+the active profile), not faults. Check the profile first: the same User
+can have up to six profiles, and every screen shows the active one (<a href="#pf-switch">Profiles</a>).</p>
+<h4 class="unnumbered" id="ts-data--where-to-find-it">Where to find
+it</h4>
+<p>This section has no screen of its own.</p>
+<h4 class="unnumbered" id="ts-data--symptom-table">Symptom table</h4>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>The reader sees</th>
+<th>Likely cause and first step</th>
+<th>Full list</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dashboard cards missing (cycle dates, Phase pattern) or not what the
+User remembers</td>
+<td>Cards need logged periods and past cycles</td>
+<td><a href="#db-cycle-dates--what-can-go-wrong">details</a>, <a href="#db-phase-pattern--what-can-go-wrong">details</a>, <a href="#lc-day-detail--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“Next period not predicted yet”, no fertile window</td>
+<td>Needs a logged period; a Menopause profile has no predictions</td>
+<td><a href="#pr-how--what-can-go-wrong">details</a>, <a href="#db-hero--what-can-go-wrong">details</a>, <a href="#pr-fertile-window--what-can-go-wrong">details</a>, <a href="#db-menopause--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>The predicted date is far off, or jumped</td>
+<td>Few logged cycles, a wrong start date, or an edit or delete just
+made</td>
+<td><a href="#pr-improve--what-can-go-wrong">details</a>, <a href="#pr-how--what-can-go-wrong">details</a>, <a href="#pr-tiers--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“Period N days late” for weeks</td>
+<td>The User has not logged the new period</td>
+<td><a href="#pr-how--what-can-go-wrong">details</a>, <a href="#ap-late-period--what-can-go-wrong">details</a>, <a href="#db-hero--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Dashboard and Calendar dates differ</td>
+<td>Later months use a different projection</td>
+<td><a href="#lc-calendar--what-can-go-wrong">details</a>, <a href="#pr-fertile-window--what-can-go-wrong">details</a>, <a href="#pr-how--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“A period cannot start or end after today” / “This overlaps a period
+you already logged”</td>
+<td>Date rules of period logging</td>
+<td><a href="#lc-log-period--what-can-go-wrong">details</a>, <a href="#lc-date-rules--what-can-go-wrong">details</a>, <a href="#lc-backfill--what-can-go-wrong">details</a>, <a href="#lc-edit-delete--what-can-go-wrong">details</a>, <a href="#db-first-run--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>A deleted period comes back, or the Dashboard shows old dates after
+a backfill</td>
+<td>Log the correct period instead of deleting the only one; compare
+with the Calendar</td>
+<td><a href="#lc-edit-delete--what-can-go-wrong">details</a>, <a href="#lc-backfill--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“Couldn’t save your symptoms. Please try again.”</td>
+<td>Retry; check the connection</td>
+<td><a href="#sc-symptoms--what-can-go-wrong">details</a>, <a href="#sc-checkin--what-can-go-wrong">details</a>, <a href="#sc-backdate--what-can-go-wrong">details</a>, <a href="#sc-all-good--what-can-go-wrong">details</a>, <a href="#sc-quick-symptom--what-can-go-wrong">details</a>, <a href="#ap-checkin--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Symptoms on the wrong person, or the wrong profile</td>
+<td>The active profile is not the one expected</td>
+<td><a href="#sc-symptoms--what-can-go-wrong">details</a>, <a href="#pf-switch--what-can-go-wrong">details</a>, <a href="#pf-list--what-can-go-wrong">details</a>, <a href="#lc-calendar--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Streak looks wrong (“lost a day” at night, stuck at 30)</td>
+<td>Streaks count Bangladesh days; stuck at 30 is expected</td>
+<td><a href="#db-streak--what-can-go-wrong">details</a>, <a href="#db-checkin-strip--what-can-go-wrong">details</a>, <a href="#lc-date-rules--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>The check-in or logging nudge shows when it should not, or not at
+all</td>
+<td>Rules of the strip and the nudge</td>
+<td><a href="#db-checkin-strip--what-can-go-wrong">details</a>, <a href="#db-nudge--what-can-go-wrong">details</a>, <a href="#sc-checkin--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“No insights yet” or a missing chart</td>
+<td>Needs enough logs; a blue note names the missing cards</td>
+<td><a href="#in-overview--what-can-go-wrong">details</a>, <a href="#in-empty--what-can-go-wrong">details</a>, <a href="#in-cycle-charts--what-can-go-wrong">details</a>, <a href="#in-symptom-stats--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Profile completion pop-up or ring: “Full name is required”, 83% and
+nothing left to fill</td>
+<td>Completion counts optional details</td>
+<td><a href="#ap-completion--what-can-go-wrong">details</a>, <a href="#pf-completion--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Cannot edit a profile, or needs a relation like Friend or Aunt</td>
+<td>Edit rules; the relation list is fixed</td>
+<td><a href="#pf-edit--what-can-go-wrong">details</a>, <a href="#pf-relations--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Cannot add a profile (“Maximum 6 profiles”)</td>
+<td>The limit is 6 profiles</td>
+<td><a href="#pf-limit--what-can-go-wrong">details</a>, <a href="#pf-add--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Cannot delete a profile, or deleted the wrong one</td>
+<td>The only profile cannot be deleted, and there is no restore</td>
+<td><a href="#pf-delete--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Settings not saved, “Failed to save preferences”, or different on
+another device</td>
+<td>Try again. Language and theme are saved per device; alerts per
+profile</td>
+<td><a href="#st-notifications--what-can-go-wrong">details</a>, <a href="#st-language-theme--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>The export is empty, has one profile, or fails</td>
+<td>Export rules</td>
+<td><a href="#st-export--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Cannot add or change a phone or email</td>
+<td>Verified by a code; a number cannot belong to two accounts</td>
+<td><a href="#st-phone--what-can-go-wrong">details</a>, <a href="#st-email--what-can-go-wrong">details</a>, <a href="#st-account--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Article missing, in English, or “Page not found”</td>
+<td>Published and translated articles only; scheduled ones appear at
+their time</td>
+<td><a href="#ct-learn--what-can-go-wrong">details</a>, <a href="#ct-filter--what-can-go-wrong">details</a>, <a href="#ct-reader--what-can-go-wrong">details</a>, <a href="#ac-schedule--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Some text stays in English, or the app is in Bengali</td>
+<td>The language is saved per device</td>
+<td><a href="#nl-switch-language--what-can-go-wrong">details</a>, <a href="#nl-language-persists--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Navigation: no bottom bar, a dot that will not go, a sheet that will
+not close</td>
+<td>Layout rules by screen size</td>
+<td><a href="#nl-bottom-nav--what-can-go-wrong">details</a>, <a href="#nl-more-sheet--what-can-go-wrong">details</a>, <a href="#nl-sidebar--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Feedback not in “Your Previous Feedback”, or Submit Feedback greyed
+out</td>
+<td>A category is required</td>
+<td><a href="#fb-send--what-can-go-wrong">details</a>, <a href="#fb-history--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>A deleted User asks to be restored after 30 days</td>
+<td>Deleted accounts are purged after 30 days</td>
+<td><a href="#sj-nightly--what-can-go-wrong">details</a>, <a href="#us-delete-restore--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Legal page says something production does not do</td>
+<td>The legal pages contain claims production does not match; see
+Getting started</td>
+<td><a href="#gs-terms--what-can-go-wrong">details</a>, <a href="#gs-privacy--what-can-go-wrong">details</a>, <a href="#st-legal--what-can-go-wrong">details</a></td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="ts-data--related">Related</h4>
+<ul>
+<li><a href="#pr-how">Predictions</a>, <a href="#lc-calendar">Logging
+and Calendar</a>, <a href="#in-overview">Insights</a>, <a href="#pf-list">Profiles</a></li>
+<li><a href="#ap-rule">Auto-prompts</a>, <a href="#nl-bottom-nav">Navigation and Language</a></li>
+</ul>
 <h3 data-number="3.5.6" id="ts-admin"><span class="header-section-number">3.5.6</span> Admin panel problems</h3>
-<blockquote>
-<p>Placeholder: not written yet (ticket #250).</p>
-</blockquote>
+<h4 class="unnumbered" id="ts-admin--what-it-is">What it is</h4>
+<p>Symptoms an Admin meets in the Admin panel: signing in, pages that
+show an error, empty lists and charts, numbers that do not match, and
+buttons that call the web app. Admin and web are two separate apps with
+separate sign-ins (ADR 0007): a web session cannot open the Admin panel,
+and the other way round.</p>
+<h4 class="unnumbered" id="ts-admin--where-to-find-it">Where to find
+it</h4>
+<p>This section has no screen of its own.</p>
+<h4 class="unnumbered" id="ts-admin--settings-that-make-buttons-fail">Settings that make
+buttons fail</h4>
+<p>Several buttons on the System and User pages do not do the work
+themselves. The Admin app calls the web app’s job routes using two
+settings on the server:</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Must be</th>
+<th>Symptom when wrong</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The Admin app’s <code>APP_URL</code></td>
+<td>The public address of the web app, not the Admin app’s own
+address</td>
+<td>“APP_URL or CRON_SECRET is not configured for the admin app”, or
+“Request failed”</td>
+</tr>
+<tr>
+<td><code>CRON_SECRET</code></td>
+<td>The same value in the web app’s and the Admin app’s settings, and in
+the server’s crontab</td>
+<td>“Web app returned 401”</td>
+</tr>
+</tbody>
+</table>
+<p>Only the server owner can change them: the environment files are in
+<code>docs/ops/04-env-reference.md</code> (<a href="#rl-ops">Ops
+runbooks</a>), and the app must be redeployed afterwards. “Web app
+returned 500” means the web app was reached but the job failed; read the
+web app’s error log on the server.</p>
+<h4 class="unnumbered" id="ts-admin--symptom-table">Symptom table</h4>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>The reader sees</th>
+<th>Likely cause and first step</th>
+<th>Full list</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>“Invalid email or password”</td>
+<td>Wrong password, or the account is not an Admin</td>
+<td><a href="#aa-sign-in--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“Too many login attempts. Try again later.”</td>
+<td>Wait 15 minutes after the last failure</td>
+<td><a href="#aa-sign-in--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“Account suspended”</td>
+<td>Cannot be undone from the panel; the server owner changes it</td>
+<td><a href="#aa-sign-in--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Sent back to the login page</td>
+<td>The session ended or was signed out elsewhere</td>
+<td><a href="#aa-sign-in--what-can-go-wrong">details</a>, <a href="#aa-sign-out--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“Not an admin”</td>
+<td>A User account signed in. Log out and switch account</td>
+<td><a href="#aa-forbidden--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“Web app returned 401”, “APP_URL or CRON_SECRET is not configured”,
+“Request failed”</td>
+<td>See “Settings that make buttons fail”</td>
+<td><a href="#sy-manual-reminders--what-can-go-wrong">details</a>, <a href="#sy-manual-sub-check--what-can-go-wrong">details</a>, <a href="#us-reminders--what-can-go-wrong">details</a>, <a href="#sj-overview--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>A System switch jumps back with no message</td>
+<td>Reload, sign in again if asked, and try once more</td>
+<td><a href="#sy-jobs--what-can-go-wrong">details</a>, <a href="#sy-report-recipients--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>A change is not visible in a list or chart</td>
+<td>Pages are cached (Overview and Subscriptions 60 seconds, Users 5
+minutes). Refresh</td>
+<td><a href="#us-list--what-can-go-wrong">details</a>, <a href="#ov-kpis--what-can-go-wrong">details</a>, <a href="#su-list--what-can-go-wrong">details</a>, <a href="#an-ranges--what-can-go-wrong">details</a>, <a href="#ac-list--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“Unavailable” on Churn Rate, Pro Subscribers, revenue or Active
+users</td>
+<td>No daily Pro or activity snapshot for the period</td>
+<td><a href="#ov-kpis--what-can-go-wrong">details</a>, <a href="#an-churn--what-can-go-wrong">details</a>, <a href="#an-revenue--what-can-go-wrong">details</a>, <a href="#an-pro-count--what-can-go-wrong">details</a>, <a href="#en-active--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Signup chart shows a spike or “No signups in this period”</td>
+<td>Chart rules</td>
+<td><a href="#ov-signup-trend--what-can-go-wrong">details</a>, <a href="#ov-kpis--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>A number differs from another page</td>
+<td>Different definitions (Bangladesh days, active vs logging, snapshot
+vs live)</td>
+<td><a href="#ov-kpis--what-can-go-wrong">details</a>, <a href="#en-active--what-can-go-wrong">details</a>, <a href="#en-panels--what-can-go-wrong">details</a>, <a href="#an-symptoms-phase--what-can-go-wrong">details</a>, <a href="#us-list--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Date range errors (“Pick a range of 366 days or fewer.”)</td>
+<td>Range rules</td>
+<td><a href="#an-ranges--what-can-go-wrong">details</a>, <a href="#ov-kpis--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Users: a person is missing, the export is short, times are 6 hours
+behind</td>
+<td>Status filter (Deleted Users show under All), phone typed with
+spaces, or export times in UTC (add 6 hours)</td>
+<td><a href="#us-list--what-can-go-wrong">details</a>, <a href="#us-search-filters--what-can-go-wrong">details</a>, <a href="#us-export--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>User page: 404, “No subscription record found.”, empty Plan history,
+a switch that snaps back</td>
+<td>Rules of the detail tabs</td>
+<td><a href="#us-detail--what-can-go-wrong">details</a>, <a href="#us-history--what-can-go-wrong">details</a>, <a href="#us-notif-prefs--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>“No subscriptions match your filters.”</td>
+<td>Filters</td>
+<td><a href="#su-filter--what-can-go-wrong">details</a>, <a href="#su-list--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Suspend, Revoke or Delete worked but the User may still be
+charged</td>
+<td>The BDApps unsubscribe failed</td>
+<td><a href="#us-suspend--what-can-go-wrong">details</a>, <a href="#us-pro-override--what-can-go-wrong">details</a>, <a href="#us-delete-restore--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Article editor: “Saved, but the web app cache did not refresh”, an
+image will not upload, a scheduled article is not live</td>
+<td>Cache refresh; image rules; schedule rules</td>
+<td><a href="#ac-editor--what-can-go-wrong">details</a>, <a href="#ac-images--what-can-go-wrong">details</a>, <a href="#ac-schedule--what-can-go-wrong">details</a>, <a href="#ac-bulk--what-can-go-wrong">details</a>, <a href="#ac-categories--what-can-go-wrong">details</a>, <a href="#ac-views--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Campaign pages: validation messages, stuck “Sending”, “Cannot send a
+message with status SENT”</td>
+<td>Campaign rules</td>
+<td><a href="#sm-create--what-can-go-wrong">details</a>, <a href="#sm-send--what-can-go-wrong">details</a>, <a href="#sm-cancel--what-can-go-wrong">details</a>, <a href="#sm-messages--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Email pages: preview fails, “No Resend ID on this log”,
+“RESEND_API_KEY not set”</td>
+<td>Email service settings on the server</td>
+<td><a href="#em-detail--what-can-go-wrong">details</a>, <a href="#em-preview--what-can-go-wrong">details</a>, <a href="#em-log--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Feedback or User export fails, or Bengali looks broken in Excel</td>
+<td>Exported times are 6 hours behind Bangladesh time (add 6 hours);
+open the file with Data, From Text/CSV and choose UTF-8</td>
+<td><a href="#af-export--what-can-go-wrong">details</a>, <a href="#us-export--what-can-go-wrong">details</a>, <a href="#af-inbox--what-can-go-wrong">details</a>, <a href="#af-detail--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Logs page shows no lines, hides a channel, or masks a code</td>
+<td>Only three channels are shown; OTPs are masked</td>
+<td><a href="#lg-channels--what-can-go-wrong">details</a>, <a href="#lg-viewer--what-can-go-wrong">details</a>, <a href="#lg-masking--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Audit log: a change is missing or a search finds nothing</td>
+<td>Search the action, or copy the User’s ID from User detail; press
+Refresh for a change made a minute ago</td>
+<td><a href="#au-search--what-can-go-wrong">details</a>, <a href="#au-entries--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Pro price: “Saved, but the web app cache did not refresh”</td>
+<td>The price may look old to Users for a short time</td>
+<td><a href="#sy-pro-price--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>System: runs missing, Skipped or Failed</td>
+<td>The job was off, or failed</td>
+<td><a href="#sy-runs--what-can-go-wrong">details</a>, <a href="#sy-run-detail--what-can-go-wrong">details</a>, <a href="#sy-sms-time--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Engagement or analytics chart empty</td>
+<td>No data in the period</td>
+<td><a href="#en-panels--what-can-go-wrong">details</a>, <a href="#an-prediction-accuracy--what-can-go-wrong">details</a>, <a href="#an-symptoms-phase--what-can-go-wrong">details</a></td>
+</tr>
+<tr>
+<td>Navigation: icons only, no sidebar, wrong theme</td>
+<td>Layout and theme buttons</td>
+<td><a href="#aa-navigation--what-can-go-wrong">details</a></td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="ts-admin--related">Related</h4>
+<ul>
+<li><a href="#aa-sign-in">Admin access</a>, <a href="#sy-jobs">System</a>, <a href="#us-list">Users</a></li>
+<li><a href="#rl-ops">Ops runbooks</a>, <a href="#rl-api-docs">Admin API
+docs</a></li>
+</ul>
 <h1 data-number="4" id="part-4"><span class="header-section-number">4</span> Reference</h1>
 <h2 data-number="4.1" id="glossary"><span class="header-section-number">4.1</span> Glossary</h2>
 <h3 data-number="4.1.1" id="gl-terms"><span class="header-section-number">4.1.1</span> Glossary</h3>
-<blockquote>
-<p>Placeholder: not written yet (ticket #250).</p>
-</blockquote>
+<h4 class="unnumbered" id="gl-terms--what-it-is">What it is</h4>
+<p>The shared vocabulary of the product, copied from
+<code>GLOSSARY.md</code> in the repository. Every chapter of this
+handbook uses these words. Use the first column when you write to a User
+or talk to the team; the last column lists words that look right but
+mean something else here, or that you should not use.</p>
+<p>Two spellings are written out in words because the PDF edition of
+this handbook cannot print Bengali script: the Bengali spelling of Cycle
+Circle (the running Bengali text writes it in Bengali script) and the
+Bengali spelling of Vesta.</p>
+<h4 class="unnumbered" id="gl-terms--where-to-find-it">Where to find
+it</h4>
+<p>This chapter has no screen of its own. The source file is
+<code>GLOSSARY.md</code> at the root of the repository; if the two ever
+differ, <code>GLOSSARY.md</code> wins, and this chapter is updated to
+match.</p>
+<h4 class="unnumbered" id="gl-terms--terms">Terms</h4>
+<h5 data-number="4.1.1.0.1" id="general"><span class="header-section-number">4.1.1.0.1</span> General</h5>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Do not say</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cycle Circle</strong></td>
+<td>The product’s name, written as two title-case words in all
+user-facing English text. The logo always uses the Latin wordmark;
+running Bengali text writes it in Bengali script.</td>
+<td>Vesta, the Bengali spelling of Vesta, CycleCircle, cycle circle</td>
+</tr>
+<tr>
+<td><strong>Vesta</strong></td>
+<td>The product’s former name, kept only as the internal code name in
+identifiers; never shown to users.</td>
+<td>using it in any user-facing text</td>
+</tr>
+<tr>
+<td><strong>Bangladesh day</strong></td>
+<td>A calendar day in Bangladesh time (UTC+6, no daylight saving): the
+day that “today”, “35 days ago” and every date the product shows or
+stores is counted in. An event (a signup, a sent SMS, a check-in)
+belongs to the Bangladesh day its moment falls on, so every per-day
+count groups by Bangladesh day.</td>
+<td>local day, server day, UTC day</td>
+</tr>
+</tbody>
+</table>
+<h5 data-number="4.1.1.0.2" id="people"><span class="header-section-number">4.1.1.0.2</span> People</h5>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Do not say</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>User</strong></td>
+<td>Anyone with a Cycle Circle account who tracks cycles in the app,
+whether a Subscriber or an email-trial account.</td>
+<td>customer, client, member</td>
+</tr>
+<tr>
+<td><strong>Admin</strong></td>
+<td>A staff member of the company operating Cycle Circle who signs in to
+the admin panel to manage Users, content and messaging.</td>
+<td>customer, operator, staff user</td>
+</tr>
+</tbody>
+</table>
+<h5 data-number="4.1.1.0.3" id="prompts-and-engagement"><span class="header-section-number">4.1.1.0.3</span> Prompts and
+engagement</h5>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Do not say</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Check-in</strong></td>
+<td>The once-a-day quick log of how the user feels today: a few common
+symptoms, or “all good”. The lightest form of logging.</td>
+<td>daily log, mood check, quick log</td>
+</tr>
+<tr>
+<td><strong>Logging nudge</strong></td>
+<td>A reminder card that appears only when the active profile has logged
+nothing for three or more days.</td>
+<td>check-in card, “How are you feeling” banner</td>
+</tr>
+<tr>
+<td><strong>Profile completion</strong></td>
+<td>How much of the optional account details (such as a recovery email)
+the user has filled in, shown as a percentage ring on the profile
+chip.</td>
+<td>onboarding progress, setup score</td>
+</tr>
+<tr>
+<td><strong>Auto-prompt</strong></td>
+<td>A pop-up the app opens on its own, not in response to a tap: the
+trial lock, the late-period alert, the onboarding tour, the check-in,
+and the profile-completion prompt. At most one shows per page load.</td>
+<td>popup, interstitial, nag</td>
+</tr>
+<tr>
+<td><strong>Trial lock</strong></td>
+<td>The blocking screen shown to an email-trial account whose 24-hour
+trial has ended; only upgrading or logging out gets past it.</td>
+<td>paywall, trial expired modal</td>
+</tr>
+</tbody>
+</table>
+<h5 data-number="4.1.1.0.4" id="cycle-insights"><span class="header-section-number">4.1.1.0.4</span> Cycle insights</h5>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Do not say</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Phase pattern</strong></td>
+<td>The symptoms a profile has logged most often in a given cycle phase,
+across its past cycles.</td>
+<td>forecast, prediction, “how you might feel”</td>
+</tr>
+</tbody>
+</table>
+<h5 data-number="4.1.1.0.5" id="phone-login"><span class="header-section-number">4.1.1.0.5</span> Phone login</h5>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Do not say</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Subscriber</strong></td>
+<td>A phone number that BDApps reports as subscribed to Cycle Circle;
+the user behind it is Pro.</td>
+<td>registered user, BDApps user</td>
+</tr>
+<tr>
+<td><strong>Masked subscriber id</strong></td>
+<td>The opaque address BDApps gives a subscriber in place of their phone
+number; it is the only address BDApps accepts for that subscriber, and
+it changes with each new subscription.</td>
+<td>subscriber id (alone), masked number, tel id</td>
+</tr>
+<tr>
+<td><strong>BDApps OTP</strong></td>
+<td>A one-time code that BDApps sends to a phone number; verifying it
+subscribes the number, so it is how a new phone user logs in and becomes
+Pro.</td>
+<td>OTP (alone), subscription OTP</td>
+</tr>
+<tr>
+<td><strong>App OTP</strong></td>
+<td>A one-time code that Cycle Circle sends by SMS to an existing
+subscriber; verifying it proves the person holds the number and logs
+them in, without subscribing anything.</td>
+<td>manual OTP, our OTP, login code</td>
+</tr>
+<tr>
+<td><strong>Daily subscription check</strong></td>
+<td>The once-a-day job that asks BDApps whether each subscriber is still
+subscribed, and moves anyone who no longer is back to Free.</td>
+<td>CaaS check, CAAS, subscription sync</td>
+</tr>
+<tr>
+<td><strong>Pro price</strong></td>
+<td>The amount a subscriber is charged and how often (daily, weekly or
+monthly), as set by an admin. It is what the customer app shows and what
+estimated revenue is counted from; it must match what BDApps actually
+charges.</td>
+<td>CAAS fee, subscription fee, plan cost</td>
+</tr>
+</tbody>
+</table>
+<h5 data-number="4.1.1.0.6" id="sms-campaigns-1"><span class="header-section-number">4.1.1.0.6</span> SMS campaigns</h5>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Do not say</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Campaign</strong></td>
+<td>A named series of SMS messages sent to every subscriber, one message
+per Bangladesh day over one or more days. A one-off SMS is a one-day
+campaign.</td>
+<td>broadcast, blast, SMS job</td>
+</tr>
+<tr>
+<td><strong>Campaign message</strong></td>
+<td>One day’s SMS within a campaign: its text and the Bangladesh day it
+goes out.</td>
+<td>broadcast, campaign day, SMS (alone)</td>
+</tr>
+</tbody>
+</table>
+<h5 data-number="4.1.1.0.7" id="activity"><span class="header-section-number">4.1.1.0.7</span> Activity</h5>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Do not say</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Active user</strong></td>
+<td>A user who opened the app on a given Bangladesh day. Suspended and
+deleted users never count.</td>
+<td>DAU (alone), logged-in user, active logger</td>
+</tr>
+<tr>
+<td><strong>Churn</strong></td>
+<td>A Pro user becoming non-Pro within a period, for one of four
+reasons: the daily subscription check found them unsubscribed, BDApps
+reported an unsubscribe, an admin revoked Pro, or the account was
+deleted. Admin revokes are reported but kept out of the churn rate.</td>
+<td>cancellation, lapse (alone), drop-off</td>
+</tr>
+<tr>
+<td><strong>Estimated revenue</strong></td>
+<td>What Pro subscribers would have paid in a period at the Pro price in
+effect each day; an estimate, because BDApps does not report what it
+actually charged.</td>
+<td>revenue (alone), earnings, billing total</td>
+</tr>
+</tbody>
+</table>
+<h5 data-number="4.1.1.0.8" id="operations-logs"><span class="header-section-number">4.1.1.0.8</span> Operations logs</h5>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Do not say</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Log channel</strong></td>
+<td>One of six named streams that every server log line belongs to:
+merchant, customer, webhook, translog, cron, error.</td>
+<td>log file, logger, category</td>
+</tr>
+<tr>
+<td><strong>Merchant call</strong></td>
+<td>A call Cycle Circle makes out to BDApps as the merchant app (OTP,
+subscription status, subscribe/unsubscribe, SMS, CaaS), recorded with
+its request and BDApps’ response.</td>
+<td>API log, BDApps log, outbound request</td>
+</tr>
+<tr>
+<td><strong>Customer action</strong></td>
+<td>Something an end user did in Cycle Circle that matters
+operationally: logging in, requesting or verifying an OTP, adding a
+phone, unsubscribing, logging out.</td>
+<td>user event, activity, audit entry</td>
+</tr>
+<tr>
+<td><strong>Webhook event</strong></td>
+<td>A call BDApps makes into Cycle Circle (subscription notification,
+incoming SMS or USSD, delivery report), recorded with its payload and
+what we did with it.</td>
+<td>callback, notification, inbound request</td>
+</tr>
+<tr>
+<td><strong>Translog</strong></td>
+<td>The record of one plan change: a user moving between Free and Pro,
+an admin override, or a charge, with who, from what, to what, and the
+cause.</td>
+<td>transaction log, billing log, subscription history</td>
+</tr>
+<tr>
+<td><strong>Cron run</strong></td>
+<td>One execution of a scheduled job, recorded as a single summary of
+what it checked and changed, plus any per-item failures.</td>
+<td>job log, scheduler log</td>
+</tr>
+</tbody>
+</table>
+<h5 data-number="4.1.1.0.9" id="admin-actions"><span class="header-section-number">4.1.1.0.9</span> Admin actions</h5>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+<th>Do not say</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Revoke</strong></td>
+<td>An admin action that makes a user Free and unsubscribes their number
+on BDApps, so they stop being charged; their data is kept.</td>
+<td>cancel Pro, downgrade, remove subscription</td>
+</tr>
+<tr>
+<td><strong>Suspend</strong></td>
+<td>An admin action that blocks a user from logging in and unsubscribes
+their number on BDApps; their data is kept, and Reactivate lifts only
+the block.</td>
+<td>ban, disable, deactivate</td>
+</tr>
+<tr>
+<td><strong>Admin override</strong></td>
+<td>A plan (Free or Pro) set by an admin that wins over what BDApps
+reports, until BDApps reports a new subscription for that number.</td>
+<td>manual plan, forced plan, comp</td>
+</tr>
+<tr>
+<td><strong>Delete</strong></td>
+<td>An admin action that hides a user’s account and unsubscribes their
+number on BDApps; an admin can restore it within 30 days.</td>
+<td>remove, purge, soft-delete</td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="gl-terms--related">Related</h4>
+<ul>
+<li>Writing rules for this handbook: Part 4 <a href="#rl-ops">Links</a>
+lists the decision records behind several terms (for example ADR 0006
+for Revoke, Suspend and Delete, and ADR 0008 for the Bangladesh
+day).</li>
+<li>Where the terms show up: <a href="#pa-at-a-glance">Plans and
+access</a>, <a href="#lg-channels">Logs</a>, <a href="#sj-overview">Scheduled jobs</a>.</li>
+</ul>
 <h2 data-number="4.2" id="links"><span class="header-section-number">4.2</span> Links</h2>
+<p>Links go to the repository on GitHub (branch <code>main</code>); each
+row also names the file path, so the file can be found in a local copy.
+The documents are written for the team that runs the server and the
+code. They are English and plain Markdown, and some are more technical
+than this handbook.</p>
 <h3 data-number="4.2.1" id="rl-ops"><span class="header-section-number">4.2.1</span> Ops runbooks</h3>
-<blockquote>
-<p>Placeholder: not written yet (ticket #250).</p>
-</blockquote>
+<h4 class="unnumbered" id="rl-ops--what-it-is">What it is</h4>
+<p>The server operations documents. Use them when a problem in <a href="#ts-index">Troubleshooting</a> says “ask the server owner”: they
+describe the server, the deploys, the environment settings, the host
+crontab and the incident checklists.</p>
+<h4 class="unnumbered" id="rl-ops--where-to-find-it">Where to find
+it</h4>
+<p>In the repository folder <code>docs/ops/</code>, starting with
+<code>docs/ops/README.md</code> (the server inventory and a table of the
+documents). This section has no screen of its own.</p>
+<h4 class="unnumbered" id="rl-ops--links">Links</h4>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Document</th>
+<th>Covers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/ops/README.md"><code>docs/ops/README.md</code></a></td>
+<td>Start here: server inventory and the index of the documents
+below</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/ops/01-access.md"><code>docs/ops/01-access.md</code></a></td>
+<td>SSH, users and keys, the Contabo portal, lockout recovery,
+credential rotation</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/ops/02-server-setup.md"><code>docs/ops/02-server-setup.md</code></a></td>
+<td>Server bootstrap and hardening runbook</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/ops/03-deployment.md"><code>docs/ops/03-deployment.md</code></a></td>
+<td>How a deploy to the server works (Docker Compose), including the
+routine deploy</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/ops/04-env-reference.md"><code>docs/ops/04-env-reference.md</code></a></td>
+<td>Every environment variable, what it does and which app needs it</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/ops/05-operations.md"><code>docs/ops/05-operations.md</code></a></td>
+<td>Day-to-day runbook: health check, logs, restarts, backups and
+restore, updates, the host crontab, incident checklists</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/ops/06-merge-to-main-runbook.md"><code>docs/ops/06-merge-to-main-runbook.md</code></a></td>
+<td>Merging the deploy stack into <code>main</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/ops/07-dns-and-env-runbook.md"><code>docs/ops/07-dns-and-env-runbook.md</code></a></td>
+<td>Public DNS checks and the environment files on the server</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/ops/08-logging.md"><code>docs/ops/08-logging.md</code></a></td>
+<td>Log channels, file layout, retention, how to read logs on the
+server</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/ops/09-bdapps-subscriptions.md"><code>docs/ops/09-bdapps-subscriptions.md</code></a></td>
+<td>How a User’s plan is decided, masked subscriber ids, checking or
+changing a subscription by hand, BDApps error codes</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/ops/10-release-log.md"><code>docs/ops/10-release-log.md</code></a></td>
+<td>One entry per production release: what shipped and how it was
+verified</td>
+</tr>
+</tbody>
+</table>
+<p>The documents above are the ones to read first. The folder also holds
+deploy and monitoring file checklists and the BDApps API test
+reports.</p>
+<h4 class="unnumbered" id="rl-ops--rules-and-limits">Rules and
+limits</h4>
+<ul>
+<li>The runbooks describe the server as it was when each document was
+last edited. When a runbook and the code disagree, the code is right;
+the chapters of this handbook say so where they found a difference (for
+example the host crontab in <a href="#sj-overview">Scheduled
+jobs</a>).</li>
+<li>Server credentials are not in these documents or in this handbook.
+Ask the server owner.</li>
+</ul>
+<h4 class="unnumbered" id="rl-ops--related">Related</h4>
+<ul>
+<li>Reading logs on the server: <a href="#ts-index">Troubleshooting
+index</a></li>
+<li>BDApps error codes: <a href="#ts-login">BDApps health</a></li>
+<li>The host crontab: <a href="#sj-overview">Jobs at a glance</a></li>
+</ul>
 <h3 data-number="4.2.2" id="rl-adr"><span class="header-section-number">4.2.2</span> Decision records</h3>
-<blockquote>
-<p>Placeholder: not written yet (ticket #250).</p>
-</blockquote>
+<h4 class="unnumbered" id="rl-adr--what-it-is">What it is</h4>
+<p>Architecture decision records (ADRs): short notes that explain why
+the product works the way it does. Each chapter of this handbook that
+depends on one names it, for example ADR 0006 in <a href="#pa-admin-overrides">Plans and access</a>.</p>
+<h4 class="unnumbered" id="rl-adr--where-to-find-it">Where to find
+it</h4>
+<p>In the repository folder <code>docs/adr/</code>. This section has no
+screen of its own.</p>
+<h4 class="unnumbered" id="rl-adr--links">Links</h4>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>ADR</th>
+<th>What it decides</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/adr/0001-cycle-circle-rename-is-user-facing-only.md">ADR
+0001</a></td>
+<td>The rename to Cycle Circle changed only what Users see; internal
+names stay “vesta”</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/adr/0002-phone-login-is-the-bdapps-subscription.md">ADR
+0002</a></td>
+<td>Logging in by phone subscribes the number; Pro means “registered on
+BDApps”; masked ids; App OTP for existing Subscribers</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/adr/0003-ui-language-lives-in-a-cookie.md">ADR
+0003</a></td>
+<td>The language choice is a cookie, so the server can render it</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/adr/0004-server-logs-are-dated-files-per-channel.md">ADR
+0004</a></td>
+<td>Six log channels, one dated file per Bangladesh day, retention</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/adr/0005-portal-redesign-borrows-the-look-not-the-data.md">ADR
+0005</a></td>
+<td>The look of the portal redesign, not the reference data</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/adr/0006-admin-actions-that-end-access-also-end-bdapps-billing.md">ADR
+0006</a></td>
+<td>Revoke, Suspend and Delete also unsubscribe the number on
+BDApps</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/adr/0007-auth-tokens-scoped-per-app-and-environment.md">ADR
+0007</a></td>
+<td>Why a web session cannot open the Admin panel and the other way
+round</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/adr/0008-dates-are-bangladesh-days-not-device-days.md">ADR
+0008</a></td>
+<td>Every date is a Bangladesh day</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/adr/0009-services-take-now-only-the-edge-reads-the-clock.md">ADR
+0009</a></td>
+<td>Developer rule: only the edge reads the clock</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/adr/0010-sms-campaigns-replace-broadcasts.md">ADR
+0010</a></td>
+<td>SMS campaigns: one message per Bangladesh day across all
+campaigns</td>
+</tr>
+<tr>
+<td><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/adr/0011-pro-price-is-admin-set-not-read-from-bdapps.md">ADR
+0011</a></td>
+<td>The Pro price is set by an Admin; revenue is an estimate</td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="rl-adr--rules-and-limits">Rules and
+limits</h4>
+<ul>
+<li>An ADR records a decision and its reasons at the time. Several have
+dated amendments at the end (ADR 0002 and ADR 0008 do); read those
+too.</li>
+<li>The glossary terms in this handbook come from
+<code>GLOSSARY.md</code> (<a href="#gl-terms">Glossary</a>); a new term
+goes into the glossary first.</li>
+</ul>
+<h4 class="unnumbered" id="rl-adr--related">Related</h4>
+<ul>
+<li><a href="#gl-terms">Glossary</a></li>
+<li><a href="#us-suspend">Suspend and reactivate</a></li>
+</ul>
 <h3 data-number="4.2.3" id="rl-local-dev"><span class="header-section-number">4.2.3</span> Local development</h3>
-<blockquote>
-<p>Placeholder: not written yet (ticket #250).</p>
-</blockquote>
+<h4 class="unnumbered" id="rl-local-dev--what-it-is">What it is</h4>
+<p>The guide for running Cycle Circle on a developer’s own computer:
+Docker for the database, mail catcher and the BDApps simulator, and the
+web and Admin apps on the machine itself.</p>
+<h4 class="unnumbered" id="rl-local-dev--where-to-find-it">Where to find
+it</h4>
+<p><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/LOCAL-DEVELOPMENT.md"><code>docs/LOCAL-DEVELOPMENT.md</code></a>.
+This section has no screen of its own.</p>
+<h4 class="unnumbered" id="rl-local-dev--rules-and-limits">Rules and
+limits</h4>
+<ul>
+<li>It is for developers. Support staff and Admins never need it to use
+the product.</li>
+<li>The local setup never talks to the real BDApps: it uses the
+simulator, and OTPs and emails stay on the machine. A problem that
+appears locally does not show that production is affected, and the other
+way round.</li>
+</ul>
+<h4 class="unnumbered" id="rl-local-dev--related">Related</h4>
+<ul>
+<li><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/EMAIL-TESTING-GUIDE.md"><code>docs/EMAIL-TESTING-GUIDE.md</code></a>:
+trying the emails locally (<a href="#ec-overview">Emails
+catalogue</a>)</li>
+<li><a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/handbook/README.md">Handbook
+README</a>: how to change this handbook and rebuild it</li>
+</ul>
 <h3 data-number="4.2.4" id="rl-api-docs"><span class="header-section-number">4.2.4</span> Admin API docs</h3>
-<blockquote>
-<p>Placeholder: not written yet (ticket #250).</p>
-</blockquote>
+<h4 class="unnumbered" id="rl-api-docs--what-it-is">What it is</h4>
+<p>The Admin app has its own reference page for the Admin API (Swagger
+UI). It is for developers and integrators; the Admin pages in this
+handbook cover everything an Admin does by hand.</p>
+<h4 class="unnumbered" id="rl-api-docs--where-to-find-it">Where to find
+it</h4>
+<p><strong>API Docs</strong> in the Admin sidebar, or
+<code>/api-docs</code> on the Admin address (<a href="#aa-navigation">Admin navigation</a>). An Admin has to be signed
+in. The page lists the endpoints and shows the formats; its “Try it out”
+mode is not switched on by default. The specification itself is the file
+<code>apps/admin/public/openapi.yaml</code>. This section has no screen
+of its own.</p>
+<h4 class="unnumbered" id="rl-api-docs--related">Related</h4>
+<ul>
+<li><a href="#aa-sign-in">Signing in</a></li>
+</ul>
 <h2 data-number="4.3" id="coming-next"><span class="header-section-number">4.3</span> Coming next</h2>
 <h3 data-number="4.3.1" id="cn-notes"><span class="header-section-number">4.3.1</span> Merged but not yet on
 production</h3>
-<blockquote>
-<p>Placeholder: not written yet (ticket #250).</p>
-</blockquote>
+<h4 class="unnumbered" id="cn-notes--what-it-is">What it is</h4>
+<p>A short list of changes that are already merged into the
+<code>main</code> branch but are not yet on the production server (the
+<code>production</code> branch). Production is updated by a deploy;
+until then Users and Admins see the old behaviour. This is the only
+place in the handbook that describes something production does not do
+yet.</p>
+<h4 class="unnumbered" id="cn-notes--where-to-find-it">Where to find
+it</h4>
+<p>This section has no screen of its own. The list was written on 2
+November 2026 by comparing the two branches
+(<code>git log origin/production..origin/main</code>). The release
+history is in <a href="https://github.com/adibahsan/cycle-circle/blob/main/docs/ops/10-release-log.md"><code>docs/ops/10-release-log.md</code></a>,
+one entry per production release; the newest entry at the time of
+writing is 2026-11-01 (tag 2.4.1).</p>
+<h4 class="unnumbered" id="cn-notes--what-is-waiting">What is
+waiting</h4>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Change</th>
+<th>Who sees it</th>
+<th>What changes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Admin pagination bar on a phone-width window (issue #236)</td>
+<td>Admin</td>
+<td>On a window narrower than the <code>sm</code> breakpoint (a phone,
+or a very narrow browser window) the bar with the page buttons at the
+bottom of a list stuck out 8 pixels past the screen edge. That pushed
+taps a few pixels off target, so for example the select box of a row in
+the <a href="#us-list">User list</a> could not be ticked. The bar now
+fits the page at each width. Nothing changes on a desktop-width
+window.</td>
+</tr>
+</tbody>
+</table>
+<p>Nothing else is waiting. The other change merged since the last
+release (issue #229) fixes an automated test of the SMS send time on the
+<a href="#sy-sms-time">System page</a> and does not change what anyone
+sees.</p>
+<h4 class="unnumbered" id="cn-notes--rules-and-limits">Rules and
+limits</h4>
+<ul>
+<li>The screens and rules in this handbook describe production as it is
+today. The change above is not on any screenshot, and none of the
+chapters depends on it.</li>
+<li>This list goes stale the moment a new release is deployed or a new
+change is merged. The handbook is rebuilt with each release, and this
+section should be rewritten then: compare the branches again, keep only
+what a User or an Admin can see, and delete the rows that have reached
+production.</li>
+<li>Changes with no visible effect (tests, build and documentation
+changes) are left out on purpose.</li>
+</ul>
+<h4 class="unnumbered" id="cn-notes--what-can-go-wrong">What can go
+wrong</h4>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>The reader sees</th>
+<th>Cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>An Admin or User reports behaviour that matches the list above but
+production does not show it</td>
+<td>The change is merged but the deploy has not run</td>
+<td>Wait for the next deploy; nothing is broken. The release log shows
+what is on production</td>
+</tr>
+<tr>
+<td>A screen differs from this handbook and the difference is not listed
+here</td>
+<td>The handbook is older than the latest release, or a change was
+merged after this list was written</td>
+<td>Trust the screen, tell the team, and check the release log</td>
+</tr>
+</tbody>
+</table>
+<h4 class="unnumbered" id="cn-notes--related">Related</h4>
+<ul>
+<li>Release entries and deploy steps: <a href="#rl-ops">Ops
+runbooks</a></li>
+</ul>
 </body>
 </html>
