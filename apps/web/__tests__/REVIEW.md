@@ -18,3 +18,6 @@ random. `helpers/unique-test-phones.test.ts` already enforces unique literal pho
    any order.
 5. **Global settings rows are restored.** A test that flips a shared setting (a cron switch, the
    Pro price) restores it in `finally`, and the assertion doesn't depend on another file's value.
+6. **Whole-table services run serial.** When the service under test needs every row of a table
+   (reorder demanding the full category set, a global count), rule 2 can't hold. List the file in
+   `SERIAL` in `apps/web/vitest.config.ts` so no other file writes that table while it runs.
