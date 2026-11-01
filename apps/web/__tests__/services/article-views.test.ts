@@ -10,12 +10,15 @@ const U2 = 'test-artviews-u2'
 const SUSPENDED = 'test-artviews-susp'
 const P = `Vw${Date.now().toString(36)}`
 const created: string[] = []
+// Fixed and in the past, never the real clock: the views below happen at fixed 2026 instants, and a view
+// only counts once the article is live, so publishing "now" broke every test once the clock passed them.
+const PUBLISHED_AT = new Date('2026-01-01T00:00:00Z')
 
 async function publish(suffix: string, status: 'PUBLISHED' | 'DRAFT' = 'PUBLISHED') {
   const a = await createArticle(
     ADMIN_ID,
     { titleEn: `${P} ${suffix}`, bodyEn: '<p>en</p>', titleBn: 'শিরোনাম', bodyBn: '<p>বাংলা</p>', cyclePhases: ['LUTEAL'], status },
-    new Date(),
+    PUBLISHED_AT,
   )
   created.push(a.id)
   return a
