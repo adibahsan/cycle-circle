@@ -23,7 +23,7 @@ test.describe('Admin Overview', () => {
 
     await page.getByRole('heading', { name: 'Churn by reason' }).evaluate((el) => el.scrollIntoView({ block: 'start' }))
     await expect(page.getByRole('row', { name: /BDApps unsubscribe/ })).toBeVisible()
-    await shot(page, 'ov-kpis', { suffix: 'churn' })
+    await shot(page, 'ov-kpis', { suffix: 'churn', of: page.locator('section[aria-label="Churn by reason"]') })
 
     await page.getByRole('button', { name: '7d' }).click()
     await expect(page).toHaveURL(/range=7d/)

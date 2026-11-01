@@ -2,7 +2,7 @@
 
 Every account in Cycle Circle, and the actions an Admin can take on one. Three actions take something away from a User: **Revoke** (Pro to not-Pro), **Suspend** (no login) and **Delete** (account hidden). By decision ADR 0006 each of them also **unsubscribes the User's number on BDApps**, so nobody is charged for access that was removed. The reverse actions (**Reactivate**, **Restore**, **Grant**) lift only our own block and **never re-subscribe** the number on BDApps: the User becomes a Subscriber again by logging in with their phone. An Admin override of the plan wins over BDApps only until BDApps reports a new subscription for that number.
 
-If BDApps cannot be reached when one of those actions runs, the action still applies on our side and the Admin sees a red message ending "The User may still be charged." (see each section).
+If BDApps cannot be reached when one of those actions runs, the action still applies on our side and the Admin sees a red message ending "The user may still be charged." (see each section).
 
 ## User list {#us-list}
 
@@ -22,7 +22,7 @@ The **Users** page: a header ("N total users"), five charts, a search and status
 | Last Login | Date of the last login |
 | Created | Date the account was created |
 
-The charts are "New signups — last 30d" (with 7d, 30d, 90d and 1y buttons), "Auth method" (Phone OTP / Email), "Subscription status", "Language preference" (English / Bengali) and "Account status".
+The charts sit under a "Signups over time" heading with 7d, 30d, 90d and 1y buttons: "New signups — last 30d", "Auth method" (Phone OTP / Email), "Subscription status", "Language preference" (English / Bengali) and "Account status".
 
 ### Where to find it
 
@@ -151,7 +151,7 @@ One User's page. The top card shows the name with badges (Active, Suspended or D
 | Tab | Shows |
 |---|---|
 | Profiles | Each profile: name, relation, Cycle length, Period length, Period logs, Symptom logs, the three notification switches and up to three recent period logs. "No profiles created yet." if none. |
-| Subscription | "Current Subscription": Status, Since, "Last confirmed by BDApps" (a date and "(reported REGISTERED)", or "never"), and "Source: Admin Override" with "Override at" when an Admin set the plan. "Charge transactions (N)" lists amounts and SUCCESS, FAILED or pending. |
+| Subscription | "Current Subscription": Status, Since, "Last confirmed by BDApps" (a date and "(reported REGISTERED)", or "never"), and "Source: Admin Override" with "Override at" when an Admin set the plan. "Charge transactions (N)" lists amounts and SUCCESS, FAILED or PENDING. |
 | Plan history | Every plan change from the Translog ([Plan history and Translog](#us-history)). |
 | Feedback | The User's feedback with category, "Rating: 4/5", date and a **View** link to the feedback detail. |
 
@@ -427,7 +427,7 @@ User detail, between the counters and the tabs. Hidden for deleted Users.
 ### How to use it
 
 1. Press **Send reminder emails now**.
-2. Read the result under the card: "Sent 2 reminder emails." followed by lines such as "Period alerts: 1", "Fertile window", "Logging reminders" and "Profile completion"; or "No reminders are currently due for this user."
+2. Read the result under the card: "Sent 2 reminder emails." followed by lines such as "Period alerts: 1", "Fertile window: 1", "Logging reminders: 1" and "Profile completion: 1" (only kinds with at least one email are listed); or "No reminders are currently due for this user."
 
 ### Rules and limits
 
