@@ -29,7 +29,7 @@ To find an email: type the address or a subject word in the search box. The "Typ
 ### Rules and limits
 
 - **Status** is SENT or FAILED (the send call failed; the error text is stored). **Delivery** is PENDING at first, then updated by Resend's notifications to DELIVERED, BOUNCED, COMPLAINED or DELAYED. Only emails sent through Resend get delivery updates; the **Refresh** button on an email's page asks Resend again.
-- Reminder emails are sent only to Users who have an email address. A phone-only User gets the profile-completion reminder as an SMS (any User with a phone, not only Pro). See [Daily reminder emails](#sj-daily-reminders)).
+- Reminder emails are sent only to Users who have an email address. A phone-only User gets the profile-completion reminder as an SMS (any User with a phone, not only Pro). See [Daily reminder emails](#sj-daily-reminders).
 - All emails are sent in the language of the User's account, except the magic-link email (always English: the Email login page does not pass the language) and the reports (English only).
 - The reminder emails end with "You received this email because you have notifications enabled in Cycle Circle. To unsubscribe, visit Settings in the app." There is no one-click unsubscribe link; the User uses **Settings > Notifications**.
 - Every email carries the contact line "Contact: info@cycle-circle.com".
