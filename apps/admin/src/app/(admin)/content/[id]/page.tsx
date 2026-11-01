@@ -27,7 +27,11 @@ export default async function EditArticlePage({
         description={article.titleEn}
         tags={[adminCacheTags.article(id), adminCacheTags.content]}
       />
-      <EditArticleClient article={article} categories={categories} />
+      <EditArticleClient
+        article={article}
+        scheduled={article.status === 'PUBLISHED' && !!article.publishedAt && new Date(article.publishedAt) > new Date()}
+        categories={categories}
+      />
     </div>
   )
 }

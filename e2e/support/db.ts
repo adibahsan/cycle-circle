@@ -98,6 +98,8 @@ export async function createArticle(opts: {
     categoryId = cat?.id
   }
 
+  // Published a minute in the past: a re-upsert stamped "now" races a parallel worker's
+  // request (its `now` is taken first), the article reads as scheduled and that list is cached 60 s.
   const article = await db.article.upsert({
     where: { slug: opts.slug },
     update: {
@@ -108,7 +110,7 @@ export async function createArticle(opts: {
       status: opts.status ?? 'PUBLISHED',
       cyclePhases: opts.cyclePhases ?? [],
       categoryId,
-      publishedAt: (opts.status ?? 'PUBLISHED') === 'PUBLISHED' ? new Date() : null,
+      publishedAt: (opts.status ?? 'PUBLISHED') === 'PUBLISHED' ? new Date(Date.now() - 60_000) : null,
     },
     create: {
       slug: opts.slug,
@@ -120,7 +122,7 @@ export async function createArticle(opts: {
       cyclePhases: opts.cyclePhases ?? [],
       authorId: author.id,
       categoryId,
-      publishedAt: (opts.status ?? 'PUBLISHED') === 'PUBLISHED' ? new Date() : null,
+      publishedAt: (opts.status ?? 'PUBLISHED') === 'PUBLISHED' ? new Date(Date.now() - 60_000) : null,
     },
   })
   await revalidateWebArticles()

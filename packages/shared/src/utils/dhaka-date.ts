@@ -61,3 +61,20 @@ export function daysBetween(from: string, to: string): number {
 export function formatDhaka(instant: Date | string, options: Intl.DateTimeFormatOptions): string {
   return new Intl.DateTimeFormat('en-US', { ...options, timeZone: 'Asia/Dhaka' }).format(new Date(instant))
 }
+
+/**
+ * A wall-clock `yyyy-MM-ddTHH:mm` (or with a space) entered as Bangladesh time, to the instant it
+ * means. Returns undefined for malformed or non-existent times (2026-02-31, 25:00).
+ */
+export function dhakaDateTimeToInstant(value: string | undefined): Date | undefined {
+  const m = value?.trim().match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})$/)
+  if (!m) return undefined
+  const [, day, hh, mm] = m
+  if (Number(hh) > 23 || Number(mm) > 59 || !parseDhakaDay(day)) return undefined
+  return new Date(`${day}T${hh}:${mm}:00.000+06:00`)
+}
+
+/** An instant as the Bangladesh wall-clock `yyyy-MM-ddTHH:mm` the admin date-time picker takes. */
+export function instantToDhakaInput(instant: Date | string): string {
+  return new Date(new Date(instant).getTime() + BANGLADESH_OFFSET_MS).toISOString().slice(0, 16)
+}

@@ -26,11 +26,11 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | **Web total** | 63 | 0 | 0 | 6 | 57 |
 | Admin: access and read-only views | 5 | 0 | 0 | 0 | 5 |
 | Admin: user actions | 4 | 0 | 0 | 0 | 4 |
-| Admin: content | 2 | 0 | 0 | 0 | 2 |
+| Admin: content | 4 | 0 | 0 | 0 | 4 |
 | Admin: analytics and engagement | 2 | 0 | 0 | 2 | 0 |
 | Admin: SMS | 2 | 0 | 0 | 0 | 2 |
 | Admin: feedback, emails, audit, logs, system | 6 | 0 | 0 | 0 | 6 |
-| **Admin total** | 21 | 0 | 0 | 2 | 19 |
+| **Admin total** | 23 | 0 | 0 | 2 | 21 |
 | Server-only (not counted) | 10 | 0 | 0 | 1 | 9 |
 
 Notes on the tally:
@@ -105,7 +105,7 @@ Notes on the tally:
 
 | # | Feature | Route(s) | Spec(s) | Depth | Planned ticket |
 |---|---|---|---|---|---|
-| W40 | Learn: filter articles by phase, open the reader, English and Bengali | `/content` | `e2e/tests/web/content.spec.ts` | full | #124 |
+| W40 | Learn: filter articles by phase, open the reader on its own URL, English and Bengali; unknown or draft id is 404 | `/content`, `/content/[id]` | `e2e/tests/web/content.spec.ts` | full | #124 |
 | W41 | Draft article never shown to users | `/content` | `e2e/tests/web/content.spec.ts`, `e2e/tests/cross-app/admin-content.spec.ts` | full | #124, #128 |
 | W42 | Feedback: submit and see it in history | `/feedback` | `e2e/tests/web/feedback.spec.ts` | full | #124 |
 | W43 | Notification preferences and reminder opt-out (cron skips the user) | `/settings` | `e2e/tests/web/settings.spec.ts` | full | #124 (cron side: #132) |
@@ -173,6 +173,8 @@ Notes on the tally:
 |---|---|---|---|---|---|
 | A10 | Content authoring: bilingual article, phase tags, image upload, draft, publish, seen on web | `/content`, `/content/new`, `/content/[id]`, `/uploads/[name]` | `e2e/tests/cross-app/admin-content.spec.ts` | full (draft hidden on settled Follicular list; publish → same URL; wrong-phase MENSTRUAL+OVULATION; EN loaded `/uploads/` img; BN text-only) | #128 |
 | A11 | Content sanitizing: unsafe HTML removed before it reaches web | `/content/new`, `/content/[id]` | `e2e/tests/cross-app/admin-content.spec.ts` | full (rich paste + raw Next-Action body bypass; stored HTML + scoped reader; script/iframe/style/js-href/evil attrs stripped; safe link/strong/uploads kept on server path) | #128 |
+| A12 | Content bulk actions: select rows, bulk publish, both seen on web | `/content` | `e2e/tests/cross-app/admin-content.spec.ts` | full (two drafts selected via row checkboxes, Publish, "2 succeeded", both on web Luteal list) | #214 |
+| A22 | Content views: Views column counts a customer's article open once per Bangladesh day | `/content`, web `/content/[id]` | `e2e/tests/cross-app/admin-content.spec.ts` | full (column 0 before; 1 after web open, refreshed; reload same day stays 1) | #216 |
 
 ### Admin: analytics and engagement
 

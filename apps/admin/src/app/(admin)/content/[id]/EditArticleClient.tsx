@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, Eye, Archive, FileText } from 'lucide-react'
+import { ArrowLeft, Save, Eye, Archive, FileText, CalendarClock } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
 const TiptapEditor = dynamic(
@@ -20,8 +20,9 @@ import { Select } from '@/components/ui/Select'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
 import { articlePublishWarnings, articleWarningMessages, isBlankBody } from '@vesta/shared/utils/article-warnings'
+import { ScheduleField, SCHEDULED, savedStatus, scheduleToIso } from '@/components/ScheduleField'
 import { updateArticle } from '@/app/actions/content-actions'
-import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
+import { formatDhaka, instantToDhakaInput } from '@vesta/shared/utils/dhaka-date'
 
 type CategoryOption = {
   id: string
@@ -45,6 +46,8 @@ type ArticleData = {
 
 interface EditArticleClientProps {
   article: ArticleData
+  /** Published with a publish time still in the future (decided on the server, against its clock). */
+  scheduled: boolean
   categories: CategoryOption[]
 }
 
@@ -58,10 +61,11 @@ const CYCLE_PHASES = [
 const STATUS_OPTIONS = [
   { value: 'DRAFT', label: 'Draft', icon: FileText },
   { value: 'PUBLISHED', label: 'Published', icon: Eye },
+  { value: SCHEDULED, label: 'Scheduled', icon: CalendarClock },
   { value: 'ARCHIVED', label: 'Archived', icon: Archive },
 ]
 
-export function EditArticleClient({ article, categories }: EditArticleClientProps) {
+export function EditArticleClient({ article, scheduled, categories }: EditArticleClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const toast = useToast()
@@ -73,9 +77,14 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
   const [bodyBn, setBodyBn] = useState(article.bodyBn ?? '')
   const [categoryId, setCategoryId] = useState(article.categoryId ?? '')
   const [cyclePhases, setCyclePhases] = useState<string[]>(article.cyclePhases ?? [])
-  const [status, setStatus] = useState(article.status)
+  const [status, setStatus] = useState(scheduled ? SCHEDULED : article.status)
+  const [scheduleAt, setScheduleAt] = useState(scheduled && article.publishedAt ? instantToDhakaInput(article.publishedAt) : '')
+  // A live article cannot be rescheduled; offer Scheduled only for drafts, archived and still-scheduled ones.
+  const liveNow = article.status === 'PUBLISHED' && !scheduled
+  const statusOptions = STATUS_OPTIONS.filter((o) => !(liveNow && o.value === SCHEDULED))
   const [error, setError] = useState<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
+  const pendingPublishedAt = useRef<string | null | undefined>(undefined)
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => { e.preventDefault() }
@@ -99,9 +108,21 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
       setError('English body is required.')
       return
     }
+    let publishedAt: string | null | undefined
+    if (status === SCHEDULED) {
+      const at = scheduleToIso(scheduleAt)
+      if ('error' in at) {
+        setError(at.error)
+        return
+      }
+      publishedAt = at.iso
+    } else if (status === 'PUBLISHED' && scheduled) {
+      publishedAt = null // moving a scheduled article to Published means publish now
+    }
     setError(null)
+    pendingPublishedAt.current = publishedAt
 
-    const warnings = articlePublishWarnings({ status, titleBn, bodyBn, cyclePhases })
+    const warnings = articlePublishWarnings({ status: savedStatus(status), titleBn, bodyBn, cyclePhases })
     if (warnings.length > 0) {
       setPublishWarnings(articleWarningMessages(warnings))
       return
@@ -120,8 +141,13 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
           bodyBn: isBlankBody(bodyBn) ? null : bodyBn,
           categoryId: categoryId || null,
           cyclePhases,
-          status,
+          status: savedStatus(status),
+          publishedAt: pendingPublishedAt.current,
         })
+        if ('error' in result) {
+          setError(result.error)
+          return
+        }
         setIsDirty(false)
         if (!result.webCacheRefreshed) toast.error('Saved, but the web app cache did not refresh. Public pages may be stale for a few minutes.')
         router.push('/content')
@@ -250,7 +276,7 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
               Status
             </h3>
             <div className="space-y-2">
-              {STATUS_OPTIONS.map((opt) => {
+              {statusOptions.map((opt) => {
                 const Icon = opt.icon
                 const isSelected = status === opt.value
                 return (
@@ -278,6 +304,9 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
                 )
               })}
             </div>
+            {status === SCHEDULED && (
+              <ScheduleField value={scheduleAt} onChange={(v) => { setScheduleAt(v); setIsDirty(true) }} />
+            )}
           </div>
 
           {/* Category */}
@@ -347,13 +376,14 @@ export function EditArticleClient({ article, categories }: EditArticleClientProp
                 Metadata
               </h3>
               <p className="text-xs text-[var(--color-text-muted)]">
-                Published{' '}
+                {scheduled ? 'Scheduled for' : 'Published'}{' '}
                 <span className="text-[var(--color-text-secondary)]">
                   {formatDhaka(article.publishedAt, {
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric',
-                  })}
+                    ...(scheduled ? { hour: 'numeric', minute: '2-digit' } : {}),
+                  })}{scheduled ? ' (Bangladesh time)' : ''}
                 </span>
               </p>
               {article.author?.fullName && (

@@ -6,23 +6,19 @@ import {
   getContentByCategoryQuery,
   getContentByPhaseQuery,
 } from '@/app/queries/content-queries'
+import { parseArticleListParams } from '@vesta/shared/utils/article-list-params'
 import { ContentClient } from './ContentClient'
 
 export default async function ContentPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string>>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   await requireAdminUser()
   const params = await searchParams
 
   const [data, categories, statusBreakdown, byCategory, byPhase] = await Promise.all([
-    getArticles({
-      page: Number(params.page) || 1,
-      pageSize: Number(params.pageSize) || 20,
-      status: params.status,
-      categoryId: params.categoryId,
-    }),
+    getArticles(parseArticleListParams(params)),
     getCategories(),
     getContentStatusBreakdownQuery(),
     getContentByCategoryQuery(),

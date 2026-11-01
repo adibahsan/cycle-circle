@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url'
 import type { Locator, Page } from '@playwright/test'
 import { test, expect } from '../../support/fixtures'
 import { createLoggedInAdmin } from '../../support/admin'
-import { e2eDb, revalidateWebArticles } from '../../support/db'
+import { e2eDb, revalidateWebArticles, createArticle } from '../../support/db'
+import { refreshData } from '../../support/admin-charts'
 
 const FIXTURE_PNG = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -51,8 +52,8 @@ async function switchWebLanguage(page: Page) {
 async function expectWebContentListSettled(page: Page) {
   await expect(page.getByRole('heading', { name: 'Health Articles' })).toBeVisible()
   const empty = page.getByText('No articles yet')
-  // Article cards are unnamed buttons that contain an h3 title (no listbox role).
-  const anyCard = page.getByRole('button').filter({ has: page.getByRole('heading', { level: 3 }) }).first()
+  // Article cards are links to /content/<id> that contain an h3 title.
+  const anyCard = page.getByRole('link').filter({ has: page.getByRole('heading', { level: 3 }) }).first()
   await expect(empty.or(anyCard)).toBeVisible({ timeout: 15_000 })
 }
 
@@ -65,7 +66,7 @@ async function expectWebContentListSettled(page: Page) {
 async function expectPublishedOnWeb(page: Page, path: string, title: string) {
   await page.goto(path)
   await expectWebContentListSettled(page)
-  const card = page.getByRole('button', { name: title })
+  const card = page.getByRole('link', { name: title })
   await expect(async () => {
     if (!(await card.isVisible())) {
       await revalidateWebArticles()
@@ -132,8 +133,8 @@ async function assertReaderSanitized(reader: Locator, opts: {
   await expect(reader.getByText(safeMarker)).toBeVisible()
 
   // Body HTML only — article chrome (phase chips) legitimately uses inline style=.
-  /* eslint-disable playwright/no-raw-locators -- sanitizer check inspects the raw rendered DOM (script/style/on* attrs, .prose body) that has no role or name */
-  const body = reader.locator('.prose')
+  /* eslint-disable playwright/no-raw-locators -- sanitizer check inspects the raw rendered DOM (script/style/on* attrs, .article-body) that has no role or name */
+  const body = reader.locator('.article-body')
   await expect(body).toBeVisible()
   await expect(body.locator('script')).toHaveCount(0)
   await expect(body.locator('iframe')).toHaveCount(0)
@@ -212,6 +213,135 @@ async function installRawBodyRewrite(page: Page, placeholder: string, rawBodyEn:
 }
 
 test.describe('Admin content authoring (seen on web)', () => {
+  test('scheduled article is hidden on web (list and URL) until its Bangladesh-time minute (#215)', async ({
+    browser,
+    newUser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    test.setTimeout(300_000)
+    const runId = uniqueId()
+    const titleEn = `E2E215 Scheduled ${runId}`
+    const admin = await createLoggedInAdmin(browser, {
+      viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId,
+    })
+    const web = await newUser()
+
+    try {
+      const { page: adminPage } = admin
+      // The next whole minute at least 60s away (steps below take a while on a busy runner), typed as
+      // Bangladesh wall time. App processes run on this machine, so the runner clock is the server's.
+      const target = new Date(Math.ceil((Date.now() + 60_000) / 60_000) * 60_000)
+      const wall = new Date(target.getTime() + 6 * 3_600_000).toISOString().slice(0, 16).replace('T', ' ')
+
+      await adminPage.goto('/content/new')
+      await expect(adminPage.getByRole('heading', { name: 'New Article' })).toBeVisible()
+      await adminPage.getByLabel('English Title').fill(titleEn)
+      await adminPage.getByLabel('Bengali Title').fill(`শিডিউল ${runId}`)
+      const editors = adminPage.getByRole('textbox', { name: /^(English|Bengali) Body$/ })
+      await fillEditor(editors.nth(0), `E2E215 EN body ${runId}`)
+      await fillEditor(editors.nth(1), `বাংলা মূল ${runId}`)
+      await adminPage.getByRole('checkbox', { name: 'Follicular' }).check()
+      await adminPage.getByRole('button', { name: 'Scheduled' }).click()
+      await adminPage.getByRole('textbox', { name: 'Publish date and time' }).fill(wall)
+      await adminPage.getByRole('button', { name: 'Save Article' }).first().click()
+      await adminPage.waitForURL((url) => url.pathname === '/content')
+
+      const stored = await e2eDb().article.findFirstOrThrow({ where: { titleEn } })
+      expect(stored.status).toBe('PUBLISHED')
+      expect(stored.publishedAt?.getTime()).toBe(target.getTime())
+
+      // Admin list shows Scheduled with its time.
+      await expect(adminPage.getByText(titleEn)).toBeVisible()
+      await expect(adminPage.getByText('Scheduled', { exact: true }).first()).toBeVisible()
+
+      // Hidden before the time: not in the list, and its URL is not found.
+      await web.page.goto('/content?phase=FOLLICULAR')
+      await expectWebContentListSettled(web.page)
+      await expect(web.page.getByRole('link', { name: titleEn })).toHaveCount(0)
+      await web.page.goto(`/content/${stored.id}`)
+      await expect(web.page.getByRole('heading', { name: titleEn })).toHaveCount(0)
+      await expect(web.page.getByText(/not found|could not be found/i).first()).toBeVisible()
+
+      // Visible after: the list refreshes within a minute of the time, with no cron.
+      await expect
+        .poll(async () => Date.now() >= target.getTime(), { timeout: 150_000, intervals: [2_000] })
+        .toBe(true)
+      await web.page.goto(`/content/${stored.id}`)
+      await expect(web.page.getByRole('heading', { name: titleEn })).toBeVisible({ timeout: 15_000 })
+      await expect(async () => {
+        await web.page.goto('/content?phase=FOLLICULAR')
+        await expectWebContentListSettled(web.page)
+        await expect(web.page.getByRole('link', { name: titleEn })).toBeVisible({ timeout: 3_000 })
+      }).toPass({ timeout: 90_000, intervals: [5_000] })
+    } finally {
+      await admin.context.close()
+    }
+  })
+
+  test('admin list search finds an article beyond page 1; filters and query survive reload (#213)', async ({
+    browser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    const runId = uniqueId()
+    const prefix = `E2E213 ${runId}`
+    const needle = `${prefix} needle`
+    const slugPrefix = `e2e213-${runId}`
+    // Needle first so the 21 newer rows push it off page 1 (page size 20).
+    await createArticle({
+      slug: `${slugPrefix}-needle`, titleEn: needle, bodyEn: '<p>x</p>',
+      status: 'DRAFT', cyclePhases: ['OVULATION'],
+    })
+    for (let i = 0; i < 21; i++) {
+      await createArticle({
+        slug: `${slugPrefix}-f${i}`, titleEn: `${prefix} filler ${i}`, titleBn: 'শিরোনাম',
+        bodyEn: '<p>x</p>', bodyBn: '<p>বাংলা</p>', status: 'PUBLISHED', cyclePhases: ['LUTEAL'],
+      })
+    }
+    const admin = await createLoggedInAdmin(browser, {
+      viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId,
+    })
+    try {
+      const page = admin.page
+      await page.goto('/content')
+      await expect(page.getByRole('button', { name: needle })).toBeHidden()
+
+      await page.getByRole('searchbox', { name: 'Search' }).fill(needle)
+      await expect(page.getByRole('button', { name: needle })).toBeVisible({ timeout: 10_000 })
+      await expect(page).toHaveURL(/[?&]q=/)
+
+      await page.reload()
+      await expect(page.getByRole('searchbox', { name: 'Search' })).toHaveValue(needle)
+      await expect(page.getByRole('button', { name: needle })).toBeVisible()
+
+      // Filters narrow the same search and also live in the URL.
+      await page.goto(`/content?q=${encodeURIComponent(prefix)}&status=PUBLISHED&phase=LUTEAL`)
+      await expect(page.getByRole('button', { name: `${prefix} filler 20` })).toBeVisible()
+      await expect(page.getByRole('button', { name: needle })).toBeHidden()
+
+      await page.goto(`/content?q=${encodeURIComponent(prefix)}&missingBangla=1`)
+      await expect(page.getByRole('button', { name: needle })).toBeVisible()
+      await expect(page.getByRole('button', { name: `${prefix} filler 20` })).toBeHidden()
+      await page.reload()
+      await expect(page.getByRole('button', { name: needle })).toBeVisible()
+      await expect(page).toHaveURL(/missingBangla=1/)
+    } finally {
+      await e2eDb().article.deleteMany({ where: { slug: { startsWith: slugPrefix } } })
+      await admin.context.close()
+    }
+  })
+
   test('category Bengali name is saved on create and inline edit (#156)', async ({
     browser,
     viewport,
@@ -321,7 +451,7 @@ test.describe('Admin content authoring (seen on web)', () => {
       // ── Draft must not appear on web (same phase URL we use after publish) ─
       await web.page.goto('/content?phase=FOLLICULAR')
       await expectWebContentListSettled(web.page)
-      await expect(web.page.getByRole('button', { name: titleEn })).toHaveCount(0)
+      await expect(web.page.getByRole('link', { name: titleEn })).toHaveCount(0)
       await expect(web.page.getByText(titleEn)).toHaveCount(0)
 
       // ── Publish the same article ───────────────────────────────────────────
@@ -342,17 +472,19 @@ test.describe('Admin content authoring (seen on web)', () => {
       await web.page.getByRole('button', { name: 'Menstrual' }).click()
       await expect(web.page).toHaveURL(/phase=MENSTRUAL/)
       await expectWebContentListSettled(web.page)
-      await expect(web.page.getByRole('button', { name: titleEn })).toHaveCount(0)
+      await expect(web.page.getByRole('link', { name: titleEn })).toHaveCount(0)
 
       await web.page.getByRole('button', { name: 'Ovulation' }).click()
       await expect(web.page).toHaveURL(/phase=OVULATION/)
       await expectWebContentListSettled(web.page)
-      await expect(web.page.getByRole('button', { name: titleEn })).toHaveCount(0)
+      await expect(web.page.getByRole('link', { name: titleEn })).toHaveCount(0)
 
       await web.page.getByRole('button', { name: 'Follicular' }).click()
       await expect(web.page).toHaveURL(/phase=FOLLICULAR/)
       await expectWebContentListSettled(web.page)
-      await web.page.getByRole('button', { name: titleEn }).click()
+      await web.page.getByRole('link', { name: titleEn }).click()
+      // Each article has its own URL: /content/<article id>.
+      await expect(web.page).toHaveURL(/\/content\/[a-z0-9]+$/)
       await expect(web.page.getByRole('heading', { name: titleEn })).toBeVisible()
       await expect(web.page.getByText(bodyEnMarker)).toBeVisible({ timeout: 15_000 })
 
@@ -447,7 +579,7 @@ test.describe('Admin content authoring (seen on web)', () => {
       expect(editHtml).not.toMatch(/javascript:/i)
 
       await expectPublishedOnWeb(web.page, '/content?phase=LUTEAL', titleEn)
-      await web.page.getByRole('button', { name: titleEn }).click()
+      await web.page.getByRole('link', { name: titleEn }).click()
 
       const reader = web.page.getByRole('article', { name: titleEn })
       await expect(reader).toBeVisible({ timeout: 15_000 })
@@ -533,7 +665,7 @@ test.describe('Admin content authoring (seen on web)', () => {
       expect(stored).toContain(uploadSrc!)
 
       await expectPublishedOnWeb(web.page, '/content?phase=OVULATION', titleEn)
-      await web.page.getByRole('button', { name: titleEn }).click()
+      await web.page.getByRole('link', { name: titleEn }).click()
 
       const reader = web.page.getByRole('article', { name: titleEn })
       await expect(reader).toBeVisible({ timeout: 15_000 })
@@ -545,6 +677,100 @@ test.describe('Admin content authoring (seen on web)', () => {
         expectUploadImg: true,
       })
     } finally {
+      await admin.context.close()
+    }
+  })
+  test('admin Views column goes up after a customer opens the article (#216)', async ({
+    browser,
+    newUser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    const runId = uniqueId()
+    const titleEn = `E2E216 views ${runId}`
+    const slug = `e2e216-${runId}`
+    const article = await createArticle({
+      slug, titleEn, titleBn: 'শিরোনাম', bodyEn: '<p>x</p>', bodyBn: '<p>বাংলা</p>',
+      status: 'PUBLISHED', cyclePhases: ['LUTEAL'],
+    })
+    const admin = await createLoggedInAdmin(browser, {
+      viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId,
+    })
+    const web = await newUser()
+    try {
+      const { page } = admin
+      const row = () => page.getByRole('button').filter({ hasText: titleEn })
+      await page.goto(`/content?q=${encodeURIComponent(titleEn)}`)
+      await expect(row().getByTestId('article-views')).toHaveText('0')
+
+      await web.page.goto(`/content/${article.id}`)
+      await expect(web.page.getByRole('heading', { name: titleEn })).toBeVisible()
+
+      // Recording runs after the response, and the admin list is cached: refresh until it lands.
+      await expect(async () => {
+        await refreshData(page)
+        await expect(row().getByTestId('article-views')).toHaveText('1', { timeout: 2_000 })
+      }).toPass({ timeout: 30_000 })
+
+      // A second open on the same Bangladesh day is not a second view.
+      await web.page.reload()
+      await expect(web.page.getByRole('heading', { name: titleEn })).toBeVisible()
+      await refreshData(page)
+      await expect(row().getByTestId('article-views')).toHaveText('1')
+    } finally {
+      await e2eDb().article.deleteMany({ where: { slug } })
+      await admin.context.close()
+    }
+  })
+
+})
+
+test.describe('Admin bulk article actions (seen on web)', () => {
+  test('bulk-publish two drafts from the list; both appear on web (#214)', async ({
+    browser,
+    newUser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    const runId = uniqueId()
+    const prefix = `E2E214 ${runId}`
+    const slugPrefix = `e2e214-${runId}`
+    const titles = [`${prefix} one`, `${prefix} two`]
+    for (const [i, titleEn] of titles.entries()) {
+      await createArticle({
+        slug: `${slugPrefix}-${i}`, titleEn, titleBn: 'শিরোনাম', bodyEn: '<p>x</p>', bodyBn: '<p>বাংলা</p>',
+        status: 'DRAFT', cyclePhases: ['LUTEAL'],
+      })
+    }
+    const admin = await createLoggedInAdmin(browser, {
+      viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId,
+    })
+    const web = await newUser()
+    try {
+      const page = admin.page
+      await page.goto(`/content?q=${encodeURIComponent(prefix)}`)
+      for (const t of titles) {
+        await page.getByRole('checkbox', { name: `Select "${t}"` }).check()
+      }
+      await expect(page.getByText('2 selected')).toBeVisible()
+      await page.getByRole('region', { name: 'Bulk actions' }).getByRole('button', { name: 'Publish', exact: true }).click()
+      await expect(page.getByText('2 succeeded')).toBeVisible({ timeout: 15_000 })
+
+      for (const t of titles) {
+        await expectPublishedOnWeb(web.page, '/content?phase=LUTEAL', t)
+      }
+    } finally {
+      await e2eDb().article.deleteMany({ where: { slug: { startsWith: slugPrefix } } })
       await admin.context.close()
     }
   })

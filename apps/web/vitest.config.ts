@@ -9,6 +9,8 @@ const SERIAL = [
   '__tests__/services/pro-snapshot.test.ts',
   '__tests__/services/admin-kpis-dashboard.test.ts',
   '__tests__/services/overview-metrics.test.ts',
+  // reorderCategories needs the full category set, so no other file may add or drop categories meanwhile.
+  '__tests__/services/category-order.test.ts',
 ]
 
 export default defineConfig({

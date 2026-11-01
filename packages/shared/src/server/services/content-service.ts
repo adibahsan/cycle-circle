@@ -1,6 +1,15 @@
 import { AUDIT_ACTIONS } from './audit-actions'
+import { createAuditLog } from './audit-service'
+import { Prisma } from '@prisma/client'
 import sanitizeHtml from 'sanitize-html'
 import { prisma } from '../db'
+import {
+  ARTICLE_NO_CATEGORY,
+  ARTICLE_PHASES,
+  normalizeListOptions,
+  type ListArticlesOptions,
+} from '../../utils/article-list-params'
+import { dayToStoredDate } from '../../utils/dhaka-date'
 import { articlePublishWarnings, isBlankBody } from '../../utils/article-warnings'
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
@@ -42,32 +51,87 @@ export function sanitizeArticleHtml(html: string): string {
 
 // ── Article queries ────────────────────────────────────────────────────────────
 
-export async function listArticles(
-  params: {
-    page?: number
-    pageSize?: number
-    status?: string
-    categoryId?: string
-  } = {},
-) {
-  const { page = 1, pageSize = 20, status, categoryId } = params
-  const where: Record<string, unknown> = {}
-  if (status && status !== 'all') where.status = status
-  if (categoryId && categoryId !== 'all') where.categoryId = categoryId
+/**
+ * THE customer-visibility rule: published status and a publish time that has come. Scheduled
+ * publishing is just a future `publishedAt`, so there is no cron; every customer read uses this
+ * with an injectable `now` (services never read the clock themselves).
+ */
+export function visibleArticleWhere(now: Date): Prisma.ArticleWhereInput {
+  return { status: 'PUBLISHED', publishedAt: { lte: now } }
+}
 
-  const [articles, total] = await Promise.all([
-    prisma.article.findMany({
-      where,
-      include: {
-        category: { select: { name: true, nameBn: true } },
-        author: { select: { fullName: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.article.count({ where }),
-  ])
+export type ArticleDisplayStatus = 'draft' | 'scheduled' | 'published' | 'archived'
+
+/** The status an admin sees: a PUBLISHED article whose time is still ahead of `now` is scheduled. */
+export function articleDisplayStatus(a: { status: string; publishedAt: Date | null }, now: Date): ArticleDisplayStatus {
+  if (a.status === 'PUBLISHED') return a.publishedAt && a.publishedAt > now ? 'scheduled' : 'published'
+  return a.status === 'ARCHIVED' ? 'archived' : 'draft'
+}
+
+export async function listArticles(options: ListArticlesOptions, now: Date) {
+  const { q, status, categoryId, phase, missingBangla, sort, sortDir, viewsFrom, viewsTo, page, pageSize } = normalizeListOptions(options)
+
+  const and: Prisma.ArticleWhereInput[] = []
+  if (q) {
+    // Prisma does not escape LIKE wildcards in `contains`; a typed % or _ must match literally.
+    const needle = q.replace(/[\\%_]/g, '\\$&')
+    and.push({
+      OR: [
+        { titleEn: { contains: needle, mode: 'insensitive' } },
+        { titleBn: { contains: needle, mode: 'insensitive' } },
+      ],
+    })
+  }
+  if (status === 'PUBLISHED') and.push(visibleArticleWhere(now))
+  else if (status === 'scheduled') and.push({ status: 'PUBLISHED', publishedAt: { gt: now } })
+  else if (status) and.push({ status })
+  if (categoryId) and.push({ categoryId: categoryId === ARTICLE_NO_CATEGORY ? null : categoryId })
+  if (phase) and.push({ cyclePhases: { has: phase } })
+  // Blank bodies are stored as null (create/updateArticle normalise), so null covers them.
+  if (missingBangla) and.push({ OR: [{ titleBn: null }, { titleBn: '' }, { bodyBn: null }, { bodyBn: '' }] })
+  const where: Prisma.ArticleWhereInput = and.length ? { AND: and } : {}
+
+  const orderBy: Prisma.ArticleOrderByWithRelationInput[] =
+    sort === 'title' ? [{ titleEn: 'asc' }, { id: 'asc' }] : [{ createdAt: 'desc' }, { id: 'desc' }]
+  const include = {
+    category: { select: { name: true, nameBn: true } },
+    author: { select: { fullName: true } },
+  } as const
+
+  // Views per article in the Bangladesh-day range (inclusive; absent bound = open).
+  const viewCounts = async (ids: string[]) => {
+    const day: Prisma.DateTimeFilter = {}
+    if (viewsFrom) day.gte = dayToStoredDate(viewsFrom)
+    if (viewsTo) day.lte = dayToStoredDate(viewsTo)
+    const grouped = await prisma.articleView.groupBy({
+      by: ['articleId'],
+      where: { articleId: { in: ids }, ...(viewsFrom || viewsTo ? { day } : {}) },
+      _count: { _all: true },
+    })
+    return new Map(grouped.map((g) => [g.articleId, g._count._all]))
+  }
+
+  const total = await prisma.article.count({ where })
+  let articles
+  if (sort === 'views') {
+    // Most-viewed first: counts come from another table, so rank every match, then page the ranking.
+    const matching = await prisma.article.findMany({ where, select: { id: true }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] })
+    const counts = await viewCounts(matching.map((m) => m.id))
+    const pageIds = matching
+      .map((m) => m.id)
+      .sort((x, y) => (sortDir === 'asc' ? 1 : -1) * ((counts.get(x) ?? 0) - (counts.get(y) ?? 0)))
+      .slice((page - 1) * pageSize, page * pageSize)
+    const rows = await prisma.article.findMany({ where: { id: { in: pageIds } }, include })
+    const byId = new Map(rows.map((r) => [r.id, r]))
+    articles = pageIds.flatMap((id) => {
+      const row = byId.get(id)
+      return row ? [{ ...row, views: counts.get(id) ?? 0, displayStatus: articleDisplayStatus(row, now) }] : []
+    })
+  } else {
+    const rows = await prisma.article.findMany({ where, include, orderBy, skip: (page - 1) * pageSize, take: pageSize })
+    const counts = await viewCounts(rows.map((r) => r.id))
+    articles = rows.map((r) => ({ ...r, views: counts.get(r.id) ?? 0, displayStatus: articleDisplayStatus(r, now) }))
+  }
 
   return {
     articles,
@@ -91,7 +155,16 @@ export async function getArticleById(id: string) {
 export async function listCategories() {
   return prisma.articleCategory.findMany({
     include: { _count: { select: { articles: true } } },
-    orderBy: { name: 'asc' },
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+  })
+}
+
+/** Categories that have at least one published article, in admin order (Learn page filter chips). */
+export async function listPublishedCategories(now: Date) {
+  return prisma.articleCategory.findMany({
+    where: { articles: { some: visibleArticleWhere(now) } },
+    select: { id: true, name: true, nameBn: true },
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   })
 }
 
@@ -101,11 +174,64 @@ const ARTICLE_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'] as const
 
 function assertArticleStatus(status: string | undefined): void {
   if (status !== undefined && !(ARTICLE_STATUSES as readonly string[]).includes(status)) {
-    throw new Error(`Invalid article status "${status}". Expected one of ${ARTICLE_STATUSES.join(', ')}.`)
+    throw new ContentError(`Invalid article status "${status}". Expected one of ${ARTICLE_STATUSES.join(', ')}.`)
   }
 }
 
 export { articlePublishWarnings }
+
+/** An error whose message is safe to show an admin as-is. */
+export class ContentError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ContentError'
+  }
+}
+
+const GENERIC_ERROR = 'Something went wrong. Please try again.'
+
+/** Message an admin action should return for a thrown error (never leaks internals). */
+export function contentErrorMessage(err: unknown): string {
+  if (err instanceof ContentError) return err.message
+  const code = (err as { code?: unknown } | null)?.code
+  if (code === 'P2002') return 'That name is already in use.'
+  if (code === 'P2025') return 'That item no longer exists.'
+  return GENERIC_ERROR
+}
+
+/** A publish time must be a real date and only makes sense on a published article. */
+function assertPublishAt(publishedAt: Date | null | undefined, status: string | undefined): void {
+  if (publishedAt === undefined || publishedAt === null) return
+  if (!(publishedAt instanceof Date) || Number.isNaN(publishedAt.getTime())) {
+    throw new ContentError('Choose a valid publish date and time.')
+  }
+  if (status !== 'PUBLISHED') throw new ContentError('Only a published article can have a publish time.')
+}
+
+/** A publish time in the past means "now"; absent means "now". */
+function clampToNow(publishedAt: Date | null | undefined, now: Date): Date {
+  return publishedAt && publishedAt > now ? publishedAt : now
+}
+
+async function assertArticleFields(
+  data: { titleEn?: string; bodyEn?: string; categoryId?: string | null; cyclePhases?: string[] },
+  mode: 'create' | 'update',
+): Promise<void> {
+  if ((mode === 'create' || data.titleEn !== undefined) && !data.titleEn?.trim()) {
+    throw new ContentError('English title is required.')
+  }
+  if ((mode === 'create' || data.bodyEn !== undefined) && isBlankBody(data.bodyEn)) {
+    throw new ContentError('English body is required.')
+  }
+  const bad = data.cyclePhases?.filter((p) => !(ARTICLE_PHASES as readonly string[]).includes(p))
+  if (bad?.length) {
+    throw new ContentError(`Invalid cycle phase "${bad[0]}". Expected one of ${ARTICLE_PHASES.join(', ')}.`)
+  }
+  if (data.categoryId) {
+    const found = await prisma.articleCategory.findUnique({ where: { id: data.categoryId }, select: { id: true } })
+    if (!found) throw new ContentError('That category no longer exists.')
+  }
+}
 
 export async function createArticle(
   authorId: string,
@@ -117,10 +243,14 @@ export async function createArticle(
     categoryId?: string | null
     cyclePhases?: string[]
     status?: string
+    /** Go live at this instant (future = scheduled). Only with status PUBLISHED; past = now. */
+    publishedAt?: Date | null
   },
   now: Date,
 ) {
   assertArticleStatus(data.status)
+  await assertArticleFields(data, 'create')
+  assertPublishAt(data.publishedAt, data.status)
   const slug = slugify(data.titleEn) + '-' + now.getTime().toString(36)
 
   const article = await prisma.article.create({
@@ -136,7 +266,7 @@ export async function createArticle(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       status: (data.status as never) || 'DRAFT',
       authorId,
-      publishedAt: data.status === 'PUBLISHED' ? now : null,
+      publishedAt: data.status === 'PUBLISHED' ? clampToNow(data.publishedAt, now) : null,
     },
   })
 
@@ -163,11 +293,18 @@ export async function updateArticle(
     categoryId?: string | null
     cyclePhases?: string[]
     status?: string
+    /** Date: schedule (past = now). null: publish now. undefined: keep what is there. */
+    publishedAt?: Date | null
   },
   now: Date,
+  /** When given, an ARTICLE_UPDATED audit row is written for this admin. */
+  adminId?: string,
 ) {
   assertArticleStatus(data.status)
+  await assertArticleFields(data, 'update')
+  assertPublishAt(data.publishedAt, data.status)
   const updateData: Record<string, unknown> = { ...data }
+  delete updateData.publishedAt
 
   if (typeof data.bodyEn === 'string') updateData.bodyEn = sanitizeArticleHtml(data.bodyEn)
   if (data.titleBn !== undefined) updateData.titleBn = data.titleBn?.trim() || null
@@ -178,7 +315,14 @@ export async function updateArticle(
 
   if (data.status === 'PUBLISHED') {
     const existing = await prisma.article.findUnique({ where: { id } })
-    if (existing && !existing.publishedAt) {
+    const live = !!existing?.publishedAt && existing.publishedAt <= now
+    if (data.publishedAt instanceof Date) {
+      if (live) throw new ContentError('This article is already published; its publish time cannot be changed.')
+      updateData.publishedAt = clampToNow(data.publishedAt, now)
+    } else if (data.publishedAt === null) {
+      // Publish now: moves a scheduled article live; leaves an already-live one alone.
+      if (existing && !live) updateData.publishedAt = now
+    } else if (existing && !existing.publishedAt) {
       updateData.publishedAt = now
     }
   } else if (data.status === 'DRAFT' || data.status === 'ARCHIVED') {
@@ -189,10 +333,101 @@ export async function updateArticle(
     updateData.cyclePhases = data.cyclePhases
   }
 
-  return prisma.article.update({
+  const article = await prisma.article.update({
     where: { id },
     data: updateData,
   })
+
+  if (adminId) {
+    await createAuditLog(adminId, AUDIT_ACTIONS.ARTICLE_UPDATED, 'Article', id, { fields: Object.keys(data) })
+  }
+
+  return article
+}
+
+// ── Bulk article actions ───────────────────────────────────────────────────────
+
+export type BulkArticleAction =
+  | { type: 'publish' }
+  | { type: 'unpublish' }
+  | { type: 'archive' }
+  | { type: 'move'; categoryId: string | null }
+
+export type BulkArticleResult = {
+  results: Array<{ id: string; ok: true } | { id: string; ok: false; error: string }>
+}
+
+const BULK_ARTICLE_MAX = 100
+
+/** Apply one action to many articles. Each id succeeds or fails alone; one audit row per call. */
+export async function bulkArticleAction(
+  adminId: string,
+  ids: string[],
+  action: BulkArticleAction,
+  now: Date,
+): Promise<BulkArticleResult> {
+  const unique = [...new Set(ids)]
+  if (unique.length === 0) throw new ContentError('Select at least one article.')
+  if (unique.length > BULK_ARTICLE_MAX) {
+    throw new ContentError(`Select at most ${BULK_ARTICLE_MAX} articles at a time.`)
+  }
+
+  let data: Prisma.ArticleUpdateManyMutationInput & { categoryId?: string | null }
+  let categoryError: string | null = null
+  switch (action.type) {
+    case 'publish':
+      // Already-live articles keep their publish time (same rule as updateArticle); the rest go live now.
+      data = { status: 'PUBLISHED', publishedAt: now }
+      break
+    case 'unpublish':
+      data = { status: 'DRAFT', publishedAt: null }
+      break
+    case 'archive':
+      data = { status: 'ARCHIVED', publishedAt: null }
+      break
+    case 'move': {
+      data = { categoryId: action.categoryId }
+      if (action.categoryId) {
+        const found = await prisma.articleCategory.findUnique({
+          where: { id: action.categoryId },
+          select: { id: true },
+        })
+        if (!found) categoryError = 'That category no longer exists.'
+      }
+      break
+    }
+    default:
+      throw new ContentError('Unknown bulk action.')
+  }
+
+  const results: BulkArticleResult['results'] = []
+  for (const id of unique) {
+    if (categoryError) {
+      results.push({ id, ok: false, error: categoryError })
+      continue
+    }
+    try {
+      const where: Prisma.ArticleWhereInput =
+        action.type === 'publish'
+          ? { id, OR: [{ status: { not: 'PUBLISHED' } }, { publishedAt: null }, { publishedAt: { gt: now } }] }
+          : { id }
+      let { count } = await prisma.article.updateMany({ where, data })
+      if (count === 0 && action.type === 'publish') count = await prisma.article.count({ where: { id } })
+      results.push(count === 0 ? { id, ok: false, error: 'Article not found.' } : { id, ok: true })
+    } catch {
+      results.push({ id, ok: false, error: 'Could not update this article.' })
+    }
+  }
+
+  await createAuditLog(adminId, AUDIT_ACTIONS.ARTICLE_BULK_ACTION, 'Article', unique[0], {
+    action: action.type,
+    ...(action.type === 'move' ? { categoryId: action.categoryId } : {}),
+    ids: unique,
+    succeeded: results.filter((r) => r.ok).map((r) => r.id),
+    failed: results.filter((r) => !r.ok).map((r) => r.id),
+  })
+
+  return { results }
 }
 
 export async function removeArticle(id: string, adminId: string) {
@@ -212,41 +447,126 @@ export async function removeArticle(id: string, adminId: string) {
 
 // ── Category mutations ─────────────────────────────────────────────────────────
 
-export async function createCategory(name: string, nameBn?: string | null) {
-  const slug = slugify(name)
-  return prisma.articleCategory.create({ data: { name, nameBn: nameBn?.trim() || null, slug } })
+const CATEGORY_TYPE = 'ArticleCategory'
+
+/** Slug for a category name. Bangla-only names slugify to "", so fall back to `category` and add -2, -3 ... until free. */
+async function uniqueCategorySlug(name: string, excludeId?: string): Promise<string> {
+  const base = slugify(name) || 'category'
+  for (let n = 1; ; n++) {
+    const candidate = n === 1 ? base : `${base}-${n}`
+    const taken = await prisma.articleCategory.findFirst({
+      where: { slug: candidate, ...(excludeId ? { id: { not: excludeId } } : {}) },
+      select: { id: true },
+    })
+    if (!taken) return candidate
+  }
 }
 
-export async function updateCategory(id: string, name: string, nameBn?: string | null) {
-  const slug = slugify(name)
-  const data: { name: string; slug: string; nameBn?: string | null } = { name, slug }
+function cleanCategoryName(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) throw new ContentError('Category name is required')
+  return trimmed
+}
+
+function rethrowDuplicateName(e: unknown, name: string): never {
+  if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+    throw new ContentError(`A category named "${name}" already exists`)
+  }
+  throw e
+}
+
+export async function createCategory(adminId: string, name: string, nameBn?: string | null) {
+  const clean = cleanCategoryName(name)
+  const max = await prisma.articleCategory.aggregate({ _max: { sortOrder: true } })
+  try {
+    const category = await prisma.articleCategory.create({
+      data: {
+        name: clean,
+        nameBn: nameBn?.trim() || null,
+        slug: await uniqueCategorySlug(clean),
+        sortOrder: (max._max.sortOrder ?? 0) + 1,
+      },
+    })
+    await createAuditLog(adminId, AUDIT_ACTIONS.CATEGORY_CREATED, CATEGORY_TYPE, category.id, { name: category.name })
+    return category
+  } catch (e) {
+    return rethrowDuplicateName(e, clean)
+  }
+}
+
+export async function updateCategory(adminId: string, id: string, name: string, nameBn?: string | null) {
+  const clean = cleanCategoryName(name)
+  const existing = await prisma.articleCategory.findUnique({ where: { id }, select: { name: true, nameBn: true } })
+  if (!existing) throw new ContentError('Category not found')
+  const data: { name: string; slug?: string; nameBn?: string | null } = { name: clean }
+  // The slug follows the name only when the name changes; renaming keeps links stable otherwise.
+  if (clean !== existing.name) data.slug = await uniqueCategorySlug(clean, id)
   if (nameBn !== undefined) data.nameBn = nameBn?.trim() || null
-  return prisma.articleCategory.update({ where: { id }, data })
+  try {
+    const category = await prisma.articleCategory.update({ where: { id }, data })
+    if (clean !== existing.name || category.nameBn !== existing.nameBn) {
+      await createAuditLog(adminId, AUDIT_ACTIONS.CATEGORY_RENAMED, CATEGORY_TYPE, id, {
+        from: existing.name,
+        to: clean,
+        fromBn: existing.nameBn,
+        toBn: category.nameBn,
+      })
+    }
+    return category
+  } catch (e) {
+    return rethrowDuplicateName(e, clean)
+  }
 }
 
-export async function removeCategory(id: string) {
+export async function removeCategory(adminId: string, id: string) {
+  const category = await prisma.articleCategory.findUnique({ where: { id }, select: { name: true } })
+  if (!category) throw new ContentError('Category not found')
   const count = await prisma.article.count({ where: { categoryId: id } })
-  if (count > 0) throw new Error('Cannot delete category with articles')
+  if (count > 0) throw new ContentError('Cannot delete a category that still has articles.')
   await prisma.articleCategory.delete({ where: { id } })
+  await createAuditLog(adminId, AUDIT_ACTIONS.CATEGORY_DELETED, CATEGORY_TYPE, id, { name: category.name })
+  return { success: true }
+}
+
+/** Persist a new category order. `orderedIds` must list every category exactly once. */
+export async function reorderCategories(adminId: string, orderedIds: string[]) {
+  const all = await prisma.articleCategory.findMany({ select: { id: true } })
+  const known = new Set(all.map((c) => c.id))
+  const valid =
+    orderedIds.length === known.size &&
+    new Set(orderedIds).size === orderedIds.length &&
+    orderedIds.every((id) => known.has(id))
+  if (!valid) throw new ContentError('Categories changed since this page loaded. Reload and try again.')
+  await prisma.$transaction(
+    orderedIds.map((id, index) =>
+      prisma.articleCategory.update({ where: { id }, data: { sortOrder: index + 1 } }),
+    ),
+  )
+  await createAuditLog(adminId, AUDIT_ACTIONS.CATEGORY_REORDERED, CATEGORY_TYPE, 'all', { count: orderedIds.length })
   return { success: true }
 }
 
 // ── Chart-data helpers ─────────────────────────────────────────────────────────
 
 /**
- * Returns article counts grouped by status (DRAFT / PUBLISHED / ARCHIVED).
- * Status values correspond to the `ArticleStatus` enum.
+ * Article counts by status: DRAFT / PUBLISHED / SCHEDULED / ARCHIVED. PUBLISHED is live at `now`;
+ * SCHEDULED is published with a publish time still ahead (same split as the list's filters).
  */
-export async function getContentStatusBreakdown(): Promise<
-  { status: string; count: number }[]
-> {
-  const groups = await prisma.article.groupBy({
-    by: ['status'],
-    _count: { status: true },
-    orderBy: { status: 'asc' },
-  })
-
-  return groups.map((g) => ({ status: g.status, count: g._count.status }))
+export async function getContentStatusBreakdown(
+  now: Date,
+): Promise<{ status: string; count: number }[]> {
+  const [draft, published, scheduled, archived] = await Promise.all([
+    prisma.article.count({ where: { status: 'DRAFT' } }),
+    prisma.article.count({ where: visibleArticleWhere(now) }),
+    prisma.article.count({ where: { status: 'PUBLISHED', publishedAt: { gt: now } } }),
+    prisma.article.count({ where: { status: 'ARCHIVED' } }),
+  ])
+  return [
+    { status: 'DRAFT', count: draft },
+    { status: 'PUBLISHED', count: published },
+    { status: 'SCHEDULED', count: scheduled },
+    { status: 'ARCHIVED', count: archived },
+  ].filter((r) => r.count > 0)
 }
 
 /**
@@ -329,9 +649,10 @@ export async function listPublishedArticles(
     pageSize?: number
     phase?: string
   } = {},
+  now: Date,
 ) {
   const { page = 1, pageSize = 20, phase } = params
-  const where: Record<string, unknown> = { status: 'PUBLISHED' }
+  const where: Record<string, unknown> = { ...visibleArticleWhere(now) }
   if (phase && phase !== 'all') {
     where.cyclePhases = { has: phase }
   }
@@ -351,7 +672,7 @@ export async function listPublishedArticles(
         status: true,
         cyclePhases: true,
         publishedAt: true,
-        category: { select: { name: true, nameBn: true } },
+        category: { select: { id: true, name: true, nameBn: true } },
         author: { select: { fullName: true } },
       },
       orderBy: { publishedAt: 'desc' },
@@ -379,9 +700,9 @@ export async function listPublishedArticles(
 }
 
 /** Fetch a single published article's body for on-demand rendering. */
-export async function getPublishedArticleById(id: string) {
+export async function getPublishedArticleById(id: string, now: Date) {
   return prisma.article.findFirst({
-    where: { id, status: 'PUBLISHED' },
+    where: { id, ...visibleArticleWhere(now) },
     select: {
       id: true,
       titleEn: true,

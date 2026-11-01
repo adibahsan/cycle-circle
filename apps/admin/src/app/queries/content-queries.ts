@@ -9,34 +9,35 @@ import {
   getContentByCategory,
   getContentByPhase,
 } from '@vesta/shared/server/services'
+import { normalizeListOptions, type ListArticlesOptions } from '@vesta/shared/utils/article-list-params'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
-function articlesCacheKey(params: {
-  page?: number
-  pageSize?: number
-  status?: string
-  categoryId?: string
-}) {
+function articlesCacheKey(o: ListArticlesOptions) {
+  // Normalised so equivalent URLs share a cache entry; every option that changes the rows is in the key.
+  const n = normalizeListOptions(o)
   return [
     'admin-articles',
-    String(params.page ?? 1),
-    String(params.pageSize ?? 20),
-    params.status ?? '',
-    params.categoryId ?? '',
+    String(n.page),
+    String(n.pageSize),
+    n.status ?? '',
+    n.categoryId ?? '',
+    n.phase ?? '',
+    n.missingBangla ? '1' : '',
+    n.sort,
+    n.sortDir,
+    n.viewsFrom ?? '',
+    n.viewsTo ?? '',
+    n.q ?? '',
   ]
 }
 
-export const getArticles = cache(async (params: {
-  page?: number
-  pageSize?: number
-  status?: string
-  categoryId?: string
-} = {}) => {
+export const getArticles = cache(async (params: ListArticlesOptions = {}) => {
   await requireAdminUser()
   return unstable_cache(
-    () => listArticles(params),
+    () => listArticles(params, new Date()),
     articlesCacheKey(params),
-    { tags: [adminCacheTags.content], revalidate: ADMIN_CACHE_TTL }
+    // 60s, not ADMIN_CACHE_TTL: the Published/Scheduled split depends on the clock.
+    { tags: [adminCacheTags.content], revalidate: 60 }
   )()
 })
 
@@ -61,9 +62,10 @@ export const getCategories = cache(async () => {
 export const getContentStatusBreakdownQuery = cache(async () => {
   await requireAdminUser()
   return unstable_cache(
-    () => getContentStatusBreakdown(),
+    () => getContentStatusBreakdown(new Date()),
     ['admin-content-status-breakdown'],
-    { tags: [adminCacheTags.content], revalidate: ADMIN_CACHE_TTL }
+    // 60s, not ADMIN_CACHE_TTL: the Published/Scheduled split depends on the clock.
+    { tags: [adminCacheTags.content], revalidate: 60 }
   )()
 })
 

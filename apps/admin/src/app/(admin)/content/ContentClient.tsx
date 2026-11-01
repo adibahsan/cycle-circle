@@ -2,8 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 import { useUrlParams } from '@/lib/use-url-params'
-import { useState, useRef } from 'react'
-import { Plus, Pencil, Trash2, ChevronRight, Tags, X, Check } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Plus, Pencil, Trash2, ChevronRight, Tags, X, Check, GripVertical, ChevronUp, ChevronDown } from 'lucide-react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
@@ -12,9 +12,12 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
-import { deleteArticle, createCategory, updateCategory, deleteCategory } from '@/app/actions/content-actions'
+import { Select } from '@/components/ui/Select'
+import type { BulkArticleAction } from '@vesta/shared/server/services'
+import { deleteArticle, bulkArticleAction, createCategory, updateCategory, deleteCategory, reorderCategories } from '@/app/actions/content-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
+import { useToast } from '@/components/ui/Toast'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
@@ -29,6 +32,8 @@ type ArticleRow = {
   createdAt: Date
   category: { name: string } | null
   author: { fullName: string | null } | null
+  views: number
+  displayStatus: 'draft' | 'scheduled' | 'published' | 'archived'
 }
 
 type CategoryOption = {
@@ -56,6 +61,7 @@ const STATUS_OPTIONS = [
   { value: 'all', label: 'All Statuses' },
   { value: 'DRAFT', label: 'Draft' },
   { value: 'PUBLISHED', label: 'Published' },
+  { value: 'scheduled', label: 'Scheduled' },
   { value: 'ARCHIVED', label: 'Archived' },
 ]
 
@@ -66,6 +72,16 @@ const PHASE_LABELS: Record<string, string> = {
   LUTEAL: 'Luteal',
 }
 
+const PHASE_OPTIONS = [
+  { value: 'all', label: 'All Phases' },
+  ...Object.entries(PHASE_LABELS).map(([value, label]) => ({ value, label })),
+]
+
+const BANGLA_OPTIONS = [
+  { value: 'all', label: 'Any' },
+  { value: '1', label: 'Missing Bangla' },
+]
+
 const PHASE_COLORS: Record<string, string> = {
   MENSTRUAL: 'bg-[color-mix(in_srgb,var(--color-menstrual)_22%,transparent)] text-[var(--color-text-primary)]',
   FOLLICULAR: 'bg-[color-mix(in_srgb,var(--color-follicular)_22%,transparent)] text-[var(--color-text-primary)]',
@@ -73,11 +89,22 @@ const PHASE_COLORS: Record<string, string> = {
   LUTEAL: 'bg-[color-mix(in_srgb,var(--color-luteal)_22%,transparent)] text-[var(--color-text-primary)]',
 }
 
-function StatusBadge({ status }: { status: string }) {
-  if (status === 'PUBLISHED') return <Badge variant="success" size="sm">Published</Badge>
-  if (status === 'DRAFT') return <Badge variant="info" size="sm">Draft</Badge>
-  if (status === 'ARCHIVED') return <Badge variant="neutral" size="sm">Archived</Badge>
-  return <Badge variant="neutral" size="sm">{status}</Badge>
+function StatusBadge({ status, publishedAt }: { status: ArticleRow['displayStatus']; publishedAt: Date | string | null }) {
+  if (status === 'scheduled') {
+    return (
+      <div className="space-y-0.5">
+        <Badge variant="warning" size="sm">Scheduled</Badge>
+        {publishedAt && (
+          <p className="text-xs text-[var(--color-text-muted)]">
+            {formatDhaka(publishedAt, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+          </p>
+        )}
+      </div>
+    )
+  }
+  if (status === 'published') return <Badge variant="success" size="sm">Published</Badge>
+  if (status === 'draft') return <Badge variant="info" size="sm">Draft</Badge>
+  return <Badge variant="neutral" size="sm">Archived</Badge>
 }
 
 function PhaseBadges({ phases }: { phases: string[] }) {
@@ -110,7 +137,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
   const { searchParams, updateParams } = useUrlParams({ clearOn: ['all'] })
   const [deleteTarget, setDeleteTarget] = useState<ArticleRow | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+  const toast = useToast()
 
   // Category manager state
   const [showCategoryManager, setShowCategoryManager] = useState(false)
@@ -129,24 +156,91 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
   const [renamingSaving, setRenamingSaving] = useState(false)
   const [renameError, setRenameError] = useState('')
 
+  // Category order: optimistic local copy of the server order, reverted if saving fails.
+  const [orderedCategories, setOrderedCategories] = useState(categories)
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [reordering, setReordering] = useState(false)
+  const [orderMessage, setOrderMessage] = useState('')
+  const [listError, setListError] = useState('')
+  useEffect(() => setOrderedCategories(categories), [categories])
+
   const currentStatus = searchParams.get('status') ?? 'all'
   const currentCategoryId = searchParams.get('categoryId') ?? 'all'
+  const currentPhase = searchParams.get('phase') ?? 'all'
+  const currentMissingBangla = searchParams.get('missingBangla') === '1' ? '1' : 'all'
+  const currentQuery = searchParams.get('q') ?? ''
+  const currentSort = searchParams.get('sort') ?? 'newest'
+  const viewsDir = searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc'
   const currentPage = data.page
   const currentPageSize = data.pageSize
 
 
   const categoryOptions = [
     { value: 'all', label: 'All Categories' },
+    { value: 'none', label: 'No category' },
     ...categories.map((c) => ({ value: c.id, label: `${c.name} (${c._count.articles})` })),
   ]
+
+  // ── Bulk selection ──
+  const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkMoveTarget, setBulkMoveTarget] = useState('')
+  const [bulkFailures, setBulkFailures] = useState<{ title: string; error: string }[]>([])
+  const bulkCategoryOptions = [
+    { value: 'none', label: 'No category' },
+    ...categories.map((c) => ({ value: c.id, label: c.name })),
+  ]
+
+  // Selection belongs to the visible page: drop it when the list changes under it.
+  const articleIdsKey = data.articles.map((a) => a.id).join(',')
+  useEffect(() => {
+    const present = new Set(articleIdsKey.split(','))
+    setSelectedIds((prev) => new Set([...prev].filter((id) => present.has(String(id)))))
+  }, [articleIdsKey])
+
+  async function runBulk(action: BulkArticleAction) {
+    const ids = [...selectedIds].map(String)
+    if (ids.length === 0) return
+    setBulkBusy(true)
+    setBulkFailures([])
+    try {
+      const result = await bulkArticleAction(ids, action)
+      if ('error' in result) {
+        toast.error(result.error)
+        return
+      }
+      const failed = result.results.filter((r) => !r.ok)
+      const succeeded = result.results.length - failed.length
+      const titleOf = (id: string) => data.articles.find((a) => a.id === id)?.titleEn ?? id
+      setBulkFailures(failed.map((r) => ({ title: titleOf(r.id), error: r.ok ? '' : r.error })))
+      const summary = `${succeeded} succeeded${failed.length ? `, ${failed.length} failed` : ''}`
+      if (failed.length) toast.error(summary)
+      else toast.success(summary)
+      // Keep only the failed ones selected so the admin can retry them.
+      setSelectedIds(new Set(failed.map((r) => r.id)))
+      setBulkMoveTarget('')
+      router.refresh()
+    } catch {
+      toast.error('Could not apply the action. Check your connection and try again.')
+    } finally {
+      setBulkBusy(false)
+    }
+  }
 
   async function handleDelete() {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      await deleteArticle(deleteTarget.id)
+      const result = await deleteArticle(deleteTarget.id)
       setDeleteTarget(null)
+      if ('error' in result) {
+        toast.error(result.error)
+        return
+      }
       router.refresh()
+    } catch {
+      setDeleteTarget(null)
+      toast.error('Could not delete the article. Check your connection and try again.')
     } finally {
       setDeleting(false)
     }
@@ -159,7 +253,11 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     setCategoryError('')
     setSaving(true)
     try {
-      await createCategory(name, newCategoryNameBn.trim())
+      const res = await createCategory(name, newCategoryNameBn.trim())
+      if ('error' in res) {
+        setCategoryError(res.error)
+        return
+      }
       setNewCategoryName('')
       setNewCategoryNameBn('')
       router.refresh()
@@ -174,10 +272,15 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
   async function handleDeleteCategory() {
     if (!categoryToDelete) return
     setDeletingCategory(true)
+    setListError('')
     try {
-      await deleteCategory(categoryToDelete.id)
+      const res = await deleteCategory(categoryToDelete.id)
+      if ('error' in res) setListError(res.error)
+      else router.refresh()
       setCategoryToDelete(null)
-      router.refresh()
+    } catch {
+      setListError('Failed to delete category')
+      setCategoryToDelete(null)
     } finally {
       setDeletingCategory(false)
     }
@@ -206,7 +309,11 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     setRenamingSaving(true)
     setRenameError('')
     try {
-      await updateCategory(id, name, editingCategoryNameBn.trim())
+      const res = await updateCategory(id, name, editingCategoryNameBn.trim())
+      if ('error' in res) {
+        setRenameError(res.error)
+        return
+      }
       setEditingCategoryId(null)
       setEditingCategoryName('')
       setEditingCategoryNameBn('')
@@ -218,12 +325,34 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     }
   }
 
-  const filteredArticles = searchTerm.trim()
-    ? data.articles.filter((a) =>
-        a.titleEn.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (a.titleBn ?? '').toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : data.articles
+  async function moveCategory(id: string, toIndex: number) {
+    const from = orderedCategories.findIndex((c) => c.id === id)
+    if (from < 0 || toIndex < 0 || toIndex >= orderedCategories.length || from === toIndex) return
+    const previous = orderedCategories
+    const next = [...orderedCategories]
+    const [moved] = next.splice(from, 1)
+    next.splice(toIndex, 0, moved)
+    setOrderedCategories(next)
+    setListError('')
+    setOrderMessage(`${moved.name} moved to position ${toIndex + 1} of ${next.length}`)
+    setReordering(true)
+    try {
+      const res = await reorderCategories(next.map((c) => c.id))
+      if ('error' in res) {
+        setOrderedCategories(previous)
+        setListError(res.error)
+        setOrderMessage('')
+      } else {
+        router.refresh()
+      }
+    } catch {
+      setOrderedCategories(previous)
+      setListError('Failed to reorder categories')
+      setOrderMessage('')
+    } finally {
+      setReordering(false)
+    }
+  }
 
   const COLUMNS: Column<ArticleRow>[] = [
     {
@@ -241,7 +370,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     {
       key: 'status',
       header: 'Status',
-      render: (row) => <StatusBadge status={row.status} />,
+      render: (row) => <StatusBadge status={row.displayStatus} publishedAt={row.publishedAt} />,
     },
     {
       key: 'category',
@@ -273,6 +402,16 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
       render: (row) => (
         <span className="text-sm text-[var(--color-text-muted)]">
           {formatDate(row.publishedAt)}
+        </span>
+      ),
+    },
+    {
+      key: 'views',
+      header: 'Views',
+      sortable: true,
+      render: (row) => (
+        <span className="text-sm tabular-nums text-[var(--color-text-secondary)]" data-testid="article-views">
+          {row.views.toLocaleString()}
         </span>
       ),
     },
@@ -379,8 +518,8 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
 
       {/* Filters */}
       <FilterBar
-        searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
+        searchValue={currentQuery}
+        onSearchChange={(q) => updateParams({ q })}
         searchPlaceholder="Search articles…"
         filters={[
           {
@@ -397,14 +536,115 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
             value: currentCategoryId,
             onChange: (v) => updateParams({ categoryId: v }),
           },
+          {
+            key: 'phase',
+            label: 'Phase',
+            options: PHASE_OPTIONS,
+            value: currentPhase,
+            onChange: (v) => updateParams({ phase: v }),
+          },
+          {
+            key: 'missingBangla',
+            label: 'Bangla',
+            options: BANGLA_OPTIONS,
+            value: currentMissingBangla,
+            onChange: (v) => updateParams({ missingBangla: v }),
+          },
         ]}
       />
 
+      {/* Views range: Bangladesh days, inclusive; empty = all time. Applies to the column and the sort. */}
+      <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+        <span>Views from</span>
+        <input
+          type="date"
+          aria-label="Views from"
+          value={searchParams.get('viewsFrom') ?? ''}
+          onChange={(e) => updateParams({ viewsFrom: e.target.value })}
+          className="h-9 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 text-sm"
+        />
+        <span>to</span>
+        <input
+          type="date"
+          aria-label="Views to"
+          value={searchParams.get('viewsTo') ?? ''}
+          onChange={(e) => updateParams({ viewsTo: e.target.value })}
+          className="h-9 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 text-sm"
+        />
+      </div>
+
       {/* Table */}
+      {(selectedIds.size > 0 || bulkFailures.length > 0) && (
+        <div
+          role="region"
+          aria-label="Bulk actions"
+          className="sticky top-2 z-10 space-y-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-3 shadow-soft"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-[var(--color-text-primary)]" aria-live="polite">
+              {selectedIds.size} selected
+            </span>
+            <Button size="sm" disabled={bulkBusy || selectedIds.size === 0} onClick={() => runBulk({ type: 'publish' })}>
+              Publish
+            </Button>
+            <Button size="sm" variant="secondary" disabled={bulkBusy || selectedIds.size === 0} onClick={() => runBulk({ type: 'unpublish' })}>
+              Unpublish
+            </Button>
+            <Button size="sm" variant="secondary" disabled={bulkBusy || selectedIds.size === 0} onClick={() => runBulk({ type: 'archive' })}>
+              Archive
+            </Button>
+            <Select
+              selectSize="sm"
+              aria-label="Move to category"
+              placeholder="Move to category…"
+              options={bulkCategoryOptions}
+              value={bulkMoveTarget}
+              onChange={setBulkMoveTarget}
+              disabled={bulkBusy || selectedIds.size === 0}
+              containerClassName="w-auto min-w-44"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkBusy || selectedIds.size === 0 || !bulkMoveTarget}
+              onClick={() => runBulk({ type: 'move', categoryId: bulkMoveTarget === 'none' ? null : bulkMoveTarget })}
+            >
+              Move
+            </Button>
+            <Button size="sm" variant="ghost" disabled={bulkBusy} onClick={() => { setSelectedIds(new Set()); setBulkFailures([]) }}>
+              Clear
+            </Button>
+          </div>
+          {bulkFailures.length > 0 && (
+            <div role="alert" className="text-sm text-[var(--color-error)]">
+              <p className="font-medium">{bulkFailures.length} failed:</p>
+              <ul className="list-disc pl-5">
+                {bulkFailures.map((f, i) => (
+                  <li key={i}>{f.title}: {f.error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
       <DataTable
         columns={COLUMNS}
-        data={filteredArticles as unknown as ArticleRow[]}
+        data={data.articles}
+        selectable
+        selectedKeys={selectedIds}
+        onSelectionChange={setSelectedIds}
+        rowSelectLabel={(row) => `Select "${row.titleEn}"`}
         emptyMessage="No articles match your filters."
+        sortKey={currentSort === 'views' ? 'views' : null}
+        sortOrder={viewsDir}
+        // Views header cycles most read (desc) -> least read (asc) -> off.
+        onSortChange={(key) => {
+          if (key !== 'views') return
+          if (currentSort !== 'views') updateParams({ sort: 'views', sortDir: '' })
+          else if (viewsDir === 'desc') updateParams({ sort: 'views', sortDir: 'asc' })
+          else updateParams({ sort: '', sortDir: '' })
+        }}
         onRowClick={(row) => router.push(`/content/${row.id}`)}
         keyExtractor={(row) => row.id}
       />
@@ -513,18 +753,45 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
 
             {/* Category list */}
             <div className="overflow-y-auto flex-1 px-6 py-2" aria-live="polite">
-              {categories.length === 0 ? (
+              {listError && (
+                <p role="alert" className="py-2 text-sm text-[var(--color-error)]">
+                  {listError}
+                </p>
+              )}
+              <p className="sr-only" role="status">{orderMessage}</p>
+              {orderedCategories.length === 0 ? (
                 <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">
                   No categories yet. Add one above.
                 </p>
               ) : (
                 <ul className="divide-y divide-[var(--color-border)]" role="list">
-                  {categories.map((cat) => {
+                  {orderedCategories.map((cat, index) => {
                     const hasArticles = cat._count.articles > 0
                     const isEditing = editingCategoryId === cat.id
                     const isBusy = saving || deletingCategory || renamingSaving
+                    const orderLocked = isBusy || reordering || !!editingCategoryId
                     return (
-                      <li key={cat.id} className="flex items-center justify-between gap-3 py-3">
+                      <li
+                        key={cat.id}
+                        className={`flex items-center justify-between gap-3 py-3 ${dragId === cat.id ? 'opacity-50' : ''}`}
+                        draggable={!orderLocked}
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = 'move'
+                          setDragId(cat.id)
+                        }}
+                        onDragOver={(e) => {
+                          if (dragId) e.preventDefault()
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          if (dragId) moveCategory(dragId, index)
+                          setDragId(null)
+                        }}
+                        onDragEnd={() => setDragId(null)}
+                      >
+                        <div className="flex flex-col items-center shrink-0">
+                          <GripVertical size={14} className="text-[var(--color-text-muted)] cursor-grab" aria-hidden="true" />
+                        </div>
                         <div className="min-w-0 flex-1">
                           {isEditing ? (
                             <div
@@ -638,6 +905,24 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                             </>
                           ) : (
                             <>
+                              <button
+                                type="button"
+                                onClick={() => moveCategory(cat.id, index - 1)}
+                                disabled={orderLocked || index === 0}
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
+                                aria-label={`Move category ${cat.name} up`}
+                              >
+                                <ChevronUp size={14} aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moveCategory(cat.id, index + 1)}
+                                disabled={orderLocked || index === orderedCategories.length - 1}
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
+                                aria-label={`Move category ${cat.name} down`}
+                              >
+                                <ChevronDown size={14} aria-hidden="true" />
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => startEditCategory(cat)}

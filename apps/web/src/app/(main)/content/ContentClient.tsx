@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, BookOpen, ChevronRight, Droplets, Flower2, Info, Loader2, Moon, Sprout, type LucideIcon } from 'lucide-react'
+import { BookOpen, ChevronRight, Droplets, Flower2, Moon, Sprout, type LucideIcon } from 'lucide-react'
 import { useLanguage } from '@/lib/use-language'
 import { getPhaseColor, parseCyclePhase } from '@vesta/shared/utils/cycle-utils'
 
@@ -14,16 +15,14 @@ function phaseColorFor(name: string): string {
 }
 
 import '@vesta/shared/utils/i18n'
-import { getArticleBody } from '@/app/actions/content-actions'
 import { PageContainer } from '@/components/ui/PageContainer'
-import { SectionHeader } from '@/components/ui/SectionHeader'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { PhaseIcon } from '@/components/ui/PhaseIcon'
 
 type FilterTab = 'all' | 'MENSTRUAL' | 'FOLLICULAR' | 'OVULATION' | 'LUTEAL'
 
 /** Shape of each item returned by listPublishedArticles (excerpts, no full body). */
-interface Article {
+export interface Article {
   id: string
   slug: string
   titleEn: string
@@ -32,12 +31,20 @@ interface Article {
   excerptBn: string
   cyclePhases: string[]
   publishedAt: Date | string | null
-  category: { name: string; nameBn?: string | null } | null
+  category: { id?: string; name: string; nameBn?: string | null } | null
   author: { fullName: string | null } | null
+}
+
+/** Category chip, already in the order the admin set. */
+export interface CategoryChip {
+  id: string
+  name: string
+  nameBn: string | null
 }
 
 interface ContentClientProps {
   articles: Article[]
+  categories?: CategoryChip[]
   activePhase?: string
   currentPhase?: string | null
 }
@@ -50,20 +57,12 @@ const PHASE_TABS: { id: FilterTab; labelKey: string; Icon: LucideIcon }[] = [
   { id: 'LUTEAL', labelKey: 'dashboard.luteal', Icon: Moon },
 ]
 
-export function ContentClient({ articles, activePhase, currentPhase }: ContentClientProps) {
+export function ContentClient({ articles: allArticles, categories = [], activePhase, currentPhase }: ContentClientProps) {
+  const [categoryId, setCategoryId] = useState<string | null>(null)
+  const articles = categoryId ? allArticles.filter(a => a.category?.id === categoryId) : allArticles
   const { t } = useTranslation()
   const language = useLanguage()
   const router = useRouter()
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null)
-
-  // Body is fetched on demand when the reader opens.
-  const [isBodyLoading, setIsBodyLoading] = useState(false)
-  const [bodyError, setBodyError] = useState(false)
-  // Sanitized HTML for each locale, stored separately so language switches work
-  // without re-fetching.
-  const [sanitizedBodyEn, setSanitizedBodyEn] = useState<string | null>(null)
-  const [sanitizedBodyBn, setSanitizedBodyBn] = useState<string | null>(null)
-
   const currentFilter = (activePhase as FilterTab) || 'all'
 
   // Locale fallback helpers — BN→EN only
@@ -73,17 +72,6 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
   const titleIsFallback = (a: Article) => language === 'bn' && !a.titleBn
   // Excerpt fallback: BN user, no BN excerpt available for the card.
   const excerptIsFallback = (a: Article) => language === 'bn' && !a.excerptBn
-  // Body fallback: BN user, body loaded, no BN version available.
-  const isBodyFallback = language === 'bn' && sanitizedBodyEn !== null && sanitizedBodyBn === null
-
-  // Resolved body HTML for the current locale.
-  const resolvedBodyHtml =
-    sanitizedBodyEn !== null
-      ? language === 'bn' && sanitizedBodyBn
-        ? sanitizedBodyBn
-        : sanitizedBodyEn
-      : ''
-
   // Current-phase surfacing: only when filter is 'all' and currentPhase is known
   const isSurfacing = currentFilter === 'all' && !!currentPhase
 
@@ -114,135 +102,6 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
   function getExcerpt(a: Article) {
     if (language === 'bn' && a.excerptBn) return a.excerptBn
     return a.excerptEn
-  }
-
-  async function handleOpenArticle(article: Article) {
-    setSelectedArticle(article)
-    setIsBodyLoading(true)
-    setBodyError(false)
-    setSanitizedBodyEn(null)
-    setSanitizedBodyBn(null)
-
-    try {
-      const result = await getArticleBody(article.id)
-      if (!result) {
-        setBodyError(true)
-        return
-      }
-      // Lazy-load DOMPurify: keeps it out of the route's first-load JS bundle.
-      const DOMPurify = (await import('dompurify')).default
-      setSanitizedBodyEn(DOMPurify.sanitize(result.bodyEn))
-      setSanitizedBodyBn(result.bodyBn ? DOMPurify.sanitize(result.bodyBn) : null)
-    } catch {
-      setBodyError(true)
-    } finally {
-      setIsBodyLoading(false)
-    }
-  }
-
-  if (selectedArticle) {
-    const moreArticles = displayedArticles.filter(a => a.id !== selectedArticle.id).slice(0, 5)
-    return (
-      <PageContainer width="canvas">
-        <PageHeader title={getTitle(selectedArticle)} />
-        <button
-          onClick={() => setSelectedArticle(null)}
-          className="flex items-center gap-1 text-sm text-[var(--goal-accent)] font-medium mb-4 hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
-        >
-          <ArrowLeft size={16} aria-hidden="true" />
-          {t('content.backToArticles')}
-        </button>
-
-        {/* From xl the article keeps a reading measure and the spare width holds what to read next. */}
-        <div className="flex flex-col gap-5 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start 2xl:grid-cols-[minmax(0,1fr)_24rem]">
-          <article aria-label={getTitle(selectedArticle)} className="glass rounded-2xl p-6 sm:p-8">
-            {selectedArticle.category && (
-              <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--goal-accent)]/10 text-[var(--color-text-primary)] mb-3">
-                {categoryLabel(selectedArticle.category)}
-              </span>
-            )}
-
-            {selectedArticle.cyclePhases.length > 0 && (
-              <div className="flex gap-1.5 mb-4">
-                {selectedArticle.cyclePhases.map(phase => (
-                  <span
-                    key={phase}
-                    className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                    style={{ backgroundColor: phaseColorFor(phase), color: `var(--color-on-${phase.toLowerCase()})` }}
-                  >
-                    {t(`dashboard.${phase.toLowerCase()}`)}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Locale fallback banner — BN user viewing EN-only article */}
-            {isBodyFallback && (
-              <div
-                role="note"
-                className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] text-xs"
-              >
-                <Info size={13} aria-hidden="true" className="shrink-0" />
-                <span>{t('content.showingInEnglish')}</span>
-              </div>
-            )}
-
-            {/* Body loading / error / content */}
-            {isBodyLoading && (
-              <div
-                className="flex items-center justify-center py-12"
-                aria-live="polite"
-                aria-label={t('common.loading')}
-              >
-                <Loader2
-                  size={24}
-                  className="text-[var(--goal-accent)] animate-spin"
-                  aria-hidden="true"
-                />
-              </div>
-            )}
-
-            {!isBodyLoading && bodyError && (
-              <p
-                className="text-sm text-[var(--color-text-muted)] py-8 text-center"
-                aria-live="polite"
-              >
-                {t('common.errorLoadingContent')}
-              </p>
-            )}
-
-            {!isBodyLoading && !bodyError && resolvedBodyHtml && (
-              <div
-                className="prose prose-sm max-w-[70ch] text-[var(--color-text-secondary)] [&_h2]:text-[var(--color-text-primary)] [&_h3]:text-[var(--color-text-primary)] [&_strong]:text-[var(--color-text-primary)] [&_a]:text-[var(--goal-accent)] [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg"
-                dangerouslySetInnerHTML={{ __html: resolvedBodyHtml }}
-              />
-            )}
-          </article>
-
-          {moreArticles.length > 0 && (
-            <aside aria-labelledby="more-articles-title" className="xl:sticky xl:top-4">
-              <SectionHeader as="h2" id="more-articles-title" title={t('content.moreArticles')} />
-              <ul className="flex flex-col gap-2">
-                {moreArticles.map(article => (
-                  <li key={article.id}>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenArticle(article)}
-                      className="w-full text-left rounded-2xl bg-[var(--color-bg-card)] p-4 hover:shadow-soft transition-shadow duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
-                    >
-                      <span className="block text-sm font-bold text-[var(--color-text-primary)] leading-snug">{getTitle(article)}</span>
-                      {getExcerpt(article) && (
-                        <span className="mt-1 block text-xs text-[var(--color-text-muted)] line-clamp-2">{getExcerpt(article)}</span>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </aside>
-          )}
-        </div>
-      </PageContainer>
-    )
   }
 
   return (
@@ -288,6 +147,37 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
         </div>
       </div>
 
+      {/* Category filter chips, in admin order */}
+      {categories.length > 0 && (
+        <div className="mb-5 -mx-4 px-4">
+          <div
+            role="group"
+            aria-label={t('content.categoryFilter')}
+            className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide"
+          >
+            {[{ id: null, label: t('content.allCategories') }, ...categories.map(c => ({ id: c.id, label: categoryLabel(c) }))].map(chip => {
+              const isActive = categoryId === chip.id
+              return (
+                <button
+                  key={chip.id ?? 'all'}
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={() => setCategoryId(chip.id)}
+                  className="flex-none min-h-11 px-4 rounded-full text-sm font-semibold border transition-colors duration-200 active:scale-95 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                  style={
+                    isActive
+                      ? { backgroundColor: 'var(--goal-accent)', borderColor: 'var(--goal-accent)', color: 'var(--color-on-accent)' }
+                      : { backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }
+                  }
+                >
+                  {chip.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Current-phase surfacing note */}
       {hasSurfacedArticles && (
         <p
@@ -322,10 +212,10 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
             const showEnChip = excerptIsFallback(article) || titleIsFallback(article)
 
             return (
-              <button
+              <Link
                 key={article.id}
-                onClick={() => handleOpenArticle(article)}
-                className="w-full text-left glass rounded-2xl p-4 hover:border-[var(--goal-accent)]/30 hover:shadow-soft transition-[color,background-color,border-color,box-shadow] duration-200 group focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                href={`/content/${article.id}`}
+                className="block w-full text-left glass rounded-2xl p-4 hover:border-[var(--goal-accent)]/30 hover:shadow-soft transition-[color,background-color,border-color,box-shadow] duration-200 group focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -382,7 +272,7 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
                     aria-hidden="true"
                   />
                 </div>
-              </button>
+              </Link>
             )
           })}
         </div>

@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, Eye, Archive, FileText } from 'lucide-react'
+import { ArrowLeft, Save, Eye, Archive, FileText, CalendarClock } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
 const TiptapEditor = dynamic(
@@ -21,6 +21,7 @@ import { Select } from '@/components/ui/Select'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
 import { articlePublishWarnings, articleWarningMessages, isBlankBody } from '@vesta/shared/utils/article-warnings'
+import { ScheduleField, SCHEDULED, savedStatus, scheduleToIso } from '@/components/ScheduleField'
 import { createArticle } from '@/app/actions/content-actions'
 
 type CategoryOption = {
@@ -43,6 +44,7 @@ const CYCLE_PHASES = [
 const STATUS_OPTIONS = [
   { value: 'DRAFT', label: 'Draft', icon: FileText, badge: <Badge variant="info" size="sm">Draft</Badge> },
   { value: 'PUBLISHED', label: 'Published', icon: Eye, badge: <Badge variant="success" size="sm">Published</Badge> },
+  { value: SCHEDULED, label: 'Scheduled', icon: CalendarClock, badge: <Badge variant="warning" size="sm">Scheduled</Badge> },
   { value: 'ARCHIVED', label: 'Archived', icon: Archive, badge: <Badge variant="neutral" size="sm">Archived</Badge> },
 ]
 
@@ -59,6 +61,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
   const [categoryId, setCategoryId] = useState('')
   const [cyclePhases, setCyclePhases] = useState<string[]>([])
   const [status, setStatus] = useState('DRAFT')
+  const [scheduleAt, setScheduleAt] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
 
@@ -84,14 +87,26 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
       setError('English body is required.')
       return
     }
+    if (status === SCHEDULED) {
+      const at = scheduleToIso(scheduleAt)
+      if ('error' in at) {
+        setError(at.error)
+        return
+      }
+    }
     setError(null)
 
-    const warnings = articlePublishWarnings({ status, titleBn, bodyBn, cyclePhases })
+    const warnings = articlePublishWarnings({ status: savedStatus(status), titleBn, bodyBn, cyclePhases })
     if (warnings.length > 0) {
       setPublishWarnings(articleWarningMessages(warnings))
       return
     }
     save()
+  }
+
+  function scheduledIso() {
+    const at = scheduleToIso(scheduleAt)
+    return 'iso' in at ? at.iso : undefined
   }
 
   function save() {
@@ -105,8 +120,13 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
           bodyBn: isBlankBody(bodyBn) ? null : bodyBn,
           categoryId: categoryId || null,
           cyclePhases,
-          status,
+          status: savedStatus(status),
+          ...(status === SCHEDULED ? { publishedAt: scheduledIso() } : {}),
         })
+        if ('error' in result) {
+          setError(result.error)
+          return
+        }
         setIsDirty(false)
         if (!result.webCacheRefreshed) toast.error('Saved, but the web app cache did not refresh. Public pages may be stale for a few minutes.')
         router.push('/content')
@@ -274,6 +294,9 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
                 )
               })}
             </div>
+            {status === SCHEDULED && (
+              <ScheduleField value={scheduleAt} onChange={(v) => { setScheduleAt(v); setIsDirty(true) }} />
+            )}
           </div>
 
           {/* Category */}
