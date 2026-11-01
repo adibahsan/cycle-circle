@@ -4,6 +4,46 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
+## 2026-11-01 — Article management: search, bulk actions, scheduling, views, category order (PRs #228, #194, tag 2.4.0)
+
+**Shipped:**
+
+- **#228, article management** (spec #193, tickets #213–#218):
+  - **Search and filters (#213):** the admin article list searches all articles by English or Bangla title on the server. It filters by status, category (including "No category"), cycle phase and "Missing Bangla". Filters, page and sort are kept in the URL.
+  - **Errors and validation (#213):** every content action returns its real error message, and a failed delete closes the confirm and shows it. The server refuses a blank English title or body, an invalid phase or an unknown category.
+  - **Bulk actions (#214):** select articles, then Publish, Unpublish, Archive or Move to category, and see how many succeeded and which failed. Delete stays one at a time. Bulk publish keeps an already-live article's publish time.
+  - **Scheduled publishing (#215):** set a publish date-time, entered and shown in Bangladesh time. The list shows "Scheduled" with its time, and the "Articles by Status" chart counts it separately. The schedule can be changed or cancelled before it goes live. No cron: customers see an article when it is published and its published-at is at or before now. The Learn list is cached for 60 s, so it appears within a minute, and `/content/<id>` is not-found until then.
+  - **Article views (#216):** one view per user per article per Bangladesh day, recorded when a customer opens `/content/<id>`. The admin list has a Views column, sorts by most or least read, and takes a from–to range of Bangladesh days.
+  - **Category order (#217):** categories are reordered by dragging, or with Move up/Move down from the keyboard. Learn shows category filter chips in that order. Bangla-only names get unique slugs (`category`, `category-2`, …).
+  - **Audit:** new actions for an article update, a bulk action (with ids) and a category create/rename/delete/reorder.
+  - **Editor typography (#218):** the admin editor and the customer reader share one stylesheet (`packages/shared/src/styles/article-typography.css`), so headings, lists and quotes look alike.
+- **#194, Learn articles on their own URL:** the reader moved from a modal to `/content/<id>`. Merged as part of #228.
+
+**Migrations** (applied by `deploy.sh` after its backup, both additive):
+- `20261101190000_article_category_sort_order`: `ArticleCategory.sortOrder`, backfilled in name order. Production had no categories, so the backfill was a no-op.
+- `20261101200000_article_views`: new `ArticleView` table, keyed by (article, user, Bangladesh day).
+
+**Behaviour change:** a PUBLISHED article with no published-at, or one in the future, is now hidden from customers. Before the deploy, production had one published article, with a past published-at, so nothing disappeared.
+
+**Post-deploy steps on the VPS:** none. No new env vars or crons.
+
+**Verification (2026-11-01 ~08:30 Dhaka)**
+
+| Check | Result |
+|---|---|
+| `cycle-circle.com/login`, `admin.cycle-circle.com/login`, `/api/health/db` | 200 |
+| `POST /api/auth/dev-login` | 403 |
+| `/content`, `/content/<id>`, admin `/content` signed out | 307 to login |
+| `_prisma_migrations` | both migrations finished |
+| Published articles visible under the new rule | 1 of 1 |
+| `/var/log/vesta/app/error/` after the deploy | no entries |
+
+**Known:** the admin E2E test "SMS daily send time" times out in CI under the full suite. It failed the same way before this release. Tracked in #229.
+
+**Deploy:** `git push origin origin/main:production` → GitHub Actions *Production* workflow (run 41264003086).
+
+---
+
 ## 2026-11-01 — Insights & reports, SMS campaigns, admin-set Pro price, admin P0 security (PRs #219, #222–#226, tag 2.3.0)
 
 **Shipped:**
