@@ -9,6 +9,7 @@ import { test, expect } from '../../../support/fixtures.ts'
 import { refreshData } from '../../../support/admin-charts.ts'
 import { ADMIN_STATE, seedDemoMembers } from '../../support/admin-demo.ts'
 import { shot } from '../../support/shot.ts'
+import { demoNowMs } from '../../support/demo-clock.ts'
 
 test.use({ storageState: ADMIN_STATE })
 
@@ -32,7 +33,7 @@ const ARTICLES: Array<[string, string, string | null, Phase[], 'DRAFT' | 'PUBLIS
 test.describe('Admin Content', () => {
   test.beforeAll(async ({ db }) => {
     await seedDemoMembers(db)
-    const now = Date.now()
+    const now = demoNowMs()
     const author = await db.user.findFirstOrThrow({ where: { role: 'ADMIN' } })
     await db.articleCategory.createMany({
       data: CATEGORIES.map(([name, nameBn], i) => ({ name, nameBn, slug: name.toLowerCase().replace(/[^a-z]+/g, '-'), sortOrder: i + 1 })),
@@ -102,7 +103,7 @@ test.describe('Admin Content', () => {
     await shot(page, 'ac-images')
 
     await page.getByRole('button', { name: 'Scheduled' }).click()
-    const at = new Date(Date.now() + 3 * DAY)
+    const at = new Date(demoNowMs() + 3 * DAY)
     at.setUTCHours(9, 30, 0, 0) // the field takes Bangladesh wall time: 09:30, three days from now
     await page.getByRole('textbox', { name: 'Publish date and time' }).fill(at.toISOString().slice(0, 16).replace('T', ' '))
     await expect(page.getByText('Goes live at this time, Bangladesh time (UTC+6).')).toBeVisible()

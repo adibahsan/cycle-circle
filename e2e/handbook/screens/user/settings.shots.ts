@@ -14,7 +14,7 @@ import { ipFor } from '../../../support/users.ts'
 import { demoEmailTrialUser, demoPhoneUser } from '../../support/demo-users.ts'
 import { shot } from '../../support/shot.ts'
 
-const PHONES = { addEmail: '01711223366', addPhone: '01711223377' } as const
+const PHONES = { addEmail: '01711223322', addPhone: '01711223333' } as const
 
 /** Scroll a Settings block to just under the sticky header. */
 async function centre(page: Page, text: string) {

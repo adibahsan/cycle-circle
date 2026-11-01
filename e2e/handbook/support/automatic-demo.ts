@@ -3,6 +3,7 @@
  * and one SMS campaign with Sent, Missed and Planned days. Idempotent (fixed ids, skipDuplicates).
  */
 import type { PrismaClient } from '../../support/db.ts'
+import { demoNow, demoNowMs } from './demo-clock.ts'
 
 const DAY = 86_400_000
 /** Bangladesh day `n` days from now, stored as that day at 00:00 UTC. */
@@ -18,7 +19,7 @@ export const DEMO_EMAIL_IDS = {
 export const DEMO_CAMPAIGN_ID = 'hbsms-camp-1'
 
 export async function seedDemoEmails(db: PrismaClient): Promise<void> {
-  const now = Date.now()
+  const now = demoNowMs()
   const rows = [
     ['hbmail-period', 'PERIOD_ALERT', 'nusrat.jahan@example.test', 'Cycle Circle: Your period is expected in 2 days', 'hbdemo-01', 'hbdemo-prof-hbdemo-01', 'DELIVERED', 1],
     ['hbmail-fertile', 'FERTILE_ALERT', 'tasnim.sultana@example.test', 'Cycle Circle: Your fertile window starts today', null, null, 'DELIVERED', 2],
@@ -39,7 +40,7 @@ export async function seedDemoEmails(db: PrismaClient): Promise<void> {
 
 export async function seedDemoCampaign(db: PrismaClient): Promise<string> {
   const admin = await db.user.findFirstOrThrow({ where: { email: 'admin@vesta.health' }, select: { id: true } })
-  const now = new Date()
+  const now = demoNow()
   await db.smsCampaign.createMany({
     data: [{ id: DEMO_CAMPAIGN_ID, name: 'Monsoon hygiene, 5 days', createdBy: admin.id }],
     skipDuplicates: true,

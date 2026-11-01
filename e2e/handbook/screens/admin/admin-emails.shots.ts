@@ -8,6 +8,7 @@ import { test, expect } from '../../../support/fixtures.ts'
 import { refreshData } from '../../../support/admin-charts.ts'
 import { ADMIN_STATE, seedDemoMembers } from '../../support/admin-demo.ts'
 import { shot } from '../../support/shot.ts'
+import { demoNowMs } from '../../support/demo-clock.ts'
 
 test.use({ storageState: ADMIN_STATE })
 test.describe.configure({ mode: 'serial' })
@@ -18,7 +19,7 @@ const DETAIL_ID = 'hbdemo-email-detail'
 async function seedEmails(db: PrismaClient) {
   // Only fake data may appear: drop the log rows this run's setup wrote, then add the demo rows.
   await db.emailLog.deleteMany({})
-  const now = Date.now()
+  const now = demoNowMs()
   const row = (
     n: number,
     hoursAgo: number,

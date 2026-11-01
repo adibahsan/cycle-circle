@@ -10,6 +10,7 @@ import { refreshData } from '../../../support/admin-charts.ts'
 import { LOG_ROOT } from '../../../support/slot.ts'
 import { ADMIN_STATE, seedDemoMembers } from '../../support/admin-demo.ts'
 import { shot } from '../../support/shot.ts'
+import { demoNowMs } from '../../support/demo-clock.ts'
 
 test.use({ storageState: ADMIN_STATE })
 
@@ -31,7 +32,7 @@ test.describe('Admin Audit logs, Logs, System', () => {
   test.beforeAll(async ({ db }) => {
     await seedDemoMembers(db)
     const admin = await db.user.findFirstOrThrow({ where: { role: 'ADMIN' }, select: { id: true } })
-    const now = Date.now()
+    const now = demoNowMs()
     const rows: Array<[action: string, type: string, target: string, meta: object | null]> = [
       ['USER_SUSPENDED', 'User', 'hbaudit-user-1', { reason: 'abusive messages', bdapps: 'ok' }],
       ['PRO_GRANTED', 'User', 'hbaudit-user-2', { reason: 'support request' }],

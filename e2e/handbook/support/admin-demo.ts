@@ -14,6 +14,7 @@
  */
 import type { PrismaClient } from '@prisma/client'
 import { statePath } from '../../support/personas.ts'
+import { demoNow } from './demo-clock.ts'
 
 export const ADMIN_STATE = statePath('admin')
 
@@ -41,7 +42,7 @@ const emailOf = (name: string) => `${name.toLowerCase().replace(/\s+/g, '.')}@ex
 const dayDate = (now: Date, n: number) => new Date(`${new Date(now.getTime() - n * DAY).toISOString().slice(0, 10)}T00:00:00.000Z`)
 
 export async function seedDemoMembers(db: PrismaClient): Promise<void> {
-  const now = new Date()
+  const now = demoNow()
   const users = ROSTER.map(([name, kind], i) => {
     const emailUser = kind === 'trial' || kind === 'trial-expired'
     const created = new Date(now.getTime() - (i + 1) * DAY * 1.2 - i * 3_600_000)
@@ -123,7 +124,7 @@ export async function freshDemoMember(db: PrismaClient, key: string, name: strin
   // A new id per call: the Translog (plan history) lives in log files that outlive the DB reset, keyed by user id.
   const id = `hbact-${key}-${Date.now().toString(36)}`
   await db.user.deleteMany({ where: { phone: `+8801711009${String(phoneTail).padStart(3, '0')}` } })
-  const now = new Date()
+  const now = demoNow()
   await db.user.create({
     data: {
       id, fullName: name, phone: `+8801711009${String(phoneTail).padStart(3, '0')}`, authMethod: 'OTP', subscriptionStatus: 'PRO',

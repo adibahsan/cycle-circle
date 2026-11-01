@@ -49,12 +49,41 @@ test('same pixels encoded differently are equal', () => {
   assert.equal(pngPixelsEqual(png(2, 2, px, 0), png(2, 2, px, 1, 1)), true)
 })
 
-test('one changed pixel is not equal', () => {
+test('a clearly different pixel in a tiny image is not equal', () => {
   const other = [...px]
-  other[5] = 51
+  other[5] = 200
   assert.equal(pngPixelsEqual(png(2, 2, px, 0), png(2, 2, other, 0)), false)
 })
 
 test('different size is not equal', () => {
   assert.equal(pngPixelsEqual(png(2, 2, px, 0), png(4, 1, px, 0)), false)
+})
+
+function flat(w: number, h: number, rgb: [number, number, number]): number[] {
+  const out: number[] = []
+  for (let i = 0; i < w * h; i++) out.push(rgb[0], rgb[1], rgb[2], 255)
+  return out
+}
+function paint(rgba: number[], w: number, x0: number, y0: number, bw: number, bh: number, rgb: [number, number, number]) {
+  const out = [...rgba]
+  for (let y = y0; y < y0 + bh; y++) for (let x = x0; x < x0 + bw; x++) out.splice((y * w + x) * 4, 3, ...rgb)
+  return out
+}
+
+test('sub-threshold colour noise on every pixel is equal', () => {
+  const base = flat(50, 50, [200, 200, 200])
+  const noisy = base.map((v, i) => (i % 4 === 3 ? v : v + 2))
+  assert.equal(pngPixelsEqual(png(50, 50, base, 0), png(50, 50, noisy, 0)), true)
+})
+
+test('a few strongly differing pixels (anti-aliasing) are equal', () => {
+  const base = flat(100, 100, [255, 255, 255])
+  const other = paint(base, 100, 10, 10, 5, 2, [0, 0, 0]) // 10 of 10000 = 0.1%
+  assert.equal(pngPixelsEqual(png(100, 100, base, 0), png(100, 100, other, 0)), true)
+})
+
+test('a small changed text region is not equal', () => {
+  const base = flat(100, 100, [255, 255, 255])
+  const other = paint(base, 100, 10, 10, 20, 10, [0, 0, 0]) // 200 of 10000 = 2%
+  assert.equal(pngPixelsEqual(png(100, 100, base, 0), png(100, 100, other, 0)), false)
 })
