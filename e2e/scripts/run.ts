@@ -9,6 +9,7 @@
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
+import { normalizeCaptureArgs } from '../../scripts/handbook/capture-args.mjs'
 import { FakeBdappsClient } from '../support/fake-bdapps.ts'
 import { assertMailpit } from '../support/mailpit.ts'
 import { recreateDatabase } from '../support/reset-db.ts'
@@ -108,6 +109,8 @@ async function ensureMailpit() {
 async function main() {
   const args = process.argv.slice(2)
   if (args[0] === '--') args.shift()
+  // `pnpm handbook:capture -- <name>` and `pnpm handbook:capture <name>` must both filter.
+  if (args.includes('--config=playwright.handbook.config.ts')) args.splice(0, args.length, ...normalizeCaptureArgs(args))
   const suite = process.env.CI_PROJECTS?.trim() || process.env.E2E_SUITE || 'all'
   console.log(
     `[e2e] slot ${SLOT}: web :${PORTS.web}, admin :${PORTS.admin}, fake BDApps :${PORTS.fakeBdapps}, db ${DB_NAME}, suite ${suite}`,

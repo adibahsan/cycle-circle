@@ -54,7 +54,7 @@ Below the cards, **Churn by reason** lists, for this period, the previous period
 
 | The Admin sees | Cause | Fix |
 |---|---|---|
-| "Unavailable" on Churn Rate or Pro Subscribers | No nightly Pro count is stored for the needed day | Check the pro-snapshot job on the [System page](#sy-jobs); the figure cannot be rebuilt for past days |
+| "Unavailable" on Churn Rate or Pro Subscribers | No nightly Pro count is stored for the needed day | The job has no switch or card on the System page. Ask the server owner to check that the host crontab runs it every day at 23:55 Bangladesh time ([Jobs at a glance](#sj-overview)); the figure cannot be rebuilt for past days |
 | "Unavailable" on both Active-user cards | The period ends before activity recording began | Choose a later period |
 | "Pick both a start and an end day." | Custom period with one date empty | Fill both dates |
 | "Use days written as YYYY-MM-DD." | A hand-edited address has a bad date | Use the date pickers |

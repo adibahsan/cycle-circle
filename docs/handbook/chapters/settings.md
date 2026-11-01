@@ -195,6 +195,8 @@ The **Plan** row in the Account block: a small badge with the User's tier.
 
 ![Plan: EXPIRED](../screenshots/st-plan-badge--expired.png)
 
+![Plan: PRO right after an email-trial User verified a phone number; the Phone row now shows the number](../screenshots/st-plan-badge--pro-after-phone.png)
+
 ### How to use it
 
 1. Read the badge. It never changes by itself on screen; it follows the account.
