@@ -79,8 +79,8 @@ The filter row, the list of lines and the "Older" and "Newest" links on the **Lo
    - the level: "info", "warn" or "error";
    - the event name, for example `subscription/otp/verify`;
    - the first 8 characters of the request ID, as a link.
-3. Press the time or the event name to open the line (pressing the request link instead jumps to step 4). The whole line shows as JSON: time, level, channel, event, request ID, user ID, how long it took (`durationMs`, in milliseconds) and the `data` with the details.
-4. Press the request link to see every line of that request: the **Request id** filter fills in and the list shows the merchant, webhook and translog lines of that one action.
+3. Press the time or the event name to open the line (pressing the request link instead jumps to step 4). The whole line shows as JSON with the keys `ts` (the time), `level`, `channel`, `event`, `requestId`, `userId`, `durationMs` (how long it took, in milliseconds) and `data` (the details).
+4. Press the request link to see every line of that request: the **Request id** filter fills in, every other filter is cleared, and the list shows the merchant, webhook and translog lines of that one action.
 5. The page shows 50 lines at a time. Press **Older** to go further back and **Newest** to return to the newest lines.
 6. **Reset** clears all filters.
 
@@ -131,7 +131,7 @@ On every line of the **Logs** page, after you open it. The screenshot shows a me
 ### Rules and limits
 
 - Masking is done **when the page reads the file**. The file on the server still holds the real code (ADR 0004). Treat the server's log directory as sensitive.
-- What is masked: any field named otp, passcode, verification code or pin; a field named `code` that holds 4 to 8 digits only; and digits that follow the words otp, code or the Bengali word for code inside a message text (for example "otp: 123456" or "your code is 123456"). It looks through the whole line at any depth.
+- What is masked: any field whose name contains otp, passcode, `verificationCode` or `verification_code`, or is exactly pin (a key written with a space, "verification code", is not matched); a field named `code` that holds 4 to 8 digits only; and digits that follow the words otp, code or the Bengali word for code inside a message text (for example "otp: 123456" or "your code is 123456"). It looks through the line down to 10 levels of nesting; text inside anything nested deeper is not masked.
 - Only OTPs are masked. Phone numbers, BDApps masked IDs and other details are shown as written.
 - The same masking applies to **Text** search and to the JSON you open, so a masked code cannot be found by searching.
 
