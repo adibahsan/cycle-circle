@@ -1,32 +1,27 @@
 name: E2E
 
-# PR to main → desktop suite (fast). Nightly and PRs labelled `e2e-full` → full matrix
-# (phone + Bengali hook). Project lists live in e2e/playwright.config.ts via E2E_SUITE —
+# Runs only when deploying: push to production → desktop suite. Manual run (workflow_dispatch)
+# → full matrix (phone + Bengali hook). PRs and schedules run no Actions; run `pnpm e2e` locally
+# while developing. Project lists live in e2e/playwright.config.ts via E2E_SUITE —
 # add a new *-desktop / serial project without editing this file.
 on:
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened, labeled]
-  schedule:
-    # 02:00 UTC nightly
-    - cron: '0 2 * * *'
+  push:
+    branches: [production]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: e2e-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   e2e:
     name: Playwright
     runs-on: ubuntu-latest
-    # Only re-run on label events when the label is e2e-full (avoids cancel storms from other labels).
-    if: github.event.action != 'labeled' || github.event.label.name == 'e2e-full'
-    # Desktop PRs: 15 min budget (10-min target to confirm on first green run). Full matrix: more headroom.
-    timeout-minutes: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'e2e-full')) && 45 || 15 }}
+    # Desktop suite (deploy push): 15 min budget. Full matrix (manual run): more headroom.
+    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 45 || 15 }}
     services:
       postgres:
         image: postgres:17.10-alpine
@@ -68,9 +63,8 @@ jobs:
         id: suite
         env:
           EVENT_NAME: ${{ github.event_name }}
-          HAS_E2E_FULL: ${{ contains(github.event.pull_request.labels.*.name, 'e2e-full') }}
         run: |
-          if [ "$EVENT_NAME" = "schedule" ] || [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$HAS_E2E_FULL" = "true" ]; then
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             echo "suite=full" >> "$GITHUB_OUTPUT"
           else
             echo "suite=desktop" >> "$GITHUB_OUTPUT"

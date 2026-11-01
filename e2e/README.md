@@ -87,8 +87,11 @@ Workflow: [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml).
 
 | Trigger | Suite (`E2E_SUITE`) | What runs |
 |---|---|---|
-| `pull_request` → `main` | `desktop` | All projects that are **not** `*-phone` and not full-only (`web-bengali`). New `*-desktop` or serial projects (e.g. cron in #132) are picked up automatically — **do not** list `--project` in the workflow. |
-| Nightly schedule, `workflow_dispatch`, or PR labelled `e2e-full` | `full` | Every project, including `*-phone` and `web-bengali`. |
+| `push` → `production` (a deploy) | `desktop` | All projects that are **not** `*-phone` and not full-only (`web-bengali`). New `*-desktop` or serial projects (e.g. cron in #132) are picked up automatically — **do not** list `--project` in the workflow. |
+| `workflow_dispatch` (manual run) | `full` | Every project, including `*-phone` and `web-bengali`. |
+
+Actions run **only when deploying**: PRs into `main` and schedules run no CI. Run `pnpm e2e` locally
+while developing (see `docs/LOCAL-DEVELOPMENT.md`, "Checks before a PR").
 
 The job starts **Postgres**, **Redis** and **Mailpit** as service containers, sets `E2E_DATABASE_URL` /
 Mailpit URLs (no `packages/shared/.env.local`), runs `pnpm install`, `pnpm db:generate`, caches
