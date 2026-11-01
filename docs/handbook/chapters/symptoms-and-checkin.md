@@ -227,7 +227,7 @@ The pop-up header reads "Every signal you log makes Cycle Circle smarter for you
 
 1. Open the pop-up from one of the entry points.
 2. Switch tabs and tap symptoms. A number on a tab counts the picks in it.
-3. Tap **Save symptoms**. A toast "Nicely done!" appears and the pop-up closes.
+3. Tap **Save symptoms**. The pop-up closes. When it was opened from the Dashboard toolkit or from **More** in the check-in, a toast "Nicely done!" also appears. When it was opened from a missed dot, there is no toast: the strip just refreshes.
 4. Close the pop-up without saving with the X button. Tapping outside it does **not** close it.
 
 ### Rules and limits

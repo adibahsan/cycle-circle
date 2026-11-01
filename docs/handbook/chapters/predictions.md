@@ -35,7 +35,7 @@ Worked example: starts on Sep 24 and Oct 22 give one cycle of 28 days. The lates
 
 ### Rules and limits
 
-- The latest period is the one with the latest **start date**, not the one saved last. A backfilled older period never moves the next date; it only adds a cycle length.
+- The latest period is the one with the latest **start date**, not the one saved last. A backfilled older period does not change which period is the latest, but it adds a cycle length, which changes the typical length and so can move the next date.
 - If the next period does not start, the prediction is not changed. The date stays in the past, the Dashboard counts "Period N days late" and the Calendar keeps the dashed days ([Cycle hero](#db-hero)). It updates when the next period is logged.
 - The Calendar draws the first predicted cycle from the saved prediction, and the two cycles after it by repeating the profile's cycle length setting. Only the first is the learned estimate.
 - If a profile somehow has no saved prediction, the Dashboard works out the date from the last-period date and the profile's cycle length.

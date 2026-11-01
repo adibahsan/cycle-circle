@@ -101,7 +101,7 @@ Changing the dates or flow of a logged period, or removing it. The pop-up is the
 
 ### Where to find it
 
-**Calendar > Recent Periods** (the pink card below the grid). Each row shows the dates ("Oct 1 > Oct 5"), the length ("5 days") and the flow; tap a row to edit. Six periods show per page, with **Prev** / **Next** and "1 / 2".
+**Calendar > Recent Periods** (the pink card below the grid). Each row shows the dates ("Oct 1 → Oct 5", with an arrow icon between them), the length ("5 days") and the flow; tap a row to edit. Six periods show per page, with **Prev** / **Next** and "1 / 2".
 
 ![Edit Period Log pop-up](../screenshots/lc-edit-delete.png)
 
@@ -163,10 +163,10 @@ If a day qualifies for more than one marker, the order is: period (logged or pre
 
 ### How to use it
 
-1. Open **Calendar**; it opens on the current month. Use the arrows (**Previous month** / **Next month**) or the month heading to move.
+1. Open **Calendar**; it opens on the current month. Use the arrows (**Previous month** / **Next month**) to move; the month heading is only a label.
 2. Read the colour key under the grid.
 3. Tap a day to see its card ([A day's logs](#lc-day-detail)).
-4. Read "This Cycle": **Next Period**, **Ovulation** and **Fertile Window** dates (or "Period Late · N days overdue" when the predicted date in the shown month has passed).
+4. Read "This Cycle": **Next Period**, **Ovulation** and **Fertile Window** dates (or "Period Late · N days overdue" ("1 day overdue" for one) when the predicted date in the shown month has passed).
 
 ### Rules and limits
 
@@ -230,7 +230,7 @@ Below it, symptom chips ("Cramps", "Headache"), or "No symptoms logged.".
 | The User sees | Cause | Fix |
 |---|---|---|
 | "No symptoms logged." | None logged that day | Log symptoms for that day ([Back-dated symptoms](#sc-backdate)) |
-| "Period day" with the dashed style | The day is predicted, not logged | Log the period if it started |
+| "Period day" pill with a "Predicted" badge beside the date | The day is in the future, so it is predicted, not logged (on the grid it has the dashed outline) | Log the period if it started |
 | A day's symptoms missing | They were logged on another profile | Switch profile |
 
 ### Related
