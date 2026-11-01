@@ -455,9 +455,12 @@ model ArticleCategory {
   name      String   @unique
   nameBn    String?
   slug      String   @unique
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 
   articles Article[]
+
+  @@index([sortOrder])
 }
 
 // A named series of campaign messages, one per Bangladesh day (ADR 0010). Its status is derived

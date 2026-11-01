@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BookOpen, ChevronRight, Droplets, Flower2, Moon, Sprout, type LucideIcon } from 'lucide-react'
 import { useLanguage } from '@/lib/use-language'
@@ -30,12 +31,20 @@ export interface Article {
   excerptBn: string
   cyclePhases: string[]
   publishedAt: Date | string | null
-  category: { name: string; nameBn?: string | null } | null
+  category: { id?: string; name: string; nameBn?: string | null } | null
   author: { fullName: string | null } | null
+}
+
+/** Category chip, already in the order the admin set. */
+export interface CategoryChip {
+  id: string
+  name: string
+  nameBn: string | null
 }
 
 interface ContentClientProps {
   articles: Article[]
+  categories?: CategoryChip[]
   activePhase?: string
   currentPhase?: string | null
 }
@@ -48,7 +57,9 @@ const PHASE_TABS: { id: FilterTab; labelKey: string; Icon: LucideIcon }[] = [
   { id: 'LUTEAL', labelKey: 'dashboard.luteal', Icon: Moon },
 ]
 
-export function ContentClient({ articles, activePhase, currentPhase }: ContentClientProps) {
+export function ContentClient({ articles: allArticles, categories = [], activePhase, currentPhase }: ContentClientProps) {
+  const [categoryId, setCategoryId] = useState<string | null>(null)
+  const articles = categoryId ? allArticles.filter(a => a.category?.id === categoryId) : allArticles
   const { t } = useTranslation()
   const language = useLanguage()
   const router = useRouter()
@@ -135,6 +146,37 @@ export function ContentClient({ articles, activePhase, currentPhase }: ContentCl
           })}
         </div>
       </div>
+
+      {/* Category filter chips, in admin order */}
+      {categories.length > 0 && (
+        <div className="mb-5 -mx-4 px-4">
+          <div
+            role="group"
+            aria-label={t('content.categoryFilter')}
+            className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide"
+          >
+            {[{ id: null, label: t('content.allCategories') }, ...categories.map(c => ({ id: c.id, label: categoryLabel(c) }))].map(chip => {
+              const isActive = categoryId === chip.id
+              return (
+                <button
+                  key={chip.id ?? 'all'}
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={() => setCategoryId(chip.id)}
+                  className="flex-none min-h-11 px-4 rounded-full text-sm font-semibold border transition-colors duration-200 active:scale-95 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)]"
+                  style={
+                    isActive
+                      ? { backgroundColor: 'var(--goal-accent)', borderColor: 'var(--goal-accent)', color: 'var(--color-on-accent)' }
+                      : { backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }
+                  }
+                >
+                  {chip.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Current-phase surfacing note */}
       {hasSurfacedArticles && (

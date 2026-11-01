@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
-import { getPublishedArticleById, listPublishedArticles, sanitizeArticleHtml } from '@vesta/shared/server/services'
+import { getPublishedArticleById, listPublishedArticles, listPublishedCategories, sanitizeArticleHtml } from '@vesta/shared/server/services'
 import { requireCurrentUser } from './auth-queries'
 import { cacheTags, WEB_CACHE_TTL } from '@/lib/cache-tags'
 
@@ -11,6 +11,15 @@ export const getPublishedArticles = cache(async (phase?: string) => {
     ['articles', phase ?? 'all'],
     { tags: [cacheTags.articles], revalidate: WEB_CACHE_TTL }
   )()
+})
+
+/** Learn-page category chips, in the order the admin set. */
+export const getPublishedCategories = cache(async () => {
+  await requireCurrentUser()
+  return unstable_cache(() => listPublishedCategories(), ['article-categories'], {
+    tags: [cacheTags.articles],
+    revalidate: WEB_CACHE_TTL,
+  })()
 })
 
 /**

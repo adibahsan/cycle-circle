@@ -1,4 +1,6 @@
 import { AUDIT_ACTIONS } from './audit-actions'
+import { createAuditLog } from './audit-service'
+import { Prisma } from '@prisma/client'
 import sanitizeHtml from 'sanitize-html'
 import { prisma } from '../db'
 import { articlePublishWarnings, isBlankBody } from '../../utils/article-warnings'
@@ -91,7 +93,16 @@ export async function getArticleById(id: string) {
 export async function listCategories() {
   return prisma.articleCategory.findMany({
     include: { _count: { select: { articles: true } } },
-    orderBy: { name: 'asc' },
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+  })
+}
+
+/** Categories that have at least one published article, in admin order (Learn page filter chips). */
+export async function listPublishedCategories() {
+  return prisma.articleCategory.findMany({
+    where: { articles: { some: { status: 'PUBLISHED' } } },
+    select: { id: true, name: true, nameBn: true },
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   })
 }
 
@@ -212,22 +223,97 @@ export async function removeArticle(id: string, adminId: string) {
 
 // ── Category mutations ─────────────────────────────────────────────────────────
 
-export async function createCategory(name: string, nameBn?: string | null) {
-  const slug = slugify(name)
-  return prisma.articleCategory.create({ data: { name, nameBn: nameBn?.trim() || null, slug } })
+const CATEGORY_TYPE = 'ArticleCategory'
+
+/** Slug for a category name. Bangla-only names slugify to "", so fall back to `category` and add -2, -3 ... until free. */
+async function uniqueCategorySlug(name: string, excludeId?: string): Promise<string> {
+  const base = slugify(name) || 'category'
+  for (let n = 1; ; n++) {
+    const candidate = n === 1 ? base : `${base}-${n}`
+    const taken = await prisma.articleCategory.findFirst({
+      where: { slug: candidate, ...(excludeId ? { id: { not: excludeId } } : {}) },
+      select: { id: true },
+    })
+    if (!taken) return candidate
+  }
 }
 
-export async function updateCategory(id: string, name: string, nameBn?: string | null) {
-  const slug = slugify(name)
-  const data: { name: string; slug: string; nameBn?: string | null } = { name, slug }
+function cleanCategoryName(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) throw new Error('Category name is required')
+  return trimmed
+}
+
+function rethrowDuplicateName(e: unknown, name: string): never {
+  if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+    throw new Error(`A category named "${name}" already exists`)
+  }
+  throw e
+}
+
+export async function createCategory(adminId: string, name: string, nameBn?: string | null) {
+  const clean = cleanCategoryName(name)
+  const max = await prisma.articleCategory.aggregate({ _max: { sortOrder: true } })
+  try {
+    const category = await prisma.articleCategory.create({
+      data: {
+        name: clean,
+        nameBn: nameBn?.trim() || null,
+        slug: await uniqueCategorySlug(clean),
+        sortOrder: (max._max.sortOrder ?? 0) + 1,
+      },
+    })
+    await createAuditLog(adminId, AUDIT_ACTIONS.CATEGORY_CREATED, CATEGORY_TYPE, category.id, { name: category.name })
+    return category
+  } catch (e) {
+    return rethrowDuplicateName(e, clean)
+  }
+}
+
+export async function updateCategory(adminId: string, id: string, name: string, nameBn?: string | null) {
+  const clean = cleanCategoryName(name)
+  const existing = await prisma.articleCategory.findUnique({ where: { id }, select: { name: true } })
+  if (!existing) throw new Error('Category not found')
+  const data: { name: string; slug?: string; nameBn?: string | null } = { name: clean }
+  // The slug follows the name only when the name changes; renaming keeps links stable otherwise.
+  if (clean !== existing.name) data.slug = await uniqueCategorySlug(clean, id)
   if (nameBn !== undefined) data.nameBn = nameBn?.trim() || null
-  return prisma.articleCategory.update({ where: { id }, data })
+  try {
+    const category = await prisma.articleCategory.update({ where: { id }, data })
+    if (clean !== existing.name) {
+      await createAuditLog(adminId, AUDIT_ACTIONS.CATEGORY_RENAMED, CATEGORY_TYPE, id, { from: existing.name, to: clean })
+    }
+    return category
+  } catch (e) {
+    return rethrowDuplicateName(e, clean)
+  }
 }
 
-export async function removeCategory(id: string) {
+export async function removeCategory(adminId: string, id: string) {
+  const category = await prisma.articleCategory.findUnique({ where: { id }, select: { name: true } })
+  if (!category) throw new Error('Category not found')
   const count = await prisma.article.count({ where: { categoryId: id } })
   if (count > 0) throw new Error('Cannot delete category with articles')
   await prisma.articleCategory.delete({ where: { id } })
+  await createAuditLog(adminId, AUDIT_ACTIONS.CATEGORY_DELETED, CATEGORY_TYPE, id, { name: category.name })
+  return { success: true }
+}
+
+/** Persist a new category order. `orderedIds` must list every category exactly once. */
+export async function reorderCategories(adminId: string, orderedIds: string[]) {
+  const all = await prisma.articleCategory.findMany({ select: { id: true } })
+  const known = new Set(all.map((c) => c.id))
+  const valid =
+    orderedIds.length === known.size &&
+    new Set(orderedIds).size === orderedIds.length &&
+    orderedIds.every((id) => known.has(id))
+  if (!valid) throw new Error('Categories changed since this page loaded. Reload and try again.')
+  await prisma.$transaction(
+    orderedIds.map((id, index) =>
+      prisma.articleCategory.update({ where: { id }, data: { sortOrder: index + 1 } }),
+    ),
+  )
+  await createAuditLog(adminId, AUDIT_ACTIONS.CATEGORY_REORDERED, CATEGORY_TYPE, 'all', { count: orderedIds.length })
   return { success: true }
 }
 
@@ -351,7 +437,7 @@ export async function listPublishedArticles(
         status: true,
         cyclePhases: true,
         publishedAt: true,
-        category: { select: { name: true, nameBn: true } },
+        category: { select: { id: true, name: true, nameBn: true } },
         author: { select: { fullName: true } },
       },
       orderBy: { publishedAt: 'desc' },
