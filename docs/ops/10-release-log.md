@@ -4,7 +4,7 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
-## 2026-11-01 — Calendar today marker in Bangladesh time, CI only on deploy (PRs #231, #232, #233, #234, #235)
+## 2026-11-01 — Calendar today marker in Bangladesh time, CI only on deploy (PRs #231, #232, #233, #234, #235, tag 2.4.1)
 
 **Shipped:**
 
@@ -16,6 +16,89 @@ One entry per production release (`main` → `production`). Newest first. For th
 **Migrations:** none.
 
 **Deploy:** `git push origin origin/main:production`.
+
+---
+
+## 2026-11-01 — Article management: search, bulk actions, scheduling, views, category order (PRs #228, #194, tag 2.4.0)
+
+**Shipped:**
+
+- **#228, article management** (spec #193, tickets #213–#218):
+  - **Search and filters (#213):** the admin article list searches all articles by English or Bangla title on the server. It filters by status, category (including "No category"), cycle phase and "Missing Bangla". Filters, page and sort are kept in the URL.
+  - **Errors and validation (#213):** every content action returns its real error message, and a failed delete closes the confirm and shows it. The server refuses a blank English title or body, an invalid phase or an unknown category.
+  - **Bulk actions (#214):** select articles, then Publish, Unpublish, Archive or Move to category, and see how many succeeded and which failed. Delete stays one at a time. Bulk publish keeps an already-live article's publish time.
+  - **Scheduled publishing (#215):** set a publish date-time, entered and shown in Bangladesh time. The list shows "Scheduled" with its time, and the "Articles by Status" chart counts it separately. The schedule can be changed or cancelled before it goes live. No cron: customers see an article when it is published and its published-at is at or before now. The Learn list is cached for 60 s, so it appears within a minute, and `/content/<id>` is not-found until then.
+  - **Article views (#216):** one view per user per article per Bangladesh day, recorded when a customer opens `/content/<id>`. The admin list has a Views column, sorts by most or least read, and takes a from–to range of Bangladesh days.
+  - **Category order (#217):** categories are reordered by dragging, or with Move up/Move down from the keyboard. Learn shows category filter chips in that order. Bangla-only names get unique slugs (`category`, `category-2`, …).
+  - **Audit:** new actions for an article update, a bulk action (with ids) and a category create/rename/delete/reorder.
+  - **Editor typography (#218):** the admin editor and the customer reader share one stylesheet (`packages/shared/src/styles/article-typography.css`), so headings, lists and quotes look alike.
+- **#194, Learn articles on their own URL:** the reader moved from a modal to `/content/<id>`. Merged as part of #228.
+
+**Migrations** (applied by `deploy.sh` after its backup, both additive):
+- `20261101190000_article_category_sort_order`: `ArticleCategory.sortOrder`, backfilled in name order. Production had no categories, so the backfill was a no-op.
+- `20261101200000_article_views`: new `ArticleView` table, keyed by (article, user, Bangladesh day).
+
+**Behaviour change:** a PUBLISHED article with no published-at, or one in the future, is now hidden from customers. Before the deploy, production had one published article, with a past published-at, so nothing disappeared.
+
+**Post-deploy steps on the VPS:** none. No new env vars or crons.
+
+**Verification (2026-11-01 ~08:20 Dhaka)**
+
+| Check | Result |
+|---|---|
+| `cycle-circle.com/login`, `admin.cycle-circle.com/login`, `/api/health/db` | 200 |
+| `POST /api/auth/dev-login` | 403 |
+| `/content`, `/content/<id>`, admin `/content` signed out | 307 to login |
+| `_prisma_migrations` | both migrations finished |
+| Published articles visible under the new rule | 1 of 1 |
+| `/var/log/vesta/app/error/` after the deploy | no entries |
+
+**Known:** the admin E2E test "SMS daily send time" times out in CI under the full suite. It failed the same way before this release. Tracked in #229.
+
+**Deploy:** `git push origin origin/main:production` → GitHub Actions *Production* workflow (run 41264003086).
+
+---
+
+## 2026-11-01 — Insights & reports, SMS campaigns, admin-set Pro price, admin P0 security (PRs #219, #222–#226, tag 2.3.0)
+
+**Shipped:**
+
+- **#226, Insights & reports** (spec #192, tickets #206–#212):
+  - **Overview:** the admin home is now the business Overview. It shows total users, new signups, active users, Pro subscribers, churn by reason with the churn rate (admin revokes excluded), and estimated daily revenue from the Pro price history. Every number shows the % change against the previous period.
+  - **Active users:** recorded per Bangladesh day from this release on. A user counts when they open the signed-in app, onboarding included.
+  - **Shared range:** 7/30/90 days or a custom from–to in Bangladesh days, up to 366 days, kept in the URL. It covers Overview, Analytics, Engagement, Subscriptions, Campaign history, Feedback and Emails, and every panel ends at the end of the Bangladesh day.
+  - **CSV:** every chart and table exports CSV, with a BOM and formula-injection escaping.
+  - **Emailed reports:** weekly (Sunday 09:00 Bangladesh time) and monthly (on the 1st), with the CSV attached and a link to the Overview. Recipients are set on System, and changes are audited.
+  - **Audit fixes:** total profiles excludes deleted users, logs today counts symptom and period logs, the Pro count is the same on every page, and retention is measured week by week per cohort.
+- **#219, SMS campaigns** (spec #190): campaigns replace broadcasts. The 15-minute `sms-dispatch` cron sends them.
+- **#223:** admin P0 security fixes #184–#189.
+- **#224, admin-set Pro price** (spec #191): the Pro price is set in admin with a price history, and the daily subscription check is visible with its run history.
+- **#222, #225:** test isolation guardrails (retro follow-ups).
+
+**Migrations** (applied by `deploy.sh` after its backup):
+- `20261101120000_sms_campaigns`: one-way. It copies `SmsBroadcast` rows into `SmsCampaign`/`SmsCampaignMessage`, then drops `SmsBroadcast`, `SmsBroadcastStatus` and `SmsSendLanguage`.
+- `20261101130000_subscription_check_runs`, `20261101150000_pro_price`, `20261101160000_subscription_check_outcome_user_nullable`.
+- `20261101170000_churn_events`, `20261101170000_user_activity`, `20261101170100_pro_snapshot`.
+- `20261101180000_email_type_report`: adds `EmailType.REPORT`. Postgres can't drop an enum value, so this one is permanent.
+
+**Post-deploy steps on the VPS (done 2026-11-01 ~06:30 Dhaka)**
+
+1. `ADMIN_APP_URL=https://admin.cycle-circle.com` added to `/opt/vesta/.env.web.production` (backup `.env.web.production.bak-20261101-002824`). Then `docker compose --env-file ops/deploy/.env --env-file .env.monitoring.production -f ops/deploy/compose.prod.yml up -d --no-deps --force-recreate web`.
+2. Crontab reinstalled from `ops/deploy/vesta-crontab` (backup `/opt/vesta/crontab.bak-20261101-002848`). It adds `sms-dispatch` (every 15 min), `pro-snapshot` (17:55 UTC = 23:55 Dhaka), and `reports` weekly (`0 3 * * 0`) and monthly (`0 3 1 * *`).
+
+**Verification**
+
+| Check | Result |
+|---|---|
+| `cycle-circle.com/login`, `admin.cycle-circle.com/login`, `/api/health/db` | 200 |
+| `POST /api/auth/dev-login` | 403 |
+| `POST /api/cron/pro-snapshot`, `/api/cron/reports` without the secret | 401 |
+| `POST /api/cron/reports?kind=bogus` with the secret | 400 (auth passes, nothing sent) |
+| `printenv ADMIN_APP_URL` in the web container | set |
+
+**Data starts today:** active users, Pro snapshots and churn events have no history before this release. Past days on the Overview show as "unavailable", not zero, and the first Pro snapshot is taken 2026-11-01 23:55 Dhaka.
+
+**Deploy:** `git push origin origin/main:production` → GitHub Actions *Production* workflow (run 41255956006).
 
 ---
 
