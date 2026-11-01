@@ -67,6 +67,20 @@ describe('recordArticleView', () => {
     expect((await rows(a.id)).map((r) => iso(r.day))).toEqual(['2026-11-01', '2026-11-02'])
   })
 
+  it('records nothing for a scheduled article before its time, then counts it', async () => {
+    const at = new Date('2026-11-05T10:00:00Z')
+    const a = await createArticle(
+      ADMIN_ID,
+      { titleEn: `${P} sched`, bodyEn: '<p>en</p>', status: 'PUBLISHED', publishedAt: at },
+      new Date('2026-11-01T10:00:00Z'),
+    )
+    created.push(a.id)
+    await recordArticleView(a.id, U1, new Date('2026-11-04T10:00:00Z'))
+    expect(await rows(a.id)).toHaveLength(0)
+    await recordArticleView(a.id, U1, at)
+    expect(await rows(a.id)).toHaveLength(1)
+  })
+
   it('ignores drafts, unknown articles and suspended users', async () => {
     const draft = await publish('draft', 'DRAFT')
     const ok = await publish('susp')
@@ -91,20 +105,27 @@ describe('listArticles views', () => {
     await recordArticleView(low.id, U1, new Date('2026-12-11T03:00:00Z'))
     await recordArticleView(mid.id, U1, new Date('2026-12-12T18:00:00Z')) // BD 12-13, after range
 
-    const r = await listArticles({ q: P, sort: 'views', viewsFrom: '2026-12-10', viewsTo: '2026-12-12' })
+    const r = await listArticles({ q: P, sort: 'views', viewsFrom: '2026-12-10', viewsTo: '2026-12-12' }, new Date())
     const mine = r.articles.filter((a) => [low.id, high.id, mid.id].includes(a.id))
     expect(mine.map((a) => [a.id, a.views])).toEqual([[high.id, 2], [low.id, 1], [mid.id, 0]])
 
-    const all = await listArticles({ q: P, sort: 'views' }) // all time
+    const all = await listArticles({ q: P, sort: 'views' }, new Date()) // all time
     expect(Object.fromEntries(all.articles.map((a) => [a.id, a.views]))[high.id]).toBe(3)
   })
 
   it('pages correctly when sorted by views', async () => {
-    const r1 = await listArticles({ q: `${P} rng`, sort: 'views', pageSize: 2, page: 1 })
-    const r2 = await listArticles({ q: `${P} rng`, sort: 'views', pageSize: 2, page: 2 })
+    const r1 = await listArticles({ q: `${P} rng`, sort: 'views', pageSize: 2, page: 1 }, new Date())
+    const r2 = await listArticles({ q: `${P} rng`, sort: 'views', pageSize: 2, page: 2 }, new Date())
     expect(r1.articles).toHaveLength(2)
     expect(r2.articles).toHaveLength(1)
     expect(r1.total).toBe(3)
+  })
+
+  it('sorts least-read first with sortDir asc, and parses the direction', async () => {
+    const r = await listArticles({ q: `${P} rng`, sort: 'views', sortDir: 'asc', viewsFrom: '2026-12-10', viewsTo: '2026-12-12' }, new Date())
+    expect(r.articles.map((a) => a.views)).toEqual([0, 1, 2])
+    expect(parseArticleListParams({ sort: 'views', sortDir: 'asc' })).toMatchObject({ sort: 'views', sortDir: 'asc' })
+    expect(parseArticleListParams({ sort: 'views', sortDir: 'sideways' }).sortDir).toBeUndefined()
   })
 
   it('parses and validates the views range', () => {

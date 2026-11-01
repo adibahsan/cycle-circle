@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll, beforeAll } from 'vitest'
 import { PrismaClient } from '@prisma/client'
-import { createArticle, updateArticle } from '@vesta/shared/server/services'
+import { createArticle, updateArticle, ContentError } from '@vesta/shared/server/services'
 import { articlePublishWarnings } from '@vesta/shared/utils/article-warnings'
 
 const prisma = new PrismaClient()
@@ -83,5 +83,13 @@ describe('articlePublishWarnings', () => {
     expect(articlePublishWarnings({ status: 'PUBLISHED', titleBn: 'a', bodyBn: '<p>b</p>', cyclePhases: ['LUTEAL'] })).toEqual([])
     expect(articlePublishWarnings({ status: 'PUBLISHED', titleBn: '', bodyBn: '<p></p>', cyclePhases: [] })).toEqual(['bengali', 'phase'])
     expect(articlePublishWarnings({ status: 'PUBLISHED', titleBn: 'a', bodyBn: '', cyclePhases: ['LUTEAL'] })).toEqual(['bengali'])
+  })
+})
+
+describe('invalid status', () => {
+  it('is a ContentError with the same message', async () => {
+    const p = createArticle('x', { titleEn: 't', bodyEn: '<p>b</p>', status: 'BOGUS' }, new Date())
+    await expect(p).rejects.toBeInstanceOf(ContentError)
+    await expect(p).rejects.toThrow('Invalid article status "BOGUS". Expected one of DRAFT, PUBLISHED, ARCHIVED.')
   })
 })

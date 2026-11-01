@@ -6,6 +6,11 @@ import { dhakaDateTimeToInstant } from '@vesta/shared/utils/dhaka-date'
 /** Editor-only status for "published, at a future time". Saved as status PUBLISHED + a publish time. */
 export const SCHEDULED = 'SCHEDULED'
 
+/** The status the server stores for an editor status: Scheduled is Published plus a future publish time. */
+export function savedStatus(status: string): string {
+  return status === SCHEDULED ? 'PUBLISHED' : status
+}
+
 /**
  * The publish-time input of the article editors. The wall time is Bangladesh time whatever the
  * browser's timezone is. Returns an error message, or the ISO instant to send.

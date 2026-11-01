@@ -21,7 +21,7 @@ import { Select } from '@/components/ui/Select'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
 import { articlePublishWarnings, articleWarningMessages, isBlankBody } from '@vesta/shared/utils/article-warnings'
-import { ScheduleField, SCHEDULED, scheduleToIso } from '@/components/ScheduleField'
+import { ScheduleField, SCHEDULED, savedStatus, scheduleToIso } from '@/components/ScheduleField'
 import { createArticle } from '@/app/actions/content-actions'
 
 type CategoryOption = {
@@ -96,7 +96,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
     }
     setError(null)
 
-    const warnings = articlePublishWarnings({ status: status === SCHEDULED ? 'PUBLISHED' : status, titleBn, bodyBn, cyclePhases })
+    const warnings = articlePublishWarnings({ status: savedStatus(status), titleBn, bodyBn, cyclePhases })
     if (warnings.length > 0) {
       setPublishWarnings(articleWarningMessages(warnings))
       return
@@ -120,7 +120,7 @@ export function ArticleEditorClient({ categories }: ArticleEditorClientProps) {
           bodyBn: isBlankBody(bodyBn) ? null : bodyBn,
           categoryId: categoryId || null,
           cyclePhases,
-          status: status === SCHEDULED ? 'PUBLISHED' : status,
+          status: savedStatus(status),
           ...(status === SCHEDULED ? { publishedAt: scheduledIso() } : {}),
         })
         if ('error' in result) {

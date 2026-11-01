@@ -6,6 +6,7 @@ import {
   removeCategory,
   listCategories,
   reorderCategories,
+  ContentError,
 } from '@vesta/shared/server/services'
 
 const prisma = new PrismaClient()
@@ -99,6 +100,18 @@ describe('category audit rows', () => {
       where: { adminId: ADMIN_ID, action: 'CATEGORY_REORDERED' },
     })
     expect(reorders.length).toBeGreaterThan(0)
+  })
+})
+
+describe('admin-safe errors are ContentErrors', () => {
+  it('uses ContentError for every category failure', async () => {
+    const c = await make(`test-catord-err-${stamp}`)
+    const all = (await listCategories()).map((x) => x.id)
+    await expect(createCategory(ADMIN_ID, '   ')).rejects.toBeInstanceOf(ContentError)
+    await expect(createCategory(ADMIN_ID, c.name)).rejects.toBeInstanceOf(ContentError)
+    await expect(updateCategory(ADMIN_ID, 'missing-cat', 'x')).rejects.toBeInstanceOf(ContentError)
+    await expect(removeCategory(ADMIN_ID, 'missing-cat')).rejects.toBeInstanceOf(ContentError)
+    await expect(reorderCategories(ADMIN_ID, all.slice(1))).rejects.toBeInstanceOf(ContentError)
   })
 })
 

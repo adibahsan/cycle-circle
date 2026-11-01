@@ -15,6 +15,9 @@ export type ArticlePhase = (typeof ARTICLE_PHASES)[number]
 export const ARTICLE_SORTS = ['newest', 'title', 'views'] as const
 export type ArticleSort = (typeof ARTICLE_SORTS)[number]
 
+export const ARTICLE_SORT_DIRS = ['asc', 'desc'] as const
+export type ArticleSortDir = (typeof ARTICLE_SORT_DIRS)[number]
+
 export const ARTICLE_DEFAULT_PAGE_SIZE = 20
 export const ARTICLE_MAX_PAGE_SIZE = 100
 /** `categoryId` value meaning "articles with no category". */
@@ -31,6 +34,8 @@ export interface ListArticlesOptions {
   /** Bangla title or body missing. */
   missingBangla?: boolean
   sort?: ArticleSort
+  /** Direction of the views sort: desc (most read first, default) or asc (least read first). */
+  sortDir?: ArticleSortDir
   /** Bangladesh days (`YYYY-MM-DD`, inclusive) that the views count and views sort cover. Absent = all time. */
   viewsFrom?: string
   viewsTo?: string
@@ -63,6 +68,7 @@ export function normalizeListOptions(o: ListArticlesOptions = {}) {
     phase: isOneOf(ARTICLE_PHASES, o.phase) ? o.phase : undefined,
     missingBangla: o.missingBangla === true,
     sort: isOneOf(ARTICLE_SORTS, o.sort) ? o.sort : ('newest' as ArticleSort),
+    sortDir: o.sortDir === 'asc' ? ('asc' as ArticleSortDir) : ('desc' as ArticleSortDir),
     viewsFrom: validDay(o.viewsFrom),
     viewsTo: validDay(o.viewsTo),
     page: clampInt(o.page, 1),
@@ -87,6 +93,8 @@ export function parseArticleListParams(raw: RawParams): ListArticlesOptions {
   if (first('missingBangla') === '1') out.missingBangla = true
   const sort = first('sort')
   if (isOneOf(ARTICLE_SORTS, sort)) out.sort = sort
+  const sortDir = first('sortDir')
+  if (isOneOf(ARTICLE_SORT_DIRS, sortDir)) out.sortDir = sortDir
   const viewsFrom = validDay(first('viewsFrom'))
   if (viewsFrom) out.viewsFrom = viewsFrom
   const viewsTo = validDay(first('viewsTo'))

@@ -4,6 +4,7 @@ import {
   createArticle,
   updateArticle,
   listArticles,
+  getContentStatusBreakdown,
   listPublishedArticles,
   listPublishedCategories,
   getPublishedArticleById,
@@ -142,5 +143,30 @@ describe('admin list scheduled/published filters', () => {
 
     expect(await ids('PUBLISHED', BD_MIDNIGHT)).toContain(sched.id)
     expect(await ids('scheduled', BD_MIDNIGHT)).not.toContain(sched.id)
+  })
+
+  it('derives the display status from the same now: scheduled flips to published at its time', async () => {
+    const live = await make({ titleEn: `${P} ds-live` }, ms(BD_MIDNIGHT, -86_400_000))
+    const sched = await make({ titleEn: `${P} ds-soon`, publishedAt: BD_MIDNIGHT })
+    const draft = await make({ titleEn: `${P} ds-draft`, status: 'DRAFT' })
+    const arch = await make({ titleEn: `${P} ds-arch`, status: 'ARCHIVED' })
+    const status = async (now: Date) =>
+      Object.fromEntries((await listArticles({ q: `${P} ds-`, pageSize: 100 }, now)).articles.map((x) => [x.id, x.displayStatus]))
+    expect(await status(ms(BD_MIDNIGHT, -1000))).toMatchObject({
+      [live.id]: 'published', [sched.id]: 'scheduled', [draft.id]: 'draft', [arch.id]: 'archived',
+    })
+    expect((await status(BD_MIDNIGHT))[sched.id]).toBe('published')
+  })
+})
+
+describe('status breakdown', () => {
+  it('counts a scheduled article as Scheduled, not Published, until its time', async () => {
+    await make({ titleEn: `${P} bd-soon`, publishedAt: BD_MIDNIGHT })
+    const count = (rows: { status: string; count: number }[], s: string) => rows.find((r) => r.status === s)?.count ?? 0
+    const before = await getContentStatusBreakdown(ms(BD_MIDNIGHT, -1000))
+    const after = await getContentStatusBreakdown(BD_MIDNIGHT)
+    expect(count(before, 'SCHEDULED')).toBeGreaterThanOrEqual(1)
+    expect(count(after, 'PUBLISHED')).toBeGreaterThan(count(before, 'PUBLISHED'))
+    expect(count(after, 'SCHEDULED')).toBeLessThan(count(before, 'SCHEDULED'))
   })
 })

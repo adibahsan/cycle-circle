@@ -62,6 +62,15 @@ describe('bulkArticleAction', () => {
     expect((await row(a.id)).publishedAt!.getTime()).toBeLessThanOrEqual(Date.now())
   })
 
+  it('publish keeps the publish time of an article that is already live', async () => {
+    const a = await make('PUBLISHED')
+    const earlier = new Date(Date.now() - 86_400_000)
+    await prisma.article.update({ where: { id: a.id }, data: { publishedAt: earlier } })
+    const { results } = await bulkArticleAction(ADMIN_ID, [a.id], { type: 'publish' }, new Date())
+    expect(results).toEqual([{ id: a.id, ok: true }])
+    expect((await row(a.id)).publishedAt!.getTime()).toBe(earlier.getTime())
+  })
+
   it('unpublish returns to draft and clears publishedAt', async () => {
     const a = await make('PUBLISHED')
     const { results } = await bulkArticleAction(ADMIN_ID, [a.id], { type: 'unpublish' }, new Date())

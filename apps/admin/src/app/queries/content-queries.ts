@@ -24,6 +24,7 @@ function articlesCacheKey(o: ListArticlesOptions) {
     n.phase ?? '',
     n.missingBangla ? '1' : '',
     n.sort,
+    n.sortDir,
     n.viewsFrom ?? '',
     n.viewsTo ?? '',
     n.q ?? '',
@@ -61,9 +62,10 @@ export const getCategories = cache(async () => {
 export const getContentStatusBreakdownQuery = cache(async () => {
   await requireAdminUser()
   return unstable_cache(
-    () => getContentStatusBreakdown(),
+    () => getContentStatusBreakdown(new Date()),
     ['admin-content-status-breakdown'],
-    { tags: [adminCacheTags.content], revalidate: ADMIN_CACHE_TTL }
+    // 60s, not ADMIN_CACHE_TTL: the Published/Scheduled split depends on the clock.
+    { tags: [adminCacheTags.content], revalidate: 60 }
   )()
 })
 

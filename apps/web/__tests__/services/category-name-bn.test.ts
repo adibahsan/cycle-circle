@@ -27,6 +27,27 @@ afterAll(async () => {
   await prisma.$disconnect()
 })
 
+describe('Bangla-only category rename', () => {
+  it('writes a rename audit row with old and new for both names', async () => {
+    const stamp = Date.now()
+    const cat = await createCategory(AUTHOR, `test-catbn-aud-${stamp}`, 'পুরনো')
+    created.push(cat.id)
+    await updateCategory(AUTHOR, cat.id, cat.name, 'নতুন')
+    const rows = await prisma.adminAuditLog.findMany({
+      where: { adminId: AUTHOR, action: 'CATEGORY_RENAMED', targetId: cat.id },
+    })
+    expect(rows).toHaveLength(1)
+    expect(rows[0].metadata).toMatchObject({ from: cat.name, to: cat.name, fromBn: 'পুরনো', toBn: 'নতুন' })
+  })
+
+  it('writes no rename row when neither name changes', async () => {
+    const cat = await createCategory(AUTHOR, `test-catbn-same-${Date.now()}`, 'একই')
+    created.push(cat.id)
+    await updateCategory(AUTHOR, cat.id, cat.name, 'একই')
+    expect(await prisma.adminAuditLog.count({ where: { adminId: AUTHOR, action: 'CATEGORY_RENAMED', targetId: cat.id } })).toBe(0)
+  })
+})
+
 describe('ArticleCategory.nameBn', () => {
   it('round-trips through create and update; empty string stores null', async () => {
     const stamp = Date.now()

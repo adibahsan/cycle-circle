@@ -20,7 +20,7 @@ import { Select } from '@/components/ui/Select'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
 import { articlePublishWarnings, articleWarningMessages, isBlankBody } from '@vesta/shared/utils/article-warnings'
-import { ScheduleField, SCHEDULED, scheduleToIso } from '@/components/ScheduleField'
+import { ScheduleField, SCHEDULED, savedStatus, scheduleToIso } from '@/components/ScheduleField'
 import { updateArticle } from '@/app/actions/content-actions'
 import { formatDhaka, instantToDhakaInput } from '@vesta/shared/utils/dhaka-date'
 
@@ -122,7 +122,7 @@ export function EditArticleClient({ article, scheduled, categories }: EditArticl
     setError(null)
     pendingPublishedAt.current = publishedAt
 
-    const warnings = articlePublishWarnings({ status: status === SCHEDULED ? 'PUBLISHED' : status, titleBn, bodyBn, cyclePhases })
+    const warnings = articlePublishWarnings({ status: savedStatus(status), titleBn, bodyBn, cyclePhases })
     if (warnings.length > 0) {
       setPublishWarnings(articleWarningMessages(warnings))
       return
@@ -141,7 +141,7 @@ export function EditArticleClient({ article, scheduled, categories }: EditArticl
           bodyBn: isBlankBody(bodyBn) ? null : bodyBn,
           categoryId: categoryId || null,
           cyclePhases,
-          status: status === SCHEDULED ? 'PUBLISHED' : status,
+          status: savedStatus(status),
           publishedAt: pendingPublishedAt.current,
         })
         if ('error' in result) {

@@ -33,6 +33,7 @@ type ArticleRow = {
   category: { name: string } | null
   author: { fullName: string | null } | null
   views: number
+  displayStatus: 'draft' | 'scheduled' | 'published' | 'archived'
 }
 
 type CategoryOption = {
@@ -88,21 +89,22 @@ const PHASE_COLORS: Record<string, string> = {
   LUTEAL: 'bg-[color-mix(in_srgb,var(--color-luteal)_22%,transparent)] text-[var(--color-text-primary)]',
 }
 
-function StatusBadge({ status, publishedAt }: { status: string; publishedAt: Date | string | null }) {
-  if (status === 'PUBLISHED' && publishedAt && new Date(publishedAt) > new Date()) {
+function StatusBadge({ status, publishedAt }: { status: ArticleRow['displayStatus']; publishedAt: Date | string | null }) {
+  if (status === 'scheduled') {
     return (
       <div className="space-y-0.5">
         <Badge variant="warning" size="sm">Scheduled</Badge>
-        <p className="text-xs text-[var(--color-text-muted)]">
-          {formatDhaka(publishedAt, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-        </p>
+        {publishedAt && (
+          <p className="text-xs text-[var(--color-text-muted)]">
+            {formatDhaka(publishedAt, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+          </p>
+        )}
       </div>
     )
   }
-  if (status === 'PUBLISHED') return <Badge variant="success" size="sm">Published</Badge>
-  if (status === 'DRAFT') return <Badge variant="info" size="sm">Draft</Badge>
-  if (status === 'ARCHIVED') return <Badge variant="neutral" size="sm">Archived</Badge>
-  return <Badge variant="neutral" size="sm">{status}</Badge>
+  if (status === 'published') return <Badge variant="success" size="sm">Published</Badge>
+  if (status === 'draft') return <Badge variant="info" size="sm">Draft</Badge>
+  return <Badge variant="neutral" size="sm">Archived</Badge>
 }
 
 function PhaseBadges({ phases }: { phases: string[] }) {
@@ -168,6 +170,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
   const currentMissingBangla = searchParams.get('missingBangla') === '1' ? '1' : 'all'
   const currentQuery = searchParams.get('q') ?? ''
   const currentSort = searchParams.get('sort') ?? 'newest'
+  const viewsDir = searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc'
   const currentPage = data.page
   const currentPageSize = data.pageSize
 
@@ -251,7 +254,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     setSaving(true)
     try {
       const res = await createCategory(name, newCategoryNameBn.trim())
-      if (res.error) {
+      if ('error' in res) {
         setCategoryError(res.error)
         return
       }
@@ -272,7 +275,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     setListError('')
     try {
       const res = await deleteCategory(categoryToDelete.id)
-      if (res.error) setListError(res.error)
+      if ('error' in res) setListError(res.error)
       else router.refresh()
       setCategoryToDelete(null)
     } catch {
@@ -307,7 +310,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     setRenameError('')
     try {
       const res = await updateCategory(id, name, editingCategoryNameBn.trim())
-      if (res.error) {
+      if ('error' in res) {
         setRenameError(res.error)
         return
       }
@@ -335,7 +338,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     setReordering(true)
     try {
       const res = await reorderCategories(next.map((c) => c.id))
-      if (res.error) {
+      if ('error' in res) {
         setOrderedCategories(previous)
         setListError(res.error)
         setOrderMessage('')
@@ -367,7 +370,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     {
       key: 'status',
       header: 'Status',
-      render: (row) => <StatusBadge status={row.status} publishedAt={row.publishedAt} />,
+      render: (row) => <StatusBadge status={row.displayStatus} publishedAt={row.publishedAt} />,
     },
     {
       key: 'category',
@@ -634,8 +637,14 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
         rowSelectLabel={(row) => `Select "${row.titleEn}"`}
         emptyMessage="No articles match your filters."
         sortKey={currentSort === 'views' ? 'views' : null}
-        sortOrder="desc"
-        onSortChange={(key) => updateParams({ sort: key === 'views' && currentSort !== 'views' ? 'views' : '' })}
+        sortOrder={viewsDir}
+        // Views header cycles most read (desc) -> least read (asc) -> off.
+        onSortChange={(key) => {
+          if (key !== 'views') return
+          if (currentSort !== 'views') updateParams({ sort: 'views', sortDir: '' })
+          else if (viewsDir === 'desc') updateParams({ sort: 'views', sortDir: 'asc' })
+          else updateParams({ sort: '', sortDir: '' })
+        }}
         onRowClick={(row) => router.push(`/content/${row.id}`)}
         keyExtractor={(row) => row.id}
       />

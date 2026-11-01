@@ -60,8 +60,16 @@ export function visibleArticleWhere(now: Date): Prisma.ArticleWhereInput {
   return { status: 'PUBLISHED', publishedAt: { lte: now } }
 }
 
+export type ArticleDisplayStatus = 'draft' | 'scheduled' | 'published' | 'archived'
+
+/** The status an admin sees: a PUBLISHED article whose time is still ahead of `now` is scheduled. */
+export function articleDisplayStatus(a: { status: string; publishedAt: Date | null }, now: Date): ArticleDisplayStatus {
+  if (a.status === 'PUBLISHED') return a.publishedAt && a.publishedAt > now ? 'scheduled' : 'published'
+  return a.status === 'ARCHIVED' ? 'archived' : 'draft'
+}
+
 export async function listArticles(options: ListArticlesOptions, now: Date) {
-  const { q, status, categoryId, phase, missingBangla, sort, viewsFrom, viewsTo, page, pageSize } = normalizeListOptions(options)
+  const { q, status, categoryId, phase, missingBangla, sort, sortDir, viewsFrom, viewsTo, page, pageSize } = normalizeListOptions(options)
 
   const and: Prisma.ArticleWhereInput[] = []
   if (q) {
@@ -111,18 +119,18 @@ export async function listArticles(options: ListArticlesOptions, now: Date) {
     const counts = await viewCounts(matching.map((m) => m.id))
     const pageIds = matching
       .map((m) => m.id)
-      .sort((x, y) => (counts.get(y) ?? 0) - (counts.get(x) ?? 0))
+      .sort((x, y) => (sortDir === 'asc' ? 1 : -1) * ((counts.get(x) ?? 0) - (counts.get(y) ?? 0)))
       .slice((page - 1) * pageSize, page * pageSize)
     const rows = await prisma.article.findMany({ where: { id: { in: pageIds } }, include })
     const byId = new Map(rows.map((r) => [r.id, r]))
     articles = pageIds.flatMap((id) => {
       const row = byId.get(id)
-      return row ? [{ ...row, views: counts.get(id) ?? 0 }] : []
+      return row ? [{ ...row, views: counts.get(id) ?? 0, displayStatus: articleDisplayStatus(row, now) }] : []
     })
   } else {
     const rows = await prisma.article.findMany({ where, include, orderBy, skip: (page - 1) * pageSize, take: pageSize })
     const counts = await viewCounts(rows.map((r) => r.id))
-    articles = rows.map((r) => ({ ...r, views: counts.get(r.id) ?? 0 }))
+    articles = rows.map((r) => ({ ...r, views: counts.get(r.id) ?? 0, displayStatus: articleDisplayStatus(r, now) }))
   }
 
   return {
@@ -166,7 +174,7 @@ const ARTICLE_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'] as const
 
 function assertArticleStatus(status: string | undefined): void {
   if (status !== undefined && !(ARTICLE_STATUSES as readonly string[]).includes(status)) {
-    throw new Error(`Invalid article status "${status}". Expected one of ${ARTICLE_STATUSES.join(', ')}.`)
+    throw new ContentError(`Invalid article status "${status}". Expected one of ${ARTICLE_STATUSES.join(', ')}.`)
   }
 }
 
@@ -368,6 +376,7 @@ export async function bulkArticleAction(
   let categoryError: string | null = null
   switch (action.type) {
     case 'publish':
+      // Already-live articles keep their publish time (same rule as updateArticle); the rest go live now.
       data = { status: 'PUBLISHED', publishedAt: now }
       break
     case 'unpublish':
@@ -398,7 +407,12 @@ export async function bulkArticleAction(
       continue
     }
     try {
-      const { count } = await prisma.article.updateMany({ where: { id }, data })
+      const where: Prisma.ArticleWhereInput =
+        action.type === 'publish'
+          ? { id, OR: [{ status: { not: 'PUBLISHED' } }, { publishedAt: null }, { publishedAt: { gt: now } }] }
+          : { id }
+      let { count } = await prisma.article.updateMany({ where, data })
+      if (count === 0 && action.type === 'publish') count = await prisma.article.count({ where: { id } })
       results.push(count === 0 ? { id, ok: false, error: 'Article not found.' } : { id, ok: true })
     } catch {
       results.push({ id, ok: false, error: 'Could not update this article.' })
@@ -450,13 +464,13 @@ async function uniqueCategorySlug(name: string, excludeId?: string): Promise<str
 
 function cleanCategoryName(name: string): string {
   const trimmed = name.trim()
-  if (!trimmed) throw new Error('Category name is required')
+  if (!trimmed) throw new ContentError('Category name is required')
   return trimmed
 }
 
 function rethrowDuplicateName(e: unknown, name: string): never {
   if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-    throw new Error(`A category named "${name}" already exists`)
+    throw new ContentError(`A category named "${name}" already exists`)
   }
   throw e
 }
@@ -482,16 +496,21 @@ export async function createCategory(adminId: string, name: string, nameBn?: str
 
 export async function updateCategory(adminId: string, id: string, name: string, nameBn?: string | null) {
   const clean = cleanCategoryName(name)
-  const existing = await prisma.articleCategory.findUnique({ where: { id }, select: { name: true } })
-  if (!existing) throw new Error('Category not found')
+  const existing = await prisma.articleCategory.findUnique({ where: { id }, select: { name: true, nameBn: true } })
+  if (!existing) throw new ContentError('Category not found')
   const data: { name: string; slug?: string; nameBn?: string | null } = { name: clean }
   // The slug follows the name only when the name changes; renaming keeps links stable otherwise.
   if (clean !== existing.name) data.slug = await uniqueCategorySlug(clean, id)
   if (nameBn !== undefined) data.nameBn = nameBn?.trim() || null
   try {
     const category = await prisma.articleCategory.update({ where: { id }, data })
-    if (clean !== existing.name) {
-      await createAuditLog(adminId, AUDIT_ACTIONS.CATEGORY_RENAMED, CATEGORY_TYPE, id, { from: existing.name, to: clean })
+    if (clean !== existing.name || category.nameBn !== existing.nameBn) {
+      await createAuditLog(adminId, AUDIT_ACTIONS.CATEGORY_RENAMED, CATEGORY_TYPE, id, {
+        from: existing.name,
+        to: clean,
+        fromBn: existing.nameBn,
+        toBn: category.nameBn,
+      })
     }
     return category
   } catch (e) {
@@ -501,7 +520,7 @@ export async function updateCategory(adminId: string, id: string, name: string, 
 
 export async function removeCategory(adminId: string, id: string) {
   const category = await prisma.articleCategory.findUnique({ where: { id }, select: { name: true } })
-  if (!category) throw new Error('Category not found')
+  if (!category) throw new ContentError('Category not found')
   const count = await prisma.article.count({ where: { categoryId: id } })
   if (count > 0) throw new ContentError('Cannot delete a category that still has articles.')
   await prisma.articleCategory.delete({ where: { id } })
@@ -517,7 +536,7 @@ export async function reorderCategories(adminId: string, orderedIds: string[]) {
     orderedIds.length === known.size &&
     new Set(orderedIds).size === orderedIds.length &&
     orderedIds.every((id) => known.has(id))
-  if (!valid) throw new Error('Categories changed since this page loaded. Reload and try again.')
+  if (!valid) throw new ContentError('Categories changed since this page loaded. Reload and try again.')
   await prisma.$transaction(
     orderedIds.map((id, index) =>
       prisma.articleCategory.update({ where: { id }, data: { sortOrder: index + 1 } }),
@@ -530,19 +549,24 @@ export async function reorderCategories(adminId: string, orderedIds: string[]) {
 // ── Chart-data helpers ─────────────────────────────────────────────────────────
 
 /**
- * Returns article counts grouped by status (DRAFT / PUBLISHED / ARCHIVED).
- * Status values correspond to the `ArticleStatus` enum.
+ * Article counts by status: DRAFT / PUBLISHED / SCHEDULED / ARCHIVED. PUBLISHED is live at `now`;
+ * SCHEDULED is published with a publish time still ahead (same split as the list's filters).
  */
-export async function getContentStatusBreakdown(): Promise<
-  { status: string; count: number }[]
-> {
-  const groups = await prisma.article.groupBy({
-    by: ['status'],
-    _count: { status: true },
-    orderBy: { status: 'asc' },
-  })
-
-  return groups.map((g) => ({ status: g.status, count: g._count.status }))
+export async function getContentStatusBreakdown(
+  now: Date,
+): Promise<{ status: string; count: number }[]> {
+  const [draft, published, scheduled, archived] = await Promise.all([
+    prisma.article.count({ where: { status: 'DRAFT' } }),
+    prisma.article.count({ where: visibleArticleWhere(now) }),
+    prisma.article.count({ where: { status: 'PUBLISHED', publishedAt: { gt: now } } }),
+    prisma.article.count({ where: { status: 'ARCHIVED' } }),
+  ])
+  return [
+    { status: 'DRAFT', count: draft },
+    { status: 'PUBLISHED', count: published },
+    { status: 'SCHEDULED', count: scheduled },
+    { status: 'ARCHIVED', count: archived },
+  ].filter((r) => r.count > 0)
 }
 
 /**
