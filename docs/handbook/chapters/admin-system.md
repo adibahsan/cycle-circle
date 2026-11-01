@@ -12,7 +12,7 @@ A **Daily schedule** switch on each job card, and a **Schedule** switch on the *
 
 ### Where to find it
 
-**System** in the sidebar, or `/system`.
+**System** in the sidebar, or `/system`. Top to bottom the page shows: the two job cards, Run history (the subscription check table), Emailed reports, Pro price, SMS send time and SMS delivery reports.
 
 ![System page: two job cards with schedule switches, and run history](../screenshots/sy-jobs.png)
 
@@ -81,6 +81,7 @@ The **Run now** button on the **Daily reminders** card. It sends the day's perio
 - The same run also takes the SMS step: if today's planned campaign SMS is due (the send time has passed and it was not sent yet) it is sent now. See [SMS send time](#sy-sms-time).
 - Only numbers are shown in the result panel. The SMS details the job returns are not shown there.
 - The run is recorded as "Trigger Cron Daily Reminders" in the [audit log](#au-search), with the numbers, or the status code when it failed. A manual reminder run does **not** appear in [Run history](#sy-runs); that table holds the subscription check only.
+- If the call to the web app itself fails before it answers (for example the address or secret is not set), the card shows the error and **no** audit row is written; only a reply, good or bad, is recorded.
 - To send reminders to **one** User, use [Send reminders](#us-reminders) on the User page.
 
 ### What can go wrong
@@ -284,7 +285,7 @@ The **Pro price** card. An Admin sets the amount and period (daily, weekly or mo
 
 ### How to use it
 
-1. Read "Current:" at the top of the card: the price in effect today, for example "5/day" (with the taka sign).
+1. Read "Current:" at the top of the card: the price in effect today, for example "5/day" (with the taka sign), or "not set" when no price is in effect.
 2. Read the yellow note: "This does not change what BDApps charges. Change the BDApps contract too and keep the two the same."
 3. Fill the form:
    - **Amount (taka)**: more than 0, at most two decimals.
@@ -410,7 +411,7 @@ Press a start time in [Run history](#sy-runs), or open `/system/runs/<run id>`. 
 |---|---|---|
 | "not found" page | The run ID does not exist | Go back to **System** and open a run from the table |
 | A red error at the top | The run itself failed | Read it, fix the cause (often BDApps unreachable), run the check again |
-| "BDApps did not answer (timeout)" for a User | BDApps was slow or down for that number | Run again later; the User stays Pro meanwhile |
+| "BDApps did not answer within 15s" for a User | BDApps was slow or down for that number (the number of seconds is the call's time limit, 15 for the check) | Run again later; the User stays Pro meanwhile |
 | A User you expected is not listed | They were not Pro at check time, or BDApps still reports them subscribed | See [Plan history and Translog](#us-history) |
 
 ### Related

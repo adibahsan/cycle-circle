@@ -33,7 +33,7 @@ test.describe('Admin Audit logs, Logs, System', () => {
     const admin = await db.user.findFirstOrThrow({ where: { role: 'ADMIN' }, select: { id: true } })
     const now = Date.now()
     const rows: Array<[action: string, type: string, target: string, meta: object | null]> = [
-      ['USER_SUSPENDED', 'User', 'hbaudit-user-1', null],
+      ['USER_SUSPENDED', 'User', 'hbaudit-user-1', { reason: 'abusive messages', bdapps: 'ok' }],
       ['PRO_GRANTED', 'User', 'hbaudit-user-2', { reason: 'support request' }],
       ['SET_CRON_ENABLED', 'CronJob', 'hbaudit-caas-check', { enabled: false }],
       ['SET_SMS_SEND_TIME', 'SystemSetting', 'hbaudit-sms-send-time', { from: '14:00', to: '16:30', timezone: 'Asia/Dhaka' }],
@@ -140,19 +140,21 @@ test.describe('Admin Audit logs, Logs, System', () => {
     await shot(page, 'sy-manual-sub-check')
     await page.getByRole('button', { name: 'Cancel' }).click()
 
+    // Each card is shot on its own so the three settings cards do not share one bottom-of-page view.
+    const card = (name: string) => page.getByRole('heading', { name }).locator('xpath=ancestor::div[contains(@class,"rounded")][1]')
     const scrollTo = (name: string) => page.getByRole('heading', { name }).evaluate((el) => el.scrollIntoView({ block: 'start' }))
 
     await scrollTo('Emailed reports')
     await shot(page, 'sy-report-recipients')
 
     await scrollTo('Pro price')
-    await shot(page, 'sy-pro-price')
+    await shot(page, 'sy-pro-price', { of: card('Pro price') })
 
     await scrollTo('SMS daily send time')
-    await shot(page, 'sy-sms-time')
+    await shot(page, 'sy-sms-time', { of: card('SMS daily send time') })
 
     await scrollTo('SMS delivery reports')
-    await shot(page, 'sy-delivery-reports')
+    await shot(page, 'sy-delivery-reports', { of: card('SMS delivery reports') })
 
     await scrollTo('Daily subscription check history')
     await expect(page.getByTestId('run-row').first()).toBeVisible()

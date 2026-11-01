@@ -17,9 +17,9 @@ The **Audit Logs** page. A header with the total ("10 total entries"), a **Refre
 ### How to use it
 
 1. Open **Audit Logs**. The newest entries are at the top.
-2. To find one kind of action, open **Action** and pick it (for example "Pro Granted"). The list has every action the system can record, from "User Suspended" to "Admin Login".
-3. To find entries about one kind of record, open **Target Type** and pick it (User, Article, ArticleCategory, Subscription, SmsBroadcast, SmsCampaign, SmsCampaignMessage, Profile, Feedback, CronJob, SystemSetting or ProPrice).
-4. To find one record, type its ID (or the first part of it) in the search box. To find an action by name, type its words ("pro granted") or its stored name ("PRO_GRANTED").
+2. To find one kind of action, open **Action** and pick it (for example "Pro Granted"). The list has every action the system can record, from "User Suspended" to "Admin Logout".
+3. To find entries about one kind of record, open **Target Type** and pick it (User, Article, Article Category, Subscription, Sms Broadcast, Sms Campaign, Sms Campaign Message, Profile, Feedback, Cron Job, System Setting or Pro Price).
+4. To find one record, type its ID (or the first part of it) in the search box. To find an action by name, type its words ("pro granted") or its stored name ("PRO_GRANTED"). The search matches the stored name only, so a label that differs from it is not found by its words (see Rules and limits).
 5. Use the page controls under the table to move through pages and to change **Rows per page**.
 6. Press **Refresh** to see entries made in the last few minutes (see rules).
 
@@ -59,7 +59,7 @@ One row in the audit table. Each row has six columns:
 | Column | Shows |
 |---|---|
 | Timestamp | When the Admin acted, in Bangladesh time (for example "Nov 1, 2026, 07:35 PM") |
-| Action | A coloured label. The label is the stored action name written in words ("PRO_GRANTED" shows as "Pro Granted"). Red labels are actions that take something away (suspend, delete, revoke), green ones give something back (reactivate, restore, grant Pro), blue ones create or edit, yellow ones start or change SMS sends and schedules, and grey ones are everything else |
+| Action | A coloured label. The label is the stored action name written in words ("PRO_GRANTED" shows as "Pro Granted"). Red labels are actions that take something away (suspend, delete, revoke), green ones give something back (reactivate, restore, grant Pro), blue ones are the few create, edit and job-run actions listed under Rules and limits, yellow ones start SMS sends or change job and report settings, and grey ones are everything else |
 | Target Type | The kind of record the action was done to |
 | Target ID | The record's ID, cut to 12 characters with "…". Hover to see the whole ID |
 | Admin | The Admin's name, or their email if they have no name (the stored Admin ID if both are empty) |
@@ -74,7 +74,7 @@ The table on the **Audit Logs** page ([Audit log search](#au-search)). Press the
 ### How to use it
 
 1. Read the row from left to right: when, what, to which kind of record, which record, by whom.
-2. Press the metadata text ("Expand metadata") to see all of it; press it again ("Collapse metadata") to shorten it. Only the first 60 characters show until you open it.
+2. Press the metadata text to see all of it; press it again to shorten it. The text is the JSON itself, cut to 60 characters with "…" until you open it (the button's screen-reader name is "Expand metadata" or "Collapse metadata").
 3. For settings changes the metadata holds the old and new value:
    - "Set Sms Send Time": the old time, the new time and the time zone.
    - "Set Report Recipients": the old list and the new list of emails.
@@ -96,10 +96,10 @@ What gets an entry:
 ### Rules and limits
 
 - The audit log records what **Admins** did. It does not record what a User did; those lines go to the server logs ([Log channels](#lg-channels)).
-- The stored action name never changes, but the label may. The one place the label differs from a plain rewrite is "Trigger Cron Subscription Check", stored as `TRIGGER_CRON_CAAS_CHECK` (the stored name is what a search for "caas" finds).
-- A few actions have a coloured label: User Suspended, User Deleted, Pro Revoked and Article Deleted (red); User Reactivated, User Restored and Pro Granted (green); Article Created (blue); the SMS broadcast actions (yellow or blue); Set Cron Enabled and Set Report Recipients (yellow); the two Trigger Cron actions (blue). Every other action, for example "Set Sms Send Time", "Pro Price Set" and "Export Users Csv", has a grey label, even when it matters.
+- The stored action name never changes, but the label may. The one place the label differs from a plain rewrite is "Trigger Cron Subscription Check", stored as `TRIGGER_CRON_CAAS_CHECK`. The search box matches the stored name, so "caas" finds it but "subscription check" finds nothing; use the **Action** menu for that one.
+- A few actions have a coloured label: User Suspended, User Deleted, Pro Revoked and Article Deleted (red); User Reactivated, User Restored and Pro Granted (green); Article Created (blue); Send Sms Broadcast and Dispatch Sms Broadcast (yellow); Update Sms Broadcast and Reschedule Sms Broadcast (blue); Set Cron Enabled and Set Report Recipients (yellow); the two Trigger Cron actions (blue). Every other action, for example "Set Sms Send Time", "Pro Price Set" and "Export Users Csv", has a grey label, even when it matters.
 - Metadata is stored as JSON and shown in the order the database returns it, so "to" can appear before "from".
-- Not every Admin action has metadata. Suspend, reactivate and article creation show a dash.
+- Not every Admin action has metadata. Reactivate and article creation show a dash; Suspend shows the reason and the BDApps result (`reason`, `bdapps`).
 - The Target ID of a sign-in entry is the Admin's own ID, and its Target Type is "User".
 
 ### What can go wrong
@@ -108,7 +108,7 @@ What gets an entry:
 |---|---|---|
 | A dash in **Metadata** | That action stores no details | Nothing is wrong; read the Action and Target ID |
 | A very long ID cut with "…" | The column shows 12 characters | Hover for the full ID, or open the metadata |
-| "Admin Login Failed" entries | Someone gave the wrong password for a real Admin email | If the Admin did not do it, change the password and see [Admin access](#aa-sign-in) |
+| "Admin Login Failed" entries | A sign-in for a real Admin email was refused: wrong password, suspended account, or too many attempts (the metadata `reason` says which: `BAD_PASSWORD`, `SUSPENDED` or `RATE_LIMITED`) | If the Admin did not do it, change the password and see [Admin access](#aa-sign-in) |
 
 ### Related
 
