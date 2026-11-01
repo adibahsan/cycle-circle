@@ -114,9 +114,9 @@ All campaign messages go out at one daily time. If a message is not sent on its 
 - Default **14:00 Bangladesh time**. Format 24-hour HH:MM; an invalid value is refused with "Send time must be HH:MM in 24-hour time (for example 14:00)".
 - The server checks every 15 minutes (at :00, :15, :30 and :45 past each hour), so the send happens up to 15 minutes after the chosen time.
 - A change applies from the next check. If the new time is already past today, today's message goes at the next check.
-- If the "every 15 minutes" line is missing from the host crontab, the message goes out only in the 14:00 daily reminder run, whatever time is saved.
+- If the "every 15 minutes" line is missing from the host crontab, the message goes out only in the 14:00 daily reminder run. A send time of 14:00 or earlier then still works (it goes at 14:00); a later send time is never reached, so that day is marked Missed.
 - A planned message whose day passes unsent is marked Missed at the next check after midnight; "Missed: not sent on its day." It stays Missed. An Admin can resend its text on a free day ([Resend failed messages](#sm-resend)).
-- Missed days happen when the server was down, the "Daily reminders" switch was off, or the campaign was cancelled (cancelled campaigns are skipped).
+- Missed days happen when the server was down, the "Daily reminders" switch was off (the day is marked Missed at the first check after the switch is back on), or the campaign was cancelled (cancelled campaigns are skipped).
 
 ### What can go wrong
 
@@ -150,7 +150,7 @@ An optional feature: BDApps tells Cycle Circle which SMS arrived. When on, a sen
 ### Rules and limits
 
 - **Off by default.** Current production SMS plan has reports disabled; when a send asks for them anyway BDApps rejects the entire send with error E1312, so the message becomes "Failed to send".
-- BDApps posts one report per recipient to `/api/webhooks/sms/report`. Each report is matched to its message by the BDApps request id and counted once (a repeated report is ignored).
+- BDApps posts one report per recipient to `/api/webhooks/sms/report`. Each report is matched to its message by the BDApps request id (older messages without one are matched by the BDApps message id) and counted once (a repeated report is ignored).
 - "Delivered" counts DELIVERED. "Failed" counts FAILED, UNDELIVERABLE, EXPIRED, DELETED and REJECTED. ACCEPTED and UNKNOWN are not counted and are written to the webhook log as "sms.report.unclassified".
 - Never shown as zeros when off: the screen says "Delivery reports off".
 - The App OTP and reminder SMS never ask for delivery reports.
