@@ -142,7 +142,7 @@ BDApps tells Cycle Circle about changes by posting small messages (webhooks) to 
 ### Rules and limits
 
 - The app always answers BDApps with `{"statusCode":"S1000","statusDetail":"Received"}` when the call is accepted, even for events it ignores.
-- A call is accepted only from the IP addresses listed in the server setting `BDAPPS_WEBHOOK_IPS` (if set) and, for subscription notices, only for this app's id. Otherwise the answer is 401 "Unauthorized: unknown webhook source" or "Unauthorized: unknown application". Resend calls are checked by signature.
+- A call is accepted only from the IP addresses listed in the server environment variable `BDAPPS_WEBHOOK_IPS`; when that variable is not set, every source is accepted and, for subscription notices, only for this app's id. Otherwise the answer is 401 "Unauthorized: unknown webhook source" or "Unauthorized: unknown application". Resend calls are checked by signature.
 - Each event is stored once. A repeat (same subscriber and time stamp, or same request id and recipient) is logged as "ignored: duplicate" and not applied again.
 - For subscription notices, only REGISTERED and UNREGISTERED are acted on (a trailing dot as in "REGISTERED." is tolerated). Any other status is logged as "ignored: unhandled-status".
 - The subscriber is matched by the masked id stored at subscription, then by phone number. A notice for nobody is logged as a warning "ignored: no-matching-user".
