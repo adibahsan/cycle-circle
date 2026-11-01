@@ -25,7 +25,7 @@ An **Active user** is a User who opened the app on a given Bangladesh day ([Glos
 - **Opening is enough.** Any signed-in visit to the app, or to the onboarding screens, counts once for that User that day. The User does not have to log anything. Each User counts **once per day**, however often they open the app.
 - **Suspended and deleted Users never count.** This is judged by their status **now**, not on the day. Suspending a User therefore also lowers the past daily counts, and restoring or reactivating one raises them again.
 - Admins do not count for using the Admin app. (An Admin who also uses the User app as a User would count.)
-- **History starts on the day recording began.** Earlier days show 0 on this page; the Overview shows them as "Unavailable" instead ("Active-user history starts on the day recording began."). A 0 before that day is not "nobody came".
+- **History starts on the day recording began.** Earlier days show 0 on this page; the Overview card shows "Unavailable" instead (and a permanent footnote on the Overview reads "Active-user history starts on the day recording began."). The charts on this page plot those days as 0. A 0 before that day is not "nobody came".
 - A day is a Bangladesh day. Someone who opens the app at 23:50 and again at 00:10 is active on two days.
 - It is **not** the same as **Daily Active Loggers**, which counts profiles that logged a symptom ([Engagement panels](#en-panels)). A User can be active without logging.
 
@@ -77,7 +77,7 @@ The same **Engagement** page, below **Daily Active Users**.
 - **Logging** means a symptom log, and "all good" counts as one. A period log alone does not.
 - **Profiles, not Users.** A User with three profiles can add up to three loggers. Profiles of **deleted** Users are left out; profiles of Suspended Users are **not** left out here (unlike Active users).
 - **Symptom Logging Rate** divides by the number of profiles that exist **today**, for every day in the range, and is shown as a whole percent.
-- **Streak:** measured at the range's last day (never later than today). A profile has a streak only if it logged on that day or the day before; the streak is the run of consecutive days up to there. Only the last 40 days are looked at, so a streak longer than that is cut. Profiles that never logged count in the "0" bucket.
+- **Streak:** measured at the range's last day (never later than today). A profile has a streak only if it logged on that day or the day before; the streak is the run of consecutive days up to there. Only the last 41 Bangladesh days are looked at (today and the 40 days before it), so a streak longer than that is cut. Profiles that never logged count in the "0" bucket.
 - **Weekly Logging Retention:** the range is cut into 7-day weeks ending on its last day (at most 53). A profile belongs to the week of its **first symptom log ever**, and counts as retained if it logs again in the **next** week. A week is "not yet measured" (a dash, with no line) until the next week has fully passed. A profile that first logged before the range is in no cohort.
 - The ranges are one shared range: all charts on the page change together.
 - Figures are kept for 60 seconds. Press **Refresh** to reload.
@@ -92,7 +92,7 @@ The same **Engagement** page, below **Daily Active Users**.
 | "No retention data yet." | No profile first logged inside the range | Choose a longer range |
 | A dash and "not yet measured" under a week | The following week has not finished | Look again next week |
 | The rate fell though logging is steady | New profiles raise the divisor | Expected |
-| Streaks look short | Only 40 days are examined, and a missed day ends the streak | Expected |
+| Streaks look short | Only the last 41 days are examined, and a missed day ends the streak | Expected |
 | Counts do not match the Overview's active Users | Different thing: opening the app, not logging | See [What counts as an Active user](#en-active) |
 
 ### Related

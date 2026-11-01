@@ -281,7 +281,7 @@ In the editor, the **Scheduled** choice under **Status** reveals the **Publish a
 ### Rules and limits
 
 - The time is **Bangladesh time (UTC+6)** whatever the time zone of the Admin's computer. The box says "Goes live at this time, Bangladesh time (UTC+6). Until then it stays hidden from readers."
-- It must be in the future when saved. A time that has already passed by the time the server saves it is treated as "now".
+- It must be in the future. The editor refuses a time that has passed with "The publish time must be in the future. Use Published to publish now." Only if a past time still reaches the server (for example the page sat open past the time) does the server treat it as "now".
 - Only a Published article can have a time; Scheduled is stored as Published plus the time.
 - The Learn page keeps its list for 60 seconds, so a scheduled article can appear up to about a minute after its time.
 - Scheduled articles are not counted as readable: they do not collect views ([Views column](#ac-views)).
