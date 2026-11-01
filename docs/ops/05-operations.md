@@ -142,42 +142,24 @@ one-off manual dump against any connection string, but it doesn't gzip or rotate
 `ops/backups/` is gitignored on purpose (real data). The **production nightly job**
 below follows the same `pg_dump` shape but runs from host cron, gzips, and prunes.
 
-Create `/opt/vesta/backup-db.sh`:
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-BACKUP_DIR=/opt/vesta/backups
-RETENTION_DAYS=14
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-FILE="$BACKUP_DIR/vesta-$TIMESTAMP.sql.gz"
-
-mkdir -p "$BACKUP_DIR"
-
-cd /opt/vesta
-docker compose exec -T postgres pg_dump -U vesta_user -d vesta_prod \
-  --format=plain --no-acl --no-owner | gzip > "$FILE"
-
-# prune anything older than retention
-find "$BACKUP_DIR" -name 'vesta-*.sql.gz' -mtime "+$RETENTION_DAYS" -delete
-
-echo "Backup written: $FILE ($(du -h "$FILE" | cut -f1))"
-```
-
-(Adjust `-U`/`-d` to match the actual `POSTGRES_USER` / `POSTGRES_DB` set in
-[03-deployment.md](./03-deployment.md)'s compose file / env — same pattern as the
-dev compose in `ops/docker/compose.yml`.)
-
-```bash
-chmod +x /opt/vesta/backup-db.sh
-crontab -e
-# 0 3 * * *  /opt/vesta/backup-db.sh >> /opt/vesta/backups/backup.log 2>&1
-```
+The job is `ops/deploy/scripts/backup-db.sh` (it also tars the uploads directory), run by
+the `0 4 * * *` line in `ops/deploy/vesta-crontab`; `deploy.sh` runs the same script before
+every migration. It reads the role and database from the postgres container's own
+`POSTGRES_USER` / `POSTGRES_DB` (on production both are `vesta`).
 
 Pick the cron time deliberately relative to the server's timezone (see
-[02-server-setup.md §1](./02-server-setup.md#1-base-packages-locale-timezone)) —
-`0 3 * * *` is 03:00 in whatever timezone the server clock is set to.
+[02-server-setup.md §1](./02-server-setup.md#1-base-packages-locale-timezone)): `0 4 * * *`
+is 04:00 in whatever timezone the server clock is set to.
+
+### Read-only query against production
+
+From the laptop, with the container's own credentials (no password needed, nothing written):
+
+```bash
+ssh vesta 'docker exec vesta-postgres-1 sh -c "psql -U \$POSTGRES_USER -d \$POSTGRES_DB -tAc \"SELECT count(*) FROM \\\"Article\\\"\""'
+```
+
+Quote table and column names (`\"Article\"`, `\"publishedAt\"`): Prisma creates them mixed-case.
 
 ### Article images (uploads directory)
 
@@ -216,25 +198,25 @@ entry a few minutes later (`--min-age 5m` above avoids racing an in-progress dum
 ### Restore procedure
 
 **Always restore to a scratch database first** — never `psql` a backup straight into
-the live `vesta_prod` database.
+the live `vesta` database.
 
 ```bash
 cd /opt/vesta
 
 # 1. create a scratch DB inside the same postgres container
-docker compose exec -T postgres psql -U vesta_user -d postgres \
+docker compose -f ops/deploy/compose.prod.yml exec -T postgres psql -U vesta -d postgres \
   -c "CREATE DATABASE vesta_restore_check;"
 
 # 2. restore the gzipped dump into it
 gunzip -c /opt/vesta/backups/vesta-<timestamp>.sql.gz | \
-  docker compose exec -T postgres psql -U vesta_user -d vesta_restore_check
+  docker compose -f ops/deploy/compose.prod.yml exec -T postgres psql -U vesta -d vesta_restore_check
 
 # 3. sanity-check row counts / spot-check a few tables
-docker compose exec -T postgres psql -U vesta_user -d vesta_restore_check \
+docker compose -f ops/deploy/compose.prod.yml exec -T postgres psql -U vesta -d vesta_restore_check \
   -c "SELECT count(*) FROM \"User\"; SELECT count(*) FROM \"PeriodLog\";"
 
 # 4. only once satisfied — drop the scratch DB
-docker compose exec -T postgres psql -U vesta_user -d postgres \
+docker compose -f ops/deploy/compose.prod.yml exec -T postgres psql -U vesta -d postgres \
   -c "DROP DATABASE vesta_restore_check;"
 ```
 
@@ -243,16 +225,16 @@ current data, confirm you have a fresh pre-restore backup of the live DB first):
 
 ```bash
 # stop app containers so nothing writes during the restore
-docker compose stop web admin
+docker compose -f ops/deploy/compose.prod.yml stop web admin
 
-docker compose exec -T postgres psql -U vesta_user -d postgres \
-  -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'vesta_prod' AND pid <> pg_backend_pid();"
-docker compose exec -T postgres psql -U vesta_user -d postgres -c "DROP DATABASE vesta_prod;"
-docker compose exec -T postgres psql -U vesta_user -d postgres -c "CREATE DATABASE vesta_prod;"
+docker compose -f ops/deploy/compose.prod.yml exec -T postgres psql -U vesta -d postgres \
+  -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'vesta' AND pid <> pg_backend_pid();"
+docker compose -f ops/deploy/compose.prod.yml exec -T postgres psql -U vesta -d postgres -c "DROP DATABASE vesta;"
+docker compose -f ops/deploy/compose.prod.yml exec -T postgres psql -U vesta -d postgres -c "CREATE DATABASE vesta;"
 gunzip -c /opt/vesta/backups/vesta-<timestamp>.sql.gz | \
-  docker compose exec -T postgres psql -U vesta_user -d vesta_prod
+  docker compose -f ops/deploy/compose.prod.yml exec -T postgres psql -U vesta -d vesta
 
-docker compose up -d web admin
+docker compose -f ops/deploy/compose.prod.yml up -d web admin
 curl -fsS https://cycle-circle.com/api/health/db
 ```
 
@@ -294,7 +276,7 @@ safe to apply like any other image update — take a backup first (§4), then:
 cd /opt/vesta
 docker compose pull postgres
 docker compose up -d postgres
-docker compose exec -T postgres pg_isready -U vesta_user -d vesta_prod
+docker compose -f ops/deploy/compose.prod.yml exec -T postgres pg_isready -U vesta -d vesta
 ```
 
 > **Major version upgrades (e.g. 17 → 18) are not a simple image bump.** Postgres
@@ -455,8 +437,8 @@ after a deploy — give it a few seconds and recheck `docker compose ps`).
 ```bash
 df -h /
 docker system df -v                        # is it Docker images/logs, or the postgres volume itself?
-docker compose exec -T postgres psql -U vesta_user -d vesta_prod \
-  -c "SELECT pg_size_pretty(pg_database_size('vesta_prod'));"
+docker compose -f ops/deploy/compose.prod.yml exec -T postgres psql -U vesta -d vesta \
+  -c "SELECT pg_size_pretty(pg_database_size('vesta'));"
 ```
 
 Quick relief: `docker system prune -f` (safe — only removes unused images/build

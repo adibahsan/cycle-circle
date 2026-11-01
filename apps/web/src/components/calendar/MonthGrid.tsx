@@ -41,6 +41,11 @@ export interface MonthDayAction {
 export interface MonthGridProps {
   /** Any day in the month shown. */
   month: Date
+  /**
+   * Today, from the Server Component's Bangladesh day (`bangladeshToday()`, as a local-midnight Date).
+   * Never the process or device clock: on a TZ=UTC server that lags a day from 00:00 to 06:00 Bangladesh (#220).
+   */
+  today: Date
   onMonthChange: (month: Date) => void
   selected: Date | null
   onSelect: (date: Date) => void
@@ -172,13 +177,12 @@ const DayCell = memo(function DayCell({
  * roving focus (arrows, Home/End, PageUp/PageDown), one look per day state, today's glow and the selected ring.
  */
 export function MonthGrid({
-  month, onMonthChange, selected, onSelect, dayState, dayAction, banner, footer, size = 'compact', dayContent, className,
+  month, today, onMonthChange, selected, onSelect, dayState, dayAction, banner, footer, size = 'compact', dayContent, className,
 }: MonthGridProps) {
   const { t } = useTranslation()
   const language = useLanguage()
   const dateLocale = language === 'bn' ? bn : undefined
   const headingId = useId()
-  const today = useMemo(() => new Date(), [])
   const monthStart = useMemo(() => startOfMonth(month), [month])
 
   // Roving focus; keyboardMove is true only while arrow/page keys drive focus.

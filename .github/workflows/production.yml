@@ -1,11 +1,10 @@
 name: Production
 
 # Release flow: feature branches → main (PR) → production (fast-forward or PR).
-# Every PR into main or production runs the checks. A push to production runs the
-# checks again and, if they pass, deploys to the VPS with ops/deploy/scripts/deploy.sh.
+# Actions run only when deploying: a push to production runs the checks and, if they pass,
+# deploys to the VPS with ops/deploy/scripts/deploy.sh. PRs run no Actions; run the same
+# checks locally while developing (docs/LOCAL-DEVELOPMENT.md, "Checks before a PR").
 on:
-  pull_request:
-    branches: [main, production]
   push:
     branches: [production]
   workflow_dispatch:
@@ -51,6 +50,10 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm docs:check
+      - name: No stray backup files (sed -i / merge leftovers)
+        run: bash scripts/check-stray-files.sh
+      - name: E2E coverage tallies match the rows
+        run: pnpm --filter @vesta/e2e coverage:check
       - run: pnpm deploy:verify
       - name: Deploy guard tests (no dev mode / placeholder creds in prod)
         run: bash ops/deploy/scripts/test-check-prod-env.sh

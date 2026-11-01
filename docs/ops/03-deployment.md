@@ -455,7 +455,7 @@ git push origin origin/main:production   # fast-forward production to main
 
 The push triggers [`.github/workflows/production.yml`](../../.github/workflows/production.yml):
 
-1. **Checks:** typecheck, lint, `docs:check`, `deploy:verify`, and the web vitest suite against a throwaway Postgres. The same checks run on every PR into `main` or `production`.
+1. **Checks:** typecheck, lint, `docs:check`, `deploy:verify`, and the web vitest suite against a throwaway Postgres. PRs run no Actions: these checks (and `pnpm e2e`) run locally while developing, and `.github/workflows/e2e.yml` runs the desktop Playwright suite alongside this push. The deploy does not wait for it.
 2. **Deploy:** if the checks pass, it SSHes to the VPS as `vesta` and runs [`ops/deploy/scripts/deploy.sh`](../../ops/deploy/scripts/deploy.sh) with the pushed SHA. The script:
    - checks out `production`
    - **refuses to deploy a dev-mode or fake-BDApps config** ([`check-prod-env.sh`](../../ops/deploy/scripts/check-prod-env.sh)): `DEV_MODE` / `NEXT_PUBLIC_DEV_MODE` must be off, `BDAPPS_APP_ID` / `BDAPPS_PASSWORD` real (no `PLACEHOLDER` / `SIMULATOR` / `DEV` / `TEST` ids) in `.env.web.production` and `.env.admin.production`, `NEXT_PUBLIC_DEV_MODE` off in `ops/deploy/.env`, no `BDAPPS_SIMULATOR_BASE_URL`. It runs before the backup, so nothing is touched. A staging box can override with `ALLOW_DEV_MODE=1 bash ops/deploy/scripts/deploy.sh`

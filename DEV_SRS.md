@@ -95,7 +95,7 @@ Production builds of web + admin, fake BDApps, Mailpit, and a per-slot `vesta_e2
 pnpm e2e                                                    # build, reset DB, all projects
 E2E_SLOT=18 E2E_SKIP_RESET=1 E2E_SKIP_BUILD=1 pnpm e2e -- --workers=2
 E2E_SUITE=desktop pnpm e2e                                  # PR job: no *-phone, no web-bengali
-E2E_SUITE=full pnpm e2e                                     # nightly / e2e-full: phones + Bengali + cron
+E2E_SUITE=full pnpm e2e                                     # manual Actions run: phones + Bengali + cron
 ```
 
 | Project | What |
@@ -108,7 +108,7 @@ E2E_SUITE=full pnpm e2e                                     # nightly / e2e-full
 
 **Slots:** `E2E_SLOT=n` offsets ports and DB name so multiple worktrees can run together. AI agents use `E2E_SKIP_RESET=1` (Prisma blocks destructive reset). First run in a slot builds; later runs use `E2E_SKIP_BUILD=1`. Prefer `--workers=2` on shared Postgres.
 
-**CI:** PR → `main` runs `E2E_SUITE=desktop`. Nightly / `workflow_dispatch` / PR label `e2e-full` runs `E2E_SUITE=full`. Expected failures use `test.fail()` linked to an open issue (no app code changes in E2E tickets).
+**CI:** Actions run only when deploying: a push to `production` runs `E2E_SUITE=desktop`; a manual `workflow_dispatch` runs `E2E_SUITE=full`. PRs run nothing in CI; run `pnpm e2e` locally. Expected failures use `test.fail()` linked to an open issue (no app code changes in E2E tickets).
 
 The older look-only suite in `apps/web/e2e/` (dev server, dev-login) remains: `pnpm --filter @vesta/web e2e`.
 
