@@ -1,0 +1,2 @@
+# Keep the generated Prisma client in step with a merged schema change.
+bash scripts/regen-prisma-if-changed.sh ORIG_HEAD HEAD

@@ -51,6 +51,10 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm docs:check
+      - name: No stray backup files (sed -i / merge leftovers)
+        run: bash scripts/check-stray-files.sh
+      - name: E2E coverage tallies match the rows
+        run: pnpm --filter @vesta/e2e coverage:check
       - run: pnpm deploy:verify
       - name: Deploy guard tests (no dev mode / placeholder creds in prod)
         run: bash ops/deploy/scripts/test-check-prod-env.sh

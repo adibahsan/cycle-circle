@@ -16,6 +16,9 @@ without a reasoned disable, no `force`, no `.only`/unexplained skips, and an iss
    in a comment.
 4. **Setup dates come from the days helper.** Use `days.dateOf(...)` / `days.daysAgo(...)`. No
    `new Date()` day arithmetic: the server runs at UTC but the product counts Bangladesh days (ADR 0007).
+   A seeded instant the app compares with its own clock (`publishedAt`, a schedule) sits clearly in
+   the past or future, never "now": a parallel worker's request takes its `now` first and the row
+   reads as not yet live (and a 60 s list cache keeps that answer).
 5. **Scripted fake-BDApps failures carry a scoped `match`.** A bare "fail the next call" hits
    whichever test calls first. Scope it to this test's phone/endpoint.
 6. **Expected failures are deterministic and linked.** `test.fail(cond, url)` where `cond` is

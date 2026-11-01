@@ -3,6 +3,9 @@
 # too slow for every commit.
 pnpm exec lint-staged
 
+# sed -i / merge leftovers (file-e, .orig, .bak) never get committed.
+bash scripts/check-stray-files.sh --staged
+
 # code-review-graph change summary (was in .git/hooks before husky took over core.hooksPath).
 if command -v code-review-graph >/dev/null 2>&1; then
   code-review-graph detect-changes --brief || true
