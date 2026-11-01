@@ -9,7 +9,8 @@
     "coverage:check": "tsx scripts/coverage-check.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test:unit": "tsx --test eslint-rules/*.test.mjs support/*.test.ts"
+    "test:unit": "tsx --test eslint-rules/*.test.mjs support/*.test.ts",
+    "handbook:capture": "tsx scripts/run.ts -- --config=playwright.handbook.config.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

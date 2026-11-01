@@ -342,3 +342,7 @@ checking no other spec writes the same row.
   condition predicts, so an expected-fail would pass at random.
 - Agents may run the full reset: it does not use `prisma migrate reset` (which Prisma blocks for AI agents). `E2E_SKIP_RESET=1` is only a speed opt-in; leftover data from earlier runs can cause flakes. CI always resets.
 - `page.clock` in the #115 test fakes the browser clock only; a server clock is out of scope.
+
+## Handbook screenshots
+
+The Cycle Circle Handbook's screenshots are captured by a separate Playwright config, `playwright.handbook.config.ts`, from `e2e/handbook/screens/**/*.shots.ts`. It is not part of this suite: `playwright.config.ts` never loads `handbook/`, and CI never runs it. Regenerate with `pnpm handbook:capture` (same build, DB reset, fake BDApps and slot ports as `pnpm e2e`; `E2E_SKIP_BUILD=1` works too). Details: [`docs/handbook/README.md`](../docs/handbook/README.md).
