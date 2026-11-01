@@ -129,7 +129,7 @@ The Privacy Policy page (last updated May 2026): what data is collected, how it 
 
 ### How to use it
 
-1. Open the link and scroll. The contact block at the end gives `info@cycle-circle.com`, and the promise to respond within 2 business days.
+1. Open the link and scroll. The contact block at the end gives `info@cycle-circle.com`, and the line "We aim to respond within 2 business days."
 
 ### Rules and limits
 
@@ -166,9 +166,9 @@ The main way in. The User enters a Bangladesh mobile number and a 6-digit one-ti
 ### How to use it
 
 1. Open **Log In**. Under "Phone Number" type the 11-digit number, for example 01711223344 (the +88 prefix is already shown).
-2. Tap **Send OTP**. The screen changes to "Enter OTP" with "We sent a 6-digit code to +88 01711223344".
+2. Tap **Send OTP**. The app opens the "Enter OTP" screen (`/verify-otp`) with "We sent a 6-digit code to +88 01711223344".
 3. Type the 6 digits (or let the phone auto-fill them). The code is submitted by itself when the sixth digit is in; the **Verify** button does the same.
-4. On success the button reads "Verified!" and the app opens: **onboarding** for a number with no profile yet ([Onboarding](#gs-onboarding)), the **Dashboard** for a returning User.
+4. On success the button reads "Verified!" and the app opens: **onboarding** when the account has not finished its profile setup ([Onboarding](#gs-onboarding)), the **Dashboard** otherwise. The app decides by whether setup is complete, not by counting profiles.
 
 ### Rules and limits
 
@@ -176,9 +176,9 @@ The main way in. The User enters a Bangladesh mobile number and a 6-digit one-ti
 - Under the button the login screen warns: "Verifying your number subscribes it to Cycle Circle Pro via BDApps. Operator charges apply."
 - OTP codes are 6 digits. A challenge stays valid for **5 minutes** from the moment it is created (see the discrepancy below).
 - Per number: at most **3 code requests per minute**, and a **60-second wait** before a resend. Per device (IP address): at most **10 code requests per hour**.
-- Per code: at most **5 verify attempts in 5 minutes**. An App OTP is also locked after **5 wrong codes** (the User must request a new one), and a number can receive at most **5 App OTPs in 24 hours**.
+- Per code: at most **5 verify attempts in 5 minutes**. An App OTP is also locked after **5 wrong codes** (the User must request a new one). The verify limit is hit first, so after 5 wrong codes the 6th try normally shows "Too many attempts. Try again in a few minutes." rather than "Too many wrong codes", and a number can receive at most **5 App OTPs in 24 hours**.
 - An App OTP SMS reads "Cycle Circle code: 123456. Valid 5 min. Don't share it." (Bengali text if the User's language is Bengali.)
-- **Where the screen and the system differ.** The OTP screen says "This code expires in 10 minutes", but the code is accepted for 5 minutes. Tell Users 5 minutes.
+- **Where the screen and the system differ.** The OTP screen says "This code expires in 10 minutes. Never share your OTP with anyone.", but the code is accepted for 5 minutes. Tell Users 5 minutes.
 - The user is never charged by logging in with an App OTP: it only logs in. See [BDApps billing events](#bb-subscribe) for what a new subscription does.
 
 ### What can go wrong
@@ -192,7 +192,7 @@ The main way in. The User enters a Bangladesh mobile number and a 6-digit one-ti
 | "This number is already subscribed, but we could not send it a code. Log in with your email instead." | Subscribed number with no usable BDApps id to SMS, and the account has an email | Log in by email, then verify the number again later |
 | "This number is already subscribed, but we could not send it a code. Unsubscribe this number from Cycle Circle on BDApps, then log in again. Your data stays safe." | Same, and the account has no email | The User unsubscribes the number on BDApps, then logs in again |
 | "Failed to send OTP. Please try again." | Any other failure when requesting a code (for example BDApps is down) | Try again; if it persists check [Logs](#lg-viewer) (merchant channel) and [BDApps health](#ts-login) |
-| "Too many attempts. Try again in a few minutes." | Rate limit (code requests, device limit, verify attempts, or the 5 App OTPs a day) | Wait. For the daily App OTP limit, wait until the next day |
+| "Too many attempts. Try again in a few minutes." | Rate limit (code requests, device limit, verify attempts incl. the 6th try after 5 wrong codes, or the 5 App OTPs a day) | Wait. For the daily App OTP limit, wait until the next day |
 | "Please wait a moment before requesting another code." | Resend inside the 60-second wait | Wait for the countdown |
 | "Invalid or expired code. Please try again." | Wrong code, expired (5 minutes), already used, or no such request. All four show the same message | Request a new code ([Resend wait](#gs-otp-resend)) |
 | "Too many wrong codes. Request a new code." | App OTP locked after 5 wrong codes | Tap **Resend OTP** once the wait is over |
@@ -269,6 +269,7 @@ A passwordless alternative: the User enters an email address and receives a **ma
 
 ### Rules and limits
 
+- The sign-in email is always sent in English, even when the User has the app in Bengali: the Email login page does not pass the language.
 - The address is lower-cased and trimmed. At most **3 magic links per hour per address**.
 - A link works **once**.
 - **Where the screen and the system differ.** The screen and the email both say the link is valid for 15 minutes; the system keeps it valid for **1 hour**.
@@ -295,17 +296,17 @@ A passwordless alternative: the User enters an email address and receives a **ma
 
 ### What it is
 
-A User who logged in by email is on a free trial for 24 hours, counted from their **first** email login. A countdown pill in the header shows the time left. When it reaches zero the account is locked until they add and verify a phone number.
+A User who logged in by email is on a free trial for 24 hours, counted from their **first** email login. A countdown pill in the header of the signed-in app shows the time left. When it reaches zero the account is locked until they add and verify a phone number.
 
 ### Where to find it
 
-The pill in the top bar of every page: a small timer with "Trial ends in HH:MM:SS". Tapping it opens "Keep your account".
+The pill in the top bar of the signed-in app (not on the public pages or login screens): an hourglass icon and the countdown as HH:MM:SS, with the words **Add number** beside it on wider screens (on a phone only the timer shows). "Trial ends in" is only the spoken label for screen readers. Tapping it opens "Keep your account".
 
 ![Dashboard with the trial countdown](../screenshots/gs-email-trial.png)
 
 ### How to use it
 
-1. Tap the countdown pill (**Add number**). The dialog "Keep your account" says "Add & verify your mobile number to keep your account and unlock Pro."
+1. Tap the countdown pill. The dialog "Keep your account" says "Add & verify your mobile number to keep your account and unlock Pro."
 2. Type the mobile number under "Mobile number" and tap **Send code**.
 3. Enter the 6-digit code ("We sent a 6-digit code to ...") and tap **Verify**.
 4. On success the dialog says "Your number is verified — you're now on Pro!" and the pill disappears.
@@ -315,7 +316,7 @@ The pill in the top bar of every page: a small timer with "Trial ends in HH:MM:S
 - The trial lasts 24 hours from the first magic-link login and is not extended by logging in again.
 - Verifying a phone subscribes it to Pro through BDApps, exactly like phone login ([Pro](#pa-pro)). A number already registered to another account is refused.
 - The same dialog is used from Settings ([Add or verify a phone](#st-phone)).
-- When the trial has ended the app shows the trial lock ([Trial lock](#pa-trial-lock)); Admins see the account in [User detail](#us-detail) as a Free User.
+- When the trial has ended the app shows the trial lock ([Trial lock](#pa-trial-lock)); Admins see the account in [User detail](#us-detail) with a "Trial expired" badge.
 
 ### What can go wrong
 
@@ -366,8 +367,8 @@ The back button on each step returns one step; answers are kept.
 
 ### Rules and limits
 
-- Name: 2 to 40 characters. A profile name shorter than 2 characters is refused.
-- Cycle length: 21 to 45 days, starting at 28. Period length: 1 to 10 days, starting at 5. (The hints on the screen say "Usually 21–35 days" and "Usually 3–7 days": those are guidance, the limits are wider.)
+- Name: 2 to 40 characters on the onboarding screen. (The server itself accepts 1 to 100, so a longer or shorter name can exist if it was saved another way.)
+- Cycle length: 21 to 45 days, starting at 28. Period length: 1 to 10 days on the screen (the server accepts up to 14), starting at 5. (The hints on the screen say "Usually 21–35 days" and "Usually 3–7 days": those are guidance, the limits are wider.)
 - Last period start date is required, cannot be in the future and cannot be more than 90 days ago. "Today" is the Bangladesh day, not the phone's date (ADR 0008).
 - The first profile can be for someone else; the User account itself is still the person who logged in. A User can hold up to 6 profiles in total ([Six-profile limit](#pf-limit)).
 - Settings can be changed later in Profiles ([Edit or rename a profile](#pf-edit)).
@@ -394,7 +395,7 @@ A five-step spotlight tour that opens by itself the first time a User reaches th
 
 ### Where to find it
 
-Opens on the Dashboard right after onboarding. Each step shows "Step N of 5" in a card with **Back**, **Skip** and **Next** (**Done** on the last step) and highlights the part of the screen it talks about.
+Opens on the Dashboard right after onboarding. Each step shows "Step N of 5" in a card with **Back**, **Skip** and **Next**. **Back** is missing on the first step, and **Skip** is missing on the last, where **Next** becomes **Done** and highlights the part of the screen it talks about.
 
 ![Step 1: Welcome to Cycle Circle](../screenshots/gs-tour.png)
 
