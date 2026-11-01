@@ -26,6 +26,17 @@ Parts: 1 User Guide (phone screenshots), 2 Admin Guide (desktop), 3 Automatic Be
 
 A pull request that changes a User- or Admin-facing feature updates the matching section and screenshot (CODING_STANDARDS.md).
 
+## Check the handbook
+
+`pnpm handbook:check` confirms the handbook still covers the product. It is not part of CI; run it before a release and after changing a User- or Admin-facing feature. Add `--skip-build` (`node scripts/check-handbook.mjs --skip-build`) for a quick run without the HTML and PDF build. It prints PASS or FAIL per check, with one line per problem saying what to fix, and exits non-zero on any failure.
+
+1. **Route coverage.** Every `page.tsx` in `apps/web` (User) and `apps/admin` (Admin) must be listed in [routes.md](routes.md), either under Covered with the anchor of the section that explains it, or under Excluded with a reason (internal or developer-only pages). API routes are not pages and are not checked. A row for a page that no longer exists, or an anchor that no chapter defines, also fails.
+2. **Links and anchors.** Every `[text](#anchor)` and relative file link in the chapters must resolve, and an anchor may be defined only once.
+3. **Screenshots.** Every `![..](../screenshots/x.png)` must exist, and every image in `screenshots/` must be used by some chapter.
+4. **Build.** `scripts/build-handbook.mjs` must produce the HTML and the PDF (needs pandoc and xelatex). The build rewrites the generated HTML; do not commit it on a chapter branch.
+
+New page in the app: write or extend a section, then add the page to the Covered table in `routes.md`.
+
 ## Rebuild the handbook
 
 ```bash
@@ -33,6 +44,7 @@ pnpm handbook:build        # HTML + PDF with pandoc (3.x) and xelatex; also sync
 node scripts/build-handbook.mjs --no-pdf     # HTML only
 pnpm handbook:test         # unit tests of the index/outline parser
 pnpm docs:check            # the docs-sync drift check (must pass)
+pnpm handbook:check        # coverage gate, see below (run before a release)
 ```
 
 Outputs: `docs/vesta/source/cycle-circle-handbook.html` (committed, with `docs/site/vesta/cycle-circle-handbook.html`) and `docs/handbook/dist/cycle-circle-handbook.pdf` (gitignored). Only the integration branch commits the generated HTML; chapter branches leave it alone so parallel tickets never conflict on a generated file.
