@@ -9,6 +9,7 @@ import {
   updateCategory as svcUpdateCategory,
   removeCategory,
   contentErrorMessage,
+  ContentError,
   reorderCategories as svcReorderCategories,
 } from '@vesta/shared/server/services'
 import { revalidateTag } from 'next/cache'
@@ -28,6 +29,14 @@ async function guarded<T>(fn: () => Promise<T>): Promise<T | ActionError> {
   }
 }
 
+/** Publish time arrives as an ISO string (server actions); an unparseable one is a validation error. */
+function parsePublishAt(v: string | null | undefined): Date | null | undefined {
+  if (v === undefined || v === null) return v
+  const d = new Date(v)
+  if (Number.isNaN(d.getTime())) throw new ContentError('Choose a valid publish date and time.')
+  return d
+}
+
 function revalidateContentTags(articleId?: string) {
   revalidateTag(adminCacheTags.content, { expire: 0 })
   if (articleId) {
@@ -43,12 +52,14 @@ export async function createArticle(data: {
   categoryId?: string | null
   cyclePhases?: string[]
   status?: string
+  /** ISO instant to go live at (future = scheduled). */
+  publishedAt?: string | null
 }) {
   const jwt = await requireAdminAuth()
   const admin = await getAuthUser(jwt.sub)
 
   return guarded(async () => {
-    const article = await svcCreateArticle(admin.id, data, new Date())
+    const article = await svcCreateArticle(admin.id, { ...data, publishedAt: parsePublishAt(data.publishedAt) }, new Date())
 
     revalidateContentTags()
     const webCacheRefreshed = await revalidateWebTags(['articles'])
@@ -66,12 +77,14 @@ export async function updateArticle(
     categoryId?: string | null
     cyclePhases?: string[]
     status?: string
+    /** ISO instant: schedule. null: publish now. Omitted: unchanged. */
+    publishedAt?: string | null
   }
 ) {
   await requireAdminAuth()
 
   return guarded(async () => {
-    const article = await svcUpdateArticle(id, data, new Date())
+    const article = await svcUpdateArticle(id, { ...data, publishedAt: parsePublishAt(data.publishedAt) }, new Date())
 
     revalidateContentTags(id)
     const webCacheRefreshed = await revalidateWebTags(['articles'])

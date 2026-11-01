@@ -31,9 +31,10 @@ function articlesCacheKey(o: ListArticlesOptions) {
 export const getArticles = cache(async (params: ListArticlesOptions = {}) => {
   await requireAdminUser()
   return unstable_cache(
-    () => listArticles(params),
+    () => listArticles(params, new Date()),
     articlesCacheKey(params),
-    { tags: [adminCacheTags.content], revalidate: ADMIN_CACHE_TTL }
+    // 60s, not ADMIN_CACHE_TTL: the Published/Scheduled split depends on the clock.
+    { tags: [adminCacheTags.content], revalidate: 60 }
   )()
 })
 

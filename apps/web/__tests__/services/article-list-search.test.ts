@@ -3,13 +3,14 @@ import { PrismaClient } from '@prisma/client'
 import {
   createArticle,
   updateArticle,
-  listArticles,
+  listArticles as listArticlesAt,
   ContentError,
   contentErrorMessage,
 } from '@vesta/shared/server/services'
 import { parseArticleListParams } from '@vesta/shared/utils/article-list-params'
 
 const prisma = new PrismaClient()
+const listArticles = (o?: Parameters<typeof listArticlesAt>[0]) => listArticlesAt(o, new Date())
 const ADMIN_ID = 'test-artlist-admin'
 // Other test files write articles in parallel: every assertion is scoped to this run's prefix.
 const P = `Zq${Date.now().toString(36)}`

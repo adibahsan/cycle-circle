@@ -11,6 +11,12 @@
 
 export const WEB_CACHE_TTL = 300
 
+/**
+ * Learn list + category chips. A cached result bakes in "now", so a scheduled article only
+ * appears once the entry refreshes: 60s keeps that delay at most a minute without a cron.
+ */
+export const ARTICLES_CACHE_TTL = 60
+
 export const cacheTags = {
   /** A user's cached record (getCurrentUser). Keyed by userId. */
   user: (id: string) => `user:${id}`,

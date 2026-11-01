@@ -4,7 +4,7 @@
  * views) and the parser, nothing else.
  */
 
-export const ARTICLE_STATUS_FILTERS = ['DRAFT', 'PUBLISHED', 'ARCHIVED'] as const
+export const ARTICLE_STATUS_FILTERS = ['DRAFT', 'PUBLISHED', 'scheduled', 'ARCHIVED'] as const
 export type ArticleStatusFilter = (typeof ARTICLE_STATUS_FILTERS)[number]
 
 export const ARTICLE_PHASES = ['MENSTRUAL', 'FOLLICULAR', 'OVULATION', 'LUTEAL'] as const

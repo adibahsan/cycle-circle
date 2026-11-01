@@ -50,7 +50,16 @@ export function sanitizeArticleHtml(html: string): string {
 
 // ── Article queries ────────────────────────────────────────────────────────────
 
-export async function listArticles(options: ListArticlesOptions = {}) {
+/**
+ * THE customer-visibility rule: published status and a publish time that has come. Scheduled
+ * publishing is just a future `publishedAt`, so there is no cron; every customer read uses this
+ * with an injectable `now` (services never read the clock themselves).
+ */
+export function visibleArticleWhere(now: Date): Prisma.ArticleWhereInput {
+  return { status: 'PUBLISHED', publishedAt: { lte: now } }
+}
+
+export async function listArticles(options: ListArticlesOptions = {}, now: Date) {
   const { q, status, categoryId, phase, missingBangla, sort, page, pageSize } = normalizeListOptions(options)
 
   const and: Prisma.ArticleWhereInput[] = []
@@ -64,7 +73,9 @@ export async function listArticles(options: ListArticlesOptions = {}) {
       ],
     })
   }
-  if (status) and.push({ status })
+  if (status === 'PUBLISHED') and.push(visibleArticleWhere(now))
+  else if (status === 'scheduled') and.push({ status: 'PUBLISHED', publishedAt: { gt: now } })
+  else if (status) and.push({ status })
   if (categoryId) and.push({ categoryId: categoryId === ARTICLE_NO_CATEGORY ? null : categoryId })
   if (phase) and.push({ cyclePhases: { has: phase } })
   // Blank bodies are stored as null (create/updateArticle normalise), so null covers them.
@@ -115,9 +126,9 @@ export async function listCategories() {
 }
 
 /** Categories that have at least one published article, in admin order (Learn page filter chips). */
-export async function listPublishedCategories() {
+export async function listPublishedCategories(now: Date) {
   return prisma.articleCategory.findMany({
-    where: { articles: { some: { status: 'PUBLISHED' } } },
+    where: { articles: { some: visibleArticleWhere(now) } },
     select: { id: true, name: true, nameBn: true },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   })
@@ -154,6 +165,20 @@ export function contentErrorMessage(err: unknown): string {
   return GENERIC_ERROR
 }
 
+/** A publish time must be a real date and only makes sense on a published article. */
+function assertPublishAt(publishedAt: Date | null | undefined, status: string | undefined): void {
+  if (publishedAt === undefined || publishedAt === null) return
+  if (!(publishedAt instanceof Date) || Number.isNaN(publishedAt.getTime())) {
+    throw new ContentError('Choose a valid publish date and time.')
+  }
+  if (status !== 'PUBLISHED') throw new ContentError('Only a published article can have a publish time.')
+}
+
+/** A publish time in the past means "now"; absent means "now". */
+function clampToNow(publishedAt: Date | null | undefined, now: Date): Date {
+  return publishedAt && publishedAt > now ? publishedAt : now
+}
+
 async function assertArticleFields(
   data: { titleEn?: string; bodyEn?: string; categoryId?: string | null; cyclePhases?: string[] },
   mode: 'create' | 'update',
@@ -184,11 +209,14 @@ export async function createArticle(
     categoryId?: string | null
     cyclePhases?: string[]
     status?: string
+    /** Go live at this instant (future = scheduled). Only with status PUBLISHED; past = now. */
+    publishedAt?: Date | null
   },
   now: Date,
 ) {
   assertArticleStatus(data.status)
   await assertArticleFields(data, 'create')
+  assertPublishAt(data.publishedAt, data.status)
   const slug = slugify(data.titleEn) + '-' + now.getTime().toString(36)
 
   const article = await prisma.article.create({
@@ -204,7 +232,7 @@ export async function createArticle(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       status: (data.status as never) || 'DRAFT',
       authorId,
-      publishedAt: data.status === 'PUBLISHED' ? now : null,
+      publishedAt: data.status === 'PUBLISHED' ? clampToNow(data.publishedAt, now) : null,
     },
   })
 
@@ -231,12 +259,16 @@ export async function updateArticle(
     categoryId?: string | null
     cyclePhases?: string[]
     status?: string
+    /** Date: schedule (past = now). null: publish now. undefined: keep what is there. */
+    publishedAt?: Date | null
   },
   now: Date,
 ) {
   assertArticleStatus(data.status)
   await assertArticleFields(data, 'update')
+  assertPublishAt(data.publishedAt, data.status)
   const updateData: Record<string, unknown> = { ...data }
+  delete updateData.publishedAt
 
   if (typeof data.bodyEn === 'string') updateData.bodyEn = sanitizeArticleHtml(data.bodyEn)
   if (data.titleBn !== undefined) updateData.titleBn = data.titleBn?.trim() || null
@@ -247,7 +279,14 @@ export async function updateArticle(
 
   if (data.status === 'PUBLISHED') {
     const existing = await prisma.article.findUnique({ where: { id } })
-    if (existing && !existing.publishedAt) {
+    const live = !!existing?.publishedAt && existing.publishedAt <= now
+    if (data.publishedAt instanceof Date) {
+      if (live) throw new ContentError('This article is already published; its publish time cannot be changed.')
+      updateData.publishedAt = clampToNow(data.publishedAt, now)
+    } else if (data.publishedAt === null) {
+      // Publish now: moves a scheduled article live; leaves an already-live one alone.
+      if (existing && !live) updateData.publishedAt = now
+    } else if (existing && !existing.publishedAt) {
       updateData.publishedAt = now
     }
   } else if (data.status === 'DRAFT' || data.status === 'ARCHIVED') {
@@ -473,9 +512,10 @@ export async function listPublishedArticles(
     pageSize?: number
     phase?: string
   } = {},
+  now: Date,
 ) {
   const { page = 1, pageSize = 20, phase } = params
-  const where: Record<string, unknown> = { status: 'PUBLISHED' }
+  const where: Record<string, unknown> = { ...visibleArticleWhere(now) }
   if (phase && phase !== 'all') {
     where.cyclePhases = { has: phase }
   }
@@ -523,9 +563,9 @@ export async function listPublishedArticles(
 }
 
 /** Fetch a single published article's body for on-demand rendering. */
-export async function getPublishedArticleById(id: string) {
+export async function getPublishedArticleById(id: string, now: Date) {
   return prisma.article.findFirst({
-    where: { id, status: 'PUBLISHED' },
+    where: { id, ...visibleArticleWhere(now) },
     select: {
       id: true,
       titleEn: true,

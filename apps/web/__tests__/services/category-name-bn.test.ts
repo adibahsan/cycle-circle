@@ -69,7 +69,7 @@ describe('ArticleCategory.nameBn', () => {
         authorId: author.id,
       },
     })
-    const got = await getPublishedArticleById(art.id)
+    const got = await getPublishedArticleById(art.id, new Date())
     expect(got?.category?.nameBn).toBe('বিভাগ')
   })
 })

@@ -57,6 +57,7 @@ const STATUS_OPTIONS = [
   { value: 'all', label: 'All Statuses' },
   { value: 'DRAFT', label: 'Draft' },
   { value: 'PUBLISHED', label: 'Published' },
+  { value: 'scheduled', label: 'Scheduled' },
   { value: 'ARCHIVED', label: 'Archived' },
 ]
 
@@ -84,7 +85,17 @@ const PHASE_COLORS: Record<string, string> = {
   LUTEAL: 'bg-[color-mix(in_srgb,var(--color-luteal)_22%,transparent)] text-[var(--color-text-primary)]',
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, publishedAt }: { status: string; publishedAt: Date | string | null }) {
+  if (status === 'PUBLISHED' && publishedAt && new Date(publishedAt) > new Date()) {
+    return (
+      <div className="space-y-0.5">
+        <Badge variant="warning" size="sm">Scheduled</Badge>
+        <p className="text-xs text-[var(--color-text-muted)]">
+          {formatDhaka(publishedAt, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+        </p>
+      </div>
+    )
+  }
   if (status === 'PUBLISHED') return <Badge variant="success" size="sm">Published</Badge>
   if (status === 'DRAFT') return <Badge variant="info" size="sm">Draft</Badge>
   if (status === 'ARCHIVED') return <Badge variant="neutral" size="sm">Archived</Badge>
@@ -306,7 +317,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     {
       key: 'status',
       header: 'Status',
-      render: (row) => <StatusBadge status={row.status} />,
+      render: (row) => <StatusBadge status={row.status} publishedAt={row.publishedAt} />,
     },
     {
       key: 'category',

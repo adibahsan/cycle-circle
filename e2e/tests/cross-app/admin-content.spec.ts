@@ -9,6 +9,7 @@ import type { Locator, Page } from '@playwright/test'
 import { test, expect } from '../../support/fixtures'
 import { createLoggedInAdmin } from '../../support/admin'
 import { e2eDb, revalidateWebArticles, createArticle } from '../../support/db'
+import { serverNow } from '../../support/bangladesh-day'
 
 const FIXTURE_PNG = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -212,6 +213,77 @@ async function installRawBodyRewrite(page: Page, placeholder: string, rawBodyEn:
 }
 
 test.describe('Admin content authoring (seen on web)', () => {
+  test('scheduled article is hidden on web (list and URL) until its Bangladesh-time minute (#215)', async ({
+    browser,
+    newUser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    test.setTimeout(240_000)
+    const runId = uniqueId()
+    const titleEn = `E2E215 Scheduled ${runId}`
+    const admin = await createLoggedInAdmin(browser, {
+      viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId,
+    })
+    const web = await newUser()
+
+    try {
+      const { page: adminPage } = admin
+      // The next whole Bangladesh minute at least 45s away, typed as Bangladesh wall time.
+      const now = await serverNow()
+      const target = new Date(Math.ceil((now.getTime() + 45_000) / 60_000) * 60_000)
+      const wall = new Date(target.getTime() + 6 * 3_600_000).toISOString().slice(0, 16).replace('T', ' ')
+
+      await adminPage.goto('/content/new')
+      await expect(adminPage.getByRole('heading', { name: 'New Article' })).toBeVisible()
+      await adminPage.getByLabel('English Title').fill(titleEn)
+      await adminPage.getByLabel('Bengali Title').fill(`শিডিউল ${runId}`)
+      const editors = adminPage.getByRole('textbox', { name: /^(English|Bengali) Body$/ })
+      await fillEditor(editors.nth(0), `E2E215 EN body ${runId}`)
+      await fillEditor(editors.nth(1), `বাংলা মূল ${runId}`)
+      await adminPage.getByRole('checkbox', { name: 'Follicular' }).check()
+      await adminPage.getByRole('button', { name: 'Scheduled' }).click()
+      await adminPage.getByRole('textbox', { name: 'Publish date and time' }).fill(wall)
+      await adminPage.getByRole('button', { name: 'Save Article' }).first().click()
+      await adminPage.waitForURL((url) => url.pathname === '/content')
+
+      const stored = await e2eDb().article.findFirstOrThrow({ where: { titleEn } })
+      expect(stored.status).toBe('PUBLISHED')
+      expect(stored.publishedAt?.getTime()).toBe(target.getTime())
+
+      // Admin list shows Scheduled with its time.
+      await expect(adminPage.getByText(titleEn)).toBeVisible()
+      await expect(adminPage.getByText('Scheduled', { exact: true }).first()).toBeVisible()
+
+      // Hidden before the time: not in the list, and its URL is not found.
+      await web.page.goto('/content?phase=FOLLICULAR')
+      await expectWebContentListSettled(web.page)
+      await expect(web.page.getByRole('link', { name: titleEn })).toHaveCount(0)
+      await web.page.goto(`/content/${stored.id}`)
+      await expect(web.page.getByRole('heading', { name: titleEn })).toHaveCount(0)
+      await expect(web.page.getByText(/not found|could not be found/i).first()).toBeVisible()
+
+      // Visible after: the list refreshes within a minute of the time, with no cron.
+      await expect
+        .poll(async () => Date.now() >= target.getTime(), { timeout: 90_000, intervals: [2_000] })
+        .toBe(true)
+      await web.page.goto(`/content/${stored.id}`)
+      await expect(web.page.getByRole('heading', { name: titleEn })).toBeVisible({ timeout: 15_000 })
+      await expect(async () => {
+        await web.page.goto('/content?phase=FOLLICULAR')
+        await expectWebContentListSettled(web.page)
+        await expect(web.page.getByRole('link', { name: titleEn })).toBeVisible({ timeout: 3_000 })
+      }).toPass({ timeout: 90_000, intervals: [5_000] })
+    } finally {
+      await admin.context.close()
+    }
+  })
+
   test('admin list search finds an article beyond page 1; filters and query survive reload (#213)', async ({
     browser,
     viewport,
