@@ -2,7 +2,7 @@ import { ESLint, RuleTester } from 'eslint'
 import { builtinRules } from 'eslint/use-at-your-own-risk'
 import { describe, expect, it } from 'vitest'
 // @ts-expect-error plain .mjs config
-import { bangladeshDayRestrictedSyntax, bangladeshDayConfig, bangladeshDayServerConfig, dateFnsLocalDayConfig, dateFnsLocalDayRule } from './bangladesh-day.mjs'
+import { bangladeshDayRestrictedSyntax, bangladeshDayComponentConfig, bangladeshDayConfig, bangladeshDayServerConfig, dateFnsLocalDayConfig, dateFnsLocalDayRule } from './bangladesh-day.mjs'
 
 RuleTester.describe = describe
 RuleTester.it = it
@@ -133,5 +133,38 @@ describe('ADR 0009 contract (flat config)', () => {
 
   it('exposes the ban as a no-restricted-imports rule with all nine functions', () => {
     expect(dateFnsLocalDayRule[1].paths[0].importNames).toHaveLength(9)
+  })
+})
+
+describe('bangladeshDayComponentConfig (#220)', () => {
+  const eslint = new ESLint({
+    overrideConfigFile: true,
+    overrideConfig: [
+      { languageOptions: { ecmaVersion: 2022, sourceType: 'module', parserOptions: { ecmaFeatures: { jsx: true } } } },
+      bangladeshDayConfig,
+      bangladeshDayComponentConfig(['src/components/**/*.{js,jsx}']),
+    ],
+  })
+  async function messages(code: string, filePath: string) {
+    const [result] = await eslint.lintText(code, { filePath })
+    return result.messages.map((m) => m.ruleId)
+  }
+
+  it('flags the #220 shape: a component reading today from the clock through a variable', async () => {
+    const code = 'export function Grid({ d }) { const today = useMemo(() => new Date(), []); return isSameDay(d, today) }'
+    expect(await messages(code, 'src/components/calendar/Grid.jsx')).toEqual(['no-restricted-syntax'])
+  })
+
+  it('keeps the Bangladesh-day shapes in components', async () => {
+    expect(await messages('export const f = () => new Date().getDate()', 'src/components/x.jsx')).toContain('no-restricted-syntax')
+  })
+
+  it('allows a today prop, Date.now() timestamps and parsing in a component', async () => {
+    const code = 'export function Grid({ today, d }) { const snooze = Date.now() + 1; return isSameDay(parseISO(d), today) && new Date(snooze) }'
+    expect(await messages(code, 'src/components/calendar/Grid.jsx')).toEqual([])
+  })
+
+  it('allows a clock read in a page (the edge)', async () => {
+    expect(await messages('export const f = () => new Date()', 'src/app/x/page.jsx')).toEqual([])
   })
 })

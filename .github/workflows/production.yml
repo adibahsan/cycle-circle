@@ -3,7 +3,7 @@ name: Production
 # Release flow: feature branches → main (PR) → production (fast-forward or PR).
 # Actions run only when deploying: a push to production runs the checks and, if they pass,
 # deploys to the VPS with ops/deploy/scripts/deploy.sh. PRs run no Actions; run the same
-# checks locally while developing (docs/LOCAL-DEVELOPMENT.md, "Checks before a PR").
+# checks locally before the push (docs/LOCAL-DEVELOPMENT.md, "Checks before a deploy").
 on:
   push:
     branches: [production]

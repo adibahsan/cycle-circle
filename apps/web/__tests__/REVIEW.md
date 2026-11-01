@@ -21,3 +21,7 @@ random. `helpers/unique-test-phones.test.ts` already enforces unique literal pho
 6. **Whole-table services run serial.** When the service under test needs every row of a table
    (reorder demanding the full category set, a global count), rule 2 can't hold. List the file in
    `SERIAL` in `apps/web/vitest.config.ts` so no other file writes that table while it runs.
+7. **One clock per test.** Every instant the test writes or passes is either fixed (a literal
+   date) or derived from one `now`; never seed with `new Date()` and then act at fixed dates.
+   A view recorded at a fixed 2026 instant on an article published at the real clock went red
+   the day the real clock passed that instant (article-views, 2026-11-01).
