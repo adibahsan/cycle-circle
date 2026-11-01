@@ -31,6 +31,8 @@ interface SymptomsClientProps {
   profiles: Profile[];
   activeProfileId: string;
   date: string;
+  /** The Bangladesh day from the Server Component; the grid's today marker (issue 220). */
+  today: string;
   symptomLogs: PrismaSymptomLog[];
   goal: string | null;
 }
@@ -39,6 +41,7 @@ export function SymptomsClient({
   profiles,
   activeProfileId,
   date,
+  today: todayDay,
   symptomLogs,
   goal,
 }: SymptomsClientProps) {
@@ -52,6 +55,7 @@ export function SymptomsClient({
   const toast = useToast();
 
   const selectedDate = useMemo(() => parseISO(date), [date]);
+  const today = useMemo(() => parseISO(todayDay), [todayDay]);
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(selectedDate));
 
   const [localSelected, setLocalSelected] = useState<Set<string>>(() =>
@@ -235,6 +239,7 @@ export function SymptomsClient({
           {/* Full month calendar: the same grid as the calendar page */}
           <MonthGrid
             month={viewMonth}
+            today={today}
             onMonthChange={setViewMonth}
             selected={selectedDate}
             onSelect={handleDateSelect}

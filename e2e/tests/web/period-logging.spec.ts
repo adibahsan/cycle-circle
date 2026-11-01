@@ -176,9 +176,6 @@ test.describe('Period logging', () => {
   })
 
   test('default log date is the Bangladesh day, not the device day', async ({ browser, fakeBdapps, days }) => {
-    // Known nightly failure: the log form reads "today" from the server's process clock, which lags the
-    // Bangladesh day from 00:00 to 06:00 Asia/Dhaka (TZ=UTC). Deterministic at every hour.
-    test.fail(days.serverDayLags, 'https://github.com/adibahsan/cycle-circle/issues/220')
     // 2026-10-26T01:30 Bangladesh = 2026-10-25T19:30Z: Bangladesh day is the 26th, a London device day is the 25th.
     const bangladeshDay = '2026-10-26'
     const { createThrowawayUser } = await import('../../support/users.ts')
