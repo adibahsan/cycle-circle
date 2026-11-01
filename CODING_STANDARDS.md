@@ -29,6 +29,10 @@ Both apps share the same UI primitives (`Button`, `Input`, `Card`, etc.) and `gl
 - `autocomplete` and `name` on all form inputs
 - `spellCheck={false}` on emails, codes, usernames
 
+## Handbook upkeep
+
+- A PR that changes a User- or Admin-facing feature updates the matching section in `docs/handbook/chapters/` and its screenshot (`pnpm handbook:capture`), adds any new page to `docs/handbook/routes.md`, and runs `pnpm handbook:check` before release. See `docs/handbook/README.md`.
+
 ## Review documents
 
 Full file-by-file audits with line numbers are in `review/`:
