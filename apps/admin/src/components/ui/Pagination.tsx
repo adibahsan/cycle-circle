@@ -199,7 +199,7 @@ export function Pagination({
   const plural = total === 1 ? itemLabel : pluralize(itemLabel);
 
   return (
-    <div className="sticky bottom-0 z-10 mt-auto -mx-6 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--color-border)] bg-[var(--color-bg-primary)]/85 px-6 py-3 text-sm backdrop-blur-sm md:-mx-8 md:px-8">
+    <div className="sticky bottom-0 z-10 mt-auto -mx-4 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--color-border)] bg-[var(--color-bg-primary)]/85 px-4 py-3 text-sm backdrop-blur-sm sm:-mx-6 sm:px-6 md:-mx-8 md:px-8">
       {/* Range count + page size selector */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[var(--color-text-muted)]">
         <p aria-live="polite" className="whitespace-nowrap tabular-nums">

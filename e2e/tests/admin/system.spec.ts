@@ -107,8 +107,14 @@ test.describe('Admin system', () => {
       for (const [bd, utc] of [['00:01', '18:01'], ['00:00', '18:00']] as const) {
         const input = page.getByLabel('Send time (Bangladesh)')
         await expect(input).toBeVisible()
-        await input.fill(bd)
-        await page.getByRole('button', { name: 'Save', exact: true }).click()
+        // Save stays disabled until the value differs from the saved one, and a fill that lands
+        // before hydration never reaches React state (#229). Fill until Save enables.
+        const save = page.getByRole('button', { name: 'Save', exact: true })
+        await expect(async () => {
+          await input.fill(bd, { timeout: 3_000 })
+          await expect(save).toBeEnabled({ timeout: 1_000 })
+        }).toPass({ timeout: 20_000 })
+        await save.click()
         // Shown in Bangladesh time, with the same moment in UTC (the previous day)
         await expect(page.getByText(`Current: ${bd} Bangladesh time (${utc} UTC)`, { exact: false })).toBeVisible()
         await page.reload()
