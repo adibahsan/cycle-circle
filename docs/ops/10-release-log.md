@@ -4,6 +4,49 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
+## 2026-11-01 — Insights & reports, SMS campaigns, admin-set Pro price, admin P0 security (PRs #219, #222–#226, tag 2.3.0)
+
+**Shipped:**
+
+- **#226, Insights & reports** (spec #192, tickets #206–#212):
+  - **Overview:** the admin home is now the business Overview. It shows total users, new signups, active users, Pro subscribers, churn by reason with the churn rate (admin revokes excluded), and estimated daily revenue from the Pro price history. Every number shows the % change against the previous period.
+  - **Active users:** recorded per Bangladesh day from this release on. A user counts when they open the signed-in app, onboarding included.
+  - **Shared range:** 7/30/90 days or a custom from–to in Bangladesh days, up to 366 days, kept in the URL. It covers Overview, Analytics, Engagement, Subscriptions, Campaign history, Feedback and Emails, and every panel ends at the end of the Bangladesh day.
+  - **CSV:** every chart and table exports CSV, with a BOM and formula-injection escaping.
+  - **Emailed reports:** weekly (Sunday 09:00 Bangladesh time) and monthly (on the 1st), with the CSV attached and a link to the Overview. Recipients are set on System, and changes are audited.
+  - **Audit fixes:** total profiles excludes deleted users, logs today counts symptom and period logs, the Pro count is the same on every page, and retention is measured week by week per cohort.
+- **#219, SMS campaigns** (spec #190): campaigns replace broadcasts. The 15-minute `sms-dispatch` cron sends them.
+- **#223:** admin P0 security fixes #184–#189.
+- **#224, admin-set Pro price** (spec #191): the Pro price is set in admin with a price history, and the daily subscription check is visible with its run history.
+- **#222, #225:** test isolation guardrails (retro follow-ups).
+
+**Migrations** (applied by `deploy.sh` after its backup):
+- `20261101120000_sms_campaigns`: one-way. It copies `SmsBroadcast` rows into `SmsCampaign`/`SmsCampaignMessage`, then drops `SmsBroadcast`, `SmsBroadcastStatus` and `SmsSendLanguage`.
+- `20261101130000_subscription_check_runs`, `20261101150000_pro_price`, `20261101160000_subscription_check_outcome_user_nullable`.
+- `20261101170000_churn_events`, `20261101170000_user_activity`, `20261101170100_pro_snapshot`.
+- `20261101180000_email_type_report`: adds `EmailType.REPORT`. Postgres can't drop an enum value, so this one is permanent.
+
+**Post-deploy steps on the VPS (done 2026-11-01 ~06:30 Dhaka)**
+
+1. `ADMIN_APP_URL=https://admin.cycle-circle.com` added to `/opt/vesta/.env.web.production` (backup `.env.web.production.bak-20261101-002824`). Then `docker compose --env-file ops/deploy/.env --env-file .env.monitoring.production -f ops/deploy/compose.prod.yml up -d --no-deps --force-recreate web`.
+2. Crontab reinstalled from `ops/deploy/vesta-crontab` (backup `/opt/vesta/crontab.bak-20261101-002848`). It adds `sms-dispatch` (every 15 min), `pro-snapshot` (17:55 UTC = 23:55 Dhaka), and `reports` weekly (`0 3 * * 0`) and monthly (`0 3 1 * *`).
+
+**Verification**
+
+| Check | Result |
+|---|---|
+| `cycle-circle.com/login`, `admin.cycle-circle.com/login`, `/api/health/db` | 200 |
+| `POST /api/auth/dev-login` | 403 |
+| `POST /api/cron/pro-snapshot`, `/api/cron/reports` without the secret | 401 |
+| `POST /api/cron/reports?kind=bogus` with the secret | 400 (auth passes, nothing sent) |
+| `printenv ADMIN_APP_URL` in the web container | set |
+
+**Data starts today:** active users, Pro snapshots and churn events have no history before this release. Past days on the Overview show as "unavailable", not zero, and the first Pro snapshot is taken 2026-11-01 23:55 Dhaka.
+
+**Deploy:** `git push origin origin/main:production` → GitHub Actions *Production* workflow (run 41255956006).
+
+---
+
 ## 2026-10-31 — Pregnancy mode removed, new tagline (PR #182)
 
 **Shipped:** the pregnancy goal is gone. Goals are now tracking, conceive and perimenopause, and legacy `pregnancy`/`pregnant` values read as tracking. The tagline is now "Smarter Periods, Personalised Care." / "স্মার্ট পিরিয়ড, ব্যক্তিগত যত্ন।". Admin no longer says CaaS on the Subscriptions badge or the charge history.
