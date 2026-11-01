@@ -26,11 +26,11 @@ Specs under `e2e/tests/` are the new suite. Specs under `apps/web/e2e/tests/` ar
 | **Web total** | 63 | 0 | 0 | 6 | 57 |
 | Admin: access and read-only views | 5 | 0 | 0 | 0 | 5 |
 | Admin: user actions | 4 | 0 | 0 | 0 | 4 |
-| Admin: content | 2 | 0 | 0 | 0 | 2 |
+| Admin: content | 3 | 0 | 0 | 0 | 3 |
 | Admin: analytics and engagement | 2 | 0 | 0 | 2 | 0 |
 | Admin: SMS | 2 | 0 | 0 | 0 | 2 |
 | Admin: feedback, emails, audit, logs, system | 6 | 0 | 0 | 0 | 6 |
-| **Admin total** | 21 | 0 | 0 | 2 | 19 |
+| **Admin total** | 22 | 0 | 0 | 2 | 20 |
 | Server-only (not counted) | 10 | 0 | 0 | 1 | 9 |
 
 Notes on the tally:
@@ -173,6 +173,7 @@ Notes on the tally:
 |---|---|---|---|---|---|
 | A10 | Content authoring: bilingual article, phase tags, image upload, draft, publish, seen on web | `/content`, `/content/new`, `/content/[id]`, `/uploads/[name]` | `e2e/tests/cross-app/admin-content.spec.ts` | full (draft hidden on settled Follicular list; publish → same URL; wrong-phase MENSTRUAL+OVULATION; EN loaded `/uploads/` img; BN text-only) | #128 |
 | A11 | Content sanitizing: unsafe HTML removed before it reaches web | `/content/new`, `/content/[id]` | `e2e/tests/cross-app/admin-content.spec.ts` | full (rich paste + raw Next-Action body bypass; stored HTML + scoped reader; script/iframe/style/js-href/evil attrs stripped; safe link/strong/uploads kept on server path) | #128 |
+| A12 | Content bulk actions: select rows, bulk publish, both seen on web | `/content` | `e2e/tests/cross-app/admin-content.spec.ts` | full (two drafts selected via row checkboxes, Publish, "2 succeeded", both on web Luteal list) | #214 |
 
 ### Admin: analytics and engagement
 

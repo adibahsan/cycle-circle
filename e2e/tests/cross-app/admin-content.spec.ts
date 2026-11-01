@@ -609,3 +609,49 @@ test.describe('Admin content authoring (seen on web)', () => {
     }
   })
 })
+
+test.describe('Admin bulk article actions (seen on web)', () => {
+  test('bulk-publish two drafts from the list; both appear on web (#214)', async ({
+    browser,
+    newUser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    const runId = uniqueId()
+    const prefix = `E2E214 ${runId}`
+    const slugPrefix = `e2e214-${runId}`
+    const titles = [`${prefix} one`, `${prefix} two`]
+    for (const [i, titleEn] of titles.entries()) {
+      await createArticle({
+        slug: `${slugPrefix}-${i}`, titleEn, titleBn: 'শিরোনাম', bodyEn: '<p>x</p>', bodyBn: '<p>বাংলা</p>',
+        status: 'DRAFT', cyclePhases: ['LUTEAL'],
+      })
+    }
+    const admin = await createLoggedInAdmin(browser, {
+      viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId,
+    })
+    const web = await newUser()
+    try {
+      const page = admin.page
+      await page.goto(`/content?q=${encodeURIComponent(prefix)}`)
+      for (const t of titles) {
+        await page.getByRole('checkbox', { name: `Select "${t}"` }).check()
+      }
+      await expect(page.getByText('2 selected')).toBeVisible()
+      await page.getByRole('region', { name: 'Bulk actions' }).getByRole('button', { name: 'Publish', exact: true }).click()
+      await expect(page.getByText('2 succeeded')).toBeVisible({ timeout: 15_000 })
+
+      for (const t of titles) {
+        await expectPublishedOnWeb(web.page, '/content?phase=LUTEAL', t)
+      }
+    } finally {
+      await e2eDb().article.deleteMany({ where: { slug: { startsWith: slugPrefix } } })
+      await admin.context.close()
+    }
+  })
+})
