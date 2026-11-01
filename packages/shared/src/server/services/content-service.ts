@@ -259,6 +259,8 @@ export async function updateArticle(
     status?: string
   },
   now: Date,
+  /** When given, an ARTICLE_UPDATED audit row is written for this admin. */
+  adminId?: string,
 ) {
   assertArticleStatus(data.status)
   await assertArticleFields(data, 'update')
@@ -284,10 +286,95 @@ export async function updateArticle(
     updateData.cyclePhases = data.cyclePhases
   }
 
-  return prisma.article.update({
+  const article = await prisma.article.update({
     where: { id },
     data: updateData,
   })
+
+  if (adminId) {
+    await createAuditLog(adminId, AUDIT_ACTIONS.ARTICLE_UPDATED, 'Article', id, { fields: Object.keys(data) })
+  }
+
+  return article
+}
+
+// ── Bulk article actions ───────────────────────────────────────────────────────
+
+export type BulkArticleAction =
+  | { type: 'publish' }
+  | { type: 'unpublish' }
+  | { type: 'archive' }
+  | { type: 'move'; categoryId: string | null }
+
+export type BulkArticleResult = {
+  results: Array<{ id: string; ok: true } | { id: string; ok: false; error: string }>
+}
+
+const BULK_ARTICLE_MAX = 100
+
+/** Apply one action to many articles. Each id succeeds or fails alone; one audit row per call. */
+export async function bulkArticleAction(
+  adminId: string,
+  ids: string[],
+  action: BulkArticleAction,
+  now: Date,
+): Promise<BulkArticleResult> {
+  const unique = [...new Set(ids)]
+  if (unique.length === 0) throw new ContentError('Select at least one article.')
+  if (unique.length > BULK_ARTICLE_MAX) {
+    throw new ContentError(`Select at most ${BULK_ARTICLE_MAX} articles at a time.`)
+  }
+
+  let data: Prisma.ArticleUpdateManyMutationInput & { categoryId?: string | null }
+  let categoryError: string | null = null
+  switch (action.type) {
+    case 'publish':
+      data = { status: 'PUBLISHED', publishedAt: now }
+      break
+    case 'unpublish':
+      data = { status: 'DRAFT', publishedAt: null }
+      break
+    case 'archive':
+      data = { status: 'ARCHIVED', publishedAt: null }
+      break
+    case 'move': {
+      data = { categoryId: action.categoryId }
+      if (action.categoryId) {
+        const found = await prisma.articleCategory.findUnique({
+          where: { id: action.categoryId },
+          select: { id: true },
+        })
+        if (!found) categoryError = 'That category no longer exists.'
+      }
+      break
+    }
+    default:
+      throw new ContentError('Unknown bulk action.')
+  }
+
+  const results: BulkArticleResult['results'] = []
+  for (const id of unique) {
+    if (categoryError) {
+      results.push({ id, ok: false, error: categoryError })
+      continue
+    }
+    try {
+      const { count } = await prisma.article.updateMany({ where: { id }, data })
+      results.push(count === 0 ? { id, ok: false, error: 'Article not found.' } : { id, ok: true })
+    } catch {
+      results.push({ id, ok: false, error: 'Could not update this article.' })
+    }
+  }
+
+  await createAuditLog(adminId, AUDIT_ACTIONS.ARTICLE_BULK_ACTION, 'Article', unique[0], {
+    action: action.type,
+    ...(action.type === 'move' ? { categoryId: action.categoryId } : {}),
+    ids: unique,
+    succeeded: results.filter((r) => r.ok).map((r) => r.id),
+    failed: results.filter((r) => !r.ok).map((r) => r.id),
+  })
+
+  return { results }
 }
 
 export async function removeArticle(id: string, adminId: string) {
