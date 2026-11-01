@@ -27,7 +27,7 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 **Post-deploy steps on the VPS:** none. No new env vars or crons.
 
-**Verification (2026-11-01 ~08:30 Dhaka)**
+**Verification (2026-11-01 ~08:20 Dhaka)**
 
 | Check | Result |
 |---|---|
