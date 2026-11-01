@@ -2,8 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 import { useUrlParams } from '@/lib/use-url-params'
-import { useState, useRef } from 'react'
-import { Plus, Pencil, Trash2, ChevronRight, Tags, X, Check } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Plus, Pencil, Trash2, ChevronRight, Tags, X, Check, GripVertical, ChevronUp, ChevronDown } from 'lucide-react'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { DataTable, Column } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
-import { deleteArticle, createCategory, updateCategory, deleteCategory } from '@/app/actions/content-actions'
+import { deleteArticle, createCategory, updateCategory, deleteCategory, reorderCategories } from '@/app/actions/content-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { useToast } from '@/components/ui/Toast'
@@ -140,6 +140,14 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
   const [renamingSaving, setRenamingSaving] = useState(false)
   const [renameError, setRenameError] = useState('')
 
+  // Category order: optimistic local copy of the server order, reverted if saving fails.
+  const [orderedCategories, setOrderedCategories] = useState(categories)
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [reordering, setReordering] = useState(false)
+  const [orderMessage, setOrderMessage] = useState('')
+  const [listError, setListError] = useState('')
+  useEffect(() => setOrderedCategories(categories), [categories])
+
   const currentStatus = searchParams.get('status') ?? 'all'
   const currentCategoryId = searchParams.get('categoryId') ?? 'all'
   const currentPhase = searchParams.get('phase') ?? 'all'
@@ -181,9 +189,9 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     setCategoryError('')
     setSaving(true)
     try {
-      const result = await createCategory(name, newCategoryNameBn.trim())
-      if ('error' in result) {
-        setCategoryError(result.error)
+      const res = await createCategory(name, newCategoryNameBn.trim())
+      if (res.error) {
+        setCategoryError(res.error)
         return
       }
       setNewCategoryName('')
@@ -200,17 +208,15 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
   async function handleDeleteCategory() {
     if (!categoryToDelete) return
     setDeletingCategory(true)
+    setListError('')
     try {
-      const result = await deleteCategory(categoryToDelete.id)
+      const res = await deleteCategory(categoryToDelete.id)
+      if (res.error) setListError(res.error)
+      else router.refresh()
       setCategoryToDelete(null)
-      if ('error' in result) {
-        toast.error(result.error)
-        return
-      }
-      router.refresh()
     } catch {
+      setListError('Failed to delete category')
       setCategoryToDelete(null)
-      toast.error('Could not delete the category. Check your connection and try again.')
     } finally {
       setDeletingCategory(false)
     }
@@ -239,9 +245,9 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     setRenamingSaving(true)
     setRenameError('')
     try {
-      const result = await updateCategory(id, name, editingCategoryNameBn.trim())
-      if ('error' in result) {
-        setRenameError(result.error)
+      const res = await updateCategory(id, name, editingCategoryNameBn.trim())
+      if (res.error) {
+        setRenameError(res.error)
         return
       }
       setEditingCategoryId(null)
@@ -252,6 +258,35 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
       setRenameError(err instanceof Error ? err.message : 'Failed to rename category')
     } finally {
       setRenamingSaving(false)
+    }
+  }
+
+  async function moveCategory(id: string, toIndex: number) {
+    const from = orderedCategories.findIndex((c) => c.id === id)
+    if (from < 0 || toIndex < 0 || toIndex >= orderedCategories.length || from === toIndex) return
+    const previous = orderedCategories
+    const next = [...orderedCategories]
+    const [moved] = next.splice(from, 1)
+    next.splice(toIndex, 0, moved)
+    setOrderedCategories(next)
+    setListError('')
+    setOrderMessage(`${moved.name} moved to position ${toIndex + 1} of ${next.length}`)
+    setReordering(true)
+    try {
+      const res = await reorderCategories(next.map((c) => c.id))
+      if (res.error) {
+        setOrderedCategories(previous)
+        setListError(res.error)
+        setOrderMessage('')
+      } else {
+        router.refresh()
+      }
+    } catch {
+      setOrderedCategories(previous)
+      setListError('Failed to reorder categories')
+      setOrderMessage('')
+    } finally {
+      setReordering(false)
     }
   }
 
@@ -557,18 +592,45 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
 
             {/* Category list */}
             <div className="overflow-y-auto flex-1 px-6 py-2" aria-live="polite">
-              {categories.length === 0 ? (
+              {listError && (
+                <p role="alert" className="py-2 text-sm text-[var(--color-error)]">
+                  {listError}
+                </p>
+              )}
+              <p className="sr-only" role="status">{orderMessage}</p>
+              {orderedCategories.length === 0 ? (
                 <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">
                   No categories yet. Add one above.
                 </p>
               ) : (
                 <ul className="divide-y divide-[var(--color-border)]" role="list">
-                  {categories.map((cat) => {
+                  {orderedCategories.map((cat, index) => {
                     const hasArticles = cat._count.articles > 0
                     const isEditing = editingCategoryId === cat.id
                     const isBusy = saving || deletingCategory || renamingSaving
+                    const orderLocked = isBusy || reordering || !!editingCategoryId
                     return (
-                      <li key={cat.id} className="flex items-center justify-between gap-3 py-3">
+                      <li
+                        key={cat.id}
+                        className={`flex items-center justify-between gap-3 py-3 ${dragId === cat.id ? 'opacity-50' : ''}`}
+                        draggable={!orderLocked}
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = 'move'
+                          setDragId(cat.id)
+                        }}
+                        onDragOver={(e) => {
+                          if (dragId) e.preventDefault()
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          if (dragId) moveCategory(dragId, index)
+                          setDragId(null)
+                        }}
+                        onDragEnd={() => setDragId(null)}
+                      >
+                        <div className="flex flex-col items-center shrink-0">
+                          <GripVertical size={14} className="text-[var(--color-text-muted)] cursor-grab" aria-hidden="true" />
+                        </div>
                         <div className="min-w-0 flex-1">
                           {isEditing ? (
                             <div
@@ -682,6 +744,24 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
                             </>
                           ) : (
                             <>
+                              <button
+                                type="button"
+                                onClick={() => moveCategory(cat.id, index - 1)}
+                                disabled={orderLocked || index === 0}
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
+                                aria-label={`Move category ${cat.name} up`}
+                              >
+                                <ChevronUp size={14} aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moveCategory(cat.id, index + 1)}
+                                disabled={orderLocked || index === orderedCategories.length - 1}
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
+                                aria-label={`Move category ${cat.name} down`}
+                              >
+                                <ChevronDown size={14} aria-hidden="true" />
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => startEditCategory(cat)}

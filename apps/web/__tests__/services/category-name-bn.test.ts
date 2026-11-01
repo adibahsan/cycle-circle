@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from 'vitest'
+import { describe, it, expect, afterAll, beforeAll } from 'vitest'
 import { PrismaClient } from '@prisma/client'
 import {
   createCategory,
@@ -11,7 +11,16 @@ const created: string[] = []
 // Own author: picking any ADMIN races other test files that create and delete admins.
 const AUTHOR = 'test-catbn-author'
 
+beforeAll(async () => {
+  await prisma.user.upsert({
+    where: { id: AUTHOR },
+    update: {},
+    create: { id: AUTHOR, email: `${AUTHOR}@example.test`, role: 'ADMIN', authMethod: 'EMAIL' },
+  })
+})
+
 afterAll(async () => {
+  await prisma.adminAuditLog.deleteMany({ where: { adminId: AUTHOR } })
   await prisma.article.deleteMany({ where: { categoryId: { in: created } } })
   await prisma.articleCategory.deleteMany({ where: { id: { in: created } } })
   await prisma.user.deleteMany({ where: { id: AUTHOR } })
@@ -21,28 +30,28 @@ afterAll(async () => {
 describe('ArticleCategory.nameBn', () => {
   it('round-trips through create and update; empty string stores null', async () => {
     const stamp = Date.now()
-    const cat = await createCategory(`test-catbn-${stamp}`, 'চক্রের স্বাস্থ্য')
+    const cat = await createCategory(AUTHOR, `test-catbn-${stamp}`, 'চক্রের স্বাস্থ্য')
     created.push(cat.id)
     expect(cat.nameBn).toBe('চক্রের স্বাস্থ্য')
 
-    const noBn = await createCategory(`test-catbn-b-${stamp}`, '')
+    const noBn = await createCategory(AUTHOR, `test-catbn-b-${stamp}`, '')
     created.push(noBn.id)
     expect(noBn.nameBn).toBeNull()
 
-    const updated = await updateCategory(cat.id, `test-catbn-${stamp}`, 'পুষ্টি')
+    const updated = await updateCategory(AUTHOR, cat.id, `test-catbn-${stamp}`, 'পুষ্টি')
     expect(updated.nameBn).toBe('পুষ্টি')
 
     // omitted nameBn leaves it untouched
-    const renamed = await updateCategory(cat.id, `test-catbn-${stamp}-r`)
+    const renamed = await updateCategory(AUTHOR, cat.id, `test-catbn-${stamp}-r`)
     expect(renamed.nameBn).toBe('পুষ্টি')
 
-    const cleared = await updateCategory(cat.id, `test-catbn-${stamp}-r`, '')
+    const cleared = await updateCategory(AUTHOR, cat.id, `test-catbn-${stamp}-r`, '')
     expect(cleared.nameBn).toBeNull()
   })
 
   it('is selected with the published article category', async () => {
     const stamp = Date.now()
-    const cat = await createCategory(`test-catbn-art-${stamp}`, 'বিভাগ')
+    const cat = await createCategory(AUTHOR, `test-catbn-art-${stamp}`, 'বিভাগ')
     created.push(cat.id)
     const author = await prisma.user.upsert({
       where: { id: AUTHOR },
