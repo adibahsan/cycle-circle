@@ -13,6 +13,7 @@ import { refreshData } from '../../../support/admin-charts.ts'
 import { bangladeshDayOf, serverNow } from '../../../support/bangladesh-day.ts'
 import { ADMIN_STATE } from '../../support/admin-demo.ts'
 import { shot } from '../../support/shot.ts'
+import { demoNow } from '../../support/demo-clock.ts'
 
 test.use({ storageState: ADMIN_STATE })
 test.describe.configure({ mode: 'serial' })
@@ -48,7 +49,7 @@ async function seedCampaigns(db: PrismaClient, today: string) {
       data: {
         name,
         createdBy: admin.id,
-        cancelledAt: cancelled ? new Date() : null,
+        cancelledAt: cancelled ? demoNow() : null,
         messages: {
           create: messages.map((m) => ({
             day: stored(addDays(today, m.offset)),

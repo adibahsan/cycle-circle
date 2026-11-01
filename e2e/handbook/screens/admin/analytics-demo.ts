@@ -5,6 +5,7 @@
  */
 import type { PrismaClient } from '@prisma/client'
 import { seedDemoMembers } from '../../support/admin-demo.ts'
+import { demoNow } from '../../support/demo-clock.ts'
 
 const DAY = 24 * 60 * 60 * 1000
 const utcDay = (now: Date, n: number) => new Date(`${new Date(now.getTime() - n * DAY).toISOString().slice(0, 10)}T00:00:00.000Z`)
@@ -17,7 +18,7 @@ const MEMBERS = Array.from({ length: 24 }, (_, i) => `hbdemo-${String(i + 1).pad
 
 export async function seedAnalyticsHistory(db: PrismaClient): Promise<void> {
   await seedDemoMembers(db)
-  const now = new Date()
+  const now = demoNow()
   const profiles = await db.profile.findMany({
     where: { userId: { in: MEMBERS }, user: { deletedAt: null } },
     select: { id: true },

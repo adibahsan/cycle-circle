@@ -6,6 +6,7 @@ import { test, expect } from '../../../support/fixtures.ts'
 import { refreshData } from '../../../support/admin-charts.ts'
 import { ADMIN_STATE, seedDemoMembers } from '../../support/admin-demo.ts'
 import { shot } from '../../support/shot.ts'
+import { demoNowMs } from '../../support/demo-clock.ts'
 
 test.use({ storageState: ADMIN_STATE })
 
@@ -23,7 +24,7 @@ const ITEMS: Array<[string, 'BUG' | 'FEATURE' | 'GENERAL' | 'SATISFACTION', numb
 test.describe('Admin Feedback', () => {
   test.beforeAll(async ({ db }) => {
     await seedDemoMembers(db)
-    const now = Date.now()
+    const now = demoNowMs()
     await db.feedback.createMany({
       data: ITEMS.map(([userId, category, rating, message], i) => ({
         id: `hbac-fb-${i}`, userId, category, rating, message, createdAt: new Date(now - (i * 2 + 1) * DAY - i * 3_600_000),
