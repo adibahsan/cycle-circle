@@ -18,12 +18,12 @@ On every signed-in screen on a phone. It is not shown on the login, onboarding o
 
 1. Tap a slot to open that screen. The current screen's icon is filled with the accent colour and its label is bold.
 2. Tap **More** for everything else ([More sheet](#nl-more-sheet)). **More** is highlighted when the current screen is one of its destinations (Learn, Profiles, Subscription, Feedback, Settings).
-3. A small dot on **Symptoms** means nothing has been logged today for the active profile (screen readers say "Nothing logged today"). The dot goes away once a check-in is saved.
+3. A small dot on **Symptoms** means nothing has been logged today for the active profile (screen readers say "Nothing logged today"). The dot goes away once anything counts as logged today: a saved check-in, any symptom logged today, or today falling inside a logged period.
 
 ### Rules and limits
 
 - The slots and their order are fixed. Learn, Profiles, Subscription, Feedback and Settings are behind **More**.
-- The top of the phone screen shows the logo, the profile chip (tap it to switch profile, see [Switch the active profile](#pf-switch)) and, for an email-trial User, the trial countdown pill ([The 24-hour email trial](#gs-email-trial)).
+- The top of the phone screen shows the logo, the profile chip (tap the name to open Profiles and switch profile, see [Switch the active profile](#pf-switch); while the profile is under 100% complete, the progress ring on the chip opens the profile-completion prompt instead) and, for an email-trial User, the trial countdown pill ([The 24-hour email trial](#gs-email-trial)).
 - While the trial lock is showing, the bar is covered ([Trial lock](#pa-trial-lock)).
 
 ### What can go wrong
@@ -31,7 +31,7 @@ On every signed-in screen on a phone. It is not shown on the login, onboarding o
 | The User sees | Cause | Fix |
 |---|---|---|
 | No bottom bar | The screen is 768 px or wider, so the sidebar is used; or the User is on a public or login page | On a wide screen the sidebar is used instead ([Desktop sidebar](#nl-sidebar)) |
-| A dot on **Symptoms** that will not go | Nothing logged today yet | Log a check-in ([Check-in prompt](#ap-checkin)) |
+| A dot on **Symptoms** that will not go | No symptom logged today and today is not inside a logged period | Log a check-in ([Check-in prompt](#ap-checkin)) |
 | Tapping a slot does nothing | The page is still loading, or the trial lock is covering the app | Wait; for the lock see [Trial lock](#pa-trial-lock) |
 
 ### Related
@@ -54,7 +54,7 @@ A pop-up that slides up from the bottom when **More** is tapped. It lists the de
 
 1. Tap **More**. The sheet "More" opens.
 2. Pick **Learn**, **Profiles**, **Subscription**, **Feedback** or **Settings**. The sheet closes and the screen opens.
-3. At the bottom of the sheet, **Theme** has a button that reads **Dark** (or **Light**) and **Language** has the **EN / BN** switch.
+3. At the bottom of the sheet, **Theme** has a button that names the mode it will switch to: **Dark** while the app is light, **Light** while it is dark and **Language** has the **EN / BN** switch.
 4. Close the sheet with the close button, by tapping outside it, or with Esc.
 
 ### Rules and limits
@@ -68,7 +68,7 @@ A pop-up that slides up from the bottom when **More** is tapped. It lists the de
 | The User sees | Cause | Fix |
 |---|---|---|
 | The sheet will not close | A touch on the sheet itself | Tap outside it or press Esc |
-| The sheet is in Bengali | The language was switched | Tap **EN / BN** ([Switching language](#nl-switch-language)) |
+| The sheet is in Bengali | The language was switched | Tap the language toggle, which is shown in Bengali script (the short English form is the first half) ([Switching language](#nl-switch-language)) |
 
 ### Related
 
@@ -89,7 +89,7 @@ Every signed-in screen on a tablet or computer. (Screenshot at 1366 px wide; eve
 ### How to use it
 
 1. Under **MENU**: **Dashboard**, **Calendar**, **Symptoms**, **Insights**, **Learn**, **Settings**. Under **MORE**: **Profiles**, **Feedback**, **Subscription**.
-2. The profile chip and the goal name sit at the top. The footer has the theme button (**Dark** or **Light**) and the **EN / BN** language switch. An email-trial User also sees the trial countdown pill there.
+2. The profile chip and the goal name sit at the top. The footer has the theme button (it names the mode it switches to: **Dark** while the app is light) and the **EN / BN** language switch. An email-trial User also sees the trial countdown pill there.
 3. The button next to the logo (**Collapse sidebar** / **Expand sidebar**) shrinks the sidebar to an icon-only rail. In the rail the language switch is a single icon button (**Switch language**).
 
 ### Rules and limits
@@ -119,7 +119,7 @@ The app is available in English and Bengali. The switch changes every screen at 
 
 Four places, all doing the same thing:
 
-- **Settings > Language & Appearance**: the buttons **EN** and the Bengali button (Bengali script, "bang").
+- **Settings > Language & Appearance**: two buttons: English (**EN**, or its short Bengali-script form while the app is in Bengali) and Bengali (always in Bengali script).
 - The **More** sheet on a phone: the **EN / BN** switch.
 - The sidebar footer on a wide screen: **EN / BN**, or the **Switch language** icon button on the rail.
 - The Welcome page has a language switch in the top corner ([Welcome page](#gs-welcome)).
@@ -142,7 +142,7 @@ Four places, all doing the same thing:
 
 | The User sees | Cause | Fix |
 |---|---|---|
-| The whole app is in Bengali and the User cannot read it | Someone switched it | Tap the language switch and choose the first option, **EN** (ইং in Bengali) |
+| The whole app is in Bengali and the User cannot read it | Someone switched it | Tap the language switch and choose the first option, **EN** (shown in Bengali script while the app is in Bengali) |
 | Some text stays English | The text comes from the server (for example an email) | Expected |
 | Reminder emails are in English though the app is Bengali | See above | Known behaviour |
 
