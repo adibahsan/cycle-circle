@@ -3,7 +3,8 @@
  * persona through the real OTP flow and the seeded admin with email + password, saving
  * each one's storage state (`statePath(...)`). A saved state that the app still accepts
  * is reused: logging in again within 60 s would hit the OTP resend cooldown, and a run
- * that kept the DB (E2E_SKIP_RESET=1) keeps the sessions valid.
+ * that kept the DB (E2E_SKIP_RESET=1) keeps the sessions valid. The admin is logged in on every run
+ * (a stale admin state would pass the page check after a reseed).
  */
 import fs from 'node:fs'
 import { chromium, type Browser } from '@playwright/test'
@@ -32,7 +33,8 @@ export default async function globalSetup() {
       await context.close()
     }
 
-    if (await stillLoggedIn(browser, statePath('admin'), URLS.admin, '/')) return
+    // Always log in again: the admin app only checks the token signature on a page load, so a state saved
+    // before a DB reseed still opens '/' but then fails with 'Unauthorized'. Password login has no cooldown.
     const admin = await browser.newContext({ baseURL: URLS.admin, timezoneId: TZ, locale: LOCALE })
     const res = await admin.request.post('/api/auth/login', { data: { email: SECRETS.adminEmail, password: SECRETS.adminPassword } })
     if (!res.ok()) throw new Error(`admin login failed (${res.status()}): ${await res.text()}`)

@@ -2,8 +2,6 @@
  * Handbook chapters "Settings" and "Navigation & Language" (docs/handbook/chapters/settings.md and
  * navigation-and-language.md), ticket #244. Anchors and file names come from docs/handbook/OUTLINE.md.
  */
-import fs from 'node:fs'
-import path from 'node:path'
 import type { Page } from '@playwright/test'
 import { test, expect } from '../../../support/fixtures.ts'
 import { ensureUserProfile } from '../../../support/db.ts'
@@ -14,7 +12,7 @@ import { suppressAutoPrompts } from '../../../support/prompts.ts'
 import { URLS } from '../../../support/slot.ts'
 import { ipFor } from '../../../support/users.ts'
 import { demoEmailTrialUser, demoPhoneUser } from '../../support/demo-users.ts'
-import { SCREENSHOT_DIR, shot } from '../../support/shot.ts'
+import { shot } from '../../support/shot.ts'
 
 const PHONES = { addEmail: '01711223366', addPhone: '01711223377' } as const
 
@@ -208,8 +206,7 @@ test.describe('Navigation & Language', () => {
     await shot(page, 'nl-language-persists', { suffix: 'dashboard' })
   })
 
-  // The desktop sidebar needs a wide viewport; the chapter's device is "phone", so shot() refuses it.
-  // Same safety check as shot(): only this slot's local web app.
+  // The desktop sidebar needs a wide viewport; the chapter's device is "phone", so the shot overrides it.
   test('desktop sidebar', async ({ browser }) => {
     const context = await browser.newContext({
       baseURL: URLS.web,
@@ -223,11 +220,7 @@ test.describe('Navigation & Language', () => {
       await suppressAutoPrompts(page)
       await page.goto('/dashboard')
       await expect(page.getByRole('complementary', { name: 'Sidebar navigation' })).toBeVisible()
-      expect(new URL(page.url()).origin).toBe(URLS.web)
-      await page.evaluate(() => document.fonts.ready)
-      await page.waitForTimeout(800)
-      fs.mkdirSync(SCREENSHOT_DIR, { recursive: true })
-      await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'nl-sidebar.png'), animations: 'disabled', caret: 'hide' })
+      await shot(page, 'nl-sidebar', { device: 'desktop' })
     } finally {
       await context.close()
     }

@@ -9,6 +9,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { Locator, Page } from '@playwright/test'
 import { parseOutline } from '../../../scripts/handbook/outline.mjs'
+import { pngPixelsEqual } from '../../support/png-equal.ts'
 import { REPO_DIR, URLS } from '../../support/slot.ts'
 
 export const SCREENSHOT_DIR = path.join(REPO_DIR, 'docs/handbook/screenshots')
@@ -31,11 +32,17 @@ export interface ShotOptions {
   of?: Locator
   /** Capture the whole scrollable page (long pages such as Terms). */
   fullPage?: boolean
+  /**
+   * The device this one shot is taken at, when it differs from the chapter's device in OUTLINE.md
+   * (for example a desktop sidebar in a phone chapter). The page's viewport must match it.
+   */
+  device?: Device
 }
 
 export async function shot(page: Page, anchor: string, opts: ShotOptions = {}): Promise<string> {
-  const device = anchors().get(anchor)
-  if (!device) throw new Error(`"${anchor}" is not an anchor in docs/handbook/OUTLINE.md; add the section there first`)
+  const outlineDevice = anchors().get(anchor)
+  if (!outlineDevice) throw new Error(`"${anchor}" is not an anchor in docs/handbook/OUTLINE.md; add the section there first`)
+  const device = opts.device ?? outlineDevice
   const viewport = page.viewportSize()
   if (viewport) {
     const isPhone = viewport.width < 600
@@ -50,8 +57,9 @@ export async function shot(page: Page, anchor: string, opts: ShotOptions = {}): 
   await page.evaluate(() => document.fonts.ready)
   // Spring/slide animations (motion library) ignore `animations: 'disabled'`; let them settle.
   await page.waitForTimeout(800)
-  const options = { path: file, animations: 'disabled' as const, caret: 'hide' as const }
-  if (opts.of) await opts.of.screenshot(options)
-  else await page.screenshot({ ...options, fullPage: opts.fullPage ?? false })
+  const options = { animations: 'disabled' as const, caret: 'hide' as const }
+  const png = opts.of ? await opts.of.screenshot(options) : await page.screenshot({ ...options, fullPage: opts.fullPage ?? false })
+  // Keep the committed file when the pixels are the same, so reruns leave no diff.
+  if (!fs.existsSync(file) || !pngPixelsEqual(fs.readFileSync(file), png)) fs.writeFileSync(file, png)
   return file
 }
