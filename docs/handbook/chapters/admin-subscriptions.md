@@ -44,7 +44,7 @@ The **Subscriptions** page. From top to bottom:
 
 ### Rules and limits
 
-- **What the buttons do** is the same as the plan menu on the User page ([Set subscription status](#us-set-status)): the change is stored as an Admin override and written to the audit log and the Translog. **Set Free** and **Revoke** also **unsubscribe the number on BDApps** (ADR 0006) and, if the User was Pro, record an "Admin revoke" churn event. **Grant Pro** does not subscribe the number on BDApps.
+- **What the buttons do** is the same as the plan menu on the User page ([Set subscription status](#us-set-status)): the change is stored as an Admin override and written to the audit log (as SUBSCRIPTION_SET_PRO, SUBSCRIPTION_SET_LAPSED or SUBSCRIPTION_SET_FREE, not the older PRO_GRANTED and PRO_REVOKED) and the Translog. **Set Free** and **Revoke** also **unsubscribe the number on BDApps** (ADR 0006) and, if the User was Pro, record an "Admin revoke" churn event. **Grant Pro** does not subscribe the number on BDApps.
 - **Revoke leaves the User Lapsed, not Free**, while **Set Free** leaves them Free. The glossary says Revoke is "Pro to Free"; on this page Revoke ends in Lapsed.
 - The list shows subscription records **updated** inside the chosen period, newest update first, not all records. A change made today moves a record into the current period. The header count says "updated in this range".
 - A User can appear even if deleted or Suspended: the table is built from subscription records, not from the User list.
