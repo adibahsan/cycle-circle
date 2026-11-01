@@ -30,6 +30,7 @@ type ArticleRow = {
   createdAt: Date
   category: { name: string } | null
   author: { fullName: string | null } | null
+  views: number
 }
 
 type CategoryOption = {
@@ -153,6 +154,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
   const currentPhase = searchParams.get('phase') ?? 'all'
   const currentMissingBangla = searchParams.get('missingBangla') === '1' ? '1' : 'all'
   const currentQuery = searchParams.get('q') ?? ''
+  const currentSort = searchParams.get('sort') ?? 'newest'
   const currentPage = data.page
   const currentPageSize = data.pageSize
 
@@ -342,6 +344,16 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
       ),
     },
     {
+      key: 'views',
+      header: 'Views',
+      sortable: true,
+      render: (row) => (
+        <span className="text-sm tabular-nums text-[var(--color-text-secondary)]" data-testid="article-views">
+          {row.views.toLocaleString()}
+        </span>
+      ),
+    },
+    {
       key: 'actions',
       header: '',
       width: '96px',
@@ -479,11 +491,34 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
         ]}
       />
 
+      {/* Views range: Bangladesh days, inclusive; empty = all time. Applies to the column and the sort. */}
+      <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+        <span>Views from</span>
+        <input
+          type="date"
+          aria-label="Views from"
+          value={searchParams.get('viewsFrom') ?? ''}
+          onChange={(e) => updateParams({ viewsFrom: e.target.value })}
+          className="h-9 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 text-sm"
+        />
+        <span>to</span>
+        <input
+          type="date"
+          aria-label="Views to"
+          value={searchParams.get('viewsTo') ?? ''}
+          onChange={(e) => updateParams({ viewsTo: e.target.value })}
+          className="h-9 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 text-sm"
+        />
+      </div>
+
       {/* Table */}
       <DataTable
         columns={COLUMNS}
         data={data.articles}
         emptyMessage="No articles match your filters."
+        sortKey={currentSort === 'views' ? 'views' : null}
+        sortOrder="desc"
+        onSortChange={(key) => updateParams({ sort: key === 'views' && currentSort !== 'views' ? 'views' : '' })}
         onRowClick={(row) => router.push(`/content/${row.id}`)}
         keyExtractor={(row) => row.id}
       />

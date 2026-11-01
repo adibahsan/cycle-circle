@@ -9,6 +9,7 @@ import {
   normalizeListOptions,
   type ListArticlesOptions,
 } from '../../utils/article-list-params'
+import { dayToStoredDate } from '../../utils/dhaka-date'
 import { articlePublishWarnings, isBlankBody } from '../../utils/article-warnings'
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
@@ -51,7 +52,7 @@ export function sanitizeArticleHtml(html: string): string {
 // ── Article queries ────────────────────────────────────────────────────────────
 
 export async function listArticles(options: ListArticlesOptions = {}) {
-  const { q, status, categoryId, phase, missingBangla, sort, page, pageSize } = normalizeListOptions(options)
+  const { q, status, categoryId, phase, missingBangla, sort, viewsFrom, viewsTo, page, pageSize } = normalizeListOptions(options)
 
   const and: Prisma.ArticleWhereInput[] = []
   if (q) {
@@ -73,20 +74,45 @@ export async function listArticles(options: ListArticlesOptions = {}) {
 
   const orderBy: Prisma.ArticleOrderByWithRelationInput[] =
     sort === 'title' ? [{ titleEn: 'asc' }, { id: 'asc' }] : [{ createdAt: 'desc' }, { id: 'desc' }]
+  const include = {
+    category: { select: { name: true, nameBn: true } },
+    author: { select: { fullName: true } },
+  } as const
 
-  const [articles, total] = await Promise.all([
-    prisma.article.findMany({
-      where,
-      include: {
-        category: { select: { name: true, nameBn: true } },
-        author: { select: { fullName: true } },
-      },
-      orderBy,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.article.count({ where }),
-  ])
+  // Views per article in the Bangladesh-day range (inclusive; absent bound = open).
+  const viewCounts = async (ids: string[]) => {
+    const day: Prisma.DateTimeFilter = {}
+    if (viewsFrom) day.gte = dayToStoredDate(viewsFrom)
+    if (viewsTo) day.lte = dayToStoredDate(viewsTo)
+    const grouped = await prisma.articleView.groupBy({
+      by: ['articleId'],
+      where: { articleId: { in: ids }, ...(viewsFrom || viewsTo ? { day } : {}) },
+      _count: { _all: true },
+    })
+    return new Map(grouped.map((g) => [g.articleId, g._count._all]))
+  }
+
+  const total = await prisma.article.count({ where })
+  let articles
+  if (sort === 'views') {
+    // Most-viewed first: counts come from another table, so rank every match, then page the ranking.
+    const matching = await prisma.article.findMany({ where, select: { id: true }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] })
+    const counts = await viewCounts(matching.map((m) => m.id))
+    const pageIds = matching
+      .map((m) => m.id)
+      .sort((x, y) => (counts.get(y) ?? 0) - (counts.get(x) ?? 0))
+      .slice((page - 1) * pageSize, page * pageSize)
+    const rows = await prisma.article.findMany({ where: { id: { in: pageIds } }, include })
+    const byId = new Map(rows.map((r) => [r.id, r]))
+    articles = pageIds.flatMap((id) => {
+      const row = byId.get(id)
+      return row ? [{ ...row, views: counts.get(id) ?? 0 }] : []
+    })
+  } else {
+    const rows = await prisma.article.findMany({ where, include, orderBy, skip: (page - 1) * pageSize, take: pageSize })
+    const counts = await viewCounts(rows.map((r) => r.id))
+    articles = rows.map((r) => ({ ...r, views: counts.get(r.id) ?? 0 }))
+  }
 
   return {
     articles,

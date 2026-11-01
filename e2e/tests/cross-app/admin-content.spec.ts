@@ -9,6 +9,7 @@ import type { Locator, Page } from '@playwright/test'
 import { test, expect } from '../../support/fixtures'
 import { createLoggedInAdmin } from '../../support/admin'
 import { e2eDb, revalidateWebArticles, createArticle } from '../../support/db'
+import { refreshData } from '../../support/admin-charts'
 
 const FIXTURE_PNG = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -608,4 +609,52 @@ test.describe('Admin content authoring (seen on web)', () => {
       await admin.context.close()
     }
   })
+  test('admin Views column goes up after a customer opens the article (#216)', async ({
+    browser,
+    newUser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    const runId = uniqueId()
+    const titleEn = `E2E216 views ${runId}`
+    const slug = `e2e216-${runId}`
+    const article = await createArticle({
+      slug, titleEn, titleBn: 'শিরোনাম', bodyEn: '<p>x</p>', bodyBn: '<p>বাংলা</p>',
+      status: 'PUBLISHED', cyclePhases: ['LUTEAL'],
+    })
+    const admin = await createLoggedInAdmin(browser, {
+      viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId,
+    })
+    const web = await newUser()
+    try {
+      const { page } = admin
+      const row = () => page.getByRole('button').filter({ hasText: titleEn })
+      await page.goto(`/content?q=${encodeURIComponent(titleEn)}`)
+      await expect(row().getByTestId('article-views')).toHaveText('0')
+
+      await web.page.goto(`/content/${article.id}`)
+      await expect(web.page.getByRole('heading', { name: titleEn })).toBeVisible()
+
+      // Recording runs after the response, and the admin list is cached: refresh until it lands.
+      await expect(async () => {
+        await refreshData(page)
+        await expect(row().getByTestId('article-views')).toHaveText('1', { timeout: 2_000 })
+      }).toPass({ timeout: 30_000 })
+
+      // A second open on the same Bangladesh day is not a second view.
+      await web.page.reload()
+      await expect(web.page.getByRole('heading', { name: titleEn })).toBeVisible()
+      await refreshData(page)
+      await expect(row().getByTestId('article-views')).toHaveText('1')
+    } finally {
+      await e2eDb().article.deleteMany({ where: { slug } })
+      await admin.context.close()
+    }
+  })
+
 })
