@@ -58,13 +58,20 @@ export async function shot(page: Page, anchor: string, opts: ShotOptions = {}): 
   // Streamed pages show a loading skeleton until their data lands; the network going quiet means it has.
   await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => undefined)
   // Spring/slide animations (motion library) ignore `animations: 'disabled'`: wait until the finite Web Animations
-  // have finished and the open dialog or sheet (if any) has held still for 12 frames. Promise/rAF based, bounded on
+  // have finished and the open dialog or sheet (if any) and the scroll position have held still for 12 frames. Promise/rAF based, bounded on
   // the Node side. Under a paused fake clock (page.clock.install) neither progresses; the screenshot's own
   // `animations: 'disabled'` then finishes the finite ones, so running out of time here is not an error.
   await Promise.race([
     page.evaluate(async () => {
       await Promise.all(document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity).map((a) => a.finished.catch(() => undefined)))
-      const moving = () => JSON.stringify(document.querySelector('[role="dialog"]')?.getBoundingClientRect() ?? null)
+      const moving = () =>
+        JSON.stringify([
+          document.querySelector('[role="dialog"]')?.getBoundingClientRect() ?? null,
+          window.scrollX,
+          window.scrollY,
+          document.scrollingElement?.scrollLeft,
+          document.scrollingElement?.scrollTop,
+        ])
       let last = moving()
       for (let still = 0; still < 12; ) {
         await new Promise((r) => requestAnimationFrame(r))
@@ -76,7 +83,17 @@ export async function shot(page: Page, anchor: string, opts: ShotOptions = {}): 
     new Promise((resolve) => setTimeout(resolve, 3_000)),
   ])
   const options = { animations: 'disabled' as const, caret: 'hide' as const }
-  const png = opts.of ? await opts.of.screenshot(options) : await page.screenshot({ ...options, fullPage: opts.fullPage ?? false })
+  const take = () => (opts.of ? opts.of.screenshot(options) : page.screenshot({ ...options, fullPage: opts.fullPage ?? false }))
+  // JS-driven entrance animations (cards growing, chart bars rising) are invisible to the checks above, so keep
+  // shooting until two shots 250 ms apart are byte-identical (at most 12 tries). Node-side waits are clock-safe.
+  let png = await take()
+  for (let i = 0; i < 12; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 250))
+    const next = await take()
+    const same = png.equals(next)
+    png = next
+    if (same) break
+  }
   // Keep the committed file when the pixels are the same, so reruns leave no diff.
   if (!fs.existsSync(file) || !pngPixelsEqual(fs.readFileSync(file), png)) fs.writeFileSync(file, png)
   return file
