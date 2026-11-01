@@ -17,10 +17,30 @@ import { shot } from '../../support/shot.ts'
 const PHONES = { addEmail: '01711223322', addPhone: '01711223333' } as const
 
 /** Scroll a Settings block to just under the sticky header. */
+/**
+ * Scroll `text` to `offset` px below the top of the viewport. Content above it can still grow after load (account
+ * data, Bengali text), so first wait until its document position has held still for three samples 100 ms apart.
+ */
+async function pin(page: Page, text: string, offset = 90) {
+  const target = page.getByText(text, { exact: true }).first()
+  const top = () => target.evaluate((el) => Math.round(window.scrollY + el.getBoundingClientRect().top))
+  let last = await top()
+  for (let still = 0, tries = 0; still < 3 && tries < 40; tries++) {
+    await page.waitForTimeout(100)
+    const now = await top()
+    still = now === last ? still + 1 : 0
+    last = now
+  }
+  await target.evaluate((el, off) => {
+    window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top - off, behavior: 'instant' })
+  }, offset)
+}
+
 async function centre(page: Page, text: string) {
-  await page.getByText(text, { exact: true }).first().evaluate((el) => {
-    window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top - 90, behavior: 'instant' })
-  })
+  // Scrolling before the whole page has rendered clamps to a shorter page: wait for its last section first.
+  await expect(page.getByRole('link', { name: 'Terms of Service' })).toBeVisible()
+  await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => undefined)
+  await pin(page, text)
 }
 
 test.describe('Settings', () => {
@@ -196,9 +216,13 @@ test.describe('Navigation & Language', () => {
       await centre(page, 'Language & Appearance')
       await page.getByRole('radio', { name: 'বাং' }).click()
       await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
+      // Bengali text is taller, so the layout moves under the scroll position: pin the heading again.
+      await pin(page, 'ভাষা ও চেহারা', 75)
       await shot(page, 'nl-switch-language', { suffix: 'settings' })
       await page.reload()
       await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
+      await expect(page.getByText('ভাষা ও চেহারা', { exact: true }).first()).toBeVisible()
+      await pin(page, 'ভাষা ও চেহারা', 75)
       await shot(page, 'nl-language-persists')
       const cookie = (await page.context().cookies()).find((c) => c.name === 'vesta_lang')
       expect(cookie?.value).toBe('bn')

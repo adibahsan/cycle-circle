@@ -105,6 +105,10 @@ test.describe('Profiles', () => {
       await page.getByRole('button', { name: 'Create Profile' }).click()
       await expect(page.getByRole('alert').filter({ hasText: /\S/ }).first()).toBeVisible()
       console.log('LIMIT-RACE-MESSAGE:', await page.getByRole('alert').first().innerText())
+      // Pin the scroll so the form, from "Tracking goal" down to the error, stays in frame.
+      await page.getByText('Tracking goal', { exact: true }).evaluate((el) => {
+        window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top - 85, behavior: 'instant' })
+      })
       await shot(page, 'pf-limit', { suffix: 'server-error' })
 
       await page.reload()
