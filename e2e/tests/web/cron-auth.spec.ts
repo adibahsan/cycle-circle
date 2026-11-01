@@ -4,6 +4,8 @@ import { URLS } from '../../support/slot.ts'
 const CRON_ROUTES = [
   '/api/cron/daily-reminders',
   '/api/cron/nightly-maintenance',
+  '/api/cron/pro-snapshot',
+  '/api/cron/reports?kind=weekly',
   '/api/cron/caas-check',
   '/api/cron/sms-dispatch',
 ] as const

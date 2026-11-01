@@ -1,7 +1,9 @@
 import { prisma } from '../db'
+import { countProUsers } from './churn-service'
 import { ALL_GOOD_SYMPTOM_ID } from '../../utils/symptoms'
 import { predictCycleLength, getPredictionTier, getCurrentPhase, MS_PER_DAY } from '../../utils/cycle-utils'
 import { fillDaySeries, resolveDaySeriesRange } from '../../utils/day-series'
+import type { DateRange } from '../../utils/date-range'
 import {
   addDaysToDay,
   bangladeshDayOf,
@@ -11,18 +13,38 @@ import {
   storedDateToDay,
 } from '../../utils/dhaka-date'
 
-type SeriesOpts = number | { days?: number; dateFrom?: Date; dateTo?: Date }
+type SeriesOpts = number | DateRange | { days?: number; dateFrom?: Date; dateTo?: Date }
 
-/** The Bangladesh days a per-day series covers; `days` counts the last N days ending today, inclusive. */
+/**
+ * The Bangladesh days a per-day series covers; `days` counts the last N days ending today, inclusive.
+ * A shared `DateRange` (see utils/date-range) gives exactly its days.
+ */
 function seriesDays(opts: SeriesOpts, now: Date) {
-  const o = typeof opts === 'number' ? { days: opts } : opts
+  const o =
+    typeof opts === 'number'
+      ? { days: opts }
+      : 'fromDay' in opts
+        ? { dateFrom: opts.from, dateTo: opts.to }
+        : opts
   const { fromDay, toDay, from, to } = resolveDaySeriesRange({ ...o, now })
   const list = fillDaySeries(fromDay, toDay, new Map()).map((r) => r.date)
   return { startDay: fromDay, endDay: toDay, from, to, list }
 }
 
+/** Symptom logs plus period logs created since the start of the Bangladesh day `now` falls on. */
+async function countLogsToday(now: Date): Promise<number> {
+  const createdAt = { gte: parseDhakaDay(bangladeshToday(now)), lte: now }
+  const [symptoms, periods] = await Promise.all([
+    prisma.symptomLog.count({ where: { createdAt } }),
+    prisma.periodLog.count({ where: { createdAt } }),
+  ])
+  return symptoms + periods
+}
+
 /**
  * Return KPI counts for the admin dashboard.
+ * `totalProfiles` leaves out deleted users' profiles, `dailyLogs` is symptom plus period logs
+ * created today (Bangladesh), and `proSubscribers` is countProUsers().
  */
 export async function getDashboardStats(now: Date) {
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
@@ -39,9 +61,9 @@ export async function getDashboardStats(now: Date) {
   ] = await Promise.all([
     prisma.user.count({ where: { deletedAt: null } }),
     prisma.user.count({ where: { deletedAt: null, lastLoginAt: { gte: thirtyDaysAgo } } }),
-    prisma.profile.count(),
-    prisma.subscription.count({ where: { status: 'PRO' } }),
-    prisma.periodLog.count({ where: { createdAt: { gte: parseDhakaDay(bangladeshToday(now)), lte: now } } }),
+    prisma.profile.count({ where: { user: { deletedAt: null } } }),
+    countProUsers(),
+    countLogsToday(now),
     prisma.user.count({ where: { deletedAt: null, createdAt: { gte: sevenDaysAgo } } }),
     prisma.user.count({
       where: {
@@ -90,8 +112,7 @@ export async function getUserTrend(
 
   const users = await prisma.user.findMany({
     where: {
-      createdAt: { gte: from, lte: to },
-      deletedAt: null,
+      createdAt: { gte: from, lte: to }, // a signup stays a signup if the user is deleted later
     },
     select: { createdAt: true },
     orderBy: { createdAt: 'asc' },
@@ -107,11 +128,11 @@ export async function getUserTrend(
   return list.map((date) => ({ date, count: dailyCounts[date] }))
 }
 
-/** Date window every analytics panel query takes; #103 adds metric/config fields. */
-export interface AnalyticsRange {
-  from: Date
-  to: Date
-}
+/**
+ * Date window every analytics panel query takes. A shared `DateRange` (utils/date-range) fits:
+ * `from` starts its first Bangladesh day and `to` is the last millisecond of its last.
+ */
+export type AnalyticsRange = Pick<DateRange, 'from' | 'to'>
 
 /** Measured gaps outside this many days are treated as missed logs, not real cycles. */
 export const PLAUSIBLE_CYCLE_MIN_DAYS = 15
@@ -140,30 +161,25 @@ export function measuredCycleGaps(
  * A cycle counts when the later period start falls in [from, to]. Aggregate only.
  */
 export async function getCycleLengthDistribution({ from, to }: AnalyticsRange) {
-  const logs = await prisma.periodLog.findMany({
-    where: { startDate: { lte: to } },
-    select: { profileId: true, startDate: true },
-    orderBy: [{ profileId: 'asc' }, { startDate: 'asc' }],
-  })
-
-  const startsByProfile = new Map<string, number[]>()
-  for (const l of logs) {
-    const arr = startsByProfile.get(l.profileId) ?? []
-    arr.push(l.startDate.getTime())
-    startsByProfile.set(l.profileId, arr)
-  }
-
-  const distribution = new Map<number, number>()
-  for (const starts of startsByProfile.values()) {
-    for (const g of measuredCycleGaps(starts)) {
-      if (g.endMs < from.getTime()) continue
-      distribution.set(g.days, (distribution.get(g.days) ?? 0) + 1)
-    }
-  }
-
-  return [...distribution.entries()]
-    .map(([cycleLength, count]) => ({ cycleLength, count }))
-    .sort((a, b) => a.cycleLength - b.cycleLength)
+  // The database pairs each period start with the previous one (per profile) and counts the
+  // plausible gaps, so only the histogram comes back.
+  const rows = await prisma.$queryRaw<{ days: number; count: number }[]>`
+    SELECT g.days::int AS days, COUNT(*)::int AS count
+    FROM (
+      SELECT pl."startDate" AS "startDate",
+             ROUND((EXTRACT(EPOCH FROM (pl."startDate" - LAG(pl."startDate") OVER (PARTITION BY pl."profileId" ORDER BY pl."startDate")))
+               / 86400)::numeric) AS days
+      FROM "PeriodLog" pl
+      JOIN "Profile" p ON p."id" = pl."profileId"
+      JOIN "User" u ON u."id" = p."userId"
+      WHERE u."deletedAt" IS NULL AND pl."startDate" <= ${to.toISOString()}::timestamp
+    ) g
+    WHERE g.days BETWEEN ${PLAUSIBLE_CYCLE_MIN_DAYS} AND ${PLAUSIBLE_CYCLE_MAX_DAYS}
+      AND g."startDate" >= ${from.toISOString()}::timestamp
+    GROUP BY g.days
+    ORDER BY g.days
+  `
+  return rows.map((r) => ({ cycleLength: Number(r.days), count: Number(r.count) }))
 }
 
 /**
@@ -176,6 +192,7 @@ export async function getSymptomsByCategory(range?: AnalyticsRange) {
     _count: { id: true },
     where: {
       symptomId: { not: ALL_GOOD_SYMPTOM_ID },
+      profile: { user: { deletedAt: null } },
       ...(range ? { date: { gte: range.from, lte: range.to } } : {}),
     },
   })
@@ -190,7 +207,7 @@ export async function getSymptomsByCategory(range?: AnalyticsRange) {
 export async function getPredictionAccuracy(range?: AnalyticsRange) {
   const predictions = await prisma.prediction.groupBy({
     by: ['tier'],
-    ...(range ? { where: { updatedAt: { gte: range.from, lte: range.to } } } : {}),
+    where: { profile: { user: { deletedAt: null } }, ...(range ? { updatedAt: { gte: range.from, lte: range.to } } : {}) },
     _count: { id: true },
     _avg: { confidence: true },
   })
@@ -222,58 +239,59 @@ export async function getUserRetention(
   { from, to }: AnalyticsRange,
   { maxWeeks = 8, now }: { maxWeeks?: number; now: Date },
 ): Promise<RetentionCohort[]> {
-  const users = await prisma.user.findMany({
-    where: { deletedAt: null, createdAt: { gte: from, lte: to } },
-    select: { id: true, createdAt: true },
-  })
-  if (users.length === 0) return []
-
-  const userIds = users.map((u) => u.id)
-  const [symptom, period] = await Promise.all([
-    prisma.symptomLog.findMany({
-      where: { profile: { userId: { in: userIds } } },
-      select: { createdAt: true, profile: { select: { userId: true } } },
-    }),
-    prisma.periodLog.findMany({
-      where: { profile: { userId: { in: userIds } } },
-      select: { createdAt: true, profile: { select: { userId: true } } },
-    }),
+  const fromIso = from.toISOString()
+  const toIso = to.toISOString()
+  // Both queries run in the database and return one row per cohort (and week), not per log.
+  const [sizes, activity] = await Promise.all([
+    prisma.$queryRaw<{ c: number; size: number }[]>`
+      SELECT FLOOR(EXTRACT(EPOCH FROM (u."createdAt" - ${fromIso}::timestamp)) / 604800)::int AS c, COUNT(*)::int AS size
+      FROM "User" u
+      WHERE u."deletedAt" IS NULL AND u."createdAt" >= ${fromIso}::timestamp AND u."createdAt" <= ${toIso}::timestamp
+      GROUP BY 1
+    `,
+    prisma.$queryRaw<{ c: number; k: number; active: number }[]>`
+      WITH cohort AS (
+        SELECT u."id", u."createdAt",
+               FLOOR(EXTRACT(EPOCH FROM (u."createdAt" - ${fromIso}::timestamp)) / 604800)::int AS c
+        FROM "User" u
+        WHERE u."deletedAt" IS NULL AND u."createdAt" >= ${fromIso}::timestamp AND u."createdAt" <= ${toIso}::timestamp
+      ),
+      logs AS (
+        SELECT p."userId" AS uid, l."createdAt" AS at
+        FROM "SymptomLog" l JOIN "Profile" p ON p."id" = l."profileId"
+        WHERE p."userId" IN (SELECT "id" FROM cohort)
+        UNION ALL
+        SELECT p."userId", l."createdAt"
+        FROM "PeriodLog" l JOIN "Profile" p ON p."id" = l."profileId"
+        WHERE p."userId" IN (SELECT "id" FROM cohort)
+      )
+      SELECT w.c, w.k, COUNT(DISTINCT w.id)::int AS active
+      FROM (
+        SELECT cohort."id", cohort.c,
+               FLOOR(EXTRACT(EPOCH FROM (logs.at - cohort."createdAt")) / 604800)::int AS k
+        FROM cohort JOIN logs ON logs.uid = cohort."id"
+      ) w
+      WHERE w.k >= 0 AND w.k < ${maxWeeks}
+      GROUP BY w.c, w.k
+    `,
   ])
 
-  const createdMs = new Map(users.map((u) => [u.id, u.createdAt.getTime()]))
-  // userId -> set of week offsets in which the user was active
-  const activeWeeks = new Map<string, Set<number>>()
-  for (const l of [...symptom, ...period]) {
-    const uid = l.profile.userId
-    const k = Math.floor((l.createdAt.getTime() - createdMs.get(uid)!) / MS_PER_WEEK)
-    if (k < 0 || k >= maxWeeks) continue
-    const set = activeWeeks.get(uid) ?? new Set<number>()
-    set.add(k)
-    activeWeeks.set(uid, set)
-  }
-
-  const cohortMembers = new Map<number, string[]>()
-  for (const u of users) {
-    const c = Math.floor((u.createdAt.getTime() - from.getTime()) / MS_PER_WEEK)
-    const arr = cohortMembers.get(c) ?? []
-    arr.push(u.id)
-    cohortMembers.set(c, arr)
-  }
-
-  return [...cohortMembers.entries()]
-    .sort((a, b) => a[0] - b[0])
-    .map(([c, members]) => {
+  const activeBy = new Map(activity.map((a) => [`${a.c}:${a.k}`, Number(a.active)]))
+  return sizes
+    .map((s) => ({ c: Number(s.c), size: Number(s.size) }))
+    .sort((a, b) => a.c - b.c)
+    .map(({ c, size }) => {
       const cohortEndMs = from.getTime() + (c + 1) * MS_PER_WEEK
       const weeks: RetentionCohort['weeks'] = []
       for (let k = 0; k < maxWeeks; k++) {
         // Skip weeks that haven't fully elapsed for the whole cohort yet.
         if (cohortEndMs + (k + 1) * MS_PER_WEEK > now.getTime()) break
-        const active = members.filter((id) => activeWeeks.get(id)?.has(k)).length
-        weeks.push({ week: k, active, rate: Math.round((active / members.length) * 100) })
+        const active = activeBy.get(`${c}:${k}`) ?? 0
+        weeks.push({ week: k, active, rate: Math.round((active / size) * 100) })
       }
       return {
         cohortWeek: new Date(from.getTime() + c * MS_PER_WEEK).toISOString().split('T')[0],
-        size: members.length,
+        size,
         weeks,
       }
     })
@@ -294,19 +312,19 @@ export async function getDailyActiveLoggers(
 ): Promise<{ date: string; count: number }[]> {
   const { startDay, endDay, list } = seriesDays(opts, now)
 
-  // Symptom log dates are stored as UTC midnight of their calendar day.
-  const logs = await prisma.symptomLog.findMany({
-    where: { date: { gte: dayToStoredDate(startDay), lte: dayToStoredDate(endDay) } },
-    select: { profileId: true, date: true },
-    orderBy: { date: 'asc' },
-  })
-
-  const dailyCounts: Record<string, Set<string>> = Object.fromEntries(list.map((d) => [d, new Set<string>()]))
-  for (const log of logs) {
-    dailyCounts[storedDateToDay(log.date)]?.add(log.profileId)
-  }
-
-  return list.map((date) => ({ date, count: dailyCounts[date].size }))
+  // Symptom log dates are stored as UTC midnight of their calendar day; deleted users' profiles don't count.
+  const rows = await prisma.$queryRaw<{ date: string; count: number }[]>`
+    SELECT TO_CHAR(s."date", 'YYYY-MM-DD') AS date, COUNT(DISTINCT s."profileId")::int AS count
+    FROM "SymptomLog" s
+    JOIN "Profile" p ON p."id" = s."profileId"
+    JOIN "User" u ON u."id" = p."userId"
+    WHERE u."deletedAt" IS NULL
+      AND s."date" >= ${dayToStoredDate(startDay).toISOString()}::timestamp
+      AND s."date" <= ${dayToStoredDate(endDay).toISOString()}::timestamp
+    GROUP BY 1
+  `
+  const counts = new Map(rows.map((r) => [r.date, Number(r.count)]))
+  return list.map((date) => ({ date, count: counts.get(date) ?? 0 }))
 }
 
 /**
@@ -323,7 +341,7 @@ export async function getSymptomLoggingRate(
 ): Promise<{ date: string; rate: number }[]> {
   const [dailyLoggers, totalProfiles] = await Promise.all([
     getDailyActiveLoggers(opts, now),
-    prisma.profile.count(),
+    prisma.profile.count({ where: { user: { deletedAt: null } } }),
   ])
 
   return dailyLoggers.map(({ date, count }) => ({
@@ -339,16 +357,22 @@ export async function getSymptomLoggingRate(
  * A streak day is any day with at least one SymptomLog (including the all_good sentinel).
  * Computes streaks over the last ~40 days in JS (efficient at v1 scale).
  */
-export async function getLoggingStreakDistribution(now: Date): Promise<
-  { bucket: string; count: number }[]
-> {
+export async function getLoggingStreakDistribution(
+  range: Pick<DateRange, 'toDay'>,
+  now: Date,
+): Promise<{ bucket: string; count: number }[]> {
   const LOOK_BACK = 40
-  const today = bangladeshToday(now)
+  // Streaks are measured as of the range's last day (never later than the Bangladesh today).
+  const todayBd = bangladeshToday(now)
+  const today = range.toDay < todayBd ? range.toDay : todayBd
   const yesterday = addDaysToDay(today, -1)
 
   // Symptom log dates are stored as UTC midnight of their calendar day.
   const logs = await prisma.symptomLog.findMany({
-    where: { date: { gte: dayToStoredDate(addDaysToDay(today, -LOOK_BACK)) } },
+    where: {
+      date: { gte: dayToStoredDate(addDaysToDay(today, -LOOK_BACK)), lte: dayToStoredDate(today) },
+      profile: { user: { deletedAt: null } },
+    },
     select: { profileId: true, date: true },
   })
 
@@ -377,7 +401,7 @@ export async function getLoggingStreakDistribution(now: Date): Promise<
   }
 
   // Also include profiles with zero streaks: count all profiles not in profileDates
-  const totalProfiles = await prisma.profile.count()
+  const totalProfiles = await prisma.profile.count({ where: { user: { deletedAt: null } } })
   const profilesWithNoLogs = totalProfiles - profileDates.size
   for (let i = 0; i < profilesWithNoLogs; i++) streaks.push(0)
 
@@ -519,8 +543,9 @@ export async function getLatestPredictionMae(): Promise<{
 
 /** Snapshot history for the analytics trend: one point per tier per night, oldest first. */
 export async function getPredictionMaeTrend({ from, to }: AnalyticsRange) {
+  // Snapshots are labelled by day: the range's first and last Bangladesh days bound them inclusively.
   const rows = await prisma.predictionAccuracySnapshot.findMany({
-    where: { date: { gte: snapshotDay(from), lte: snapshotDay(to) } },
+    where: { date: { gte: dayToStoredDate(bangladeshDayOf(from)), lte: dayToStoredDate(bangladeshDayOf(to)) } },
     orderBy: [{ date: 'asc' }, { tier: 'asc' }],
   })
   return rows.map((r) => ({
@@ -532,59 +557,61 @@ export async function getPredictionMaeTrend({ from, to }: AnalyticsRange) {
 }
 
 /**
- * Return weekly cohort logging retention over the past N weeks (default 8).
+ * Weekly logging retention, measured per cohort.
  *
- * Cohort = profiles whose first SymptomLog falls in the cohort week.
- * "Retained" = that profile also has a SymptomLog in a subsequent week
- * (specifically the most recent completed week before now).
- * Mirrors getUserRetention but cohorting by first log rather than account creation.
+ * Cohort = live users' profiles whose first SymptomLog falls in a 7-day block (Bangladesh days,
+ * `ceil(days / 7)` blocks ending on the range's last day, never past today). A cohort is
+ * "retained" when the profile logs again in the block right after its own cohort block.
+ * That following block must have fully elapsed; until then `retained` and `rate` are null,
+ * so the newest cohorts are never reported as 100% by construction.
  */
 export async function getLoggingRetention(
+  range: Pick<DateRange, 'days' | 'toDay'>,
   now: Date,
-  weeks: number = 8,
-): Promise<{ week: string; created: number; retained: number; rate: number }[]> {
-  const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000
-  const retentionWindowStart = new Date(now.getTime() - MS_PER_WEEK)
-  const cohorts = []
+): Promise<{ week: string; created: number; retained: number | null; rate: number | null }[]> {
+  const weeks = Math.min(Math.max(Math.ceil(range.days / 7), 1), 53)
+  const today = bangladeshToday(now)
+  const endDay = range.toDay < today ? range.toDay : today
+  const startDay = addDaysToDay(endDay, -(weeks * 7 - 1))
+  const startIso = dayToStoredDate(startDay).toISOString()
+  const endIso = dayToStoredDate(addDaysToDay(endDay, 1)).toISOString()
 
-  for (let i = 0; i < weeks; i++) {
-    const weekStart = new Date(now.getTime() - (weeks - i) * MS_PER_WEEK)
-    const weekEnd = new Date(weekStart.getTime() + MS_PER_WEEK)
+  const rows = await prisma.$queryRaw<{ idx: number; created: number; retained: number }[]>`
+    SELECT c.idx::int AS idx, COUNT(*)::int AS created,
+           COUNT(*) FILTER (WHERE EXISTS (
+             SELECT 1 FROM "SymptomLog" s2
+             WHERE s2."profileId" = c."profileId"
+               AND s2."date" >= ${startIso}::timestamp + (c.idx + 1) * 7 * interval '1 day'
+               AND s2."date" <  ${startIso}::timestamp + (c.idx + 2) * 7 * interval '1 day'
+           ))::int AS retained
+    FROM (
+      SELECT s."profileId",
+             FLOOR(EXTRACT(EPOCH FROM (MIN(s."date") - ${startIso}::timestamp)) / 604800)::int AS idx
+      FROM "SymptomLog" s
+      JOIN "Profile" p ON p."id" = s."profileId"
+      JOIN "User" u ON u."id" = p."userId"
+      WHERE u."deletedAt" IS NULL
+      GROUP BY s."profileId"
+      HAVING MIN(s."date") >= ${startIso}::timestamp AND MIN(s."date") < ${endIso}::timestamp
+    ) c
+    GROUP BY c.idx
+  `
+  const byIdx = new Map(rows.map((r) => [Number(r.idx), r]))
 
-    // Profiles whose first SymptomLog is in this cohort week
-    const cohortProfiles = await prisma.symptomLog.groupBy({
-      by: ['profileId'],
-      _min: { date: true },
-      having: {
-        date: { _min: { gte: weekStart, lt: weekEnd } },
-      },
-    })
-
-    const created = cohortProfiles.length
-    const cohortIds = cohortProfiles.map(p => p.profileId)
-
-    let retained = 0
-    if (cohortIds.length > 0) {
-      const retainedProfiles = await prisma.symptomLog.findMany({
-        where: {
-          profileId: { in: cohortIds },
-          date: { gte: retentionWindowStart },
-        },
-        select: { profileId: true },
-        distinct: ['profileId'],
-      })
-      retained = retainedProfiles.length
-    }
-
-    cohorts.push({
-      week: weekStart.toISOString().split('T')[0],
+  return Array.from({ length: weeks }, (_, i) => {
+    const row = byIdx.get(i)
+    const created = row ? Number(row.created) : 0
+    // The block after cohort i is [start + (i+1)*7, start + (i+2)*7); it must end before today.
+    const followingEnd = addDaysToDay(startDay, (i + 2) * 7 - 1)
+    const measured = followingEnd < today
+    const retained = measured ? (row ? Number(row.retained) : 0) : null
+    return {
+      week: addDaysToDay(startDay, i * 7),
       created,
       retained,
-      rate: created > 0 ? Math.round((retained / created) * 100) : 0,
-    })
-  }
-
-  return cohorts
+      rate: retained === null ? null : created > 0 ? Math.round((retained / created) * 100) : 0,
+    }
+  })
 }
 
 // ── Symptoms by Cycle Phase ────────────────────────────────────────────────
@@ -626,46 +653,37 @@ export async function getSymptomsByPhase(
   { from, to }: AnalyticsRange,
   { topN = 5 }: { topN?: number } = {},
 ): Promise<PhaseSymptoms[]> {
-  const symptomLogs = await prisma.symptomLog.findMany({
-    where: { date: { gte: from, lte: to }, symptomId: { not: ALL_GOOD_SYMPTOM_ID } },
-    select: { profileId: true, date: true, symptomId: true },
-  })
-  const profileIds = [...new Set(symptomLogs.map((l) => l.profileId))]
-  const [profiles, periodLogs] = await Promise.all([
-    prisma.profile.findMany({
-      where: { id: { in: profileIds } },
-      select: { id: true, cycleLength: true, periodLength: true },
-    }),
-    prisma.periodLog.findMany({
-      where: { profileId: { in: profileIds } },
-      select: { profileId: true, startDate: true },
-      orderBy: [{ profileId: 'asc' }, { startDate: 'asc' }],
-    }),
-  ])
-
-  const profileMap = new Map(profiles.map((p) => [p.id, p]))
-  const startsByProfile = new Map<string, number[]>()
-  for (const l of periodLogs) {
-    const arr = startsByProfile.get(l.profileId) ?? []
-    arr.push(l.startDate.getTime())
-    startsByProfile.set(l.profileId, arr)
-  }
+  // The database places each log in the period interval (start up to the next start) it falls in and returns counts per
+  // (symptom, profile cycle settings, days since that start), never the logs themselves.
+  const rows = await prisma.$queryRaw<
+    { symptomId: string; cycleLength: number; periodLength: number; sinceStart: number; count: number }[]
+  >`
+    SELECT s."symptomId", p."cycleLength", p."periodLength",
+           FLOOR(EXTRACT(EPOCH FROM (s."date" - i."start")) / 86400)::int AS "sinceStart",
+           COUNT(*)::int AS count
+    FROM (
+      SELECT pl."profileId", pl."startDate" AS "start",
+             LEAD(pl."startDate") OVER (PARTITION BY pl."profileId" ORDER BY pl."startDate") AS "next"
+      FROM "PeriodLog" pl
+    ) i
+    JOIN "Profile" p ON p."id" = i."profileId"
+    JOIN "User" u ON u."id" = p."userId"
+    JOIN "SymptomLog" s ON s."profileId" = i."profileId"
+      AND s."date" >= i."start" AND (i."next" IS NULL OR s."date" < i."next")
+    WHERE u."deletedAt" IS NULL
+      AND s."symptomId" <> ${ALL_GOOD_SYMPTOM_ID}
+      AND s."date" >= ${from.toISOString()}::timestamp AND s."date" <= ${to.toISOString()}::timestamp
+    GROUP BY 1, 2, 3, 4
+  `
 
   const phases = ['MENSTRUAL', 'FOLLICULAR', 'OVULATION', 'LUTEAL'] as const
   const counts = new Map<string, Map<string, number>>(phases.map((p) => [p, new Map()]))
-  for (const log of symptomLogs) {
-    const prof = profileMap.get(log.profileId)
-    const starts = startsByProfile.get(log.profileId)
-    if (!prof || !starts) continue
-    const phase = phaseForLog(
-      log.date.getTime(),
-      starts,
-      prof.cycleLength ?? 28,
-      prof.periodLength ?? 5,
-    )
+  for (const r of rows) {
+    // A single period start at 0 ms: phaseForLog derives the cycle day from the gap alone.
+    const phase = phaseForLog(Number(r.sinceStart) * MS_PER_DAY, [0], r.cycleLength ?? 28, r.periodLength ?? 5)
     if (!phase) continue
     const m = counts.get(phase.toUpperCase())!
-    m.set(log.symptomId, (m.get(log.symptomId) ?? 0) + 1)
+    m.set(r.symptomId, (m.get(r.symptomId) ?? 0) + Number(r.count))
   }
 
   return phases.map((phase) => {

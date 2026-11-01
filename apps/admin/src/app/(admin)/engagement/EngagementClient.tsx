@@ -3,7 +3,7 @@
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
-import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
+import { DateRangeControl, type DateRangeControlValue } from '@/components/charts/DateRangeControl'
 import { CHART_VAR } from '@/lib/chart-palette'
 import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
@@ -27,16 +27,18 @@ interface StreakBucket {
 interface RetentionPoint {
   week: string
   created: number
-  retained: number
-  rate: number
+  /** Null until the week after the cohort has fully elapsed. */
+  retained: number | null
+  rate: number | null
 }
 
 interface EngagementClientProps {
+  activeUsers: ActiveLoggerPoint[]
   activeLoggers: ActiveLoggerPoint[]
   loggingRate: LoggingRatePoint[]
   streakDistribution: StreakBucket[]
   retention: RetentionPoint[]
-  range: string
+  range: DateRangeControlValue
 }
 
 // ── Retention rate mini-badges ─────────────────────────────────────────────
@@ -60,11 +62,11 @@ function RetentionRates({ data }: { data: RetentionPoint[] }) {
           </p>
           <p
             className="text-lg font-bold tabular-nums"
-            style={{ color: d.rate >= 50 ? CHART_VAR.good : d.rate >= 25 ? CHART_VAR.mid : CHART_VAR.low }}
+            style={{ color: d.rate === null ? 'var(--color-text-muted)' : d.rate >= 50 ? CHART_VAR.good : d.rate >= 25 ? CHART_VAR.mid : CHART_VAR.low }}
           >
-            {d.rate}%
+            {d.rate === null ? '—' : `${d.rate}%`}
           </p>
-          <p className="text-[10px] text-[var(--color-text-muted)]">retained</p>
+          <p className="text-[10px] text-[var(--color-text-muted)]">{d.rate === null ? 'not yet measured' : 'retained'}</p>
         </div>
       ))}
     </div>
@@ -74,10 +76,12 @@ function RetentionRates({ data }: { data: RetentionPoint[] }) {
 // ── Root component ─────────────────────────────────────────────────────────
 
 export function EngagementClient({
+  activeUsers,
   activeLoggers,
   loggingRate,
   streakDistribution,
   retention,
+  range,
 }: EngagementClientProps) {
   const retentionData = retention.map((d) => ({
     ...d,
@@ -98,13 +102,29 @@ export function EngagementClient({
         tags={[adminCacheTags.analytics]}
       />
 
-      {/* Date range control — drives time-series panels via ?range= query param */}
+      {/* Shared range (?range= or ?from=&to=) drives every panel */}
       <div className="flex justify-end">
-        <UrlSegmentedControl />
+        <DateRangeControl range={range} />
       </div>
+      <p className="text-sm text-text-secondary">
+        Daily Active Users counts users who opened the app; Daily Active Loggers counts profiles that logged a symptom.
+        Active-user history starts on the day recording began, so earlier days show zero.
+      </p>
 
       {/* Charts grid — 2 columns on lg+, single column on mobile */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* 0 — Daily Active Users (opened the app); history starts when recording began */}
+        <ChartPanel
+          title="Daily Active Users"
+          data={activeUsers.map((d) => ({ ...d } as Record<string, string | number | null>))}
+          xKey="date"
+          series={[{ key: 'count', label: 'Users', color: CHART_VAR.primary }]}
+          kinds={['line', 'area', 'bar']}
+          defaultKind="area"
+          height={240}
+          emptyLabel="No activity recorded for this period."
+        />
+
         {/* 1 — Daily Active Loggers */}
         <ChartPanel
           title="Daily Active Loggers"

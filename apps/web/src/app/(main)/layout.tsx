@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { recordSignedInActivity } from '@/app/queries/activity-queries';
 import { MainShell } from '@/components/shell/MainShell';
 import { getShellInitial } from '@/app/queries/shell-queries';
 import { getProPrice } from '@/app/queries/pro-price-queries';
@@ -11,6 +12,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const clientShell =
     process.env.NODE_ENV !== 'production' && (await cookies()).has('vesta_e2e_client_shell');
   const price = await getProPrice();
+  await recordSignedInActivity();
   return (
     <ProPriceProvider price={price}>
       <MainShell initial={clientShell ? undefined : getShellInitial()}>{children}</MainShell>

@@ -6,12 +6,15 @@ import {
   getSubscriptionTrend as svcGetSubscriptionTrend,
   getSubscriptionStatusBreakdown as svcGetSubscriptionStatusBreakdown,
 } from '@vesta/shared/server/services'
+import type { DateRange } from '@vesta/shared/utils/date-range'
 import { adminCacheTags, KPI_CACHE_TTL } from '@/lib/admin-cache-tags'
 
 interface SubscriptionListParams {
   page?: number
   pageSize?: number
   status?: string
+  dateFrom?: Date
+  dateTo?: Date
 }
 
 function subscriptionsCacheKey(params: SubscriptionListParams) {
@@ -20,6 +23,8 @@ function subscriptionsCacheKey(params: SubscriptionListParams) {
     String(params.page ?? 1),
     String(params.pageSize ?? 20),
     params.status ?? '',
+    params.dateFrom?.toISOString() ?? '',
+    params.dateTo?.toISOString() ?? '',
   ]
 }
 
@@ -32,11 +37,11 @@ export const getSubscriptions = cache(async (params: SubscriptionListParams = {}
   )()
 })
 
-export const getSubscriptionTrend = cache(async (days: number) => {
+export const getSubscriptionTrend = cache(async (range: DateRange) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetSubscriptionTrend({ days, now: new Date() }),
-    ['admin-subscriptions-subscription-trend', String(days)],
+    () => svcGetSubscriptionTrend({ dateFrom: range.from, dateTo: range.to, now: new Date() }),
+    ['admin-subscriptions-subscription-trend', range.key],
     { tags: [adminCacheTags.subscriptions], revalidate: KPI_CACHE_TTL }
   )()
 })

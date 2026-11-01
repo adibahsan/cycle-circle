@@ -4,13 +4,12 @@ import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { ChartPanel } from '@/components/charts/ChartPanelLazy'
 import { UrlSegmentedControl } from '@/components/charts/UrlSegmentedControl'
+import { DateRangeControl, type DateRangeControlValue } from '@/components/charts/DateRangeControl'
 import { CHART_VAR } from '@/lib/chart-palette'
 import {
   ACCURACY_METRICS,
-  PANEL_RANGES,
   TREND_METRICS,
   type MetricConfig,
-  type PanelKey,
 } from '@/lib/analytics-panels'
 import { formatDhaka } from '@vesta/shared/utils/dhaka-date'
 
@@ -78,6 +77,7 @@ interface SymptomPhasePoint {
 }
 
 interface AnalyticsClientProps {
+  range: DateRangeControlValue
   cycleLengths: CycleLength[]
   symptoms: SymptomCategory[]
   predictions: PredictionAccuracy[]
@@ -93,19 +93,7 @@ interface AnalyticsClientProps {
   symptomsByPhase: SymptomPhasePoint[]
 }
 
-// ── Per-panel selectors ────────────────────────────────────────────────────
-
-function PanelRange({ panel }: { panel: PanelKey }) {
-  const cfg = PANEL_RANGES[panel]
-  return (
-    <UrlSegmentedControl
-      paramKey={cfg.param}
-      options={[...cfg.options]}
-      defaultValue={cfg.defaultValue}
-      label="Date range"
-    />
-  )
-}
+// ── Metric selectors ────────────────────────────────────────────────────
 
 function MetricPicker<T extends string>({ cfg, label }: { cfg: MetricConfig<T>; label: string }) {
   return (
@@ -193,6 +181,7 @@ function humanizeSymptom(id: string) {
 // ── Root component ─────────────────────────────────────────────────────────
 
 export function AnalyticsClient({
+  range,
   cycleLengths,
   symptoms,
   predictions,
@@ -266,7 +255,11 @@ export function AnalyticsClient({
         tags={[adminCacheTags.analytics, adminCacheTags.feedback]}
       />
 
-      {/* Every panel carries its own range (and metric) selector, each bound to its own URL param. */}
+      {/* One shared range (?range= or ?from=&to=) drives every panel; metric pickers stay per panel. */}
+      <div className="flex justify-end">
+        <DateRangeControl range={range} />
+      </div>
+
       {/* Charts grid — 2 columns on lg+, single column on mobile */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* 1 — Cycle Length Distribution */}
@@ -278,7 +271,6 @@ export function AnalyticsClient({
           kinds={['bar']}
           defaultKind="bar"
           height={240}
-          controls={<PanelRange panel="cycleLength" />}
           emptyLabel="Not enough logged periods to measure cycles yet."
         />
 
@@ -291,7 +283,6 @@ export function AnalyticsClient({
           kinds={['pie', 'bar']}
           defaultKind="pie"
           height={240}
-          controls={<PanelRange panel="symptoms" />}
           emptyLabel="No symptom data in this period."
         />
 
@@ -305,7 +296,6 @@ export function AnalyticsClient({
             kinds={['bar', 'pie']}
             defaultKind="bar"
             height={240}
-            controls={<PanelRange panel="phase" />}
             emptyLabel="No symptom data in this period."
           />
           <dl className="mt-3 grid grid-cols-2 gap-3 text-xs">
@@ -340,12 +330,7 @@ export function AnalyticsClient({
             defaultKind="bar"
             height={240}
             decimals={accuracyMetric === 'confidence'}
-            controls={
-              <>
-                <PanelRange panel="accuracy" />
-                <MetricPicker cfg={ACCURACY_METRICS} label="Metric" />
-              </>
-            }
+            controls={<MetricPicker cfg={ACCURACY_METRICS} label="Metric" />}
             emptyLabel="No prediction data in this period."
           />
           <TierBadges data={predictions} />
@@ -405,7 +390,6 @@ export function AnalyticsClient({
           defaultKind="line"
           height={240}
           decimals
-          controls={<PanelRange panel="mae" />}
           emptyLabel="No data: no nightly MAE snapshots in this period."
         />
 
@@ -419,7 +403,6 @@ export function AnalyticsClient({
             kinds={['line']}
             defaultKind="line"
             height={240}
-            controls={<PanelRange panel="retention" />}
             emptyLabel="No retention data in this period."
           />
           <RetentionRates data={retention} />
@@ -442,12 +425,7 @@ export function AnalyticsClient({
         defaultKind="area"
         height={240}
         decimals={trendMetric === 'logRate'}
-        controls={
-          <>
-            <PanelRange panel="trend" />
-            <MetricPicker cfg={TREND_METRICS} label="Metric" />
-          </>
-        }
+        controls={<MetricPicker cfg={TREND_METRICS} label="Metric" />}
         emptyLabel="No activity data for this period."
       />
 
@@ -457,7 +435,6 @@ export function AnalyticsClient({
           <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
             Feedback
           </h2>
-          <PanelRange panel="feedback" />
         </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Submission volume over time */}

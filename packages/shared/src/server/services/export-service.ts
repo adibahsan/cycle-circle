@@ -1,29 +1,16 @@
+import { toCsv } from '../../utils/csv'
 import { AUDIT_ACTIONS } from './audit-actions'
 import { prisma } from '../db'
 import { createAuditLog } from './audit-service'
+import { listEmailLogs } from './email-service'
+import { listCampaigns } from './campaign-service'
+import { listSubscriptions } from './subscription-service'
+import type { DayWindow } from '../../utils/date-range'
 import { buildUsersWhere, type ListUsersParams } from './user-service'
 import { buildFeedbackWhere, type FeedbackFilters } from './feedback-service'
 
-type CsvCell = string | number | boolean | Date | null | undefined
-
-const BOM = '﻿'
-
-function csvCell(value: CsvCell): string {
-  if (value === null || value === undefined) return ''
-  let s = value instanceof Date ? value.toISOString() : String(value)
-  // Formula-injection guard: only for text, never for real numbers.
-  if (typeof value === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`
-  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
-}
-
-/**
- * Shared CSV writer: UTF-8 BOM (so Excel reads Bengali), RFC 4180 quoting,
- * CRLF row separators, and a leading `'` on cells that would run as formulas.
- */
-export function toCsv(header: string[], rows: CsvCell[][]): string {
-  const lines = [header, ...rows].map(r => r.map(csvCell).join(','))
-  return BOM + lines.join('\r\n')
-}
+import type { CsvCell } from '../../utils/csv'
+export { toCsv }
 
 export type FeedbackExportFilters = FeedbackFilters
 
@@ -118,4 +105,75 @@ export async function generateUsersCsv(
       u.lastLoginAt,
     ]),
   )
+}
+
+export type ExportableTable = 'subscriptions' | 'sms-campaigns' | 'emails'
+
+export interface TableExportFilters {
+  /** The page's shared range; rows outside it are left out. */
+  range: Pick<DayWindow, 'from' | 'to'>
+  status?: string
+  search?: string
+  q?: string
+  type?: string
+  deliveryStatus?: string
+}
+
+/** Most rows a table export writes; the page lists are paginated, the export is not. */
+export const TABLE_EXPORT_ROW_CAP = 10_000
+
+/**
+ * CSV of a dashboard table with the page's own filters, for the selected range. The campaign list
+ * is the exception: it is a planning list (upcoming days are its point), so the range does not cut it. Rows are the
+ * whole filtered set, not the current page. Audit-logged because rows carry contact details.
+ */
+export async function generateTableCsv(
+  adminId: string,
+  table: ExportableTable,
+  filters: TableExportFilters,
+): Promise<string> {
+  const { from: dateFrom, to: dateTo } = filters.range
+  const page = { page: 1, pageSize: TABLE_EXPORT_ROW_CAP, dateFrom, dateTo }
+  let header: string[]
+  let rows: CsvCell[][]
+  let targetType: string
+
+  if (table === 'subscriptions') {
+    const { subscriptions } = await listSubscriptions({ ...page, status: filters.status })
+    targetType = 'Subscription'
+    header = ['ID', 'User', 'Phone', 'Email', 'Status', 'Amount', 'Payment', 'Admin override', 'Last confirmed', 'Created', 'Updated']
+    rows = subscriptions.map((s) => [
+      s.id, s.user.fullName, s.user.phone, s.user.email, s.status, s.amount, s.paymentInstrumentName,
+      s.adminOverride, s.lastConfirmedAt, s.createdAt, s.updatedAt,
+    ])
+  } else if (table === 'sms-campaigns') {
+    const { campaigns } = await listCampaigns({ page: 1, pageSize: TABLE_EXPORT_ROW_CAP, status: filters.status, q: filters.q })
+    targetType = 'SmsCampaign'
+    header = ['ID', 'Name', 'Status', 'Messages', 'First day', 'Last day', 'Created by', 'Created']
+    rows = campaigns.map((c) => [
+      c.id, c.name, c.status, c.messages.length,
+      c.messages[0]?.day.toISOString().slice(0, 10),
+      c.messages[c.messages.length - 1]?.day.toISOString().slice(0, 10),
+      c.creator?.fullName, c.createdAt,
+    ])
+  } else {
+    const { items } = await listEmailLogs({
+      ...page,
+      status: filters.status,
+      type: filters.type,
+      deliveryStatus: filters.deliveryStatus,
+      search: filters.search,
+    })
+    targetType = 'EmailLog'
+    header = ['ID', 'Type', 'To', 'Subject', 'Status', 'Delivery', 'Provider', 'Error', 'Sent']
+    rows = items.map((e) => [e.id, e.type, e.to, e.subject, e.status, e.deliveryStatus, e.provider, e.error, e.sentAt])
+  }
+
+  await createAuditLog(adminId, AUDIT_ACTIONS.EXPORT_TABLE_CSV, targetType, 'csv', {
+    table,
+    rows: rows.length,
+    from: dateFrom.toISOString(),
+    to: dateTo.toISOString(),
+  })
+  return toCsv(header, rows)
 }

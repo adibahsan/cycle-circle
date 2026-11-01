@@ -8,6 +8,7 @@ import {
   getSmsSendHistory as svcGetSmsSendHistory,
   getSmsDeliveryBreakdown as svcGetSmsDeliveryBreakdown,
 } from '@vesta/shared/server/services'
+import type { DateRange } from '@vesta/shared/utils/date-range'
 import { adminCacheTags, ADMIN_CACHE_TTL, KPI_CACHE_TTL } from '@/lib/admin-cache-tags'
 
 interface SmsCampaignListParams {
@@ -39,11 +40,11 @@ export const getSmsCampaign = cache(async (id: string) => {
   })()
 })
 
-export const getSmsSendHistory = cache(async (days: number) => {
+export const getSmsSendHistory = cache(async (range: DateRange) => {
   await requireAdminUser()
   return unstable_cache(
-    () => svcGetSmsSendHistory({ days, now: new Date() }),
-    ['admin-sms-send-history', String(days)],
+    () => svcGetSmsSendHistory({ dateFrom: range.from, dateTo: range.to, now: new Date() }),
+    ['admin-sms-send-history', range.key],
     { tags: [adminCacheTags.sms], revalidate: ADMIN_CACHE_TTL }
   )()
 })

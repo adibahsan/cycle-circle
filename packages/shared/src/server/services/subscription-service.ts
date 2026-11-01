@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client'
 import { fillDaySeries, resolveDaySeriesRange, type DaySeriesOpts } from '../../utils/day-series'
 import { logger } from '../log'
 import { isPhoneSubscriberId, setSubscription } from '../adapters/bdapps'
+import { recordChurnEvent } from './churn-service'
 
 /** What caused a plan change; recorded on every translog line. */
 export type PlanChangeCause =
@@ -138,6 +139,7 @@ export async function revokePro(userId: string, adminId: string, now: Date) {
     },
   })
   logPlanChange(userId, before?.subscriptionStatus ?? null, 'LAPSED', 'admin', { adminId, adminOverride: true, bdapps: bdapps.status })
+  if (before?.subscriptionStatus === 'PRO') await recordChurnEvent(userId, 'ADMIN_REVOKE', now)
 
   return { success: true, bdapps }
 }
@@ -183,6 +185,7 @@ export async function setSubscriptionStatus(
     },
   })
   logPlanChange(userId, previous, status, 'admin', { adminId, adminOverride: true, bdapps: bdapps?.status })
+  if (previous === 'PRO' && status !== 'PRO') await recordChurnEvent(userId, 'ADMIN_REVOKE', now)
 
   return { success: true, bdapps }
 }
@@ -271,6 +274,7 @@ export async function applyBdappsSubscription(
   subscriberId: string,
   registered: boolean,
   cause: PlanChangeCause = 'unknown',
+  now?: Date,
 ): Promise<'FREE' | 'PRO' | 'LAPSED'> {
   const before = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
@@ -319,6 +323,9 @@ export async function applyBdappsSubscription(
   }
   await prisma.user.update({ where: { id: userId }, data: { subscriptionStatus: status } })
   logPlanChange(userId, before.subscriptionStatus, status, cause, { subscriberId, ...(overrideEnded && { overrideEnded }) })
+  if (before.subscriptionStatus === 'PRO' && status !== 'PRO') {
+    await recordChurnEvent(userId, cause === 'nightly-check' ? 'DAILY_CHECK' : 'BDAPPS_UNSUBSCRIBE', now)
+  }
   return status
 }
 
@@ -467,23 +474,28 @@ export async function getSubscriptionTrend(
 }
 
 /**
- * Count of subscriptions grouped by status (FREE, PRO, LAPSED).
+ * Count of live users grouped by plan status (FREE, PRO, LAPSED). Counts users, so Pro matches
+ * countProUsers() on every page.
  */
 export async function getSubscriptionStatusBreakdown(): Promise<
   { status: string; count: number }[]
 > {
-  const rows = await prisma.subscription.groupBy({
-    by: ['status'],
+  const rows = await prisma.user.groupBy({
+    by: ['subscriptionStatus'],
+    where: { deletedAt: null },
     _count: { _all: true },
   })
 
-  return rows.map((r) => ({ status: r.status as string, count: r._count._all }))
+  return rows.map((r) => ({ status: r.subscriptionStatus as string, count: r._count._all }))
 }
 
 export interface SubscriptionListParams {
   page?: number
   pageSize?: number
   status?: string
+  /** Shared dashboard range: subscriptions updated from `dateFrom` to `dateTo` inclusive. */
+  dateFrom?: Date
+  dateTo?: Date
 }
 
 /**
@@ -491,11 +503,12 @@ export interface SubscriptionListParams {
  * Each subscription includes the associated user.
  */
 export async function listSubscriptions(params: SubscriptionListParams = {}) {
-  const { page = 1, pageSize = 20, status } = params
+  const { page = 1, pageSize = 20, status, dateFrom, dateTo } = params
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {}
   if (status && status !== 'all') where.status = status
+  if (dateFrom || dateTo) where.updatedAt = { ...(dateFrom && { gte: dateFrom }), ...(dateTo && { lte: dateTo }) }
 
   const [subscriptions, total] = await Promise.all([
     prisma.subscription.findMany({

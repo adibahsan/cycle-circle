@@ -63,6 +63,7 @@ const ACTION_VARIANT_MAP: Partial<Record<AuditAction, BadgeVariant>> = {
   UPDATE_SMS_BROADCAST: 'info',
   RESCHEDULE_SMS_BROADCAST: 'info',
   SET_CRON_ENABLED: 'warning',
+  SET_REPORT_RECIPIENTS: 'warning',
   TRIGGER_CRON_DAILY_REMINDERS: 'info',
   TRIGGER_CRON_CAAS_CHECK: 'info',
 }

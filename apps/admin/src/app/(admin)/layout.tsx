@@ -29,7 +29,7 @@ import { Drawer } from '@/components/ui/Drawer'
 import { useAdminStore } from '@/lib/store'
 
 const NAV_ITEMS = [
-  { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/', icon: LayoutDashboard, label: 'Overview' },
   { href: '/users', icon: Users, label: 'Users' },
   { href: '/subscriptions', icon: CreditCard, label: 'Subscriptions' },
   { href: '/content', icon: FileText, label: 'Content' },

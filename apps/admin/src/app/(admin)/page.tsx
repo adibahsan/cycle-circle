@@ -1,46 +1,31 @@
 import { requireAdminUser } from '@/app/queries/auth-queries'
-import {
-  getDashboardStats,
-  getUserTrend,
-  getUserSignupTrend,
-  getSubscriptionTrend,
-  getPredictionMaeSummary,
-} from '@/app/queries/dashboard-queries'
-import { DashboardClient } from './DashboardClient'
+import { getOverviewMetrics, getUserSignupTrend } from '@/app/queries/dashboard-queries'
+import { getPredictionMaeTrend } from '@/app/queries/analytics-queries'
+import { parseDateRange } from '@vesta/shared/utils/date-range'
+import { OverviewClient } from './OverviewClient'
 
-const RANGE_MAP: Record<string, number> = {
-  '7d': 7,
-  '30d': 30,
-  '90d': 90,
-  '1y': 365,
-}
-
-export default async function DashboardPage({
+export default async function OverviewPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string>>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   await requireAdminUser()
-  const params = await searchParams
-  const range = params.range ?? '30d'
-  const days = RANGE_MAP[range] ?? 30
 
-  const [stats, userTrend, signupTrend, subscriptionTrend, mae] = await Promise.all([
-    getDashboardStats(),
-    getUserTrend(days),
-    getUserSignupTrend(days),
-    getSubscriptionTrend(days),
-    getPredictionMaeSummary(),
+  const range = parseDateRange(await searchParams, new Date())
+
+  const [overview, signupTrend, maeTrend] = await Promise.all([
+    getOverviewMetrics(range),
+    getUserSignupTrend(range),
+    getPredictionMaeTrend(range),
   ])
 
   return (
-    <DashboardClient
-      stats={stats}
-      mae={mae}
-      userTrend={userTrend}
+    <OverviewClient
+      generatedAt={overview.generatedAt}
+      metrics={overview.metrics}
       signupTrend={signupTrend}
-      subscriptionTrend={subscriptionTrend}
-      range={range}
+      maeTrend={maeTrend}
+      range={{ kind: range.kind, preset: range.preset, fromDay: range.fromDay, toDay: range.toDay, error: range.error }}
     />
   )
 }

@@ -8,6 +8,7 @@ import {
   getFeedbackByCategory,
   getFeedbackRatingDistribution,
 } from '@vesta/shared/server/services'
+import type { DateRange } from '@vesta/shared/utils/date-range'
 import { adminCacheTags, ADMIN_CACHE_TTL } from '@/lib/admin-cache-tags'
 
 interface FeedbackListParams {
@@ -53,29 +54,31 @@ export const getFeedbackDetail = cache(async (id: string) => {
   )()
 })
 
-export const getFeedbackVolume = cache(async (days: number) => {
+const feedbackWindow = (w: DateRange) => ({ dateFrom: w.from, dateTo: w.to, now: new Date() })
+
+export const getFeedbackVolume = cache(async (range: DateRange) => {
   await requireAdminUser()
   return unstable_cache(
-    () => getFeedbackVolumeByDate({ days, now: new Date() }),
-    ['admin-feedback-volume', String(days)],
+    () => getFeedbackVolumeByDate(feedbackWindow(range)),
+    ['admin-feedback-volume', range.key],
     { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
   )()
 })
 
-export const getFeedbackCategories = cache(async (days: number) => {
+export const getFeedbackCategories = cache(async (range: DateRange) => {
   await requireAdminUser()
   return unstable_cache(
-    () => getFeedbackByCategory({ days, now: new Date() }),
-    ['admin-feedback-categories', String(days)],
+    () => getFeedbackByCategory(feedbackWindow(range)),
+    ['admin-feedback-categories', range.key],
     { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
   )()
 })
 
-export const getFeedbackRatings = cache(async (days: number) => {
+export const getFeedbackRatings = cache(async (range: DateRange) => {
   await requireAdminUser()
   return unstable_cache(
-    () => getFeedbackRatingDistribution({ days, now: new Date() }),
-    ['admin-feedback-ratings', String(days)],
+    () => getFeedbackRatingDistribution(feedbackWindow(range)),
+    ['admin-feedback-ratings', range.key],
     { tags: [adminCacheTags.feedback], revalidate: ADMIN_CACHE_TTL }
   )()
 })

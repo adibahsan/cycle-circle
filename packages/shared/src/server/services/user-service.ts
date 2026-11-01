@@ -1,6 +1,7 @@
 import { AUDIT_ACTIONS } from './audit-actions'
 import { AuthMethod, type Prisma } from '@prisma/client'
 import { prisma } from '../db'
+import { recordChurnEvent, removeLatestAccountDeletedChurn } from './churn-service'
 import { applyBdappsSubscription, unsubscribeUserOnBdapps, type BdappsUnsubscribeResult } from './subscription-service'
 import { ApiError } from '../api-error'
 import { bumpSessionsValidAfter } from '../auth'
@@ -272,10 +273,12 @@ export async function softDeleteUser(
   const current = await assertManageableTarget(userId)
   if (current.deletedAt) return { success: true, bdapps: null, alreadyDeleted: true }
 
+  const wasPro = (await prisma.user.findUnique({ where: { id: userId }, select: { subscriptionStatus: true } }))?.subscriptionStatus === 'PRO'
   await prisma.user.update({
     where: { id: userId },
     data: { deletedAt: now },
   })
+  if (wasPro) await recordChurnEvent(userId, 'ACCOUNT_DELETED', now)
   // Existing sessions stop working on their next request.
   await bumpSessionsValidAfter(userId, now)
   const bdapps = await unsubscribeUserOnBdapps(userId, adminId)
@@ -295,7 +298,8 @@ export async function softDeleteUser(
 
 /**
  * Restore a soft-deleted user within the restore window. Clears deletedAt only;
- * never re-subscribes on BDApps (ADR 0006). Refused after 30 days.
+ * never re-subscribes on BDApps (ADR 0006). Removes the user's latest ACCOUNT_DELETED
+ * churn event, if any. Refused after 30 days.
  */
 export async function restoreUser(userId: string, adminId: string, now: Date) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { deletedAt: true } })
@@ -306,6 +310,8 @@ export async function restoreUser(userId: string, adminId: string, now: Date) {
   }
 
   await prisma.user.update({ where: { id: userId }, data: { deletedAt: null } })
+  // The deletion is undone, so the Pro user did not churn: drop the event the deletion recorded.
+  await removeLatestAccountDeletedChurn(userId)
   await prisma.adminAuditLog.create({
     data: { adminId, action: AUDIT_ACTIONS.USER_RESTORED, targetType: 'User', targetId: userId },
   })

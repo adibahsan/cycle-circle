@@ -132,6 +132,7 @@ function appEnv(app: 'web' | 'admin'): Record<string, string> {
     JWT_SECRET: app === 'web' ? SECRETS.webJwt : SECRETS.adminJwt,
     AUTH_COOKIE_NAME: app === 'web' ? 'vesta_token' : 'vesta_admin_token',
     APP_URL: URLS.web,
+    ADMIN_APP_URL: URLS.admin,
     CRON_SECRET: SECRETS.cronSecret,
     // No Resend key: outbound email goes to Mailpit over SMTP. Webhook secret is set so
     // `/api/webhooks/resend` verifies Svix HMAC (see webhooks-resend.spec.ts).

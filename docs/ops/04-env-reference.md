@@ -56,6 +56,7 @@ diff <(sha256sum < <(grep ^JWT_SECRET= /opt/vesta/.env.web.production)) \
 | `JWT_SECRET` | Yes (min 32 chars) | `<generate: openssl rand -hex 32>` | Must **differ** from admin's. Startup fails when `APP_ENV` is `production`/`staging` and it starts with `local-dev`. |
 | `AUTH_COOKIE_NAME` | **Yes** (no default) | `vesta_token` | Startup fails if unset, so admin can't fall back to the web name. |
 | `APP_ENV` | No (default `local`); set it | `production` (or `staging`) | One of `local`, `staging`, `production`. Token issuer is `vesta:<APP_ENV>`. |
+| `ADMIN_APP_URL` | No (but should be set) | `https://admin.cycle-circle.com` | Admin app's public URL. Emailed reports link to its Overview. Unset: reports still send, without the link. |
 | `APP_URL` | No (but should be set) | `https://cycle-circle.com` | Used for magic-link callback URLs. Schema default is `http://localhost:3000` — wrong in prod if left unset. |
 | `RESEND_API_KEY` | No, but required for real email | `<from Resend dashboard>` (`re_...`) | When unset, `packages/shared/src/server/adapters/mail.ts` falls back to Mailpit SMTP — do not leave unset in prod. |
 | `RESEND_FROM_EMAIL` | No | `Vesta <noreply@cycle-circle.com>` | Schema default is `noreply@vesta.app` — override to a domain verified in Resend. |
