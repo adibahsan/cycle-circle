@@ -17,7 +17,7 @@ On a phone: **More > Learn**. On desktop: **Learn** in the left sidebar. The add
 ### How to use it
 
 1. Scroll the list. Each card shows the category, the title, a preview of the first words, and the cycle phases the article is about (Menstrual, Follicular, Ovulation, Luteal).
-2. When the User is in a known phase, a note reads "Articles for your Menstrual phase first" (with her current phase) and matching cards carry a "For you" badge. A small dot on a phase tab marks her current phase.
+2. When the User is in a known phase, and at least one article is about that phase, a note reads "Articles for your Menstrual phase first" (with her current phase) and matching cards carry a "For you" badge. A small dot on a phase tab marks her current phase.
 3. Tap a card to read it ([Reading an article](#ct-reader)).
 
 ### Rules and limits

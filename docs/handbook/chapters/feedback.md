@@ -34,7 +34,7 @@ On a phone: **More > Feedback**. On desktop: **Feedback** in the left sidebar. T
 - The submission records the User, the category, the message, the rating and the active profile at the time ([Switch the active profile](#pf-switch)).
 - There is no limit on how many a User can send, and no confirmation email.
 - Feedback is open to every plan, including the email trial and lapsed Users, as long as the User can reach the page (the [Trial lock](#pa-trial-lock) covers the screen when it applies).
-- The SRS also describes "a persistent feedback button"; the app has none. Feedback is reached only through the More sheet or the sidebar.
+- The SRS also describes "a persistent feedback button"; the app has none. Feedback is reached through the More sheet, the sidebar, or the **Give Feedback** row in Settings.
 - Nothing in the app tells the User when the team has read or answered her feedback.
 
 ### What can go wrong
