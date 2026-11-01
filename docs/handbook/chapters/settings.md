@@ -59,7 +59,7 @@ The **Account** block: the User's phone and email, the plan badge, shortcuts and
 ### Rules and limits
 
 - A phone User always has a phone row. An email-trial User always has an email row. The other contact can be added once.
-- Neither contact can be edited or removed afterwards. An Admin cannot change them from Settings either; support must go through the Admin app ([Users](#us-detail)).
+- Neither contact can be edited or removed afterwards. An Admin cannot change them either: the Admin app ([Users](#us-detail)) only shows them. Changing a phone or email is a developer change in the database.
 - Phone and email are each unique across Cycle Circle: one number or address belongs to one account.
 
 ### What can go wrong
@@ -67,7 +67,7 @@ The **Account** block: the User's phone and email, the plan badge, shortcuts and
 | The User sees | Cause | Fix |
 |---|---|---|
 | "Add Phone Number" is missing | The account already has a phone | Nothing to add |
-| Wants to change the phone or email | Not supported in Settings | Add the missing contact only; for anything else ask an Admin |
+| Wants to change the phone or email | Not supported in Settings | Add the missing contact only; for a change to an existing contact, raise it with the developers (neither the User nor an Admin can do it) |
 
 ### Related
 
@@ -105,14 +105,14 @@ A User who signed in with a phone can attach an email address. The address is sa
 - 5 wrong codes lock that code. The User must request a new one.
 - A new code can be requested every 60 seconds, at most 3 times a minute per User, and the server also limits requests per device (10 an hour). Code checks are limited to 10 per 5 minutes.
 - The address is lower-cased before it is saved.
-- The check on the address is simple: text, an @, a dot. An address that belongs to another account is refused.
+- The address is checked twice: the form needs an @ and a dot, and the server applies a stricter standard email check. An address that belongs to another account is refused.
 - The email asks nothing of the User beyond the code. Adding an email does not change the plan.
 
 ### What can go wrong
 
 | The User sees | Cause | Fix |
 |---|---|---|
-| "Enter a valid email address." | The address has no @ or no dot, or the server rejected it | Retype it |
+| "Enter a valid email address." | The address has no @ or no dot, or the server's stricter check rejected it | Retype it |
 | "This email is already used by another account." | Another account has this address | Use a different address |
 | "Please wait a moment before requesting another code." | Asked again within 60 seconds | Wait for the countdown |
 | "Too many attempts. Try again in a few minutes." | Too many requests or code checks | Wait a few minutes |
@@ -238,7 +238,7 @@ Four switches that decide which reminders the system sends. Three are **per prof
 ### How to use it
 
 1. Check which profile is active (profile chip at the top).
-2. Tap a switch to turn it on or off. After about half a second a toast says "Preferences saved".
+2. Tap a switch to turn it on or off. After about half a second a toast says "Preferences saved" (for the profile-completion switch the save is immediate).
 3. If saving fails, the switch jumps back and a toast says "Failed to save preferences".
 
 | Switch | Screen text | What it does |
@@ -246,7 +246,7 @@ Four switches that decide which reminders the system sends. Three are **per prof
 | Period Alerts | "Get notified 2 days before your period" | Sent when the next predicted period is 0 to 2 days away; at most one a day |
 | Fertile Window Alerts | "Know when your fertile window opens" | Sent once, on the day the predicted fertile window starts |
 | Logging Reminders | "Daily reminder to log your symptoms" | Sent every day while the last period log started 3 or more days ago (or none exists) |
-| Profile-completion reminders | "Get email & SMS reminders until your profile is complete." | Per User. Sent daily until the profile is complete; stops after 14 days from signup |
+| Profile-completion reminders | "Get email & SMS reminders until your profile is complete." | Per User. Sent daily until the profile is complete. Not sent on the signup day: the first one comes after the account is 24 hours old, and they stop after 14 days from signup |
 
 ### Rules and limits
 
@@ -285,7 +285,7 @@ The **Language & Appearance** block: the app language (English or Bengali) and t
 
 ### How to use it
 
-1. Under **Language** ("App display language") tap **EN** or the Bengali button. The whole app changes at once.
+1. Under **Language** ("App display language") tap the first button (English) or the second (Bengali). The first reads **EN**, or its short Bengali-script form while the app is in Bengali. The whole app changes at once.
 2. Under **Theme** ("Visual appearance") tap **Light** or **Dark**.
 
 ### Rules and limits
@@ -362,7 +362,7 @@ Shows the first-run guided tour again.
 ### How to use it
 
 1. Tap **Replay app tour**. The app opens the Dashboard and the tour starts.
-2. Step through with **Next**, finish with **Done**, or close it with **Skip** or Esc.
+2. Step through with **Next**, go back one step with **Back** (steps 2 to 5), finish with **Done**, or close it with **Skip** or Esc.
 
 ### Rules and limits
 
@@ -373,7 +373,7 @@ Shows the first-run guided tour again.
 
 | The User sees | Cause | Fix |
 |---|---|---|
-| The Dashboard opens with no tour | Another pop-up took priority this page load, or the Dashboard failed to load | Reload, or tap **Replay app tour** again |
+| The Dashboard opens with no tour | The Dashboard failed to load, or the trial lock is showing (a replay never opens over the lock). Other pop-ups do not block a replay | Reload, or tap **Replay app tour** again |
 
 ### Related
 
@@ -427,14 +427,14 @@ Ends the session on this device.
 ### How to use it
 
 1. Tap **Log Out**. A pop-up asks "Are you sure you want to log out?".
-2. Tap **Log Out** to confirm, or **Cancel**. The button changes to "Logging out…" and the login screen opens.
+2. Tap **Log Out** to confirm, or **Cancel**. The pop-up closes and the login screen opens.
 
 ### Rules and limits
 
 - The session is ended on the server (the login token is blocked) and the browser goes to the login screen. Other devices stay logged in.
 - The chosen language and theme stay in the browser after logout.
 - Logging out does not cancel Pro or delete data.
-- The trial lock and the onboarding screen have their own **Log out** buttons that do the same.
+- The trial lock and the onboarding screen have their own logout buttons that do the same (the trial lock's reads **Log out**, in lower case).
 
 ### What can go wrong
 
