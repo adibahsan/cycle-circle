@@ -4,6 +4,21 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
+## 2026-11-01 — Calendar today marker in Bangladesh time, CI only on deploy (PRs #231, #232, #233, #234, #235)
+
+**Shipped:**
+
+- #232: the calendar and symptoms grids mark the Bangladesh day as today. From 00:00 to 06:00 Bangladesh time they marked yesterday, or nothing on the 1st of a month (#220).
+- #234: GitHub Actions run only on a push to `production` (checks + deploy, desktop E2E) or a manual run. PRs and the nightly schedule run nothing; the full local set runs before a deploy (`docs/LOCAL-DEVELOPMENT.md`, "Checks before a deploy").
+- #231, #235: retro guardrails. Shared UI components can't read the clock for a day (ESLint), plus E2E and unit-test review rules.
+- #233: the article-views unit test no longer fails once the real clock passes its fixed dates (test only).
+
+**Migrations:** none.
+
+**Deploy:** `git push origin origin/main:production`.
+
+---
+
 ## 2026-10-31 — Pregnancy mode removed, new tagline (PR #182)
 
 **Shipped:** the pregnancy goal is gone. Goals are now tracking, conceive and perimenopause, and legacy `pregnancy`/`pregnant` values read as tracking. The tagline is now "Smarter Periods, Personalised Care." / "স্মার্ট পিরিয়ড, ব্যক্তিগত যত্ন।". Admin no longer says CaaS on the Subscriptions badge or the charge history.
