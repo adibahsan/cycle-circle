@@ -135,6 +135,7 @@ export function ConsistencyGrid({ today: todayStr, last30, onBackfill, variant =
 
   // Full: 7-wide grid (weeks)
   // Pad front so first day of the 30-window lands on the correct weekday slot
+  // eslint-disable-next-line no-restricted-syntax -- fallback only when there are no entries, so no day is shown from it
   const firstDate = entries[0] ? new Date(entries[0].date + 'T00:00:00') : new Date();
   const startDow = firstDate.getDay(); // 0=Sun
   const padCells = Array.from({ length: startDow });

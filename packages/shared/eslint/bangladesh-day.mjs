@@ -21,7 +21,9 @@
  * or `Date.now()`), so there is no `now` variable to follow. `dateFnsLocalDayConfig` additionally bans
  * date-fns' local-time day functions in shared and server code, which closes the "local midnight of a
  * stored date" variant. Routes, actions, pages and client code (the edge) may read the clock, and the
- * shapes above still apply there. The event-timestamp gap stays open.
+ * shapes above still apply there. Shared UI components follow the same contract
+ * (`bangladeshDayComponentConfig`): no `new Date()`; they take `today`/`now` as props (#220: MonthGrid's
+ * `useMemo(() => new Date(), [])` marked the UTC day as today). The event-timestamp gap stays open.
  */
 const SEE = 'Use bangladeshToday()/bangladeshDayOf() from @vesta/shared/utils/dhaka-date (see #115).'
 
@@ -144,6 +146,26 @@ export const bangladeshDayServerConfig = {
   rules: {
     'no-restricted-syntax': ['error', ...bangladeshDayRestrictedSyntax, ...noClockReadSyntax],
   },
+}
+
+const COMPONENT_CLOCK_MESSAGE =
+  'Shared UI components never read the clock for a day: take `today` (the Server Component\'s bangladeshToday()) or `now` as a prop. On a TZ=UTC server `new Date()` lags the Bangladesh day from 00:00 to 06:00 (#220). Date.now() for timers and timestamps is fine.'
+
+/**
+ * Shared UI components: the Bangladesh-day shapes plus a ban on zero-argument `new Date()`, which the
+ * shapes cannot follow through a variable. `Date.now()` stays allowed. Pass the app's component glob.
+ */
+export function bangladeshDayComponentConfig(files) {
+  return {
+    files,
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...bangladeshDayRestrictedSyntax,
+        { selector: 'NewExpression[callee.name="Date"][arguments.length=0]', message: COMPONENT_CLOCK_MESSAGE },
+      ],
+    },
+  }
 }
 
 export const dateFnsLocalDayFunctions = [

@@ -4,6 +4,21 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
+## 2026-11-01 — Calendar today marker in Bangladesh time, CI only on deploy (PRs #231, #232, #233, #234, #235, tag 2.4.1)
+
+**Shipped:**
+
+- #232: the calendar and symptoms grids mark the Bangladesh day as today. From 00:00 to 06:00 Bangladesh time they marked yesterday, or nothing on the 1st of a month (#220).
+- #234: GitHub Actions run only on a push to `production` (checks + deploy, desktop E2E) or a manual run. PRs and the nightly schedule run nothing; the full local set runs before a deploy (`docs/LOCAL-DEVELOPMENT.md`, "Checks before a deploy").
+- #231, #235: retro guardrails. Shared UI components can't read the clock for a day (ESLint), plus E2E and unit-test review rules.
+- #233: the article-views unit test no longer fails once the real clock passes its fixed dates (test only).
+
+**Migrations:** none.
+
+**Deploy:** `git push origin origin/main:production`.
+
+---
+
 ## 2026-11-01 — Article management: search, bulk actions, scheduling, views, category order (PRs #228, #194, tag 2.4.0)
 
 **Shipped:**

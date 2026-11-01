@@ -65,6 +65,7 @@ const QUICK_CHIP_IDS = [
 // ── Greeting helper ───────────────────────────────────────────────────────────
 
 function getGreetingKey(): 'checkIn.greetingMorning' | 'checkIn.greetingAfternoon' | 'checkIn.greetingEvening' {
+  // eslint-disable-next-line no-restricted-syntax -- the device's hour picks a greeting; no calendar day is derived
   const h = new Date().getHours();
   if (h < 12) return 'checkIn.greetingMorning';
   if (h < 17) return 'checkIn.greetingAfternoon';

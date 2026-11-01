@@ -1,6 +1,7 @@
 # ESLint on staged files only (each file linted with its own package's config).
-# Typecheck and tests run in CI (.github/workflows) and in agent verification; they are
-# too slow for every commit.
+# Typecheck and tests are too slow for every commit: run what the change touches while
+# developing, and the full set before a prod deploy (docs/LOCAL-DEVELOPMENT.md,
+# "Checks before a deploy"; CI runs them only on a push to production).
 pnpm exec lint-staged
 
 # sed -i / merge leftovers (file-e, .orig, .bak) never get committed.

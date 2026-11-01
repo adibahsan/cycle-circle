@@ -144,9 +144,9 @@ Server logs are written as dated files per channel under `apps/web/logs/<channel
 
 Run `just health` after the web app is running to probe API health routes.
 
-### Checks before a PR
+### Checks before a deploy
 
-GitHub Actions run **only when deploying** (a push to `production`, see `docs/ops/03-deployment.md` §5). PRs into `main` run nothing in CI, so run the same checks locally before opening or merging one. Needs Postgres on 5431.
+GitHub Actions run **only when deploying** (a push to `production`, see `docs/ops/03-deployment.md` §5), and so does the full local set below. While developing, run only what the change touches: the test files for the code you changed and ESLint on those files (the pre-commit hook lints staged files). Run the full set once before pushing to `production`. Needs Postgres on 5431.
 
 ```bash
 pnpm typecheck && pnpm lint && pnpm docs:check && pnpm db:drift
