@@ -28,8 +28,8 @@ Open the admin app address. Anyone who is not signed in is sent to `/login`, wha
 
 - The email is trimmed and lower-cased before it is checked, so `Admin@Vesta.Health` and `admin@vesta.health` are the same account.
 - The password is checked against a stored hash. A wrong password, an unknown email and a non-Admin account all give the **same** message, on purpose, so the page never reveals which emails are Admins.
-- **Failed attempts are limited**: 5 failed attempts per email and 20 per IP address in any 15 minutes. Only wrong-password attempts count. Once the limit is hit, even the right password is refused until the 15 minutes pass.
-- A suspended Admin account is refused with "Account suspended" (this does not count towards the limit). A deleted one is refused as "User not found".
+- **Failed attempts are limited**: 5 failed attempts per email and 20 per IP address in any 15 minutes. Every refused sign-in with a 401 counts: a wrong password, an unknown email, an account that is not an Admin, and a deleted Admin even with the right password. Only the "Account suspended" refusal does not. Once the limit is hit, even the right password is refused until the 15 minutes pass.
+- A suspended Admin account is refused with "Account suspended" (this does not count towards the limit; it is only shown after the right password). A deleted Admin who types the right password is refused as "User not found"; with a wrong password they get the usual "Invalid email or password".
 - A session lasts **7 days**. After that the next page request sends you back to the login page.
 - Every sign-in, failed sign-in (for a real Admin email) and sign-out is written to the audit log ([What each entry means](#au-entries)).
 - In a local development build only, the login page also shows a dashed "Dev — sign in as admin@vesta.health" button. It is not present in production.

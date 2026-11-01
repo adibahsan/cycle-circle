@@ -13,7 +13,7 @@ Admins can override the plan, and the overrides that take access away also end B
 
 ### What it is
 
-The four situations a User can be in, and what the app does in each.
+The five situations a User can be in, and what the app does in each.
 
 | Situation | Plan label | How the User got there | What they can do |
 |---|---|---|---|
@@ -27,7 +27,7 @@ Free, Expired and an ended trial all keep the User's data; nothing is deleted wh
 
 ### Where to find it
 
-**More > Subscription** shows the plan. **More > Settings** shows it as a badge ([Plan badge](#st-plan-badge)). Admins see it on the User detail page ([User detail](#us-detail)).
+**More > Subscription** shows the plan. **More > Settings** shows it as a badge, shown in capitals, for example EXPIRED ([Plan badge](#st-plan-badge)). Admins see it on the User detail page ([User detail](#us-detail)).
 
 The Subscription page of a Free User (the Pro offer comes first on a phone, the plan card below it):
 
@@ -43,7 +43,7 @@ The Subscription page of a Free User (the Pro offer comes first on a phone, the 
 
 - The plan is stored on the User and follows the status BDApps reports for the User's number. An **Admin override** (Free, Pro or Lapsed) wins over BDApps until BDApps reports a new subscription for that number ([Admin overrides and billing](#pa-admin-overrides)).
 - Only **SMS alerts** are limited to Pro in the app today. Export, advanced predictions and "ad-free" are listed as Pro on the Subscription page but are not enforced ([Pro-only features](#pa-pro-gating)).
-- The app keeps a copy of the User for up to 5 minutes. After an Admin or BDApps change, the Subscription and Settings pages can show the old plan for up to 5 minutes; the trial lock reads the live status and reacts at once.
+- The app keeps a copy of the User for up to 5 minutes. After an Admin or BDApps change, the Subscription and Settings pages can show the old plan for up to 5 minutes; the countdown pill and trial lock often follow the live status, but they can also start from the same cached copy, so they can lag too.
 - All times are Bangladesh time.
 
 ### What can go wrong
@@ -81,7 +81,7 @@ A User becomes Pro in one of three ways:
 
 ### Rules and limits
 
-- Pro lasts while BDApps reports the number as subscribed. BDApps tells the app in two ways: a subscription webhook, and the daily subscription check ([Daily subscription check](#sj-sub-check)), which asks BDApps about every Pro User and moves anyone no longer subscribed to Free.
+- Pro lasts while BDApps reports the number as subscribed. BDApps tells the app in two ways: a subscription webhook, and the daily subscription check ([Daily subscription check](#sj-sub-check)), which asks BDApps about Users whose Pro comes from a BDApps subscription (not Admin-granted or overridden Pro) and moves anyone no longer subscribed to Free. It also re-checks revoked Users, so one who has subscribed again is reinstated.
 - A successful BDApps OTP verification counts as Pro even if BDApps reports a charging-pending status; the webhook or daily check corrects it later.
 - An existing Subscriber who logs out and logs in again gets an **App OTP** by SMS (BDApps refuses a second OTP for an already-subscribed number). Logging in this way does not change the plan.
 - Pro unlocks SMS alerts for period, fertile window and logging reminders. Nothing else in the app is blocked for Free Users today.
@@ -123,7 +123,7 @@ The pill is in the header on every page, for example the Dashboard. On the **Sub
 ### Rules and limits
 
 - The trial is **24 hours from the first magic-link login**. Logging in again does not extend it, and an ended trial is never restarted.
-- The countdown pill shows hours:minutes:seconds ("Trial ends in"). The Subscription page shows whole hours, rounded down: "Trial · 23h remaining", and "Trial · 0h remaining" in the last hour.
+- The countdown pill shows hours:minutes:seconds (with **Add number** beside it on wider screens; "Trial ends in" is only the label read aloud by screen readers). The Subscription page shows whole hours, rounded down: "Trial · 23h remaining", and "Trial · 0h remaining" in the last hour.
 - A trial User is on the Free plan: everything works except SMS alerts.
 - Adding and verifying a phone ends the trial and makes the User Pro, because the BDApps OTP subscribes the number.
 - The trial exists only for accounts created by email. A phone User never has a trial.
@@ -133,7 +133,7 @@ The pill is in the header on every page, for example the Dashboard. On the **Sub
 | The User sees | Cause | Fix |
 |---|---|---|
 | A full-screen lock "Your 24-hour trial has ended" | 24 hours passed | [Trial lock](#pa-trial-lock) |
-| Still "Trial" on the Subscription page after adding a phone | The 5-minute cache | Wait a few minutes; the lock and the countdown pill already follow the live status |
+| Still "Trial" on the Subscription page after adding a phone | The 5-minute cache | Wait a few minutes; the lock and the countdown pill usually follow the live status, but may also lag |
 | "Trial expired" badge on the Admin User page | The trial ended and the User did not add a phone | Nothing to fix; the User adds a phone |
 
 ### Related
@@ -200,7 +200,7 @@ It covers every signed-in page except **Subscription**.
 
 - The lock cannot be dismissed: Escape and a tap outside do nothing.
 - It applies to an **email** account on the Free plan whose trial end time has passed. A phone User is never locked.
-- While locked, the app refuses data requests with an "Email trial has expired. Please upgrade to PRO." error (HTTP 402, code TRIAL_EXPIRED); the User sees only the lock screen. The requests needed to add a phone, verify an email and unsubscribe are still allowed.
+- While locked, the app refuses data requests with an "Email trial has expired. Please upgrade to PRO." error (HTTP 402, code TRIAL_EXPIRED); the User sees only the lock screen. The requests needed to add a phone (request and verify), request and verify an email, subscribe, unsubscribe and check the sign-in status are still allowed.
 - After a verified phone, the lock goes away at once and the User is Pro.
 - The lock is an auto-prompt and always wins over the other prompts ([Trial lock prompt](#ap-trial-lock)).
 
@@ -286,7 +286,7 @@ After Suspend or Delete the User must log in by phone to be a Subscriber again.
 
 ### Rules and limits
 
-- Revoke, Set Free, Suspend and Delete call BDApps to unsubscribe the number. Our change applies even if BDApps fails; the Admin then sees "Plan changed, but the BDApps unsubscribe failed: ... The user may still be charged." (or the same for Suspend and Delete) and should follow up. If the User has no stored BDApps subscriber id (older accounts), the unsubscribe is skipped and the override is treated as unconfirmed.
+- Revoke, Set Free, Suspend and Delete call BDApps to unsubscribe the number. Our change applies even if BDApps fails; the Admin then sees "Plan changed, but the BDApps unsubscribe failed: ... The user may still be charged." (or the same for Suspend and Delete) and should follow up. If the User has no stored BDApps subscriber id (older accounts), the unsubscribe is skipped and the override is treated as unconfirmed (the Admin sees the failure toast only when BDApps actually failed, not when the call was skipped).
 - **Grant Pro does not subscribe the number**, so the User is not billed. The **Unsubscribe from Pro** button then answers "Your Pro access was granted by our team, so it can't be cancelled here. Contact support." An Admin changes it.
 - An override ends when BDApps reports a **new** subscription for the number (for example the User subscribes again by phone login). Then the real BDApps status applies: a revoked User who pays again is Pro. If the Admin's unsubscribe failed or was skipped, only a new BDApps subscriber id ends it; the same old subscription is ignored.
 - A deleted account can be restored for **30 days**; after that a nightly job purges the User, profiles and logs, leaving one translog line ([Delete and restore](#us-delete-restore)).
@@ -307,6 +307,7 @@ After Suspend or Delete the User must log in by phone to be a Subscriber again.
 
 - Admin: [Grant and revoke Pro](#us-pro-override), [Set subscription status](#us-set-status), [Suspend and reactivate](#us-suspend), [Delete and restore](#us-delete-restore), [Subscriptions list](#su-list)
 - [Unsubscribe](#bb-unsubscribe), [Lapse](#bb-lapse)
+- Note: ADR 0006 still describes Revoke as "Pro to Free". The app follows the code: Revoke sets the plan to Lapsed (shown as Expired).
 
 ## Adding a phone to keep an account {#pa-keep-account}
 

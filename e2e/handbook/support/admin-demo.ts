@@ -30,6 +30,7 @@ const ROSTER: Array<[name: string, kind: Kind]> = [
   ['Mahfuza Khan', 'pro'], ['Reshma Biswas', 'pro'], ['Anika Tabassum', 'pro'], ['Sumaiya Hoque', 'pro'],
 ]
 
+// Seeding uses skipDuplicates, so re-running does not refresh roster fields changed since the first run; reset the slot DB to pick them up.
 export const DEMO_FIRST = { name: 'Nusrat Jahan', id: 'hbdemo-01' }
 
 const idOf = (i: number) => `hbdemo-${String(i + 1).padStart(2, '0')}`
