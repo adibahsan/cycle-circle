@@ -68,7 +68,6 @@ The Admin Logs page shows three of the six channels (merchant, webhook and trans
 
 | The reader sees | Cause | Fix |
 |---|---|---|
-| A link in this chapter goes to a section that says "Placeholder" | The section is not written yet | Tell the team; the section anchors do not change |
 | The symptom is in no group | It is not in any "What can go wrong" table yet | Use the nearest group, then add the symptom to the right chapter |
 
 ### Related
@@ -100,8 +99,8 @@ This section has no screen of its own. The fixes are in the linked sections.
 |---|---|
 | A full-screen "Your 24-hour trial has ended" | The email trial is over (24 hours from the first magic-link login). The User adds a phone and verifies it to become Pro ([Trial lock](#pa-trial-lock)) |
 | The login page again after a correct code | The account is Suspended or Deleted. An Admin reactivates it, or restores it within 30 days ([Admin overrides](#pa-admin-overrides)) |
-| "Too many wrong codes. Request a new code." | 5 wrong tries on one code. Resend the code |
-| "Too many attempts. Try again in a few minutes." | Rate limit. Wait; the App OTP daily cap is 5 per number and resets 24 hours after the first code |
+| "Too many attempts. Try again in a few minutes." | Rate limit. This is also what the User sees after 5 wrong codes, because the verify limit (5 tries in 5 minutes) is reached before the code lock, and when the App OTP daily cap is hit (5 codes per number in a rolling 24 hours; the Logs show "Too many codes sent to this number today. Try again tomorrow."). Wait |
+| "Too many wrong codes. Request a new code." | The code was locked after 5 wrong tries. Rarely shown, since the verify limit usually answers first. Resend the code |
 | "This number is already registered to another account." | The number belongs to another User. Use another number or log in to that account |
 
 ### BDApps health
@@ -137,6 +136,7 @@ There is no BDApps status page in the Admin panel. To check whether BDApps is th
 | The reader sees | Likely cause and first step |
 |---|---|
 | The app opens in the wrong language | The language is a cookie on that phone and browser ([Language persists](#nl-language-persists)) |
+| A User asks where to sign up | There is no separate sign-up: a new number or email is registered the first time it is verified ([Get Started slides](#gs-get-started--what-can-go-wrong)) |
 | No app tour after the first login | The tour opens only on the Dashboard, once ([Tour](#gs-tour)) |
 | Settings opens the login screen | The session ended; log in again ([Settings overview](#st-overview)) |
 
@@ -189,7 +189,7 @@ This section has no screen of its own.
 | Pro shown after unsubscribing on BDApps | Wait for the daily check or use Run now | [details](#bb-lapse--what-can-go-wrong), [details](#sj-sub-check--what-can-go-wrong) |
 | "Couldn't unsubscribe. Try again in a minute." | Retry; if it keeps failing, unsubscribe on BDApps by hand | [details](#bb-unsubscribe--what-can-go-wrong), [details](#sb-unsubscribe--what-can-go-wrong) |
 | Red toast "...the BDApps unsubscribe failed... The user may still be charged." | The plan changed here but BDApps did not unsubscribe. Ask BDApps to unsubscribe the number | [details](#us-pro-override--what-can-go-wrong), [details](#us-set-status--what-can-go-wrong), [details](#us-suspend--what-can-go-wrong), [details](#us-delete-restore--what-can-go-wrong), [details](#su-list--what-can-go-wrong) |
-| "Your Pro access was granted by our team, so it can't be cancelled here." | An Admin granted Pro. An Admin sets Free | [details](#sb-unsubscribe--what-can-go-wrong), [details](#pa-admin-overrides--what-can-go-wrong) |
+| "Your Pro access was granted by our team, so it can't be cancelled here." | An Admin granted Pro. An Admin sets the plan to Free (**Set Free**) or Lapsed (**Revoke** on the Subscriptions page) | [details](#sb-unsubscribe--what-can-go-wrong), [details](#pa-admin-overrides--what-can-go-wrong) |
 | "Your subscription has expired. Renew to keep Pro." / Expired badge | The Lapsed plan; renewing is by phone login or Upgrade to Pro | [details](#pa-lapsed--what-can-go-wrong), [details](#sb-status--what-can-go-wrong) |
 | "Cycle Circle Free" although they pay | Webhook not received or the number is not linked to this account | [details](#pa-at-a-glance--what-can-go-wrong), [details](#bb-webhooks--what-can-go-wrong) |
 | Revoked User is Pro again after some days | Expected when BDApps reports a new subscription; use Suspend to keep someone out | [details](#us-pro-override--what-can-go-wrong), [details](#pa-admin-overrides--what-can-go-wrong) |
@@ -237,7 +237,7 @@ This section has no screen of its own.
 | Email status Failed, Bounced, Complained or Pending | Open the row; refresh a Pending one | [details](#ec-overview--what-can-go-wrong), [details](#em-log--what-can-go-wrong), [details](#em-detail--what-can-go-wrong) |
 | "I log symptoms every day and still get the logging reminder" | The reminder follows the last period log. Switch Logging Reminders off | [details](#ec-logging-reminder--what-can-go-wrong), [details](#sj-daily-reminders--what-can-go-wrong) |
 | "My subject says 0 days" | Expected for the period alert on the day | [details](#ec-period-alert--what-can-go-wrong) |
-| "I never get a period alert" / no fertile window email | Check predictions, the switches, and whether SMS needs Pro | [details](#ec-period-alert--what-can-go-wrong), [details](#ec-fertile-window--what-can-go-wrong), [details](#sj-daily-reminders--what-can-go-wrong), [details](#st-notifications--what-can-go-wrong) |
+| "I never get a period alert" / no fertile window email | Check predictions and the switches. The email is sent on every plan; only the extra SMS needs Pro and a phone | [details](#ec-period-alert--what-can-go-wrong), [details](#ec-fertile-window--what-can-go-wrong), [details](#sj-daily-reminders--what-can-go-wrong), [details](#st-notifications--what-can-go-wrong) |
 | Profile completion email button opens a login page | The button opens a login page; the User logs in and lands on the profile screen | [details](#ec-profile-completion--what-can-go-wrong) |
 | Reminders or reports stopped for everyone | The job switch, or the crontab | [details](#sj-overview--what-can-go-wrong), [details](#sy-jobs--what-can-go-wrong), [details](#sj-reports--what-can-go-wrong) |
 | No weekly or monthly report | No recipients, the switch is off, or an address is invalid | [details](#sj-reports--what-can-go-wrong), [details](#sy-report-recipients--what-can-go-wrong) |
@@ -248,9 +248,9 @@ This section has no screen of its own.
 | "Delivery reports off", or Delivered 0, Failed 0 | Delivery reports are not enabled, or no reports have arrived | [details](#sm-delivery--what-can-go-wrong), [details](#as-delivery-reports--what-can-go-wrong), [details](#sy-delivery-reports--what-can-go-wrong) |
 | Send failed with "E1312" | The SMS plan does not allow delivery reports; turn the switch off | [details](#sm-delivery--what-can-go-wrong), [details](#sy-delivery-reports--what-can-go-wrong) |
 | Campaign form errors ("Message is N SMS parts long; the limit is 6", "is in the past", "already has a message") | Form rules | [details](#sm-create--what-can-go-wrong), [details](#sm-import--what-can-go-wrong), [details](#sm-schedule--what-can-go-wrong), [details](#as-campaign-sms--what-can-go-wrong) |
-| A User received two SMS the same day | Expected in one case; the daily guard is the email log | [details](#sj-daily-reminders--what-can-go-wrong) |
+| A User received two SMS the same day | Expected in one case only: the job ran twice and the User has no email on file, so the daily guard (the email log) has nothing to check | [details](#sj-daily-reminders--what-can-go-wrong) |
 | Pro User gets no SMS | Check the phone on the User and the plan | [details](#pa-pro--what-can-go-wrong), [details](#pa-pro-gating--what-can-go-wrong) |
-| Login SMS in the wrong language, reminder email in English | The email follows the saved language | [details](#nl-switch-language--what-can-go-wrong), [details](#nl-language-persists--what-can-go-wrong) |
+| Login SMS in the wrong language, reminder email in English | The login code SMS follows the browser language at the moment the code is requested; reminder emails and SMS follow the language saved on the account, which the app never updates, so they stay English | [details](#nl-switch-language--what-can-go-wrong), [details](#nl-language-persists--what-can-go-wrong) |
 
 ### Related
 
@@ -328,13 +328,13 @@ Only the server owner can change them: the environment files are in `docs/ops/04
 | The reader sees | Likely cause and first step | Full list |
 |---|---|---|
 | "Invalid email or password" | Wrong password, or the account is not an Admin | [details](#aa-sign-in--what-can-go-wrong) |
-| "Too many login attempts. Try again later." | Wait 15 minutes after the last failure | [details](#aa-sign-in--what-can-go-wrong) |
+| "Too many login attempts. Try again later." | 5 failed sign-ins for one email within 15 minutes (20 per connection). The window slides, so wait until the oldest failure is 15 minutes old | [details](#aa-sign-in--what-can-go-wrong) |
 | "Account suspended" | Cannot be undone from the panel; the server owner changes it | [details](#aa-sign-in--what-can-go-wrong) |
 | Sent back to the login page | The session ended or was signed out elsewhere | [details](#aa-sign-in--what-can-go-wrong), [details](#aa-sign-out--what-can-go-wrong) |
 | "Not an admin" | A User account signed in. Log out and switch account | [details](#aa-forbidden--what-can-go-wrong) |
 | "Web app returned 401", "APP_URL or CRON_SECRET is not configured", "Request failed" | See "Settings that make buttons fail" | [details](#sy-manual-reminders--what-can-go-wrong), [details](#sy-manual-sub-check--what-can-go-wrong), [details](#us-reminders--what-can-go-wrong), [details](#sj-overview--what-can-go-wrong) |
 | A System switch jumps back with no message | Reload, sign in again if asked, and try once more | [details](#sy-jobs--what-can-go-wrong), [details](#sy-report-recipients--what-can-go-wrong) |
-| A change is not visible in a list or chart | Pages are cached (Overview and Subscriptions 60 seconds, Users 5 minutes). Refresh | [details](#us-list--what-can-go-wrong), [details](#ov-kpis--what-can-go-wrong), [details](#su-list--what-can-go-wrong), [details](#an-ranges--what-can-go-wrong), [details](#ac-list--what-can-go-wrong) |
+| A change is not visible in a list or chart | Pages are cached (Overview, Subscriptions, Analytics and User detail 60 seconds; Users list, Emails and most Content queries 5 minutes; the Articles list 60 seconds). Refresh | [details](#us-list--what-can-go-wrong), [details](#ov-kpis--what-can-go-wrong), [details](#su-list--what-can-go-wrong), [details](#an-ranges--what-can-go-wrong), [details](#ac-list--what-can-go-wrong) |
 | "Unavailable" on Churn Rate, Pro Subscribers, revenue or Active users | No daily Pro or activity snapshot for the period | [details](#ov-kpis--what-can-go-wrong), [details](#an-churn--what-can-go-wrong), [details](#an-revenue--what-can-go-wrong), [details](#an-pro-count--what-can-go-wrong), [details](#en-active--what-can-go-wrong) |
 | Signup chart shows a spike or "No signups in this period" | Chart rules | [details](#ov-signup-trend--what-can-go-wrong), [details](#ov-kpis--what-can-go-wrong) |
 | A number differs from another page | Different definitions (Bangladesh days, active vs logging, snapshot vs live) | [details](#ov-kpis--what-can-go-wrong), [details](#en-active--what-can-go-wrong), [details](#en-panels--what-can-go-wrong), [details](#an-symptoms-phase--what-can-go-wrong), [details](#us-list--what-can-go-wrong) |

@@ -427,7 +427,7 @@ Opens on the Dashboard right after onboarding. Each step shows "Step N of 5" in 
 
 | The User sees | Cause | Fix |
 |---|---|---|
-| No tour after onboarding | Another auto-prompt took that page load (for example the check-in or late-period alert) or the tour was already finished | Replay it from Settings |
+| No tour after onboarding | The trial lock or the late-period alert took that page load (the order is trial lock, late-period alert, tour, check-in, profile, so the check-in never blocks the tour), or the tour was already finished | Replay it from Settings |
 | The tour reappears on every visit | The close request failed (offline) so it was not saved | Finish it again with network on |
 
 ### Related

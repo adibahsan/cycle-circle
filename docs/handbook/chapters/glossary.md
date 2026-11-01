@@ -18,7 +18,7 @@ This chapter has no screen of its own. The source file is `GLOSSARY.md` at the r
 
 | Term | Meaning | Do not say |
 |---|---|---|
-| **Cycle Circle** | The product's name, written as two title-case words in all user-facing English text. The logo always uses the Latin wordmark; running Bengali text writes it in Bengali script. | Vesta, the Bengali spelling of Vesta, CycleCircle, cycle circle |
+| **Cycle Circle** | The product's name, written as two title-case words in all user-facing English text. The logo always uses the Latin wordmark; running Bengali text uses the Bengali spelling of Cycle Circle. | Vesta, the Bengali spelling of Vesta, CycleCircle, cycle circle |
 | **Vesta** | The product's former name, kept only as the internal code name in identifiers; never shown to users. | using it in any user-facing text |
 | **Bangladesh day** | A calendar day in Bangladesh time (UTC+6, no daylight saving): the day that "today", "35 days ago" and every date the product shows or stores is counted in. An event (a signup, a sent SMS, a check-in) belongs to the Bangladesh day its moment falls on, so every per-day count groups by Bangladesh day. | local day, server day, UTC day |
 
