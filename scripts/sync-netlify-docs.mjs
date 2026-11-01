@@ -10,6 +10,7 @@ const sourceIndex = path.join(repoRoot, 'docs/site/index.html');
 const deployIndex = path.join(repoRoot, 'docs/site/index.html');
 
 const publishedDocs = [
+  'cycle-circle-handbook.html',
   'vesta-mvp-plan.html',
   'vesta-srs.html',
   'vesta-user-journey-flows.html',

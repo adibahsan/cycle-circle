@@ -1,0 +1,12 @@
+% Keep tall phone screenshots to half a page; wide Admin screenshots to the text width.
+\usepackage{graphicx}
+\makeatletter
+\AtBeginDocument{%
+  \def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+  \def\maxheight{0.5\textheight}
+  \setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}}
+\makeatother
+% Template headings (\paragraph level after the build) on their own line, not run in.
+\usepackage{titlesec}
+\titleformat{\paragraph}[hang]{\normalfont\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\paragraph}{0pt}{1.4ex plus .3ex}{0.5ex}
