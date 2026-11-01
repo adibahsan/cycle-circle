@@ -26,7 +26,9 @@ test.describe('Auto-prompts', () => {
 
     await page.getByRole('button', { name: 'Maybe later' }).click()
     await expect(lateAlert(page)).toHaveCount(0)
-    await page.waitForTimeout(1500)
+    // Settled signal: the dashboard has rendered its content, so a prompt that was going to open would have by now.
+    await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeVisible()
+    await page.waitForLoadState('networkidle')
     await expect(tour(page)).toHaveCount(0)
     await expect(checkIn(page)).toHaveCount(0)
     await shot(page, 'ap-rule', { suffix: 'after-close' })

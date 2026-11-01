@@ -176,34 +176,41 @@ test.describe('Navigation & Language', () => {
   test.use({ storageState: statePath('streaker') })
 
   test('bottom nav, More sheet, language switch and persistence', async ({ page }) => {
-    await suppressAutoPrompts(page)
-    await page.goto('/dashboard')
-    await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeVisible()
-    await shot(page, 'nl-bottom-nav')
+    try {
+      await suppressAutoPrompts(page)
+      await page.goto('/dashboard')
+      await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeVisible()
+      await shot(page, 'nl-bottom-nav')
 
-    await page.getByRole('button', { name: 'More' }).click()
-    await expect(page.getByRole('heading', { name: 'More' })).toBeVisible()
-    await shot(page, 'nl-more-sheet')
+      await page.getByRole('button', { name: 'More' }).click()
+      await expect(page.getByRole('heading', { name: 'More' })).toBeVisible()
+      await shot(page, 'nl-more-sheet')
 
-    await page.getByRole('button', { name: 'Switch language' }).click()
-    await shot(page, 'nl-switch-language')
-    await page.getByRole('button', { name: 'ভাষা পরিবর্তন করুন' }).click()
-    await page.keyboard.press('Escape')
+      await page.getByRole('button', { name: 'Switch language' }).click()
+      await shot(page, 'nl-switch-language')
+      await page.getByRole('button', { name: 'ভাষা পরিবর্তন করুন' }).click()
+      await page.keyboard.press('Escape')
 
-    // Switch from Settings, then reload: the choice is kept (cookie vesta_lang).
-    await page.goto('/settings')
-    await centre(page, 'Language & Appearance')
-    await page.getByRole('radio', { name: 'বাং' }).click()
-    await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
-    await shot(page, 'nl-switch-language', { suffix: 'settings' })
-    await page.reload()
-    await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
-    await shot(page, 'nl-language-persists')
-    const cookie = (await page.context().cookies()).find((c) => c.name === 'vesta_lang')
-    expect(cookie?.value).toBe('bn')
-    await page.goto('/dashboard')
-    await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
-    await shot(page, 'nl-language-persists', { suffix: 'dashboard' })
+      // Switch from Settings, then reload: the choice is kept (cookie vesta_lang).
+      await page.goto('/settings')
+      await centre(page, 'Language & Appearance')
+      await page.getByRole('radio', { name: 'বাং' }).click()
+      await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
+      await shot(page, 'nl-switch-language', { suffix: 'settings' })
+      await page.reload()
+      await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
+      await shot(page, 'nl-language-persists')
+      const cookie = (await page.context().cookies()).find((c) => c.name === 'vesta_lang')
+      expect(cookie?.value).toBe('bn')
+      await page.goto('/dashboard')
+      await expect(page.locator('html')).toHaveAttribute('lang', 'bn')
+      await shot(page, 'nl-language-persists', { suffix: 'dashboard' })
+    } finally {
+      // Leave the seeded persona as found: English (the switch above is saved to its profile).
+      await page.goto('/settings')
+      await page.getByRole('radio', { name: /^(EN|ইং)$/ }).click()
+      await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+    }
   })
 
   // The desktop sidebar needs a wide viewport; the chapter's device is "phone", so the shot overrides it.

@@ -39,7 +39,7 @@ const phoneOf = (i: number) => `+8801711000${100 + i}`
 const emailOf = (name: string) => `${name.toLowerCase().replace(/\s+/g, '.')}@example.test`
 
 /** Calendar day (`YYYY-MM-DD`, UTC date part) `n` days before `now`, as the @db.Date value. */
-const dayDate = (now: Date, n: number) => new Date(`${new Date(now.getTime() - n * DAY).toISOString().slice(0, 10)}T00:00:00.000Z`)
+const dayDateBefore = (now: Date, n: number) => new Date(`${new Date(now.getTime() - n * DAY).toISOString().slice(0, 10)}T00:00:00.000Z`)
 
 export async function seedDemoMembers(db: PrismaClient): Promise<void> {
   const now = demoNow()
@@ -100,12 +100,12 @@ export async function seedDemoMembers(db: PrismaClient): Promise<void> {
 
   // Overview history: nightly Pro counts, daily activity of the live members, a few churn events.
   await db.proSnapshot.createMany({
-    data: Array.from({ length: 60 }, (_, n) => ({ day: dayDate(now, n + 1), proCount: Math.max(4, 22 - Math.floor(n / 4) + (n % 3)) })),
+    data: Array.from({ length: 60 }, (_, n) => ({ day: dayDateBefore(now, n + 1), proCount: Math.max(4, 22 - Math.floor(n / 4) + (n % 3)) })),
     skipDuplicates: true,
   })
   const live = ROSTER.flatMap(([, kind], i) => (kind === 'suspended' || kind === 'deleted' ? [] : [i]))
   await db.userActivity.createMany({
-    data: Array.from({ length: 14 }, (_, n) => live.filter((i) => (i + n) % 3 !== 0 || n < 2).map((i) => ({ userId: idOf(i), day: dayDate(now, n) }))).flat(),
+    data: Array.from({ length: 14 }, (_, n) => live.filter((i) => (i + n) % 3 !== 0 || n < 2).map((i) => ({ userId: idOf(i), day: dayDateBefore(now, n) }))).flat(),
     skipDuplicates: true,
   })
   await db.subscriptionCheckRun.createMany({

@@ -36,8 +36,12 @@ if (!process.argv.includes('--skip-build')) {
   results.push([
     'Build (HTML and PDF)',
     () => {
-      const r = spawnSync('node', [path.join(root, 'scripts/build-handbook.mjs')], { encoding: 'utf8' })
-      return r.status === 0 ? [] : [`The build failed (exit ${r.status}). Last output:\n${`${r.stdout}${r.stderr}`.trim().split('\n').slice(-12).join('\n')}`]
+      // Same two steps as `pnpm handbook:build`, so the published copy stays in sync with the build.
+      for (const [script, ...flags] of [['build-handbook.mjs'], ['sync-netlify-docs.mjs', '--sync']]) {
+        const r = spawnSync('node', [path.join(root, 'scripts', script), ...flags], { encoding: 'utf8' })
+        if (r.status !== 0) return [`${script} failed (exit ${r.status}). Last output:\n${`${r.stdout}${r.stderr}`.trim().split('\n').slice(-12).join('\n')}`]
+      }
+      return []
     },
   ])
 }
