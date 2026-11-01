@@ -8,7 +8,7 @@ Some things in Cycle Circle happen without anyone tapping anything: reminder ema
 
 ### Where to find it
 
-**Admin > System** lists the two jobs an Admin can switch and run by hand, plus the report, SMS send time and delivery-report cards. The other jobs have no screen of their own; their results show up in the places named in the table below.
+**Admin > System** lists the two jobs an Admin can switch and run by hand, plus the report, SMS send time, delivery-report and Pro price cards. The other jobs have no screen of their own; their results show up in the places named in the table below.
 
 ![System page with the job cards and their schedule](../screenshots/sj-overview.png)
 
@@ -28,7 +28,7 @@ Use this table to answer "when does it run, and what does a User or Admin see af
 
 ### Rules and limits
 
-- The times come from the production host crontab (`ops/deploy/vesta-crontab`, described in `docs/ops/05-operations.md`). The app does not schedule anything itself. If someone edits the host crontab, these times change; the in-app switches and the SMS send time do not move them.
+- The times come from the production host crontab (`ops/deploy/vesta-crontab`, described in `docs/ops/05-operations.md`). The app does not schedule anything itself. (For developers: `apps/web/vercel.json` still lists two legacy Vercel Cron entries; production does not use them.) If someone edits the host crontab, these times change; the in-app switches and the SMS send time do not move them.
 - **The System page shows UTC.** Its cards say "Production schedule: 08:00 UTC daily" and "02:00 UTC daily", and the report card adds "Sunday 03:00 UTC (weekly), 1st of the month 03:00 UTC (monthly)". Add 6 hours for Bangladesh time. The report card's own text also says "every Sunday at 09:00 Bangladesh time".
 - Only three switches exist: **Daily reminders**, **Daily subscription check** and **Emailed reports**. A switched-off job answers the server's call with `{"skipped":true,"reason":"cron disabled"}` and does nothing. Nightly maintenance and the Pro subscriber snapshot cannot be switched off.
 - The campaign SMS dispatch has **no switch of its own**. It follows the **Daily reminders** switch: turning "Daily reminders" off also stops the SMS dispatch.
@@ -141,7 +141,7 @@ Admins plan a **campaign**: one SMS per Bangladesh day. A job sends each day's *
 
 | The Admin sees | Cause | Fix |
 |---|---|---|
-| A day is **Missed** | The server was down at the send time, or the "Daily reminders" switch was off all day | Resend the text on a free day ([Resend failed messages](#sm-resend)) |
+| A day is **Missed** | The server was down at the send time, or the "Daily reminders" switch was off (nothing runs while it is off; the day is marked Missed at the first check after it is switched back on) | Resend the text on a free day ([Resend failed messages](#sm-resend)) |
 | **Failed to send** with an error | BDApps refused the send (for example E1312 when delivery reports are on but not enabled for the plan) | Fix the cause, then resend ([Resend failed messages](#sm-resend)); see [Delivery reports](#as-delivery-reports) |
 | Message sent later than the send time | The 15-minute step; or the cron line is missing and only the 14:00 run sends | Check the host crontab has the every-15-minutes line |
 | "Delivery reports off" under a sent message | Delivery reports were off when it was sent | Normal; see [Delivery reports](#as-delivery-reports) |
@@ -263,7 +263,7 @@ The server emails the Overview numbers to a list of recipients every week and ev
 - **Each period is sent once.** A repeated call for the same period answers `already-sent` and sends nothing. If every recipient fails, the period is released so the next call tries again.
 - The link to the Overview is added only when the web app has `ADMIN_APP_URL` set.
 - The "Schedule" switch turns both reports off. Reports sent are logged as type REPORT, and in the Admin email log they show with the raw type text.
-- To send a period again by hand, a developer adds `force=true` to the report URL; there is no button.
+- To send a period again by hand, a developer calls the report URL with `force=true` and the `Authorization: Bearer` cron secret header (without it the answer is 401 "Invalid cron secret"); there is no button.
 
 ### What can go wrong
 
