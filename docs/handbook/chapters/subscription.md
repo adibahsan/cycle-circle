@@ -22,7 +22,7 @@ One page that shows the current plan, what it includes and a **Free vs Pro** tab
 
 ### Rules and limits
 
-- The page follows the plan stored on the User. After a change (an Admin action, BDApps, an upgrade in another tab) it can lag by up to 5 minutes; an upgrade or unsubscribe done on this page updates it at once.
+- The page follows the plan stored on the User. After a change (an Admin action, BDApps, an upgrade in another tab) it can lag by up to 5 minutes (the trial note and countdown can lag the same way); an upgrade or unsubscribe done on this page updates it at once.
 - Notes under the plan name: "Trial · {hours}h remaining" (email trial), "Your free trial has ended — upgrade to continue." (trial ended), "Your subscription has expired. Renew to keep Pro." (Lapsed).
 - The page is the only signed-in page that opens while the trial lock is active.
 - The footer "Cancel anytime. No hidden fees." shows to Users who are not Pro.
@@ -44,7 +44,7 @@ One page that shows the current plan, what it includes and a **Free vs Pro** tab
 
 ### What it is
 
-The amount the Pro offer shows, for example "5 taka /day" (the app writes the taka sign before the number). It is set by an **Admin**, not read from BDApps (ADR 0011). It is what the Subscription page, the upgrade dialog and the Terms show, in English and Bengali.
+The amount the Pro offer shows, for example "5 /day" with the taka sign (৳) before the amount. It is set by an **Admin**, not read from BDApps (ADR 0011). It is what the Subscription page, the upgrade dialog and the Terms show, in English and Bengali.
 
 ### Where to find it
 
@@ -114,7 +114,8 @@ How a Free, Expired or trial User becomes Pro: tap **Upgrade to Pro**, verify a 
 | "This number is already registered to another account." | Another User owns the number | Use another number |
 | "This number is already subscribed. Unsubscribe it from Cycle Circle on BDApps first, then add it here." | The number is already a BDApps Subscriber, for example a Free User whose plan fell out of sync with BDApps | The User unsubscribes on BDApps and retries, or an Admin sets Pro |
 | "We can't send a code to this number's mobile operator yet. Please try another number." | Unsupported operator | Use another number |
-| "Please wait a moment before requesting another code." / "Too many attempts. Try again in a few minutes." | Resend and rate limits | Wait |
+| "Please wait a moment before requesting another code." | Resend within 60 seconds | Wait |
+| "Too many attempts. Try again in a few minutes." | Rate limit | Wait |
 | "Invalid or expired code. Please try again." | Wrong, expired or reused code | Request a new code |
 | "Something went wrong. Please try again." | Any other failure, including too many wrong codes | Request a new code |
 
@@ -150,6 +151,7 @@ A Pro User ends their own BDApps subscription from the app. The plan becomes Fre
 - Not available when an Admin granted Pro ([Admin overrides and billing](#pa-admin-overrides)) or the account has no phone.
 - Logging in with the phone again, or **Upgrade to Pro**, subscribes the number again.
 - Unsubscribing in the app is the same as BDApps ending the subscription: SMS alerts stop and nothing else changes.
+- Unsubscribing takes effect at once: the User moves to Free immediately, even though the Terms say access continues until the end of the current billing period.
 - The Terms page may say a User cancels "from Settings". The cancel button is on the Subscription page, not in Settings.
 
 ### What can go wrong
