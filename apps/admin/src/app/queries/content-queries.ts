@@ -24,6 +24,8 @@ function articlesCacheKey(o: ListArticlesOptions) {
     n.phase ?? '',
     n.missingBangla ? '1' : '',
     n.sort,
+    n.viewsFrom ?? '',
+    n.viewsTo ?? '',
     n.q ?? '',
   ]
 }

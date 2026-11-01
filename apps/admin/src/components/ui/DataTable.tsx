@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { clsx } from 'clsx';
 import { Shimmer } from './Shimmer';
 
@@ -23,6 +23,12 @@ interface DataTableProps<T> {
   sortKey?: string | null;
   sortOrder?: 'asc' | 'desc';
   onSortChange?: (key: string, order: 'asc' | 'desc') => void;
+  /** Opt-in row selection (controlled). Requires `keyExtractor`. Adds a checkbox column + select-all-on-page. */
+  selectable?: boolean;
+  selectedKeys?: ReadonlySet<string | number>;
+  onSelectionChange?: (keys: Set<string | number>) => void;
+  /** Accessible name for a row checkbox, e.g. `Select "Title"`. */
+  rowSelectLabel?: (row: T) => string;
 }
 
 type SortDirection = 'asc' | 'desc';
@@ -37,6 +43,10 @@ export function DataTable<T extends Record<string, unknown>>({
   sortKey: controlledSortKey,
   sortOrder: controlledSortOrder,
   onSortChange,
+  selectable,
+  selectedKeys,
+  onSelectionChange,
+  rowSelectLabel,
 }: DataTableProps<T>) {
   // Internal state used only when onSortChange is not provided (client-side sort)
   const [localSortKey, setLocalSortKey] = useState<string | null>(null);
@@ -76,11 +86,54 @@ export function DataTable<T extends Record<string, unknown>>({
         })
       : data;
 
+  const selecting = !!selectable && !!keyExtractor && !!onSelectionChange;
+  const pageKeys = selecting ? sortedData.map((r) => keyExtractor!(r)) : [];
+  const selectedOnPage = pageKeys.filter((k) => selectedKeys?.has(k)).length;
+  const allSelected = pageKeys.length > 0 && selectedOnPage === pageKeys.length;
+  const someSelected = selectedOnPage > 0 && !allSelected;
+  const headerCheckRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (headerCheckRef.current) headerCheckRef.current.indeterminate = someSelected;
+  }, [someSelected]);
+
+  function toggleAll() {
+    const next = new Set(selectedKeys);
+    for (const k of pageKeys) {
+      if (allSelected) next.delete(k);
+      else next.add(k);
+    }
+    onSelectionChange!(next);
+  }
+
+  function toggleRow(key: string | number) {
+    const next = new Set(selectedKeys);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    onSelectionChange!(next);
+  }
+
+  const checkboxClass =
+    'h-4 w-4 cursor-pointer rounded border-[var(--color-border)] accent-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]';
+  const colCount = columns.length + (selecting ? 1 : 0);
+
   return (
     <div className="w-full overflow-auto rounded-2xl border border-[var(--color-border)] glass">
       <table className="w-full min-w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-[var(--color-border)]">
+            {selecting && (
+              <th scope="col" style={{ width: '44px' }} className="sticky top-0 bg-[var(--color-bg-secondary)] py-3 pl-5 pr-2 text-left">
+                <input
+                  ref={headerCheckRef}
+                  type="checkbox"
+                  className={checkboxClass}
+                  aria-label="Select all rows on this page"
+                  checked={allSelected}
+                  disabled={loading || pageKeys.length === 0}
+                  onChange={toggleAll}
+                />
+              </th>
+            )}
             {columns.map((col) => (
               <th
                 key={col.key}
@@ -123,6 +176,7 @@ export function DataTable<T extends Record<string, unknown>>({
           {loading ? (
             Array.from({ length: 5 }).map((_, i) => (
               <tr key={i} className="border-b border-[var(--color-border)] last:border-0">
+                {selecting && <td className="py-3 pl-5 pr-2" />}
                 {columns.map((col) => (
                   <td key={col.key} className="px-4 py-3 first:pl-5 last:pr-5">
                     <Shimmer className="h-4 w-full" />
@@ -133,7 +187,7 @@ export function DataTable<T extends Record<string, unknown>>({
           ) : sortedData.length === 0 ? (
             <tr>
               <td
-                colSpan={columns.length}
+                colSpan={colCount}
                 className="px-5 py-12 text-center text-[var(--color-text-muted)]"
               >
                 {emptyMessage}
@@ -153,6 +207,21 @@ export function DataTable<T extends Record<string, unknown>>({
                   onRowClick && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-primary)]'
                 )}
               >
+                {selecting && (
+                  <td
+                    className="py-3 pl-5 pr-2"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      className={checkboxClass}
+                      aria-label={rowSelectLabel ? rowSelectLabel(row) : 'Select row'}
+                      checked={!!selectedKeys?.has(keyExtractor!(row))}
+                      onChange={() => toggleRow(keyExtractor!(row))}
+                    />
+                  </td>
+                )}
                 {columns.map((col) => (
                   <td
                     key={col.key}

@@ -12,7 +12,9 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
-import { deleteArticle, createCategory, updateCategory, deleteCategory, reorderCategories } from '@/app/actions/content-actions'
+import { Select } from '@/components/ui/Select'
+import type { BulkArticleAction } from '@vesta/shared/server/services'
+import { deleteArticle, bulkArticleAction, createCategory, updateCategory, deleteCategory, reorderCategories } from '@/app/actions/content-actions'
 import { AdminPageHeader } from '@/components/ui/AdminPageHeader'
 import { adminCacheTags } from '@/lib/admin-cache-tags'
 import { useToast } from '@/components/ui/Toast'
@@ -30,6 +32,7 @@ type ArticleRow = {
   createdAt: Date
   category: { name: string } | null
   author: { fullName: string | null } | null
+  views: number
 }
 
 type CategoryOption = {
@@ -164,6 +167,7 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
   const currentPhase = searchParams.get('phase') ?? 'all'
   const currentMissingBangla = searchParams.get('missingBangla') === '1' ? '1' : 'all'
   const currentQuery = searchParams.get('q') ?? ''
+  const currentSort = searchParams.get('sort') ?? 'newest'
   const currentPage = data.page
   const currentPageSize = data.pageSize
 
@@ -173,6 +177,52 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
     { value: 'none', label: 'No category' },
     ...categories.map((c) => ({ value: c.id, label: `${c.name} (${c._count.articles})` })),
   ]
+
+  // ── Bulk selection ──
+  const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkMoveTarget, setBulkMoveTarget] = useState('')
+  const [bulkFailures, setBulkFailures] = useState<{ title: string; error: string }[]>([])
+  const bulkCategoryOptions = [
+    { value: 'none', label: 'No category' },
+    ...categories.map((c) => ({ value: c.id, label: c.name })),
+  ]
+
+  // Selection belongs to the visible page: drop it when the list changes under it.
+  const articleIdsKey = data.articles.map((a) => a.id).join(',')
+  useEffect(() => {
+    const present = new Set(articleIdsKey.split(','))
+    setSelectedIds((prev) => new Set([...prev].filter((id) => present.has(String(id)))))
+  }, [articleIdsKey])
+
+  async function runBulk(action: BulkArticleAction) {
+    const ids = [...selectedIds].map(String)
+    if (ids.length === 0) return
+    setBulkBusy(true)
+    setBulkFailures([])
+    try {
+      const result = await bulkArticleAction(ids, action)
+      if ('error' in result) {
+        toast.error(result.error)
+        return
+      }
+      const failed = result.results.filter((r) => !r.ok)
+      const succeeded = result.results.length - failed.length
+      const titleOf = (id: string) => data.articles.find((a) => a.id === id)?.titleEn ?? id
+      setBulkFailures(failed.map((r) => ({ title: titleOf(r.id), error: r.ok ? '' : r.error })))
+      const summary = `${succeeded} succeeded${failed.length ? `, ${failed.length} failed` : ''}`
+      if (failed.length) toast.error(summary)
+      else toast.success(summary)
+      // Keep only the failed ones selected so the admin can retry them.
+      setSelectedIds(new Set(failed.map((r) => r.id)))
+      setBulkMoveTarget('')
+      router.refresh()
+    } catch {
+      toast.error('Could not apply the action. Check your connection and try again.')
+    } finally {
+      setBulkBusy(false)
+    }
+  }
 
   async function handleDelete() {
     if (!deleteTarget) return
@@ -353,6 +403,16 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
       ),
     },
     {
+      key: 'views',
+      header: 'Views',
+      sortable: true,
+      render: (row) => (
+        <span className="text-sm tabular-nums text-[var(--color-text-secondary)]" data-testid="article-views">
+          {row.views.toLocaleString()}
+        </span>
+      ),
+    },
+    {
       key: 'actions',
       header: '',
       width: '96px',
@@ -490,11 +550,92 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
         ]}
       />
 
+      {/* Views range: Bangladesh days, inclusive; empty = all time. Applies to the column and the sort. */}
+      <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+        <span>Views from</span>
+        <input
+          type="date"
+          aria-label="Views from"
+          value={searchParams.get('viewsFrom') ?? ''}
+          onChange={(e) => updateParams({ viewsFrom: e.target.value })}
+          className="h-9 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 text-sm"
+        />
+        <span>to</span>
+        <input
+          type="date"
+          aria-label="Views to"
+          value={searchParams.get('viewsTo') ?? ''}
+          onChange={(e) => updateParams({ viewsTo: e.target.value })}
+          className="h-9 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 text-sm"
+        />
+      </div>
+
       {/* Table */}
+      {(selectedIds.size > 0 || bulkFailures.length > 0) && (
+        <div
+          role="region"
+          aria-label="Bulk actions"
+          className="sticky top-2 z-10 space-y-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-3 shadow-soft"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-[var(--color-text-primary)]" aria-live="polite">
+              {selectedIds.size} selected
+            </span>
+            <Button size="sm" disabled={bulkBusy || selectedIds.size === 0} onClick={() => runBulk({ type: 'publish' })}>
+              Publish
+            </Button>
+            <Button size="sm" variant="secondary" disabled={bulkBusy || selectedIds.size === 0} onClick={() => runBulk({ type: 'unpublish' })}>
+              Unpublish
+            </Button>
+            <Button size="sm" variant="secondary" disabled={bulkBusy || selectedIds.size === 0} onClick={() => runBulk({ type: 'archive' })}>
+              Archive
+            </Button>
+            <Select
+              selectSize="sm"
+              aria-label="Move to category"
+              placeholder="Move to category…"
+              options={bulkCategoryOptions}
+              value={bulkMoveTarget}
+              onChange={setBulkMoveTarget}
+              disabled={bulkBusy || selectedIds.size === 0}
+              containerClassName="w-auto min-w-44"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkBusy || selectedIds.size === 0 || !bulkMoveTarget}
+              onClick={() => runBulk({ type: 'move', categoryId: bulkMoveTarget === 'none' ? null : bulkMoveTarget })}
+            >
+              Move
+            </Button>
+            <Button size="sm" variant="ghost" disabled={bulkBusy} onClick={() => { setSelectedIds(new Set()); setBulkFailures([]) }}>
+              Clear
+            </Button>
+          </div>
+          {bulkFailures.length > 0 && (
+            <div role="alert" className="text-sm text-[var(--color-error)]">
+              <p className="font-medium">{bulkFailures.length} failed:</p>
+              <ul className="list-disc pl-5">
+                {bulkFailures.map((f, i) => (
+                  <li key={i}>{f.title}: {f.error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
       <DataTable
         columns={COLUMNS}
         data={data.articles}
+        selectable
+        selectedKeys={selectedIds}
+        onSelectionChange={setSelectedIds}
+        rowSelectLabel={(row) => `Select "${row.titleEn}"`}
         emptyMessage="No articles match your filters."
+        sortKey={currentSort === 'views' ? 'views' : null}
+        sortOrder="desc"
+        onSortChange={(key) => updateParams({ sort: key === 'views' && currentSort !== 'views' ? 'views' : '' })}
         onRowClick={(row) => router.push(`/content/${row.id}`)}
         keyExtractor={(row) => row.id}
       />

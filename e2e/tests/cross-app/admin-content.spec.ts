@@ -9,7 +9,7 @@ import type { Locator, Page } from '@playwright/test'
 import { test, expect } from '../../support/fixtures'
 import { createLoggedInAdmin } from '../../support/admin'
 import { e2eDb, revalidateWebArticles, createArticle } from '../../support/db'
-import { serverNow } from '../../support/bangladesh-day'
+import { refreshData } from '../../support/admin-charts'
 
 const FIXTURE_PNG = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -224,7 +224,7 @@ test.describe('Admin content authoring (seen on web)', () => {
     locale,
     timezoneId,
   }) => {
-    test.setTimeout(240_000)
+    test.setTimeout(300_000)
     const runId = uniqueId()
     const titleEn = `E2E215 Scheduled ${runId}`
     const admin = await createLoggedInAdmin(browser, {
@@ -234,9 +234,9 @@ test.describe('Admin content authoring (seen on web)', () => {
 
     try {
       const { page: adminPage } = admin
-      // The next whole Bangladesh minute at least 45s away, typed as Bangladesh wall time.
-      const now = await serverNow()
-      const target = new Date(Math.ceil((now.getTime() + 45_000) / 60_000) * 60_000)
+      // The next whole minute at least 60s away (steps below take a while on a busy runner), typed as
+      // Bangladesh wall time. App processes run on this machine, so the runner clock is the server's.
+      const target = new Date(Math.ceil((Date.now() + 60_000) / 60_000) * 60_000)
       const wall = new Date(target.getTime() + 6 * 3_600_000).toISOString().slice(0, 16).replace('T', ' ')
 
       await adminPage.goto('/content/new')
@@ -270,7 +270,7 @@ test.describe('Admin content authoring (seen on web)', () => {
 
       // Visible after: the list refreshes within a minute of the time, with no cron.
       await expect
-        .poll(async () => Date.now() >= target.getTime(), { timeout: 90_000, intervals: [2_000] })
+        .poll(async () => Date.now() >= target.getTime(), { timeout: 150_000, intervals: [2_000] })
         .toBe(true)
       await web.page.goto(`/content/${stored.id}`)
       await expect(web.page.getByRole('heading', { name: titleEn })).toBeVisible({ timeout: 15_000 })
@@ -677,6 +677,100 @@ test.describe('Admin content authoring (seen on web)', () => {
         expectUploadImg: true,
       })
     } finally {
+      await admin.context.close()
+    }
+  })
+  test('admin Views column goes up after a customer opens the article (#216)', async ({
+    browser,
+    newUser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    const runId = uniqueId()
+    const titleEn = `E2E216 views ${runId}`
+    const slug = `e2e216-${runId}`
+    const article = await createArticle({
+      slug, titleEn, titleBn: 'শিরোনাম', bodyEn: '<p>x</p>', bodyBn: '<p>বাংলা</p>',
+      status: 'PUBLISHED', cyclePhases: ['LUTEAL'],
+    })
+    const admin = await createLoggedInAdmin(browser, {
+      viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId,
+    })
+    const web = await newUser()
+    try {
+      const { page } = admin
+      const row = () => page.getByRole('button').filter({ hasText: titleEn })
+      await page.goto(`/content?q=${encodeURIComponent(titleEn)}`)
+      await expect(row().getByTestId('article-views')).toHaveText('0')
+
+      await web.page.goto(`/content/${article.id}`)
+      await expect(web.page.getByRole('heading', { name: titleEn })).toBeVisible()
+
+      // Recording runs after the response, and the admin list is cached: refresh until it lands.
+      await expect(async () => {
+        await refreshData(page)
+        await expect(row().getByTestId('article-views')).toHaveText('1', { timeout: 2_000 })
+      }).toPass({ timeout: 30_000 })
+
+      // A second open on the same Bangladesh day is not a second view.
+      await web.page.reload()
+      await expect(web.page.getByRole('heading', { name: titleEn })).toBeVisible()
+      await refreshData(page)
+      await expect(row().getByTestId('article-views')).toHaveText('1')
+    } finally {
+      await e2eDb().article.deleteMany({ where: { slug } })
+      await admin.context.close()
+    }
+  })
+
+})
+
+test.describe('Admin bulk article actions (seen on web)', () => {
+  test('bulk-publish two drafts from the list; both appear on web (#214)', async ({
+    browser,
+    newUser,
+    viewport,
+    userAgent,
+    isMobile,
+    hasTouch,
+    deviceScaleFactor,
+    locale,
+    timezoneId,
+  }) => {
+    const runId = uniqueId()
+    const prefix = `E2E214 ${runId}`
+    const slugPrefix = `e2e214-${runId}`
+    const titles = [`${prefix} one`, `${prefix} two`]
+    for (const [i, titleEn] of titles.entries()) {
+      await createArticle({
+        slug: `${slugPrefix}-${i}`, titleEn, titleBn: 'শিরোনাম', bodyEn: '<p>x</p>', bodyBn: '<p>বাংলা</p>',
+        status: 'DRAFT', cyclePhases: ['LUTEAL'],
+      })
+    }
+    const admin = await createLoggedInAdmin(browser, {
+      viewport, userAgent, isMobile, hasTouch, deviceScaleFactor, locale, timezoneId,
+    })
+    const web = await newUser()
+    try {
+      const page = admin.page
+      await page.goto(`/content?q=${encodeURIComponent(prefix)}`)
+      for (const t of titles) {
+        await page.getByRole('checkbox', { name: `Select "${t}"` }).check()
+      }
+      await expect(page.getByText('2 selected')).toBeVisible()
+      await page.getByRole('region', { name: 'Bulk actions' }).getByRole('button', { name: 'Publish', exact: true }).click()
+      await expect(page.getByText('2 succeeded')).toBeVisible({ timeout: 15_000 })
+
+      for (const t of titles) {
+        await expectPublishedOnWeb(web.page, '/content?phase=LUTEAL', t)
+      }
+    } finally {
+      await e2eDb().article.deleteMany({ where: { slug: { startsWith: slugPrefix } } })
       await admin.context.close()
     }
   })

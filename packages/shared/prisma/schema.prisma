@@ -171,6 +171,7 @@ model User {
   emailLogs                 EmailLog[]
   emailVerifications        EmailVerification[]
   activity                  UserActivity[]
+  articleViews              ArticleView[]
 
   @@index([createdAt])
   @@index([lastLoginAt])
@@ -444,6 +445,7 @@ model Article {
 
   category ArticleCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   author   User             @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  views    ArticleView[]
 
   @@index([status])
   @@index([categoryId])
@@ -640,4 +642,18 @@ model UserActivity {
 
   @@id([userId, day])
   @@index([day])
+}
+
+/// One row per (article, user, Bangladesh day) on which a customer opened the article (spec #193, ticket #216).
+model ArticleView {
+  articleId String
+  userId    String
+  day       DateTime @db.Date // a Bangladesh day, stored as that day at 00:00 UTC
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, userId, day])
+  @@index([day])
+  @@index([articleId, day])
 }

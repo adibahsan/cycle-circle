@@ -4,13 +4,15 @@
  * views) and the parser, nothing else.
  */
 
+import { parseDhakaDay } from './dhaka-date'
+
 export const ARTICLE_STATUS_FILTERS = ['DRAFT', 'PUBLISHED', 'scheduled', 'ARCHIVED'] as const
 export type ArticleStatusFilter = (typeof ARTICLE_STATUS_FILTERS)[number]
 
 export const ARTICLE_PHASES = ['MENSTRUAL', 'FOLLICULAR', 'OVULATION', 'LUTEAL'] as const
 export type ArticlePhase = (typeof ARTICLE_PHASES)[number]
 
-export const ARTICLE_SORTS = ['newest', 'title'] as const
+export const ARTICLE_SORTS = ['newest', 'title', 'views'] as const
 export type ArticleSort = (typeof ARTICLE_SORTS)[number]
 
 export const ARTICLE_DEFAULT_PAGE_SIZE = 20
@@ -29,8 +31,16 @@ export interface ListArticlesOptions {
   /** Bangla title or body missing. */
   missingBangla?: boolean
   sort?: ArticleSort
+  /** Bangladesh days (`YYYY-MM-DD`, inclusive) that the views count and views sort cover. Absent = all time. */
+  viewsFrom?: string
+  viewsTo?: string
   page?: number
   pageSize?: number
+}
+
+/** A real `YYYY-MM-DD` day, else undefined. */
+function validDay(v: unknown): string | undefined {
+  return typeof v === 'string' && parseDhakaDay(v) && v.length === 10 ? v : undefined
 }
 
 const isOneOf = <T extends string>(list: readonly T[], v: unknown): v is T =>
@@ -53,6 +63,8 @@ export function normalizeListOptions(o: ListArticlesOptions = {}) {
     phase: isOneOf(ARTICLE_PHASES, o.phase) ? o.phase : undefined,
     missingBangla: o.missingBangla === true,
     sort: isOneOf(ARTICLE_SORTS, o.sort) ? o.sort : ('newest' as ArticleSort),
+    viewsFrom: validDay(o.viewsFrom),
+    viewsTo: validDay(o.viewsTo),
     page: clampInt(o.page, 1),
     pageSize: clampInt(o.pageSize, ARTICLE_DEFAULT_PAGE_SIZE, ARTICLE_MAX_PAGE_SIZE),
   }
@@ -75,6 +87,10 @@ export function parseArticleListParams(raw: RawParams): ListArticlesOptions {
   if (first('missingBangla') === '1') out.missingBangla = true
   const sort = first('sort')
   if (isOneOf(ARTICLE_SORTS, sort)) out.sort = sort
+  const viewsFrom = validDay(first('viewsFrom'))
+  if (viewsFrom) out.viewsFrom = viewsFrom
+  const viewsTo = validDay(first('viewsTo'))
+  if (viewsTo) out.viewsTo = viewsTo
   out.page = clampInt(first('page'), 1)
   out.pageSize = clampInt(first('pageSize'), ARTICLE_DEFAULT_PAGE_SIZE, ARTICLE_MAX_PAGE_SIZE)
   return out

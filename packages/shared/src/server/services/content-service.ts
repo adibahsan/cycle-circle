@@ -9,6 +9,7 @@ import {
   normalizeListOptions,
   type ListArticlesOptions,
 } from '../../utils/article-list-params'
+import { dayToStoredDate } from '../../utils/dhaka-date'
 import { articlePublishWarnings, isBlankBody } from '../../utils/article-warnings'
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
@@ -59,8 +60,8 @@ export function visibleArticleWhere(now: Date): Prisma.ArticleWhereInput {
   return { status: 'PUBLISHED', publishedAt: { lte: now } }
 }
 
-export async function listArticles(options: ListArticlesOptions = {}, now: Date) {
-  const { q, status, categoryId, phase, missingBangla, sort, page, pageSize } = normalizeListOptions(options)
+export async function listArticles(options: ListArticlesOptions, now: Date) {
+  const { q, status, categoryId, phase, missingBangla, sort, viewsFrom, viewsTo, page, pageSize } = normalizeListOptions(options)
 
   const and: Prisma.ArticleWhereInput[] = []
   if (q) {
@@ -84,20 +85,45 @@ export async function listArticles(options: ListArticlesOptions = {}, now: Date)
 
   const orderBy: Prisma.ArticleOrderByWithRelationInput[] =
     sort === 'title' ? [{ titleEn: 'asc' }, { id: 'asc' }] : [{ createdAt: 'desc' }, { id: 'desc' }]
+  const include = {
+    category: { select: { name: true, nameBn: true } },
+    author: { select: { fullName: true } },
+  } as const
 
-  const [articles, total] = await Promise.all([
-    prisma.article.findMany({
-      where,
-      include: {
-        category: { select: { name: true, nameBn: true } },
-        author: { select: { fullName: true } },
-      },
-      orderBy,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.article.count({ where }),
-  ])
+  // Views per article in the Bangladesh-day range (inclusive; absent bound = open).
+  const viewCounts = async (ids: string[]) => {
+    const day: Prisma.DateTimeFilter = {}
+    if (viewsFrom) day.gte = dayToStoredDate(viewsFrom)
+    if (viewsTo) day.lte = dayToStoredDate(viewsTo)
+    const grouped = await prisma.articleView.groupBy({
+      by: ['articleId'],
+      where: { articleId: { in: ids }, ...(viewsFrom || viewsTo ? { day } : {}) },
+      _count: { _all: true },
+    })
+    return new Map(grouped.map((g) => [g.articleId, g._count._all]))
+  }
+
+  const total = await prisma.article.count({ where })
+  let articles
+  if (sort === 'views') {
+    // Most-viewed first: counts come from another table, so rank every match, then page the ranking.
+    const matching = await prisma.article.findMany({ where, select: { id: true }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] })
+    const counts = await viewCounts(matching.map((m) => m.id))
+    const pageIds = matching
+      .map((m) => m.id)
+      .sort((x, y) => (counts.get(y) ?? 0) - (counts.get(x) ?? 0))
+      .slice((page - 1) * pageSize, page * pageSize)
+    const rows = await prisma.article.findMany({ where: { id: { in: pageIds } }, include })
+    const byId = new Map(rows.map((r) => [r.id, r]))
+    articles = pageIds.flatMap((id) => {
+      const row = byId.get(id)
+      return row ? [{ ...row, views: counts.get(id) ?? 0 }] : []
+    })
+  } else {
+    const rows = await prisma.article.findMany({ where, include, orderBy, skip: (page - 1) * pageSize, take: pageSize })
+    const counts = await viewCounts(rows.map((r) => r.id))
+    articles = rows.map((r) => ({ ...r, views: counts.get(r.id) ?? 0 }))
+  }
 
   return {
     articles,
@@ -263,6 +289,8 @@ export async function updateArticle(
     publishedAt?: Date | null
   },
   now: Date,
+  /** When given, an ARTICLE_UPDATED audit row is written for this admin. */
+  adminId?: string,
 ) {
   assertArticleStatus(data.status)
   await assertArticleFields(data, 'update')
@@ -297,10 +325,95 @@ export async function updateArticle(
     updateData.cyclePhases = data.cyclePhases
   }
 
-  return prisma.article.update({
+  const article = await prisma.article.update({
     where: { id },
     data: updateData,
   })
+
+  if (adminId) {
+    await createAuditLog(adminId, AUDIT_ACTIONS.ARTICLE_UPDATED, 'Article', id, { fields: Object.keys(data) })
+  }
+
+  return article
+}
+
+// ── Bulk article actions ───────────────────────────────────────────────────────
+
+export type BulkArticleAction =
+  | { type: 'publish' }
+  | { type: 'unpublish' }
+  | { type: 'archive' }
+  | { type: 'move'; categoryId: string | null }
+
+export type BulkArticleResult = {
+  results: Array<{ id: string; ok: true } | { id: string; ok: false; error: string }>
+}
+
+const BULK_ARTICLE_MAX = 100
+
+/** Apply one action to many articles. Each id succeeds or fails alone; one audit row per call. */
+export async function bulkArticleAction(
+  adminId: string,
+  ids: string[],
+  action: BulkArticleAction,
+  now: Date,
+): Promise<BulkArticleResult> {
+  const unique = [...new Set(ids)]
+  if (unique.length === 0) throw new ContentError('Select at least one article.')
+  if (unique.length > BULK_ARTICLE_MAX) {
+    throw new ContentError(`Select at most ${BULK_ARTICLE_MAX} articles at a time.`)
+  }
+
+  let data: Prisma.ArticleUpdateManyMutationInput & { categoryId?: string | null }
+  let categoryError: string | null = null
+  switch (action.type) {
+    case 'publish':
+      data = { status: 'PUBLISHED', publishedAt: now }
+      break
+    case 'unpublish':
+      data = { status: 'DRAFT', publishedAt: null }
+      break
+    case 'archive':
+      data = { status: 'ARCHIVED', publishedAt: null }
+      break
+    case 'move': {
+      data = { categoryId: action.categoryId }
+      if (action.categoryId) {
+        const found = await prisma.articleCategory.findUnique({
+          where: { id: action.categoryId },
+          select: { id: true },
+        })
+        if (!found) categoryError = 'That category no longer exists.'
+      }
+      break
+    }
+    default:
+      throw new ContentError('Unknown bulk action.')
+  }
+
+  const results: BulkArticleResult['results'] = []
+  for (const id of unique) {
+    if (categoryError) {
+      results.push({ id, ok: false, error: categoryError })
+      continue
+    }
+    try {
+      const { count } = await prisma.article.updateMany({ where: { id }, data })
+      results.push(count === 0 ? { id, ok: false, error: 'Article not found.' } : { id, ok: true })
+    } catch {
+      results.push({ id, ok: false, error: 'Could not update this article.' })
+    }
+  }
+
+  await createAuditLog(adminId, AUDIT_ACTIONS.ARTICLE_BULK_ACTION, 'Article', unique[0], {
+    action: action.type,
+    ...(action.type === 'move' ? { categoryId: action.categoryId } : {}),
+    ids: unique,
+    succeeded: results.filter((r) => r.ok).map((r) => r.id),
+    failed: results.filter((r) => !r.ok).map((r) => r.id),
+  })
+
+  return { results }
 }
 
 export async function removeArticle(id: string, adminId: string) {

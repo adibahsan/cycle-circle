@@ -5,6 +5,9 @@ import {
   createArticle as svcCreateArticle,
   updateArticle as svcUpdateArticle,
   removeArticle,
+  bulkArticleAction as svcBulkArticleAction,
+  type BulkArticleAction,
+  type BulkArticleResult,
   createCategory as svcCreateCategory,
   updateCategory as svcUpdateCategory,
   removeCategory,
@@ -81,14 +84,31 @@ export async function updateArticle(
     publishedAt?: string | null
   }
 ) {
-  await requireAdminAuth()
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
 
   return guarded(async () => {
-    const article = await svcUpdateArticle(id, { ...data, publishedAt: parsePublishAt(data.publishedAt) }, new Date())
+    const article = await svcUpdateArticle(id, { ...data, publishedAt: parsePublishAt(data.publishedAt) }, new Date(), admin.id)
 
     revalidateContentTags(id)
     const webCacheRefreshed = await revalidateWebTags(['articles'])
     return { article, webCacheRefreshed }
+  })
+}
+
+export async function bulkArticleAction(
+  ids: string[],
+  action: BulkArticleAction,
+): Promise<BulkArticleResult | ActionError> {
+  const jwt = await requireAdminAuth()
+  const admin = await getAuthUser(jwt.sub)
+
+  return guarded(async () => {
+    const result = await svcBulkArticleAction(admin.id, ids, action, new Date())
+
+    revalidateContentTags()
+    await revalidateWebTags(['articles'])
+    return result
   })
 }
 
