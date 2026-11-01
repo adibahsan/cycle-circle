@@ -44,7 +44,7 @@ One page that shows the current plan, what it includes and a **Free vs Pro** tab
 
 ### What it is
 
-The amount the Pro offer shows, for example "5 /day" with the taka sign (৳) before the amount. It is set by an **Admin**, not read from BDApps (ADR 0011). It is what the Subscription page, the upgrade dialog and the Terms show, in English and Bengali.
+The amount the Pro offer shows, for example "5 /day" with the taka sign before the amount. It is set by an **Admin**, not read from BDApps (ADR 0011). It is what the Subscription page, the upgrade dialog and the Terms show, in English and Bengali.
 
 ### Where to find it
 
