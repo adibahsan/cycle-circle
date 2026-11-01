@@ -44,7 +44,7 @@ The campaign badge is worked out from its messages: **Cancelled** once the campa
 1. Press the date buttons to change the period. Only the **SMS Send History** chart follows it ([Date ranges](#an-ranges)); the table and the status chart always show everything.
 2. Type in **Search campaigns…** to find a campaign by its name or by any of its message texts. Choose **Status** (All, Planned, Running, Finished, Cancelled) to narrow the table.
 3. Click a campaign name to open it ([Per-message view](#sm-messages)).
-4. A **one-day** campaign also has quick icons on its row: **Edit** (pencil), **Move to another day** (calendar), **Send Now** (paper plane) while its message is Planned, and **Delete** (bin) while nothing has gone out. A longer series is managed from its own page.
+4. A **one-day** campaign also has quick icons on its row: **Edit** (pencil), **Move to another day** (calendar) and **Send Now** (paper plane) while its message is Planned. **Delete** (bin) shows on any campaign, one-day or longer, as long as none of its messages is Sent or Sending. A longer series is otherwise managed from its own page.
 5. **CSV** downloads the whole filtered list (not just this page) with the columns ID, Name, Status, Messages, First day, Last day, Created by, Created.
 
 ### Rules and limits
@@ -63,7 +63,8 @@ The campaign badge is worked out from its messages: **Cancelled** once the campa
 | "No campaigns yet. Create the first one with New Campaign." | No campaign exists | Press **New Campaign** ([Create a campaign](#sm-create)) |
 | "No campaigns match your filters." | The search or status excludes everything | Clear the search or choose **All** |
 | A message that went out this morning is still "Planned" | The page was cached | Press **Refresh** |
-| No icons on a campaign row | It has several messages, or its message is no longer Planned | Open the campaign |
+| No Edit, Move or Send Now icons on a campaign row | It has several messages, or its message is no longer Planned | Open the campaign |
+| No Delete icon on a campaign row | At least one of its messages is Sent or Sending | Nothing to do; a sent message cannot be deleted |
 | Toast "Could not delete the campaign" | The delete request failed | Try again; see [Cancel a campaign](#sm-cancel) for the delete rule |
 
 ### Related
@@ -463,7 +464,7 @@ The totals lines on the list and under the campaign title, and the **Result** co
 
 - **Audience** is an estimate from our own records at send time (Pro subscriptions with a stored BDApps subscriber number), not a number from BDApps. Someone who unsubscribed on BDApps since the last check still counts.
 - **Delivered** and **Failed** come from BDApps delivery reports that arrive after the send, one per recipient, so the numbers grow for a while. The first values after a send are "Delivered 0 · Failed 0".
-- Counted as delivered: DELIVERED. Counted as failed: FAILED, UNDELIVERABLE, EXPIRED, DELETED, REJECTED. Reports still in flight (ACCEPTED) or UNKNOWN are not counted.
+- Counted as delivered: DELIVERED (also DELIVEREDTOTERMINAL, the older spelling). Counted as failed: FAILED, UNDELIVERABLE, EXPIRED, DELETED, REJECTED (also DELIVERYIMPOSSIBLE, the older spelling). Reports still in flight (ACCEPTED) or UNKNOWN are not counted.
 - Reports are matched to the message by BDApps' request number. A report that matches nothing is ignored.
 - The switch is **off** by default. The BDApps SMS plan in use has delivery reports disabled; if they are requested on such a plan, BDApps refuses the whole send (error E1312). Turn the switch on only when the plan allows it.
 - The switch is read at send time: a message sent while it was off stays "Delivery reports off" for good.

@@ -47,9 +47,9 @@ The **Email Logs** page: one row for every send attempt, successful or not, newe
 
 - A row is written for **every** send attempt: "Sent" when the provider accepted the mail, "Failed" with the error text when it did not.
 - **Sent is not Delivered.** "Sent" only means the provider took the mail. "Delivery" is what the provider reported afterwards, through a notification to Cycle Circle: Delivered, Bounced (the address rejected it), Complained (the recipient marked it as spam) or Delayed. "Pending" means no report has arrived yet. A Failed email has no provider reference, so it stays "Pending".
-- The log holds seven types: Magic Link, Period Alert, Fertile Alert, Logging Reminder, Profile-completion reminder, Verification code and Report. The **Type** menu offers only the first four. The other three can be found by searching, or in the CSV; their badge shows the raw code (PROFILE_COMPLETION_REMINDER, VERIFICATION_CODE, REPORT).
+- The log holds seven types: Magic Link, Period Alert, Fertile Alert, Logging Reminder, Profile-completion reminder, Verification code and Report. The **Type** menu offers only the first four. The other three have no menu entry (search matches only the recipient address and the subject, not the type); the badge and the CSV's Type column still show them. The badge shows the raw code (PROFILE_COMPLETION_REMINDER, VERIFICATION_CODE, REPORT).
 - 20 rows per page (adjustable). The card figures and the CSV follow the period; the CSV holds at most 10,000 rows.
-- The page keeps its data for up to a minute; the **Refresh** button at the top gets the newest.
+- The page keeps its data for up to five minutes; the **Refresh** button at the top gets the newest.
 - Magic-link rows for a User are the first thing to check for "I never got my sign-in link" ([Magic-link email](#ec-magic-link)).
 
 ### What can go wrong
@@ -168,7 +168,7 @@ Open `/emails/preview` (add `/emails/preview` to the Admin address). **There is 
 | The Admin sees | Cause | Fix |
 |---|---|---|
 | "Loading preview…" or "Generating preview…" | The template is being built | Wait a moment |
-| "Select a template to preview" | The template could not be built | Reload the page |
+| "Select a template to preview" | The preview area is empty and nothing is loading, for example just before the first preview appears | Choose a template in the menu; every listed template can be built |
 | The page is not in the sidebar | It is not linked | Open `/emails/preview` directly |
 | Bengali shows boxes or question marks | The device lacks a Bengali font | Use a current browser on a device with Bengali fonts |
 | The real email looked different | The preview uses example data and today's template | Compare with [Email detail](#em-detail) for the real row |
