@@ -21,8 +21,13 @@ without a reasoned disable, no `force`, no `.only`/unexplained skips, and an iss
    A seeded instant the app compares with its own clock (`publishedAt`, a schedule) sits clearly in
    the past or future, never "now": a parallel worker's request takes its `now` first and the row
    reads as not yet live (and a 60 s list cache keeps that answer).
+   A spec that opens a month view (calendar, symptoms) seeds its dates inside the month it opens
+   on, counted from today, so it still passes on the 1st.
 5. **Scripted fake-BDApps failures carry a scoped `match`.** A bare "fail the next call" hits
    whichever test calls first. Scope it to this test's phone/endpoint.
+   **A sent SMS is one BDApps accepted.** Count `fakeBdapps.smsTo(phone)` (masked id, `S1000`
+   per destination), not recorded `/sms/send` requests: a raw number answers E1951 under a
+   top-level S1000, which is how every reminder SMS failed unseen until #253.
 6. **Expected failures are deterministic and linked.** `test.fail(cond, url)` where `cond` is
    constant `true` or a real guard such as `days.serverDayLags`; if the bug is a race no
    condition predicts, use `test.fixme` instead (an expected-fail would pass at random). The

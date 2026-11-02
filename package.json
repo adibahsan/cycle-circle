@@ -17,6 +17,7 @@
     "dev": "pnpm --filter @vesta/web dev",
     "bdapps:mock": "node ops/mock/bdapps/server.mjs",
     "e2e": "pnpm --filter @vesta/e2e e2e",
+    "predeploy": "bash scripts/predeploy.sh",
     "e2e:fake-bdapps": "pnpm --filter @vesta/e2e fake-bdapps",
     "dev:admin": "pnpm --filter @vesta/admin dev",
     "build": "pnpm --filter @vesta/web build",

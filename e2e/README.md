@@ -142,6 +142,10 @@ They live in Playwright project **`cron`**: desktop viewport only, `workers: 1`,
 `fullyParallel: false`, and `dependencies` on every `web-*` / `admin-*` / `cross-app-*`
 project so a bare `pnpm e2e` still runs everything and the serial group finishes **last**.
 `--project=web-desktop` (etc.) still works: those projects `testIgnore` the serial files.
+Two consequences of `dependencies`: a failure in any of those projects **skips all of `cron`**
+(no line says so; `run.ts` prints a reminder), and a spec-file filter without `--project` still
+runs every dependency project in full. Run the serial group alone with
+`E2E_SKIP_BUILD=1 pnpm e2e -- --project=cron --no-deps`.
 
 **Add a spec to the serial group:** append its basename to `CRON_SERIAL_SPECS` in
 `playwright.config.ts` (same regex used for `cron` `testMatch` and web `testIgnore`). Keep
