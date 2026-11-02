@@ -8,6 +8,7 @@ import {
   storedDateToDay,
 } from '../../utils/dhaka-date'
 import { getProfilesForReminders } from './tracking-service'
+import { reminderSmsAddress } from './subscription-service'
 import { wasEmailSentToday, wasEmailSentTodayForUser } from './email-service'
 import {
   sendPeriodAlert,
@@ -57,6 +58,14 @@ export async function runDailyReminders(
   let errors = 0
   let skipped = 0
 
+  // One lookup per User per run, however many profiles and reminders they have.
+  const smsAddresses = new Map<string, Promise<string | null>>()
+  const smsAddressFor = (id: string) => {
+    let address = smsAddresses.get(id)
+    if (!address) smsAddresses.set(id, (address = reminderSmsAddress(id)))
+    return address
+  }
+
   const profilesWithData = await getProfilesForReminders(userId)
 
   for (const profile of profilesWithData) {
@@ -64,12 +73,13 @@ export async function runDailyReminders(
     if (!prefs) continue
 
     const { user } = profile
-    const isProSubscriber = user.subscriptionStatus === 'PRO'
     const { language } = user
 
     const prediction = profile.predictions[0] ?? null
 
     try {
+      const smsTo = await smsAddressFor(user.id)
+
       if (prefs.periodAlert && prediction) {
         const daysUntil = daysBetween(today, storedDateToDay(prediction.nextPeriodStart))
         if (daysUntil >= 0 && daysUntil <= 2) {
@@ -78,7 +88,6 @@ export async function runDailyReminders(
           } else {
             await sendPeriodAlert({
               email: user.email,
-              phone: user.phone,
               userName: user.fullName ?? 'User',
               profileName: profile.name,
               language,
@@ -86,7 +95,7 @@ export async function runDailyReminders(
                 .toISOString()
                 .split('T')[0]!,
               daysUntil,
-              isProSubscriber,
+              smsTo,
               userId: user.id,
               profileId: profile.id,
             })
@@ -103,7 +112,6 @@ export async function runDailyReminders(
           } else {
             await sendFertileAlert({
               email: user.email,
-              phone: user.phone,
               userName: user.fullName ?? 'User',
               profileName: profile.name,
               language,
@@ -114,7 +122,7 @@ export async function runDailyReminders(
               ovulationDate: prediction.ovulationDay
                 .toISOString()
                 .split('T')[0]!,
-              isProSubscriber,
+              smsTo,
               userId: user.id,
               profileId: profile.id,
             })
@@ -134,12 +142,11 @@ export async function runDailyReminders(
           } else {
             await sendLoggingReminder({
               email: user.email,
-              phone: user.phone,
               userName: user.fullName ?? 'User',
               profileName: profile.name,
               language,
               daysSinceLastLog: daysSince,
-              isProSubscriber,
+              smsTo,
               userId: user.id,
               profileId: profile.id,
             })
@@ -174,7 +181,6 @@ export async function runDailyReminders(
     select: {
       id: true,
       email: true,
-      phone: true,
       fullName: true,
       language: true,
     },
@@ -192,7 +198,7 @@ export async function runDailyReminders(
       await sendProfileCompletionReminder({
         id: user.id,
         email: user.email,
-        phone: user.phone,
+        smsTo: await smsAddressFor(user.id),
         fullName: user.fullName,
         language: user.language,
         userId: user.id,

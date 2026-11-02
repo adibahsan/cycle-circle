@@ -23,8 +23,12 @@ The once-a-day quick log of how the user feels today: a few common symptoms, or 
 _Avoid_: daily log, mood check, quick log
 
 **Logging nudge**:
-A reminder card that appears only when the active profile has logged nothing for three or more days.
+An in-app card that appears only when the active profile has logged nothing for three or more days.
 _Avoid_: check-in card, "How are you feeling" banner
+
+**Reminder**:
+A scheduled message Cycle Circle sends by email and SMS about a profile's coming period, fertile window or missing logs, or about the user's profile completion. The SMS copy goes only to a Subscriber, at their masked subscriber id.
+_Avoid_: alert, notification
 
 **Profile completion**:
 How much of the optional account details (such as a recovery email) the user has filled in, shown as a percentage ring on the profile chip.
