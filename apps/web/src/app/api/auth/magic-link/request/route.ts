@@ -32,12 +32,15 @@ export async function POST(request: Request): Promise<Response> {
     const token = crypto.randomUUID()
     const expiresAt = new Date(Date.now() + MAGIC_LINK_TTL_MS)
 
-    await createMagicLink(email, token, expiresAt)
+    // The page's language, else the cookie; undefined when neither says (#258: stored on
+    // the link, because it is often opened in a browser without this cookie).
+    const cookieLang = (await cookies()).get(LANG_COOKIE)?.value
+    const chosen = body.language ?? (cookieLang === 'en' || cookieLang === 'bn' ? cookieLang : undefined)
+    await createMagicLink(email, token, expiresAt, chosen)
 
     const magicLinkUrl = `${env.APP_URL}/api/auth/magic-link/callback?token=${token}`
 
-    const language = body.language ?? parseLang((await cookies()).get(LANG_COOKIE)?.value)
-    await sendMagicLinkEmail(email, magicLinkUrl, language)
+    await sendMagicLinkEmail(email, magicLinkUrl, parseLang(chosen))
 
     logger.customer('auth.magic-link.request', { email, ok: true })
     return Response.json({ message: 'Magic link sent' })

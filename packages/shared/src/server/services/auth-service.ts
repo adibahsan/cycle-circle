@@ -1,9 +1,10 @@
 import { prisma } from '../db'
 import { applyBdappsSubscription } from './subscription-service'
 
-export async function createMagicLink(email: string, token: string, expiresAt: Date) {
+/** `language` is the requesting page's choice; omit it when none was made (#258). */
+export async function createMagicLink(email: string, token: string, expiresAt: Date, language?: 'en' | 'bn') {
   return prisma.magicLink.create({
-    data: { email, token, expiresAt },
+    data: { email, token, expiresAt, language: language ? (language === 'bn' ? 'BN' : 'EN') : undefined },
   })
 }
 

@@ -7,9 +7,12 @@ import { LANG_COOKIE } from '@/lib/language'
  * Copies the `vesta_lang` cookie to the User at login, so a language picked before
  * logging in reaches reminders and emails (#254). No cookie means no choice was made:
  * the saved language stays. A failed save never fails the login.
+ *
+ * `stored` is a language saved with the login itself (a magic link's requesting page,
+ * #258); it wins over the cookie of whichever browser finishes the login.
  */
-export async function saveLoginLanguage(userId: string): Promise<void> {
-  const lang = (await cookies()).get(LANG_COOKIE)?.value
+export async function saveLoginLanguage(userId: string, stored?: 'EN' | 'BN' | null): Promise<void> {
+  const lang = stored ? (stored === 'BN' ? 'bn' : 'en') : (await cookies()).get(LANG_COOKIE)?.value
   if (lang !== 'en' && lang !== 'bn') return
   try {
     await setUserLanguage(userId, lang)

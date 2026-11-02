@@ -38,7 +38,7 @@ export async function GET(request: Request): Promise<Response> {
 
     const user = await completeMagicLinkAuth(magicLink.id, magicLink.email, new Date())
     setRequestUser(user.id)
-    await saveLoginLanguage(user.id)
+    await saveLoginLanguage(user.id, magicLink.language)
     revalidateTag(cacheTags.user(user.id), { expire: 0 })
 
     const jwtToken = await issueJwt({

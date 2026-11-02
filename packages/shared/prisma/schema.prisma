@@ -380,6 +380,9 @@ model MagicLink {
   used      Boolean  @default(false)
   expiresAt DateTime
   createdAt DateTime @default(now())
+  /// The requesting page's language, saved to the User at the callback (#258): the link is
+  /// often opened in another browser. Null = no choice made (or a link from before #258).
+  language  Language?
 
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

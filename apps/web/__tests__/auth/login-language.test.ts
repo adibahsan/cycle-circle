@@ -74,3 +74,23 @@ describe.each([
     expect(res.status).toBeLessThan(400)
   })
 })
+
+// #258: a magic link carries the requesting page's language; the browser that
+// opens it may have no cookie or a different one.
+describe('login by magic link with a stored language', () => {
+  beforeEach(() => {
+    svc.findMagicLink.mockResolvedValue({ id: 'ml', email: 'a@b.c', used: false, expiresAt: new Date(Date.now() + 60_000), language: 'BN' })
+  })
+
+  it('saves the stored language when the opening browser has no cookie', async () => {
+    await loginByMagicLink()
+    expect(svc.setUserLanguage).toHaveBeenCalledWith('u1', 'bn')
+  })
+
+  it('saves the stored language over the opening browser\'s cookie', async () => {
+    jar.set('vesta_lang', 'en')
+    await loginByMagicLink()
+    expect(svc.setUserLanguage).toHaveBeenCalledWith('u1', 'bn')
+    expect(svc.setUserLanguage).toHaveBeenCalledTimes(1)
+  })
+})
