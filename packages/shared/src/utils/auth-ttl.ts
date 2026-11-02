@@ -1,6 +1,8 @@
 // How long login codes and links stay valid. Client-safe: the copy that tells Users these
 // times is built from the same constants the server enforces, so they can't drift (#256).
 
+import type { Language } from '../types/types'
+
 /** Phone login OTP challenge, BDApps OTP and App OTP alike. */
 export const OTP_TTL_MS = 5 * 60 * 1000
 
@@ -13,7 +15,7 @@ const UNITS = {
 } as const
 
 /** A TTL as words, e.g. `5 minutes`, `1 hour`, `৫ মিনিট`. Whole hours are written as hours. */
-export function durationText(ms: number, lang: 'en' | 'bn'): string {
+export function durationText(ms: number, lang: Language): string {
   const minutes = Math.round(ms / 60_000)
   const inHours = minutes >= 60 && minutes % 60 === 0
   const n = inHours ? minutes / 60 : minutes
