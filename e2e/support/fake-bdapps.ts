@@ -84,15 +84,16 @@ export class FakeBdappsClient {
   }
 
   /**
-   * `/sms/send` calls addressed to this phone's subscriber: its masked id (where reminders and
-   * App OTPs go, #253) or, for a number BDApps never subscribed, the raw number.
+   * `/sms/send` calls BDApps accepted (`S1000`) for this phone's subscriber, i.e. SMS that
+   * reached them. A request alone proves nothing: a raw number gets E1951 per destination
+   * under a top-level S1000, which is how every reminder SMS failed unseen until #253.
    */
   async smsTo(phone: string): Promise<RecordedCall[]> {
     const maskedId = (await this.subscriber(phone))?.maskedId
-    const digits = phone.replace(/\D/g, '').slice(-10)
+    if (!maskedId) return []
     return (await this.calls({ path: '/sms/send' })).filter((c) => {
-      const to = JSON.stringify(c.body.destinationAddresses ?? c.body.destinationAddress ?? '')
-      return (maskedId !== undefined && to.includes(maskedId)) || to.includes(digits)
+      const answers = (c.response.destinationResponses ?? []) as { address?: string; statusCode?: string }[]
+      return answers.some((d) => d.address === maskedId && d.statusCode === 'S1000')
     })
   }
 

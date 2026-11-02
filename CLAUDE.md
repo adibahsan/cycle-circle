@@ -51,6 +51,7 @@ App-specific files stay as `@/lib/*` and `@/components/*`:
 Subdirectory memory (loads when you work under that path): `apps/admin/CLAUDE.md` (admin app), `packages/shared/CLAUDE.md` (shared services layer).
 
 - Frontend code: read `CODING_STANDARDS.md` before writing or reviewing it.
+- Behaviour change: also run the E2E specs `e2e/COVERAGE.md` lists for that behaviour (e.g. reminder SMS: W43, W48, W52, S01), not only the touched unit tests.
 
 ---
 

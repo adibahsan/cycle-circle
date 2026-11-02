@@ -57,6 +57,22 @@ test.describe('fake BDApps: merchant calls', () => {
     expect(mine.map((c) => c.path)).toEqual(['/sms/send', '/caas/get/balance'])
     expect(await fakeBdapps.caasBalance(phone)).toMatchObject({ accountStatus: 'ACTIVE' })
   })
+
+  // Every reminder SMS went to a raw number (E1951) from 2026-10-18 while the specs that
+  // counted /sms/send requests stayed green (#253). smsTo counts only what BDApps accepted.
+  test('smsTo counts an SMS BDApps accepted, not one it rejected with E1951', async ({ newUser, fakeBdapps }) => {
+    const { phone } = await newUser()
+    const maskedId = (await fakeBdapps.subscriber(phone))!.maskedId
+    const marker = `smsTo-${Date.now()}`
+    const mine = async () => (await fakeBdapps.smsTo(phone)).filter((c) => String(c.body.message).includes(marker))
+
+    const raw = await merchant(fakeBdapps.baseUrl, '/sms/send', { message: marker, destinationAddresses: [`tel:88${phone.replace(/\D/g, '').slice(-11)}`] })
+    expect(raw.json).toMatchObject({ destinationResponses: [{ statusCode: 'E1951' }] })
+    expect(await mine()).toHaveLength(0)
+
+    await merchant(fakeBdapps.baseUrl, '/sms/send', { message: marker, destinationAddresses: [maskedId] })
+    expect(await mine()).toHaveLength(1)
+  })
 })
 
 test.describe('fake BDApps: scripted failures', () => {

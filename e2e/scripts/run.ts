@@ -116,7 +116,19 @@ async function main() {
   await build()
   await prepareDatabase()
   await ensureMailpit()
-  await run('playwright', 'pnpm', ['exec', 'playwright', 'test', ...args], E2E_DIR)
+  try {
+    await run('playwright', 'pnpm', ['exec', 'playwright', 'test', ...args], E2E_DIR)
+  } catch (e) {
+    // The cron project depends on every parallel project, so one failure there skips all of
+    // cron without a line in the report (#259 release: a cron failure hid behind 8 others).
+    if (!args.includes('--no-deps')) {
+      console.error(
+        '[e2e] A failure in a parallel project skips the whole cron project. After fixing it, or to check cron now:\n' +
+          '[e2e]   E2E_SKIP_BUILD=1 pnpm e2e -- --project=cron --no-deps',
+      )
+    }
+    throw e
+  }
 }
 
 main().catch((e: unknown) => {
