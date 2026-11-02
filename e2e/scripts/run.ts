@@ -9,6 +9,8 @@
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
+import { normalizeCaptureArgs } from '../../scripts/handbook/capture-args.mjs'
+import { bangladeshDayOf } from '../support/bangladesh-day.ts'
 import { FakeBdappsClient } from '../support/fake-bdapps.ts'
 import { assertMailpit } from '../support/mailpit.ts'
 import { recreateDatabase } from '../support/reset-db.ts'
@@ -42,7 +44,10 @@ async function build() {
 
 const SHARED_DIR = path.join(REPO_DIR, 'packages/shared')
 const prisma = (label: string, ...args: string[]) =>
-  run(label, 'pnpm', ['exec', 'prisma', ...args, '--schema', './prisma/schema.prisma'], SHARED_DIR, ENV.db)
+  run(label, 'pnpm', ['exec', 'prisma', ...args, '--schema', './prisma/schema.prisma'], SHARED_DIR, { ...ENV.db, ...seedEnv })
+
+/** Handbook capture only: seed "today" as the Bangladesh day, as the apps count it (the E2E suite keeps the UTC day). */
+let seedEnv: Record<string, string> = {}
 
 /** True when the slot DB already has the schema and the seed (its admin user). */
 async function isSeeded(): Promise<boolean> {
@@ -108,15 +113,26 @@ async function ensureMailpit() {
 async function main() {
   const args = process.argv.slice(2)
   if (args[0] === '--') args.shift()
+  // `pnpm handbook:capture -- <name>` and `pnpm handbook:capture <name>` must both filter.
+  if (args.includes('--config=playwright.handbook.config.ts')) args.splice(0, args.length, ...normalizeCaptureArgs(args))
   const suite = process.env.CI_PROJECTS?.trim() || process.env.E2E_SUITE || 'all'
   console.log(
     `[e2e] slot ${SLOT}: web :${PORTS.web}, admin :${PORTS.admin}, fake BDApps :${PORTS.fakeBdapps}, db ${DB_NAME}, suite ${suite}`,
   )
   assertE2eDatabase(ENV.db.DATABASE_URL)
+  const handbook = args.includes('--config=playwright.handbook.config.ts')
+  if (handbook) seedEnv = { SEED_TODAY: bangladeshDayOf(new Date()) }
   await build()
-  await prepareDatabase()
   await ensureMailpit()
-  await run('playwright', 'pnpm', ['exec', 'playwright', 'test', ...args], E2E_DIR)
+  // A full handbook capture runs the Admin shots and the User shots one after the other, each on a freshly
+  // reset database: the accounts the User shots create must not leak into Admin aggregates and lists (or back).
+  // The Admin files share demo campaigns, articles and totals, so they run one at a time, in file order.
+  // Only an unfiltered capture (no project, no file name) is split into the two phases.
+  const phases = handbook && args.length === 1 ? [['--project=handbook-admin', '--workers=1'], ['--project=handbook-phone']] : [[]]
+  for (const phase of phases) {
+    await prepareDatabase()
+    await run('playwright', 'pnpm', ['exec', 'playwright', 'test', ...args, ...phase], E2E_DIR)
+  }
 }
 
 main().catch((e: unknown) => {

@@ -10,9 +10,9 @@
  * - `CI_PROJECTS=a,b` — explicit project name list (overrides the suite).
  * - `CI_PROJECTS=desktop|full|all` — same as `E2E_SUITE`.
  */
-import path from 'node:path'
 import { defineConfig, devices, type Project } from '@playwright/test'
-import { ENV, E2E_DIR, REPO_DIR, SLOT, URLS } from './support/slot.ts'
+import { SLOT, URLS } from './support/slot.ts'
+import { webServers } from './support/servers.ts'
 
 const desktop = { ...devices['Desktop Chrome'], viewport: { width: 1366, height: 900 } }
 const phone = devices['Pixel 7']
@@ -119,8 +119,6 @@ function selectProjects(projects: Project[]): Project[] {
   return selected
 }
 
-const reuse = process.env.E2E_REUSE_SERVERS === '1'
-const serverLogs = process.env.E2E_SERVER_LOGS === '1' ? 'pipe' : 'ignore'
 const ci = Boolean(process.env.CI)
 
 const ALL_PROJECTS = allProjects()
@@ -154,35 +152,5 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: withCronDependencies(selectProjects(ALL_PROJECTS)),
-  webServer: [
-    {
-      command: 'pnpm exec tsx fake-bdapps/main.ts',
-      cwd: E2E_DIR,
-      env: ENV.fakeBdapps,
-      url: `${URLS.fakeBdapps}/_control/health`,
-      reuseExistingServer: reuse,
-      stdout: serverLogs,
-      stderr: 'pipe',
-    },
-    {
-      command: `pnpm exec next start --port ${new URL(URLS.web).port}`,
-      cwd: path.join(REPO_DIR, 'apps/web'),
-      env: ENV.web,
-      url: `${URLS.web}/api/health/db`,
-      reuseExistingServer: reuse,
-      timeout: 120_000,
-      stdout: serverLogs,
-      stderr: 'pipe',
-    },
-    {
-      command: `pnpm exec next start --port ${new URL(URLS.admin).port}`,
-      cwd: path.join(REPO_DIR, 'apps/admin'),
-      env: ENV.admin,
-      url: `${URLS.admin}/login`,
-      reuseExistingServer: reuse,
-      timeout: 120_000,
-      stdout: serverLogs,
-      stderr: 'pipe',
-    },
-  ],
+  webServer: webServers(),
 })

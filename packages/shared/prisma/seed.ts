@@ -28,9 +28,12 @@ function addDays(date: Date, days: number): Date {
   return d
 }
 
-/** Return a midnight-UTC Date that is `n` days before today. */
+/**
+ * Return a midnight-UTC Date that is `n` days before today. `SEED_TODAY=YYYY-MM-DD` pins "today"
+ * (the handbook capture sets it to the Bangladesh day, which differs from the UTC day 18:00-24:00 UTC).
+ */
 function daysAgo(n: number): Date {
-  const d = new Date()
+  const d = process.env.SEED_TODAY ? new Date(`${process.env.SEED_TODAY}T00:00:00.000Z`) : new Date()
   d.setUTCHours(0, 0, 0, 0)
   d.setUTCDate(d.getUTCDate() - n)
   return d

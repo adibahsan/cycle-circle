@@ -16,6 +16,16 @@ _Avoid_: using it in any user-facing text
 A calendar day in Bangladesh time (UTC+6, no daylight saving): the day that "today", "35 days ago" and every date the product shows or stores is counted in. An event (a signup, a sent SMS, a check-in) belongs to the Bangladesh day its moment falls on, so every per-day count groups by Bangladesh day.
 _Avoid_: local day, server day, UTC day
 
+### People
+
+**User**:
+Anyone with a Cycle Circle account who tracks cycles in the app, whether a Subscriber or an email-trial account.
+_Avoid_: customer, client, member
+
+**Admin**:
+A staff member of the company operating Cycle Circle who signs in to the admin panel to manage Users, content and messaging.
+_Avoid_: customer, operator, staff user
+
 ### Prompts and engagement
 
 **Check-in**:
