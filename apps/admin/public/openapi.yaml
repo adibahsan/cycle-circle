@@ -291,7 +291,7 @@ paths:
     post:
       tags: [Auth]
       summary: Request an OTP SMS
-      description: 60s resend cooldown (429 OTP_COOLDOWN) plus a 3/60s rate limit (429 RATE_LIMITED).
+      description: 60s resend cooldown (429 OTP_COOLDOWN) plus a 3/60s rate limit (429 RATE_LIMITED). An existing subscriber gets at most 5 App OTPs per number per 24 h (429 OTP_DAILY_LIMIT).
       security: []
       requestBody:
         required: true

@@ -12,6 +12,7 @@ const CODE_TO_KEY: Record<string, string> = {
   RATE_LIMITED: 'trial.err.rateLimited',
   OTP_COOLDOWN: 'trial.err.cooldown',
   OTP_LOCKED: 'trial.err.codeLocked',
+  OTP_DAILY_LIMIT: 'trial.err.dailyLimit',
 };
 
 /**

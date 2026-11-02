@@ -5,6 +5,7 @@ import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
 import { sendMagicLinkEmail } from '@vesta/shared/server/adapters/mail'
 import { createMagicLink } from '@vesta/shared/server/services'
 import { env } from '@vesta/shared/utils/env'
+import { MAGIC_LINK_TTL_MS } from '@vesta/shared/utils/auth-ttl'
 import { withRequestContext, logger } from '@vesta/shared/server/log'
 import { logCustomerRefusal } from '@/app/api/auth/log-failure'
 import { cookies } from 'next/headers'
@@ -29,7 +30,7 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const token = crypto.randomUUID()
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+    const expiresAt = new Date(Date.now() + MAGIC_LINK_TTL_MS)
 
     await createMagicLink(email, token, expiresAt)
 
