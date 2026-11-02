@@ -101,14 +101,15 @@ const POPUPS: PopupCase[] = [
   {
     id: 'calendar-day',
     inline: true,
-    open: (p) => p.getByRole('gridcell').getByRole('button').first(),
+    // A logged period day: on a hover screen an unlogged recent day is covered by its
+    // "log period from" quick action, so clicking it never opens the day pop-up.
+    open: (p) => p.getByRole('gridcell').getByRole('button', { name: /পিরিয়ড/ }).first(),
     setup: async ({ page, phone }) => {
       const profile = await ensureUserProfile(phone, { name: 'বাংলা ইউজার' })
       const { bangladeshDays } = await import('../../support/bangladesh-day.ts')
       const days = await bangladeshDays()
-      await setPeriodLogs(profile.id, [
-        { startDate: days.dateOf(days.daysAgo(10)), endDate: days.dateOf(days.daysAgo(6)) },
-      ])
+      // Starts today so it is in the month the calendar opens on, whatever the date.
+      await setPeriodLogs(profile.id, [{ startDate: days.dateOf(days.daysAgo(0)), endDate: days.dateOf(days.daysAgo(0)) }])
       await page.goto('/calendar')
     },
   },
