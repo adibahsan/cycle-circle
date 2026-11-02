@@ -50,18 +50,45 @@ Run `just` to see all available commands.
 
 ```
 apps/web/              Next.js customer app (Prisma, API routes, UI)
-apps/admin/            Next.js admin panel (scaffold for Phase 04)
+apps/admin/            Next.js admin panel (users, subscriptions, content, SMS campaigns, analytics)
 packages/shared/       @vesta/shared — Prisma schema, server logic, auth, adapters, types
+e2e/                   Playwright E2E against production builds, with a fake BDApps (e2e/README.md)
 ops/docker/            Docker Compose stack (postgres, redis, mailpit, worker)
+ops/deploy/            Production Compose stack, nginx, deploy scripts
 ops/vendor/bdapps/     Read-only BDApps SDK for simulator image
 ops/simulator/bdapps/  Local BDApps simulator for testing
 docs/vesta/source/     Canonical Vesta source docs (SRS, knowledge base, user stories)
 docs/vesta/exports/    Generated artifacts (DOCX SRS)
 docs/site/             Client-facing documentation site
+docs/ops/              Production runbooks and the release log
 docs/archive/          Archived research (Flo competitor analysis)
 .planning/             Implementation plans, roadmap, research
 scripts/               Repo maintenance scripts (docs sync, SRS export)
 ```
+
+## Tests and Checks
+
+```bash
+pnpm --filter @vesta/web test:changed     # vitest for what you changed (add a ref, e.g. HEAD~2)
+pnpm --filter @vesta/shared test:changed
+pnpm e2e -- tests/web/<spec>.spec.ts      # one E2E spec (production build, fake BDApps)
+pnpm predeploy                            # full set before a production push
+```
+
+While developing, run what the change touches, plus the E2E specs [e2e/COVERAGE.md](e2e/COVERAGE.md) lists for a behaviour change. `pnpm predeploy` runs typecheck, lint, docs and drift checks, all vitest suites (also in two time zones) and the full E2E suite. See [docs/LOCAL-DEVELOPMENT.md](docs/LOCAL-DEVELOPMENT.md), "Checks before a deploy".
+
+## Releases
+
+Current release: **[v2.4.2](https://github.com/adibahsan/cycle-circle/releases/tag/2.4.2)** (2026-11-02): reminder SMS to masked subscriber ids, the User's saved language for reminders and emails, corrected OTP and magic-link copy, and the 6-profile limit message. All releases: [GitHub Releases](https://github.com/adibahsan/cycle-circle/releases).
+
+Production runs the `production` branch on the VPS. Work merges to `main` by PR; a release is:
+
+1. `pnpm predeploy` on `main`.
+2. Add the release to [docs/ops/10-release-log.md](docs/ops/10-release-log.md), then tag `main` (`git tag -a 2.x.y`).
+3. `git push origin origin/main:production`. GitHub Actions run the checks, then `ops/deploy/scripts/deploy.sh` (DB backup, migrations, restart, production-mode checks).
+4. Publish the GitHub Release for the tag.
+
+Details and rollback: [docs/ops/03-deployment.md](docs/ops/03-deployment.md) §5.
 
 ## Client Docs Workflow
 
