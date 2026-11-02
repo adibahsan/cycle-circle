@@ -6,6 +6,7 @@ import { upsertUserByPhone } from '@vesta/shared/server/services'
 import { isDevModeEnabled } from '@vesta/shared/server/dev'
 import { withRequestContext, setRequestUser, logger } from '@vesta/shared/server/log'
 import { logCustomerRefusal } from '@/app/api/auth/log-failure'
+import { saveLoginLanguage } from '@/app/api/auth/login-language'
 
 function mapPartialAuthUser(raw: {
   id: string
@@ -41,6 +42,7 @@ export async function POST(request: Request): Promise<Response> {
 
     const user = await upsertUserByPhone(normalizedPhone, new Date())
     setRequestUser(user.id)
+    await saveLoginLanguage(user.id)
 
     const token = await issueJwt({
       sub: user.id,
