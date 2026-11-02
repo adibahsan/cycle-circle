@@ -4,6 +4,24 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
+## 2026-11-02 — Reminder SMS to masked ids, saved User language, copy and profile-limit fixes (PRs #237, #259, tag 2.4.2)
+
+**Shipped:**
+
+- #253: reminder SMS go to the User's masked BDApps subscriber id. BDApps rejects raw numbers for our app (E1951), so every reminder SMS had failed since 2026-10-18. Users without a masked id are skipped and logged.
+- #254: login saves the `vesta_lang` cookie to `User.language`, so reminders and emails follow the User's language instead of always English.
+- #258: a magic link stores the requesting page's language, so opening it in another browser (no cookie, or `vesta_lang=en`) still saves the language the User picked.
+- #256: the OTP screen says the code expires in 5 minutes (was 10) and the magic link in 1 hour (was 15 minutes), read from the TTL constants. The false "AES-256-GCM" claim is gone from Settings, Terms and Privacy. The daily App OTP cap shows its own "Too many codes sent to this number today" message.
+- #255: adding a 7th profile from a stale tab shows the limit message and refreshes the list, instead of "Minified React error #441". Profiles, onboarding and feedback no longer show a server action's raw error text.
+- #236: the admin pagination bar no longer overflows a phone screen. #229: SMS send-time E2E hydration race (test only).
+- Retro guardrails: ESLint `vesta/no-action-error-message`, a fixed E2E limit check, `test:changed` scripts.
+
+**Migrations:** `20261102200000_magic_link_language` (adds a nullable `MagicLink.language`). Applied by `deploy.sh`.
+
+**Deploy:** `git push origin origin/main:production`.
+
+---
+
 ## 2026-11-01 — Calendar today marker in Bangladesh time, CI only on deploy (PRs #231, #232, #233, #234, #235, tag 2.4.1)
 
 **Shipped:**
