@@ -15,7 +15,7 @@ vi.mock('@vesta/shared/server/adapters/mail', async (importOriginal) => ({
 
 const { ApiError } = await import('@vesta/shared/server/api-error')
 const { logger } = await import('@vesta/shared/server/log')
-const { runDailyReminders } = await import('@vesta/shared/server/services')
+const { runDailyReminders, setUserLanguage } = await import('@vesta/shared/server/services')
 
 const P = 'test-rem253'
 const USER_ID = `${P}-user`
@@ -163,5 +163,29 @@ describe('SMS send errors', () => {
     expect(failed).toHaveLength(1)
     expect(failed[0]![2]).toMatchObject({ alert: 'Period alert' })
     expect(skippedLogs()).toHaveLength(0)
+  })
+})
+
+describe('reminders follow the saved User language (#254)', () => {
+  const BENGALI = /[ঀ-৿]/
+
+  it.each<Kind>(['period', 'completion'])('%s reminder email and SMS are in Bengali after the User picks bn', async (kind) => {
+    await seed(kind, MASKED_ID)
+    await setUserLanguage(USER_ID, 'bn')
+    await run()
+
+    expect(bdapps.smsSend).toHaveBeenCalledTimes(1)
+    expect(bdapps.smsSend.mock.calls[0]![0]).toMatch(BENGALI)
+    expect(mail.sendEmail).toHaveBeenCalledTimes(1)
+    expect(mail.sendEmail.mock.calls[0]![1]).toMatch(BENGALI)
+  })
+
+  it('switching back to en sends English again', async () => {
+    await seed('period', MASKED_ID)
+    await setUserLanguage(USER_ID, 'bn')
+    await setUserLanguage(USER_ID, 'en')
+    await run()
+
+    expect(bdapps.smsSend.mock.calls[0]![0]).toMatch(/period expected in 1 days/)
   })
 })

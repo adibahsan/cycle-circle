@@ -27,6 +27,7 @@ import {
   Compass,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
+import { useChangeLanguage } from '@/lib/use-change-language'
 import { useLanguage } from '@/lib/use-language'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -214,10 +215,10 @@ function AccountRow({
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 export function SettingsClient({ user, profiles, notifPrefs, completionRemindersOptOut }: SettingsClientProps) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const router = useRouter()
   const language = useLanguage()
-  const setLanguage = useAppStore((s) => s.setLanguage)
+  const changeLanguage = useChangeLanguage()
   const theme = useAppStore((s) => s.theme)
   const setTheme = useAppStore((s) => s.setTheme)
   const activeProfileId = useAppStore((s) => s.activeProfileId)
@@ -252,10 +253,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   // ── Language handler ──
-  const handleLanguageChange = (lang: Language) => {
-    setLanguage(lang)
-    i18n.changeLanguage(lang)
-  }
+  const handleLanguageChange = (lang: Language) => changeLanguage(lang)
 
   // ── Theme handler — Providers.tsx manages DOM class, just update store ──
   const handleThemeChange = (t: Theme) => {

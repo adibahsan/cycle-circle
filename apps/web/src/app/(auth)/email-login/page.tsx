@@ -9,6 +9,7 @@ import { ArrowLeft, Mail, Clock, MailCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import '@vesta/shared/utils/i18n';
+import { useLanguage } from '@/lib/use-language';
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -41,6 +42,7 @@ export default function EmailLoginPage() {
 
 function EmailLoginContent() {
   const { t } = useTranslation();
+  const language = useLanguage();
   const linkErrorKey = LINK_ERROR_KEYS[useSearchParams().get('error') ?? ''];
 
   const [email, setEmail] = useState('');
@@ -70,7 +72,7 @@ function EmailLoginContent() {
       const res = await fetch('/api/auth/magic-link/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: email.trim(), language }),
       });
       const body = await res.json().catch(() => ({})) as { error?: string | { message?: string } };
       if (!res.ok) {

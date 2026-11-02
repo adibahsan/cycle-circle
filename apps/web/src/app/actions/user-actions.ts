@@ -2,8 +2,8 @@
 
 import { z } from 'zod'
 import { revalidateTag } from 'next/cache'
-import { requireAuth, getAuthUser } from '@vesta/shared/server/auth'
-import { completeUserProfile, updateUserName as svcUpdateUserName, completeOnboardingTour as svcCompleteOnboardingTour } from '@vesta/shared/server/services'
+import { requireAuth, getAuthUser, verifyAuth } from '@vesta/shared/server/auth'
+import { completeUserProfile, updateUserName as svcUpdateUserName, completeOnboardingTour as svcCompleteOnboardingTour, setUserLanguage } from '@vesta/shared/server/services'
 import { cacheTags } from '@/lib/cache-tags'
 
 /**
@@ -60,4 +60,18 @@ export async function completeOnboardingTour() {
   await svcCompleteOnboardingTour(user.id, new Date())
   revalidateTag(cacheTags.user(user.id), { expire: 0 })
   return { success: true }
+}
+
+const languageSchema = z.enum(['en', 'bn'])
+
+/**
+ * Saves a language switch to the User so reminders and emails follow it (#254). The
+ * switch itself lives in the `vesta_lang` cookie (ADR 0003); logged out, there is no
+ * User to save to, and login copies the cookie over instead.
+ */
+export async function saveLanguage(input: 'en' | 'bn'): Promise<void> {
+  const jwt = await verifyAuth()
+  const lang = languageSchema.safeParse(input)
+  if (!jwt?.sub || !lang.success) return
+  await setUserLanguage(jwt.sub, lang.data)
 }

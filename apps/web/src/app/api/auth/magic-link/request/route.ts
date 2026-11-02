@@ -7,10 +7,13 @@ import { createMagicLink } from '@vesta/shared/server/services'
 import { env } from '@vesta/shared/utils/env'
 import { withRequestContext, logger } from '@vesta/shared/server/log'
 import { logCustomerRefusal } from '@/app/api/auth/log-failure'
+import { cookies } from 'next/headers'
+import { LANG_COOKIE, parseLang } from '@/lib/language'
 
 const bodySchema = z.object({
   email: z.string().email('Invalid email address'),
-  language: z.enum(['en', 'bn']).default('en'),
+  /** The page's language; older clients send none, so the vesta_lang cookie decides. */
+  language: z.enum(['en', 'bn']).optional(),
 })
 
 export async function POST(request: Request): Promise<Response> {
@@ -32,7 +35,8 @@ export async function POST(request: Request): Promise<Response> {
 
     const magicLinkUrl = `${env.APP_URL}/api/auth/magic-link/callback?token=${token}`
 
-    await sendMagicLinkEmail(email, magicLinkUrl, body.language)
+    const language = body.language ?? parseLang((await cookies()).get(LANG_COOKIE)?.value)
+    await sendMagicLinkEmail(email, magicLinkUrl, language)
 
     logger.customer('auth.magic-link.request', { email, ok: true })
     return Response.json({ message: 'Magic link sent' })
