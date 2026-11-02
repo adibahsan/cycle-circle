@@ -27,7 +27,7 @@ An in-app card that appears only when the active profile has logged nothing for 
 _Avoid_: check-in card, "How are you feeling" banner
 
 **Reminder**:
-A scheduled message Cycle Circle sends by email and SMS about a profile's coming period, fertile window or missing logs, or about the user's profile completion. The SMS copy goes only to a Subscriber, at their masked subscriber id.
+A scheduled message Cycle Circle sends by email and SMS about a profile's coming period, fertile window or missing logs, or about the user's profile completion. The SMS copy goes only to a user who has a masked subscriber id, and is sent to that id.
 _Avoid_: alert, notification
 
 **Profile completion**:

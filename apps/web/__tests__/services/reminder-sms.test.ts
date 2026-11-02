@@ -79,8 +79,6 @@ async function seed(kind: Kind, subscriberId: string | null) {
       confidence: 0.5,
     },
   })
-  if (kind === 'logging') return
-  // A recent log keeps the logging reminder out of the other kinds' way (their pref is off anyway).
 }
 
 async function cleanup() {
