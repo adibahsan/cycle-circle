@@ -903,7 +903,7 @@ export default function OnboardingClient({ user, today }: OnboardingClientProps)
     setStepErrors({});
 
     try {
-      const profile = await createProfile({
+      const result = await createProfile({
         name: state.profileName.trim(),
         relation: RELATION_TO_DB[state.profileRelation],
         cycleLength: state.cycleLength,
@@ -913,13 +913,17 @@ export default function OnboardingClient({ user, today }: OnboardingClientProps)
         goal: state.goal ?? undefined,
         userName: state.profileRelation === 'self' ? state.profileName.trim() : state.userName.trim() || undefined,
       });
-      await setActiveProfileCookie(profile.id);
-      setActiveProfile(profile.id);
+      if (!result.ok) {
+        setStepErrors({ submit: t('profiles.limitReached') });
+        return;
+      }
+      await setActiveProfileCookie(result.profile.id);
+      setActiveProfile(result.profile.id);
       setOnboardingComplete(true);
       router.replace('/dashboard');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create profile. Please try again.';
-      setStepErrors({ submit: message });
+      // Never show err.message: production replaces server-action errors with React's text (issue 255).
+      setStepErrors({ submit: t('profiles.serverError') });
       console.error('Failed to create profile:', err);
     } finally {
       setSubmitting(false);
