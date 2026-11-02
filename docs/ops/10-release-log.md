@@ -18,7 +18,7 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 **Migrations:** `20261102200000_magic_link_language` (adds a nullable `MagicLink.language`). Applied by `deploy.sh`.
 
-**Deploy:** `git push origin origin/main:production`.
+**Deploy:** `git push origin origin/main:production` (923d6fb); checks and the deploy job succeeded at 20:50 Bangladesh time. `/api/health/db` ok, web and admin `/login` 200. The desktop E2E workflow failed 1/209: the admin SMS send-time test (#229's flake: Save stayed disabled); it passed in both local full runs.
 
 ---
 
