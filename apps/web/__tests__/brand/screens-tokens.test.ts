@@ -39,6 +39,8 @@ const OWNED = [
 ].flatMap(walk).filter((f) => /\.(tsx?|css)$/.test(f));
 
 const read = (f: string) => readFileSync(f, 'utf8');
+/** Drops block comments and `//` line comments (a `//` after whitespace or at line start, so URLs survive). */
+const stripComments = (code: string) => code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
 const LEGACY = ['E8476C', 'F2728E', 'C93558', '9B7FD4', 'B9A4E3', 'FF8C6B', '7BC5AE'];
 
 describe('#23 owned screens use tokens only', () => {
@@ -52,7 +54,8 @@ describe('#23 owned screens use tokens only', () => {
   });
 
   it.each(OWNED.map((f) => [f.slice(src.length + 1), f]))('%s has no raw hex colour literals', (_n, f) => {
-    const s = read(f).replace(/&#\d+;/g, '');
+    // Comments are skipped so an issue reference like `(#255)` is not read as a colour.
+    const s = stripComments(read(f)).replace(/&#\d+;/g, '');
     expect(s.match(/#[0-9a-fA-F]{3,8}\b(?![\w-])/g) ?? []).toEqual([]);
     expect(s).not.toMatch(/\b(?:stroke|fill|color)=["'](?:white|black)["']/);
   });

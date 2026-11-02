@@ -83,6 +83,19 @@ export class FakeBdappsClient {
     return (await this.req<RecordedCall[]>('GET', `/_control/calls?${q}`)).json
   }
 
+  /**
+   * `/sms/send` calls addressed to this phone's subscriber: its masked id (where reminders and
+   * App OTPs go, #253) or, for a number BDApps never subscribed, the raw number.
+   */
+  async smsTo(phone: string): Promise<RecordedCall[]> {
+    const maskedId = (await this.subscriber(phone))?.maskedId
+    const digits = phone.replace(/\D/g, '').slice(-10)
+    return (await this.calls({ path: '/sms/send' })).filter((c) => {
+      const to = JSON.stringify(c.body.destinationAddresses ?? c.body.destinationAddress ?? '')
+      return (maskedId !== undefined && to.includes(maskedId)) || to.includes(digits)
+    })
+  }
+
   /** The subscriber behind a phone number, or undefined if BDApps never subscribed it. */
   async subscriber(phone: string): Promise<Subscriber | undefined> {
     const { status, json } = await this.req<Subscriber>('GET', `/_control/subscribers/${encodeURIComponent(phone)}`)

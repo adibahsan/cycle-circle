@@ -380,6 +380,15 @@ export async function getBdappsSubscriberId(userId: string): Promise<string | nu
   return sub?.bdappsSubscriberId ?? null
 }
 
+/**
+ * Where a Reminder SMS goes: the User's masked subscriber id, or null when they have none
+ * or only a raw-phone id (BDApps rejects those with E1951; ADR 0002).
+ */
+export async function reminderSmsAddress(userId: string): Promise<string | null> {
+  const id = await getBdappsSubscriberId(userId)
+  return id && !isPhoneSubscriberId(id) ? id : null
+}
+
 /** Users whose BDApps subscription we believe is active (for the nightly check). */
 export async function listBdappsSubscribers(): Promise<{ userId: string; subscriberId: string }[]> {
   const [rows, legacy] = await Promise.all([

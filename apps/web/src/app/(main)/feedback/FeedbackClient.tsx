@@ -240,7 +240,8 @@ export function FeedbackClient({ feedbackHistory }: FeedbackClientProps) {
         setMessage('')
       }, 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit feedback')
+      console.error('Failed to submit feedback:', err)
+      setError(t('feedback.submitFailed'))
     } finally {
       setSubmitting(false)
     }

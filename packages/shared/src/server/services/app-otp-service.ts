@@ -4,6 +4,7 @@ import { ApiError } from '../api-error'
 import { env } from '../../utils/env'
 import { isDevModeEnabled } from '../dev'
 import type { Language } from '../../types'
+import { OTP_TTL_MS, durationText } from '../../utils/auth-ttl'
 import { getSubscriptionStatus, isPhoneSubscriberId, isSubscribed, requestOtp, smsSend } from '../adapters/bdapps'
 import { createOtpChallenge } from './auth-service'
 import { getBdappsSubscriberId } from './subscription-service'
@@ -14,7 +15,6 @@ import { getBdappsSubscriberId } from './subscription-service'
  * and never changes their plan (ADR 0002, amendment 2026-10-18).
  */
 
-const OTP_TTL_MS = 5 * 60 * 1000
 const APP_OTP_MAX_ATTEMPTS = 5
 const APP_OTP_DAILY_CAP = 5
 
@@ -36,8 +36,8 @@ function hashCode(referenceNo: string, code: string): string {
 /** The SMS body we send (also what the merchant log records, so log masking is tested against it). */
 export function appOtpSmsText(code: string, lang: Language): string {
   return lang === 'bn'
-    ? `সাইকেল সার্কেল কোড: ${code}। ৫ মিনিট বৈধ। কাউকে জানাবেন না।`
-    : `Cycle Circle code: ${code}. Valid 5 min. Don't share it.`
+    ? `সাইকেল সার্কেল কোড: ${code}। ${durationText(OTP_TTL_MS, 'bn')} বৈধ। কাউকে জানাবেন না।`
+    : `Cycle Circle code: ${code}. Valid ${durationText(OTP_TTL_MS, 'en')}. Don't share it.`
 }
 
 /**
@@ -75,7 +75,7 @@ export async function startAppOtpLogin(phone: string, lang: Language, now: Date)
     where: { phone, codeHash: { not: null }, createdAt: { gt: new Date(now.getTime() - 24 * 60 * 60 * 1000) } },
   })
   if (sentToday >= APP_OTP_DAILY_CAP) {
-    throw new ApiError(429, 'Too many codes sent to this number today. Try again tomorrow.', 'RATE_LIMITED')
+    throw new ApiError(429, 'Too many codes sent to this number today. Try again tomorrow.', 'OTP_DAILY_LIMIT')
   }
 
   // Save before sending, so a code that reaches the phone can always be verified.

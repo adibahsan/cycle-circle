@@ -11,6 +11,7 @@ import { revalidateTag } from 'next/cache'
 import { cacheTags } from '@/lib/cache-tags'
 import { withRequestContext, setRequestUser, logger } from '@vesta/shared/server/log'
 import { logCustomerRefusal } from '@/app/api/auth/log-failure'
+import { saveLoginLanguage } from '@/app/api/auth/login-language'
 
 const bodySchema = z.object({
   referenceNo: z.string().min(1, 'referenceNo is required'),
@@ -67,6 +68,7 @@ export async function POST(request: Request): Promise<Response> {
       user = await completeOtpAuth(challenge.id, challenge.phone, registered, new Date(), subscriberId)
     }
     setRequestUser(user.id)
+    await saveLoginLanguage(user.id)
     revalidateTag(cacheTags.user(user.id), { expire: 0 })
 
     const token = await issueJwt({

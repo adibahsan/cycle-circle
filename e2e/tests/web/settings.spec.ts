@@ -4,7 +4,6 @@ import { test, expect } from '../../support/fixtures.ts'
 import { createProfileWithLogs, getDb } from '../../support/db.ts'
 import { latestEmailFor } from '../../support/mailpit.ts'
 import { SECRETS, URLS } from '../../support/slot.ts'
-import { unusedPhone } from '../../support/users.ts'
 
 test.describe('Settings and Account', () => {
   test('the theme toggle switches and remembers light and dark', async ({ newUser }) => {
@@ -93,19 +92,13 @@ test.describe('Settings and Account', () => {
       },
     })
 
-    // Seed a due CONTROL throwaway user (not opted out) with the exact same due data
-    const controlPhone = await unusedPhone()
+    // Seed a due CONTROL user (not opted out) with the exact same due data. A real login, so
+    // BDApps has a masked id to send its reminder SMS to (#253).
+    const { phone: controlPhone } = await newUser()
     const controlEmail = `control-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
-    const controlUser = await db.user.create({
-      data: {
-        phone: `+880${controlPhone.slice(1)}`,
-        email: controlEmail,
-        fullName: 'Control Due User',
-        authMethod: 'OTP',
-        subscriptionStatus: 'PRO',
-        profileCompleted: true,
-        profileReminderOptOut: false,
-      },
+    const controlUser = await db.user.update({
+      where: { id: (await db.user.findFirstOrThrow({ where: { phone: { contains: controlPhone.slice(1) } } })).id },
+      data: { email: controlEmail, fullName: 'Control Due User', profileCompleted: true, profileReminderOptOut: false },
     })
     const { profile: controlProfile } = await createProfileWithLogs({
       userId: controlUser.id,
@@ -191,11 +184,7 @@ test.describe('Settings and Account', () => {
     expect(controlEmailMessage.subject).toBeTruthy()
 
     // Control user: received SMS recorded in fake BDApps
-    const calls = await fakeBdapps.calls({ path: '/sms/send' })
-    const controlCalls = calls.filter((c) =>
-      JSON.stringify(c.body).includes(controlPhone.slice(1)),
-    )
-    expect(controlCalls.length).toBeGreaterThanOrEqual(1)
+    expect((await fakeBdapps.smsTo(controlPhone)).length).toBeGreaterThanOrEqual(1)
 
     // Control user: emails logged in database
     const controlDbEmails = await db.emailLog.findMany({ where: { userId: controlUser.id } })
@@ -205,11 +194,8 @@ test.describe('Settings and Account', () => {
     const optedOutDbEmails = await db.emailLog.findMany({ where: { userId: dbUser.id } })
     expect(optedOutDbEmails).toHaveLength(0)
 
-    // Opted-out user: zero SMS recorded in fake BDApps
-    const optedOutCalls = calls.filter((c) =>
-      JSON.stringify(c.body).includes(phone.slice(1)),
-    )
-    expect(optedOutCalls).toHaveLength(0)
+    // Opted-out user: zero SMS recorded in fake BDApps (smsTo matches the masked id reminders use)
+    expect(await fakeBdapps.smsTo(phone)).toHaveLength(0)
 
     // Opted-out user: zero emails in Mailpit
     const searchRes = await fetch(

@@ -14,6 +14,7 @@ import {
   updateUserName as svcUpdateUserName,
   completeUserProfile as svcCompleteUserProfile,
 } from '@vesta/shared/server/services'
+import { ApiError } from '@vesta/shared/server/api-error'
 import { cacheTags } from '@/lib/cache-tags'
 
 const createProfileSchema = z.object({
@@ -27,15 +28,29 @@ const createProfileSchema = z.object({
   userName: z.string().max(200).optional(),
 })
 
-export async function createProfile(input: z.infer<typeof createProfileSchema>) {
+/**
+ * The 6-profile limit is RETURNED, not thrown: Next.js replaces a thrown server-action
+ * error with React error #441 in production, so the page could not show it (#255).
+ */
+export type CreateProfileResult =
+  | { ok: true; profile: Awaited<ReturnType<typeof svcCreateProfile>> }
+  | { ok: false; code: 'PROFILE_LIMIT_REACHED' }
+
+export async function createProfile(input: z.infer<typeof createProfileSchema>): Promise<CreateProfileResult> {
   const jwt = await requireAuth()
   const user = await getAuthUser(jwt.sub)
   const data = createProfileSchema.parse(input)
 
-  const profile = await svcCreateProfile(user.id, {
-    ...data,
-    goal: data.goal ? (normalizeGoal(data.goal) ?? data.goal) : undefined,
-  })
+  let profile: Awaited<ReturnType<typeof svcCreateProfile>>
+  try {
+    profile = await svcCreateProfile(user.id, {
+      ...data,
+      goal: data.goal ? (normalizeGoal(data.goal) ?? data.goal) : undefined,
+    })
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'PROFILE_LIMIT_REACHED') return { ok: false, code: 'PROFILE_LIMIT_REACHED' }
+    throw error
+  }
 
   if (data.userName) {
     await svcUpdateUserName(user.id, data.userName)
@@ -45,7 +60,7 @@ export async function createProfile(input: z.infer<typeof createProfileSchema>) 
 
   revalidateTag(cacheTags.profiles(user.id), { expire: 0 })
   revalidateTag(cacheTags.user(user.id), { expire: 0 })
-  return profile
+  return { ok: true, profile }
 }
 
 export async function renameProfile(profileId: string, name: string) {

@@ -7,7 +7,9 @@ without a reasoned disable, no `force`, no `.only`/unexplained skips, and an iss
 1. **Negative assertions follow a settled positive signal.** `not.toBeVisible()`, `toHaveCount(0)`
    or "no email arrived" only after something that proves the page or system finished (the
    success toast, the row that must be there, a polled call that did arrive). Otherwise it passes
-   before the thing it guards against could have happened.
+   before the thing it guards against could have happened. Its locator must also be one this
+   spec shows matching when the element is there (same role and name, e.g. a `/^Add/` button
+   clicked elsewhere): a locator that never matches passes forever.
 2. **Assert on this test's own data.** Put a unique marker (run id, per-test phone/email) in what
    the test creates, and filter recorded fake-BDApps calls and Mailpit emails by this user. Never
    assert a global count, "the latest email", or "the only row": parallel workers share the slot.

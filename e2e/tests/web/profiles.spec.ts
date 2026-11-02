@@ -103,7 +103,33 @@ test.describe('Profiles management and isolation', () => {
     await expect(page.getByRole('button', { name: /^Edit Profile Member \d$/ })).toHaveCount(6)
     await expect(page.getByText('Maximum 6 profiles')).toBeVisible()
     await expect(page.getByText('Delete a profile to add a new one')).toBeVisible()
-    await expect(page.getByRole('button', { name: /^Add$/i })).not.toBeVisible()
+    await expect(page.getByRole('button', { name: /^Add/i })).not.toBeVisible()
+  })
+
+  test('a page loaded before the sixth profile was added shows the limit message on add and refreshes to six (#255)', async ({ newUser, days }) => {
+    const { page } = await newUser()
+    const addViaApi = async (i: number) => {
+      const res = await page.request.post('/api/profiles', {
+        data: { name: `Member ${i}`, relation: i === 1 ? 'SELF' : 'SISTER', cycleLength: 28, periodLength: 5, lastPeriodStart: days.daysAgo(5 + i), goal: 'tracking' },
+      })
+      expect(res.status(), `profile ${i}: ${await res.text()}`).toBe(201)
+    }
+    for (let i = 1; i <= 5; i++) await addViaApi(i)
+
+    // This page (tab B) sees five profiles; then "tab A" adds the sixth.
+    await page.goto('/profiles')
+    await expect(page.getByRole('button', { name: /^Edit Profile Member \d$/ })).toHaveCount(5)
+    await addViaApi(6)
+
+    await page.getByRole('button', { name: /^Add/i }).click()
+    await page.getByLabel(/^Name$/).fill('Member 7')
+    await page.getByRole('button', { name: 'Sister' }).click()
+    await page.getByLabel(/Last period start/i).fill(days.daysAgo(5))
+    await page.getByRole('button', { name: 'Create Profile' }).click()
+
+    await expect(page.getByText('You can have up to 6 profiles. Delete one to add another.')).toBeVisible()
+    await expect(page.getByText(/React error/i)).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /^Edit Profile Member \d$/ })).toHaveCount(6)
   })
 
   test('API rejects seventh profile with 409 PROFILE_LIMIT_REACHED when limit is exceeded', async ({ newUser, days }) => {

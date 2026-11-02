@@ -1,15 +1,9 @@
 import { test, expect } from '../../support/fixtures'
-import { newEmail, toDbPhone } from '../../support/users.ts'
+import { newEmail } from '../../support/users.ts'
 import { SECRETS, URLS } from '../../support/slot.ts'
 import { waitForEmail } from '../../support/mailpit.ts'
 import type { BangladeshDays } from '../../support/bangladesh-day.ts'
 import type { PrismaClient } from '../../support/db.ts'
-
-/** `+8801…` / `0136…` → BDApps `tel:8801…` (same as the app's `toTelUri`). */
-function toTelUri(phone: string): string {
-  const db = phone.startsWith('+88') ? phone : toDbPhone(phone)
-  return `tel:88${db.slice(3)}`
-}
 
 async function seedPeriodAlertProfile(
   db: PrismaClient,
@@ -137,18 +131,10 @@ test.describe('cron: daily-reminders', () => {
 
     await expectNoEmail(outEmail, since)
 
-    const dueTel = toTelUri(due.phone)
-    const outTel = toTelUri(optedOut.phone)
-    const sms = await fakeBdapps.calls({ path: '/sms/send', sinceSeq })
-    const dueSms = sms.filter((c) => {
-      const addrs = c.body.destinationAddresses
-      return Array.isArray(addrs) && addrs.includes(dueTel) && String(c.body.message ?? '').includes('DueProfile')
-    })
-    expect(dueSms.length).toBeGreaterThanOrEqual(1)
-    const outSms = sms.filter((c) => {
-      const addrs = c.body.destinationAddresses
-      return Array.isArray(addrs) && addrs.includes(outTel) && String(c.body.message ?? '').includes('OutProfile')
-    })
-    expect(outSms).toHaveLength(0)
+    // Reminder SMS go to the masked subscriber id (#253); smsTo resolves it from the phone.
+    const reminderSms = async (phone: string, profileName: string) =>
+      (await fakeBdapps.smsTo(phone)).filter((c) => c.seq > sinceSeq && String(c.body.message ?? '').includes(profileName))
+    expect((await reminderSms(due.phone, 'DueProfile')).length).toBeGreaterThanOrEqual(1)
+    expect(await reminderSms(optedOut.phone, 'OutProfile')).toHaveLength(0)
   })
 })

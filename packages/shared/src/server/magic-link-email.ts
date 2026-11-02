@@ -1,5 +1,6 @@
 import type { Language } from '@prisma/client'
 import { EMAIL_PALETTE as P, emailContactHtml, emailHeaderHtml } from './email-templates'
+import { MAGIC_LINK_TTL_MS, durationText } from '../utils/auth-ttl'
 
 export function buildMagicLinkEmailHtml(
   magicLink: string,
@@ -10,9 +11,8 @@ export function buildMagicLinkEmailHtml(
   const subject = isBn ? 'সাইকেল সার্কেল - লগইন লিঙ্ক' : 'Cycle Circle - Login Link'
   const intro = isBn ? 'আপনার লগইন লিঙ্ক' : 'Your login link'
   const buttonLabel = isBn ? 'লগইন করুন' : 'Sign in to Cycle Circle'
-  const expiry = isBn
-    ? 'এই লিঙ্কটি ১৫ মিনিটের মধ্যে মেয়াদ শেষ হবে।'
-    : 'This link will expire in 15 minutes.'
+  const ttl = durationText(MAGIC_LINK_TTL_MS, isBn ? 'bn' : 'en')
+  const expiry = isBn ? `এই লিঙ্কটি ${ttl} পর্যন্ত বৈধ।` : `This link will expire in ${ttl}.`
 
   const html = `<!DOCTYPE html>
 <html lang="${langAttr}">

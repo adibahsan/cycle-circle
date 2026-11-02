@@ -19,7 +19,7 @@ async function runDailyReminders(userId: string): Promise<void> {
 
 /** Count of SMS the app sent through the fake BDApps to this local-format phone. */
 async function smsSentTo(fakeBdapps: FakeBdappsClient, phone: string): Promise<number> {
-  return (await fakeBdapps.calls({ path: '/sms/send' })).filter((c) => JSON.stringify(c.body).includes(phone.slice(1))).length
+  return (await fakeBdapps.smsTo(phone)).length
 }
 
 test.describe('Web billing: upgrade and unsubscribe', () => {
@@ -388,7 +388,7 @@ test.describe('Web billing: Pro-only features are gated for a Free user', () => 
     }
   })
 
-  test('SMS alerts: the daily-reminders cron sends an SMS to a Pro user but not to the same user once Free', async ({
+  test('SMS alerts: the daily-reminders cron sends the SMS to the masked subscriber id, and none without one (#253)', async ({
     newUser,
     days,
     db,
@@ -407,16 +407,17 @@ test.describe('Web billing: Pro-only features are gated for a Free user', () => 
       expect(res.ok).toBe(true)
       expect(((await res.json()) as { errors: number }).errors).toBe(0)
     }
-    const smsToUser = async () =>
-      (await fakeBdapps.calls({ path: '/sms/send' })).filter((c) => JSON.stringify(c.body).includes(phone.slice(1))).length
+    const smsToUser = () => smsSentTo(fakeBdapps, phone)
 
-    // Free: the reminder email still goes out, the SMS does not
-    await setUserSubscription({ userId: user.id, status: 'FREE' })
+    // #253: a Reminder SMS goes to the masked subscriber id, whatever the plan; without one
+    // there is nowhere to send it (the reminder email still goes out).
+    const maskedId = (await fakeBdapps.subscriber(phone))!.maskedId
+    await setUserSubscription({ userId: user.id, status: 'FREE', bdappsSubscriberId: null })
     await runCron()
     expect(await smsToUser()).toBe(0)
 
-    // Pro again: the same cron run now sends the SMS
-    await setUserSubscription({ userId: user.id, status: 'PRO' })
+    // The masked id back: the same cron run now sends the SMS to it
+    await setUserSubscription({ userId: user.id, status: 'PRO', bdappsSubscriberId: maskedId })
     await runCron()
     expect(await smsToUser()).toBeGreaterThanOrEqual(1)
   })

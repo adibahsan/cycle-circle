@@ -194,7 +194,7 @@ export function isSubscribed(status: SubscriptionStatusValue): boolean {
 }
 
 /** E1951 = "Format of the address is invalid Or User Already UnRegistered". */
-function isUnregisteredError(error: unknown): boolean {
+export function isUnregisteredError(error: unknown): boolean {
   return error instanceof ApiError && error.code === 'BDAPPS_E1951'
 }
 

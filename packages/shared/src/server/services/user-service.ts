@@ -475,6 +475,18 @@ export async function setProfileReminderOptOut(
   return updated.profileReminderOptOut
 }
 
+/**
+ * Save the User's language so background sends (reminders, emails) use it. The
+ * `vesta_lang` cookie stays the UI's source of truth (ADR 0003); this is its copy for
+ * jobs that run without a request. A deleted or missing User is a no-op.
+ */
+export async function setUserLanguage(userId: string, lang: 'en' | 'bn'): Promise<void> {
+  await prisma.user.updateMany({
+    where: { id: userId, deletedAt: null },
+    data: { language: lang === 'bn' ? 'BN' : 'EN' },
+  })
+}
+
 // ---------------------------------------------------------------------------
 // Chart-data aggregations for admin Users section
 // ---------------------------------------------------------------------------

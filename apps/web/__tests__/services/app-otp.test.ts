@@ -158,7 +158,7 @@ describe('verifying an App OTP', () => {
 describe('App OTP abuse limits', () => {
   it('sends at most 5 App OTPs per number per day', async () => {
     for (let i = 0; i < 5; i++) await startAppOtpLogin(users.subscriber.phone, 'en', new Date())
-    await expect(startAppOtpLogin(users.subscriber.phone, 'en', new Date())).rejects.toMatchObject({ statusCode: 429, code: 'RATE_LIMITED' })
+    await expect(startAppOtpLogin(users.subscriber.phone, 'en', new Date())).rejects.toMatchObject({ statusCode: 429, code: 'OTP_DAILY_LIMIT' })
     expect(bdapps.smsSend).toHaveBeenCalledTimes(5)
   })
 })

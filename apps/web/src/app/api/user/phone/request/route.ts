@@ -6,6 +6,7 @@ import { checkRateLimit } from '@vesta/shared/server/adapters/redis'
 import { requestOtp } from '@vesta/shared/server/adapters/bdapps'
 import { createOtpChallenge, getOtpResendCooldownRemaining } from '@vesta/shared/server/services'
 import { isDevModeEnabled } from '@vesta/shared/server/dev'
+import { OTP_TTL_MS } from '@vesta/shared/utils/auth-ttl'
 import { withAuth } from '@vesta/shared/server/middleware'
 import { prisma } from '@vesta/shared'
 import { logger } from '@vesta/shared/server/log'
@@ -62,7 +63,7 @@ export const POST = withAuth(async (request, { user }) => {
       referenceNo = result.referenceNo
     }
 
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
+    const expiresAt = new Date(Date.now() + OTP_TTL_MS)
     await createOtpChallenge(normalized, referenceNo, expiresAt)
 
     logger.customer('user.phone.request', { phone: normalized, referenceNo, ok: true, dev: isDevModeEnabled() })

@@ -15,6 +15,7 @@ vi.mock('@vesta/shared/server/auth', () => ({
 // Prod: nginx proxies to the app on localhost:3000; the public origin is APP_URL.
 vi.mock('@vesta/shared/utils/env', () => ({ env: { APP_URL: 'https://cycle-circle.com' } }))
 vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }))
+vi.mock('@/app/api/auth/login-language', () => ({ saveLoginLanguage: vi.fn(async () => {}) }))
 vi.mock('@/app/api/auth/log-failure', () => ({ logCustomerRefusal: vi.fn() }))
 
 import { GET } from '@/app/api/auth/magic-link/callback/route'

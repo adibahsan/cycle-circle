@@ -1,18 +1,16 @@
 'use client';
 
-import { useAppStore } from '@/lib/store';
 import { useLanguage } from '@/lib/use-language';
+import { useChangeLanguage } from '@/lib/use-change-language';
 import { useTranslation } from 'react-i18next';
 
 export function LanguageToggle() {
   const language = useLanguage();
-  const setLanguage = useAppStore((s) => s.setLanguage);
-  const { i18n, t } = useTranslation();
+  const changeLanguage = useChangeLanguage();
+  const { t } = useTranslation();
 
   const toggle = () => {
-    const newLang = language === 'en' ? 'bn' : 'en';
-    setLanguage(newLang);
-    i18n.changeLanguage(newLang);
+    changeLanguage(language === 'en' ? 'bn' : 'en');
   };
 
   return (

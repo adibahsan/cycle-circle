@@ -1,5 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import { MAGIC_LINK_TTL_MS, OTP_TTL_MS, durationText } from './auth-ttl';
 
 const resources = {
   en: {
@@ -25,7 +26,7 @@ const resources = {
         emailAddress: 'Email address',
         magicLinkSentTo: 'We sent a magic link to',
         magicStepInbox: 'Check your inbox (and spam folder)',
-        magicStepValid: 'The link is valid for 15 minutes',
+        magicStepValid: `The link is valid for ${durationText(MAGIC_LINK_TTL_MS, 'en')}`,
         magicStepTrial: '24-hour trial access after first login',
         useDifferentEmail: 'Use a different email',
         havePhone: 'Have a phone number?',
@@ -72,7 +73,7 @@ const resources = {
         backToPhoneLogin: 'Back to phone login',
         didNotReceive: "Didn't receive the code?",
         resendOtp: 'Resend OTP',
-        codeExpiry: 'This code expires in 10 minutes. Never share your OTP with anyone.',
+        codeExpiry: `This code expires in ${durationText(OTP_TTL_MS, 'en')}. Never share your OTP with anyone.`,
         verified: 'Verified!',
       },
       onboarding: {
@@ -365,6 +366,7 @@ const resources = {
         title: 'Feedback', bug: 'Bug Report', feature: 'Feature Request',
         general: 'General', satisfaction: 'Satisfaction', message: 'Your message...',
         rating: 'Rating', submit: 'Submit Feedback', success: 'Thank you for your feedback!',
+        submitFailed: 'Failed to submit feedback. Please try again.',
         helpUs: 'Help us make Cycle Circle better for you',
         category: 'Category',
         optional: 'optional',
@@ -455,6 +457,7 @@ const resources = {
         err: {
           cooldown: 'Please wait a moment before requesting another code.',
           rateLimited: 'Too many attempts. Try again in a few minutes.',
+          dailyLimit: 'Too many codes sent to this number today. Try again tomorrow.',
           phoneTaken: 'This number is already registered to another account.',
           alreadySubscribed: 'This number is already subscribed. Unsubscribe it from Cycle Circle on BDApps first, then add it here.',
           invalidCode: 'Invalid or expired code. Please try again.',
@@ -485,7 +488,7 @@ const resources = {
         logoutConfirmMsg: 'Are you sure you want to log out?',
         about: 'About', appVersion: 'App Version',
         privacyPolicy: 'Privacy Policy', termsOfService: 'Terms of Service',
-        encryptionNote: 'Your health data is encrypted with AES-256-GCM and stored securely.',
+        encryptionNote: 'Your health data is stored securely on our servers.',
         lightMode: 'Light', darkMode: 'Dark',
         prefsSaved: 'Preferences saved', prefsFailed: 'Failed to save preferences',
         emailCodeSent: 'We sent a 6-digit code to {{email}}.',
@@ -522,6 +525,7 @@ const resources = {
         nameMinLength: 'Name must be at least 2 characters',
         lastPeriodRequired: 'Last period start date is required',
         serverError: 'Something went wrong. Please try again.',
+        limitReached: 'You can have up to 6 profiles. Delete one to add another.',
         createProfile: 'Create Profile',
         editProfile: 'Edit Profile',
         saveChanges: 'Save Changes',
@@ -762,7 +766,7 @@ const resources = {
             title: 'Data & Privacy',
             body: 'Your use of Cycle Circle is also governed by our Privacy Policy, which is incorporated into these Terms by reference.',
             items: [
-              { desc: 'All health data is encrypted at rest with AES-256-GCM.' },
+              { desc: 'All health data is stored securely on our servers.' },
               { desc: 'We do not sell, rent, or share your personal or health data with third parties for commercial purposes.' },
               { desc: 'You may request export or deletion of your data at any time.' },
             ],
@@ -797,7 +801,7 @@ const resources = {
               { term: 'Symptom logs', desc: 'mood, flow intensity, pain levels, and notes you enter' },
               { term: 'Profile information', desc: 'name and any details you choose to provide per profile' },
             ],
-            callout: 'All health data is encrypted at rest using AES-256-GCM before storage.',
+            callout: 'All health data is stored securely on our servers.',
           },
           usage: {
             title: 'How We Use Your Data',
@@ -878,7 +882,7 @@ const resources = {
         emailAddress: 'ইমেইল ঠিকানা',
         magicLinkSentTo: 'আমরা একটি ম্যাজিক লিংক পাঠিয়েছি',
         magicStepInbox: 'আপনার ইনবক্স (এবং স্প্যাম ফোল্ডার) দেখুন',
-        magicStepValid: 'লিংকটি ১৫ মিনিট পর্যন্ত বৈধ',
+        magicStepValid: `লিংকটি ${durationText(MAGIC_LINK_TTL_MS, 'bn')} পর্যন্ত বৈধ`,
         magicStepTrial: 'প্রথম লগইনের পর ২৪ ঘণ্টার ট্রায়াল অ্যাক্সেস',
         useDifferentEmail: 'অন্য ইমেইল ব্যবহার করুন',
         havePhone: 'ফোন নম্বর আছে?',
@@ -925,7 +929,7 @@ const resources = {
         backToPhoneLogin: 'ফোন লগইনে ফিরুন',
         didNotReceive: 'কোড পাননি?',
         resendOtp: 'ওটিপি পুনরায় পাঠান',
-        codeExpiry: 'এই কোড ১০ মিনিটে মেয়াদ শেষ হয়। কখনো ওটিপি কারো সাথে শেয়ার করবেন না।',
+        codeExpiry: `এই কোডের মেয়াদ ${durationText(OTP_TTL_MS, 'bn')}। কখনো ওটিপি কারো সাথে শেয়ার করবেন না।`,
         verified: 'যাচাই হয়েছে!',
       },
       onboarding: {
@@ -1218,6 +1222,7 @@ const resources = {
         title: 'মতামত', bug: 'বাগ রিপোর্ট', feature: 'ফিচার অনুরোধ',
         general: 'সাধারণ', satisfaction: 'সন্তুষ্টি', message: 'আপনার বার্তা...',
         rating: 'রেটিং', submit: 'মতামত জমা দিন', success: 'আপনার মতামতের জন্য ধন্যবাদ!',
+        submitFailed: 'মতামত পাঠানো যায়নি। আবার চেষ্টা করুন।',
         helpUs: 'সাইকেল সার্কেলকে আপনার জন্য আরও ভালো করতে সাহায্য করুন',
         category: 'বিভাগ',
         optional: 'ঐচ্ছিক',
@@ -1308,6 +1313,7 @@ const resources = {
         err: {
           cooldown: 'আরেকটি কোড চাওয়ার আগে একটু অপেক্ষা করুন।',
           rateLimited: 'অনেকবার চেষ্টা হয়েছে। কয়েক মিনিট পরে আবার চেষ্টা করুন।',
+          dailyLimit: 'আজ এই নম্বরে অনেকবার কোড পাঠানো হয়েছে। আগামীকাল আবার চেষ্টা করুন।',
           phoneTaken: 'এই নম্বরটি ইতিমধ্যে অন্য অ্যাকাউন্টে নিবন্ধিত।',
           alreadySubscribed: 'এই নম্বরটি ইতিমধ্যে সাবস্ক্রাইব করা আছে। আগে BDApps থেকে সাইকেল সার্কেলের সাবস্ক্রিপশন বাতিল করুন, তারপর এখানে যোগ করুন।',
           invalidCode: 'ভুল বা মেয়াদোত্তীর্ণ কোড। আবার চেষ্টা করুন।',
@@ -1338,7 +1344,7 @@ const resources = {
         logoutConfirmMsg: 'আপনি কি সত্যিই লগ আউট করতে চান?',
         about: 'সম্পর্কে', appVersion: 'অ্যাপ ভার্সন',
         privacyPolicy: 'গোপনীয়তা নীতি', termsOfService: 'সেবার শর্তাবলী',
-        encryptionNote: 'আপনার স্বাস্থ্য তথ্য AES-256-GCM দিয়ে এনক্রিপ্ট করে নিরাপদে সংরক্ষিত।',
+        encryptionNote: 'আপনার স্বাস্থ্য তথ্য আমাদের সার্ভারে নিরাপদে সংরক্ষিত।',
         lightMode: 'লাইট', darkMode: 'ডার্ক',
         prefsSaved: 'পছন্দ সংরক্ষিত', prefsFailed: 'পছন্দ সংরক্ষণ ব্যর্থ হয়েছে',
         emailCodeSent: '{{email}}-এ একটি ৬-সংখ্যার কোড পাঠানো হয়েছে।',
@@ -1375,6 +1381,7 @@ const resources = {
         nameMinLength: 'নাম কমপক্ষে ২ অক্ষর হতে হবে',
         lastPeriodRequired: 'শেষ পিরিয়ড শুরুর তারিখ প্রয়োজন',
         serverError: 'কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।',
+        limitReached: 'সর্বোচ্চ ৬টি প্রোফাইল রাখা যায়। নতুন যোগ করতে একটি মুছে ফেলুন।',
         createProfile: 'প্রোফাইল তৈরি করুন',
         editProfile: 'প্রোফাইল সম্পাদনা',
         saveChanges: 'পরিবর্তন সংরক্ষণ',
@@ -1616,7 +1623,7 @@ const resources = {
             title: 'তথ্য ও গোপনীয়তা',
             body: 'সাইকেল সার্কেলের ব্যবহার আমাদের গোপনীয়তা নীতি দ্বারাও নিয়ন্ত্রিত, যা রেফারেন্সের মাধ্যমে এই শর্তাবলীতে অন্তর্ভুক্ত।',
             items: [
-              { desc: 'সকল স্বাস্থ্য তথ্য AES-256-GCM দিয়ে বিশ্রামে এনক্রিপ্ট করা হয়।' },
+              { desc: 'সকল স্বাস্থ্য তথ্য আমাদের সার্ভারে নিরাপদে সংরক্ষিত থাকে।' },
               { desc: 'আমরা বাণিজ্যিক উদ্দেশ্যে আপনার ব্যক্তিগত বা স্বাস্থ্য তথ্য তৃতীয় পক্ষের কাছে বিক্রি, ভাড়া বা শেয়ার করি না।' },
               { desc: 'আপনি যেকোনো সময় আপনার তথ্য এক্সপোর্ট বা মুছে ফেলার অনুরোধ করতে পারবেন।' },
             ],
@@ -1651,7 +1658,7 @@ const resources = {
               { term: 'লক্ষণ লগ', desc: 'মেজাজ, প্রবাহের তীব্রতা, ব্যথার মাত্রা এবং আপনার প্রবেশ করা নোট' },
               { term: 'প্রোফাইল তথ্য', desc: 'নাম এবং প্রতিটি প্রোফাইলে আপনি দিতে চান এমন যেকোনো বিবরণ' },
             ],
-            callout: 'সকল স্বাস্থ্য তথ্য সংরক্ষণের আগে AES-256-GCM ব্যবহার করে বিশ্রামে এনক্রিপ্ট করা হয়।',
+            callout: 'সকল স্বাস্থ্য তথ্য আমাদের সার্ভারে নিরাপদে সংরক্ষিত থাকে।',
           },
           usage: {
             title: 'আমরা আপনার তথ্য কীভাবে ব্যবহার করি',

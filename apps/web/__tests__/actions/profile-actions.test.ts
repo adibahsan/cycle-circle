@@ -31,6 +31,7 @@ import {
 } from '../../src/app/actions/profile-actions'
 import * as svc from '@vesta/shared/server/services'
 import { revalidateTag } from 'next/cache'
+import { ApiError } from '@vesta/shared/server/api-error'
 
 const MOCK_PROFILE = {
   id: 'profile-1',
@@ -70,16 +71,24 @@ describe('createProfile', () => {
         periodLength: 5,
       }),
     )
-    expect(result).toEqual(MOCK_PROFILE)
+    expect(result).toEqual({ ok: true, profile: MOCK_PROFILE })
     expect(revalidateTag).toHaveBeenCalledWith('profiles:user-1', { expire: 0 })
   })
 
-  it('throws when user already has 6 profiles', async () => {
-    vi.mocked(svc.createProfile).mockRejectedValue(new Error('Maximum of 6 profiles allowed'))
+  // #255: a thrown action error reaches the browser as React error #441 in production,
+  // so the limit comes back as a typed result the page can translate.
+  it('returns PROFILE_LIMIT_REACHED instead of throwing when the user already has 6 profiles', async () => {
+    vi.mocked(svc.createProfile).mockRejectedValue(
+      new ApiError(409, 'You can have up to 6 profiles. Delete one to add another.', 'PROFILE_LIMIT_REACHED'),
+    )
 
-    await expect(
-      createProfile({ name: 'Alice', relation: 'SELF' }),
-    ).rejects.toThrow('Maximum of 6 profiles allowed')
+    await expect(createProfile({ name: 'Alice', relation: 'SELF' })).resolves.toEqual({ ok: false, code: 'PROFILE_LIMIT_REACHED' })
+    expect(svc.completeUserProfile).not.toHaveBeenCalled()
+  })
+
+  it('still throws unexpected errors', async () => {
+    vi.mocked(svc.createProfile).mockRejectedValue(new Error('db down'))
+    await expect(createProfile({ name: 'Alice', relation: 'SELF' })).rejects.toThrow('db down')
   })
 
   it('seeds period log when lastPeriodStart is provided', async () => {
@@ -97,7 +106,7 @@ describe('createProfile', () => {
       'user-1',
       expect.objectContaining({ lastPeriodStart: '2026-01-15' }),
     )
-    expect(result).toEqual(profileWithDate)
+    expect(result).toEqual({ ok: true, profile: profileWithDate })
   })
 })
 

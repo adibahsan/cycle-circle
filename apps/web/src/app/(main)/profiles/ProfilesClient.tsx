@@ -866,7 +866,7 @@ export function ProfilesClient({ profiles, today }: ProfilesClientProps) {
     setIsPending(true);
     setAddError('');
     try {
-      await createProfile({
+      const result = await createProfile({
         name: data.name,
         relation: toDbRelation(data.relation),
         cycleLength: data.cycleLength,
@@ -875,13 +875,19 @@ export function ProfilesClient({ profiles, today }: ProfilesClientProps) {
         flowIntensity: data.flowIntensity,
         goal: data.goal,
       });
+      if (!result.ok) {
+        // Another tab reached the limit after this page loaded: say so and show the real list.
+        setAddError(t('profiles.limitReached'));
+        router.refresh();
+        return;
+      }
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
       }
       closeAddForm();
     } catch (err) {
-      const message = err instanceof Error ? err.message : t('profiles.serverError');
-      setAddError(message);
+      // Never show err.message: production replaces server-action errors with React's text (issue 255).
+      setAddError(t('profiles.serverError'));
       console.error('Failed to add profile:', err);
     } finally {
       setIsPending(false);
@@ -902,8 +908,7 @@ export function ProfilesClient({ profiles, today }: ProfilesClientProps) {
       window.dispatchEvent(new CustomEvent('vesta:profile-updated'));
       closeDeleteDialog();
     } catch (err) {
-      const message = err instanceof Error ? err.message : t('profiles.serverError');
-      setDeleteError(message);
+      setDeleteError(t('profiles.serverError'));
       console.error('Failed to delete profile:', err);
     } finally {
       setIsPending(false);
@@ -939,8 +944,7 @@ export function ProfilesClient({ profiles, today }: ProfilesClientProps) {
       }
       closeEditForm();
     } catch (err) {
-      const message = err instanceof Error ? err.message : t('profiles.serverError');
-      setEditError(message);
+      setEditError(t('profiles.serverError'));
       console.error('Failed to update profile:', err);
     } finally {
       setIsPending(false);

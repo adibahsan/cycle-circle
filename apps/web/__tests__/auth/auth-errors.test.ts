@@ -38,6 +38,7 @@ describe('authErrorMessage', () => {
     ['RATE_LIMITED', 'trial.err.rateLimited'],
     ['OTP_COOLDOWN', 'trial.err.cooldown'],
     ['OTP_LOCKED', 'trial.err.codeLocked'],
+    ['OTP_DAILY_LIMIT', 'trial.err.dailyLimit'],
   ])('maps %s to %s', (code, key) => {
     expect(authErrorMessage({ error: { code, message: 'raw' } }, 'fallback', t)).toBe(`t:${key}`)
   })
