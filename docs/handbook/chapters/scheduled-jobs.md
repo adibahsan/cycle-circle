@@ -70,10 +70,10 @@ To see who got a reminder, open the email log and filter by type or search by th
 
 | Reminder | Who gets it | Email subject | SMS |
 |---|---|---|---|
-| Period alert | A profile with **Period Alerts** on whose predicted next period starts 0, 1 or 2 days from today | "Cycle Circle: Your period is expected in N days" | Pro Users with a phone: "Cycle Circle: <profile>'s period expected in N days (date)" |
-| Fertile window | A profile with **Fertile Window Alerts** on, on the day its predicted fertile window starts | "Cycle Circle: Your fertile window starts today" | Pro Users with a phone |
-| Logging reminder | A profile with **Logging Reminders** on whose latest period log started 3 or more days ago, or that has no period log | "Cycle Circle: Don't forget to log your cycle" | Pro Users with a phone |
-| Profile-completion reminder | A User whose profile is not complete, who has not switched **Profile-completion reminders** off, was not deleted, and signed up between 2 and 14 days ago | "Cycle Circle: Finish setting up your profile" | Any User with a phone (not only Pro) |
+| Period alert | A profile with **Period Alerts** on whose predicted next period starts 0, 1 or 2 days from today | "Cycle Circle: Your period is expected in N days" | Users with a BDApps subscription (a masked subscriber id): "Cycle Circle: <profile>'s period expected in N days (date)" |
+| Fertile window | A profile with **Fertile Window Alerts** on, on the day its predicted fertile window starts | "Cycle Circle: Your fertile window starts today" | Users with a BDApps subscription (a masked subscriber id) |
+| Logging reminder | A profile with **Logging Reminders** on whose latest period log started 3 or more days ago, or that has no period log | "Cycle Circle: Don't forget to log your cycle" | Users with a BDApps subscription (a masked subscriber id) |
+| Profile-completion reminder | A User whose profile is not complete, who has not switched **Profile-completion reminders** off, was not deleted, and signed up between 2 and 14 days ago | "Cycle Circle: Finish setting up your profile" | Users with a BDApps subscription (a masked subscriber id) |
 
 ### Rules and limits
 
@@ -83,7 +83,7 @@ To see who got a reminder, open the email log and filter by type or search by th
 - **Logging reminders count days since the last period log**, not symptom logs or check-ins. A User who logs symptoms every day but has not logged a period for 3 days still receives the reminder, every day, until a new period is logged. The email says "It's been N days since your last log." or, with no period yet, "You haven't logged a period yet."
 - **Profile-completion window.** "Complete" means the User has created a profile (finished onboarding). The reminder is sent on the 2nd to 14th Bangladesh day after signup, at most once a day, and stops when a profile is created. A User who signed up on the 1st gets the first reminder on the 3rd.
 - Emails use the User's saved language (English or Bengali). SMS texts are also in that language.
-- SMS is sent only when the User has a phone number; period, fertile and logging SMS only to Pro Users. SMS sent by this job go straight to the phone number. BDApps rejects raw phone numbers for this app (ADR 0002, amendment of 2026-10-18), so these SMS may not be delivered; the failure is only written to the server log as `notification.sms.failed`. Email is the reliable channel.
+- SMS go to the User's masked BDApps subscriber id (since 2.4.2; before, they went to the raw number and BDApps rejected them). A User without one (email-only, old phone-only records, admin-granted Pro) gets no SMS; the log shows `notification.sms.skipped` with `no-masked-id`. An unsubscribed id logs `unregistered`.
 - **The job does not skip suspended Users or Users deleted in the last 30 days** for the three profile-based reminders. Nothing in the code filters them out; only the profile-completion step skips deleted Users. The System page caption says the reminders go "to active subscribers"; in fact they go to every profile that has the switch on.
 - The job also runs the campaign SMS step ([Campaign SMS dispatch](#sj-sms-dispatch)) at the end, and a failure there never stops the reminders.
 - **Run now** and the per-User reminder button use the same job. **Run now** keeps the one-per-day rule. The per-User button on the User detail page forces a send even if one went out today.
@@ -95,7 +95,7 @@ To see who got a reminder, open the email log and filter by type or search by th
 | The User or Admin sees | Cause | Fix |
 |---|---|---|
 | The User says "I get a logging reminder every day" | The last period log started 3 or more days ago (see rule above) | Explain it is based on the last period log; the User can switch **Logging Reminders** off in **Settings > Notifications** |
-| The User says "I never get a period alert" | No prediction yet, the switch is off for the active profile, the next period is more than 2 days away, or the email address is missing | Check the profile's predictions and switches; for SMS check the plan is Pro |
+| The User says "I never get a period alert" | No prediction yet, the switch is off for the active profile, the next period is more than 2 days away, or the email address is missing | Check the profile's predictions and switches; for SMS check the User has a BDApps subscription |
 | Email log shows no row for a User | No email on the account, or the job did not run that day | Check the account has an email; check [Jobs at a glance](#sj-overview) |
 | A User received two SMS the same day | The job ran twice and the User has no email on file | Expected; the one-per-day check needs an email log entry |
 | A deleted or suspended User still gets reminders | The job does not filter them | Report it to the developers; until fixed, delete means reminders continue for up to 30 days |

@@ -16,7 +16,7 @@ Cycle Circle sends seven kinds of email. This section lists all of them, who get
 
 | Type in the log | Sent when | To | Language | Section |
 |---|---|---|---|---|
-| Magic Link | A User asks for an email login link | The email address typed | Always English | [Magic-link email](#ec-magic-link) |
+| Magic Link | A User asks for an email login link | The email address typed | The language of the page it was requested from | [Magic-link email](#ec-magic-link) |
 | VERIFICATION_CODE | A signed-in User adds or changes an email address | The new address | The User's language | [Verification-code email](#ec-verification-code) |
 | Period Alert | Daily job, 0 to 2 days before the predicted period | The User's email | The User's language | [Period alert](#ec-period-alert) |
 | Fertile Alert | Daily job, the day the fertile window starts | The User's email | The User's language | [Fertile window email](#ec-fertile-window) |
@@ -29,8 +29,8 @@ To find an email: type the address or a subject word in the search box. The "Typ
 ### Rules and limits
 
 - **Status** is SENT or FAILED (the send call failed; the error text is stored). **Delivery** is PENDING at first, then updated by Resend's notifications to DELIVERED, BOUNCED, COMPLAINED or DELAYED. Only emails sent through Resend get delivery updates; the **Refresh** button on an email's page asks Resend again.
-- Reminder emails are sent only to Users who have an email address. A phone-only User gets the profile-completion reminder as an SMS (any User with a phone, not only Pro). See [Daily reminder emails](#sj-daily-reminders).
-- All emails are sent in the language of the User's account, except the magic-link email (always English: the Email login page does not pass the language) and the reports (English only).
+- Reminder emails are sent only to Users who have an email address. Reminder SMS go to Users with a BDApps subscription (a masked subscriber id). See [Daily reminder emails](#sj-daily-reminders).
+- All emails are sent in the language of the User's account, except the magic-link email (in the language of the page it was requested from) and the reports (English only).
 - The reminder emails end with "You received this email because you have notifications enabled in Cycle Circle. To unsubscribe, visit Settings in the app." There is no one-click unsubscribe link; the User uses **Settings > Notifications**.
 - Every email carries the contact line "Contact: info@cycle-circle.com".
 - **Preview is approximate.** An Admin can open a row to see a rendered copy, with the notice "Approximate preview — dynamic values (dates, magic links) are reconstructed and may differ from the original send." Only Magic Link, Period Alert, Fertile Alert and Logging Reminder rows can be rendered; the other three show "Could not generate preview for this email type." The samples below that have no preview in the Admin app are described from the template text.
@@ -67,11 +67,11 @@ The email that carries the login link for a User who chose **Login with Email in
 What the User receives:
 
 - Subject: "Cycle Circle - Login Link"
-- Body: "Your login link:" then a button **Sign in to Cycle Circle**, the line "This link will expire in 15 minutes." and the link written out below the button.
+- Body: "Your login link:" then a button **Sign in to Cycle Circle**, the line "This link will expire in 1 hour." and the link written out below the button.
 
 ### Rules and limits
 
-- The link works once and for **1 hour**, although the email says 15 minutes (same difference as on the login screen, see [Email login](#gs-email-login)). Tell Users 15 minutes to be safe.
+- The link works once and for **1 hour**.
 - At most 3 links per hour per address.
 - Always sent in English.
 - It is sent immediately when the User taps **Send Magic Link**; it is not part of any scheduled job.
@@ -265,7 +265,7 @@ What the User receives:
 - Subject: "Cycle Circle: Finish setting up your profile"
 - "Hi <name>," ("Hi User," when no name is saved), a card "YOUR PROFILE IS ALMOST READY" with "You've joined Cycle Circle — that's a great first step! Completing your profile helps us give you more accurate cycle predictions and personalised health insights." and a button **Complete your profile** that opens `/profiles`.
 - A tip "Quick to finish": "Adding just a few details unlocks the full experience — it takes less than 2 minutes."
-- SMS (any User with a phone, not only Pro): "Cycle Circle: <name>, your profile setup isn't complete yet. Open the app to finish setting up."
+- SMS (to Users with a BDApps subscription (a masked subscriber id)): "Cycle Circle: <name>, your profile setup isn't complete yet. Open the app to finish setting up."
 
 ### Rules and limits
 

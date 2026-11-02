@@ -84,7 +84,7 @@ A User becomes Pro in one of three ways:
 - Pro lasts while BDApps reports the number as subscribed. BDApps tells the app in two ways: a subscription webhook, and the daily subscription check ([Daily subscription check](#sj-sub-check)), which asks BDApps about Users whose Pro comes from a BDApps subscription (not Admin-granted or overridden Pro) and moves anyone no longer subscribed to Free. It also re-checks revoked Users, so one who has subscribed again is reinstated.
 - A successful BDApps OTP verification counts as Pro even if BDApps reports a charging-pending status; the webhook or daily check corrects it later.
 - An existing Subscriber who logs out and logs in again gets an **App OTP** by SMS (BDApps refuses a second OTP for an already-subscribed number). Logging in this way does not change the plan.
-- Pro unlocks SMS alerts for period, fertile window and logging reminders. Nothing else in the app is blocked for Free Users today.
+- Reminder SMS (period, fertile window, logging) go to Users with a BDApps subscription (a masked subscriber id), which is how a number becomes Pro. Nothing in the app is blocked for Free Users today.
 - Unsubscribing, an Admin revoke or BDApps ending the subscription moves the User to Free (or Expired) and keeps all data.
 
 ### What can go wrong
@@ -239,7 +239,7 @@ The "Free vs Pro" table on the Subscription page lists what Pro adds. Only some 
 | Row in the table | Free on the page | What the app actually does |
 |---|---|---|
 | Cycle Tracking, Calendar View, Symptom Logging, Health Articles | Included | Free and Pro |
-| SMS Alerts | Not included | **Enforced.** SMS (period, fertile window, logging reminders) goes only to Pro Users with a phone. Email alerts go to everyone with an email |
+| SMS Alerts | Not included | **Enforced.** SMS (period, fertile window, logging reminders) goes only to Users with a BDApps subscription (a masked subscriber id). Email alerts go to everyone with an email |
 | Data Export | Not included | **Not enforced.** A Free User can export CSV or Excel from Settings |
 | Advanced Predictions | Not included | **Not enforced.** A Free User with enough cycles gets the same prediction tier as Pro |
 | Ad-free Experience | Not included | Nothing to enforce: the app shows no ads to anyone |

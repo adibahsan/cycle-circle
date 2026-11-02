@@ -61,7 +61,7 @@ The Admin Logs page shows three of the six channels (merchant, webhook and trans
 ### Rules and limits
 
 - Times in logs and tables are Bangladesh time unless the table says otherwise. A day is a Bangladesh day ([Glossary](#gl-terms)).
-- When a screen's own text disagrees with what the code does, this handbook says what the code does. Two examples that matter for support: the phone code is valid for 5 minutes although the screen says 10, and a sign-in link is valid for 1 hour although the screen and the email say 15 minutes.
+- When a screen's own text disagrees with what the code does, this handbook says what the code does. Since 2.4.2 the code and link expiry texts match the system (5 minutes and 1 hour); some screenshots are older.
 - App OTPs are written to the server logs on purpose, so support can read a User's code; the Admin Logs page masks them ([OTP masking](#lg-masking)). Treat any log extract as sensitive.
 
 ### What can go wrong
@@ -99,7 +99,7 @@ This section has no screen of its own. The fixes are in the linked sections.
 |---|---|
 | A full-screen "Your 24-hour trial has ended" | The email trial is over (24 hours from the first magic-link login). The User adds a phone and verifies it to become Pro ([Trial lock](#pa-trial-lock)) |
 | The login page again after a correct code | The account is Suspended or Deleted. An Admin reactivates it, or restores it within 30 days ([Admin overrides](#pa-admin-overrides)) |
-| "Too many attempts. Try again in a few minutes." | Rate limit. This is also what the User sees after 5 wrong codes, because the verify limit (5 tries in 5 minutes) is reached before the code lock, and when the App OTP daily cap is hit (5 codes per number in a rolling 24 hours; the Logs show "Too many codes sent to this number today. Try again tomorrow."). Wait |
+| "Too many attempts. Try again in a few minutes." | Rate limit. This is also what the User sees after 5 wrong codes, because the verify limit (5 tries in 5 minutes) is reached before the code lock. (The App OTP daily cap, 5 codes per number in 24 hours, shows its own "Too many codes sent to this number today. Try again tomorrow.") Wait |
 | "Too many wrong codes. Request a new code." | The code was locked after 5 wrong tries. Rarely shown, since the verify limit usually answers first. Resend the code |
 | "This number is already registered to another account." | The number belongs to another User. Use another number or log in to that account |
 
@@ -127,7 +127,7 @@ There is no BDApps status page in the Admin panel. To check whether BDApps is th
 | The reader sees | Likely cause and first step |
 |---|---|
 | No email arrives | Check spam and the address, then search the address in the [Email log](#em-log). "Failed", "Bounced" or "Complained" explains it |
-| "This sign-in link has expired." | A link lasts 1 hour (the screen says 15 minutes) |
+| "This sign-in link has expired." | A link lasts 1 hour |
 | "This sign-in link has already been used." | A link works once. Request a new one and open it directly |
 | "Too many magic link requests. Try again later." | 3 requests per hour per address. Use the latest email |
 

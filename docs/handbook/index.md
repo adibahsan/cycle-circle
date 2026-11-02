@@ -2,6 +2,8 @@
 
 For the client's business, ops and support staff. Everything a User or an Admin can do in Cycle Circle, and everything the product does on its own. English only. Times are Bangladesh time (Asia/Dhaka, UTC+6).
 
+The text matches release 2.4.2 (2026-11-02). Some screenshots were taken just before it; where a screenshot and the text differ, the text is current.
+
 <!-- end-intro -->
 
 <!-- This file fixes the chapter order. The build (`pnpm handbook:build`) reads it top to bottom. How to add or change a section: docs/handbook/README.md. -->

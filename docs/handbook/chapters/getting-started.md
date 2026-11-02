@@ -176,9 +176,9 @@ The main way in. The User enters a Bangladesh mobile number and a 6-digit one-ti
 - Under the button the login screen warns: "Verifying your number subscribes it to Cycle Circle Pro via BDApps. Operator charges apply."
 - OTP codes are 6 digits. A challenge stays valid for **5 minutes** from the moment it is created (see the discrepancy below).
 - Per number: at most **3 code requests per minute**, and a **60-second wait** before a resend. Per device (IP address): at most **10 code requests per hour**.
-- Per code: at most **5 verify attempts in 5 minutes**. An App OTP is also locked after **5 wrong codes** (the User must request a new one). The verify limit is hit first, so after 5 wrong codes the 6th try normally shows "Too many attempts. Try again in a few minutes." rather than "Too many wrong codes", and a number can receive at most **5 App OTPs in 24 hours**.
+- Per code: at most **5 verify attempts in 5 minutes**. An App OTP is also locked after **5 wrong codes** (the User must request a new one). The verify limit is hit first, so after 5 wrong codes the 6th try normally shows "Too many attempts. Try again in a few minutes." rather than "Too many wrong codes". A number can receive at most **5 App OTPs in 24 hours**; the sixth shows "Too many codes sent to this number today. Try again tomorrow."
 - An App OTP SMS reads "Cycle Circle code: 123456. Valid 5 min. Don't share it." (Bengali text if the User's language is Bengali.)
-- **Where the screen and the system differ.** The OTP screen says "This code expires in 10 minutes. Never share your OTP with anyone.", but the code is accepted for 5 minutes. Tell Users 5 minutes.
+- The OTP screen says "This code expires in 5 minutes. Never share your OTP with anyone." (since 2.4.2; older screenshots show 10 minutes).
 - The user is never charged by logging in with an App OTP: it only logs in. See [BDApps billing events](#bb-subscribe) for what a new subscription does.
 
 ### What can go wrong
@@ -192,7 +192,8 @@ The main way in. The User enters a Bangladesh mobile number and a 6-digit one-ti
 | "This number is already subscribed, but we could not send it a code. Log in with your email instead." | Subscribed number with no usable BDApps id to SMS, and the account has an email | Log in by email, then verify the number again later |
 | "This number is already subscribed, but we could not send it a code. Unsubscribe this number from Cycle Circle on BDApps, then log in again. Your data stays safe." | Same, and the account has no email | The User unsubscribes the number on BDApps, then logs in again |
 | "Failed to send OTP. Please try again." | Any other failure when requesting a code (for example BDApps is down) | Try again; if it persists check [Logs](#lg-viewer) (merchant channel) and [BDApps health](#ts-login) |
-| "Too many attempts. Try again in a few minutes." | Rate limit (code requests, device limit, verify attempts incl. the 6th try after 5 wrong codes, or the 5 App OTPs a day) | Wait. For the daily App OTP limit, wait until the next day |
+| "Too many attempts. Try again in a few minutes." | Rate limit (code requests, device limit, verify attempts incl. the 6th try after 5 wrong codes) | Wait |
+| "Too many codes sent to this number today. Try again tomorrow." | The 5 App OTPs a day for this number were used | Wait until the next day, or log in by email |
 | "Please wait a moment before requesting another code." | Resend inside the 60-second wait | Wait for the countdown |
 | "Invalid or expired code. Please try again." | Wrong code, expired (5 minutes), already used, or no such request. All four show the same message | Request a new code ([Resend wait](#gs-otp-resend)) |
 | "Too many wrong codes. Request a new code." | App OTP locked after 5 wrong codes | Tap **Resend OTP** once the wait is over |
@@ -263,7 +264,7 @@ A passwordless alternative: the User enters an email address and receives a **ma
 
 1. On the phone login screen tap **Login with Email instead**.
 2. Under "Email address" type the address and tap **Send Magic Link**.
-3. The screen shows "Check your inbox!" and "We sent a magic link to" the address, with three notes: "Check your inbox (and spam folder)", "The link is valid for 15 minutes", "24-hour trial access after first login".
+3. The screen shows "Check your inbox!" and "We sent a magic link to" the address, with three notes: "Check your inbox (and spam folder)", "The link is valid for 1 hour", "24-hour trial access after first login".
 4. Open the email and tap the link. The browser or phone that opens it is the one that is logged in. The User lands on the Dashboard (or onboarding if there is no profile).
 5. **Use a different email** goes back to the form; **Log in with OTP** (at the bottom of the form) returns to phone login.
 
@@ -272,7 +273,7 @@ A passwordless alternative: the User enters an email address and receives a **ma
 - The sign-in email is always sent in English, even when the User has the app in Bengali: the Email login page does not pass the language.
 - The address is lower-cased and trimmed. At most **3 magic links per hour per address**.
 - A link works **once**.
-- **Where the screen and the system differ.** The screen and the email both say the link is valid for 15 minutes; the system keeps it valid for **1 hour**.
+- The link is valid for **1 hour**, as the screen and the email say (since 2.4.2; older screenshots say 15 minutes).
 - An existing email account logs in again without a new trial: the trial clock starts at the **first** login only.
 - The email is described in [Magic-link email](#ec-magic-link).
 

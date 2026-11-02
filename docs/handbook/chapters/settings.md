@@ -253,7 +253,7 @@ Four switches that decide which reminders the system sends. Three are **per prof
 ### Rules and limits
 
 - All four are on by default.
-- Alerts go by **email** (if the account has an email) and by **SMS** (only for Pro Users who have a phone). Profile-completion reminders go by SMS to any User with a phone. There are no push notifications.
+- Alerts go by **email** (if the account has an email) and by **SMS** to Users with a BDApps subscription (a masked subscriber id). There are no push notifications.
 - Alerts use the account's language, which is English ([Language persistence](#nl-language-persists)).
 - The jobs run once a day ([Daily reminders](#sj-daily-reminders)). Switching a toggle off applies from the next run.
 - The page says Logging Reminders ask for "symptoms"; the system counts days since the last **period log**, not symptom logs. A User who logs symptoms every day but no new period still gets the reminder.
@@ -401,7 +401,7 @@ The **About** block: app version, a note on data protection, and links to the le
 ### Rules and limits
 
 - The version number is fixed text in the app. It does not change with a release, so do not use it to tell which build a User has.
-- The note says "Your health data is encrypted with AES-256-GCM and stored securely." The code has no application-level encryption of health data, so support should not repeat this sentence. Raise it with the client.
+- The note says "Your health data is stored securely on our servers." (since 2.4.2; older screenshots show an AES-256-GCM encryption claim, which was removed because the app has no application-level encryption).
 - The legal pages contain statements that production does not match; see [Terms of Service](#gs-terms) and [Privacy Policy](#gs-privacy).
 
 ### What can go wrong

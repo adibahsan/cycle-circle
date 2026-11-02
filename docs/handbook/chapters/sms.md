@@ -30,7 +30,7 @@ There is no SMS inbox in the Admin app. The request and verify calls to BDApps a
 
 - A code is valid for **5 minutes**, although the screen says 10 ([Phone login](#gs-phone-login)).
 - Resend wait 60 seconds; 3 requests per minute per number; 10 per hour per device; 5 verify attempts in 5 minutes per code.
-- An App OTP is locked after 5 wrong codes, and a number can get at most **5 App OTPs in 24 hours**; the sixth is refused with "Too many codes sent to this number today. Try again tomorrow." (the User sees "Too many attempts. Try again in a few minutes.").
+- An App OTP is locked after 5 wrong codes, and a number can get at most **5 App OTPs in 24 hours**; the sixth is refused with "Too many codes sent to this number today. Try again tomorrow." (the User sees the same message).
 - The App OTP is sent to the masked subscriber id BDApps gave at subscription. A raw phone number would be refused by BDApps for this app (E1951), so Users whose account only has a raw phone id cannot receive App OTPs.
 - The code is saved before the SMS is sent; if the send fails, the saved code is deleted so it does not count toward the 24-hour limit.
 - App OTP SMS are sent without delivery reports, so a lost code cannot be seen in the Admin app; the User uses **Resend OTP**.
@@ -44,7 +44,8 @@ There is no SMS inbox in the Admin app. The request and verify calls to BDApps a
 | "Failed to send OTP. Please try again." | BDApps or the SMS send failed | Retry; check the merchant log |
 | "This number is already subscribed, but we could not send it a code. Log in with your email instead." | No usable BDApps id, and the account has an email | Log in by email |
 | "This number is already subscribed, but we could not send it a code. Unsubscribe this number from Cycle Circle on BDApps, then log in again. Your data stays safe." | Same, no email on the account | Unsubscribe on BDApps, log in again |
-| "Too many attempts. Try again in a few minutes." | Rate limit or the 5-a-day App OTP cap | Wait; the daily cap resets 24 hours after the first code |
+| "Too many attempts. Try again in a few minutes." | Rate limit | Wait |
+| "Too many codes sent to this number today. Try again tomorrow." | The 5-a-day App OTP cap | Wait; it resets 24 hours after the first code |
 | "Invalid or expired code. Please try again." | Wrong, expired or used code | Resend |
 | "Too many wrong codes. Request a new code." | 5 wrong App OTP codes | **Resend OTP** |
 

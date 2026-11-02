@@ -245,7 +245,7 @@ An account can hold six profiles. When it holds six, the Add Profile card is rep
 - Exactly six, on every plan. The check runs on the server too, so it cannot be bypassed from the app.
 - The counter under the title reads "6 / 6 profiles".
 - The slots count on the Add Profile card is singular for one ("1 slot remaining") and plural otherwise ("3 slots remaining").
-- Edge case: the page was opened with five profiles and a sixth was added elsewhere (another phone, another tab). The Add button is still there, and the server refuses the seventh. The system's reason is "You can have up to 6 profiles. Delete one to add another.", but in the live app the User sees a technical React error line in red (shown below). Reloading the page shows the locked card.
+- Edge case: the page was opened with five profiles and a sixth was added elsewhere (another phone, another tab). The Add button is still there, and the server refuses the seventh. The User sees "You can have up to 6 profiles. Delete one to add another." and the list refreshes to six with the locked card (since 2.4.2; the screenshot below shows the older error line).
 
 ![The add attempt that loses the race: a technical message is shown](../screenshots/pf-limit--server-error.png)
 
@@ -254,7 +254,7 @@ An account can hold six profiles. When it holds six, the Add Profile card is rep
 | The User sees | Cause | Fix |
 |---|---|---|
 | "Maximum 6 profiles" and no Add button | Six profiles | Delete one first |
-| A red line starting "Minified React error #441" under the form | Seventh profile refused after the limit was reached elsewhere; the app shows the system error text instead of the friendly message | Reload; the locked card appears. This is a known wording gap |
+| "You can have up to 6 profiles. Delete one to add another." under the form | Seventh profile refused after the limit was reached elsewhere | Delete a profile first. (Before 2.4.2 this showed "Minified React error #441".) |
 
 ### Related
 

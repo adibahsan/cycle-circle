@@ -136,7 +136,7 @@ Four places, all doing the same thing:
 ### Rules and limits
 
 - Two languages only. English is the default.
-- The switch changes what the User sees in the app. It does not change the language of messages sent later: reminder and code emails and SMS follow the language saved on the account, which stays English because nothing in the app saves the choice there (see [Language persistence](#nl-language-persists)). The exception is the login OTP SMS: it follows the language of the browser at the moment the code is requested.
+- The switch changes what the User sees in the app. It does not change the language of messages sent later: reminder and code emails and SMS follow the language saved on the account, which is updated from the switch each time the User logs in (see [Language persistence](#nl-language-persists)). The exception is the login OTP SMS: it follows the language of the browser at the moment the code is requested.
 
 ### What can go wrong
 
@@ -172,11 +172,11 @@ Nothing to tap. The User sees the effect after reloading or returning later.
 ### Rules and limits
 
 - **How it works.** The choice is stored in a cookie called `vesta_lang` ("en" or "bn"), set for the whole site and kept for one year. The server reads the cookie on every page, so the first screen is already in the right language with no English flash.
-- **One browser, one choice.** A new phone, a new browser, a private window or cleared cookies start in English again. Logging in on another device does not bring the language along, because the choice is not saved in the User's account.
+- **One browser, one choice.** A new phone, a new browser, a private window or cleared cookies start in English again. Logging in on another device does not change that browser's display language, but the login saves the choice to the account for messages.
 - **Logging out does not reset it.** The cookie stays after log out, so the login screen opens in the last chosen language.
 - **Older choice.** A User who picked Bengali before the cookie existed had it only in the app's local storage. On the next visit the app copies it into the cookie and reloads the page once.
 - **Cookies blocked.** If the browser refuses cookies the language goes back to English on the next page load. The cookie is also what makes pages server-rendered in the right language, so the app cannot remember it any other way.
-- **The account's own language field** (used for emails and SMS) is never changed by the switch. Reminder emails, email verification codes and reminder SMS therefore go out in English, even for a User who uses the app in Bengali. Raise this with the client if Bengali messages are expected.
+- **The account's own language field** (used for emails and SMS) is saved at login from the language the User picked (since 2.4.2). A magic link saves the language of the page it was requested from, even when opened in another browser. Reminder emails, verification codes and reminder SMS then follow it.
 - The theme is remembered the same way, per browser, in local storage ([Language and theme](#st-language-theme)).
 
 ### What can go wrong
