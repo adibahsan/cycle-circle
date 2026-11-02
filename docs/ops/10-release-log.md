@@ -4,6 +4,19 @@ One entry per production release (`main` → `production`). Newest first. For th
 
 ---
 
+## 2026-11-02 — Release retro guardrails, 2.4.2 deploy record (PRs #261, #262)
+
+**Shipped:** no app change.
+
+- #262: E2E counts an SMS as sent only when BDApps accepted it (`S1000`); counting requests hid the E1951 failures #253 fixed. `pnpm predeploy` runs the pre-deploy set (and the serial `cron` project when E2E fails). `run.ts` says when `cron` was skipped.
+- #261: the 2.4.2 deploy result below.
+
+**Migrations:** none.
+
+**Deploy:** `git push origin origin/main:production`. `pnpm predeploy`: all green except the admin-content E2E flake (`admin-content.spec.ts:396`, 3 of the last 6 full runs); `cron` green on its own.
+
+---
+
 ## 2026-11-02 — Reminder SMS to masked ids, saved User language, copy and profile-limit fixes (PRs #237, #259, tag 2.4.2)
 
 **Shipped:**
