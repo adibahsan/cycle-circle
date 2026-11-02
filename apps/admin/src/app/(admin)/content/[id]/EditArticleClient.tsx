@@ -151,8 +151,8 @@ export function EditArticleClient({ article, scheduled, categories }: EditArticl
         setIsDirty(false)
         if (!result.webCacheRefreshed) toast.error('Saved, but the web app cache did not refresh. Public pages may be stale for a few minutes.')
         router.push('/content')
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to save article.')
+      } catch {
+        setError('Failed to save article.')
       }
     })
   }

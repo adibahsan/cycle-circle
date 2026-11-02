@@ -827,8 +827,8 @@ export function UserDetailClient({ user, planHistory }: UserDetailClientProps) {
       setModalAction(null)
       setSuspendReason('')
       startTransition(() => router.refresh())
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
+    } catch {
+      setActionError('An error occurred. Please try again.')
     }
   }
 

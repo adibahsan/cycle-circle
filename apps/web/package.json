@@ -16,6 +16,7 @@
     "db:studio": "pnpm --filter @vesta/shared db:studio",
     "db:reset": "pnpm --filter @vesta/shared db:reset",
     "backend:test": "vitest run",
+    "test:changed": "vitest run --passWithNoTests --changed",
     "backend:test:watch": "vitest",
     "worker": "tsx worker/index.ts",
     "worker:dev": "tsx watch worker/index.ts",

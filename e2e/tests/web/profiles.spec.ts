@@ -103,7 +103,7 @@ test.describe('Profiles management and isolation', () => {
     await expect(page.getByRole('button', { name: /^Edit Profile Member \d$/ })).toHaveCount(6)
     await expect(page.getByText('Maximum 6 profiles')).toBeVisible()
     await expect(page.getByText('Delete a profile to add a new one')).toBeVisible()
-    await expect(page.getByRole('button', { name: /^Add$/i })).not.toBeVisible()
+    await expect(page.getByRole('button', { name: /^Add/i })).not.toBeVisible()
   })
 
   test('a page loaded before the sixth profile was added shows the limit message on add and refreshes to six (#255)', async ({ newUser, days }) => {

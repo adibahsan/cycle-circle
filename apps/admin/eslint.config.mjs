@@ -1,11 +1,13 @@
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
 import { bangladeshDayConfig, dateFnsLocalDayConfig } from "@vesta/shared/eslint/bangladesh-day";
+import { actionErrorMessageConfig } from "@vesta/shared/eslint/action-error-message";
 
 const eslintConfig = [
   ...nextCoreWebVitals,
   ...nextTypescript,
   bangladeshDayConfig, // no server/device-clock days; see #115
+  actionErrorMessageConfig(["src/**/*.tsx"]), // never show a server action's error text (React #441); see #255
   dateFnsLocalDayConfig(["src/app/api/**/*.{ts,tsx}", "src/app/actions/**/*.{ts,tsx}", "src/lib/server/**/*.{ts,tsx}"]), // server code: no local-time day functions
   {
     rules: {

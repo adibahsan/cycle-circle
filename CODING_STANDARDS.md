@@ -16,6 +16,7 @@ Both apps share the same UI primitives (`Button`, `Input`, `Card`, etc.) and `gl
 - **Sanitize HTML** before `dangerouslySetInnerHTML` (use DOMPurify or equivalent)
 - **`role="dialog"` + `aria-modal` + ESC-to-close** on all modal/drawer overlays
 - **`overscroll-behavior: contain`** inside modals and drawers
+- **Server actions return expected failures** as a typed `{ ok: false, code }` result (`createProfile`, `user-actions` `ContactResult`); the client shows translated copy for the code. A thrown action error reaches production Users as React error #441. ESLint (`vesta/no-action-error-message`) catches showing the error's text; judge here which failures are expected.
 
 ## Prefer
 

@@ -262,8 +262,8 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
       setNewCategoryNameBn('')
       router.refresh()
       categoryInputRef.current?.focus()
-    } catch (err) {
-      setCategoryError(err instanceof Error ? err.message : 'Failed to create category')
+    } catch {
+      setCategoryError('Failed to create category')
     } finally {
       setSaving(false)
     }
@@ -318,8 +318,8 @@ export function ContentClient({ data, categories, statusBreakdown, byCategory, b
       setEditingCategoryName('')
       setEditingCategoryNameBn('')
       router.refresh()
-    } catch (err) {
-      setRenameError(err instanceof Error ? err.message : 'Failed to rename category')
+    } catch {
+      setRenameError('Failed to rename category')
     } finally {
       setRenamingSaving(false)
     }

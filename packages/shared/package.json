@@ -12,12 +12,14 @@
     "./types": "./src/types/index.ts",
     "./utils/*": "./src/utils/*.ts",
     "./eslint/bangladesh-day": "./eslint/bangladesh-day.mjs",
+    "./eslint/action-error-message": "./eslint/action-error-message.mjs",
     "./prisma": "./prisma/schema.prisma"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:changed": "vitest run --passWithNoTests --changed",
     "db:generate": "prisma generate --schema ./prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema ./prisma/schema.prisma",
     "db:migrate:deploy": "prisma migrate deploy --schema ./prisma/schema.prisma",
