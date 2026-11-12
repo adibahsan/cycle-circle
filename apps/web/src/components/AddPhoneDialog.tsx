@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { CheckCircle2, CircleAlert, Phone } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
@@ -271,7 +271,7 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone, purpos
               describedBy="trial-phone-notice"
             />
             <p id="trial-phone-notice" className="mt-2 text-xs text-[var(--color-text-muted)] leading-relaxed">
-              {t('auth.loginNotice')}
+              <Trans i18nKey={proPrice ? 'auth.loginNotice' : 'auth.loginNoticeNoPrice'} values={proPrice ?? undefined} components={{ strong: <strong className="font-semibold text-[var(--color-text-secondary)]" /> }} />
             </p>
             {purpose === 'upgrade' && proPrice && (
               <p id="trial-price-notice" className="mt-2 text-xs font-medium text-[var(--color-text-secondary)] leading-relaxed">

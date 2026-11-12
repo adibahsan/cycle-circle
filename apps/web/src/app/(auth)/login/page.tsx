@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { Phone, Shield, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { PhoneField } from '@/components/auth/PhoneField';
+import { useProPriceVars } from '@/components/ProPriceProvider';
 import { authErrorMessage } from '@/lib/auth-errors';
 import { devMode, DEV_DEFAULT_PHONE } from '@vesta/shared/utils/config';
 import '@vesta/shared/utils/i18n';
@@ -27,6 +28,7 @@ const FADE_UP = {
 export default function LoginPage() {
   const router = useRouter();
   const { t } = useTranslation();
+  const proPrice = useProPriceVars();
 
   const [phone, setPhone] = useState(devMode ? DEV_DEFAULT_PHONE : '');
   const [error, setError] = useState('');
@@ -132,7 +134,7 @@ export default function LoginPage() {
             describedBy="login-notice"
           />
           <p id="login-notice" className="mt-2 text-xs text-[var(--color-text-muted)] leading-relaxed">
-            {t('auth.loginNotice')}
+            <Trans i18nKey={proPrice ? 'auth.loginNotice' : 'auth.loginNoticeNoPrice'} values={proPrice ?? undefined} components={{ strong: <strong className="font-semibold text-[var(--color-text-secondary)]" /> }} />
           </p>
         </div>
 
