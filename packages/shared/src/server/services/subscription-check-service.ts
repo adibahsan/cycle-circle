@@ -139,11 +139,17 @@ export async function runDailySubscriptionCheck(
       try {
         const status = await getStatus(subscriberId)
         await recordConfirmed(sub.userId, subscriberId, status, now)
-        if (status === 'UNREGISTERED' && isPhoneSubscriberId(subscriberId)) {
+        if (status === 'REGISTERED') {
+          // Paying subscriber: nothing to do.
+        } else if (!status) {
+          throw new Error('BDApps returned no subscription status')
+        } else if (status === 'UNREGISTERED' && isPhoneSubscriberId(subscriberId)) {
           // Masked-number apps reject raw phone ids with E1951, which reads as
           // UNREGISTERED: ambiguous, so never downgrade a legacy phone-id row.
           skipped++
-        } else if (status === 'UNREGISTERED') {
+        } else {
+          // Anything other than REGISTERED (UNREGISTERED, TEMPORARY BLOCKED, BLOCKED,
+          // INITIAL CHARGING PENDING, ...) means BDApps is not charging them: move to Free.
           await applyBdappsSubscription(sub.userId, subscriberId, false, 'nightly-check', now)
           moved++
           movedUserIds.push(sub.userId)

@@ -9,13 +9,14 @@ import {
 } from '@vesta/shared/server/services'
 
 const P = 'test-subchk'
-const ids = { vanish: `${P}-vanish`, gone: `${P}-gone`, stays: `${P}-stays`, boom: `${P}-boom`, legacy: `${P}-legacy` }
-const sid = { vanish: 'tel:dmFuaXNo', gone: 'tel:Z29uZS1zdWJz', stays: 'tel:c3RheXM', boom: 'tel:Ym9vbQ' }
+const ids = { vanish: `${P}-vanish`, gone: `${P}-gone`, stays: `${P}-stays`, boom: `${P}-boom`, blocked: `${P}-blocked`, legacy: `${P}-legacy` }
+const sid = { vanish: 'tel:dmFuaXNo', gone: 'tel:Z29uZS1zdWJz', stays: 'tel:c3RheXM', boom: 'tel:Ym9vbQ', blocked: 'tel:YmxvY2tlZA' }
 const NOW = new Date('2031-07-01T20:00:00Z') // 02:00 on 2 July, Bangladesh time
 const LEGACY_PHONE = '+8801955500009'
 
-const answers: Record<string, 'REGISTERED' | 'UNREGISTERED' | Error> = {
+const answers: Record<string, string | Error> = {
   [sid.gone]: 'UNREGISTERED',
+  [sid.blocked]: 'TEMPORARY BLOCKED',
   [sid.stays]: 'REGISTERED',
   [sid.vanish]: 'REGISTERED',
   [LEGACY_PHONE]: 'REGISTERED',
@@ -41,7 +42,7 @@ async function cleanup() {
 beforeAll(async () => {
   await cleanup()
   let n = 0
-  for (const key of ['gone', 'stays', 'boom', 'vanish'] as const) {
+  for (const key of ['gone', 'stays', 'boom', 'vanish', 'blocked'] as const) {
     await testPrisma.user.create({
       data: { id: ids[key], phone: `+880195550000${++n}`, authMethod: 'OTP', subscriptionStatus: 'PRO' },
     })
@@ -70,16 +71,22 @@ describe('runDailySubscriptionCheck', () => {
     expect(run!.startedAt).toEqual(NOW)
     expect(run!.finishedAt).toEqual(clock())
     const mine = run!.outcomes.filter((o) => o.userId?.startsWith(P))
-    expect(mine).toHaveLength(2)
+    expect(mine).toHaveLength(3)
     expect(mine.find((o) => o.userId === ids.gone)).toMatchObject({
       outcome: 'MOVED_TO_FREE',
       bdappsStatus: 'UNREGISTERED',
       maskedSubscriberId: sid.gone,
     })
+    expect(mine.find((o) => o.userId === ids.blocked)).toMatchObject({
+      outcome: 'MOVED_TO_FREE',
+      bdappsStatus: 'TEMPORARY BLOCKED',
+      maskedSubscriberId: sid.blocked,
+    })
     expect(mine.find((o) => o.userId === ids.boom)).toMatchObject({ outcome: 'ERROR', error: expect.stringContaining('BDApps timeout') })
 
     expect((await testPrisma.user.findUnique({ where: { id: ids.gone } }))!.subscriptionStatus).toBe('FREE')
     expect((await testPrisma.user.findUnique({ where: { id: ids.stays } }))!.subscriptionStatus).toBe('PRO')
+    expect((await testPrisma.user.findUnique({ where: { id: ids.blocked } }))!.subscriptionStatus).toBe('FREE')
   })
 
   it('stores last-confirmed time and reported status for subscribers BDApps answered, not for errors', async () => {
