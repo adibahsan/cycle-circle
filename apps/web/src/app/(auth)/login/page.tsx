@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { Phone, Shield, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BrandLogo } from '@/components/ui/BrandLogo';
@@ -134,7 +134,7 @@ export default function LoginPage() {
             describedBy="login-notice"
           />
           <p id="login-notice" className="mt-2 text-xs text-[var(--color-text-muted)] leading-relaxed">
-            {proPrice ? t('auth.loginNotice', proPrice) : t('auth.loginNoticeNoPrice')}
+            <Trans i18nKey={proPrice ? 'auth.loginNotice' : 'auth.loginNoticeNoPrice'} values={proPrice ?? undefined} components={{ strong: <strong className="font-semibold text-[var(--color-text-secondary)]" /> }} />
           </p>
         </div>
 
