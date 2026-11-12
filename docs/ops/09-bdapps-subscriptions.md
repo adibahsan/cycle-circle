@@ -11,7 +11,7 @@ How Pro works in production, how to check a subscriber, and how to test with a r
 | Phone login: OTP verify succeeds (`REGISTERED` or a charging-pending status) | **PRO** | `otp-verify` |
 | Email user verifies a phone the same way | **PRO**, email trial cleared | `phone-verify` |
 | BDApps webhook `subscription/notify` → `REGISTERED` / `UNREGISTERED` | PRO / FREE | `webhook` |
-| Nightly `caas-check` (02:00 host time): `getStatus` says `UNREGISTERED` | FREE | `nightly-check` |
+| Nightly `caas-check` (02:00 host time): `getStatus` says anything but `REGISTERED` (`UNREGISTERED`, `TEMPORARY BLOCKED`, a charging-pending status, ...) | FREE | `nightly-check` |
 | User taps **Unsubscribe** (`/subscription/send`, action `0`) | FREE | `unsubscribe` |
 | Admin grant / revoke / set status | whatever the admin set; **always wins** over all of the above | `admin` |
 
