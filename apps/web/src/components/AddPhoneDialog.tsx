@@ -271,7 +271,7 @@ export function AddPhoneDialog({ open, onClose, onVerified, initialPhone, purpos
               describedBy="trial-phone-notice"
             />
             <p id="trial-phone-notice" className="mt-2 text-xs text-[var(--color-text-muted)] leading-relaxed">
-              {t('auth.loginNotice')}
+              {proPrice ? t('auth.loginNotice', proPrice) : t('auth.loginNoticeNoPrice')}
             </p>
             {purpose === 'upgrade' && proPrice && (
               <p id="trial-price-notice" className="mt-2 text-xs font-medium text-[var(--color-text-secondary)] leading-relaxed">
