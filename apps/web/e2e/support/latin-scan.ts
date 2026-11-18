@@ -17,6 +17,7 @@ export const LATIN_ALLOW: { pattern: RegExp; reason: string }[] = [
   { pattern: /Cycle Circle/g, reason: 'brand name' },
   { pattern: /\bPro\b/g, reason: 'plan name, quoted verbatim in the BDApps subscription copy (ADR 0002)' },
   { pattern: /\b(?:BDApps|CAAS|Grameenphone|Cirkle|Supabase|PostgreSQL|AWS|Resend|ARIMA)\b/g, reason: 'third-party product and algorithm names' },
+  { pattern: /\b(?:VAT|SD|SC)\b/g, reason: 'tax abbreviations in the BDApps charge line (Tk + VAT + SD + SC)' },
   { pattern: /\b(?:AES-256-GCM|TLS 1\.3|SOC 2)\b/g, reason: 'security standard identifiers' },
   { pattern: /(?<=[\d\u09E6-\u09EF]\s?)(?:kg|cm|mm|ml|mg|°C|°F|bpm)\b/g, reason: 'SI units after a number' },
   { pattern: /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, reason: 'email addresses' },
