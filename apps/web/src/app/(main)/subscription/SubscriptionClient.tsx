@@ -10,10 +10,8 @@ import {
   Check,
   X,
   Shield,
-  Download,
   MessageSquare,
   BarChart2,
-  Star,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
@@ -41,8 +39,6 @@ const PRO_FEATURE_KEYS = [
   { icon: MessageSquare, labelKey: 'subscription.smsAlertsFull' },
   { icon: BarChart2, labelKey: 'subscription.advancedInsightsFull' },
   { icon: Shield, labelKey: 'subscription.prioritySupportFull' },
-  { icon: Download, labelKey: 'subscription.dataExport' },
-  { icon: Star, labelKey: 'subscription.adFree' },
 ]
 
 const FREE_FEATURE_KEYS = [

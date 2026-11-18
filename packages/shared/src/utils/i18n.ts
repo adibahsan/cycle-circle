@@ -711,7 +711,7 @@ const resources = {
           forBd: 'Built for Bangladesh',
         },
         finalCtaTitle: 'Start understanding your body today',
-        finalCtaSubtitle: 'Free to begin. No card required.',
+        finalCtaSubtitle: 'Try it free for 24 hours with email, or subscribe with your Robi/Cirkle number.',
         footer: { privacy: 'Privacy', terms: 'Terms', guide: 'User guide', bdappsTerms: 'BDApps terms', login: 'Log In', rights: '© Cycle Circle' },
         featuresPlanNote: 'Free features are also included in Pro.',
         how: {
@@ -1604,7 +1604,7 @@ const resources = {
           forBd: 'বাংলাদেশের জন্য তৈরি',
         },
         finalCtaTitle: 'আজই আপনার শরীরকে বুঝতে শুরু করুন',
-        finalCtaSubtitle: 'শুরু করতে কোনো খরচ নেই। কার্ডের প্রয়োজন নেই।',
+        finalCtaSubtitle: 'ইমেইল দিয়ে ২৪ ঘণ্টা ফ্রি ব্যবহার করুন, অথবা আপনার রবি/Cirkle নম্বর দিয়ে সাবস্ক্রাইব করুন।',
         footer: { privacy: 'গোপনীয়তা', terms: 'শর্তাবলী', guide: 'ব্যবহার নির্দেশিকা', bdappsTerms: 'BDApps শর্তাবলী', login: 'লগ ইন', rights: '© সাইকেল সার্কেল' },
         featuresPlanNote: 'ফ্রি ফিচারগুলো প্রো-তেও আছে।',
         how: {

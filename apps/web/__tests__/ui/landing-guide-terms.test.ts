@@ -17,6 +17,19 @@ describe('landing guide, features and BDApps terms', () => {
     expect(COMPARISON_FEATURE_KEYS.some((f) => !f.free)).toBe(true)
   })
 
+  it('claims Pro-only only for what the app gates by plan (SMS alerts)', () => {
+    expect(COMPARISON_FEATURE_KEYS.filter((f) => !f.free).map((f) => f.key)).toEqual(['smsAlerts'])
+    expect(COMPARISON_FEATURE_KEYS.map((f) => f.key)).not.toContain('adFree')
+  })
+
+  it('final CTA does not promise a free start without naming the trial', () => {
+    for (const lng of ['en', 'bn']) {
+      const s = i18n.getFixedT(lng)('landing.finalCtaSubtitle')
+      expect(s).not.toMatch(/No card required|কার্ডের প্রয়োজন নেই/)
+      expect(s).toMatch(/24|২৪/)
+    }
+  })
+
   it('orders the landing sections', () => {
     const client = read('app/(marketing)/welcome/LandingClient.tsx')
     const order = ['<HeroSection', '<FeaturesSection', '<PhaseShowcaseSection', '<HowItWorksSection', '<SubscriptionChargesSection', '<SocialProofSection', '<CTASection', '<LandingFooter']
