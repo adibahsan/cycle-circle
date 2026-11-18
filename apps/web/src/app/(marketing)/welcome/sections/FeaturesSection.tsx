@@ -1,16 +1,13 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { CalendarHeart, Sparkles, ShieldCheck, Users } from 'lucide-react';
 import { LANDING_CONTAINER, LANDING_SECTION } from './landing-layout';
 import { RevealOnScroll } from '@/components/motion/RevealOnScroll';
+import { COMPARISON_FEATURE_KEYS } from '@/lib/plan-features';
 
-const FEATURES = [
-  { key: 'tracking' as const, icon: CalendarHeart, color: 'var(--color-menstrual)' },
-  { key: 'predictions' as const, icon: Sparkles, color: 'var(--color-gold-ink)' },
-  { key: 'privacy' as const, icon: ShieldCheck, color: 'var(--color-primary)' },
-  { key: 'profiles' as const, icon: Users, color: 'var(--color-luteal)' },
-] as const;
+const TAG_BASE = 'shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold';
+const TAG_FREE = `${TAG_BASE} border-[var(--color-primary)] text-[var(--color-primary)]`;
+const TAG_PRO = `${TAG_BASE} border-[var(--color-gold-ink)] text-[var(--color-gold-ink)]`;
 
 export function FeaturesSection() {
   const { t } = useTranslation();
@@ -28,20 +25,16 @@ export function FeaturesSection() {
           >
             {t('landing.featuresTitle')}
           </h2>
+          <p className="mt-3 text-sm text-[var(--color-text-secondary)]">{t('landing.featuresPlanNote')}</p>
         </RevealOnScroll>
 
-        {/* Ruled two-column list: the content carries the section, not a card grid. */}
+        {/* Ruled two-column list: every feature, tagged with the plan it starts in. */}
         <ul className="grid grid-cols-1 md:grid-cols-2 md:gap-x-12">
-          {FEATURES.map(({ key, icon: Icon, color }) => (
-            <li key={key} className="border-t border-[var(--color-border)] py-6">
-              <RevealOnScroll>
-                <h3 className="flex items-center gap-2.5 text-fluid-md font-bold text-[var(--color-text-primary)] mb-2">
-                  <Icon size={20} strokeWidth={2} aria-hidden="true" style={{ color }} className="shrink-0" />
-                  {t(`landing.features.${key}.title`)}
-                </h3>
-                <p className="text-[var(--color-text-secondary)] leading-relaxed max-w-[48ch]">
-                  {t(`landing.features.${key}.body`)}
-                </p>
+          {COMPARISON_FEATURE_KEYS.map(({ key, labelKey, free }) => (
+            <li key={key} className="border-t border-[var(--color-border)] py-4">
+              <RevealOnScroll className="flex items-center justify-between gap-3">
+                <span className="font-semibold text-[var(--color-text-primary)]">{t(labelKey)}</span>
+                <span className={free ? TAG_FREE : TAG_PRO}>{free ? t('subscription.free') : t('subscription.pro')}</span>
               </RevealOnScroll>
             </li>
           ))}

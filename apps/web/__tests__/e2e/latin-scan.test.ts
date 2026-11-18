@@ -18,6 +18,9 @@ describe('latin-scan allow-list', () => {
     expect(latinOffenders([text('info@cycle-circle.com'), text('BDApps ওটিপি'), text('AES-256-GCM দিয়ে')])).toEqual([])
     expect(latinOffenders([text('Rina')]).length).toBe(1)
   })
+  it('lets VAT + SD + SC through in Bengali billing text', () => {
+    expect(latinOffenders([text('প্রতি দিন ৳২ + VAT + SD + SC, যা মোবাইল ব্যালেন্স থেকে কাটা হয়।')])).toEqual([])
+  })
   it('strips only the allowed parts', () => {
     expect(stripAllowed('Cycle Circle ৫ cm').trim()).toBe('৫')
   })

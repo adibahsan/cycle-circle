@@ -4,7 +4,7 @@ import { PHONE_375, DESKTOP, expectNoHorizontalOverflow, settle } from '../guard
 // The landing page is for signed-out visitors: drop the seeded session.
 test.use({ storageState: { cookies: [], origins: [] } })
 
-const BELOW_HERO = ['#features-heading', '#phases-heading', '#proof-heading']
+const BELOW_HERO = ['#features-heading', '#phases-heading', '#how-heading', '#charges-heading', '#proof-heading']
 
 /** Effective opacity (own x ancestors). Playwright's toBeVisible ignores opacity, so check it here. */
 async function effectiveOpacity(page: Page, selector: string) {

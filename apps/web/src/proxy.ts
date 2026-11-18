@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { env } from '@vesta/shared/utils/env'
 import { WEB_AUDIENCE, verifyAuthToken } from '@vesta/shared/utils/auth-token'
 
-const PUBLIC_PATHS = ['/login', '/verify-otp', '/email-login', '/welcome', '/get-started', '/terms', '/privacy', '/api/', '/internal/']
+const PUBLIC_PATHS = ['/login', '/verify-otp', '/email-login', '/welcome', '/get-started', '/terms', '/privacy', '/guide', '/api/', '/internal/']
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl

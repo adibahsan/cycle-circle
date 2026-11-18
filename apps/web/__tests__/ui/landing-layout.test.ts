@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 const src = path.resolve(__dirname, '../../src')
 const read = (p: string) => readFileSync(path.join(src, p), 'utf8')
 const sectionsDir = 'app/(marketing)/welcome/sections/'
-const SECTIONS = ['FeaturesSection', 'PhaseShowcaseSection', 'SocialProofSection', 'CTASection', 'LandingFooter']
+const SECTIONS = ['FeaturesSection', 'PhaseShowcaseSection', 'HowItWorksSection', 'SubscriptionChargesSection', 'SocialProofSection', 'CTASection', 'LandingFooter']
 
 describe('landing content is visible by default', () => {
   const reveal = read('components/motion/RevealOnScroll.tsx')

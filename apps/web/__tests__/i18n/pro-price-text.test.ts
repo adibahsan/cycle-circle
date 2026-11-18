@@ -31,7 +31,18 @@ describe.each(['en', 'bn'] as const)('Pro price text (%s)', (lng) => {
 
   it('states the price in the Terms', () => {
     const vars = proPriceVars(price, lng)
-    expect(t('terms.sections.subscription.intro', vars)).toContain(vars.price)
+    const text = t('terms.sections.subscription.intro', vars)
+    expect(text).toContain(vars.amount)
+    expect(text).toContain(vars.period)
+  })
+
+  it.each(['auth.loginNotice', 'landing.charges.charge', 'landing.charges.renewal'])('%s states amount and period and leaves no placeholder', (key) => {
+    const vars = proPriceVars(price, lng)
+    const text = t(key, vars)
+    // The renewal line states only the period; the other two also state the amount.
+    if (key !== 'landing.charges.renewal') expect(text).toContain(vars.amount)
+    expect(text).toContain(vars.period)
+    expect(text).not.toContain('{{')
   })
 
   it('states amount and period in the upgrade confirmation', () => {

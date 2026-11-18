@@ -10,10 +10,8 @@ import {
   Check,
   X,
   Shield,
-  Download,
   MessageSquare,
   BarChart2,
-  Star,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
@@ -27,6 +25,7 @@ import { getSubscriptionTier } from '@vesta/shared/utils/subscription'
 import { PageContainer } from '@/components/ui/PageContainer'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { useProPriceVars } from '@/components/ProPriceProvider'
+import { COMPARISON_FEATURE_KEYS } from '@/lib/plan-features'
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 interface SubscriptionClientProps {
@@ -36,23 +35,10 @@ interface SubscriptionClientProps {
 const toLocalStatus = (status: string) => status.toLowerCase() as SubscriptionStatus
 
 // ── Feature rows ───────────────────────────────────────────────────────────────
-const COMPARISON_FEATURE_KEYS = [
-  { key: 'cycleTracking', labelKey: 'subscription.cycleTracking', free: true, pro: true },
-  { key: 'calendar', labelKey: 'subscription.calendarView', free: true, pro: true },
-  { key: 'symptoms', labelKey: 'subscription.symptomLogging', free: true, pro: true },
-  { key: 'content', labelKey: 'subscription.healthArticles', free: true, pro: true },
-  { key: 'smsAlerts', labelKey: 'subscription.smsAlertsShort', free: false, pro: true },
-  { key: 'export', labelKey: 'subscription.dataExport', free: false, pro: true },
-  { key: 'predictions', labelKey: 'subscription.advancedPredictions', free: false, pro: true },
-  { key: 'adFree', labelKey: 'subscription.adFree', free: false, pro: true },
-]
-
 const PRO_FEATURE_KEYS = [
   { icon: MessageSquare, labelKey: 'subscription.smsAlertsFull' },
   { icon: BarChart2, labelKey: 'subscription.advancedInsightsFull' },
   { icon: Shield, labelKey: 'subscription.prioritySupportFull' },
-  { icon: Download, labelKey: 'subscription.dataExport' },
-  { icon: Star, labelKey: 'subscription.adFree' },
 ]
 
 const FREE_FEATURE_KEYS = [

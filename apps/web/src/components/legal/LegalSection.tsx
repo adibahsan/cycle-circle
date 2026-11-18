@@ -8,15 +8,17 @@ import { RevealOnScroll } from '@/components/motion/RevealOnScroll';
 interface LegalSectionProps {
   icon: React.ElementType;
   title: string;
+  /** Anchor id for deep links, e.g. /terms#bdapps. */
+  id?: string;
   children: React.ReactNode;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function LegalSection({ icon: Icon, title, children }: LegalSectionProps) {
+export function LegalSection({ icon: Icon, title, id, children }: LegalSectionProps) {
   return (
     <RevealOnScroll>
-      <div className="glass rounded-2xl shadow-soft p-5 sm:p-6 space-y-3">
+      <div id={id} className="glass rounded-2xl shadow-soft p-5 sm:p-6 space-y-3 scroll-mt-20">
         {/* Header row */}
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[var(--color-action)] flex items-center justify-center shrink-0">

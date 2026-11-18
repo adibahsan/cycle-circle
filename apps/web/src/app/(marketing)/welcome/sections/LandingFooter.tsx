@@ -22,7 +22,7 @@ export function LandingFooter() {
 
         {/* Nav links */}
         <nav aria-label={t('nav.footerNav')}>
-          <ul className="flex items-center gap-6 list-none p-0 m-0">
+          <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 list-none p-0 m-0">
             <li>
               <Link
                 href="/privacy"
@@ -37,6 +37,22 @@ export function LandingFooter() {
                 className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
               >
                 {t('landing.footer.terms')}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/guide"
+                className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
+              >
+                {t('landing.footer.guide')}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/terms#bdapps"
+                className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
+              >
+                {t('landing.footer.bdappsTerms')}
               </Link>
             </li>
             <li>
