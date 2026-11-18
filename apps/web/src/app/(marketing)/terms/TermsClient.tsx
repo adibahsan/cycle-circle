@@ -115,7 +115,7 @@ export function TermsClient({ price }: { price: CustomerProPrice | null }) {
 
       {/* 4. Subscription */}
       <LegalSection key="subscription" id="bdapps" icon={Crown} title={t('terms.sections.subscription.title')}>
-        <p>{proPrice ? t('terms.sections.subscription.intro', { amount: proPrice.amount, period: proPrice.period }) : t('terms.sections.subscription.introNoPrice')}</p>
+        <p>{proPrice ? t('terms.sections.subscription.intro', proPrice) : t('terms.sections.subscription.introNoPrice')}</p>
         <BulletList items={subscriptionItems} />
       </LegalSection>
 

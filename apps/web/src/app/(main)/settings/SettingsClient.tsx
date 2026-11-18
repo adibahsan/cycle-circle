@@ -740,21 +740,21 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1">
                   <Link
                     href="/privacy"
-                    className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
+                    className="text-xs text-[var(--color-secondary)] hover:underline font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
                   >
                     {t('settings.privacyPolicy')}
                   </Link>
-                  <span className="text-[var(--color-border)]">·</span>
+                  <span aria-hidden="true" className="text-[var(--color-border)]">·</span>
                   <Link
                     href="/terms"
-                    className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
+                    className="text-xs text-[var(--color-secondary)] hover:underline font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
                   >
                     {t('settings.termsOfService')}
                   </Link>
-                  <span className="text-[var(--color-border)]">·</span>
+                  <span aria-hidden="true" className="text-[var(--color-border)]">·</span>
                   <Link
                     href="/guide"
-                    className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
+                    className="text-xs text-[var(--color-secondary)] hover:underline font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--goal-accent)] rounded"
                   >
                     {t('settings.userGuide')}
                   </Link>

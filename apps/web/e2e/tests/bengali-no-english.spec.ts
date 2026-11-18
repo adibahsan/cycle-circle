@@ -58,7 +58,7 @@ for (const [name, viewport] of [['desktop', DESKTOP], ['phone 375', PHONE_375]] 
 
 test.describe('bengali: public pages', () => {
   test.use({ viewport: PHONE_375, storageState: { cookies: [], origins: [] } })
-  for (const route of ['/welcome', '/login', '/get-started', '/privacy', '/terms', '/no-such-page']) {
+  for (const route of ['/welcome', '/login', '/get-started', '/privacy', '/terms', '/guide', '/no-such-page']) {
     test(route, async ({ page }) => {
       await useBengali(page)
       await gotoQuiet(page, route)

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { ArrowRight } from 'lucide-react';
 import { LegalPageShell } from '@/components/legal/LegalPageShell';
 import { LegalSection } from '@/components/legal/LegalSection';
 import { GUIDE_STEPS } from '@/lib/guide-steps';
@@ -19,9 +20,10 @@ export function GuideClient() {
       <p>
         <Link
           href="/terms#bdapps"
-          className="inline-flex items-center gap-1 text-[var(--color-secondary)] hover:underline font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
+          className="inline-flex items-center gap-1.5 text-[var(--color-secondary)] hover:underline font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500 rounded"
         >
-          {t('landing.charges.termsLink')} →
+          {t('landing.charges.termsLink')}
+          <ArrowRight size={16} aria-hidden="true" />
         </Link>
       </p>
     </LegalPageShell>

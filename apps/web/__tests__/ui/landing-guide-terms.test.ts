@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { NextRequest } from 'next/server'
 import { describe, expect, it } from 'vitest'
+import { proxy } from '@/proxy'
 import i18n from '@vesta/shared/utils/i18n'
 import { COMPARISON_FEATURE_KEYS } from '@/lib/plan-features'
 
@@ -23,8 +25,13 @@ describe('landing guide, features and BDApps terms', () => {
     expect([...at].sort((a, b) => a - b)).toEqual(at)
   })
 
-  it('treats /guide as public and lists it in the sitemap', () => {
-    expect(read('proxy.ts')).toMatch(/PUBLIC_PATHS = \[[^\]]*'\/guide'/)
+  it.each(['/guide', '/terms', '/privacy'])('serves %s to signed-out visitors without a redirect', async (route) => {
+    const res = await proxy(new NextRequest(`http://localhost${route}`))
+    expect(res.status).toBe(200)
+    expect(res.headers.get('location')).toBeNull()
+  })
+
+  it('lists /guide in the sitemap', () => {
     expect(read('app/sitemap.ts')).toContain('/guide')
   })
 
@@ -32,9 +39,12 @@ describe('landing guide, features and BDApps terms', () => {
     expect(read('app/(marketing)/terms/TermsClient.tsx')).toMatch(/key="subscription" id="bdapps"/)
   })
 
-  it.each(['en', 'bn'] as const)('has no Grameenphone or billing-period claims in the Terms (%s)', (lng) => {
-    const items = i18n.getResourceBundle(lng, 'translation').terms.sections.subscription.items as { desc: string }[]
-    expect(items).toHaveLength(6)
-    expect(JSON.stringify(items)).not.toMatch(/Grameenphone/)
+  it.each(['en', 'bn'] as const)('Terms subscription copy is the BDApps copy, not the old claims (%s)', (lng) => {
+    const sub = i18n.getResourceBundle(lng, 'translation').terms.sections.subscription
+    const items = (sub.items as { desc: string }[]).map((i) => i.desc)
+    const all = JSON.stringify(sub)
+    expect(all).not.toMatch(/Grameenphone|end of the current billing period|access continues|বর্তমান বিলিং পিরিয়ড শেষ|অ্যাক্সেস অব্যাহত/)
+    const immediate = lng === 'en' ? /free plan immediately/ : /সঙ্গে সঙ্গে ফ্রি প্ল্যানে/
+    expect(items.some((d) => immediate.test(d))).toBe(true)
   })
 })
