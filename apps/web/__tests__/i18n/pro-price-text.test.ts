@@ -31,7 +31,9 @@ describe.each(['en', 'bn'] as const)('Pro price text (%s)', (lng) => {
 
   it('states the price in the Terms', () => {
     const vars = proPriceVars(price, lng)
-    expect(t('terms.sections.subscription.intro', vars)).toContain(vars.price)
+    const text = t('terms.sections.subscription.intro', vars)
+    expect(text).toContain(vars.amount)
+    expect(text).toContain(vars.period)
   })
 
   it('states amount and period in the upgrade confirmation', () => {

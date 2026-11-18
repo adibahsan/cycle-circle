@@ -10,7 +10,7 @@ import { LandingFooter } from '@/app/(marketing)/welcome/sections/LandingFooter'
 
 interface LegalPageShellProps {
   title: string;
-  dateLabel: string;
+  dateLabel?: string;
   intro: string;
   children: React.ReactNode;
 }
@@ -44,12 +44,14 @@ export function LegalPageShell({ title, dateLabel, intro, children }: LegalPageS
       {/* ── Main content ── */}
       <main className="relative z-10 max-w-3xl mx-auto px-4 py-8 sm:py-12">
         <h1 className="text-fluid-xl font-bold text-[var(--color-text-primary)]">{title}</h1>
-        <p
-          className="mt-1.5 text-sm text-[var(--color-text-muted)]"
-          style={{ fontVariantNumeric: 'tabular-nums' }}
-        >
-          {dateLabel}
-        </p>
+        {dateLabel && (
+          <p
+            className="mt-1.5 text-sm text-[var(--color-text-muted)]"
+            style={{ fontVariantNumeric: 'tabular-nums' }}
+          >
+            {dateLabel}
+          </p>
+        )}
         <p className="mt-4 text-sm sm:text-base text-[var(--color-text-secondary)] leading-relaxed max-w-2xl">
           {intro}
         </p>

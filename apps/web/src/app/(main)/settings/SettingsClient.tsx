@@ -737,7 +737,7 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                   </p>
                 </div>
 
-                <div className="flex items-center gap-4 pt-1">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1">
                   <Link
                     href="/privacy"
                     className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
@@ -750,6 +750,13 @@ export function SettingsClient({ user, profiles, notifPrefs, completionReminders
                     className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
                   >
                     {t('settings.termsOfService')}
+                  </Link>
+                  <span className="text-[var(--color-border)]">·</span>
+                  <Link
+                    href="/guide"
+                    className="text-xs text-[var(--color-secondary)] hover:underline font-medium"
+                  >
+                    {t('settings.userGuide')}
                   </Link>
                 </div>
               </Card>
